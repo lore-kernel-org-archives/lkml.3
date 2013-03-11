@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3CKW2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:28:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47414 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab3CKW2D (ORCPT
+	id S1754379Ab3CKWae (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:30:34 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37266 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab3CKWac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:28:03 -0400
-Date: Mon, 11 Mar 2013 15:28:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Subject: Re: [PATCH] backlight: l4f00242t03: check return value of
- regulator_enable()
-Message-Id: <20130311152801.fd07ff051885bb1c98fe14f5@linux-foundation.org>
-In-Reply-To: <005f01ce1e0c$b7dbcfc0$27936f40$%han@samsung.com>
-References: <005f01ce1e0c$b7dbcfc0$27936f40$%han@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Mar 2013 18:30:32 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH REPOST] dma: tegra: assume CONFIG_OF
+Date: Mon, 11 Mar 2013 16:30:26 -0600
+Message-Id: <1363041026-31890-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013 12:58:41 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
+From: Stephen Warren <swarren@nvidia.com>
 
-> The regulator_enable() was marked as as __must_check, therefore,
-> the return value of regulator_enable() should be checked.
-> Also, this patch checks return value of regulator_set_voltage().
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/l4f00242t03.c |   27 ++++++++++++++++++++++-----
->  1 files changed, 22 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-> index fb61557..8d54c3c 100644
-> --- a/drivers/video/backlight/l4f00242t03.c
-> +++ b/drivers/video/backlight/l4f00242t03.c
-> @@ -51,14 +51,31 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
->  	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
->  	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
->  	const u16 cmd[] = { 0x36, param(0), 0x3A, param(0x60) };
-> +	int ret;
->  
->  	dev_dbg(&spi->dev, "initializing LCD\n");
->  
-> -	regulator_set_voltage(priv->io_reg, 1800000, 1800000);
-> -	regulator_enable(priv->io_reg);
-> +	ret = regulator_set_voltage(priv->io_reg, 1800000, 1800000);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "failed to set the IO regulator voltage.\n");
-> +		return;
-> +	}
-> +	ret = regulator_enable(priv->io_reg);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "failed to enable the IO regulator.\n");
-> +		return;
-> +	}
->  
-> -	regulator_set_voltage(priv->core_reg, 2800000, 2800000);
-> -	regulator_enable(priv->core_reg);
-> +	ret = regulator_set_voltage(priv->core_reg, 2800000, 2800000);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "failed to set the core regulator voltage.\n");
-> +		return;
+Tegra only supports, and always enables, device tree. Remove all ifdefs
+and runtime checks for DT support from the driver.
 
-Should the IO regulator be disabled before returning?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-> +	}
-> +	ret = regulator_enable(priv->core_reg);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "failed to enable the core regulator.\n");
-> +		return;
-> +	}
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index fcee27e..5a0b66c 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -1213,7 +1213,6 @@ static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
+ 	.support_channel_pause	= false,
+ };
+ 
+-#if defined(CONFIG_OF)
+ /* Tegra30 specific DMA controller information */
+ static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
+ 	.nr_channels		= 32,
+@@ -1243,7 +1242,6 @@ static const struct of_device_id tegra_dma_of_match[] = {
+ 	},
+ };
+ MODULE_DEVICE_TABLE(of, tegra_dma_of_match);
+-#endif
+ 
+ static int tegra_dma_probe(struct platform_device *pdev)
+ {
+@@ -1252,20 +1250,14 @@ static int tegra_dma_probe(struct platform_device *pdev)
+ 	int ret;
+ 	int i;
+ 	const struct tegra_dma_chip_data *cdata = NULL;
++	const struct of_device_id *match;
+ 
+-	if (pdev->dev.of_node) {
+-		const struct of_device_id *match;
+-		match = of_match_device(of_match_ptr(tegra_dma_of_match),
+-					&pdev->dev);
+-		if (!match) {
+-			dev_err(&pdev->dev, "Error: No device match found\n");
+-			return -ENODEV;
+-		}
+-		cdata = match->data;
+-	} else {
+-		/* If no device tree then fallback to tegra20 */
+-		cdata = &tegra20_dma_chip_data;
++	match = of_match_device(tegra_dma_of_match, &pdev->dev);
++	if (!match) {
++		dev_err(&pdev->dev, "Error: No device match found\n");
++		return -ENODEV;
+ 	}
++	cdata = match->data;
+ 
+ 	tdma = devm_kzalloc(&pdev->dev, sizeof(*tdma) + cdata->nr_channels *
+ 			sizeof(struct tegra_dma_channel), GFP_KERNEL);
+@@ -1460,7 +1452,7 @@ static struct platform_driver tegra_dmac_driver = {
+ 		.name	= "tegra-apbdma",
+ 		.owner = THIS_MODULE,
+ 		.pm	= &tegra_dma_dev_pm_ops,
+-		.of_match_table = of_match_ptr(tegra_dma_of_match),
++		.of_match_table = tegra_dma_of_match,
+ 	},
+ 	.probe		= tegra_dma_probe,
+ 	.remove		= tegra_dma_remove,
+-- 
+1.7.10.4
 
-Ditto.
