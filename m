@@ -1,233 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3CKQ3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:29:01 -0400
+	id S1754289Ab3CKQ3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:29:04 -0400
 Received: from mga09.intel.com ([134.134.136.24]:50682 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753639Ab3CKQ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:28:59 -0400
+	id S1753639Ab3CKQ3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 12:29:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,824,1355126400"; 
-   d="scan'208";a="299229608"
+   d="scan'208";a="299229644"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 1/2] mei: revamp mei_data2slots
-Date: Mon, 11 Mar 2013 18:27:02 +0200
-Message-Id: <1363019223-624-1-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 2/2] mei: add hw start callback
+Date: Mon, 11 Mar 2013 18:27:03 +0200
+Message-Id: <1363019223-624-2-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363019223-624-1-git-send-email-tomas.winkler@intel.com>
+References: <1363019223-624-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Move the mei_data2slots to mei_dev.h as it will be used
-by the all supported HW.
-2. Change return value from u8 to u32 to catch possible overflows
-3. Eliminate computing the slots number twice in the same function
+This callback wraps up hardware dependent details
+of the hardware initialization.
+
+This callback also contains host ready setting
+so we can remove host_set_ready callback
+
+In ME we switch to waiting on event so
+we can streamline the initialization flow.
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/amthif.c    | 11 +++++-----
- drivers/misc/mei/hw-me.c     |  3 ++-
- drivers/misc/mei/hw-me.h     |  6 ------
- drivers/misc/mei/interrupt.c | 50 +++++++++++++++++++++++++-------------------
- drivers/misc/mei/mei_dev.h   | 11 ++++++++++
- 5 files changed, 47 insertions(+), 34 deletions(-)
+ drivers/misc/mei/hw-me.c   | 45 ++++++++++++++++++++++++++++++++++++---------
+ drivers/misc/mei/init.c    | 16 ++++++++++++++++
+ drivers/misc/mei/mei_dev.h | 16 ++++++++++------
+ 3 files changed, 62 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index c86d7e3..9a5e8c7 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -449,7 +449,7 @@ int mei_amthif_irq_write_complete(struct mei_device *dev, s32 *slots,
- 	struct mei_msg_hdr mei_hdr;
- 	struct mei_cl *cl = cb->cl;
- 	size_t len = dev->iamthif_msg_buf_size - dev->iamthif_msg_buf_index;
--	size_t msg_slots = mei_data2slots(len);
-+	u32 msg_slots = mei_data2slots(len);
- 
- 	mei_hdr.host_addr = cl->host_client_id;
- 	mei_hdr.me_addr = cl->me_client_id;
-@@ -566,12 +566,13 @@ int mei_amthif_irq_read_message(struct mei_cl_cb *complete_list,
-  */
- int mei_amthif_irq_read(struct mei_device *dev, s32 *slots)
- {
-+	u32 msg_slots = mei_data2slots(sizeof(struct hbm_flow_control));
- 
--	if (((*slots) * sizeof(u32)) < (sizeof(struct mei_msg_hdr)
--			+ sizeof(struct hbm_flow_control))) {
-+	if (*slots < msg_slots)
- 		return -EMSGSIZE;
--	}
--	*slots -= mei_data2slots(sizeof(struct hbm_flow_control));
-+
-+	*slots -= msg_slots;
-+
- 	if (mei_hbm_cl_flow_control_req(dev, &dev->iamthif_cl)) {
- 		dev_dbg(&dev->pdev->dev, "iamthif flow control failed\n");
- 		return -EIO;
 diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 642c622..4d4738a 100644
+index 4d4738a..0db071f 100644
 --- a/drivers/misc/mei/hw-me.c
 +++ b/drivers/misc/mei/hw-me.c
-@@ -305,10 +305,11 @@ static int mei_me_write_message(struct mei_device *dev,
- 			unsigned char *buf)
- {
- 	struct mei_me_hw *hw = to_me_hw(dev);
--	unsigned long rem, dw_cnt;
-+	unsigned long rem;
- 	unsigned long length = header->length;
- 	u32 *reg_buf = (u32 *)buf;
- 	u32 hcsr;
-+	u32 dw_cnt;
- 	int i;
- 	int empty_slots;
- 
-diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
-index 8518d3e..80bd829 100644
---- a/drivers/misc/mei/hw-me.h
-+++ b/drivers/misc/mei/hw-me.h
-@@ -36,12 +36,6 @@ struct mei_me_hw {
- 
- struct mei_device *mei_me_dev_init(struct pci_dev *pdev);
- 
--/* get slots (dwords) from a message length + header (bytes) */
--static inline unsigned char mei_data2slots(size_t length)
--{
--	return DIV_ROUND_UP(sizeof(struct mei_msg_hdr) + length, 4);
--}
--
- irqreturn_t mei_me_irq_quick_handler(int irq, void *dev_id);
- irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id);
- 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 3535b26..14c70b8 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -153,25 +153,27 @@ static int _mei_irq_thread_close(struct mei_device *dev, s32 *slots,
- 				struct mei_cl *cl,
- 				struct mei_cl_cb *cmpl_list)
- {
--	if ((*slots * sizeof(u32)) < (sizeof(struct mei_msg_hdr) +
--			sizeof(struct hbm_client_connect_request)))
--		return -EBADMSG;
-+	u32 msg_slots =
-+		mei_data2slots(sizeof(struct hbm_client_connect_request));
- 
--	*slots -= mei_data2slots(sizeof(struct hbm_client_connect_request));
-+	if (*slots < msg_slots)
-+		return -EMSGSIZE;
-+
-+	*slots -= msg_slots;
- 
- 	if (mei_hbm_cl_disconnect_req(dev, cl)) {
- 		cl->status = 0;
- 		cb_pos->buf_idx = 0;
- 		list_move_tail(&cb_pos->list, &cmpl_list->list);
--		return -EMSGSIZE;
--	} else {
--		cl->state = MEI_FILE_DISCONNECTING;
--		cl->status = 0;
--		cb_pos->buf_idx = 0;
--		list_move_tail(&cb_pos->list, &dev->ctrl_rd_list.list);
--		cl->timer_count = MEI_CONNECT_TIMEOUT;
-+		return -EIO;
- 	}
- 
-+	cl->state = MEI_FILE_DISCONNECTING;
-+	cl->status = 0;
-+	cb_pos->buf_idx = 0;
-+	list_move_tail(&cb_pos->list, &dev->ctrl_rd_list.list);
-+	cl->timer_count = MEI_CONNECT_TIMEOUT;
-+
- 	return 0;
+@@ -232,6 +232,38 @@ static bool mei_me_hw_is_ready(struct mei_device *dev)
+ 	return (hw->me_hw_state & ME_RDY_HRA) == ME_RDY_HRA;
  }
  
-@@ -192,14 +194,15 @@ static int _mei_irq_thread_read(struct mei_device *dev,	s32 *slots,
- 			struct mei_cl *cl,
- 			struct mei_cl_cb *cmpl_list)
- {
--	if ((*slots * sizeof(u32)) < (sizeof(struct mei_msg_hdr) +
--			sizeof(struct hbm_flow_control))) {
-+	u32 msg_slots = mei_data2slots(sizeof(struct hbm_flow_control));
-+
-+	if (*slots < msg_slots) {
- 		/* return the cancel routine */
- 		list_del(&cb_pos->list);
--		return -EBADMSG;
-+		return -EMSGSIZE;
- 	}
- 
--	*slots -= mei_data2slots(sizeof(struct hbm_flow_control));
-+	*slots -= msg_slots;
- 
- 	if (mei_hbm_cl_flow_control_req(dev, cl)) {
- 		cl->status = -ENODEV;
-@@ -229,15 +232,19 @@ static int _mei_irq_thread_ioctl(struct mei_device *dev, s32 *slots,
- 			struct mei_cl *cl,
- 			struct mei_cl_cb *cmpl_list)
- {
--	if ((*slots * sizeof(u32)) < (sizeof(struct mei_msg_hdr) +
--			sizeof(struct hbm_client_connect_request))) {
-+	u32 msg_slots =
-+		mei_data2slots(sizeof(struct hbm_client_connect_request));
-+
-+	if (*slots < msg_slots) {
- 		/* return the cancel routine */
- 		list_del(&cb_pos->list);
--		return -EBADMSG;
-+		return -EMSGSIZE;
- 	}
- 
-+	*slots -=  msg_slots;
-+
- 	cl->state = MEI_FILE_CONNECTING;
--	*slots -= mei_data2slots(sizeof(struct hbm_client_connect_request));
-+
- 	if (mei_hbm_cl_connect_req(dev, cl)) {
- 		cl->status = -ENODEV;
- 		cb_pos->buf_idx = 0;
-@@ -266,7 +273,7 @@ static int mei_irq_thread_write_complete(struct mei_device *dev, s32 *slots,
- 	struct mei_msg_hdr mei_hdr;
- 	struct mei_cl *cl = cb->cl;
- 	size_t len = cb->request_buffer.size - cb->buf_idx;
--	size_t msg_slots = mei_data2slots(len);
-+	u32 msg_slots = mei_data2slots(len);
- 
- 	mei_hdr.host_addr = cl->host_client_id;
- 	mei_hdr.me_addr = cl->me_client_id;
-@@ -419,8 +426,7 @@ end:
-  *
-  * returns 0 on success, <0 on failure.
-  */
--int mei_irq_write_handler(struct mei_device *dev,
--				struct mei_cl_cb *cmpl_list)
-+int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- {
- 
- 	struct mei_cl *cl;
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 9787381..224c0e3 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -374,6 +374,17 @@ static inline unsigned long mei_secs_to_jiffies(unsigned long sec)
- 	return msecs_to_jiffies(sec * MSEC_PER_SEC);
- }
- 
-+/**
-+ * mei_data2slots - get slots - number of (dwords) from a message length
-+ *	+ size of the mei header
-+ * @length - size of the messages in bytes
-+ * returns  - number of slots
-+ */
-+static inline u32 mei_data2slots(size_t length)
++static int mei_me_hw_ready_wait(struct mei_device *dev)
 +{
-+	return DIV_ROUND_UP(sizeof(struct mei_msg_hdr) + length, 4);
++	int err;
++	if (mei_me_hw_is_ready(dev))
++		return 0;
++
++	mutex_unlock(&dev->device_lock);
++	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
++			dev->recvd_hw_ready, MEI_INTEROP_TIMEOUT);
++	mutex_lock(&dev->device_lock);
++	if (!err && !dev->recvd_hw_ready) {
++		dev_err(&dev->pdev->dev,
++			"wait hw ready failed. status = 0x%x\n", err);
++		return -ETIMEDOUT;
++	}
++
++	dev->recvd_hw_ready = false;
++	return 0;
 +}
 +
++static int mei_me_hw_start(struct mei_device *dev)
++{
++	int ret = mei_me_hw_ready_wait(dev);
++	if (ret)
++		return ret;
++	dev_dbg(&dev->pdev->dev, "hw is ready\n");
++
++	mei_me_host_set_ready(dev);
++	return ret;
++}
++
++
+ /**
+  * mei_hbuf_filled_slots - gets number of device filled buffer slots
+  *
+@@ -466,14 +498,9 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 		if (mei_hw_is_ready(dev)) {
+ 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
  
- /*
-  * mei init function prototypes
+-			mei_host_set_ready(dev);
+-
+-			dev_dbg(&dev->pdev->dev, "link is established start sending messages.\n");
+-			/* link is established * start sending messages.  */
+-
+-			dev->dev_state = MEI_DEV_INIT_CLIENTS;
++			dev->recvd_hw_ready = true;
++			wake_up_interruptible(&dev->wait_hw_ready);
+ 
+-			mei_hbm_start_req(dev);
+ 			mutex_unlock(&dev->device_lock);
+ 			return IRQ_HANDLED;
+ 		} else {
+@@ -532,12 +559,12 @@ end:
+ }
+ static const struct mei_hw_ops mei_me_hw_ops = {
+ 
+-	.host_set_ready = mei_me_host_set_ready,
+ 	.host_is_ready = mei_me_host_is_ready,
+ 
+ 	.hw_is_ready = mei_me_hw_is_ready,
+ 	.hw_reset = mei_me_hw_reset,
+-	.hw_config  = mei_me_hw_config,
++	.hw_config = mei_me_hw_config,
++	.hw_start = mei_me_hw_start,
+ 
+ 	.intr_clear = mei_me_intr_clear,
+ 	.intr_enable = mei_me_intr_enable,
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 3561799..1ab1fb1 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -22,6 +22,7 @@
+ #include <linux/mei.h>
+ 
+ #include "mei_dev.h"
++#include "hbm.h"
+ #include "client.h"
+ 
+ const char *mei_dev_state_str(int state)
+@@ -47,6 +48,7 @@ void mei_device_init(struct mei_device *dev)
+ 	/* setup our list array */
+ 	INIT_LIST_HEAD(&dev->file_list);
+ 	mutex_init(&dev->device_lock);
++	init_waitqueue_head(&dev->wait_hw_ready);
+ 	init_waitqueue_head(&dev->wait_recvd_msg);
+ 	init_waitqueue_head(&dev->wait_stop_wd);
+ 	dev->dev_state = MEI_DEV_INITIALIZING;
+@@ -176,6 +178,20 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 		dev_warn(&dev->pdev->dev, "unexpected reset: dev_state = %s\n",
+ 			 mei_dev_state_str(dev->dev_state));
+ 
++	if (!interrupts_enabled) {
++		dev_dbg(&dev->pdev->dev, "intr not enabled end of reset\n");
++		return;
++	}
++
++	mei_hw_start(dev);
++
++	dev_dbg(&dev->pdev->dev, "link is established start sending messages.\n");
++	/* link is established * start sending messages.  */
++
++	dev->dev_state = MEI_DEV_INIT_CLIENTS;
++
++	mei_hbm_start_req(dev);
++
+ 	/* wake up all readings so they can be interrupted */
+ 	mei_cl_all_read_wakeup(dev);
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 224c0e3..c17bced 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -213,11 +213,11 @@ struct mei_cl {
+ 
+ /** struct mei_hw_ops
+  *
+- * @host_set_ready   - notify FW that host side is ready
+  * @host_is_ready    - query for host readiness
+ 
+  * @hw_is_ready      - query if hw is ready
+  * @hw_reset         - reset hw
++ * @hw_start         - start hw after reset
+  * @hw_config        - configure hw
+ 
+  * @intr_clear       - clear pending interrupts
+@@ -237,11 +237,11 @@ struct mei_cl {
+  */
+ struct mei_hw_ops {
+ 
+-	void (*host_set_ready) (struct mei_device *dev);
+ 	bool (*host_is_ready) (struct mei_device *dev);
+ 
+ 	bool (*hw_is_ready) (struct mei_device *dev);
+ 	void (*hw_reset) (struct mei_device *dev, bool enable);
++	int  (*hw_start) (struct mei_device *dev);
+ 	void (*hw_config) (struct mei_device *dev);
+ 
+ 	void (*intr_clear) (struct mei_device *dev);
+@@ -296,11 +296,14 @@ struct mei_device {
+ 	 */
+ 	struct mutex device_lock; /* device lock */
+ 	struct delayed_work timer_work;	/* MEI timer delayed work (timeouts) */
++
++	bool recvd_hw_ready;
+ 	bool recvd_msg;
+ 
+ 	/*
+ 	 * waiting queue for receive message from FW
+ 	 */
++	wait_queue_head_t wait_hw_ready;
+ 	wait_queue_head_t wait_recvd_msg;
+ 	wait_queue_head_t wait_stop_wd;
+ 
+@@ -466,6 +469,11 @@ static inline void mei_hw_reset(struct mei_device *dev, bool enable)
+ 	dev->ops->hw_reset(dev, enable);
+ }
+ 
++static inline void mei_hw_start(struct mei_device *dev)
++{
++	dev->ops->hw_start(dev);
++}
++
+ static inline void mei_clear_interrupts(struct mei_device *dev)
+ {
+ 	dev->ops->intr_clear(dev);
+@@ -481,10 +489,6 @@ static inline void mei_disable_interrupts(struct mei_device *dev)
+ 	dev->ops->intr_disable(dev);
+ }
+ 
+-static inline void mei_host_set_ready(struct mei_device *dev)
+-{
+-	dev->ops->host_set_ready(dev);
+-}
+ static inline bool mei_host_is_ready(struct mei_device *dev)
+ {
+ 	return dev->ops->host_is_ready(dev);
 -- 
 1.8.1.3
 
