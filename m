@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3CKQZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:25:00 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:41612 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab3CKQY6 (ORCPT
+	id S1754134Ab3CKQ0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:26:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42779 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab3CKQ0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:24:58 -0400
-Date: Mon, 11 Mar 2013 09:24:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH wq/for-3.9-fixes] workqueue: fix possible pool stall bug
- in wq_unbind_fn()
-Message-ID: <20130311162454.GM24522@htj.dyndns.org>
-References: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com>
- <20130308231517.GS14556@mtj.dyndns.org>
- <513E01CB.7060103@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513E01CB.7060103@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 12:26:46 -0400
+Message-ID: <1363019193.14933.14.camel@laptop>
+Subject: Re: [PATCHv2] perf: Fix vmalloc ring buffer free function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Mon, 11 Mar 2013 17:26:33 +0100
+In-Reply-To: <20130311112105.GA9737@krava.brq.redhat.com>
+References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
+	 <1362994843.10972.40.camel@laptop>
+	 <20130311112105.GA9737@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Lai.
-
-On Tue, Mar 12, 2013 at 12:09:47AM +0800, Lai Jiangshan wrote:
-> Hi, Tejun,
+On Mon, 2013-03-11 at 12:21 +0100, Jiri Olsa wrote:
+> >  pg_nr     = offset >> page_shift;
+> >  pg_offset = offset & (1 << page_shift) - 1;
+> > 
+> > You just wrecked that.
+> > 
+> > >     handle->page &= rb->nr_pages - 1;
 > 
-> Forgot to send a pull-request?
-> Add CC Linus.
+> here's ^^^ where the handle->page becomes 0 due to (rb->nr_pages == 0)
 
-Ummm... I (and maintainers in general) don't send pull-request
-whenever I queue a fix patch.  I usually let them sit in the tree for
-some weeks before sending a pull-request to Linus, so that the fixes
-get some exposure in -next and more of them can be aggregated.  As
-workqueue is seeing high level of activity these days, it's likely
-that we'll see more fixes coming out of it, and your fix while marked
-for -stable isn't that urgent, so I'm gonna wait for some more weeks
-before sending out pull request to Linus.
+then that'll be &= -1, which is a nop, no?
 
-Thanks for checking tho.
+Also, you wrecked it for anything that uses some intermediate page
+order (we currently don't).
 
--- 
-tejun
