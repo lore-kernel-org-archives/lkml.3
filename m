@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3CKJ7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:59:48 -0400
-Received: from smtp-out-220.synserver.de ([212.40.185.220]:1097 "EHLO
-	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3CKJ7r (ORCPT
+	id S1753809Ab3CKKAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:00:00 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37650
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753751Ab3CKJ76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:59:47 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29314
-Message-ID: <513DAB80.1020900@metafoo.de>
-Date: Mon, 11 Mar 2013 11:01:36 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: adau1373: adau1373_hw_params: Silence overflow
- warning
-References: <1362936878-84443-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1362936878-84443-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Mar 2013 05:59:58 -0400
+Message-ID: <1362995984.14933.0.camel@laptop>
+Subject: Re: [PATCH 1/2] perf: Reset detached siblings' group_flags
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 11 Mar 2013 10:59:44 +0100
+In-Reply-To: <1362629990-10053-1-git-send-email-namhyung@kernel.org>
+References: <1362629990-10053-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 06:34 PM, Tim Gardner wrote:
-> ADAU1373_BCLKDIV_SOURCE is defined as BIT(5) which uses UL constants. On
-> amd64 the result of the ones complement operator is then truncated to
-> unsigned int according to the prototype of snd_soc_update_bits(). I think
-> gcc is correctly warning that the upper 32 bits are lost.
+On Thu, 2013-03-07 at 13:19 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> sound/soc/codecs/adau1373.c: In function 'adau1373_hw_params':
-> sound/soc/codecs/adau1373.c:940:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+> Currently if a group_leader event is deleted, the sibling events are
+> upgraded to singleton events of a same group list.  At this time, the
+> siblings inherit the leader's group_flags.
 > 
-> gcc version 4.6.3
+> However, if the group has mixed hw/sw events the leader's group_flag
+> does not contain PERF_GROUP_SOFTWARE so sibling sw events will miss
+> the flag also.  Fix it.
 > 
-> Cc: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Liam Girdwood <lgirdwood@gmail.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Jaroslav Kysela <perex@perex.cz>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Cc: device-drivers-devel@blackfin.uclinux.org
-> Cc: alsa-devel@alsa-project.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  sound/soc/codecs/adau1373.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  kernel/events/core.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 > 
-> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
-> index 068b3ae..56ed788 100644
-> --- a/sound/soc/codecs/adau1373.c
-> +++ b/sound/soc/codecs/adau1373.c
-> @@ -132,7 +132,7 @@ struct adau1373 {
->  #define ADAU1373_DAI_FORMAT_I2S		0x2
->  #define ADAU1373_DAI_FORMAT_DSP		0x3
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 5c75791d7269..007dfe846d4d 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1107,8 +1107,9 @@ static void perf_group_detach(struct perf_event *event)
+>  			list_move_tail(&sibling->group_entry, list);
+>  		sibling->group_leader = sibling;
 >  
-> -#define ADAU1373_BCLKDIV_SOURCE		BIT(5)
-> +#define ADAU1373_BCLKDIV_SOURCE		(unsigned int)BIT(5)
+> -		/* Inherit group flags from the previous leader */
+> -		sibling->group_flags = event->group_flags;
+> +		/* Reset group flags for each siblings */
+> +		sibling->group_flags = is_software_event(sibling) ?
+> +						PERF_GROUP_SOFTWARE : 0;
+>  	}
 
-Hm, that's a bit ugly. How about the following instead:
 
-diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
-index 068b3ae..1aa10dd 100644
---- a/sound/soc/codecs/adau1373.c
-+++ b/sound/soc/codecs/adau1373.c
-@@ -133,6 +133,8 @@ struct adau1373 {
- #define ADAU1373_DAI_FORMAT_DSP		0x3
-
- #define ADAU1373_BCLKDIV_SOURCE		BIT(5)
-+#define ADAU1373_BCLKDIV_SR_MASK	(0x07 << 2)
-+#define ADAU1373_BCLKDIV_BCLK_MASK	0x03
- #define ADAU1373_BCLKDIV_32		0x03
- #define ADAU1373_BCLKDIV_64		0x02
- #define ADAU1373_BCLKDIV_128		0x01
-@@ -937,7 +939,8 @@ static int adau1373_hw_params(struct snd_pcm_substream
-*substream,
- 	adau1373_dai->enable_src = (div != 0);
-
- 	snd_soc_update_bits(codec, ADAU1373_BCLKDIV(dai->id),
--		~ADAU1373_BCLKDIV_SOURCE, (div << 2) | ADAU1373_BCLKDIV_64);
-+		ADAU1373_BCLKDIV_SR_MASK | ADAU1373_BCLKDIV_BCLK_MASK,
-+		(div << 2) | ADAU1373_BCLKDIV_64);
-
- 	switch (params_format(params)) {
- 	case SNDRV_PCM_FORMAT_S16_LE:
-
+In such a case, does the event not continue to live on the hw pmu? That
+is, after this patch we'll have a software event on the hardware pmu
+list with PERF_GROUP_SOFTWARE set, right? Seems odd.
 
