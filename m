@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3CKSR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:17:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44253 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab3CKSRy (ORCPT
+	id S1753915Ab3CKSSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:18:39 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:39749 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3CKSSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:17:54 -0400
-Date: Mon, 11 Mar 2013 11:16:39 -0700
-From: tip-bot for Andrei Epure <tipbot@zytor.com>
-Message-ID: <tip-660cc00f8c6f7a2e16c25918590b470e86de19ec@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        epure.andrei@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        epure.andrei@gmail.com, tglx@linutronix.de
-In-Reply-To: <1362996200-2674-1-git-send-email-epure.andrei@gmail.com>
-References: <1362996200-2674-1-git-send-email-epure.andrei@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Spelling fix
-Git-Commit-ID: 660cc00f8c6f7a2e16c25918590b470e86de19ec
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 11 Mar 2013 14:18:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 11 Mar 2013 11:16:44 -0700 (PDT)
+In-Reply-To: <51364285.4040406@samba.org>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+ <512FD1D5.3010106@mit.edu> <20130304211923.GI20389@fieldses.org>
+ <5135250A.30604@samba.org> <20130305181306.GA15816@fieldses.org> <51364285.4040406@samba.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 11 Mar 2013 11:18:15 -0700
+Message-ID: <CALCETrXvyXqx+R2wSROEOb+qrSBpPeCGT_9Z6N+QJOU=1aikPw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+To: Simo <simo@samba.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  660cc00f8c6f7a2e16c25918590b470e86de19ec
-Gitweb:     http://git.kernel.org/tip/660cc00f8c6f7a2e16c25918590b470e86de19ec
-Author:     Andrei Epure <epure.andrei@gmail.com>
-AuthorDate: Mon, 11 Mar 2013 12:03:20 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Mar 2013 15:12:11 +0100
+On Tue, Mar 5, 2013 at 11:07 AM, Simo <simo@samba.org> wrote:
+> On 03/05/2013 01:13 PM, J. Bruce Fields wrote:
+>>
+>> On Mon, Mar 04, 2013 at 05:49:46PM -0500, Simo wrote:
+>>>
+>>> On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
+>>>>
+>>>> On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
+>>>>>
+>>>>> [possible resend -- sorry]
+>>>>>
+>>>>> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
+>>>>>>
+>>>>>> This patchset adds support of O_DENY* flags for Linux fs layer. These
+>>>>>> flags can be used by any application that needs share reservations to
+>>>>>> organize a file access. VFS already has some sort of this capability - now
+>>>>>> it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic.
+>>>>>> This patchset build new capabilities on top of the existing one but doesn't
+>>>>>> bring any changes into the flock call semantic.
+>>>>>>
+>>>>>> These flags can be used by NFS (built-in-kernel) and CIFS (Samba)
+>>>>>> servers and Wine applications through VFS (for local filesystems) or
+>>>>>> CIFS/NFS modules. This will help when e.g. Samba and NFS server share the
+>>>>>> same directory for Windows and Linux users or Wine applications use
+>>>>>> Samba/NFS share to access the same data from different clients.
+>>>>>>
+>>>>>> According to the previous discussions the most problematic question is
+>>>>>> how to prevent situations like DoS attacks where e.g /lib/liba.so file can
+>>>>>> be open with DENYREAD, or smth like this. That's why one extra flag
+>>>>>> O_DENYMAND is added. It indicates to underlying layer that an application
+>>>>>> want to use O_DENY* flags semantic. It allows us not affect native Linux
+>>>>>> applications (that don't use O_DENYMAND flag) - so, these flags (and the
+>>>>>> semantic of open syscall that they bring) are used only for those
+>>>>>> applications that really want it proccessed that way.
+>>>>>>
+>>>>>> So, we have four new flags:
+>>>>>> O_DENYREAD - to prevent other opens with read access,
+>>>>>> O_DENYWRITE - to prevent other opens with write access,
+>>>>>> O_DENYDELETE - to prevent delete operations (this flag is not
+>>>>>> implemented in VFS and NFS part and only suitable for CIFS module),
+>>>>>> O_DENYMAND - to switch on/off three flags above.
+>>>>>
+>>>>> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
+>>>>> better?
+>>>>>
+>>>>> Other than that, this seems like a sensible mechanism.
+>>>>
+>>>> I'm a little more worried: these are mandatory locks, and applications
+>>>> that use them are used to the locks being enforced correctly.  Are we
+>>>> sure that an application that opens a file O_DENYWRITE won't crash if it
+>>>> sees the file data change while it holds the open?
+>>>
+>>> The redirector may simply assume it has full control of that part of
+>>> the file and not read nor send data until the lock is released too,
+>>> so you get conflicting views of the file contents between different
+>>> clients if you let a mandatory lock not be mandatory.
+>>>
+>>>> In general the idea of making a mandatory lock opt-in makes me nervous.
+>>>> I'd prefer something like a mount option, so that we know that everyone
+>>>> on that one filesystem is playing by the same rules, but we can still
+>>>> mount filesystems like / without the option.
+>>>
+>>> +1
+>>>
+>>>> But I'll admit I'm definitely not an expert on Windows locking and may
+>>>> be missing something about how these locks are meant to work.
+>>>
+>>> Mandatory locks really are mandatory in Windows.
+>>> That may not be nice to a Unix system but what can you do ?
+>>
+>> I wonder if we could repurpose the existing -omand mount option?
+>>
+>> That would be a problem for anyone that wants to allow mandatory fcntl
+>> locks without allowing share locks.  I doubt anyone sane actually uses
+>> mandatory fcntl locks, but still I suppose it would probably be better
+>> to play it safe and use a new mount option.
+>
+>
+> Maybe we should have a -o win_semantics option :-)
+>
 
-sched: Spelling fix
+It's not entirely obvious to me that allowing programs to bypass this
+kind of locking is a bad idea.  It's hard to do on Windows, but
+presumably network filesystems on Windows already have this issue.
 
-Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
-Cc: trivial@kernel.org
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1362996200-2674-1-git-send-email-epure.andrei@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9f23112..22bd9e6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -652,7 +652,7 @@ static u64 sched_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
- }
- 
- /*
-- * We calculate the vruntime slice of a to be inserted task
-+ * We calculate the vruntime slice of a to-be-inserted task.
-  *
-  * vs = s/w
-  */
+--Andy
