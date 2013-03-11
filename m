@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3CKONf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:13:35 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:55500 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3CKONd (ORCPT
+	id S1753213Ab3CKOQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:16:41 -0400
+Received: from sapphire.tuxdriver.com ([70.61.120.61]:51931 "EHLO
+	Linville-X1.hq.tuxdriver.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750923Ab3CKOQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:13:33 -0400
+	Mon, 11 Mar 2013 10:16:39 -0400
+X-Greylist: delayed 1511 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Mar 2013 10:16:39 EDT
+Date: Mon, 11 Mar 2013 09:44:14 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Adrian Chadd <adrian@freebsd.org>, linux-wireless@vger.kernel.org,
+        ath9k-devel <ath9k-devel@venema.h4ckr.net>,
+        ath9k_htc_fw@lists.infradead.org, Chris Zankel <chris@zankel.net>,
+        linux-kernel@vger.kernel.org, Marc Gauthier <marc@tensilica.com>,
+        lwn@lwn.net
+Subject: Re: [Announce] open ath9k_htc firmware
+Message-ID: <20130311134414.GA13275@tuxdriver.com>
+References: <CAB=NE6WwQDfx+H4zV2niLDaZ0vGAahEF5jg1WS+NU7YhTZ9rQw@mail.gmail.com>
 MIME-Version: 1.0
-Date: Mon, 11 Mar 2013 22:13:30 +0800
-Message-ID: <CAPgLHd9ufsjGd9CvVf7y3jMXoN=rh7uc7jxiwZ9FHSeJ+XRzUQ@mail.gmail.com>
-Subject: [PATCH -next] microblaze/PCI: remove duplicated include from pci-common.c
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: monstr@monstr.eu, grant.likely@secretlab.ca, rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6WwQDfx+H4zV2niLDaZ0vGAahEF5jg1WS+NU7YhTZ9rQw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Awesome news!  Many thanks to Adrian, Luis, and all the others they
+have credited with helping this along!
 
-Remove duplicated include.
+John
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- arch/microblaze/pci/pci-common.c | 1 -
- 1 file changed, 1 deletion(-)
+On Fri, Mar 08, 2013 at 03:46:38PM -0800, Luis R. Rodriguez wrote:
+> Many thanks to Adrian for his hard work on all this and to everyone
+> else who volunteered to help make this happen, including the
+> understanding by our management at QCA and even Tensilica requires
+> some handsome applause for their commitment, understanding on letting
+> us get this out. We now have a public mailing list for development:
+> 
+> http://lists.infradead.org/mailman/listinfo/ath9k_htc_fw
+> 
+> Full steam ahead!
+> 
+>   Luis
+> 
+> On Fri, Mar 8, 2013 at 3:32 PM, Adrian Chadd <adrian@freebsd.org> wrote:
+> > Hi,
+> >
+> > I hate fanfare.
+> >
+> > You can all thank Luis Rodriguez for his ridiculously long and hard
+> > fighting to get this stuff pushed through the grinder to make this
+> > happen.
+> >
+> > There's also been a hard working team of developers behind the scene -
+> > Felix Fietkau, Eugene Krasnikov, Sujith Manoharan, and the team from
+> > Cozybit. They've been working hard to get the codebase converted over
+> > to using the open source tensilica toolchain and finding/fixing up any
+> > silly issues that may creep up from that.
+> >
+> > I've just been involved in shepharding this stuff into a sensible
+> > shape and pushing it through the final stage (legal review) before
+> > publication.
+> >
+> > You can find it here:
+> >
+> > https://github.com/qca/open-ath9k-htc-firmware
+> >
+> > There's a bunch of sorely needed work to do in the short term:
+> >
+> > * felix has a replacement cmake build system that I'd like to now integrate;
+> > * there's lots of build warnings which need to be removed (and then
+> > build this thing using -Wall -Werror);
+> > * some general code cleanup and documentation wouldn't be rejected -
+> > but I don't really want any sweeping code changes to go in until we've
+> > tidied up the build warnings and validated that the image(s) work
+> > right.
+> >
+> > I plan on doing some test builds shortly. I plan on bumping the
+> > firmware to 1.4 once felix's cmake system is in place and people have
+> > validated that this work.s
+> >
+> > Thanks,
+> >
+> >
+> >
+> > Adrian
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 9ea521e..bdb8ea1 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -30,7 +30,6 @@
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_pci.h>
--#include <linux/pci.h>
- #include <linux/export.h>
- 
- #include <asm/processor.h>
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
