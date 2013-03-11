@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3CKOVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:21:30 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:60691 "EHLO
+	id S1752936Ab3CKOWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:22:44 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:38493 "EHLO
 	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab3CKOV3 (ORCPT
+	with ESMTP id S1750948Ab3CKOWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:21:29 -0400
+	Mon, 11 Mar 2013 10:22:43 -0400
 MIME-Version: 1.0
-Date: Mon, 11 Mar 2013 22:21:28 +0800
-Message-ID: <CAPgLHd9QgppJ1mR3F6jkTJYOZLD5rbJwcy+KEEZSjtVPtHHdRw@mail.gmail.com>
-Subject: [PATCH -next] x86, io_apic: remove duplicated include from irq_remapping.c
+Date: Mon, 11 Mar 2013 22:22:42 +0800
+Message-ID: <CAPgLHd-U-AJkPpWiRXQO5Nyod_AGE=EKHBQTEmTPzAfGfUBx8w@mail.gmail.com>
+Subject: [PATCH -next] staging: comedi: remove duplicated include from ni_pcimio.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: joro@8bytes.org, konrad.wilk@oracle.com, sebastian@breakpoint.cc,
-        suresh.b.siddha@intel.com, yinghai@kernel.org
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,19 +27,19 @@ Remove duplicated include.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/iommu/irq_remapping.c | 1 -
+ drivers/staging/comedi/drivers/ni_pcimio.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index d56f8c1..7c11ff3 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -2,7 +2,6 @@
- #include <linux/cpumask.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
--#include <linux/cpumask.h>
- #include <linux/errno.h>
- #include <linux/msi.h>
- #include <linux/irq.h>
+diff --git a/drivers/staging/comedi/drivers/ni_pcimio.c b/drivers/staging/comedi/drivers/ni_pcimio.c
+index 98b43f2..2b52fd0 100644
+--- a/drivers/staging/comedi/drivers/ni_pcimio.c
++++ b/drivers/staging/comedi/drivers/ni_pcimio.c
+@@ -111,7 +111,6 @@ Bugs:
+ */
+ 
+ #include <linux/delay.h>
+-#include <linux/delay.h>
+ 
+ #include "../comedidev.h"
+ 
 
