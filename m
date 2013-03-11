@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3CKGbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 02:31:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18774 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3CKGbm (ORCPT
+	id S1752309Ab3CKGcD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 02:32:03 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59739 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3CKGcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 02:31:42 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-59-513d7a4bbb26
+	Mon, 11 Mar 2013 02:32:00 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-e2-513d7a5fef27
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
 In-reply-to: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
-Subject: [PATCH 02/14] power: max8925_power: use devm_kzalloc()
-Date: Mon, 11 Mar 2013 15:31:39 +0900
-Message-id: <007201ce1e22$163b7600$42b26200$%han@samsung.com>
+Subject: [PATCH 03/14] power: da9030_battery: use devm_kzalloc()
+Date: Mon, 11 Mar 2013 15:31:59 +0900
+Message-id: <007301ce1e22$224b13b0$66e13b10$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAAA1VQ
+Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAAB9wQ
 Content-language: ko
-x-cr-hashedpuzzle: ZPg= BBbL DlvU Ei6m G7CI H7NP JVKC KxxS PsaE Sise gDYM iSEV
- momi ofra rA2Y
- tdiK;4;YQBuAHQAbwBuAEAAZQBuAG8AbQBzAGcALgBvAHIAZwA7AGQAdwBtAHcAMgBAAGkAbgBmAHIAYQBkAGUAYQBkAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{C5DE7C8C-5A28-4C7A-96B3-8D7750890E20};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
- 11 Mar 2013 06:31:32
- GMT;WwBQAEEAVABDAEgAIAAwADIALwAxADQAXQAgAHAAbwB3AGUAcgA6ACAAbQBhAHgAOAA5ADIANQBfAHAAbwB3AGUAcgA6ACAAdQBzAGUAIABkAGUAdgBtAF8AawB6AGEAbABsAG8AYwAoACkA
-x-cr-puzzleid: {C5DE7C8C-5A28-4C7A-96B3-8D7750890E20}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zA13vKttAg//3BSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGhVv/2QvOcFRM+PqAsYGxm72LkZNDQsBE4s6sF4wQtpjEhXvr
-	2boYuTiEBJYxSnw6uJgRpujd+UWsEIlFjBIrF61kgXBmM0m0buhnBaliE1CT+PLlMNhYEQEN
-	ibbVU1hAbGaBfInDhy6D2UICthK7f0Ks4xSwk7ix7BIbiC0sYC/R+XwamM0ioCrxZNdRsDm8
-	QPWPHv5lhbAFJX5Mvgc1U0ti87YmVghbXmLzmrfMXYwcQJeqSzz6qwtiiggYSTxfXApRISKx
-	78U7RpCTJQResEhM2XIX6ntTiZ97HjFB2LvYJf4+4YY4QUDi2+RDLBAjZSU2HWCGKJGUOLji
-	BssERqlZSA6aheSgWUgOmoVk9QJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYIZE4cQfj
-	/QPWhxiTgdZPZJYSTc4HRnJeSbyhsZmRhamJqbGRuaUZacJK4rzqLdaBQgLpiSWp2ampBalF
-	8UWlOanFhxiZODilGhgl+Gcs8G3fGOk0Q37ds3vfpJ8aBDInNvCLODOLSy79O6N8T9bZvI0P
-	7NYuz+6Zf0XDY6bmC2ZxpsOP60+0RDxk/X782s197vnC4vM8EvKMH+RvTDgaoB/+Z811g/SO
-	Q7n3Lq95Pv/e60xxfbWbNXe3Ft7JnH/28zaxSEe9aparzCpfZ3W4dYcqsRRnJBpqMRcVJwIA
-	ryJgXtoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jAV3vKttAg23zeSwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoVb/9kLznBUTPj6gLGB
-	sZu9i5GTQ0LAROLd+UWsELaYxIV769m6GLk4hAQWMUqsXLSSBcKZzSTRuqEfrIpNQE3iy5fD
-	YN0iAhoSbaunsIDYzAL5EocPXQazhQRsJXb/fMEIYnMK2EncWHaJDcQWFrCX6Hw+DcxmEVCV
-	eLLrKNgcXqD6Rw//skLYghI/Jt+DmqklsXlbEyuELS+xec1b5i5GDqBL1SUe/dUFMUUEjCSe
-	Ly6FqBCR2PfiHSPIyRICL1gkpmy5C/WkqcTPPY+YJjCKzEKyYRaSDbOQbJiFZNYCRpZVjKKp
-	BckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGR/kxqB+PKBotDjAIcjEo8vBN0bAOFWBPLiitzDzFK
-	cDArifCu3GQTKMSbklhZlVqUH19UmpNafIgxGRgAE5mlRJPzgUkoryTe0NjEzMjSyMzCyMTc
-	nDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoY40ssKtendf/6ezltbfCzTKefi1fsrN89
-	1eX3330s3/sE7r8u/Vk3Lys/qHzDQodgnk+MmkIJtezeF7/enJP5dll94o+cjV/urGmbMXPF
-	AZW1muvNbvgEcp5aKJO/vMP8yBQxI+0/U02+Fqipc65wN7ze/rsnIbswKdX9ZIZIhYfB4YM6
-	r64fVmIpzkg01GIuKk4EAGQoIlw4AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI934KttAgx93ZSwObtW0mLhyMrPF
+	5YWXWC0u75rD5sDiMaH/E6PH5hVaHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJWxY+4MloJN
+	HBU3ppU1MH5h62Lk5JAQMJHof7+fEcIWk7hwbz1QnItDSGAZo8TC6b3sXYwcYEXft9lBxKcz
+	Ssy4s5YVwvnFKNG94iorSDebgJrEly+H2UFsEQENibbVU1hAbGaBfInDhy6D2UICthK7f74A
+	28YpYCdxY9klsCuEBRwkNp45CBZnEVCVuLF0IdgcXqD6afPPsEDYghI/Jt+DmqklsXlbEyuE
+	LS+xec1bZohD1SUe/dWFOMFI4vrJW8wQJSIS+168YwS5WULgGLvEs38voHYJSHybfIgFoldW
+	YtMBZkhASEocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSkV5yYW1yal66X
+	nJ+7iRESj307GG8esD7EmAy0fiKzlGhyPjCe80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQS
+	SE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAWMDQW2nSHnlybubmtx3JbtUf06fe5p4pp/TM+atd
+	667q+DdHFcUthS+c8nmQWauwMff3x7ykdxqJMz4ddHj5werx9MlmUf0r1COEFCssrrWaS8jb
+	G03marj1k7vsvnlgfj63qffb5Jj9xpO4YhUcN/stO6dyn8NCnUX6pFjWfXnbz3rfI64psRRn
+	JBpqMRcVJwIAIJbvnN0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd34KttAg5Y3EhYHt2paTFw5mdni
+	8sJLrBaXd81hc2DxmND/idFj8wotj74tqxg9Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1Xy
+	Do53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHaqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
+	MULXNyQIrsfIAA0krGPM2DF3BkvBJo6KG9PKGhi/sHUxcnBICJhIfN9m18XICWSKSVy4tx4o
+	zMUhJDCdUWLGnbWsEM4vRonuFVdZQarYBNQkvnw5zA5iiwhoSLStnsICYjML5EscPnQZzBYS
+	sJXY/fMFI4jNKWAncWPZJTYQW1jAQWLjmYNgcRYBVYkbSxeCzeEFqp82/wwLhC0o8WPyPaiZ
+	WhKbtzWxQtjyEpvXvGWGOFpd4tFfXYgTjCSun7zFDFEiIrHvxTvGCYxCs5BMmoVk0iwkk2Yh
+	aVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjan0nvYFzVYHGIUYCDUYmHd4KObaAQ
+	a2JZcWXuIUYJDmYlEd6Vm2wChXhTEiurUovy44tKc1KLDzEmAz06kVlKNDkfmIjySuINjU3M
+	jCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoFRY3vkuqpgZo4lxzzfrTdi
+	9TjossH98L86ptjdleukVfc1NpQK/e7IOv7cKZCXyYjpRkNarfbXZW5u/2wv8a3ZKrV0I5fv
+	t6sPr6x4Uh9W/kAnqbns06TN7kyzuCezpdv5fKl1//PvQN6cl/EdG/+Ivn5vud0j6aWl6dtF
+	TO7PV/tMudresDZFiaU4I9FQi7moOBEAuYUnNjoDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,39 +59,40 @@ Use devm_kzalloc() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/max8925_power.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/power/da9030_battery.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index 665cdc7..0ee1e14 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -489,7 +489,8 @@ static int max8925_power_probe(struct platform_device *pdev)
+diff --git a/drivers/power/da9030_battery.c b/drivers/power/da9030_battery.c
+index e8c5a39..ae6c418 100644
+--- a/drivers/power/da9030_battery.c
++++ b/drivers/power/da9030_battery.c
+@@ -505,7 +505,7 @@ static int da9030_battery_probe(struct platform_device *pdev)
+ 	    pdata->charge_millivolt > 4350)
  		return -EINVAL;
- 	}
  
--	info = kzalloc(sizeof(struct max8925_power_info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct max8925_power_info),
-+				GFP_KERNEL);
- 	if (!info)
+-	charger = kzalloc(sizeof(*charger), GFP_KERNEL);
++	charger = devm_kzalloc(&pdev->dev, sizeof(*charger), GFP_KERNEL);
+ 	if (charger == NULL)
  		return -ENOMEM;
- 	info->chip = chip;
-@@ -546,7 +547,6 @@ out_battery:
- out_usb:
- 	power_supply_unregister(&info->ac);
- out:
--	kfree(info);
+ 
+@@ -557,8 +557,6 @@ err_notifier:
+ 	cancel_delayed_work(&charger->work);
+ 
+ err_charger_init:
+-	kfree(charger);
+-
  	return ret;
  }
  
-@@ -559,7 +559,6 @@ static int max8925_power_remove(struct platform_device *pdev)
- 		power_supply_unregister(&info->usb);
- 		power_supply_unregister(&info->battery);
- 		max8925_deinit_charger(info);
--		kfree(info);
- 	}
+@@ -575,8 +573,6 @@ static int da9030_battery_remove(struct platform_device *dev)
+ 	da9030_set_charge(charger, 0);
+ 	power_supply_unregister(&charger->psy);
+ 
+-	kfree(charger);
+-
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
