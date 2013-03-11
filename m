@@ -1,95 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3CKBfs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 21:35:48 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:41905 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab3CKBfp (ORCPT
+	id S1753619Ab3CKBil (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 21:38:41 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:62242 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3CKBij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 21:35:45 -0400
-X-AuditID: cbfee68d-b7f786d000005188-fe-513d34f09f23
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Paul Bolle'" <pebolle@tiscali.nl>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Jiri Slaby'" <jslaby@suse.cz>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1362867404.3137.44.camel@x61.thuisdomein>
-In-reply-to: <1362867404.3137.44.camel@x61.thuisdomein>
-Subject: RE: [PATCH] tty: serial: fix typo "ARCH_S5P6450"
-Date: Mon, 11 Mar 2013 10:35:43 +0900
-Message-id: <04f801ce1df8$bf644ec0$3e2cec40$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4dE8qKFDeObznERCSmnEUOrXegnAA5OCqg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ90PJraBBju/81tc3jWHzeLM4l52
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKWvWljL7jBXvHnwwH2BsaZbF2MnBwSAiYS99e9ZoWw
-	xSQu3FsPFOfiEBJYxihx9MkDFpiiRwd/sEIkFjFKPOr8zQzh/GWUmH2rmQmkik1AQ+Lw+2fs
-	ILaIQLXEgm2TGEFsZoFkiQ0n+5lBbCEBM4lTaxeD1XAKmEu0vvgFdoawgKXE20PbwM5gEVCV
-	2DBzL1icV8BWYt3hr0wQtqDEj8n3gC7iAJqpLjFlSi7EeHmJzWveMoOEJYDCj/7qgpgiAkYS
-	T5eoQ1SISOx78Y4R5GIJgVXsEsu/djFCbBKQ+Db5EAtEq6zEpgPMEO9KShxccYNlAqPELCR7
-	ZyHsnYVk7ywkGxYwsqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECImv3h2Mtw9YH2JMBto+
-	kVlKNDkfGJ95JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamAsNY3ODXkxg+XVS2GnnlvRB0+vXPfQ9NjHbW8eJa4QZ7iywCDm4fqEc213ZaYnJvld
-	MLYM8TvToyNXUfpv/a+Tl7R+lMsl9QpvWM67eeq3c4fdLk39detMtJ/APM/5CjJaq5oUVXbt
-	Stzoc7iI42anyuc3bHffZ+bX/HwhvWXSrZNqG62nLNu1XomlOCPRUIu5qDgRAJ0Jfs7FAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgO4HE9tAgxn3eSwu75rDZnFmcS+7
-	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
-	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZy960sRfcYK/4
-	8+EAewPjTLYuRk4OCQETiUcHf7BC2GISF+6tB4pzcQgJLGKUeNT5mxnC+csoMftWMxNIFZuA
-	hsTh98/YQWwRgWqJBdsmMYLYzALJEhtO9jOD2EICZhKn1i4Gq+EUMJdoffELbJuwgKXE20Pb
-	wLaxCKhKbJi5FyzOK2Arse7wVyYIW1Dix+R7LF2MHEAz1SWmTMmFGC8vsXnNW2aQsARQ+NFf
-	XRBTRMBI4ukSdYgKEYl9L94xTmAUmoVkziyEObOQzJmFpGMBI8sqRtHUguSC4qT0XEO94sTc
-	4tK8dL3k/NxNjODofSa1g3Flg8UhRgEORiUe3gk6toFCrIllxZW5hxglOJiVRHhXbrIJFOJN
-	SaysSi3Kjy8qzUktPsSYDPTlRGYp0eR8YGLJK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBA
-	emJJanZqakFqEcwWJg5OqQZGF/Hs4r5yi3fs8SsvRC/gnSZ8+/uEiPD1Nc95drJaL5trIq28
-	eWnmj+tWFoveaz5x8Vac/XPyvicfH9a/99PSOuxit/ti85zPCpfsxbZLnOsXL/ukfW/+aw9W
-	0eOTXxXWvDk39fpOI/83XLvfbDBrjw15ySr4qKMxrjHDQWenobJZYYfReutFSizFGYmGWsxF
-	xYkAxri0kiIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 10 Mar 2013 21:38:39 -0400
+Date: Sun, 10 Mar 2013 18:38:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.9-rc2
+Message-ID: <20130311013835.GA2104@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle wrote:
-> 
-> This could have been either ARCH_S5P64X0 or CPU_S5P6450. Looking at
-> commit 2555e663b367b8d555e76023f4de3f6338c28d6c ("ARM: S5P64X0: Add UART
-> serial support for S5P6450") - which added this typo - makes clear this
-> should be CPU_S5P6450.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+--2fHTh5uZTiUOsy+g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hi Linus,
 
-- Kukjin
+Please pull from:
 
-> ---
-> Bravely untested.
-> 
->  drivers/tty/serial/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> index cf9210d..40ddbe4 100644
-> --- a/drivers/tty/serial/Kconfig
-> +++ b/drivers/tty/serial/Kconfig
-> @@ -218,7 +218,7 @@ config SERIAL_SAMSUNG_UARTS_4
->  config SERIAL_SAMSUNG_UARTS
->  	int
->  	depends on PLAT_SAMSUNG
-> -	default 6 if ARCH_S5P6450
-> +	default 6 if CPU_S5P6450
->  	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
->  	default 3
->  	help
-> --
-> 1.7.11.7
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
+to receive updates for the input subsystem. Except for the largish
+change to the ALPS driver adding "Dolphin V1"  support and Wacom getting
+a new signature of yet another device, the rest are straightforward
+driver fixes.
+
+Thanks!
+
+Changelog:
+---------
+
+Dave Turvene (1):
+      Input: ALPS - add "Dolphin V1" touchpad support
+
+Kamal Mostafa (1):
+      Input: cypress_ps2 - fix trackpad found in Dell XPS12
+
+Kevin Cernekee (1):
+      Input: ALPS - remove unused argument to alps_enter_command_mode()
+
+Mark Brown (2):
+      Input: ads7864 - check return value of regulator enable
+      Input: mms114 - Fix regulator enable and disable paths
+
+Rabin Vincent (1):
+      Input: tc3589x-keypad - fix keymap size
+
+Stephan Frank (1):
+      Input: wacom - add support for 0x10d
+
+dave turvene (1):
+      Input: ALPS - update documentation for recent touchpad driver mods
+
+Diffstat:
+--------
+
+ Documentation/input/alps.txt            | 67 +++++++++++++++++++++++---
+ drivers/input/keyboard/tc3589x-keypad.c |  8 ++--
+ drivers/input/mouse/alps.c              | 85 ++++++++++++++++++++++++++++-=
+----
+ drivers/input/mouse/alps.h              |  1 +
+ drivers/input/mouse/cypress_ps2.c       | 19 +++++---
+ drivers/input/tablet/wacom_wac.c        |  4 ++
+ drivers/input/touchscreen/ads7846.c     |  7 ++-
+ drivers/input/touchscreen/mms114.c      | 34 +++++++++----
+ 8 files changed, 185 insertions(+), 40 deletions(-)
+
+--=20
+Dmitry
+
+
+--2fHTh5uZTiUOsy+g
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRPTWbAAoJEH70+W8r6ZYqrkMQALf63y7FDfQ7CPBbBgElg4qo
+Yn94a/VwWUjDdyy1a+Qm45kKQA9mrK15w1bXmtjb5VhD0cCnAPJigKqBVXYJdG0e
+Lxd9lWWK1+Ke14pctcp56PSWsKJBeKqbIFYr0+bDuHi/QyyTc+8bwvzjUxw8UvqO
+D4peZbEeUtNUApBs5KhmHqsmfmBoPHdNktpED+LMHYMUB/eBxjHZndoKQ0EH62t9
+FCRze3H7ygfPF0RthRhbTPaKOencOCczxrsfzq+pgtzeVLNPHY8/5Qul+gQCz1TY
+yERiobna1jqwGLp2ssHmBhkHaGblAsgALPrqqSuVUkLcDYZJHFjhowliNJ2c+dQ+
+S++vkoD6hkzLkdCpMbVzI+dgn7JPirbJ7iFC4IOjKVcYm3mAL5E8ygaZbHNvoaLy
+eAm1Xi/FdZ2MGcBa5vF8jurPUjzM/xadnvtOwaBLRtSUbqeMjLXUGD9sYhcvdAOI
+dGX6kiM/PnOft+QhcHv7iARo4tDpLsVArNGsY3L5ChsaMAI4+tX6ZWTkAmntT30D
+oyQUFHjM/YpB+SfequnX083lv9+MVrR/qIGpyRDGleXihbasysEmqBgg2Sk1hbPG
+hxglM0syKYNHbGDCvBV+28OjZIisvgx3l7EtMNoh+5nCLQkZHhuK0AjZJsFGVxsh
+ELVkOLFB01PLggP2/FSJ
+=YJvb
+-----END PGP SIGNATURE-----
+
+--2fHTh5uZTiUOsy+g--
