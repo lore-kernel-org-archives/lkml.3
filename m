@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3CKSct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:32:49 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:60399 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751665Ab3CKScr (ORCPT
+	id S1753491Ab3CKSeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:34:01 -0400
+Received: from qmta02.westchester.pa.mail.comcast.net ([76.96.62.24]:60863
+	"EHLO qmta02.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751247Ab3CKSeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:32:47 -0400
-Message-ID: <513E23DA.90100@metafoo.de>
-Date: Mon, 11 Mar 2013 19:35:06 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Alexander Shiyan <shc_work@mail.ru>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] tty: max310x: Use dev_pm_ops
-References: <1363023892-15957-1-git-send-email-lars@metafoo.de> <1363023892-15957-2-git-send-email-lars@metafoo.de> <1363025431.558252587@f43.mail.ru>
-In-Reply-To: <1363025431.558252587@f43.mail.ru>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Mar 2013 14:34:00 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Mar 2013 14:34:00 EDT
+Date: Mon, 11 Mar 2013 14:26:51 -0400
+From: Frank Peters <frank.peters@comcast.net>
+To: linux-kernel@vger.kernel.org
+Subject: USB Mouse Disconnect Kernel-3.7/3.8
+Message-Id: <20130311142651.12cc0311887f69db13913986@comcast.net>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.16; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 07:10 PM, Alexander Shiyan wrote:
-> Hello.
-> 
->> Use dev_pm_ops instead of the deprecated legacy suspend/resume for the
->> max310x driver.
->>
->> Cc: Alexander Shiyan <shc_work@mail.ru>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  drivers/tty/serial/max310x.c | 24 ++++++++++++++++--------
->>  1 file changed, 16 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
->> index 0c2422c..8941e64 100644
->> --- a/drivers/tty/serial/max310x.c
->> +++ b/drivers/tty/serial/max310x.c
->> @@ -881,12 +881,14 @@ static struct uart_ops max310x_ops = {
->>  	.verify_port	= max310x_verify_port,
->>  };
->>  
->> -static int max310x_suspend(struct spi_device *spi, pm_message_t state)
->> +#ifdef CONFIG_PM_SLEEP
->> +
->> +static int max310x_suspend(struct device *dev)
->>  {
->>  	int ret;
->> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
->> +	struct max310x_port *s = dev_get_drvdata(dev);
->>  
->> -	dev_dbg(&spi->dev, "Suspend\n");
->> +	dev_dbg(dev, "Suspend\n");
->>  
->>  	ret = uart_suspend_port(&s->uart, &s->port);
->>  
->> @@ -905,11 +907,11 @@ static int max310x_suspend(struct spi_device *spi, pm_message_t state)
->>  	return ret;
->>  }
->>  
->> -static int max310x_resume(struct spi_device *spi)
->> +static int max310x_resume(struct device *dev)
->>  {
->> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
->> +	struct max310x_port *s = dev_get_drvdata(dev);
->>  
->> -	dev_dbg(&spi->dev, "Resume\n");
->> +	dev_dbg(dev, "Resume\n");
->>  
->>  	if (s->pdata->suspend)
->>  		s->pdata->suspend(0);
->> @@ -928,6 +930,13 @@ static int max310x_resume(struct spi_device *spi)
->>  	return uart_resume_port(&s->uart, &s->port);
->>  }
->>  
->> +static SIMPLE_DEV_PM_OPS(max310x_pm_ops, max310x_suspend, max310x_resume);
->> +#define MAX310X_PM_OPS (&max310x_pm_ops)
->> +
->> +#else
->> +#define MAX310X_PM_OPS NULL
->> +#endif
->> +
->>  #ifdef CONFIG_GPIOLIB
->>  static int max310x_gpio_get(struct gpio_chip *chip, unsigned offset)
->>  {
->> @@ -1242,11 +1251,10 @@ static struct spi_driver max310x_driver = {
->>  	.driver = {
->>  		.name	= "max310x",
->>  		.owner	= THIS_MODULE,
->> +		.pm	= MAX310X_PM_OPS,
-> 
-> Check for CONFIG_PM_SLEEP not necessary at all.
-> <linux/pm.h> will do all for us.
+Hello,
 
-No it wont, you'll end up with a dev_pm_ops struct full of zeros and two
-warnings from your compiler about unused functions.
+When I boot my x64 Linux system to the console a continuous series
+of "USB disconnect/reconnect" messages appears in the kernel log.
+The disconnect/reconnect messages concern the USB mouse:
 
-> 
->>  	},
->>  	.probe		= max310x_probe,
->>  	.remove		= max310x_remove,
->> -	.suspend	= max310x_suspend,
->> -	.resume		= max310x_resume,
->>  	.id_table	= max310x_id_table,
->>  };
->>  module_spi_driver(max310x_driver);
->> -- 
->> 1.8.0
-> 
-> ---
+usb 1-1.3: USB disconnect, device number N
+usb 1-1.3: new low-speed USB device number N+1 using ehci-pci
+input: Microsoft  Microsoft Basic Optical Mouse v2.0  as /devices/pci0000:00/0000:00:1a.0 usb1/1-1/1-1.3/1-1.3:1.0/input/input5
+hid-generic 0003:045E:00CB.0006: input: USB HID v1.11 Mouse [Microsoft  Microsoft Basic Optical Mouse v2.0 ] on usb-0000:00:1a.0-1.3/input0
+....
+
+These "USB disconnect/reconnect" messages will repeat roughly every 40 seconds
+with the device number "N" increasing to "N+1" each time.
+
+The interesting thing about this behavior is that I can stop the messages,
+and presumably the disconnects, by starting the General Purpose Mouse (gpm)
+server:
+
+gpm -m /dev/input/mice -t imps2
+
+If I then terminate the gpm server, the USB disconnect/reconnect messages
+will start to occur once again.
+
+The USB disconnects also stop when I start the graphical X server.
+
+It would seem that if nothing is "grabbing" the USB mouse (i.e. gpm or X)
+then the kernel somehow automatically disconnects it.
+
+My system has the USB built in to the kernel (no modules).
+
+The motherboard I use is Intel DP55KG which has the P55 Express
+chipset to control the USB.
+
+I've seen this behavior on the current kernel-3.8.x and also
+on the previous kernel-3.7.  I have not tested anything earlier.
+
+Please CC to frank.peters@comcast.net as I am not subscribed to
+the list.
+
+Frank Peters
 
