@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3CKKJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:09:52 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53761 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab3CKKJv (ORCPT
+	id S1753756Ab3CKKOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:14:51 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:47941 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab3CKKOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:09:51 -0400
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <alex.grad@gmail.com>, <penberg@kernel.org>, <jason.wessel@windriver.com>,
-        <benh@kernel.crashing.org>
-CC: <paulus@samba.org>, <mikey@neuling.org>, <sfr@canb.auug.org.au>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <daniel.baluta@gmail.com>
-Subject: [PATCH 1/1] powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's thread_info
-Date: Mon, 11 Mar 2013 18:08:06 +0800
-Message-ID: <1362996486-13983-1-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Mar 2013 06:14:49 -0400
+Message-ID: <513DAE8F.3050102@redhat.com>
+Date: Mon, 11 Mar 2013 11:14:39 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com>
+In-Reply-To: <20130310181035.GM24444@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use DEFINE_PER_CPU to allocate thread_info statically instead of kmalloc().
-This can avoid introducing more memory check codes.
+Il 10/03/2013 19:10, Gleb Natapov ha scritto:
+> On Sun, Mar 10, 2013 at 06:19:07PM +0100, Paolo Bonzini wrote:
+>> Il 10/03/2013 16:35, Gleb Natapov ha scritto:
+>>>>> However, it would effectively redefine the meaning of
+>>>>> KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
+>>>>> to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
+>>>>> if this is considered an API change (personally, I would treat it as one).
+>>>>>
+>>> If it is kernel module internal it definitely is not API change.
+>>> INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
+>>> instance INIT does not really resets VCPU. Only after SIPI it is really
+>>> reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
+>>> state.
+>>
+>> Yeah, and the current definition is ambiguous (without hypervisor
+>> patches, there's no way to use it as the names would suggest), so
+>> perhaps the right thing to do is to rename the states (old names kept
+>> for backwards compatibility only) and work from there.
+>>
+> I do not see how renaming clarify things. From userspace point of view
+> KVM_MP_STATE_SIPI_RECEIVED does not exists.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
- arch/powerpc/kernel/kgdb.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Not really true---we do exit with that state and EINTR when we get a
+SIPI.  Perhaps that can be changed.
 
-diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index 1a57307..cde7818 100644
---- a/arch/powerpc/kernel/kgdb.c
-+++ b/arch/powerpc/kernel/kgdb.c
-@@ -151,15 +151,15 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
- 	return 1;
- }
- 
-+static DEFINE_PER_CPU(struct thread_info, kgdb_thread_info);
- static int kgdb_singlestep(struct pt_regs *regs)
- {
- 	struct thread_info *thread_info, *exception_thread_info;
--	struct thread_info *backup_current_thread_info;
-+	struct thread_info *backup_current_thread_info = &__get_cpu_var(kgdb_thread_info);
- 
- 	if (user_mode(regs))
- 		return 0;
- 
--	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
- 	/*
- 	 * On Book E and perhaps other processors, singlestep is handled on
- 	 * the critical exception stack.  This causes current_thread_info()
-@@ -185,7 +185,6 @@ static int kgdb_singlestep(struct pt_regs *regs)
- 		/* Restore current_thread_info lastly. */
- 		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
- 
--	kfree(backup_current_thread_info);
- 	return 1;
- }
- 
--- 
-1.7.9.5
+> If AP is hard reset
+> userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
+> BSP it makes it running no matter what type of reset.
 
+The current name just suggests . 
+And when getting an INIT in the in-kernel LAPIC, this:
+
+-			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
++			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
++				KVM_MP_STATE_SIPI_RECEIVED :
++				KVM_MP_STATE_INIT_RECEIVED;
+
+makes much less sense than this:
+
+-			vcpu->arch.mp_state = KVM_MP_STATE_WAIT_FOR_SIPI;
++			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
++				KVM_MP_STATE_RESET_NOW :
++				KVM_MP_STATE_WAIT_FOR_SIPI;
+
+However, there's also Jan's plans for nVMX.  Peeking at his queue (see
+http://git.kiszka.org/?p=linux-kvm.git;a=commitdiff;h=037fb24ec) I think
+it's better to always reflect INITs to the hypervisor like I did in these
+patches.
+
+Paolo
