@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3CKISH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:18:07 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:36239 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab3CKISF (ORCPT
+	id S1752692Ab3CKIVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 04:21:12 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:36551 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab3CKIVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:18:05 -0400
-Message-ID: <513D9338.20402@hp.com>
-Date: Mon, 11 Mar 2013 16:18:00 +0800
-From: Jingbai Ma <jingbai.ma@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	Mon, 11 Mar 2013 04:21:10 -0400
+Date: Mon, 11 Mar 2013 09:21:05 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wakeup buddy
+Message-ID: <20130311082105.GB12742@gmail.com>
+References: <5136EB06.2050905@linux.vnet.ibm.com>
+ <1362645372.2606.11.camel@laptop>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jingbai Ma <jingbai.ma@hp.com>, mingo@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, hpa@zytor.com, yinghai@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
- to speedup kernel dump process
-References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net> <20130307152108.GC2790@redhat.com> <87k3piri3e.fsf@xmission.com> <20130308155216.GB8219@redhat.com>
-In-Reply-To: <20130308155216.GB8219@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362645372.2606.11.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 11:52 PM, Vivek Goyal wrote:
-> On Thu, Mar 07, 2013 at 01:54:45PM -0800, Eric W. Biederman wrote:
->> Vivek Goyal<vgoyal@redhat.com>  writes:
->>
->>> On Thu, Mar 07, 2013 at 10:58:18PM +0800, Jingbai Ma wrote:
->>>> This patch intend to speedup the memory pages scanning process in
->>>> selective dump mode.
->>>>
->>>> Test result (On HP ProLiant DL980 G7 with 1TB RAM, makedumpfile
->>>> v1.5.3):
->>>>
->>>> 						Total scan Time
->>>> Original kernel
->>>> 	+ makedumpfile v1.5.3 cyclic mode	1958.05 seconds
->>>> Original kernel
->>>> 	+ makedumpfile v1.5.3 non-cyclic mode	1151.50 seconds
->>>> Patched kernel
->>>> 	+ patched makedumpfile v1.5.3		17.50 seconds
->>>>
->>>> Traditionally, to reduce the size of dump file, dumper scans all memory
->>>> pages to exclude the unnecessary memory pages after capture kernel
->>>> booted, and scan it in userspace code (makedumpfile).
->>>
->>> I think this is not a good idea. It has several issues.
->>
->> Actually it does not appear to be doing any work in the first kernel.
->
-> Looks like patch3 in series is doing that.
->
->                          machine_crash_shutdown(&fixed_regs);
-> +                       generate_crash_dump_bitmap();
->                          machine_kexec(kexec_crash_image);
->
-> So this bitmap seems to be being set just before transitioning into
-> second kernel.
->
-> I am sure you would not like this extra code in this path. :-)
 
-I was thought this function code is pretty simple, could be called here 
-safely.
-If it's not proper for here, how about before the function 
-machine_crash_shutdown(&fixed_regs)?
-Furthermore, could you explain the real risks to execute more codes here?
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Thanks!
+> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+> 
+> > wake_affine() stuff is trying to bind related tasks closely, but it 
+> > doesn't work well according to the test on 'perf bench sched pipe' 
+> > (thanks to Peter).
+> 
+> so sched-pipe is a poor benchmark for this..
+> 
+> Ideally we'd write a new benchmark that has some actual data footprint 
+> and we'd measure the cost of tasks being apart on the various cache 
+> metrics and see what affine wakeup does for it.
 
->
-> Thanks
-> Vivek
+Ideally we'd offer applications a new, lightweight vsyscall:
 
+   void sys_sched_work_tick(void)
 
--- 
-Jingbai Ma (jingbai.ma@hp.com)
+Or, to speed up adoption, a new, vsyscall-accelerated prctrl():
+
+   prctl(PR_WORK_TICK);
+
+which applications could call in each basic work unit they are performing.
+
+Sysbench would call it for every transaction completed, sched-pipe would 
+call it for every pipe message sent, hackbench would call it for messages, 
+etc. etc.
+
+This is a minimal application level change, but gives *huge* information 
+to the scheduler: we could balance tasks to maximize their observed work 
+rate.
+
+The scheduler could also do other things, like observe the wakeup/sleep 
+patterns within a 'work atom', observe execution overlap between work 
+atoms and place tasks accordingly, etc. etc.
+
+Today we approximate work atoms by saying that scheduling atoms == work 
+atoms. But that approximation breaks down in a number of important cases.
+
+If we had such a design we'd be able to fix pretty much everything, 
+without the catch-22 problems we are facing normally.
+
+An added bonus would be increased instrumentation: we could trace, time, 
+profile work atom rates and could collect work atom profiles. We see work 
+atom execution histograms, etc. etc. - stuff that is simply not possible 
+today without extensive application-dependent instrumentation.
+
+We could also use utrace scripts to define work atoms without modifying 
+the application: for many applications we know which particular function 
+call means that a basic work unit was completed.
+
+I have actually written the prctl() approach before, for instrumentation 
+purposes, and it does wonders to system analysis.
+
+Any objections?
+
+Thanks,
+
+	Ingo
