@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab3CKWuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:50:10 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:18967 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752994Ab3CKWuI (ORCPT
+	id S1754438Ab3CKWvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:51:12 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:60316 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab3CKWvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:50:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18aRNX42tjVntj1u9oYT4hq
-Date: Mon, 11 Mar 2013 15:50:04 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
- API
-Message-ID: <20130311225004.GR26093@atomide.com>
-References: <20130308180730.GE11806@atomide.com>
- <513A2B20.30805@codeaurora.org>
- <20130308194802.GG11806@atomide.com>
- <513A40EF.8050403@codeaurora.org>
- <20130308200811.GJ11806@atomide.com>
- <513A4774.3040605@codeaurora.org>
- <20130308202947.GK11806@atomide.com>
- <513A8B22.5030008@codeaurora.org>
- <20130311172847.GP26093@atomide.com>
- <513E5804.3050104@codeaurora.org>
+	Mon, 11 Mar 2013 18:51:10 -0400
+Date: Mon, 11 Mar 2013 23:50:48 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Jacob Shin <jacob.shin@amd.com>,
+        linux-acpi@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 01/14] x86, ACPI, mm: Kill max_low_pfn_mapped
+Message-ID: <20130311225048.GA3872@bremse>
+Mail-Followup-To: "H. Peter Anvin" <hpa@zytor.com>,
+	Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Renninger <trenn@suse.de>,
+	Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, David Airlie <airlied@linux.ie>,
+	Jacob Shin <jacob.shin@amd.com>, linux-acpi@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+ <1362718720-27048-2-git-send-email-yinghai@kernel.org>
+ <20130308051059.GC14556@mtj.dyndns.org>
+ <CAE9FiQVMjm7P28XLYGQ675we2+dU+H6rJK2eiO+FFeynYefJHA@mail.gmail.com>
+ <CAOS58YOwSjHyFfAfaY_o3YZKhD-p2gc78ZGrc4N5_NCg+ZVu1A@mail.gmail.com>
+ <CAE9FiQVFvg2M5A5Se5pys5yquNSZeOTV=s4YgLwr6QH_6=nY_w@mail.gmail.com>
+ <CAOS58YNy_Rhg8M_7Qbgyutz68Q67i9R00rTuVy6CyZaFV1MSgA@mail.gmail.com>
+ <51398096.1060304@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513E5804.3050104@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51398096.1060304@zytor.com>
+X-Operating-System: Linux bremse 3.8.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Boyd <sboyd@codeaurora.org> [130311 15:22]:
-> On 03/11/13 10:28, Tony Lindgren wrote:
-> > * Stephen Boyd <sboyd@codeaurora.org> [130308 17:10]:
-> >> On 03/08/13 12:29, Tony Lindgren wrote:
-> >>> Applying that does not seem to help, but you might want to get vexpress
-> >>> running anyways for some multiplatform sanity checks.
-> >>>
-> >>> I just built and installed qemu-linaro from their git, then ran the
-> >>> command above. Looks like stock qemu does not work for vexpress for some
-> >>> reason. You can probably use a dummy initrd and rootfs to debug this
-> >>> though :)
-> >> So my patchset didn't break qemu?
-> > Sorry if that was unclear: Yes your patchset breaks booting vexpress
-> > in qemu.
-> >
-> >
+On Thu, Mar 07, 2013 at 10:09:26PM -0800, H. Peter Anvin wrote:
+> On 03/07/2013 09:28 PM, Tejun Heo wrote:
+> > On Thu, Mar 7, 2013 at 9:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> They are not using memblock_find_in_range(), so 1ULL<< will not help.
+> >>
+> >> Really hope i915 drm guys could clean that hacks.
+> > 
+> > The code isn't being used.  Just leave it alone.  Maybe add a comment.
+> >  The change is just making things more confusing.
+> > 
 > 
-> Ok. qemu works for me before applying my patches. I've added this into
-> the series before this patch to fix the boot issue.
+> Indeed, but...
+> 
+> Daniel: can you guys clean this up or can we just remove the #if 0 clause?
 
-OK thanks:
-
-Acked-by: Tony Lindgren <tony@atomide.com>
-
- 
-> -----8<-----
-> 
-> Subject: [PATCH] ARM: vexpress: Move smp_twd setup to time_late_init hook
-> 
-> On devices without a clock describing the rate of the twd we
-> detect the rate at runtime via twd_calibrate_rate(). Currently
-> this happens when smp_prepare_cpus() calls the localtimer start
-> callback, after the sp804 timer has been registered and when
-> jiffies have started incrementing.
-> 
-> In the next patch we're going to make twd_local_timer_register()
-> register the twd clockevent on the boot CPU. In the case of
-> vexpress, this will hang the system at boot because jiffies
-> haven't started incrementing when twd_calibrate_rate() is called.
-> Register the smp_twd during time_late_init() on vexpress to avoid
-> this problem.
-> 
-> Based on a patch by Marc Zyngier <marc.zyngier@arm.com>.
-> 
-> Reported-by: Tony Lindgren <tony@atomide.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/mach-vexpress/ct-ca9x4.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
-> index 6f34497..a9f39bf 100644
-> --- a/arch/arm/mach-vexpress/ct-ca9x4.c
-> +++ b/arch/arm/mach-vexpress/ct-ca9x4.c
-> @@ -62,7 +62,7 @@ static void __init ct_ca9x4_init_irq(void)
->  {
->  	gic_init(0, 29, ioremap(A9_MPCORE_GIC_DIST, SZ_4K),
->  		 ioremap(A9_MPCORE_GIC_CPU, SZ_256));
-> -	ca9x4_twd_init();
-> +	late_time_init = ca9x4_twd_init;
->  }
->  
->  static int ct_ca9x4_clcd_setup(struct clcd_fb *fb)
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+I guess we could just put this into a comment explaining where stolen
+memory for the gfx devices is at on gen2. But tbh I don't mind if we just
+keep the #if 0 code around. For all newer platforms we can get at that
+offset through mch bar registers, so I don't really care.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
