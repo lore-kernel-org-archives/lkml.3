@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab3CKG33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 02:29:29 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14090 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3CKG32 (ORCPT
+	id S1752165Ab3CKG3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 02:29:51 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:58902 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3CKG3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 02:29:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 10 Mar 2013 23:22:54 -0700
-Message-ID: <513D79E7.5000801@nvidia.com>
-Date: Mon, 11 Mar 2013 08:29:59 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 11 Mar 2013 02:29:50 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Arto Merilainen <amerilainen@nvidia.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5,RESEND 3/8] gpu: host1x: Add channel support
-References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com> <1358250244-9678-4-git-send-email-tbergstrom@nvidia.com> <20130225152457.GA29545@avionic-0098.mockup.avionic-design.de> <512C84E2.5090201@nvidia.com> <513A0ED0.4070701@nvidia.com> <20130308204301.GA30742@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130308204301.GA30742@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <513D7078.9080507@cn.fujitsu.com>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+	<1362897887-30808-21-git-send-email-yinghai@kernel.org>
+	<513D7078.9080507@cn.fujitsu.com>
+Date: Sun, 10 Mar 2013 23:29:49 -0700
+X-Google-Sender-Auth: wwtt5DGWbn-qYtGFi3A9da3CNZI
+Message-ID: <CAE9FiQXKxnx5kiuz6zfcfS4pKJJu6GOR6CWso-wKcZuHBaAzbQ@mail.gmail.com>
+Subject: Re: [PATCH v2 20/20] x86, mm, numa: Put pagetable on local node ram
+ for 64bit
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.03.2013 22:43, Thierry Reding wrote:
-> A bo is just a buffer object, so I don't see why the name shouldn't
-> be used. The name is in no way specific to DRM or GEM. But the point
-> that I was trying to make was that there is nothing to suggest that
-> we couldn't use drm_gem_object as the underlying scaffold to base all
-> host1x buffer objects on.
-> 
-> Furthermore I don't understand why you've chosen this approach. It
-> is completely different from what other drivers do and therefore
-> makes it more difficult to comprehend. That alone I could live with
-> if there were any advantages to that approach, but as far as I can
-> tell there are none.
+On Sun, Mar 10, 2013 at 10:49 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 03/10/2013 02:44 PM, Yinghai Lu wrote:
+>>
+>> Calling init_mem_mapping in early_initmem_init for every node.
+>> alloc_low_pages will alloc page table in following order:
+>>         BRK, local node, low range
+>> So page table will be on low range or local nodes.
+...
+> IIUC, we call init_mem_mapping() for each node ranges. In the first time,
+>         local_max_pfn_mapped = begin >> PAGE_SHIFT;
+>         local_min_pfn_mapped = real_end >> PAGE_SHIFT;
+> which means
+>         local_min_pfn_mapped >= local_max_pfn_mapped
+> right ?
+>
+> So, the first page allocated by alloc_low_pages() is not on local node,
+> right ?
 
-I was following the plan we agreed on earlier in email discussion with
-you and Lucas:
+It is from BRK with kernel code.
 
-On 29.11.2012 11:09, Lucas Stach wrote:
-> We should aim for a clean split here. GEM handles are something which
-> is really specific to how DRM works and as such should be constructed
-> by tegradrm. nvhost should really just manage allocations/virtual
-> address space and provide something that is able to back all the GEM
-> handle operations.
-> 
-> nvhost has really no reason at all to even know about GEM handles.
-> If you back a GEM object by a nvhost object you can just peel out
-> the nvhost handles from the GEM wrapper in the tegradrm submit ioctl
-> handler and queue the job to nvhost using it's native handles.
-> 
-> This way you would also be able to construct different handles (like
-> GEM obj or V4L2 buffers) from the same backing nvhost object. Note
-> that I'm not sure how useful this would be, but it seems like a
-> reasonable design to me being able to do so.
+> Furthermore, the first page of pagetable is not on local node, right ?
 
-With this structure, we are already prepared for non-DRM APIs. Tt's a
-matter of familiarity of code versus future expansion. Code paths for
-both are as simple/complex, so neither has a direct technical
-superiority in performance.
+It is in BRK for node with start = 0.
 
-I know other DRM drivers have opted to hard code GEM dependency
-throughout the code. Then again, host1x hardware is managing much more
-than graphics, so we need to think outside the DRM box, too.
+Other node, it is from low_range aka node with start = 0.
 
-Terje
+Thanks
+
+Yinghai
