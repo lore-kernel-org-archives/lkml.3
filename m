@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab3CKHjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:39:15 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:33538 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3CKHjN (ORCPT
+	id S1751767Ab3CKHk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:40:27 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:49282 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3CKHk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:39:13 -0400
-Date: Mon, 11 Mar 2013 08:39:09 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <mats.liljegren@enea.com>
-Subject: Re: [ANNOUNCE] 3.9-rc1-nohz1
-Message-ID: <20130311073908.GA9988@gmail.com>
-References: <1362790259-7837-1-git-send-email-fweisbec@gmail.com>
- <20130309082650.GA9944@gmail.com>
- <CAFTL4hxt5y2hdh0_LNA-08+jNTYwkjeg=QHBfgNf_X_XCHie1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hxt5y2hdh0_LNA-08+jNTYwkjeg=QHBfgNf_X_XCHie1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 03:40:26 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-media@vger.kernel.org
+Cc: g.liakhovetski@gmx.de, mchehab@redhat.com, linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] soc_camera: convert to devm_ioremap_resource()
+Date: Mon, 11 Mar 2013 09:40:21 +0200
+Message-Id: <1362987621-6527-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert all uses of devm_request_and_ioremap() to the newly introduced
+devm_ioremap_resource() which provides more consistent error handling.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+devm_ioremap_resource() provides its own error messages so all explicit
+error messages can be removed from the failure code paths.
 
-> >  - Please outline how the current TODO entries affect upstream
-> >    mergability. Does it reduce the 'full'-ness of this dynticks mode?
-> >    Outright buggy behavior? Other trade-offs?
-> 
-> Mostly this is about upstream features that won't be working with the current 
-> state of the art: enqueuing a posix cpu timer on a nohz CPU may result in it being 
-> ignored by the target due to the lack of ticking until expiration, perf events may 
-> not be round-robined, etc... I'll make sure to document all these items.
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/media/platform/soc_camera/pxa_camera.c     |    6 +++---
+ .../platform/soc_camera/sh_mobile_ceu_camera.c     |    8 +++-----
+ drivers/media/platform/soc_camera/sh_mobile_csi2.c |    8 +++-----
+ 3 files changed, 9 insertions(+), 13 deletions(-)
 
-So it's "buggy behavior of existing features" it appears?
+diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
+index 395e2e0..e94ed6c 100644
+--- a/drivers/media/platform/soc_camera/pxa_camera.c
++++ b/drivers/media/platform/soc_camera/pxa_camera.c
+@@ -1710,9 +1710,9 @@ static int pxa_camera_probe(struct platform_device *pdev)
+ 	/*
+ 	 * Request the regions.
+ 	 */
+-	base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base)
+-		return -ENOMEM;
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
+ 	pcdev->irq = irq;
+ 	pcdev->base = base;
+ 
+diff --git a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
+index bb08a46..8cdee71 100644
+--- a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
++++ b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
+@@ -2110,11 +2110,9 @@ static int sh_mobile_ceu_probe(struct platform_device *pdev)
+ 	pcdev->max_width = pcdev->pdata->max_width ? : 2560;
+ 	pcdev->max_height = pcdev->pdata->max_height ? : 1920;
+ 
+-	base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base) {
+-		dev_err(&pdev->dev, "Unable to ioremap CEU registers.\n");
+-		return -ENXIO;
+-	}
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
+ 
+ 	pcdev->irq = irq;
+ 	pcdev->base = base;
+diff --git a/drivers/media/platform/soc_camera/sh_mobile_csi2.c b/drivers/media/platform/soc_camera/sh_mobile_csi2.c
+index 42c559e..3ec7735 100644
+--- a/drivers/media/platform/soc_camera/sh_mobile_csi2.c
++++ b/drivers/media/platform/soc_camera/sh_mobile_csi2.c
+@@ -324,11 +324,9 @@ static int sh_csi2_probe(struct platform_device *pdev)
+ 
+ 	priv->irq = irq;
+ 
+-	priv->base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!priv->base) {
+-		dev_err(&pdev->dev, "Unable to ioremap CSI2 registers.\n");
+-		return -ENXIO;
+-	}
++	priv->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(priv->base))
++		return PTR_ERR(priv->base);
+ 
+ 	priv->pdev = pdev;
+ 	platform_set_drvdata(pdev, priv);
+-- 
+1.7.9.5
 
-It would be really useful to add some sort of 'make it safe easily' mechanism:
-
- - if a posix timer is enqueued on a CPU, then the CPU should have a timer ticking
-
- - if perf events are active on a CPU, then it should have a timer ticking
-
-this would make it mergable, as most of the time systems don't have any of these 
-facilities active. Plus this dynticks-off mechanism would also allow us to cover any 
-other (still unknown) facility that regresses. So it would be nice to have that 
-option.
-
-Later on we could gradually eliminate these limitations. It would also be apparent 
-where they are, just from grepping the source.
-
-If that's done, and if it tests fine for a few weeks then this could be v3.10 
-material IMO.
-
-Thanks,
-
-	Ingo
