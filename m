@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3CKGgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 02:36:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:40998 "EHLO
+	id S1753006Ab3CKGgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 02:36:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:41108 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab3CKGf7 (ORCPT
+	with ESMTP id S1752036Ab3CKGgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 02:35:59 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-9f-513d7b4ed2fa
+	Mon, 11 Mar 2013 02:36:20 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-f2-513d7b6380bc
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
 In-reply-to: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
-Subject: [PATCH 13/14] power: rx51_battery: use devm_kzalloc()
-Date: Mon, 11 Mar 2013 15:35:58 +0900
-Message-id: <007d01ce1e22$b0a99c30$11fcd490$%han@samsung.com>
+Subject: [PATCH 14/14] power: wm831x_backup: use devm_kzalloc()
+Date: Mon, 11 Mar 2013 15:36:19 +0900
+Message-id: <007e01ce1e22$bd376a90$37a63fb0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAALIpA
+Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAAL3pQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI12/attAg1m9IhYHt2paTFw5mdni
-	8sJLrBaXd81hc2DxmND/idFj8wotj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mo4vv0pU8Fu
-	joqVy5+xNDD+YOti5OSQEDCRODbtECuELSZx4d56sLiQwDJGiQ+vLGBq1q08wdLFyAUUn84o
-	0fhjGzuE84tR4s6tD8wgVWwCahJfvhxmB7FFBDQk2lZPYQGxmQXyJQ4fuswCMdVWYvfPF4wg
-	NqeAncSNZZfAtgkD2V3nfoL1sgioSpzp/8QEYvMC1X/cOpUdwhaU+DH5HtRMLYnN25pYIWx5
-	ic1r3gLdwAF0qbrEo7+6ECcYSUzvWMwMUSIise/FO0aQmyUEjrFL/Pp7ihlil4DEt8mHWCB6
-	ZSU2HWCGeFhS4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiY73ixNzi0rx0
-	veT83E2MkIjs38F494D1IcZkoPUTmaVEk/OBEZ1XEm9obGZkYWpiamxkbmlGmrCSOK9ai3Wg
-	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkaWZ1oH2n7E3ZTal1A3PzhlaR+/d79V0wK7Gfeq
-	bsxiXaln8Fbsqt61RY3X/D/OZeTMPffv9MWbJz2tM5qKUjcv57vh6OU20bNFukTCeWHqxjOa
-	UrahUycvu/dINuv9+i2XNP79vK3vXPyaV+8FV+t2r98Xvjmtf/WeZcHa1bOf/Zpeczc6qfia
-	EktxRqKhFnNRcSIABogngd4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV2/attAgxWrBSwObtW0mLhyMrPF
-	5YWXWC0u75rD5sDiMaH/E6PH5hVaHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMeYcXz7U6aC3RwVK5c/Y2lg/MHWxcjJISFgIrFu5QkWCFtM4sK99UBx
-	Lg4hgemMEo0/trFDOL8YJe7c+sAMUsUmoCbx5cthdhBbREBDom31FLBuZoF8icOHLoPZQgK2
-	Ert/vmAEsTkF7CRuLLsEtk0YyO469xOsl0VAVeJM/ycmEJsXqP7j1qnsELagxI/J96Bmakls
-	3tbECmHLS2xe8xboBg6gS9UlHv3VhTjBSGJ6x2JmiBIRiX0v3jFOYBSahWTSLCSTZiGZNAtJ
-	ywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwRH/THoH46oGi0OMAhyMSjy8E3RsA4VY
-	E8uKK3MPMUpwMCuJ8K7cZBMoxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnAZJRXEm9obGJm
-	ZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYys87VCDvGIZMdoLJFvvTT/
-	/P4T8/V3cr86wPfAUiXz+wudFBeu3a/Oidk07PgaeXS77d2GxOx9rLXnLyz3mc6mZvz+JtPj
-	V1Od++2C9awecnL577Le6yRm7JGuuFpvc/jpOqGZ0858Y42XMXr1mztBe3LNDemC24dXXlDc
-	vqzqrYTxvx8MXTOUWIozEg21mIuKEwH8BuVlPAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zfd3kattAgycnJSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGi9YD7AVXuCqmT25gbGD8xNHFyMkhIWAi8f3NbFYIW0ziwr31
+	bCC2kMAyRonJE/1gajb2ngaq4QKKL2KUmL/mFTOEM5tJ4t6O18wgVWwCahJfvhxmB7FFBDQk
+	2lZPYQGxmQXyJQ4fuswCMdVWYvfPF4wgNqeAncSNZZfAtgkL2Ev8/38QbA6LgKrE5M9vwC7i
+	Baq/+WcyE4QtKPFj8j2omVoSm7c1sULY8hKb17wF6uUAulRd4tFfXYgTjCR+Pp0GVSIise/F
+	O0aQmyUE5rFLPJx9gBVil4DEt8mHWCB6ZSU2HWCGeFhS4uCKGywTGCVmIdk8C8nmWUg2z0Ky
+	YgEjyypG0dSC5ILipPQiI73ixNzi0rx0veT83E2MkMjq28F484D1IcZkoPUTmaVEk/OBkZlX
+	Em9obGZkYWpiamxkbmlGmrCSOK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbCxLdy
+	qSrdnSsSpSVa+vKUyh7yNC90i/xgeUH7UPDrSTXpipmZn9lzhKfPjf128mH+9QapyhnH44Vm
+	/GvPCptg+Vve293+oUyu0eKGFqukprkm9/fF+XzmP/LxUM3m90qy/48cD9235uqiOttNwkoz
+	1zssaO75maXjI5rz8MPkyUq5/zRW71JiKc5INNRiLipOBAClezo1wgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgG5ytW2gwbKfIhaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x40XrAfaCK1wV0yc3MDYw
+	fuLoYuTkkBAwkdjYe5oVwhaTuHBvPVsXIxeHkMAiRon5a14xQzizmSTu7XjNDFLFJqAm8eXL
+	YXYQW0RAQ6Jt9RQWEJtZIF/i8KHLYLaQgK3E7p8vGEFsTgE7iRvLLrGB2MIC9hL//x8Em8Mi
+	oCox+fMbsM28QPU3/0xmgrAFJX5Mvgc1U0ti87YmVghbXmLzmrdAvRxAl6pLPPqrC3GCkcTP
+	p9OgSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefn
+	bmIER+4z6R2MqxosDjEKcDAq8fBO0LENFGJNLCuuzD3EKMHBrCTCu3KTTaAQb0piZVVqUX58
+	UWlOavEhxmSgRycyS4km5wOTSl5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1ML
+	UotgtjBxcEo1MBr83rF6uabQap9u43KXiwtr5R8qJVlZ99Zv1Uny2+gpfb6WNytPvuhoa7HM
+	wahtwgYZtfbJ5s92O0xeE/PTMcKXI2FyRq7O7To9d+bHGtmfUhrOPny8Zmbryfhe8wj7uTUn
+	K39t25Mvmfp/2aZr0pVSU9+f/8927LjCYWbleaLtmp+PzLBMUmIpzkg01GIuKk4EAELqZh8g	AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,35 +57,43 @@ Use devm_kzalloc() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/rx51_battery.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/power/wm831x_backup.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
-index 8208888..f9dc9ff 100644
---- a/drivers/power/rx51_battery.c
-+++ b/drivers/power/rx51_battery.c
-@@ -202,7 +202,7 @@ static int rx51_battery_probe(struct platform_device *pdev)
- 	struct rx51_device_info *di;
+diff --git a/drivers/power/wm831x_backup.c b/drivers/power/wm831x_backup.c
+index d9cc169..58cbb00 100644
+--- a/drivers/power/wm831x_backup.c
++++ b/drivers/power/wm831x_backup.c
+@@ -169,7 +169,8 @@ static int wm831x_backup_probe(struct platform_device *pdev)
+ 	struct power_supply *backup;
  	int ret;
  
--	di = kzalloc(sizeof(*di), GFP_KERNEL);
-+	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
- 	if (!di)
+-	devdata = kzalloc(sizeof(struct wm831x_backup), GFP_KERNEL);
++	devdata = devm_kzalloc(&pdev->dev, sizeof(struct wm831x_backup),
++				GFP_KERNEL);
+ 	if (devdata == NULL)
  		return -ENOMEM;
  
-@@ -217,7 +217,6 @@ static int rx51_battery_probe(struct platform_device *pdev)
- 	ret = power_supply_register(di->dev, &di->bat);
- 	if (ret) {
- 		platform_set_drvdata(pdev, NULL);
--		kfree(di);
- 		return ret;
- 	}
+@@ -197,14 +198,8 @@ static int wm831x_backup_probe(struct platform_device *pdev)
+ 	backup->num_properties = ARRAY_SIZE(wm831x_backup_props);
+ 	backup->get_property = wm831x_backup_get_prop;
+ 	ret = power_supply_register(&pdev->dev, backup);
+-	if (ret)
+-		goto err_kmalloc;
  
-@@ -230,7 +229,6 @@ static int rx51_battery_remove(struct platform_device *pdev)
+ 	return ret;
+-
+-err_kmalloc:
+-	kfree(devdata);
+-	return ret;
+ }
  
- 	power_supply_unregister(&di->bat);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(di);
+ static int wm831x_backup_remove(struct platform_device *pdev)
+@@ -213,7 +208,6 @@ static int wm831x_backup_remove(struct platform_device *pdev)
+ 
+ 	power_supply_unregister(&devdata->backup);
+ 	kfree(devdata->backup.name);
+-	kfree(devdata);
  
  	return 0;
  }
