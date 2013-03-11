@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3CKHk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:40:27 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:49282 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab3CKHk0 (ORCPT
+	id S1752123Ab3CKHkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:40:42 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:60215 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab3CKHkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:40:26 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-media@vger.kernel.org
-Cc: g.liakhovetski@gmx.de, mchehab@redhat.com, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] soc_camera: convert to devm_ioremap_resource()
-Date: Mon, 11 Mar 2013 09:40:21 +0200
-Message-Id: <1362987621-6527-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Mar 2013 03:40:41 -0400
+Date: Mon, 11 Mar 2013 08:40:36 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mats Liljegren <mats.liljegren@enea.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL] context tracking updates for 3.10
+Message-ID: <20130311074036.GA10161@gmail.com>
+References: <1362682201-612-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362682201-612-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- drivers/media/platform/soc_camera/pxa_camera.c     |    6 +++---
- .../platform/soc_camera/sh_mobile_ceu_camera.c     |    8 +++-----
- drivers/media/platform/soc_camera/sh_mobile_csi2.c |    8 +++-----
- 3 files changed, 9 insertions(+), 13 deletions(-)
+> Ingo,
+> 
+> Please pull the latest context tracking and cputime updates that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	sched/cputime
+> 
+> HEAD is 8b43876643a737bb74a0e1e557f634eb2453948b (in case you still get the
+> cache of the previous branch there).
+> 
+> Thanks.
+> 
+> ---
+> Changes include:
+> 
+> * Generalize exception handling
+> 
+> * Fix race in context tracking state restore on return from exception
+> and irq exit kernel preemption
+> 
+> * Fix cputime scaling in full dynticks accounting dynamic off-case
+> 
+> * Fix default Kconfig value
+> 
+> ---
+> Frederic Weisbecker (5):
+>   context_tracking: Move exception handling to generic code
+>   context_tracking: Restore correct previous context state on exception
+>     exit
+>   context_tracking: Restore preempted context state after
+>     preempt_schedule_irq()
+>   cputime: Dynamically scale cputime for full dynticks accounting
+>   context_tracking: Enable probes by default for selftesting
+> 
+>  arch/x86/include/asm/context_tracking.h |   21 ----
+>  arch/x86/kernel/kvm.c                   |    8 +-
+>  arch/x86/kernel/traps.c                 |   68 +++++++++-----
+>  arch/x86/mm/fault.c                     |    8 +-
+>  include/linux/context_tracking.h        |   24 +++++-
+>  include/linux/sched.h                   |    4 +-
+>  init/Kconfig                            |    1 +
+>  kernel/fork.c                           |    2 +-
+>  kernel/sched/core.c                     |    6 +-
+>  kernel/sched/cputime.c                  |  154 ++++++++++++++++---------------
+>  10 files changed, 163 insertions(+), 133 deletions(-)
 
-diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
-index 395e2e0..e94ed6c 100644
---- a/drivers/media/platform/soc_camera/pxa_camera.c
-+++ b/drivers/media/platform/soc_camera/pxa_camera.c
-@@ -1710,9 +1710,9 @@ static int pxa_camera_probe(struct platform_device *pdev)
- 	/*
- 	 * Request the regions.
- 	 */
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base)
--		return -ENOMEM;
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 	pcdev->irq = irq;
- 	pcdev->base = base;
- 
-diff --git a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
-index bb08a46..8cdee71 100644
---- a/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
-+++ b/drivers/media/platform/soc_camera/sh_mobile_ceu_camera.c
-@@ -2110,11 +2110,9 @@ static int sh_mobile_ceu_probe(struct platform_device *pdev)
- 	pcdev->max_width = pcdev->pdata->max_width ? : 2560;
- 	pcdev->max_height = pcdev->pdata->max_height ? : 1920;
- 
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base) {
--		dev_err(&pdev->dev, "Unable to ioremap CEU registers.\n");
--		return -ENXIO;
--	}
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	pcdev->irq = irq;
- 	pcdev->base = base;
-diff --git a/drivers/media/platform/soc_camera/sh_mobile_csi2.c b/drivers/media/platform/soc_camera/sh_mobile_csi2.c
-index 42c559e..3ec7735 100644
---- a/drivers/media/platform/soc_camera/sh_mobile_csi2.c
-+++ b/drivers/media/platform/soc_camera/sh_mobile_csi2.c
-@@ -324,11 +324,9 @@ static int sh_csi2_probe(struct platform_device *pdev)
- 
- 	priv->irq = irq;
- 
--	priv->base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv->base) {
--		dev_err(&pdev->dev, "Unable to ioremap CSI2 registers.\n");
--		return -ENXIO;
--	}
-+	priv->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->base))
-+		return PTR_ERR(priv->base);
- 
- 	priv->pdev = pdev;
- 	platform_set_drvdata(pdev, priv);
--- 
-1.7.9.5
+Pulled, thanks Frederic!
 
+	Ingo
