@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3CKSL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:11:26 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:54309 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3CKSLY (ORCPT
+	id S1754162Ab3CKSMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:12:37 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:36085 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab3CKSLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:11:24 -0400
+	Mon, 11 Mar 2013 14:11:22 -0400
 From: Johan Hovold <jhovold@gmail.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Andrew Victor <linux@maxim.org.za>,
         Alessandro Zummo <a.zummo@towertech.it>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH v2 1/5] ARM: at91/rtc: fix boot after RTC wake-up
-Date: Mon, 11 Mar 2013 19:07:55 +0100
-Message-Id: <1363025279-17615-2-git-send-email-jhovold@gmail.com>
+        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v2 2/5] ARM: at91/dts: add RTC nodes
+Date: Mon, 11 Mar 2013 19:07:56 +0100
+Message-Id: <1363025279-17615-3-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
 References: <20130311180611.GF8797@localhost>
@@ -26,84 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix failed boot after RTC wake-up by making sure RTC-interrupts are
-disabled at shutdown.
+Add RTC nodes for Atmel SOCs.
 
-The RTC-registers are not reset at shutdown when there is backup power
-available, and hence the RTC-interrupt, which uses the shared system
-interrupt, may be enabled during early boot. If an RTC-alarm goes off
-before the RTC-driver is initialised (e.g. when waking up from an
-RTC-alarm) this results in disabled system interrupts.
+Use two different compatible properties to reflect the fact that the
+RTC-peripherals are backup powered (VDDBU) and are thus not reset on
+wake-up, user, watchdog or software reset on all SOCs but at91rm9200.
 
-Without earlyprintk boot hangs after
-
-  Uncompressing Linux... done, booting the kernel.
-
-and earlyprintk reveals that the shared system interrupt gets disabled:
-
-  irq 17: nobody cared (try booting with the "irqpoll" option)
-  [<c000cf8c>] (unwind_backtrace+0x0/0xf0) from [<c00513ec>] (__report_bad_irq+0x20/0xe8)
-  [<c00513ec>] (__report_bad_irq+0x20/0xe8) from [<c00516fc>] (note_interrupt+0x1e0/0x244)
-  [<c00516fc>] (note_interrupt+0x1e0/0x244) from [<c004f980>] (handle_irq_event_percpu+0xac/0x1c4)
-  [<c004f980>] (handle_irq_event_percpu+0xac/0x1c4) from [<c004faec>] (handle_irq_event+0x54/0x84)
-  [<c004faec>] (handle_irq_event+0x54/0x84) from [<c0052364>] (handle_fasteoi_irq+0x84/0x154)
-  [<c0052364>] (handle_fasteoi_irq+0x84/0x154) from [<c004f1f8>] (generic_handle_irq+0x20/0x30)
-  [<c004f1f8>] (generic_handle_irq+0x20/0x30) from [<c0009b8c>] (handle_IRQ+0x30/0x84)
-  [<c0009b8c>] (handle_IRQ+0x30/0x84) from [<c0008fa0>] (__irq_svc+0x40/0x6c)
-  [<c0008fa0>] (__irq_svc+0x40/0x6c) from [<c001cd6c>] (__do_softirq+0x5c/0x164)
-  [<c001cd6c>] (__do_softirq+0x5c/0x164) from [<c001d268>] (irq_exit+0x58/0x60)
-  [<c001d268>] (irq_exit+0x58/0x60) from [<c0009b90>] (handle_IRQ+0x34/0x84)
-  [<c0009b90>] (handle_IRQ+0x34/0x84) from [<c0008fa0>] (__irq_svc+0x40/0x6c)
-  [<c0008fa0>] (__irq_svc+0x40/0x6c) from [<c03e668c>] (start_kernel+0x1d8/0x29c)
-  [<c03e668c>] (start_kernel+0x1d8/0x29c) from [<70008040>] (0x70008040)
-  handlers:
-  [<c0012df0>] at91sam926x_pit_interrupt
-  Disabling IRQ #17
-
-Note that disabling the RTC-interrupts at shutdown fixes boot after a
-clean shutdown, but that an RTC-alarm after a user (or watchdog) reset
-could still prevent the system from booting.
-
-Note also that the only way to recover from a failed boot after an
-RTC-alarm is to remove any backup power (e.g. backup battery) or to
-disable (or acknowledge) the RTC-interrupt manually from the bootloader.
-In particular, a user-reset is not sufficient.
-
-Tested on at91sam9g45.
-
-Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/rtc/rtc-at91rm9200.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/boot/dts/at91rm9200.dtsi  | 5 +++++
+ arch/arm/boot/dts/at91sam9g45.dtsi | 5 +++++
+ arch/arm/boot/dts/at91sam9n12.dtsi | 5 +++++
+ arch/arm/boot/dts/at91sam9x5.dtsi  | 5 +++++
+ 4 files changed, 20 insertions(+)
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index b6469e2..936c75a 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -338,6 +338,14 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
- 	return 0;
- }
+diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
+index 222047f..96b4e30 100644
+--- a/arch/arm/boot/dts/at91rm9200.dtsi
++++ b/arch/arm/boot/dts/at91rm9200.dtsi
+@@ -326,6 +326,11 @@
+ 			status = "disabled";
+ 		};
  
-+static void at91_rtc_shutdown(struct platform_device *pdev)
-+{
-+	/* Disable all interrupts */
-+	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
-+					AT91_RTC_SECEV | AT91_RTC_TIMEV |
-+					AT91_RTC_CALEV);
-+}
++		rtc@fffffe00 {
++			compatible = "atmel,at91rm9200-rtc";
++			reg = <0xfffffe00 0x30>;
++		};
 +
- #ifdef CONFIG_PM
+ 		usb0: ohci@00300000 {
+ 			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
+ 			reg = <0x00300000 0x100000>;
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index 6b1d4ca..c1ad522 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -526,6 +526,11 @@
+ 				status = "disabled";
+ 			};
  
- /* AT91RM9200 RTC Power management control */
-@@ -384,6 +392,7 @@ static const struct dev_pm_ops at91_rtc_pm = {
++			rtc@fffffdb0 {
++				compatible = "atmel,at91sam9g45-rtc";
++				reg = <0xfffffdb0 0x30>;
++			};
++
+ 			watchdog@fffffd40 {
+ 				compatible = "atmel,at91sam9260-wdt";
+ 				reg = <0xfffffd40 0x10>;
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index 4801717..802e92f 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -311,6 +311,11 @@
+ 				status = "disabled";
+ 			};
  
- static struct platform_driver at91_rtc_driver = {
- 	.remove		= __exit_p(at91_rtc_remove),
-+	.shutdown	= at91_rtc_shutdown,
- 	.driver		= {
- 		.name	= "at91_rtc",
- 		.owner	= THIS_MODULE,
++			rtc@fffffeb0 {
++				compatible = "atmel,at91sam9g45-rtc";
++				reg = <0xfffffeb0 0x30>;
++			};
++
+ 			ssc0: ssc@f0010000 {
+ 				compatible = "atmel,at91sam9g45-ssc";
+ 				reg = <0xf0010000 0x4000>;
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index c461e11..432fbfb 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -362,6 +362,11 @@
+ 				};
+ 			};
+ 
++			rtc@fffffeb0 {
++				compatible = "atmel,at91sam9g45-rtc";
++				reg = <0xfffffeb0 0x30>;
++			};
++
+ 			ssc0: ssc@f0010000 {
+ 				compatible = "atmel,at91sam9g45-ssc";
+ 				reg = <0xf0010000 0x4000>;
 -- 
 1.8.1.5
 
