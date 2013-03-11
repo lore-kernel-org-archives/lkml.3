@@ -1,246 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3CKSiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:38:00 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:30732 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab3CKSh6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:37:58 -0400
-From: "Luca Porzio (lporzio)" <lporzio@micron.com>
-To: Yaniv Gardi <ygardi@codeaurora.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: RE: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-Thread-Topic: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-Thread-Index: AQHOEoOVvKTWzXh8tUGn859P256raJig6Mqg
-Date: Mon, 11 Mar 2013 18:36:55 +0000
-Message-ID: <26E7A31274623843B0E8CF86148BFE32B02F5779@NTXAVZMBX04.azit.micron.com>
-References: <1361705927-10524-1-git-send-email-ygardi@codeaurora.org>
-In-Reply-To: <1361705927-10524-1-git-send-email-ygardi@codeaurora.org>
-Accept-Language: it-IT, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.176.66.86]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19710.000
-X-TM-AS-Result: No--18.997400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754185Ab3CKSjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:39:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753906Ab3CKSjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:39:19 -0400
+Date: Mon, 11 Mar 2013 20:39:15 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130311183915.GA14689@redhat.com>
+References: <513DE3C4.5000503@siemens.com>
+ <20130311140503.GO31619@redhat.com>
+ <513DE8C5.3090209@redhat.com>
+ <513DFA01.1040500@siemens.com>
+ <20130311172342.GS31619@redhat.com>
+ <513E158B.80506@siemens.com>
+ <20130311174155.GU31619@redhat.com>
+ <513E1CFC.6010201@siemens.com>
+ <20130311181306.GW31619@redhat.com>
+ <513E2220.2090501@siemens.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513E2220.2090501@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yaniv,
+On Mon, Mar 11, 2013 at 07:27:44PM +0100, Jan Kiszka wrote:
+> On 2013-03-11 19:13, Gleb Natapov wrote:
+> > On Mon, Mar 11, 2013 at 07:05:48PM +0100, Jan Kiszka wrote:
+> >> On 2013-03-11 18:41, Gleb Natapov wrote:
+> >>> On Mon, Mar 11, 2013 at 06:34:03PM +0100, Jan Kiszka wrote:
+> >>>> On 2013-03-11 18:23, Gleb Natapov wrote:
+> >>>>> On Mon, Mar 11, 2013 at 04:36:33PM +0100, Jan Kiszka wrote:
+> >>>>>> On 2013-03-11 15:23, Paolo Bonzini wrote:
+> >>>>>>> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
+> >>>>>>>> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
+> >>>>>>>>>> We are not moving away from mp_state, we are moving away from using
+> >>>>>>>>>> mp_state for signaling because with nested virt INIT does not always
+> >>>>>>>>>> change mp_state, not only that it can change mp_state long after signal
+> >>>>>>>>>> is received after vmx off is done.
+> >>>>>>>>>
+> >>>>>>>>> Right.
+> >>>>>>>>>
+> >>>>>>>>> BTW, for that to happen, we will also need to influence the INIT level.
+> >>>>>>>>> Unless I misread the spec, INIT is blocked while in root mode, and if
+> >>>>>>>>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
+> >>>>>>>>> actually happens. So what matters is the INIT signal level at the exit
+> >>>>>>>>> of root mode.
+> >>>>>>>>>
+> >>>>>>>> You are talking about INIT# signal received via CPU pin, right? I think
+> >>>>>>>> INIT send by IPI cannot go away.
+> >>>>>>>
+> >>>>>>> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
+> >>>>>>>
+> >>>>>>> Only the Pentium and P6 family processors support the INIT-deassert IPI.
+> >>>>>>> An INIT-disassert IPI has no affect on the state of the APIC, other than
+> >>>>>>> to reload the arbitration ID register with the value in the APIC ID
+> >>>>>>> register.
+> >>>>>>>
+> >>>>>>> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
+> >>>>>>> deassert) are always treated as edge triggered interrupts".
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
+> >>>>>>> clocks" when a soft reset is requested.  So we can guess that INIT# is
+> >>>>>>> also edge-triggered.
+> >>>>>>
+> >>>>>> Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
+> >>>>>> form of a reset or a vmexit.
+> >>>>>>
+> >>>>> vmexit clears it?
+> >>>>
+> >>>> It has to. Otherwise, it would hit the host on vmxoff.
+> >>>>
+> >>> Why do you thing this is not happening?
+> >>>
+> >>> Look at [1] page 10 "VMX and INIT blocking". Do you think they were
+> >>> lucky to hit CPU while it was in a root mode?
+> >>>
+> >>> [1] http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+> >>
+> >> Interesting. And confusing. If a VMM cannot "consume" INIT events by
+> >> reentering the guest nor postpone those events up to that point if they
+> >> arrived in root mode, the whole vmexit-on-INIT thing is practically
+> >> useless. I wonder what use case Intel had in mind while designing this.
+> >>
+> > I actually find it very useful. On INIT vmexit hypervisor may call
+> > vmxoff and do proper reset. I find it less useful on AMD where you need
+> > to send self INIT IPI, but then how you can send self SIPI?
+> 
+> Where's the difference? On Intel, SIPI is also not deliverable until
+> after vmxoff. So that signal has to come from the INIT sender, just like
+> on AMD.
+> 
+On Intel:
+CPU 1                          CPU 2 in a guest mode
+send INIT
+send SIPI
+                                INIT vmexit
+                                vmxoff
+                                reset and start from SIPI vector
 
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> owner@vger.kernel.org] On Behalf Of Yaniv Gardi
-> Sent: Sunday, February 24, 2013 12:39 PM
-> To: linux-mmc@vger.kernel.org; vgoyal@redhat.com; tj@kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: linux-arm-msm@vger.kernel.org; Yaniv Gardi
-> Subject: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-> 
-> The sanitize support is added as a user-app ioctl call, and
-> was removed from the block-device request, since its purpose is
-> to be invoked not via File-System but by a user.
-> This feature deletes the unmap memory region of the eMMC card,
-> by writing to a specific register in the EXT_CSD.
-> unmap region is the memory region that was previously deleted
-> (by erase, trim or discard operation).
-> In order to avoid timeout when sanitizing large-scale cards,
-> the timeout for sanitize operation is 240 seconds.
-> 
-> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-> 
-> ---
->  drivers/mmc/card/block.c |   68 +++++++++++++++++++++++++++++++-----------
-> ---
->  drivers/mmc/card/queue.c |    2 +-
->  include/linux/mmc/host.h |    1 +
->  3 files changed, 49 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 21056b9..21bb8b4 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -58,6 +58,8 @@ MODULE_ALIAS("mmc:block");
->  #define INAND_CMD38_ARG_SECTRIM1 0x81
->  #define INAND_CMD38_ARG_SECTRIM2 0x88
->  #define MMC_BLK_TIMEOUT_MS  (10 * 60 * 1000)        /* 10 minute timeout
-> */
-> +#define MMC_SANITIZE_REQ_TIMEOUT 240000
 
-Though I would agree that 4 minutes is a reasonable sanitize time,
-the sanitize command may also depend on card size.
-As such I am not sure whether it can be regarded as a constant or
-needs to be proportional to card size.
+On AMD;
+CPU 1                           CPU 2 in a guest mode
+send INIT
+send SIPI
+                                INIT vmexit
+                                self INIT IPI
+                                ???
 
-> +#define MMC_EXTRACT_INDEX_FROM_ARG(x) ((x & 0x00FF0000) >> 16)
-> 
->  static DEFINE_MUTEX(block_mutex);
-> 
-> @@ -394,6 +396,35 @@ static int ioctl_rpmb_card_status_poll(struct mmc_card
-> *card, u32 *status,
->  	return err;
->  }
-> 
-> +static int ioctl_do_sanitize(struct mmc_card *card)
-> +{
-> +	int err;
-> +
-> +	if (!(mmc_can_sanitize(card) &&
-> +	      (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-> +			pr_warn("%s: %s - SANITIZE is not supported\n",
-> +				mmc_hostname(card->host), __func__);
-> +			err = -EOPNOTSUPP;
-> +			goto out;
-> +	}
-> +
-> +	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-> +		mmc_hostname(card->host), __func__);
-> +
-> +	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> +					EXT_CSD_SANITIZE_START, 1,
-> +					MMC_SANITIZE_REQ_TIMEOUT);
-> +
-> +	if (err)
-> +		pr_err("%s: %s - EXT_CSD_SANITIZE_START failed. err=%d\n",
-> +		       mmc_hostname(card->host), __func__, err);
-> +
 
-In case of Sanitize timeout, the eMMC might go in an unclear state.
-May I suggest to:
-- issue an HPI before leaving thus bring the eMMC back into safe status
-- report the 'sanitize not complete error' and let the user decide on 
-  Whether he wants to re-issue (i.e. continue) the sanitize or just let 
-  it go.
+> However, AMD allows you to NOT do a reset after leaving virtualization
+> mode. On Intel, INIT is obviously irreversible, thus of limited use.
+> 
+Why would hypervisor send INIT to one of its CPUs if it does not want to
+reset it? :)
 
-Thanks,
-   Luca
-
-> +	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
-> +					     __func__);
-> +out:
-> +	return err;
-> +}
-> +
->  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
->  	struct mmc_ioc_cmd __user *ic_ptr)
->  {
-> @@ -496,6 +527,16 @@ static int mmc_blk_ioctl_cmd(struct block_device
-> *bdev,
->  			goto cmd_rel_host;
->  	}
-> 
-> +	if (MMC_EXTRACT_INDEX_FROM_ARG(cmd.arg) == EXT_CSD_SANITIZE_START) {
-> +		err = ioctl_do_sanitize(card);
-> +
-> +		if (err)
-> +			pr_err("%s: ioctl_do_sanitize() failed. err = %d",
-> +			       __func__, err);
-> +
-> +		goto cmd_rel_host;
-> +	}
-> +
->  	mmc_wait_for_req(card->host, &mrq);
-> 
->  	if (cmd.error) {
-> @@ -925,10 +966,10 @@ static int mmc_blk_issue_secdiscard_rq(struct
-> mmc_queue *mq,
->  {
->  	struct mmc_blk_data *md = mq->data;
->  	struct mmc_card *card = md->queue.card;
-> -	unsigned int from, nr, arg, trim_arg, erase_arg;
-> +	unsigned int from, nr, arg;
->  	int err = 0, type = MMC_BLK_SECDISCARD;
-> 
-> -	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-> +	if (!(mmc_can_secure_erase_trim(card))) {
->  		err = -EOPNOTSUPP;
->  		goto out;
->  	}
-> @@ -936,23 +977,11 @@ static int mmc_blk_issue_secdiscard_rq(struct
-> mmc_queue *mq,
->  	from = blk_rq_pos(req);
->  	nr = blk_rq_sectors(req);
-> 
-> -	/* The sanitize operation is supported at v4.5 only */
-> -	if (mmc_can_sanitize(card)) {
-> -		erase_arg = MMC_ERASE_ARG;
-> -		trim_arg = MMC_TRIM_ARG;
-> -	} else {
-> -		erase_arg = MMC_SECURE_ERASE_ARG;
-> -		trim_arg = MMC_SECURE_TRIM1_ARG;
-> -	}
-> +	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-> +		arg = MMC_SECURE_TRIM1_ARG;
-> +	else
-> +		arg = MMC_SECURE_ERASE_ARG;
-> 
-> -	if (mmc_erase_group_aligned(card, from, nr))
-> -		arg = erase_arg;
-> -	else if (mmc_can_trim(card))
-> -		arg = trim_arg;
-> -	else {
-> -		err = -EINVAL;
-> -		goto out;
-> -	}
->  retry:
->  	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
->  		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> @@ -988,9 +1017,6 @@ retry:
->  			goto out;
->  	}
-> 
-> -	if (mmc_can_sanitize(card))
-> -		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> -				 EXT_CSD_SANITIZE_START, 1, 0);
->  out_retry:
->  	if (err && !mmc_blk_reset(md, card->host, type))
->  		goto retry;
-> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-> index fadf52e..483f0e8 100644
-> --- a/drivers/mmc/card/queue.c
-> +++ b/drivers/mmc/card/queue.c
-> @@ -148,7 +148,7 @@ static void mmc_queue_setup_discard(struct
-> request_queue *q,
->  	/* granularity must not be greater than max. discard */
->  	if (card->pref_erase > max_discard)
->  		q->limits.discard_granularity = 0;
-> -	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-> +	if (mmc_can_secure_erase_trim(card))
->  		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
->  }
-> 
-> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> index 61a10c1..045e9f7 100644
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -258,6 +258,7 @@ struct mmc_host {
->  #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
->  #define MMC_CAP2_CD_ACTIVE_HIGH	(1 << 10)	/* Card-detect signal active
-> high */
->  #define MMC_CAP2_RO_ACTIVE_HIGH	(1 << 11)	/* Write-protect signal active
-> high */
-> +#define MMC_CAP2_SANITIZE	(1 << 12)		/* Support Sanitize */
-> 
->  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
-> 
-> --
-> 1.7.6
-> --
-> Sent by a consultant of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+			Gleb.
