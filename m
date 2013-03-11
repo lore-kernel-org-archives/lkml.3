@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3CKKOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:14:51 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:47941 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab3CKKOt (ORCPT
+	id S1753859Ab3CKKPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:15:00 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54027 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab3CKKOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:14:49 -0400
-Message-ID: <513DAE8F.3050102@redhat.com>
-Date: Mon, 11 Mar 2013 11:14:39 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Mon, 11 Mar 2013 06:14:51 -0400
+Message-ID: <513DAE85.9010603@windriver.com>
+Date: Mon, 11 Mar 2013 18:14:29 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com>
-In-Reply-To: <20130310181035.GM24444@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Grad <alex.grad@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+CC: <sfr@canb.auug.org.au>, <mikey@neuling.org>, <daniel.baluta@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <penberg@kernel.org>,
+        <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH]->[PATCH v2] kgdb: Removed kmalloc returned value cast
+References: <1362955188-3023-1-git-send-email-alex.grad@gmail.com> <513D346E.20009@windriver.com>
+In-Reply-To: <513D346E.20009@windriver.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.178.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/03/2013 19:10, Gleb Natapov ha scritto:
-> On Sun, Mar 10, 2013 at 06:19:07PM +0100, Paolo Bonzini wrote:
->> Il 10/03/2013 16:35, Gleb Natapov ha scritto:
->>>>> However, it would effectively redefine the meaning of
->>>>> KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
->>>>> to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
->>>>> if this is considered an API change (personally, I would treat it as one).
->>>>>
->>> If it is kernel module internal it definitely is not API change.
->>> INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
->>> instance INIT does not really resets VCPU. Only after SIPI it is really
->>> reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
->>> state.
+On 03/11/2013 09:33 AM, tiejun.chen wrote:
+> On 03/11/2013 06:39 AM, Alex Grad wrote:
+>> While at it, check kmalloc return value.
 >>
->> Yeah, and the current definition is ambiguous (without hypervisor
->> patches, there's no way to use it as the names would suggest), so
->> perhaps the right thing to do is to rename the states (old names kept
->> for backwards compatibility only) and work from there.
+>> Signed-off-by: Alex Grad <alex.grad@gmail.com>
+>> ---
+>>   arch/powerpc/kernel/kgdb.c |    5 ++++-
+>>   1 file changed, 4 insertions(+), 1 deletion(-)
 >>
-> I do not see how renaming clarify things. From userspace point of view
-> KVM_MP_STATE_SIPI_RECEIVED does not exists.
+>> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+>> index 5ca82cd..9e81dd8 100644
+>> --- a/arch/powerpc/kernel/kgdb.c
+>> +++ b/arch/powerpc/kernel/kgdb.c
+>> @@ -159,7 +159,10 @@ static int kgdb_singlestep(struct pt_regs *regs)
+>>       if (user_mode(regs))
+>>           return 0;
+>>
+>> -    backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct
+>> thread_info), GFP_KERNEL);
+>> +    backup_current_thread_info = kmalloc(sizeof(struct thread_info),
+>> GFP_KERNEL);
+>> +    if (!backup_current_thread_info)
+>> +        return -ENOMEM;
+>
+> I already send a kgdb patchset in "[v3][PATCH 6/6] powerpc/kgdb: remove copying
+> the thread_info" to remove these stuff since its unnecessary to copy current
+> thread_info now.
 
-Not really true---we do exit with that state and EINTR when we get a
-SIPI.  Perhaps that can be changed.
+I guess that patchset needs to be reviewed with more time and I also think I can 
+leave this copying to be compatible for other platforms in the future, but we 
+really should fix this problem I introduced right now. So I'd like to fix this 
+with DEFINE_PER_CPU.
 
-> If AP is hard reset
-> userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
-> BSP it makes it running no matter what type of reset.
+I send a patch, "powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's 
+thread_info", so please take a look at if that version is fine to every one.
 
-The current name just suggests . 
-And when getting an INIT in the in-kernel LAPIC, this:
+Any comments are appreciated.
 
--			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
-+			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
-+				KVM_MP_STATE_SIPI_RECEIVED :
-+				KVM_MP_STATE_INIT_RECEIVED;
+BTW, I will update that kgdb patchset with this change to resend.
 
-makes much less sense than this:
-
--			vcpu->arch.mp_state = KVM_MP_STATE_WAIT_FOR_SIPI;
-+			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
-+				KVM_MP_STATE_RESET_NOW :
-+				KVM_MP_STATE_WAIT_FOR_SIPI;
-
-However, there's also Jan's plans for nVMX.  Peeking at his queue (see
-http://git.kiszka.org/?p=linux-kvm.git;a=commitdiff;h=037fb24ec) I think
-it's better to always reflect INITs to the hypervisor like I did in these
-patches.
-
-Paolo
+Tiejun
