@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab3CKNqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:46:07 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41548 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3CKNqF (ORCPT
+	id S1752962Ab3CKNqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:46:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39024 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751695Ab3CKNq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:46:05 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] clocksource: add empty version of clocksource_of_init
-Date: Mon, 11 Mar 2013 08:45:51 -0500
-Message-Id: <1363009551-8978-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 11 Mar 2013 09:46:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Dl539oxd4HnjFW4Ufjb3eVOa4GQFlUAQ=
+Date: Mon, 11 Mar 2013 09:46:21 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: cpufreq@vger.kernel.org, rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch,
+        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
+Message-ID: <20130311134621.GA23237@titan.lakedaemon.net>
+References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Mon, Mar 11, 2013 at 09:35:19AM +0200, Silviu-Mihai Popescu wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
+> 
+> devm_ioremap_resource() provides its own error messages so all explicit
+> error messages can be removed from the failure code paths.
+> 
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+> ---
+>  drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
+>  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
+>  drivers/thermal/kirkwood_thermal.c |    8 +++-----
+>  3 files changed, 9 insertions(+), 13 deletions(-)
 
-Add an empty clocksource_of_init when !CLKSRC_OF. This is needed for builds
-where no timer has selected CLKSRC_OF.
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
-This is part of my CLKSRC_OF init rework. It is also needed for
-Arnd's default machine patch. I plan to send a pull request to arm-soc
-for all this shortly.
+thx,
 
-Rob
-
- include/linux/clocksource.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 27cfda4..08ed5e1 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -340,6 +340,7 @@ extern void clocksource_of_init(void);
- 		__used __section(__clksrc_of_table)			\
- 		 = { .compatible = compat, .data = fn };
- #else
-+static inline void clocksource_of_init(void) {}
- #define CLOCKSOURCE_OF_DECLARE(name, compat, fn)
- #endif
- 
--- 
-1.7.10.4
-
+Jason.
