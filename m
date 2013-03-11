@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab3CKV3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:29:14 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33330 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3CKVPL (ORCPT
+	id S1754662Ab3CKVaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:30:10 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:50307 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753438Ab3CKVaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:11 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 11/44] n_tty: Correct unthrottle-with-buffer-flush comments
-Date: Mon, 11 Mar 2013 16:44:31 -0400
-Message-Id: <1363034704-28036-12-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
- <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 11 Mar 2013 17:30:08 -0400
+Message-ID: <1363037403.3137.114.camel@x61.thuisdomein>
+Subject: [PATCH] [media] soc_camera: remove two outdated selects
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 22:30:03 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 21:30:03.0451 (UTC) FILETIME=[97BA10B0:01CE1E9F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is no longer unthrottled on buffer reset, so remove
-comments that claim it is.
+Release v2.6.30 removed the MT9M001_PCA9536_SWITCH and
+MT9V022_PCA9536_SWITCH Kconfig symbols, in commits
+36034dc325ecab63c8cfb992fbf9a1a8e94738a2 ("V4L/DVB (11032): mt9m001:
+allow setting of bus width from board code") and
+e958e27adeade7fa085dd396a8a0dfaef7e338c1 ("V4L/DVB (11033): mt9v022:
+allow setting of bus width from board code").
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+These two commits removed all gpio related code from these two drivers.
+But they skipped removing their two selects of GPIO_PCA953X. Remove
+these now as they are outdated. Their dependencies can never evaluate to
+true anyhow.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/tty/n_tty.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+Tested by grepping the tree.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 0b85693..a786f4e 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -213,9 +213,8 @@ static void check_unthrottle(struct tty_struct *tty)
-  *	reset_buffer_flags	-	reset buffer state
-  *	@tty: terminal to reset
-  *
-- *	Reset the read buffer counters, clear the flags,
-- *	and make sure the driver is unthrottled. Called
-- *	from n_tty_open() and n_tty_flush_buffer().
-+ *	Reset the read buffer counters and clear the flags.
-+ *	Called from n_tty_open() and n_tty_flush_buffer().
-  *
-  *	Locking: tty_read_lock for read fields.
-  */
-@@ -254,17 +253,15 @@ static void n_tty_packet_mode_flush(struct tty_struct *tty)
-  *	n_tty_flush_buffer	-	clean input queue
-  *	@tty:	terminal device
-  *
-- *	Flush the input buffer. Called when the line discipline is
-- *	being closed, when the tty layer wants the buffer flushed (eg
-- *	at hangup) or when the N_TTY line discipline internally has to
-- *	clean the pending queue (for example some signals).
-+ *	Flush the input buffer. Called when the tty layer wants the
-+ *	buffer flushed (eg at hangup) or when the N_TTY line discipline
-+ *	internally has to clean the pending queue (for example some signals).
-  *
-  *	Locking: ctrl_lock, read_lock.
-  */
+ drivers/media/i2c/soc_camera/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/media/i2c/soc_camera/Kconfig b/drivers/media/i2c/soc_camera/Kconfig
+index 6dff2b7..23d352f 100644
+--- a/drivers/media/i2c/soc_camera/Kconfig
++++ b/drivers/media/i2c/soc_camera/Kconfig
+@@ -9,7 +9,6 @@ config SOC_CAMERA_IMX074
+ config SOC_CAMERA_MT9M001
+ 	tristate "mt9m001 support"
+ 	depends on SOC_CAMERA && I2C
+-	select GPIO_PCA953X if MT9M001_PCA9536_SWITCH
+ 	help
+ 	  This driver supports MT9M001 cameras from Micron, monochrome
+ 	  and colour models.
+@@ -36,7 +35,6 @@ config SOC_CAMERA_MT9T112
+ config SOC_CAMERA_MT9V022
+ 	tristate "mt9v022 and mt9v024 support"
+ 	depends on SOC_CAMERA && I2C
+-	select GPIO_PCA953X if MT9V022_PCA9536_SWITCH
+ 	help
+ 	  This driver supports MT9V022 cameras from Micron
  
- static void n_tty_flush_buffer(struct tty_struct *tty)
- {
--	/* clear everything and unthrottle the driver */
- 	reset_buffer_flags(tty);
- 
- 	if (tty->link)
 -- 
-1.8.1.2
+1.7.11.7
 
