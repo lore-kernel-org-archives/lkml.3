@@ -1,42 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab3CKRyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:54:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36692 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3CKRyO (ORCPT
+	id S1753611Ab3CKR6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:58:41 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46255 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3CKR6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:54:14 -0400
-Date: Mon, 11 Mar 2013 18:54:08 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Threaded irqs + 100% CPU RT task = RCU stall
-Message-ID: <20130311175408.GC22286@linutronix.de>
-References: <20130306154917.GA15249@windriver.com>
- <alpine.LFD.2.02.1303061651360.22263@ionos>
- <20130306171648.GO3268@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1303062010060.22263@ionos>
- <20130306214502.GC3268@linux.vnet.ibm.com>
+	Mon, 11 Mar 2013 13:58:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130306214502.GC3268@linux.vnet.ibm.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130311150256.GC8482@redhat.com>
+References: <513D52BA.3070206@redhat.com>
+	<1362977817-23297-1-git-send-email-yinghai@kernel.org>
+	<20130311144853.GB8482@redhat.com>
+	<20130311150256.GC8482@redhat.com>
+Date: Mon, 11 Mar 2013 10:58:39 -0700
+X-Google-Sender-Auth: oJkFMKSEnZOWpqOdXXjvODFu76I
+Message-ID: <CAE9FiQW1CHJ-j9aFgdtKEsgyZSTHTS1HzgMSGM8FnV7Ns3kUvw@mail.gmail.com>
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae9340e5b3d9e2604d7a9ec50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney | 2013-03-06 13:45:02 [-0800]:
+--14dae9340e5b3d9e2604d7a9ec50
+Content-Type: text/plain; charset=ISO-8859-1
 
->Is this behavior OK?  If so, the following (untested) patch might do
->what you want.  ;-)
+On Mon, Mar 11, 2013 at 8:02 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>
+> IOW, wouldn't it be better that crashkernel=X first tries to find
+> requested amount of memory in lowest memory area available/possible.
 
-Paul (Gortmaker) could you please test Paul's (McKenney) to see if it
-makes things for Joe (Average) easier to spot?
+Yest, that is much better, and user even could stay with old kexec-tools
+for system that does not tons of memory.
+And I don't need to mess up with auto setting crashkernel_low or export
+swiotlb_size() etc.
 
-Sebastian
+Please check if you are ok with attached one.
+
+Thanks
+
+Yinghai
+
+--14dae9340e5b3d9e2604d7a9ec50
+Content-Type: application/octet-stream; name="fix_crashkernel_low_v2.patch"
+Content-Disposition: attachment; filename="fix_crashkernel_low_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_he5xp03j0
+
+U3ViamVjdDogW1BBVENIXSB4ODYsIGtkdW1wLCA2NGJpdDogVHJ5IGFsbG9jYXRlIGNyYXNoa2Vy
+bmVsIHVuZGVyIDg5Nk0gYXQgZmlyc3QKCk9uIDY0Yml0IHN5c3RlbSwgd2UgdHJ5IGFsbG9jYXRl
+IGNyYXNoa2VybmVsIGFib3ZlIDRHIGF0IGZpcnN0LAphbmQgZG9lcyBub3Qgc2V0IGxvdyByYW5n
+ZSBmb3IgY3Jhc2hrZXJuZWwgaWYgdGhlIHVzZXIgZG9lcyBub3QKc3BlY2lmeSB0aGF0LgoKVGhh
+dCBjYXVzZSByZWdyZXNzaW9ucyBvbiBzeXN0ZW0gdGhhdCBkb2VzIG5vdCBzdXBwb3J0IGludGVs
+X2lvbW11CnByb3Blcmx5LgoKQ2hhbyBzYWlkIHRoYXQgaGlzIHN5c3RlbSBkb2VzIHdvcmsgd2Vs
+bCBvbiAzLjggd2l0aG91dCBleHRyYSBwYXJhbWV0ZXIuCmV2ZW4gaW9tbXUgZG9lcyBub3Qgd29y
+ayB3aXRoIGtkdW1wLgoKQ2hhbmdlIHRvIHRyeSB1c2Ugb2xkIDg5Nk0gbGltaXQgYXQgZmlyc3Qg
+YW5kIHRoZW4gdHJ5IHRvIGFsbG9jYXRlIGFib3ZlIDRHLgoKQWxzbyB1cGRhdGUga2VybmVsIHBh
+cmFtZXRlcnMgdG8gbWFrZSBpdCBjbGVhciB3aGVuIHRoYXQgaXMgbmVlZGVkLgoKUmVwb3J0ZWQt
+Ynk6IFdBTkcgQ2hhbyA8Y2hhb3dhbmdAcmVkaGF0LmNvbT4KU3VnZ2VzdGVkLWJ5OiBWaXZlayBH
+b3lhbCA8dmdveWFsQHJlZGhhdC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdo
+YWlAa2VybmVsLm9yZz4KCi0tLQogRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQg
+fCAgIDEwICsrKysrKystLS0KIGFyY2gveDg2L2tlcm5lbC9zZXR1cC5jICAgICAgICAgICAgIHwg
+ICAxMCArKysrKysrKystCiAyIGZpbGVzIGNoYW5nZWQsIDE2IGluc2VydGlvbnMoKyksIDQgZGVs
+ZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L0RvY3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRl
+cnMudHh0Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL0RvY3VtZW50YXRpb24va2VybmVs
+LXBhcmFtZXRlcnMudHh0CisrKyBsaW51eC0yLjYvRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1l
+dGVycy50eHQKQEAgLTU5Niw5ICs1OTYsNiBAQCBieXRlcyByZXNwZWN0aXZlbHkuIFN1Y2ggbGV0
+dGVyIHN1ZmZpeGVzCiAJCQlpcyBzZWxlY3RlZCBhdXRvbWF0aWNhbGx5LiBDaGVjawogCQkJRG9j
+dW1lbnRhdGlvbi9rZHVtcC9rZHVtcC50eHQgZm9yIGZ1cnRoZXIgZGV0YWlscy4KIAotCWNyYXNo
+a2VybmVsX2xvdz1zaXplW0tNR10KLQkJCVtLTkwsIHg4Nl0gcGFydHMgdW5kZXIgNEcuCi0KIAlj
+cmFzaGtlcm5lbD1yYW5nZTE6c2l6ZTFbLHJhbmdlMjpzaXplMiwuLi5dW0BvZmZzZXRdCiAJCQlb
+S05MXSBTYW1lIGFzIGFib3ZlLCBidXQgZGVwZW5kcyBvbiB0aGUgbWVtb3J5CiAJCQlpbiB0aGUg
+cnVubmluZyBzeXN0ZW0uIFRoZSBzeW50YXggb2YgcmFuZ2UgaXMKQEAgLTYwNiw2ICs2MDMsMTMg
+QEAgYnl0ZXMgcmVzcGVjdGl2ZWx5LiBTdWNoIGxldHRlciBzdWZmaXhlcwogCQkJYSBtZW1vcnkg
+dW5pdCAoYW1vdW50W0tNR10pLiBTZWUgYWxzbwogCQkJRG9jdW1lbnRhdGlvbi9rZHVtcC9rZHVt
+cC50eHQgZm9yIGFuIGV4YW1wbGUuCiAKKwljcmFzaGtlcm5lbF9sb3c9c2l6ZVtLTUddCisJCQlb
+S05MLCB4ODZfNjRdIHJhbmdlIHVuZGVyIDRHLiBXaGVuIGNyYXNoa2VybmVsPSByZXF1ZXN0CisJ
+CQltb3JlIHRoYW4gNTEyTSwga2VybmVsIGFsbG9jYXRlIHBoeXNpY2FsIG1lbW9yeSByZWdpb24K
+KwkJCWFib3ZlIDRHLCB0aGF0IGNhdXNlIHNlY29uZCBrZXJuZWwgY3Jhc2ggb24gc3lzdGVtIHRo
+YXQKKwkJCW5lZWQgc3dpb3RsYiBsYXRlci4gVGhpcyBvbmUgbGV0IHVzZXIgdG8gc3BlY2lmeSBl
+eHRyYQorCQkJbG93IHJhbmdlIHVuZGVyIDRHIGZvciBzZWNvbmQga2VybmVsLgorCiAJY3M4OXgw
+X2RtYT0JW0hXLE5FVF0KIAkJCUZvcm1hdDogPGRtYT4KIApJbmRleDogbGludXgtMi42L2FyY2gv
+eDg2L2tlcm5lbC9zZXR1cC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2
+L2tlcm5lbC9zZXR1cC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVwLmMKQEAg
+LTUwNywxMSArNTA3LDEyIEBAIHN0YXRpYyB2b2lkIF9faW5pdCBtZW1ibG9ja194ODZfcmVzZXJ2
+ZV8KIC8qCiAgKiBLZWVwIHRoZSBjcmFzaCBrZXJuZWwgYmVsb3cgdGhpcyBsaW1pdC4gIE9uIDMy
+IGJpdHMgZWFybGllciBrZXJuZWxzCiAgKiB3b3VsZCBsaW1pdCB0aGUga2VybmVsIHRvIHRoZSBs
+b3cgNTEyIE1pQiBkdWUgdG8gbWFwcGluZyByZXN0cmljdGlvbnMuCisgKiBPbiA2NCBiaXRzLCBr
+ZXhlYy10b29scyAoYmVmb3JlIDIuMC40KSBsaW1pdHMgdXMgdG8gODk2IE1pQi4KICAqLwogI2lm
+ZGVmIENPTkZJR19YODZfMzIKICMgZGVmaW5lIENSQVNIX0tFUk5FTF9BRERSX01BWAkoNTEyIDw8
+IDIwKQogI2Vsc2UKLSMgZGVmaW5lIENSQVNIX0tFUk5FTF9BRERSX01BWAlNQVhNRU0KKyMgZGVm
+aW5lIENSQVNIX0tFUk5FTF9BRERSX01BWAkoODk2IDw8IDIwKQogI2VuZGlmCiAKIHN0YXRpYyB2
+b2lkIF9faW5pdCByZXNlcnZlX2NyYXNoa2VybmVsX2xvdyh2b2lkKQpAQCAtNTcxLDYgKzU3Miwx
+MyBAQCBzdGF0aWMgdm9pZCBfX2luaXQgcmVzZXJ2ZV9jcmFzaGtlcm5lbCh2CiAJCWNyYXNoX2Jh
+c2UgPSBtZW1ibG9ja19maW5kX2luX3JhbmdlKGFsaWdubWVudCwKIAkJCSAgICAgICBDUkFTSF9L
+RVJORUxfQUREUl9NQVgsIGNyYXNoX3NpemUsIGFsaWdubWVudCk7CiAKKyNpZmRlZiBDT05GSUdf
+WDg2XzY0CisJCWlmICghY3Jhc2hfYmFzZSkKKwkJCWNyYXNoX2Jhc2UgPSBtZW1ibG9ja19maW5k
+X2luX3JhbmdlKGFsaWdubWVudCwKKwkJCQkgICAgICAgTUFYX01FTSwgY3Jhc2hfc2l6ZSwgYWxp
+Z25tZW50KTsKKworI2VuZGlmCisKIAkJaWYgKCFjcmFzaF9iYXNlKSB7CiAJCQlwcl9pbmZvKCJj
+cmFzaGtlcm5lbCByZXNlcnZhdGlvbiBmYWlsZWQgLSBObyBzdWl0YWJsZSBhcmVhIGZvdW5kLlxu
+Iik7CiAJCQlyZXR1cm47Cg==
+--14dae9340e5b3d9e2604d7a9ec50--
