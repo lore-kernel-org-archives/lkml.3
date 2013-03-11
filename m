@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab3CKCNA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 22:13:00 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:51087 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3CKCM7 (ORCPT
+	id S1753759Ab3CKCOA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 22:14:00 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57596 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3CKCN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 22:12:59 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-0c-513d3daa4218
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/3] pwm: pwm-tiecap: add CONFIG_PM_SLEEP to suspend/resume
- functions
-Date: Mon, 11 Mar 2013 11:12:58 +0900
-Message-id: <005301ce1dfd$f306bec0$d9143c40$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4d/fLoREAEAFdzR4uo7XL58BGkQQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t8zY91VtraBBv+WSllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M6w/WMxb84qhYNe0yWwPjOfYuRk4OCQETiXvX9kLZYhIX7q1n
-	62Lk4hASWMYocf75EbiiuUcb2CESixglFm96xgzhzGaSuNCziQWkik1ATeLLl8NgHSIC5hJL
-	Fu0FKuLgYBZwkTg6TQQkLCwQLjHtwhsmEJtFQFVi/aJprCA2r4CtxIsHFxghbEGJH5PvgY1k
-	FtCS2LytiRXClpfYvOYt2EgJAXWJR391ITbpSbz5PoENokREYt+Ld4wgp0kItLNLfFz+kxFi
-	l4DEt8mHWCB6ZSU2HWCG+EtS4uCKGywTGMVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQi
-	Y73ixNzi0rx0veT83E2MkEjp38F494D1IcZkoPUTmaVEk/OBkZZXEm9obGZkYWpiamxkbmlG
-	mrCSOK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsZwg49HY36cW1ex99+Du6VNm11O
-	rJgWrXfIcr7H11sFCd8+Nh7p6Mu9cjzh3k7ei8YFaZnsaWrZ01W97t5dt2HKFcMz8lNcenP4
-	b8+etO2L/fuTySt3Te1ftlS5cu2W6rDlLUE11SreMWZRsQL1N3a79cyfWPvT2eeT3tINPV3f
-	PkyKf/VGddZHJZbijERDLeai4kQAb7lnYqoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jAd1VtraBBp3NYhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/qD9YwFvzgqVk27zNbA
-	eI69i5GTQ0LARGLu0QYoW0ziwr31bF2MXBxCAosYJRZvesYM4cxmkrjQs4kFpIpNQE3iy5fD
-	YB0iAuYSSxbtBSri4GAWcJE4Ok0EJCwsEC4x7cIbJhCbRUBVYv2iaawgNq+ArcSLBxcYIWxB
-	iR+T74GNZBbQkti8rYkVwpaX2LzmLdhICQF1iUd/dSE26Um8+T6BDaJERGLfi3eMExgFZiGZ
-	NAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAcPpPawbiyweIQowAH
-	oxIP7wQd20Ah1sSy4srcQ4wSHMxKIrwrN9kECvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+
-	MEXklcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOj9b3uJ5Mv
-	+LUG3y3/r3zbRlOzQiCkoFzEyrna7V9qf56/zZ8tm9vM9jH98tJqPbLuxKI5nJ6uL1XL2QNe
-	neo7tYNr7mXPKs6HIYzpkd7rmRQSy1fvO3NJ8Ki9e6lK7XsbnhWBuYEmAjOSzuv192fP9tAs
-	jp2xJ2aH3ynr/r+nqjbrPC9aqKXEUpyRaKjFXFScCABhcITfBwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 10 Mar 2013 22:13:59 -0400
+Date: Mon, 11 Mar 2013 11:13:52 +0900 (JST)
+Message-Id: <20130311.111352.105946462.d.hatayama@jp.fujitsu.com>
+To: ebiederm@xmission.com
+Cc: len.brown@intel.com, fenghua.yu@intel.com, x86@kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca, hpa@zytor.com,
+        tglx@linutronix.de, mingo@elte.hu, vgoyal@redhat.com
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20130311.100721.32982204.d.hatayama@jp.fujitsu.com>
+References: <20121026.122406.13396329.d.hatayama@jp.fujitsu.com>
+	<87r4oloopm.fsf@xmission.com>
+	<20130311.100721.32982204.d.hatayama@jp.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CONFIG_PM_SLEEP to suspend/resume functions to fix
-the following build warning when CONFIG_PM_SLEEP is not selected.
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+Date: Mon, 11 Mar 2013 10:07:21 +0900
 
-drivers/pwm/pwm-tiecap.c:314:12: warning: 'ecap_pwm_suspend' defined but not used [-Wunused-function]
-drivers/pwm/pwm-tiecap.c:328:12: warning: 'ecap_pwm_resume' defined but not used [-Wunused-function]
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+> Date: Thu, 25 Oct 2012 21:13:25 -0700
+> 
+>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+>> 
+>>> From: "H. Peter Anvin" <hpa@zytor.com>
+>>> Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+>>> Date: Mon, 22 Oct 2012 17:35:47 -0700
+>>>
+>>>> On 10/22/2012 02:29 PM, Eric W. Biederman wrote:
+> <cut>
+>>> Considering these, I'll make a patch to clear BSP flag at appropreate
+>>> position in kernel boot-up code. OTOH, according to the discussion, it
+>>> was reported that clearing BSP flag affected some BIOSes. To deal with
+>>> this, I'll prepare a kernel option to decide whether to clear BSP flag
+>>> or not.
+>>>
+>>> Does anyone have any comments now? Or please comment after I submit a
+>>> new patch.
+>> 
+>> I think you are on right track with preparing some patches, and this
+>> certainly looks like worth experimenting with.
+>> 
+>> At least for i386 the code need to verify you have a cpu new enough to
+>> have an APIC_BASE_MSR, but I don't think that is going to be hard.
+> 
+> Eric, you have probably forgotten this work but I want to restart the
+> work to allow multiple CPUs on the 2nd kernel. But on my
+> investigation, I have a question about inconsistent states kdump
+> framework assumes in the crash path on the 1st kernel.
+> 
+> Now I'm re-investigating how to unset BSP flag on the 1st kernel in a
+> safe manner. But then I must discuss possibility of BSP flag being set
+> again after the unsetting of BSP. This includes firmware that assumes
+> BSP flag is kept set throughtout system execution, but I noticed,
+> fundamentally, it can happen even only with kernel code in the
+> inconsistent state from the point where any bug happpens to before
+> entering 2nd kernel.
+> 
+> For example, some bug that causes buffer overrun can rewrite kdump
+> code so some part of it be wrmsr but any other part is safe enough to
+> boot 2nd kernel successfully... Although this is very low, but it must
+> actually happen. Of course, we face the same situation if we put
+> unsetting code in machine_shutdown() path, which is similarly not
+> guaranteed to work well in inconsistent state.
+> 
+> Different from kernel state and similar to any other device states, it
+> seems to me that it's impossible to unset BSP flag in a safe manner
+> together with inconsistent state kdump framework considers. Then, it
+> seems to me that disabling BSP on 2nd kernel is a final resort.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/pwm/pwm-tiecap.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I noticed this was not enough. In the inconsistent state, even AP can
+have BSP flag set due to some bug. Then, in conclusion, we cannot use
+multiple cpus on the 2nd kernel on top of kdump framework policy if
+any change cannot be made there.
 
-diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
-index 22e96e2..f024db0 100644
---- a/drivers/pwm/pwm-tiecap.c
-+++ b/drivers/pwm/pwm-tiecap.c
-@@ -311,6 +311,7 @@ void ecap_pwm_restore_context(struct ecap_pwm_chip *pc)
- 	writew(pc->ctx.ecctl2, pc->mmio_base + ECCTL2);
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int ecap_pwm_suspend(struct device *dev)
- {
- 	struct ecap_pwm_chip *pc = dev_get_drvdata(dev);
-@@ -337,6 +338,7 @@ static int ecap_pwm_resume(struct device *dev)
- 	ecap_pwm_restore_context(pc);
- 	return 0;
- }
-+#endif
- 
- static SIMPLE_DEV_PM_OPS(ecap_pwm_pm_ops, ecap_pwm_suspend, ecap_pwm_resume);
- 
--- 
-1.7.2.5
+It seems to me that at least there needs to be the following design
+policy for multiple CPUs on the 2nd kenrel:
 
+- There's no firmware, kernel components and modules that depend on
+  BSP flag being kept set on the original BSP flag and never set BSP
+  flag of any of the existing CPUs again at runtime.
+
+- Exclude a kind of bugs on which kdump framework works well, that set
+  BSP flag on any of the existing CPUs including AP.
+
+If one of the assumption doesn't hold, we have to accept a risk of
+system leading to unspecified behaviour.
+
+Thanks.
+HATAYAMA, Daisuke
 
