@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab3CKKsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:48:31 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64322 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab3CKKs1 (ORCPT
+	id S1753914Ab3CKKxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:53:52 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62931 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753546Ab3CKKxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:48:27 -0400
-From: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
-To: linux-crypto@vger.kernel.org
-Cc: herbert@gondor.hengli.com.au, davem@davemloft.net,
-        linus.walleij@linaro.org, andreas.westin@stericsson.com, arnd@arndb.de,
-        rubini@unipv.it, linux-kernel@vger.kernel.org,
-        Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
-Subject: [PATCH] crypto: replace kmalloc and then memcpy with kmemdup
-Date: Mon, 11 Mar 2013 12:48:10 +0200
-Message-Id: <1362998890-7532-1-git-send-email-mihneadb@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 11 Mar 2013 06:53:51 -0400
+Message-ID: <1362999228.3137.55.camel@x61.thuisdomein>
+Subject: [PATCH] acpi: remove reference to ACPI_HOTPLUG_IO
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 11:53:48 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 10:53:49.0510 (UTC) FILETIME=[B648EE60:01CE1E46]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
----
- drivers/crypto/ux500/hash/hash_core.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+The Kconfig entry for ACPI Container and Module Devices got
+added in v2.6.11. Its default value has always been set to
+    (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU || ACPI_HOTPLUG_IO)
 
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 632c333..8d16d3a 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -1368,14 +1368,12 @@ static int hash_setkey(struct crypto_ahash *tfm,
- 	/**
- 	 * Freed in final.
- 	 */
--	ctx->key = kmalloc(keylen, GFP_KERNEL);
-+	ctx->key = kmemdup(key, keylen, GFP_KERNEL);
- 	if (!ctx->key) {
- 		pr_err(DEV_DBG_NAME " [%s] Failed to allocate ctx->key "
- 		       "for %d\n", __func__, alg);
- 		return -ENOMEM;
- 	}
--
--	memcpy(ctx->key, key, keylen);
- 	ctx->keylen = keylen;
+But the Kconfig symbol ACPI_HOTPLUG_IO has never existed. So it's
+pointless to use it to set this default value.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested, actually.
+
+ drivers/acpi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 92ed969..b46f5e3 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -334,7 +334,7 @@ config X86_PM_TIMER
  
- 	return ret;
+ config ACPI_CONTAINER
+ 	bool "Container and Module Devices"
+-	default (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU || ACPI_HOTPLUG_IO)
++	default (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU)
+ 	help
+ 	  This driver supports ACPI Container and Module devices (IDs
+ 	  ACPI0004, PNP0A05, and PNP0A06).
 -- 
-1.7.10.4
+1.7.11.7
 
