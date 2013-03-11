@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3CKGcr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 02:32:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59918 "EHLO
+	id S1752503Ab3CKGdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 02:33:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59992 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3CKGcq (ORCPT
+	with ESMTP id S1751612Ab3CKGdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 02:32:46 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-e6-513d7a8d5306
+	Mon, 11 Mar 2013 02:33:07 -0400
+X-AuditID: cbfee68d-b7f786d000005188-4f-513d7aa2db98
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
 In-reply-to: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
-Subject: [PATCH 05/14] power: ds2760_battery: use devm_kzalloc()
-Date: Mon, 11 Mar 2013 15:32:44 +0900
-Message-id: <007501ce1e22$3d8104f0$b8830ed0$%han@samsung.com>
+Subject: [PATCH 06/14] power: ds2780_battery: use devm_kzalloc()
+Date: Mon, 11 Mar 2013 15:33:05 +0900
+Message-id: <007601ce1e22$4a1032e0$de3098a0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAADqvg
+Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAAEY5w
 Content-language: ko
-x-cr-hashedpuzzle: bXo= AE4q Biqn JC9z Kc4d PO1A PUIQ Q7Zu V4o2 X+cM Y+BI e0uW
- qU7U uPrA uTn9
- wk1q;4;YQBuAHQAbwBuAEAAZQBuAG8AbQBzAGcALgBvAHIAZwA7AGQAdwBtAHcAMgBAAGkAbgBmAHIAYQBkAGUAYQBkAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{72981A2D-BF13-4AC8-8356-A486D8A918C2};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
- 11 Mar 2013 06:32:37
- GMT;WwBQAEEAVABDAEgAIAAwADUALwAxADQAXQAgAHAAbwB3AGUAcgA6ACAAZABzADIANwA2ADAAXwBiAGEAdAB0AGUAcgB5ADoAIAB1AHMAZQAgAGQAZQB2AG0AXwBrAHoAYQBsAGwAbwBjACgAKQA=
-x-cr-puzzleid: {72981A2D-BF13-4AC8-8356-A486D8A918C2}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zQ93eKttAg2mbxC0ObtW0mLhyMrPF
-	5YWXWC0u75rD5sDiMaH/E6PH5hVaHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXx6NlZpoJ5
-	nBUzjvxhamB8wN7FyMkhIWAi0bF2PSuELSZx4d56ti5GLg4hgWWMEgc3vWbsYuQAK/p0Vwek
-	RkhgOqNEyxl3iJpfjBLt76cygyTYBNQkvnw5DDZUREBDom31FBYQm1kgX+LwocssEM22Ert/
-	vmAEsTkF7CRuLLvEBjJfWMBB4tcOHpAwi4CqxL1VH8HG8AKVbzjVyARhC0r8mHwPaqSWxOZt
-	TawQtrzE5jVvmSHOVJd49FcXxBQRMJKY8M4dokJEYt+Ld4wgF0sIvGGR+Lb1CgvEu6YSDQ9P
-	MUEkHrFLNC5Ywghxg4DEt8mHWCBmykpsOsAMUS8pcXDFDZYJjFKzkFw0C8lFs5BcNAvJ7gWM
-	LKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxQqJ34g7G+wesDzEmA62fyCwlmpwPjP68knhD
-	YzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAWV804pnGY
-	61fXonqftuueeguyDIV/Hfy7XvRijK3oDV1mrdePc4qXF98+yZ2aFCAvsjA7f4Zv8bKACZ8t
-	7qf++lj76bPYl3+W3sXml6fYPDm1pJ+F3/DGDouvXZd2idpKMq2t0MgyW/nd50ZxX3Zq1bJd
-	V29dihP/qKhfN/dkYHxePpOZ7XolluKMREMt5qLiRABHyGQc9AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jQd3eKttAg3WrhS0ObtW0mLhyMrPF
-	5YWXWC0u75rD5sDiMaH/E6PH5hVaHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMeY8ejZWaaCeZwVM478YWpgfMDexcjBISFgIvHprk4XIyeQKSZx4d56
-	NhBbSGA6o0TLGfcuRi4g+xejRPv7qcwgCTYBNYkvXw6zg9giAhoSbaunsIDYzAL5EocPXWaB
-	aLaV2P3zBSOIzSlgJ3Fj2SU2kF3CAg4Sv3bwgIRZBFQl7q36CDaGF6h8w6lGJghbUOLH5HtQ
-	I7UkNm9rYoWw5SU2r3nLDHGyusSjv7ogpoiAkcSEd+4QFSIS+168YwS5WELgDYvEt61XWCDe
-	MpVoeHiKaQKjyCwkG2Yh2TALyYZZSGYtYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGc
-	Gp5J72Bc1WBxiFGAg1GJh3eCjm2gEGtiWXFl7iFGCQ5mJRHelZtsAoV4UxIrq1KL8uOLSnNS
-	iw8xJgMDYCKzlGhyPjBt5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhm
-	CxMHp1QD44Zp4Tmfsuyn3SvJz3im0hxok9tbnh5ycsa7q06PtV8srrs14XxrSfPCD7JMP16s
-	Dezc+k/U4d+BHZmnhM3mX5A/YX4+UuHU3t410wO4df5IfprxJmT/Tr4DN5Keeky5z+oRmLY0
-	uPVO/tn2r5JNF3qmcTPukZS94j7flX0y0zFOGfdpETnN65VYijMSDbWYi4oTAVH+t0xRAwAA
+x-cr-hashedpuzzle: GqMH JOro L4JI dV8j dwSQ gQv3 hwr3 ijlY jnIg ldLA loQZ mY87
+ pmRl qDFK smSp
+ tj+k;4;YQBuAHQAbwBuAEAAZQBuAG8AbQBzAGcALgBvAHIAZwA7AGQAdwBtAHcAMgBAAGkAbgBmAHIAYQBkAGUAYQBkAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{73BF8927-ECA3-4A97-8E1B-7B4985F4956C};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
+ 11 Mar 2013 06:32:59
+ GMT;WwBQAEEAVABDAEgAIAAwADYALwAxADQAXQAgAHAAbwB3AGUAcgA6ACAAZABzADIANwA4ADAAXwBiAGEAdAB0AGUAcgB5ADoAIAB1AHMAZQAgAGQAZQB2AG0AXwBrAHoAYQBsAGwAbwBjACgAKQA=
+x-cr-puzzleid: {73BF8927-ECA3-4A97-8E1B-7B4985F4956C}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zA91FVbaBBsfe8llc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MYw/3shec567YevwcSwPjbc4uRk4OCQETiR8vVzJC2GISF+6t
+	Z+ti5OIQEljGKNF//AIjTNH0D0eYQWwhgUWMEvtWu0AUzWaSeLymkw0kwSagJvHly2F2EFtE
+	QEOibfUUFhCbWSBf4vChyywQzbYSu3++ABvKKWAncWPZJaBeDg5hAQeJ7t5QEJNFQFXiyvwC
+	kApeoOrNE/YzQdiCEj8m34OaqCWxeVsTK4QtL7F5zVtmkFYJAXWJR391IQ4wkrgw9TYbRImI
+	xL4X7xhBLpYQeMMi0bfrGSvEW6YSz6Z+hkrsY5eYs2gW2GksAgIS3yYfYoEYKiux6QAzRL2k
+	xMEVN1gmMErNQnLSLCQnzUJy0iwkuxcwsqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECInD
+	3h2Mtw9YH2JMBlo/kVlKNDkfGMd5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqem
+	FqQWxReV5qQWH2Jk4uCUamAMT+f7YJHwaZZpVwtfbqnups7De2f5KqzMSj1wZc2ne+/WH+mJ
+	jk1nZJt4cUOn46zrPMV93lfrU0+vMhH7cCJzyf4/l1dt9iqIn3HjzaGysCaOZT8L7n1aNHVr
+	76No10Xul9ue8/2797jgrrevjd6xzr7Ht+Yu/NG8Z5fU7Jclk5rl/G8fXLdeVYmlOCPRUIu5
+	qDgRAI8/0iPZAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jAd1FVbaBBks/cVpc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGMP97IXnOeu2Hr8HEsD
+	423OLkZODgkBE4npH44wQ9hiEhfurWcDsYUEFjFK7Fvt0sXIBWTPZpJ4vKYTLMEmoCbx5cth
+	dhBbREBDom31FBYQm1kgX+LwocssEM22Ert/vmAEsTkF7CRuLLsE1MvBISzgINHdGwpisgio
+	SlyZXwBSwQtUvXnCfiYIW1Dix+R7UBO1JDZva2KFsOUlNq95ywzSKiGgLvHory7EAUYSF6be
+	ZoMoEZHY9+IdI8jFEgJvWCT6dj1jhXjLVOLZ1M+MExhFZiFZMQvJillIVsxCMmsBI8sqRtHU
+	guSC4qT0XCO94sTc4tK8dL3k/NxNjOAofya9g3FVg8UhRgEORiUe3gk6toFCrIllxZW5hxgl
+	OJiVRHhXbrIJFOJNSaysSi3Kjy8qzUktPsSYDAyAicxSosn5wASUVxJvaGxiZmRpZGZhZGJu
+	TpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MC1x2F916qPPhntnjq1Ntlsj8W54x0Viy
+	cemFnLcPZZ4+Vrj9+e7dGR8tVGauN09XN+9jnb/uv828kLx9ZxZsX7LnPBfr2gU6buc4S6qi
+	6s5e+C7uELfSYsMVt5/Lb84Uf7uMkedV7/01J1r8njho33+iI3r7hbpPsY3DJMH+Sye/HFfa
+	/ux2/3ElluKMREMt5qLiRAAWxqu3NgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,44 +61,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
 Use devm_kzalloc() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/ds2760_battery.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/power/ds2780_battery.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/power/ds2760_battery.c b/drivers/power/ds2760_battery.c
-index 704e652..85b4e6e 100644
---- a/drivers/power/ds2760_battery.c
-+++ b/drivers/power/ds2760_battery.c
-@@ -512,7 +512,7 @@ static int ds2760_battery_probe(struct platform_device *pdev)
- 	int retval = 0;
- 	struct ds2760_device_info *di;
+diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
+index 8b6c453..9f418fa 100644
+--- a/drivers/power/ds2780_battery.c
++++ b/drivers/power/ds2780_battery.c
+@@ -760,7 +760,7 @@ static int ds2780_battery_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 	struct ds2780_device_info *dev_info;
  
--	di = kzalloc(sizeof(*di), GFP_KERNEL);
-+	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
- 	if (!di) {
- 		retval = -ENOMEM;
- 		goto di_alloc_failed;
-@@ -576,7 +576,6 @@ static int ds2760_battery_probe(struct platform_device *pdev)
- workqueue_failed:
- 	power_supply_unregister(&di->bat);
- batt_failed:
--	kfree(di);
- di_alloc_failed:
- success:
- 	return retval;
-@@ -590,7 +589,6 @@ static int ds2760_battery_remove(struct platform_device *pdev)
- 	cancel_delayed_work_sync(&di->set_charged_work);
- 	destroy_workqueue(di->monitor_wqueue);
- 	power_supply_unregister(&di->bat);
--	kfree(di);
+-	dev_info = kzalloc(sizeof(*dev_info), GFP_KERNEL);
++	dev_info = devm_kzalloc(&pdev->dev, sizeof(*dev_info), GFP_KERNEL);
+ 	if (!dev_info) {
+ 		ret = -ENOMEM;
+ 		goto fail;
+@@ -779,7 +779,7 @@ static int ds2780_battery_probe(struct platform_device *pdev)
+ 	ret = power_supply_register(&pdev->dev, &dev_info->bat);
+ 	if (ret) {
+ 		dev_err(dev_info->dev, "failed to register battery\n");
+-		goto fail_free_info;
++		goto fail;
+ 	}
  
+ 	ret = sysfs_create_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
+@@ -813,8 +813,6 @@ fail_remove_group:
+ 	sysfs_remove_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
+ fail_unregister:
+ 	power_supply_unregister(&dev_info->bat);
+-fail_free_info:
+-	kfree(dev_info);
+ fail:
+ 	return ret;
+ }
+@@ -828,7 +826,6 @@ static int ds2780_battery_remove(struct platform_device *pdev)
+ 
+ 	power_supply_unregister(&dev_info->bat);
+ 
+-	kfree(dev_info);
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
