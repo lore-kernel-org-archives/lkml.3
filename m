@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3CKTdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:33:39 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3874 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334Ab3CKTcf (ORCPT
+	id S1754519Ab3CKTeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:34:03 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:54990 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab3CKTeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:32:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 11 Mar 2013 12:25:33 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>, <a.zummo@towertech.it>
-CC: <swarren@wwwdotorg.org>, <rtc-linux@googlegroups.com>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <thierry.reding@avionic-design.de>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 1/5] rtc: tegra: protect suspend/resume callbacks with CONFIG_PM_SLEEP
-Date: Tue, 12 Mar 2013 00:59:57 +0530
-Message-ID: <1363030201-14717-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
-References: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 11 Mar 2013 15:34:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130311191031.GD12107@redhat.com>
+References: <513D52BA.3070206@redhat.com>
+	<1362977817-23297-1-git-send-email-yinghai@kernel.org>
+	<20130311144853.GB8482@redhat.com>
+	<20130311150256.GC8482@redhat.com>
+	<CAE9FiQW1CHJ-j9aFgdtKEsgyZSTHTS1HzgMSGM8FnV7Ns3kUvw@mail.gmail.com>
+	<20130311182655.GB12107@redhat.com>
+	<513E2695.3080707@zytor.com>
+	<CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
+	<513E28B8.3000502@zytor.com>
+	<20130311191031.GD12107@redhat.com>
+Date: Mon, 11 Mar 2013 12:34:00 -0700
+X-Google-Sender-Auth: V4-M9J-ZiOOjj2NkJJ06LvyFqgk
+Message-ID: <CAE9FiQUxmipKJfUsZdN+J6wGR66VKfLQ8+z41yd3TCJxXTyDRA@mail.gmail.com>
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_PM doesn't actually enable any of the PM callbacks, it
-only allows to enable CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME.
-This means if CONFIG_PM is used to protect system sleep callbacks
-then it may end up unreferenced if only runtime PM is enabled.
-Hence protecting sleep callbacks with CONFIG_PM_SLEEP.
+On Mon, Mar 11, 2013 at 12:10 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Not breaking existing cases makes sense to me.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
-Changes from V1:
-- Add Thierry's reviewed by.
-- No Change in code.
+that is -v2 version:
+try 896M, then try 4G, than MAXMEM.
 
-Changes from V2:
-- Add Stephen's reviewed by.
-- No Change in code.
+> May be we should use
+> a new parameter crashkernel_high to force memory reservation above
+> 4G and crashkernel=X continues to reserve memory at lower addresses
+> and remains backward compatible.
 
- drivers/rtc/rtc-tegra.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+No need to use crashkernel_high, we can just cashkernel=X@Y instead.
 
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-index 0020bab..d64cde6 100644
---- a/drivers/rtc/rtc-tegra.c
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -390,7 +390,7 @@ static int __exit tegra_rtc_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int tegra_rtc_suspend(struct platform_device *pdev, pm_message_t state)
- {
- 	struct device *dev = &pdev->dev;
-@@ -446,7 +446,7 @@ static struct platform_driver tegra_rtc_driver = {
- 		.owner	= THIS_MODULE,
- 		.of_match_table = tegra_rtc_dt_match,
- 	},
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- 	.suspend	= tegra_rtc_suspend,
- 	.resume		= tegra_rtc_resume,
- #endif
--- 
-1.7.1.1
+Thanks
 
+Yinghai
