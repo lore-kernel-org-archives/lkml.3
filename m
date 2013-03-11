@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3CKL0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:26:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25949 "EHLO mx1.redhat.com"
+	id S1754085Ab3CKLbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:31:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3910 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753954Ab3CKL0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:26:02 -0400
-Message-ID: <513DBF45.9030803@redhat.com>
-Date: Mon, 11 Mar 2013 12:25:57 +0100
+	id S1753897Ab3CKLbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 07:31:36 -0400
+Message-ID: <513DC087.6000508@redhat.com>
+Date: Mon, 11 Mar 2013 12:31:19 +0100
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com>
-In-Reply-To: <20130311102852.GE31619@redhat.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        asias@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com
+Subject: Re: [PATCH V4 1/5] virtio-scsi: redo allocation of target data
+References: <1362969842-9145-1-git-send-email-gaowanlong@cn.fujitsu.com> <1362969842-9145-2-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <1362969842-9145-2-git-send-email-gaowanlong@cn.fujitsu.com>
 X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/03/2013 11:28, Gleb Natapov ha scritto:
->> Not really true---we do exit with that state and EINTR when we get a
->> SIPI.  Perhaps that can be changed.
->
-> That's implementation detail. We can jump to the beginning of the
-> function instead. Nowhere we document that entering
-> KVM_MP_STATE_SIPI_RECEIVED state cause KVM_RUN return with EINTR.
-
-Yes, that would be nice.
-
->>> If AP is hard reset
->>> userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
->>> BSP it makes it running no matter what type of reset.
->>
->> The current name just suggests . 
->> And when getting an INIT in the in-kernel LAPIC, this:
->>
->> -			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
->> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
->> +				KVM_MP_STATE_SIPI_RECEIVED :
->> +				KVM_MP_STATE_INIT_RECEIVED;
->>
->> makes much less sense than this:
->>
->> -			vcpu->arch.mp_state = KVM_MP_STATE_WAIT_FOR_SIPI;
->> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
->> +				KVM_MP_STATE_RESET_NOW :
->> +				KVM_MP_STATE_WAIT_FOR_SIPI;
->>
-> Both of them are equally incorrect. INIT should cause reset, and only if
-> vmx is off. An userspace reset is also completely broken in that regard.
-> Renaming things gives us nothing, only bring unneeded churn. If the
-> names were internal I wouldn't mind, but they are APIs.
+Il 11/03/2013 03:43, Wanlong Gao ha scritto:
+> virtio_scsi_target_state is now empty, but we will find new uses
+> for it in the next few patches.  However, dropping the sglist lets
+> us turn the array-of-pointers into a simple array, which simplifies
+> the allocation.
 > 
->> However, there's also Jan's plans for nVMX.  Peeking at his queue (see
->> http://git.kiszka.org/?p=linux-kvm.git;a=commitdiff;h=037fb24ec) I think
->> it's better to always reflect INITs to the hypervisor like I did in these
->> patches.
->>
-> The commit was before we decided that we should not abuse mp_state for
-> signaling.
+> However, we do not leave the virtio_scsi_target_state structs in the
+> flexible array member at the end of struct virtio_scsi, because
+> we will place the virtqueues there in the next patches.
 
-Agreed, but we still have the problem of how to signal from userspace.
-For that do you have any other suggestion than mp_state?  And if we keep
-mp_state to signal from userspace, giving INIT_RECEIVED the
-"wait-for-SIPI" semantics would be wrong.
+If you have to respin, consider improving the grammar:
+
+virtio_scsi_target_state is now empty.  We will find new uses for it in
+the next few patches, so this patch does not drop it completely.
+However, having dropped the sglist flexible array member, we can turn
+the tgt array-of-pointers into a simple array.  This simplifies the
+allocation.
+
+Even simpler would be to place the virtio_scsi_target_state structs in a
+flexible array member at the end of struct virtio_scsi.  But we do not
+do that, because we will place the virtqueues there in the next patches.
 
 Paolo
+
+> Cc: linux-scsi@vger.kernel.org
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
