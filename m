@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab3CKGfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 02:35:42 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:60547 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab3CKGfl (ORCPT
+	id S1752923Ab3CKGgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 02:36:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:40998 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3CKGf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 02:35:41 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-19-513d7b3a9fa3
+	Mon, 11 Mar 2013 02:35:59 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-9f-513d7b4ed2fa
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
 In-reply-to: <007101ce1e21$f39efcc0$dadcf640$%han@samsung.com>
-Subject: [PATCH 12/14] power: pcf50633-charger: use devm_kzalloc()
-Date: Mon, 11 Mar 2013 15:35:38 +0900
-Message-id: <007c01ce1e22$a502f980$ef08ec80$%han@samsung.com>
+Subject: [PATCH 13/14] power: rx51_battery: use devm_kzalloc()
+Date: Mon, 11 Mar 2013 15:35:58 +0900
+Message-id: <007d01ce1e22$b0a99c30$11fcd490$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAAKO8g
+Thread-index: Ac4eIfOI6J7YtEddQ/Gjh19YaZUzVAAALIpA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zA12rattAg/73hhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj4qSvLAW3eCqeNE1naWDcztXFyMkhIWAiMXdbIxOELSZx4d56
-	ti5GLg4hgWWMEm8frWaEKdr8cQM7RGIRo8SN1dsYIZzZTBKbrnSxg1SxCahJfPlyGMwWEdCQ
-	aFs9hQXEZhbIlzh86DKYLSRgK7H75wuwqZwCdhI3ll1iA7GFBZwkti78CXYGi4CqROf6q8wg
-	Ni9Q/f03q1ggbEGJH5PvQc3Ukti8rYkVwpaX2LzmLVA9B9Cl6hKP/upCnGAksaFtIzNEiYjE
-	vhfvwG6WEJjHLrHs7DWoXQIS3yYfYoHolZXYdIAZ4mFJiYMrbrBMYJSYhWTzLCSbZyHZPAvJ
-	igWMLKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxQmKrbwfjzQPWhxiTgdZPZJYSTc4HxmZe
-	SbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh7rvd9
-	PvrvuZZd6y3Ofev+ie6/fGFKe0zkwXjr7PagxNNpa69tdFx53HD1zLfrtDJN1p7vz2yZvGWJ
-	/p3/8fbrmJxEWlWu8r9/13J5neZVbfXPfw/daPuolHTJ6shz55fpb+NT7GLS6vwStxf0qLJd
-	d400SPB3nH0s/OBlCV+l7b591VaybxiVWIozEg21mIuKEwGMI7j4wwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgK5VtW2gwY1XuhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4+KkrywFt3gqnjRNZ2lg
-	3M7VxcjJISFgIrH54wZ2CFtM4sK99WxdjFwcQgKLGCVurN7GCOHMZpLYdKULrIpNQE3iy5fD
-	YLaIgIZE2+opLCA2s0C+xOFDl8FsIQFbid0/XzCC2JwCdhI3ll1iA7GFBZwkti78yQRiswio
-	SnSuv8oMYvMC1d9/s4oFwhaU+DH5HtRMLYnN25pYIWx5ic1r3gLVcwBdqi7x6K8uxAlGEhva
-	NjJDlIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P
-	3cQIjtxnUjsYVzZYHGIU4GBU4uGdoGMbKMSaWFZcmXuIUYKDWUmEd+Umm0Ah3pTEyqrUovz4
-	otKc1OJDjMlAj05klhJNzgcmlbySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YW
-	pBbBbGHi4JRqYJSSdDJ7csrl0P6aCQVKKlzi8eyZMvXnwubNCdvwd64U/63fWovy3oYI3NVL
-	+te/paJt8wHT8/eE/jhzaUqGCXBOWbTHKVKptz1thnzPba8ltuo+Vp/YC4pUvLPrXW8eFmPN
-	35GZWSoRaXX3/q6OBa2Tfy+JrlQX0Eh6P3V2aufSLxO9jJVnKLEUZyQaajEXFScCAK7IOVIg	AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI12/attAg1m9IhYHt2paTFw5mdni
+	8sJLrBaXd81hc2DxmND/idFj8wotj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mo4vv0pU8Fu
+	joqVy5+xNDD+YOti5OSQEDCRODbtECuELSZx4d56sLiQwDJGiQ+vLGBq1q08wdLFyAUUn84o
+	0fhjGzuE84tR4s6tD8wgVWwCahJfvhxmB7FFBDQk2lZPYQGxmQXyJQ4fuswCMdVWYvfPF4wg
+	NqeAncSNZZfAtgkD2V3nfoL1sgioSpzp/8QEYvMC1X/cOpUdwhaU+DH5HtRMLYnN25pYIWx5
+	ic1r3gLdwAF0qbrEo7+6ECcYSUzvWMwMUSIise/FO0aQmyUEjrFL/Pp7ihlil4DEt8mHWCB6
+	ZSU2HWCGeFhS4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiY73ixNzi0rx0
+	veT83E2MkIjs38F494D1IcZkoPUTmaVEk/OBEZ1XEm9obGZkYWpiamxkbmlGmrCSOK9ai3Wg
+	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkaWZ1oH2n7E3ZTal1A3PzhlaR+/d79V0wK7Gfeq
+	bsxiXaln8Fbsqt61RY3X/D/OZeTMPffv9MWbJz2tM5qKUjcv57vh6OU20bNFukTCeWHqxjOa
+	UrahUycvu/dINuv9+i2XNP79vK3vXPyaV+8FV+t2r98Xvjmtf/WeZcHa1bOf/Zpeczc6qfia
+	EktxRqKhFnNRcSIABogngd4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV2/attAgxWrBSwObtW0mLhyMrPF
+	5YWXWC0u75rD5sDiMaH/E6PH5hVaHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMeYcXz7U6aC3RwVK5c/Y2lg/MHWxcjJISFgIrFu5QkWCFtM4sK99UBx
+	Lg4hgemMEo0/trFDOL8YJe7c+sAMUsUmoCbx5cthdhBbREBDom31FLBuZoF8icOHLoPZQgK2
+	Ert/vmAEsTkF7CRuLLsEtk0YyO469xOsl0VAVeJM/ycmEJsXqP7j1qnsELagxI/J96Bmakls
+	3tbECmHLS2xe8xboBg6gS9UlHv3VhTjBSGJ6x2JmiBIRiX0v3jFOYBSahWTSLCSTZiGZNAtJ
+	ywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwRH/THoH46oGi0OMAhyMSjy8E3RsA4VY
+	E8uKK3MPMUpwMCuJ8K7cZBMoxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnAZJRXEm9obGJm
+	ZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYys87VCDvGIZMdoLJFvvTT/
+	/P4T8/V3cr86wPfAUiXz+wudFBeu3a/Oidk07PgaeXS77d2GxOx9rLXnLyz3mc6mZvz+JtPj
+	V1Od++2C9awecnL577Le6yRm7JGuuFpvc/jpOqGZ0858Y42XMXr1mztBe3LNDemC24dXXlDc
+	vqzqrYTxvx8MXTOUWIozEg21mIuKEwH8BuVlPAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,55 +59,38 @@ Use devm_kzalloc() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/pcf50633-charger.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+ drivers/power/rx51_battery.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
-index c2122a7..17fd77f 100644
---- a/drivers/power/pcf50633-charger.c
-+++ b/drivers/power/pcf50633-charger.c
-@@ -373,7 +373,7 @@ static int pcf50633_mbc_probe(struct platform_device *pdev)
- 	int i;
- 	u8 mbcs1;
+diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
+index 8208888..f9dc9ff 100644
+--- a/drivers/power/rx51_battery.c
++++ b/drivers/power/rx51_battery.c
+@@ -202,7 +202,7 @@ static int rx51_battery_probe(struct platform_device *pdev)
+ 	struct rx51_device_info *di;
+ 	int ret;
  
--	mbc = kzalloc(sizeof(*mbc), GFP_KERNEL);
-+	mbc = devm_kzalloc(&pdev->dev, sizeof(*mbc), GFP_KERNEL);
- 	if (!mbc)
+-	di = kzalloc(sizeof(*di), GFP_KERNEL);
++	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
+ 	if (!di)
  		return -ENOMEM;
  
-@@ -413,7 +413,6 @@ static int pcf50633_mbc_probe(struct platform_device *pdev)
- 	ret = power_supply_register(&pdev->dev, &mbc->adapter);
+@@ -217,7 +217,6 @@ static int rx51_battery_probe(struct platform_device *pdev)
+ 	ret = power_supply_register(di->dev, &di->bat);
  	if (ret) {
- 		dev_err(mbc->pcf->dev, "failed to register adapter\n");
--		kfree(mbc);
+ 		platform_set_drvdata(pdev, NULL);
+-		kfree(di);
  		return ret;
  	}
  
-@@ -421,7 +420,6 @@ static int pcf50633_mbc_probe(struct platform_device *pdev)
- 	if (ret) {
- 		dev_err(mbc->pcf->dev, "failed to register usb\n");
- 		power_supply_unregister(&mbc->adapter);
--		kfree(mbc);
- 		return ret;
- 	}
+@@ -230,7 +229,6 @@ static int rx51_battery_remove(struct platform_device *pdev)
  
-@@ -430,7 +428,6 @@ static int pcf50633_mbc_probe(struct platform_device *pdev)
- 		dev_err(mbc->pcf->dev, "failed to register ac\n");
- 		power_supply_unregister(&mbc->adapter);
- 		power_supply_unregister(&mbc->usb);
--		kfree(mbc);
- 		return ret;
- 	}
+ 	power_supply_unregister(&di->bat);
+ 	platform_set_drvdata(pdev, NULL);
+-	kfree(di);
  
-@@ -461,8 +458,6 @@ static int pcf50633_mbc_remove(struct platform_device *pdev)
- 	power_supply_unregister(&mbc->adapter);
- 	power_supply_unregister(&mbc->ac);
- 
--	kfree(mbc);
--
  	return 0;
  }
- 
 -- 
 1.7.2.5
 
