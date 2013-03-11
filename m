@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3CKHia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:38:30 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42727 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3CKHi2 (ORCPT
+	id S1752913Ab3CKHjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:39:15 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:33538 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab3CKHjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:38:28 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-watchdog@vger.kernel.org
-Cc: wim@iguana.be, ben-linux@fluff.org, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] watchdog: convert to devm_ioremap_resource()
-Date: Mon, 11 Mar 2013 09:38:23 +0200
-Message-Id: <1362987503-6449-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Mar 2013 03:39:13 -0400
+Date: Mon, 11 Mar 2013 08:39:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mats Liljegren <mats.liljegren@enea.com>
+Subject: Re: [ANNOUNCE] 3.9-rc1-nohz1
+Message-ID: <20130311073908.GA9988@gmail.com>
+References: <1362790259-7837-1-git-send-email-fweisbec@gmail.com>
+ <20130309082650.GA9944@gmail.com>
+ <CAFTL4hxt5y2hdh0_LNA-08+jNTYwkjeg=QHBfgNf_X_XCHie1w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hxt5y2hdh0_LNA-08+jNTYwkjeg=QHBfgNf_X_XCHie1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- drivers/watchdog/ath79_wdt.c   |    8 +++-----
- drivers/watchdog/davinci_wdt.c |    8 +++-----
- drivers/watchdog/s3c2410_wdt.c |    9 +++------
- 3 files changed, 9 insertions(+), 16 deletions(-)
+> >  - Please outline how the current TODO entries affect upstream
+> >    mergability. Does it reduce the 'full'-ness of this dynticks mode?
+> >    Outright buggy behavior? Other trade-offs?
+> 
+> Mostly this is about upstream features that won't be working with the current 
+> state of the art: enqueuing a posix cpu timer on a nohz CPU may result in it being 
+> ignored by the target due to the lack of ticking until expiration, perf events may 
+> not be round-robined, etc... I'll make sure to document all these items.
 
-diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
-index 8987990..d184c48 100644
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -253,11 +253,9 @@ static int ath79_wdt_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	wdt_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!wdt_base) {
--		dev_err(&pdev->dev, "unable to remap memory region\n");
--		return -ENOMEM;
--	}
-+	wdt_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(wdt_base))
-+		return PTR_ERR(wdt_base);
- 
- 	wdt_clk = devm_clk_get(&pdev->dev, "wdt");
- 	if (IS_ERR(wdt_clk))
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 7df1fdc..005fd71 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -221,11 +221,9 @@ static int davinci_wdt_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	wdt_base = devm_request_and_ioremap(dev, wdt_mem);
--	if (!wdt_base) {
--		dev_err(dev, "ioremap failed\n");
--		return -EADDRNOTAVAIL;
--	}
-+	wdt_base = devm_ioremap_resource(dev, wdt_mem);
-+	if (IS_ERR(wdt_base))
-+		return PTR_ERR(wdt_base);
- 
- 	ret = misc_register(&davinci_wdt_miscdev);
- 	if (ret < 0) {
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index c1a221c..393496c 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -330,12 +330,9 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
- 	}
- 
- 	/* get the memory region for the watchdog timer */
--	wdt_base = devm_request_and_ioremap(dev, wdt_mem);
--	if (wdt_base == NULL) {
--		dev_err(dev, "failed to devm_request_and_ioremap() region\n");
--		ret = -ENOMEM;
--		goto err;
--	}
-+	wdt_base = devm_ioremap_resource(dev, wdt_mem);
-+	if (IS_ERR(wdt_base))
-+		return PTR_ERR(wdt_base);
- 
- 	DBG("probe: mapped wdt_base=%p\n", wdt_base);
- 
--- 
-1.7.9.5
+So it's "buggy behavior of existing features" it appears?
 
+It would be really useful to add some sort of 'make it safe easily' mechanism:
+
+ - if a posix timer is enqueued on a CPU, then the CPU should have a timer ticking
+
+ - if perf events are active on a CPU, then it should have a timer ticking
+
+this would make it mergable, as most of the time systems don't have any of these 
+facilities active. Plus this dynticks-off mechanism would also allow us to cover any 
+other (still unknown) facility that regresses. So it would be nice to have that 
+option.
+
+Later on we could gradually eliminate these limitations. It would also be apparent 
+where they are, just from grepping the source.
+
+If that's done, and if it tests fine for a few weeks then this could be v3.10 
+material IMO.
+
+Thanks,
+
+	Ingo
