@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3CKQsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:48:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60699 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab3CKQsV (ORCPT
+	id S1753976Ab3CKQyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:54:47 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60648 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3CKQyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:48:21 -0400
-Date: Mon, 11 Mar 2013 16:47:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: gang.chen@asianux.com, mgherzan@gmail.com, nschichan@freebox.fr,
-        daniel.borkmann@tik.ee.ethz.ch, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
-Message-ID: <20130311164741.GL4977@n2100.arm.linux.org.uk>
-References: <513BECDA.3030803@asianux.com> <20130310.171238.330349067962026661.davem@davemloft.net>
+	Mon, 11 Mar 2013 12:54:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130310.171238.330349067962026661.davem@davemloft.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <513BECDA.3030803@asianux.com>
+References: <513BECDA.3030803@asianux.com>
+Date: Mon, 11 Mar 2013 17:54:43 +0100
+Message-ID: <CAN9tCgRw9RKRVosMAKqqYTvkEmEXEqjGm3Sp0ajE+ibd+V9a_Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
+From: Mircea Gherzan <mgherzan@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, nschichan@freebox.fr,
+        daniel.borkmann@tik.ee.ethz.ch, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org >> linux-kernel@vger.kernel.org" 
+	<linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 05:12:38PM -0400, David Miller wrote:
-> From: Chen Gang <gang.chen@asianux.com>
-> Date: Sun, 10 Mar 2013 10:15:54 +0800
-> 
-> > 
-> >   k is u32 which never < 0, need type cast, or cause issue.
-> > 
-> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> Who will apply this, ARM folks or me?
+2013/3/10 Chen Gang <gang.chen@asianux.com>:
+>
+>   k is u32 which never < 0, need type cast, or cause issue.
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arm/net/bpf_jit_32.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index 6828ef6..a0bd8a7 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -576,7 +576,7 @@ load_ind:
+>                         /* x = ((*(frame + k)) & 0xf) << 2; */
+>                         ctx->seen |= SEEN_X | SEEN_DATA | SEEN_CALL;
+>                         /* the interpreter should deal with the negative K */
+> -                       if (k < 0)
+> +                       if ((int)k < 0)
+>                                 return -1;
+>                         /* offset in r1: we might have to take the slow path */
+>                         emit_mov_i(r_off, k, ctx);
+> --
+> 1.7.7.6
 
-I'm happy if you wish to take the patch:
-
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
-Thanks.
+Acked-by: Mircea Gherzan <mgherzan@gmail.com>
