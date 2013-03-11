@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3CKXQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 19:16:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52869 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754132Ab3CKXQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 19:16:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
-Date: Tue, 12 Mar 2013 00:23:08 +0100
-Message-ID: <3505617.pgqBjPDzlA@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1361550275-5716-1-git-send-email-nzimmer@sgi.com>
-References: <51265E0F.6090209@sgi.com> <1361550275-5716-1-git-send-email-nzimmer@sgi.com>
+	id S1754721Ab3CKXQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 19:16:12 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:64018 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab3CKXQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 19:16:09 -0400
+Date: Tue, 12 Mar 2013 00:16:01 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2] drm/i915: clarify reasoning for the access_ok call
+Message-ID: <20130311231601.GD3872@bremse>
+Mail-Followup-To: Kees Cook <keescook@chromium.org>,
+	linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org
+References: <20130311213735.GA22493@www.outflux.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311213735.GA22493@www.outflux.net>
+X-Operating-System: Linux bremse 3.8.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 22, 2013 10:24:33 AM Nathan Zimmer wrote:
-> I am noticing the cpufreq_driver_lock is quite hot.
-> On an idle 512 system perf shows me most of the system time is spent on this
-> lock.  This is quite significant as top shows 5% of time in system time.
-> My solution was to first convert the lock to a rwlock and then to the rcu.
+On Mon, Mar 11, 2013 at 02:37:35PM -0700, Kees Cook wrote:
+> This clarifies the comment above the access_ok check so a missing
+> VERIFY_READ doesn't alarm anyone.
 > 
-> v2: Rebase
-> 
-> v3: Read the RCU documentation instead of skimming it.  Also I based on 
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.9-rc1
-> I assumed that was what you would prefer Rafael.
-> 
-> v4: Removed an unnecessary syncronize_rcu().
-> 
-> 
-> Nathan Zimmer (2):
->   cpufreq: Convert the cpufreq_driver_lock to a rwlock
->   cpufreq: Convert the cpufreq_driver_lock to use the rcu
-> 
->  drivers/cpufreq/cpufreq.c | 286 ++++++++++++++++++++++++++++++++++------------
->  1 file changed, 211 insertions(+), 75 deletions(-)
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+> v2:
+>  - rewrote comment, thanks to Chris Wilson
 
-I'm going to take patch [1/2] for v3.10, but patch [2/2] still needs some
-work it seems.  Is that correct?  If so, are you going to send an update?
-
-Rafael
-
+Queued for -next, thanks for the patch. Fyi I prefer the patch changelog
+in the actual commit message so that it gets recorded in git. Usually it's
+not that interesting, but sometimes knowning the history of a patch is
+really important. I've fixed this while applying.
+-Daniel
+> ---
+>  drivers/gpu/drm/i915/i915_gem_execbuffer.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> index bf7ceca..89c4039 100644
+> --- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> +++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> @@ -751,7 +751,11 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+>  
+>  		length = exec[i].relocation_count *
+>  			sizeof(struct drm_i915_gem_relocation_entry);
+> -		/* we may also need to update the presumed offsets */
+> +		/*
+> +		 * We must check that the entire relocation array is safe
+> +		 * to read, but since we may need to update the presumed
+> +		 * offsets during execution, check for full write access.
+> +		 */
+>  		if (!access_ok(VERIFY_WRITE, ptr, length))
+>  			return -EFAULT;
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
