@@ -1,240 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab3CKHd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:33:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab3CKHdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:33:25 -0400
-Message-ID: <513D88BC.4010108@redhat.com>
-Date: Mon, 11 Mar 2013 15:33:16 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: remove tx polling state
-References: <1362630716-57674-1-git-send-email-jasowang@redhat.com> <20130310165030.GA13687@redhat.com> <513D8316.90907@redhat.com>
-In-Reply-To: <513D8316.90907@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753067Ab3CKHf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:35:26 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:51354 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab3CKHfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 03:35:24 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: cpufreq@vger.kernel.org
+Cc: rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch, jason@lakedaemon.net,
+        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] kirkwood: fix coccicheck warnings
+Date: Mon, 11 Mar 2013 09:35:19 +0200
+Message-Id: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 03:09 PM, Jason Wang wrote:
-> On 03/11/2013 12:50 AM, Michael S. Tsirkin wrote:
->> On Thu, Mar 07, 2013 at 12:31:56PM +0800, Jason Wang wrote:
->>> After commit 2b8b328b61c799957a456a5a8dab8cc7dea68575 (vhost_net: handle polling
->>> errors when setting backend), we in fact track the polling state through
->>> poll->wqh, so there's no need to duplicate the work with an extra
->>> vhost_net_polling_state. So this patch removes this and make the code simpler.
->>>
->>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> I'd prefer a more radical approach, since I think it can be even
->> simpler: tap and macvtap backends both only send events when tx queue
->> overruns which should almost never happen.
->>
->> So let's just start polling when VQ is enabled
->> drop all poll_start/stop calls on data path.
-> I think then it may damage the performance at least for tx. We
-> conditionally enable the tx polling in the past to reduce the
-> unnecessary wakeups of vhost thead when zerocopy or sndbuf is used. If
-> we don't stop the polling, after each packet were transmitted,
-> tap/macvtap will try to wakeup the vhost thread.
+Convert all uses of devm_request_and_ioremap() to the newly introduced
+devm_ioremap_resource() which provides more consistent error handling.
 
-Or for zerocopy, looks like we can in fact just depends on
-ubuf->callback in stead of tx polling to wakeup tx thread to do tx
-completion, so we can even drop the num_pends and VHOST_MAX_PEND stuffs.
-> Actually, I'm considering the reverse direction. Looks like we can
-> disable the rx polling like what we do for tx in handle_tx() to reduce
-> the uncessary wakeups.
->> The optimization was written for packet socket backend but I know of no
->> one caring about performance of that one that much.
->> Needs a bit of perf testing to make sure I didn't miss anything though
->> but it's not 3.9 material anyway so there's no rush.
->>
->>> ---
->>>  drivers/vhost/net.c   |   60 ++++++++----------------------------------------
->>>  drivers/vhost/vhost.c |    3 ++
->>>  2 files changed, 13 insertions(+), 50 deletions(-)
->>>
->>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->>> index 959b1cd..d1a03dd 100644
->>> --- a/drivers/vhost/net.c
->>> +++ b/drivers/vhost/net.c
->>> @@ -64,20 +64,10 @@ enum {
->>>  	VHOST_NET_VQ_MAX = 2,
->>>  };
->>>  
->>> -enum vhost_net_poll_state {
->>> -	VHOST_NET_POLL_DISABLED = 0,
->>> -	VHOST_NET_POLL_STARTED = 1,
->>> -	VHOST_NET_POLL_STOPPED = 2,
->>> -};
->>> -
->>>  struct vhost_net {
->>>  	struct vhost_dev dev;
->>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
->>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
->>> -	/* Tells us whether we are polling a socket for TX.
->>> -	 * We only do this when socket buffer fills up.
->>> -	 * Protected by tx vq lock. */
->>> -	enum vhost_net_poll_state tx_poll_state;
->>>  	/* Number of TX recently submitted.
->>>  	 * Protected by tx vq lock. */
->>>  	unsigned tx_packets;
->>> @@ -155,28 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
->>>  	}
->>>  }
->>>  
->>> -/* Caller must have TX VQ lock */
->>> -static void tx_poll_stop(struct vhost_net *net)
->>> -{
->>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
->>> -		return;
->>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
->>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
->>> -}
->>> -
->>> -/* Caller must have TX VQ lock */
->>> -static int tx_poll_start(struct vhost_net *net, struct socket *sock)
->>> -{
->>> -	int ret;
->>> -
->>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
->>> -		return 0;
->>> -	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
->>> -	if (!ret)
->>> -		net->tx_poll_state = VHOST_NET_POLL_STARTED;
->>> -	return ret;
->>> -}
->>> -
->>>  /* In case of DMA done not in order in lower device driver for some reason.
->>>   * upend_idx is used to track end of used idx, done_idx is used to track head
->>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
->>> @@ -231,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
->>>  static void handle_tx(struct vhost_net *net)
->>>  {
->>>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
->>> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
->>>  	unsigned out, in, s;
->>>  	int head;
->>>  	struct msghdr msg = {
->>> @@ -256,7 +225,7 @@ static void handle_tx(struct vhost_net *net)
->>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>>  	if (wmem >= sock->sk->sk_sndbuf) {
->>>  		mutex_lock(&vq->mutex);
->>> -		tx_poll_start(net, sock);
->>> +		vhost_poll_start(poll, sock->file);
->>>  		mutex_unlock(&vq->mutex);
->>>  		return;
->>>  	}
->>> @@ -265,7 +234,7 @@ static void handle_tx(struct vhost_net *net)
->>>  	vhost_disable_notify(&net->dev, vq);
->>>  
->>>  	if (wmem < sock->sk->sk_sndbuf / 2)
->>> -		tx_poll_stop(net);
->>> +		vhost_poll_stop(poll);
->>>  	hdr_size = vq->vhost_hlen;
->>>  	zcopy = vq->ubufs;
->>>  
->>> @@ -287,7 +256,7 @@ static void handle_tx(struct vhost_net *net)
->>>  
->>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
->>> -				tx_poll_start(net, sock);
->>> +				vhost_poll_start(poll, sock->file);
->>>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>  				break;
->>>  			}
->>> @@ -298,7 +267,7 @@ static void handle_tx(struct vhost_net *net)
->>>  				    (vq->upend_idx - vq->done_idx) :
->>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
->>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
->>> -				tx_poll_start(net, sock);
->>> +				vhost_poll_start(poll, sock->file);
->>>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>>  				break;
->>>  			}
->>> @@ -364,7 +333,7 @@ static void handle_tx(struct vhost_net *net)
->>>  			}
->>>  			vhost_discard_vq_desc(vq, 1);
->>>  			if (err == -EAGAIN || err == -ENOBUFS)
->>> -				tx_poll_start(net, sock);
->>> +				vhost_poll_start(poll, sock->file);
->>>  			break;
->>>  		}
->>>  		if (err != len)
->>> @@ -627,7 +596,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>>  
->>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
->>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
->>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->>>  
->>>  	f->private_data = n;
->>>  
->>> @@ -637,32 +605,24 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>>  static void vhost_net_disable_vq(struct vhost_net *n,
->>>  				 struct vhost_virtqueue *vq)
->>>  {
->>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>>  	if (!vq->private_data)
->>>  		return;
->>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->>> -		tx_poll_stop(n);
->>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->>> -	} else
->>> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
->>> +	vhost_poll_stop(poll);
->>>  }
->>>  
->>>  static int vhost_net_enable_vq(struct vhost_net *n,
->>>  				struct vhost_virtqueue *vq)
->>>  {
->>> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>>  	struct socket *sock;
->>> -	int ret;
->>>  
->>>  	sock = rcu_dereference_protected(vq->private_data,
->>>  					 lockdep_is_held(&vq->mutex));
->>>  	if (!sock)
->>>  		return 0;
->>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
->>> -		ret = tx_poll_start(n, sock);
->>> -	} else
->>> -		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
->>>  
->>> -	return ret;
->>> +	return vhost_poll_start(poll, sock->file);
->>>  }
->>>  
->>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
->>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
->>> index 9759249..4eecdb8 100644
->>> --- a/drivers/vhost/vhost.c
->>> +++ b/drivers/vhost/vhost.c
->>> @@ -89,6 +89,9 @@ int vhost_poll_start(struct vhost_poll *poll, struct file *file)
->>>  	unsigned long mask;
->>>  	int ret = 0;
->>>  
->>> +	if (poll->wqh)
->>> +		return 0;
->>> +
->>>  	mask = file->f_op->poll(file, &poll->table);
->>>  	if (mask)
->>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
->>> -- 
->>> 1.7.1
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+devm_ioremap_resource() provides its own error messages so all explicit
+error messages can be removed from the failure code paths.
+
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
+ drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
+ drivers/thermal/kirkwood_thermal.c |    8 +++-----
+ 3 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+index 0e83e3c..6052476 100644
+--- a/drivers/cpufreq/kirkwood-cpufreq.c
++++ b/drivers/cpufreq/kirkwood-cpufreq.c
+@@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "Cannot get memory resource\n");
+ 		return -ENODEV;
+ 	}
+-	priv.base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!priv.base) {
+-		dev_err(&pdev->dev, "Cannot ioremap\n");
+-		return -EADDRNOTAVAIL;
+-	}
++	priv.base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(priv.base))
++		return PTR_ERR(priv.base);
+ 
+ 	np = of_find_node_by_path("/cpus/cpu@0");
+ 	if (!np)
+diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
+index 670aa1e..53aad73 100644
+--- a/drivers/cpuidle/cpuidle-kirkwood.c
++++ b/drivers/cpuidle/cpuidle-kirkwood.c
+@@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
+ 	if (res == NULL)
+ 		return -EINVAL;
+ 
+-	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!ddr_operation_base)
+-		return -EADDRNOTAVAIL;
++	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(ddr_operation_base))
++		return PTR_ERR(ddr_operation_base);
+ 
+ 	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
+ 	device->state_count = KIRKWOOD_MAX_STATES;
+diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
+index 65cb4f0..e5500ed 100644
+--- a/drivers/thermal/kirkwood_thermal.c
++++ b/drivers/thermal/kirkwood_thermal.c
+@@ -85,11 +85,9 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	priv->sensor = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!priv->sensor) {
+-		dev_err(&pdev->dev, "Failed to request_ioremap memory\n");
+-		return -EADDRNOTAVAIL;
+-	}
++	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(priv->sensor))
++		return PTR_ERR(priv->sensor);
+ 
+ 	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
+ 					       priv, &ops, NULL, 0, 0);
+-- 
+1.7.9.5
 
