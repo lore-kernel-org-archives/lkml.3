@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3CKLw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:52:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47501 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753886Ab3CKLwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:52:25 -0400
-Date: Mon, 11 Mar 2013 12:52:20 +0100
-From: Jan Kara <jack@suse.cz>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: Howard Chu <hyc@symas.com>, Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-Message-ID: <20130311115220.GB29799@quack.suse.cz>
-References: <5136320E.8030109@symas.com>
- <20130307154312.GG6723@quack.suse.cz>
- <20130308020854.GC23767@cmpxchg.org>
- <5139975F.9070509@symas.com>
- <20130308084246.GA4411@shutemov.name>
- <5139B214.3040303@symas.com>
- <5139FA13.8090305@genband.com>
- <5139FD27.1030208@symas.com>
- <513A8ECB.8000504@ubuntu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A8ECB.8000504@ubuntu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753998Ab3CKLzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:55:48 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:51425 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753751Ab3CKLzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 07:55:47 -0400
+Message-ID: <1363002940.3137.65.camel@x61.thuisdomein>
+Subject: [PATCH] sh: remove references to CPU_SUBTYPE_SH7764
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 12:55:40 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 11:55:41.0316 (UTC) FILETIME=[5AB19440:01CE1E4F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-03-13 20:22:19, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 03/08/2013 10:00 AM, Howard Chu wrote:
-> > Yes, that's what I was thinking. I added a 
-> > posix_madvise(..POSIX_MADV_RANDOM) but that had no effect on the
-> > test.
-> 
-> Yep, that's because it isn't implemented.
-  Why do you think so? AFAICS it is implemented by setting VM_RAND_READ
-flag in the VMA and do_async_mmap_readahead() and do_sync_mmap_readahead()
-check for the flag and don't do anything if it is set...
+Since release v2.6.29 the tree has a few references to the Kconfig
+symbol CPU_SUBTYPE_SH7764 and the Kconfig macro
+CONFIG_CPU_SUBTYPE_SH7764. But the actual symbol CPU_SUBTYPE_SH7764 was
+never added to the tree. Perhaps no one noticed because these references
+were never used alone. Anyhow, these references serve no purpose and
+can be removed.
 
-								Honza
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested: I don't have the hardware. Neither do I have the compiler for
+this architecture at hand.
+
+ arch/sh/drivers/dma/Kconfig                | 2 +-
+ arch/sh/include/cpu-sh4/cpu/dma-register.h | 1 -
+ arch/sh/include/cpu-sh4a/cpu/dma.h         | 3 +--
+ drivers/net/ethernet/renesas/sh_eth.c      | 1 -
+ 4 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/sh/drivers/dma/Kconfig b/arch/sh/drivers/dma/Kconfig
+index cfd5b90..504afb4 100644
+--- a/arch/sh/drivers/dma/Kconfig
++++ b/arch/sh/drivers/dma/Kconfig
+@@ -12,7 +12,7 @@ config SH_DMA_IRQ_MULTI
+ 	default y if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
+ 		     CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7750R || \
+ 		     CPU_SUBTYPE_SH7751R || CPU_SUBTYPE_SH7091  || \
+-		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7764  || \
++		     CPU_SUBTYPE_SH7763  || \
+ 		     CPU_SUBTYPE_SH7780  || CPU_SUBTYPE_SH7785  || \
+ 		     CPU_SUBTYPE_SH7760
+ 
+diff --git a/arch/sh/include/cpu-sh4/cpu/dma-register.h b/arch/sh/include/cpu-sh4/cpu/dma-register.h
+index 02788b6..9cd81e5 100644
+--- a/arch/sh/include/cpu-sh4/cpu/dma-register.h
++++ b/arch/sh/include/cpu-sh4/cpu/dma-register.h
+@@ -32,7 +32,6 @@
+ #define CHCR_TS_HIGH_SHIFT	(20 - 2)	/* 2 bits for shifted low TS */
+ #elif defined(CONFIG_CPU_SUBTYPE_SH7757) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7763) || \
+-	defined(CONFIG_CPU_SUBTYPE_SH7764) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7780) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7785)
+ #define CHCR_TS_LOW_MASK	0x00000018
+diff --git a/arch/sh/include/cpu-sh4a/cpu/dma.h b/arch/sh/include/cpu-sh4a/cpu/dma.h
+index 89afb65..8ceccce 100644
+--- a/arch/sh/include/cpu-sh4a/cpu/dma.h
++++ b/arch/sh/include/cpu-sh4a/cpu/dma.h
+@@ -14,8 +14,7 @@
+ #define DMTE4_IRQ	evt2irq(0xb80)
+ #define DMAE0_IRQ	evt2irq(0xbc0)	/* DMA Error IRQ*/
+ #define SH_DMAC_BASE0	0xFE008020
+-#elif defined(CONFIG_CPU_SUBTYPE_SH7763) || \
+-	defined(CONFIG_CPU_SUBTYPE_SH7764)
++#elif defined(CONFIG_CPU_SUBTYPE_SH7763)
+ #define DMTE0_IRQ	evt2irq(0x640)
+ #define DMTE4_IRQ	evt2irq(0x780)
+ #define DMAE0_IRQ	evt2irq(0x6c0)
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index 33e9617..44a3d7b 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -1653,7 +1653,6 @@ static int sh_eth_open(struct net_device *ndev)
+ 
+ 	ret = request_irq(ndev->irq, sh_eth_interrupt,
+ #if defined(CONFIG_CPU_SUBTYPE_SH7763) || \
+-	defined(CONFIG_CPU_SUBTYPE_SH7764) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7757)
+ 				IRQF_SHARED,
+ #else
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.11.7
+
