@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3CKUoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:44:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64200 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3CKUoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:44:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: Regulator API ignored return values
-Date: Mon, 11 Mar 2013 20:43:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Axel Lin <axel.lin@ingics.com>, Jingoo Han <jg1.han@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dtor@mail.ru>
+	id S1754427Ab3CKUoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:44:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754365Ab3CKUoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:44:30 -0400
+Date: Mon, 11 Mar 2013 16:44:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311204423.GA25307@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303112043.53334.arnd@arndb.de>
-X-Provags-ID: V02:K0:+VPKhT0yKlUHJtPtwFtTKAHnjzjW4LckqtDdB6WTkF/
- y6DWK6fwBmzKjyj2YMhM4cVK1oGBzepWqH/6LwdQaGYndv8vhE
- 8EzG1q53gNFgbSWOWYhoK4htYj3t22gKMtk8Pkrmlt/NCNE3Ps
- 0FbxfBfBGdDRNfcVZBdhz7l9Ytib+NCvd6g9S8ueSZokz/UlA+
- /+W+xfCV++xCsap3+uRQ81yT4Eg6TR2T0oxet8VTPOKLvFn3/z
- HDCth7ahFPy3eTv7H2CXSSSjswBmib74tXgWJwojKKPozH8EA+
- YKh7u5LBlXLmTCchM0h6pCWPAfMztdywjJA8OIvm2WM9EZW4Za
- gZagzuboM9KrAMvoOkDk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311201334.GA444@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Mar 11, 2013 at 09:13:34PM +0100, Markus Trippelsdorf wrote:
 
-Mark Brown has added a patch to Linux-next that warns about certain regulator
-API functions being called without checking the results, which seems to have
-uncovered a number of bugs.
+ > > Worked fine for me on two separate machines.  Could it be a network problem
+ > > perhaps ? If something is mangling the packet before it hits the disk,
+ > > that would explain it.  What NIC do you use ?
+ > 
+ > I normally use ATL1E, but I've dusted off my E100 and the issue is also
+ > reproducible on the Intel card.
+ 
+ok, good to rule that out at least.
 
-I've added a few people to Cc that might be interested in the reports and
-in fixing these bugs. Below you can find a list of all instances I found
-building the ARM defconfigs.
+ > > Or maybe you could isolate it to a filesystem problem using something
+ > > like fsx ?
+ > 
+ > I've found fsx on your homepage, but I've no idea on how to use this
+ > tool. Any pointers?
 
-	Arnd
+cd to the mount point you want to test, and then 'fsx test' will create
+a couple files there, and stress them.
 
-==> build/dove_defconfig/faillog <==
-/git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-/git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
+	Dave
 
-==> build/imx_v4_v5_defconfig/faillog <==
-/git/arm-soc/drivers/input/touchscreen/ads7846.c: In function '__ads7846_enable':
-/git/arm-soc/drivers/input/touchscreen/ads7846.c:239:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-/git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c: In function 'l4f00242t03_lcd_init':
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c:58:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c:61:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/imx_v6_v7_defconfig/faillog <==
-/git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-/git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c: In function 'l4f00242t03_lcd_init':
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c:58:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/video/backlight/l4f00242t03.c:61:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/magician_defconfig/faillog <==
-/git/arm-soc/drivers/usb/otg/gpio_vbus.c: In function 'set_vbus_draw':
-/git/arm-soc/drivers/usb/otg/gpio_vbus.c:72:20: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/mmp2_defconfig/faillog <==
-/git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-/git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/omap2plus_defconfig/faillog <==
-/git/arm-soc/drivers/input/touchscreen/ads7846.c: In function '__ads7846_enable':
-/git/arm-soc/drivers/input/touchscreen/ads7846.c:239:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/tegra_defconfig/faillog <==
-/git/arm-soc/arch/arm/mach-tegra/board-harmony-pcie.c: In function 'harmony_pcie_init':
-/git/arm-soc/arch/arm/mach-tegra/board-harmony-pcie.c:65:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-/git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-
-==> build/u8500_defconfig/faillog <==
-/git/arm-soc/arch/arm/mach-ux500/board-mop500.c: In function 'mop500_prox_activate':
-/git/arm-soc/arch/arm/mach-ux500/board-mop500.c:432:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/mfd/ab8500-gpadc.c: In function 'ab8500_gpadc_runtime_resume':
-/git/arm-soc/drivers/mfd/ab8500-gpadc.c:598:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/mfd/ab8500-gpadc.c: In function 'ab8500_gpadc_probe':
-/git/arm-soc/drivers/mfd/ab8500-gpadc.c:655:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
-/git/arm-soc/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c: In function 'synaptics_rmi4_resume':
-/git/arm-soc/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1085:18: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
