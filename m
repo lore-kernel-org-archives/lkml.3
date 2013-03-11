@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3CKTz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:55:59 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:59659 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab3CKTz5 (ORCPT
+	id S1754301Ab3CKT5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:57:24 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44776 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753621Ab3CKT5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:55:57 -0400
-Date: Mon, 11 Mar 2013 16:55:50 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Sunguk Lee <d3m3vilurr@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth device 0cf3:3008 should map AR 3012
-Message-ID: <20130311195550.GB22451@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Sunguk Lee <d3m3vilurr@gmail.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1363030918-8186-1-git-send-email-d3m3vilurr@gmail.com>
+	Mon, 11 Mar 2013 15:57:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363030918-8186-1-git-send-email-d3m3vilurr@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363029780-2902-1-git-send-email-valentin.ilie@gmail.com>
+References: <1363029780-2902-1-git-send-email-valentin.ilie@gmail.com>
+Date: Mon, 11 Mar 2013 21:57:22 +0200
+X-Google-Sender-Auth: AMc-rKsJ8wikHgOgbO4CbCOp9ms
+Message-ID: <CAEnQRZDdOO9DAZoypCs5jV5Zy0u=btX-zQV7kxo6HxoXZxEN3w@mail.gmail.com>
+Subject: Re: [PATCH] Arch: x86: kernel: smpboot.c: Remove unused variable
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: Valentin Ilie <valentin.ilie@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sunguk,
-
-* Sunguk Lee <d3m3vilurr@gmail.com> [2013-03-12 04:41:58 +0900]:
-
-> T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
-> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=0cf3 ProdID=3008 Rev= 0.01
-> S:  Manufacturer=Atheros Communications
-> S:  Product=Bluetooth USB Host Controller
-> S:  SerialNumber=Alaska Day 2006
-> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-> 
-> Signed-off-by: Sunguk Lee <d3m3vilurr@gmail.com>
+On Mon, Mar 11, 2013 at 9:23 PM, Valentin Ilie <valentin.ilie@gmail.com> wrote:
+> Remove unused variable 'c'
+>
+> Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
 > ---
->  drivers/bluetooth/ath3k.c |    2 ++
->  drivers/bluetooth/btusb.c |    1 +
->  2 files changed, 3 insertions(+)
+>  arch/x86/kernel/smpboot.c |    1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index a6ceaed..7bc998a 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
+>         unsigned int highest_subcstate = 0;
+>         int i;
+>         void *mwait_ptr;
+> -       struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
+>
+>         if (!this_cpu_has(X86_FEATURE_MWAIT))
+>                 return;
+> --
+> 1.7.10.4
 
-Patch has been applied to bluetooth.git. Thanks.
+Hi Valentin,
 
-	Gustavo
+I guess a better subject for this patch should be
+x86, smpboot: Remove unused variable
+
+Use git log arch/x86/kernel/smpboot.c to check previous commits.
+
+thanks,
+Daniel.
