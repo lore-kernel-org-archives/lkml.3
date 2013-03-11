@@ -1,37 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab3CKNte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:49:34 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:56993 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3CKNtc (ORCPT
+	id S1751941Ab3CKNuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:50:07 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:50807 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3CKNuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:49:32 -0400
+	Mon, 11 Mar 2013 09:50:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
-References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
-Date: Mon, 11 Mar 2013 21:49:31 +0800
-X-Google-Sender-Auth: -5P-sADiWgfnp59yaNAobhYPi38
-Message-ID: <CAOh2x==ECHa4=5Xz+7B9KVJh_8FM1=QndoFkG-unR_8+4PeTWg@mail.gmail.com>
-Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Cc: cpufreq@vger.kernel.org, rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch,
-        jason@lakedaemon.net, rob.lee@linaro.org, len.brown@intel.com,
-        khilman@ti.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1363009649.3137.78.camel@x61.thuisdomein>
+References: <1363007760.3137.69.camel@x61.thuisdomein>
+	<20130311133720.GB25910@S2101-09.ap.freescale.net>
+	<CAOMZO5AhjKV=ja+Agr_pMg4ghB6Vux2ciBnr_M8SQuS4AQ4Bzg@mail.gmail.com>
+	<1363009649.3137.78.camel@x61.thuisdomein>
+Date: Mon, 11 Mar 2013 10:50:04 -0300
+Message-ID: <CAOMZO5DFh_H5murFk_qR=v+kA2vu46rEjgU4cjjrO2gKtYA5mQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: imx: fix typo "DEBUG_IMX50_IMX53_UART"
+From: Fabio Estevam <festevam@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 3:35 PM, Silviu-Mihai Popescu
-<silviupopescu1990@gmail.com> wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
->
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
->
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+On Mon, Mar 11, 2013 at 10:47 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> That's not correct:
+>     $ git grep -n DEBUG_IMX50_IMX53_UART v3.9-rc2
+>     v3.9-rc2:arch/arm/Kconfig.debug:495:                                            DEBUG_IMX50_IMX53_UART || \
+
+Yes, you are right. I missed to remove one entry.
