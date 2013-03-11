@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab3CKUwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:52:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46045 "EHLO mail.zytor.com"
+	id S1754498Ab3CKUxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:53:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58258 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab3CKUwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:52:40 -0400
-Message-ID: <513E438D.5010303@zytor.com>
-Date: Mon, 11 Mar 2013 13:50:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754043Ab3CKUw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:52:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
+   d="scan'208";a="300274032"
+Date: Mon, 11 Mar 2013 20:52:51 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: bounds check execbuffer relocations
+Message-ID: <20130311205251.GB31324@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+References: <20130311192716.GA18244@www.outflux.net>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-References: <20130311182655.GB12107@redhat.com> <513E2695.3080707@zytor.com> <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com> <513E28B8.3000502@zytor.com> <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com> <20130311192021.GF12107@redhat.com> <513E36CB.5040908@zytor.com> <20130311201245.GC14738@redhat.com> <513E3C44.9030402@zytor.com> <87hakhk6xu.fsf@xmission.com> <20130311204530.GE14738@redhat.com>
-In-Reply-To: <20130311204530.GE14738@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311192716.GA18244@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 01:45 PM, Vivek Goyal wrote:
-> 
-> - Now we use dracut generated initramfs and it has been growing in size.
->   Now systemd has been pulled in too.
-> 
+On Mon, Mar 11, 2013 at 12:27:16PM -0700, Kees Cook wrote:
+> It is possible to wrap the counter used to allocate the buffer for
+> relocation copies. This could lead to heap writing overflows.
 
-And the solution to that isn't obvious?
+Seems a sensible check, just in the wrong location. You need to do the
+checking upfront in validate_exec_list() so that the error condition is
+always hit and that the limits are applied consistently to all
+execbuffers.
+-Chris
 
-> - makdumpfile needs more memory to dump large machines.
-> 
-> There are so many places where memory usage is going up and trying
-> to keep track of all that has been very hard.
-
-Seriously, in particular the O(n) memory requirements you may want to
-think very very hard about.
-
-	-hpa
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
