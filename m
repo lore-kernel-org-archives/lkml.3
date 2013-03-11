@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab3CKBvq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 21:51:46 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52899 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab3CKBvp (ORCPT
+	id S1753600Ab3CKCHv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 22:07:51 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:54507 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457Ab3CKCHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 21:51:45 -0400
-Message-ID: <513D387F.6060101@huawei.com>
-Date: Mon, 11 Mar 2013 09:50:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Sun, 10 Mar 2013 22:07:50 -0400
+Date: Sun, 10 Mar 2013 22:07:49 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Sathya Perla <Sathya.Perla@Emulex.Com>
+Cc: Ivan Vecera <ivecera@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Message-ID: <1916441684.11871533.1362967669686.JavaMail.root@redhat.com>
+In-Reply-To: <CF9D1877D81D214CB0CA0669EFAE020C0F259965@CMEXMB1.ad.emulex.com>
+Subject: Re: be2net failed to initialize regression
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 1/1] do not abuse ->cred_guard_mutex in threadgroup_lock()
-References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org> <513A9A67.60909@huawei.com> <20130309032936.GT14556@mtj.dyndns.org> <513AE918.7020704@huawei.com> <20130309200046.GA8149@redhat.com> <20130309200106.GB8149@redhat.com>
-In-Reply-To: <20130309200106.GB8149@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.66.13.149]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/10 4:01, Oleg Nesterov wrote:
-> threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-> thread_group_leader() is stable. This doesn't look nice, the scope
-> of this lock in do_execve() is huge.
-> 
-> And as Dave pointed out this can lead to deadlock, we have the
-> following dependencies:
-> 
-> 	do_execve:		cred_guard_mutex -> i_mutex
-> 	cgroup_mount:		i_mutex -> cgroup_mutex
-> 	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
-> 
-> Change de_thread() to take threadgroup_change_begin() around the
-> switch-the-leader code and change threadgroup_lock() to avoid
-> ->cred_guard_mutex.
-> 
-> Note that de_thread() can't sleep with ->group_rwsem held, this
-> can obviously deadlock with the exiting leader if the writer is
-> active, so it does threadgroup_change_end() before schedule().
-> 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Acked-by: Li Zefan <lizefan@huawei.com>
 
+----- Original Message -----
+> From: "Sathya Perla" <Sathya.Perla@Emulex.Com>
+> To: "CAI Qian" <caiqian@redhat.com>, netdev@vger.kernel.org
+> Cc: "Ivan Vecera" <ivecera@redhat.com>, "LKML" <linux-kernel@vger.kernel.org>
+> Sent: Friday, March 8, 2013 6:22:24 PM
+> Subject: RE: be2net failed to initialize regression
+> 
+> > -----Original Message-----
+> > From: netdev-owner@vger.kernel.org
+> > [mailto:netdev-owner@vger.kernel.org]
+> > On Behalf Of CAI Qian
+> > 
+> > Emulex CNA card failed to initialize using 3.8 and the latest
+> > upstream kernel,
+> > 
+> > [   87.479859] be2net 0000:04:00.0: POST timeout; stage=0xc911
+> > [   87.515978] be2net 0000:04:00.0: Emulex OneConnect
+> > initialization failed
+> > [   87.557130] be2net: probe of 0000:04:00.0 failed with error -1
+> > 
+> > lspci output,
+> > 
+> > 04:00.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC
+> > (rev 02)
+> > 04:00.1 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC
+> > (rev 02)
+> > 
+> > 04:00.1 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC
+> > (rev 02)
+> >         Subsystem: Hewlett-Packard Company NC551i Dual Port
+> >         FlexFabric 10Gb
+> > Adapter
+> > 
+> > Confirmed no such problem using 3.7 kernel. Reproduced every time
+> > and still
+> > bisecting. Just want to give an early head-up to see if anyone saw
+> > sometime
+> > obvious.
+> 
+> Could you give me the FW version (ethtool -i) of the adapter (after
+> be2net successfully
+> probes in a 3.7 kernel.)
+firmware-version: 2.104.281.0
+> 
+> If the FW version is as old as 2.x, then the culprit commit that
+> broke compatibility with old FW versions
+> on some (BE2) chips I is:
+> commit 1bc8e7e4f36c0c19dd7dea29e7c248b7c6ef3a15
+> be2net: fix access to SEMAPHORE reg
+> 
+> The fix for this is (still on David's net tree I guess):
+> commit c5b3ad4c67989c778e4753be4f91dc7193a04d21
+> be2net: use CSR-BAR SEMAPHORE reg for BE2/BE3
+> 
+> Dave, can these 2 commits be queued for stable too:
+> commit1: c5b3ad4c67989c778e4753be4f91dc7193a04d21
+> commit2: 1bc8e7e4f36c0c19dd7dea29e7c248b7c6ef3a15
+> 
+> thanks,
+> -Sathya
+> 
