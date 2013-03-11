@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3CKPbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:31:43 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57740 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751919Ab3CKPbm (ORCPT
+	id S1754104Ab3CKPdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:33:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50231 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753864Ab3CKPct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:31:42 -0400
-Message-ID: <1363015899.3137.91.camel@x61.thuisdomein>
-Subject: [PATCH] [media] ts2020: use customise option correctly
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Konstantin Dimitrov <kosio.dimitrov@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Mar 2013 16:31:39 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Mar 2013 15:31:40.0408 (UTC) FILETIME=[86EA1780:01CE1E6D]
-X-RcptDomain: vger.kernel.org
+	Mon, 11 Mar 2013 11:32:49 -0400
+Date: Mon, 11 Mar 2013 11:32:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <tom.leiming@gmail.com>
+cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hans de Goede <hdegoede@redhat.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ldv-project@linuxtesting.org>
+Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
+ reset a storage device
+In-Reply-To: <CACVXFVNuJa0i9gtUWP2tVexwjKF0k1MJ2bA9V5M28LUWFJt5DQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1303111127030.2246-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig entry for "TS2020 based tuners" defaults to modular if
-DVB_FE_CUSTOMISE is set. But that Kconfig symbol was replaced with
-MEDIA_SUBDRV_AUTOSELECT as of v3.7. So use the new symbol. And negate
-the logic, so we are in line with all the similar entries in this file.
+On Mon, 11 Mar 2013, Ming Lei wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Entirely untested.
+> On Sat, Mar 9, 2013 at 12:50 AM, Alexey Khoroshilov
+> <khoroshilov@ispras.ru> wrote:
+> > As it was described by Oliver Neukum in commit acbe2fe
+> > "USB: Don't use GFP_KERNEL while we cannot reset a storage device":
+> >
+> >   Memory allocations with GFP_KERNEL can cause IO to a storage device
+> >   which can fail resulting in a need to reset the device. Therefore
+> >   GFP_KERNEL cannot be safely used between usb_lock_device()
+> >   and usb_unlock_device(). Replace by GFP_NOIO.
+> >
+> > The patch fixes the same issue in usb/core/devio.c.
+> > All the allocations fixed are under usb_lock_device() from usbdev_do_ioctl().
+> 
+> I am wondering why the device lock is needed for usbdev_do_ioctl()? Looks
+> device lock isn't required for USB transfer of kernel driver.
 
- drivers/media/dvb-frontends/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Of course you have to lock the device before changing its driver.  What 
+would happen if two different threads tried to change a device's driver 
+at the same time?
 
-diff --git a/drivers/media/dvb-frontends/Kconfig b/drivers/media/dvb-frontends/Kconfig
-index 6f809a7..0e2ec6f 100644
---- a/drivers/media/dvb-frontends/Kconfig
-+++ b/drivers/media/dvb-frontends/Kconfig
-@@ -210,7 +210,7 @@ config DVB_SI21XX
- config DVB_TS2020
- 	tristate "Montage Tehnology TS2020 based tuners"
- 	depends on DVB_CORE && I2C
--	default m if DVB_FE_CUSTOMISE
-+	default m if !MEDIA_SUBDRV_AUTOSELECT
- 	help
- 	  A DVB-S/S2 silicon tuner. Say Y when you want to support this tuner.
- 
--- 
-1.7.11.7
+usbdev_do_ioctl() needs to acquire the device lock in order to prevent 
+races with driver_disconnect() and usbdev_remove().
+
+Alan Stern
 
