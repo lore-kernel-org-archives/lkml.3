@@ -1,147 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3CKSoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:44:18 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:59125 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab3CKSoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:44:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130311182655.GB12107@redhat.com>
-References: <513D52BA.3070206@redhat.com>
-	<1362977817-23297-1-git-send-email-yinghai@kernel.org>
-	<20130311144853.GB8482@redhat.com>
-	<20130311150256.GC8482@redhat.com>
-	<CAE9FiQW1CHJ-j9aFgdtKEsgyZSTHTS1HzgMSGM8FnV7Ns3kUvw@mail.gmail.com>
-	<20130311182655.GB12107@redhat.com>
-Date: Mon, 11 Mar 2013 11:44:16 -0700
-X-Google-Sender-Auth: P_HdPyB0gI5Fa3iBGfLzA9-AmyE
-Message-ID: <CAE9FiQUu-AwKhsAdUautjxduW5a-pxpv8XFY-p1LWSmb-itATg@mail.gmail.com>
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=f46d04462e0a68228604d7aa8f94
+	id S1754218Ab3CKSqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:46:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752686Ab3CKSqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:46:15 -0400
+Date: Mon, 11 Mar 2013 14:46:09 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v3 2/7] vfs: Add O_DENYREAD/WRITE flags support for open
+ syscall
+Message-ID: <20130311144609.2ba86964@corrin.poochiereds.net>
+In-Reply-To: <1362065133-9490-3-git-send-email-piastry@etersoft.ru>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<1362065133-9490-3-git-send-email-piastry@etersoft.ru>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d04462e0a68228604d7aa8f94
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 28 Feb 2013 19:25:28 +0400
+Pavel Shilovsky <piastry@etersoft.ru> wrote:
 
-On Mon, Mar 11, 2013 at 11:26 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Mar 11, 2013 at 10:58:39AM -0700, Yinghai Lu wrote:
->> On Mon, Mar 11, 2013 at 8:02 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> >
->> > IOW, wouldn't it be better that crashkernel=X first tries to find
->> > requested amount of memory in lowest memory area available/possible.
->>
->> Yest, that is much better, and user even could stay with old kexec-tools
->> for system that does not tons of memory.
->> And I don't need to mess up with auto setting crashkernel_low or export
->> swiotlb_size() etc.
->>
->> Please check if you are ok with attached one.
->>
-> Hi Yinghai,
->
-> In mutt your patches are showing as attachment instead of inline. Mutt
-> thinks attachment is of type "application/octet-stream". Not sure if
-> this is configuration issue on my part or something is going on your
-> end.
+> If O_DENYMAND flag is specified, O_DENYREAD/WRITE/MAND flags are
+> translated to flock's flags:
+> 
+> !O_DENYREAD  -> LOCK_READ
+> !O_DENYWRITE -> LOCK_WRITE
+> O_DENYMAND   -> LOCK_MAND
+> 
+> and set through flock_lock_file on a file.
+> 
+> This change affects opens that use O_DENYMAND flag - all other
+> native Linux opens don't care about these flags. It allow us to
+> enable this feature for applications that need it (e.g. NFS and
+> Samba servers that export the same directory for Windows clients,
+> or Wine applications that access the same files simultaneously).
+> 
+> Create codepath is slightly changed to prevent data races on
+> newely created files: when open with O_CREAT can return with -ETXTBSY
+> error for successfully created files due to a deny lock set by
+> another task.
+> 
+> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> ---
+>  fs/locks.c         | 116 +++++++++++++++++++++++++++++++++++++++++++++++------
+>  fs/namei.c         |  44 ++++++++++++++++++--
+>  include/linux/fs.h |   6 +++
+>  3 files changed, 151 insertions(+), 15 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index a94e331..0cc7d1b 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -605,20 +605,81 @@ static int posix_locks_conflict(struct file_lock *caller_fl, struct file_lock *s
+>  	return (locks_conflict(caller_fl, sys_fl));
+>  }
+>  
+> -/* Determine if lock sys_fl blocks lock caller_fl. FLOCK specific
+> - * checking before calling the locks_conflict().
+> +static unsigned int
+> +deny_flags_to_cmd(unsigned int flags)
+> +{
+> +	unsigned int cmd = LOCK_MAND;
+> +
+> +	if (!(flags & O_DENYREAD))
+> +		cmd |= LOCK_READ;
+> +	if (!(flags & O_DENYWRITE))
+> +		cmd |= LOCK_WRITE;
+> +
+> +	return cmd;
+> +}
+> +
+> +/*
+> + * locks_mand_conflict - Determine if there's a share reservation conflict
+> + * @caller_fl: lock we're attempting to acquire
+> + * @sys_fl: lock already present on system that we're checking against
+> + *
+> + * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
+> + * tell us whether the reservation allows other readers and writers.
+> + *
+> + * We only check against other LOCK_MAND locks, so applications that want to
+> + * use share mode locking will only conflict against one another. "normal"
+> + * applications that open files won't be affected by and won't themselves
+> + * affect the share reservations.
+>   */
+> -static int flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
+> +static int
+> +locks_mand_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
+>  {
+> -	/* FLOCK locks referring to the same filp do not conflict with
+> +	unsigned char caller_type = caller_fl->fl_type;
+> +	unsigned char sys_type = sys_fl->fl_type;
+> +	fmode_t caller_fmode = caller_fl->fl_file->f_mode;
+> +	fmode_t sys_fmode = sys_fl->fl_file->f_mode;
+> +
+> +	/* they can only conflict if they're both LOCK_MAND */
+> +	if (!(caller_type & LOCK_MAND) || !(sys_type & LOCK_MAND))
+> +		return 0;
+> +
+> +	if (!(caller_type & LOCK_READ) && (sys_fmode & FMODE_READ))
+> +		return 1;
+> +	if (!(caller_type & LOCK_WRITE) && (sys_fmode & FMODE_WRITE))
+> +		return 1;
+> +	if (!(sys_type & LOCK_READ) && (caller_fmode & FMODE_READ))
+> +		return 1;
+> +	if (!(sys_type & LOCK_WRITE) && (caller_fmode & FMODE_WRITE))
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Determine if lock sys_fl blocks lock caller_fl. FLOCK specific checking
+> + * before calling the locks_conflict(). Boolean is_mand indicates whether
+> + * we should use a share reservation scheme or not.
+> + */
+> +static int
+> +flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl,
+> +		     bool is_mand)
 
-I sent it via gmail and it only can have attachment instead of inline.
+I'm not sure you really need to add this new is_mand bool. Won't that
+be equivalent to (caller_fl->fl_type & LOCK_MAND)?
 
->
-> I have few more concerns.
->
-> - Are we able to reserve 512MB memory now below 896MB. I remember so
->   far it was broken.
+> +{
+> +	/*
+> +	 * FLOCK locks referring to the same filp do not conflict with
+>  	 * each other.
+>  	 */
+> -	if (!IS_FLOCK(sys_fl) || (caller_fl->fl_file == sys_fl->fl_file))
+> -		return (0);
+> -	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND))
+> +	if (!IS_FLOCK(sys_fl))
+> +		return 0;
+> +	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND)) {
+> +		if (is_mand)
+> +			return locks_mand_conflict(caller_fl, sys_fl);
+> +		else
+> +			return 0;
+> +	}
+> +	if (caller_fl->fl_file == sys_fl->fl_file)
+>  		return 0;
+>  
+> -	return (locks_conflict(caller_fl, sys_fl));
+> +	return locks_conflict(caller_fl, sys_fl);
+>  }
+>  
+>  void
+> @@ -697,14 +758,19 @@ static int posix_locks_deadlock(struct file_lock *caller_fl,
+>  	return 0;
+>  }
+>  
+> -/* Try to create a FLOCK lock on filp. We always insert new FLOCK locks
+> +/*
+> + * Try to create a FLOCK lock on filp. We always insert new FLOCK locks
+>   * after any leases, but before any posix locks.
+>   *
+>   * Note that if called with an FL_EXISTS argument, the caller may determine
+>   * whether or not a lock was successfully freed by testing the return
+>   * value for -ENOENT.
+> + *
+> + * Take @is_conflict callback that determines how to check if locks have
+> + * conflicts or not.
+>   */
+> -static int flock_lock_file(struct file *filp, struct file_lock *request)
+> +static int
+> +flock_lock_file(struct file *filp, struct file_lock *request, bool is_mand)
 
-It also depends BIOS memmap layout. some bios put reserved on middle of ram
-like just below 512M or just 2G.
+Ditto here on the is_mand bool. I think you can determine that from
+request->fl_type. Right?
 
->
-> - If reserving memory below 896MB fails, we immediately switch to
->   reserving anywhere till MAXMEM. Would it make sense to first try
->   to reserve it below 4G (so that we don't have to worry much about
->   swiotlb or iommu being on).
+>  {
+>  	struct file_lock *new_fl = NULL;
+>  	struct file_lock **before;
+> @@ -760,7 +826,7 @@ find_conflict:
+>  			break;
+>  		if (IS_LEASE(fl))
+>  			continue;
+> -		if (!flock_locks_conflict(request, fl))
+> +		if (!flock_locks_conflict(request, fl, is_mand))
+>  			continue;
+>  		error = -EAGAIN;
+>  		if (!(request->fl_flags & FL_SLEEP))
+> @@ -783,6 +849,32 @@ out:
+>  	return error;
+>  }
+>  
+> +/*
+> + * Determine if a file is allowed to be opened with specified access and deny
+> + * modes. Lock the file and return 0 if checks passed, otherwise return a error
+> + * code.
+> + */
+> +int
+> +deny_lock_file(struct file *filp)
+> +{
+> +	struct file_lock *lock;
+> +	int error = 0;
+> +
+> +	if (!(filp->f_flags & O_DENYMAND))
+> +		return error;
+> +
+> +	error = flock_make_lock(filp, &lock, deny_flags_to_cmd(filp->f_flags));
+> +	if (error)
+> +		return error;
+> +
+> +	error = flock_lock_file(filp, lock, true);
+> +	if (error == -EAGAIN)
+> +		error = -ETXTBSY;
+> +
 
-ok.
+I think EBUSY would be a better return code here. ETXTBSY is returned
+in more specific circumstances -- mostly when you're opening a file for
+write that is being executed.
 
-Attached again.
+> +	locks_free_lock(lock);
+> +	return error;
+> +}
+> +
+>  static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
+>  {
+>  	struct file_lock *fl;
+> @@ -1589,7 +1681,7 @@ int flock_lock_file_wait(struct file *filp, struct file_lock *fl)
+>  	int error;
+>  	might_sleep();
+>  	for (;;) {
+> -		error = flock_lock_file(filp, fl);
+> +		error = flock_lock_file(filp, fl, false);
+>  		if (error != FILE_LOCK_DEFERRED)
+>  			break;
+>  		error = wait_event_interruptible(fl->fl_wait, !fl->fl_next);
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 43a97ee..c1f7e08 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2559,9 +2559,14 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
+>  	 * here.
+>  	 */
+>  	error = may_open(&file->f_path, acc_mode, open_flag);
+> -	if (error)
+> +	if (error) {
+>  		fput(file);
+> +		goto out;
+> +	}
+>  
+> +	error = deny_lock_file(file);
+> +	if (error)
+> +		fput(file);
+>  out:
+>  	dput(dentry);
+>  	return error;
+> @@ -2771,9 +2776,9 @@ retry_lookup:
+>  	}
+>  	mutex_lock(&dir->d_inode->i_mutex);
+>  	error = lookup_open(nd, path, file, op, got_write, opened);
+> -	mutex_unlock(&dir->d_inode->i_mutex);
+>  
+>  	if (error <= 0) {
+> +		mutex_unlock(&dir->d_inode->i_mutex);
+>  		if (error)
+>  			goto out;
+>  
+> @@ -2791,8 +2796,32 @@ retry_lookup:
+>  		will_truncate = false;
+>  		acc_mode = MAY_OPEN;
+>  		path_to_nameidata(path, nd);
+> -		goto finish_open_created;
+> +
+> +		/*
+> +		 * Unlock parent i_mutex later when the open finishes - prevent
+> +		 * races when a file can be locked with a deny lock by another
+> +		 * task that opens the file.
+> +		 */
+> +		error = may_open(&nd->path, acc_mode, open_flag);
+> +		if (error) {
+> +			mutex_unlock(&dir->d_inode->i_mutex);
+> +			goto out;
+> +		}
+> +		file->f_path.mnt = nd->path.mnt;
+> +		error = finish_open(file, nd->path.dentry, NULL, opened);
+> +		if (error) {
+> +			mutex_unlock(&dir->d_inode->i_mutex);
+> +			if (error == -EOPENSTALE)
+> +				goto stale_open;
+> +			goto out;
+> +		}
+> +		error = deny_lock_file(file);
+> +		mutex_unlock(&dir->d_inode->i_mutex);
+> +		if (error)
+> +			goto exit_fput;
+> +		goto opened;
+>  	}
+> +	mutex_unlock(&dir->d_inode->i_mutex);
+>  
+>  	/*
+>  	 * create/update audit record if it already exists.
+> @@ -2885,6 +2914,15 @@ finish_open_created:
+>  			goto stale_open;
+>  		goto out;
+>  	}
+> +	/*
+> +	 * Lock parent i_mutex to prevent races with deny locks on newely
+> +	 * created files.
+> +	 */
+> +	mutex_lock(&dir->d_inode->i_mutex);
+> +	error = deny_lock_file(file);
+> +	mutex_unlock(&dir->d_inode->i_mutex);
+> +	if (error)
+> +		goto exit_fput;
+>  opened:
+>  	error = open_check_o_direct(file);
+>  	if (error)
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 7617ee0..347e1de 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1005,6 +1005,7 @@ extern int lease_modify(struct file_lock **, int);
+>  extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+>  extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
+>  extern void locks_delete_block(struct file_lock *waiter);
+> +extern int deny_lock_file(struct file *);
+>  extern void lock_flocks(void);
+>  extern void unlock_flocks(void);
+>  #else /* !CONFIG_FILE_LOCKING */
+> @@ -1153,6 +1154,11 @@ static inline void locks_delete_block(struct file_lock *waiter)
+>  {
+>  }
+>  
+> +static inline int deny_lock_file(struct file *filp)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline void lock_flocks(void)
+>  {
+>  }
 
-Thanks
 
-Yinghai
-
---f46d04462e0a68228604d7aa8f94
-Content-Type: application/octet-stream; name="fix_crashkernel_low_v2.patch"
-Content-Disposition: attachment; filename="fix_crashkernel_low_v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_he5zb9e20
-
-U3ViamVjdDogW1BBVENIXSB4ODYsIGtkdW1wLCA2NGJpdDogVHJ5IGFsbG9jYXRlIGNyYXNoa2Vy
-bmVsIHVuZGVyIDg5Nk0gYXQgZmlyc3QKCk9uIDY0Yml0IHN5c3RlbSwgd2UgdHJ5IGFsbG9jYXRl
-IGNyYXNoa2VybmVsIGFib3ZlIDRHIGF0IGZpcnN0LAphbmQgZG9lcyBub3Qgc2V0IGxvdyByYW5n
-ZSBmb3IgY3Jhc2hrZXJuZWwgaWYgdGhlIHVzZXIgZG9lcyBub3QKc3BlY2lmeSB0aGF0LgoKVGhh
-dCBjYXVzZSByZWdyZXNzaW9ucyBvbiBzeXN0ZW0gdGhhdCBkb2VzIG5vdCBzdXBwb3J0IGludGVs
-X2lvbW11CnByb3Blcmx5LgoKQ2hhbyBzYWlkIHRoYXQgaGlzIHN5c3RlbSBkb2VzIHdvcmsgd2Vs
-bCBvbiAzLjggd2l0aG91dCBleHRyYSBwYXJhbWV0ZXIuCmV2ZW4gaW9tbXUgZG9lcyBub3Qgd29y
-ayB3aXRoIGtkdW1wLgoKQ2hhbmdlIHRvIHRyeSB1c2Ugb2xkIDg5Nk0gbGltaXQgYXQgZmlyc3Qg
-YW5kIHRoZW4gdHJ5IHRvIGFsbG9jYXRlIGFib3ZlIDRHLgoKQWxzbyB1cGRhdGUga2VybmVsIHBh
-cmFtZXRlcnMgdG8gbWFrZSBpdCBjbGVhciB3aGVuIHRoYXQgaXMgbmVlZGVkLgoKLXYyOiB0cnkg
-NEcgYmVsb3cgYW5kIGF0IGxhc3QgdHJ5IE1BWE1FTSBhY2NvcmRpbmcgdG8gVml2ZWsuCgpSZXBv
-cnRlZC1ieTogV0FORyBDaGFvIDxjaGFvd2FuZ0ByZWRoYXQuY29tPgpTdWdnZXN0ZWQtYnk6IFZp
-dmVrIEdveWFsIDx2Z295YWxAcmVkaGF0LmNvbT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8
-eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBEb2N1bWVudGF0aW9uL2tlcm5lbC1wYXJhbWV0ZXJz
-LnR4dCB8ICAgMTAgKysrKysrKy0tLQogYXJjaC94ODYva2VybmVsL3NldHVwLmMgICAgICAgICAg
-ICAgfCAgIDE1ICsrKysrKysrKysrKysrLQogMiBmaWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRpb25z
-KCspLCA0IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9Eb2N1bWVudGF0aW9uL2tlcm5l
-bC1wYXJhbWV0ZXJzLnR4dAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9Eb2N1bWVudGF0
-aW9uL2tlcm5lbC1wYXJhbWV0ZXJzLnR4dAorKysgbGludXgtMi42L0RvY3VtZW50YXRpb24va2Vy
-bmVsLXBhcmFtZXRlcnMudHh0CkBAIC01OTYsOSArNTk2LDYgQEAgYnl0ZXMgcmVzcGVjdGl2ZWx5
-LiBTdWNoIGxldHRlciBzdWZmaXhlcwogCQkJaXMgc2VsZWN0ZWQgYXV0b21hdGljYWxseS4gQ2hl
-Y2sKIAkJCURvY3VtZW50YXRpb24va2R1bXAva2R1bXAudHh0IGZvciBmdXJ0aGVyIGRldGFpbHMu
-CiAKLQljcmFzaGtlcm5lbF9sb3c9c2l6ZVtLTUddCi0JCQlbS05MLCB4ODZdIHBhcnRzIHVuZGVy
-IDRHLgotCiAJY3Jhc2hrZXJuZWw9cmFuZ2UxOnNpemUxWyxyYW5nZTI6c2l6ZTIsLi4uXVtAb2Zm
-c2V0XQogCQkJW0tOTF0gU2FtZSBhcyBhYm92ZSwgYnV0IGRlcGVuZHMgb24gdGhlIG1lbW9yeQog
-CQkJaW4gdGhlIHJ1bm5pbmcgc3lzdGVtLiBUaGUgc3ludGF4IG9mIHJhbmdlIGlzCkBAIC02MDYs
-NiArNjAzLDEzIEBAIGJ5dGVzIHJlc3BlY3RpdmVseS4gU3VjaCBsZXR0ZXIgc3VmZml4ZXMKIAkJ
-CWEgbWVtb3J5IHVuaXQgKGFtb3VudFtLTUddKS4gU2VlIGFsc28KIAkJCURvY3VtZW50YXRpb24v
-a2R1bXAva2R1bXAudHh0IGZvciBhbiBleGFtcGxlLgogCisJY3Jhc2hrZXJuZWxfbG93PXNpemVb
-S01HXQorCQkJW0tOTCwgeDg2XzY0XSByYW5nZSB1bmRlciA0Ry4gV2hlbiBjcmFzaGtlcm5lbD0g
-cmVxdWVzdAorCQkJbW9yZSB0aGFuIDUxMk0sIGtlcm5lbCBhbGxvY2F0ZSBwaHlzaWNhbCBtZW1v
-cnkgcmVnaW9uCisJCQlhYm92ZSA0RywgdGhhdCBjYXVzZSBzZWNvbmQga2VybmVsIGNyYXNoIG9u
-IHN5c3RlbSB0aGF0CisJCQluZWVkIHN3aW90bGIgbGF0ZXIuIFRoaXMgb25lIGxldCB1c2VyIHRv
-IHNwZWNpZnkgZXh0cmEKKwkJCWxvdyByYW5nZSB1bmRlciA0RyBmb3Igc2Vjb25kIGtlcm5lbC4K
-KwogCWNzODl4MF9kbWE9CVtIVyxORVRdCiAJCQlGb3JtYXQ6IDxkbWE+CiAKSW5kZXg6IGxpbnV4
-LTIuNi9hcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9hcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9z
-ZXR1cC5jCkBAIC01MDcsMTEgKzUwNywxMiBAQCBzdGF0aWMgdm9pZCBfX2luaXQgbWVtYmxvY2tf
-eDg2X3Jlc2VydmVfCiAvKgogICogS2VlcCB0aGUgY3Jhc2gga2VybmVsIGJlbG93IHRoaXMgbGlt
-aXQuICBPbiAzMiBiaXRzIGVhcmxpZXIga2VybmVscwogICogd291bGQgbGltaXQgdGhlIGtlcm5l
-bCB0byB0aGUgbG93IDUxMiBNaUIgZHVlIHRvIG1hcHBpbmcgcmVzdHJpY3Rpb25zLgorICogT24g
-NjQgYml0cywga2V4ZWMtdG9vbHMgKGJlZm9yZSAyLjAuNCkgbGltaXRzIHVzIHRvIDg5NiBNaUIu
-CiAgKi8KICNpZmRlZiBDT05GSUdfWDg2XzMyCiAjIGRlZmluZSBDUkFTSF9LRVJORUxfQUREUl9N
-QVgJKDUxMiA8PCAyMCkKICNlbHNlCi0jIGRlZmluZSBDUkFTSF9LRVJORUxfQUREUl9NQVgJTUFY
-TUVNCisjIGRlZmluZSBDUkFTSF9LRVJORUxfQUREUl9NQVgJKDg5NiA8PCAyMCkKICNlbmRpZgog
-CiBzdGF0aWMgdm9pZCBfX2luaXQgcmVzZXJ2ZV9jcmFzaGtlcm5lbF9sb3codm9pZCkKQEAgLTU3
-MSw2ICs1NzIsMTggQEAgc3RhdGljIHZvaWQgX19pbml0IHJlc2VydmVfY3Jhc2hrZXJuZWwodgog
-CQljcmFzaF9iYXNlID0gbWVtYmxvY2tfZmluZF9pbl9yYW5nZShhbGlnbm1lbnQsCiAJCQkgICAg
-ICAgQ1JBU0hfS0VSTkVMX0FERFJfTUFYLCBjcmFzaF9zaXplLCBhbGlnbm1lbnQpOwogCisjaWZk
-ZWYgQ09ORklHX1g4Nl82NAorCQkvKiB0cnkgdW5kZXIgNEcgYXQgZmlyc3QgKi8KKwkJaWYgKCFj
-cmFzaF9iYXNlKQorCQkJY3Jhc2hfYmFzZSA9IG1lbWJsb2NrX2ZpbmRfaW5fcmFuZ2UoYWxpZ25t
-ZW50LAorCQkJCSAgICAgICAxVUw8PDMyLCBjcmFzaF9zaXplLCBhbGlnbm1lbnQpOworCQkvKiBh
-Ym92ZSA0RyBub3cgKi8KKwkJaWYgKCFjcmFzaF9iYXNlKQorCQkJY3Jhc2hfYmFzZSA9IG1lbWJs
-b2NrX2ZpbmRfaW5fcmFuZ2UoYWxpZ25tZW50LAorCQkJCSAgICAgICBNQVhNRU0sIGNyYXNoX3Np
-emUsIGFsaWdubWVudCk7CisKKyNlbmRpZgorCiAJCWlmICghY3Jhc2hfYmFzZSkgewogCQkJcHJf
-aW5mbygiY3Jhc2hrZXJuZWwgcmVzZXJ2YXRpb24gZmFpbGVkIC0gTm8gc3VpdGFibGUgYXJlYSBm
-b3VuZC5cbiIpOwogCQkJcmV0dXJuOwo=
---f46d04462e0a68228604d7aa8f94--
+-- 
+Jeff Layton <jlayton@redhat.com>
