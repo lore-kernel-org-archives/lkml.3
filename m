@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3CKJI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:08:57 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:49478 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab3CKJI4 (ORCPT
+	id S1753448Ab3CKJLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:11:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49495 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3CKJLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:08:56 -0400
-Message-ID: <513D9F23.5050705@linaro.org>
-Date: Mon, 11 Mar 2013 10:08:51 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 11 Mar 2013 05:11:21 -0400
+Message-ID: <513DA009.9080601@ti.com>
+Date: Mon, 11 Mar 2013 14:42:41 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-CC: lenb@kernel.org, len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 V2] intel_idle: Removing the redundant calculating
- for dev->state_count
-References: <1362674529.31506.17.camel@cliu38-desktop-build>  <1362754926.31506.42.camel@cliu38-desktop-build>  <1362755074.31506.45.camel@cliu38-desktop-build> <1362998657.31506.52.camel@cliu38-desktop-build>
-In-Reply-To: <1362998657.31506.52.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: <john.stultz@linaro.org>, <tglx@linutronix.de>, <viresh.kumar@linaro.org>,
+        <jacob.jun.pan@linux.intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 0/4] time: dynamic irq affinity
+References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org> <513CC404.6000200@ti.com> <513CCF60.6060406@linaro.org> <513D4E79.5090307@ti.com> <513D9896.2010304@linaro.org>
+In-Reply-To: <513D9896.2010304@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 11:44 AM, Chuansheng Liu wrote:
+On Monday 11 March 2013 02:10 PM, Daniel Lezcano wrote:
+> On 03/11/2013 04:24 AM, Santosh Shilimkar wrote:
+>> On Sunday 10 March 2013 11:52 PM, Daniel Lezcano wrote:
 > 
-> In function intel_idle_cpu_init() and intel_idle_cpuidle_driver_init(),
-> they are having the same for(;;) loop to count the ->state_count.
+> [ ... ]
 > 
-> Although intel_idle_cpu_init() can be called at runtime CPU HOTPLUG case,
-> but max_cstate can not be changed at runtime.
+>>> I don't think it is the case for all the ARM platforms, at least we
+>>> tested it on vexpress TC2 and u8500, and the number of IPI were reduced
+>>> very significantly increasing the idle time for cpu0. TC2 will need
+>>> another optimization on another area for the idle wake up to gain real
+>>> improvements.
+>>>
+>> You are missing my point. TC2 can be an exception since the SGI can wakeup
+>> CPUs even from low power states where local timer's are stalled. Is that
+>> the case with U8500 ?
 > 
-> So the dev->state_count should be == drv->state_count, in the function
-> cpuidle_register_device() has done the initialization.
+> Well, the cpuidle driver is not going into a deep idle state to check
+> this out.
 > 
-> Here we can clean up these pieces of code.
+> AFAICT this board has a specific firmware with the PRCMU (a device
+> managing the power on the board) and it replaces the GIC when going to
+> deep idle state, especially by reconnecting the GIC to the A9 cores
+> automatically when an interrupt occurs.
 > 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
+But most likely it will be limited to peripheral interrupts. SGI's
+are per-cpu irq's so you need to check that part.
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> But definitively worth to check.
+> 
+>>> I will test it on OMAP but with the coupled idle state, I am not sure of
+>>> the behavior. Could elaborate a bit the specificity of OMAP ? I am not
+>>> sure to understand why I may miss some IPI wakeups.
+>>>
+>> I already mention the issue here [1]. You might not see any major issues
+>> because the missed asynchronous IPIs might eventually get executed when
+>> CPU's wakeup from deeper states because of idle wakeups. OMAP is no
+>> different from idle wakeup optimisation and it will surely benefit and work.
+>> The main reason I didn't pursue it because of not having solution for
+>> [1] which as discussed in past is very much essential from kernel
+>> functional correctness perspective. You might want to verify that by
+>> adding a tracepoint on IPI's on other reasons except the timer wakeup.
+> 
+> Oh, ok. I didn't make the connection. I got the point now.
+> 
+Good.
 
+> If we can raise a fake hardware interrupt on the GIC (not sure that
+> could be done), may be we can implement something similar to the
+> broadcast timer mechanism to replace the IPI when the cores are not IPI
+> wakeup capable.
+> 
+It isn't straight forward. The easiest way is to replace the SGI IPI
+with one which is wakeup capable even from deeper states. But then
+it all depends on hardware support and what that hook looks
+like per platform.
 
+Regards,
+Santosh
 
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
