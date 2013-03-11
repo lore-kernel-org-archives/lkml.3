@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab3CKVDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:03:55 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:52051 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab3CKVDw (ORCPT
+	id S1754503Ab3CKVEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:04:53 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:42267 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3CKVEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:03:52 -0400
+	Mon, 11 Mar 2013 17:04:51 -0400
 MIME-Version: 1.0
-Date: Mon, 11 Mar 2013 14:03:51 -0700
-Message-ID: <CAA3XVTxhXqo5vJmUjmN1_GPZvftVoNcYGKm1WaVOJTuz3jMNqQ@mail.gmail.com>
-Subject: ext4 change in v3.3-rc2 broke user space
-From: Bryan Whitehead <driver@megahappy.net>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20130311205125.GA31324@cantiga.alporthouse.com>
+References: <20130311192630.GA18227@www.outflux.net>
+	<20130311205125.GA31324@cantiga.alporthouse.com>
+Date: Mon, 11 Mar 2013 14:04:51 -0700
+X-Google-Sender-Auth: LdqK630n2UgFr3fdPsjFW3ombDc
+Message-ID: <CAGXu5j+v9ma5rwhtPqtJKzve5q5G_m9VQkAUqJ38VnDFPpvGYw@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: clarify reasoning for the access_ok call
+From: Kees Cook <keescook@chromium.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specifically this change:
-http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=d1f5273e9adb40724a85272f248f210dc4ce919a
+On Mon, Mar 11, 2013 at 1:51 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Mon, Mar 11, 2013 at 12:26:30PM -0700, Kees Cook wrote:
+>> This clarifies the comment above the access_ok check so a missing
+>> VERIFY_READ doesn't alarm anyone.
+>
+> Do we really need to copy the interface documentation?
+>
+> /**
+>  * access_ok: - Checks if a user space pointer is valid
+>  * @type: Type of access: %VERIFY_READ or %VERIFY_WRITE.  Note that
+>  *        %VERIFY_WRITE is a superset of %VERIFY_READ - if it is safe
+>  *        to write to a block, it is always safe to read from it.
+>  * @addr: User space pointer to start of block to check
+>  * @size: Size of block to check
+>  */
+> -Chris
 
-This change has broken gluster when using ext4 as the backing
-filesystem. Details are here:
-http://www.gluster.org/2012/08/glusterfs-bit-by-ext4-structure-change/
+Probably not. It just seemed like the existing comment was
+insufficient after the removal of the redundant VERIFY_READ check that
+happened recently.
 
-The change is about a year old now but it is finally making its way
-into distribution binaries. As a user it sucks because "ext4" the
-"stable" fs basically breaks. Fortunately for myself I've used xfs as
-suggested by GlusterFS (older versions stated ext4/ext3 was fine).
-However, there are many installs (particularly older installs) that
-used ext4 and are finding they must now run outdated old kernels until
-they can completely reinstall their gluster cluster with non-ext4
-underlying filesystems. Another side effect is users like myself
-dealing with the fallout on mailinglists. I've run across this issue
-on glusterfs maillinglist (obviously) and also cloudstack. It is so
-damn annoying to tell people a kernel change screwed up gluster and
-that is why their cluster is busted. To be frank, most will just
-assume kernel would never do such a bad thing and it is nonsense that
-the kernel is to blame. This sucks.
+-Kees
 
-I'm not hear to bitch (well maybe a little) but I hope changes like
-this STOP happening. I think the biggest blame is on RedHat for
-backporting the above patch and pushing out kernel binaries before a
-workaround in kernel-land was found. On the other hand - a work-around
-should have been part of the original patch. I'm resigned to the fact
-there is NO hope of this being fixed since everyone has moved on and
-it has been accepted for so long. Damnit.
-
-If ext4 is seriously this much in flux - I'd like to politely suggest
-it is marked experimental, non-prod, or dangerous.
-
--Bryan
+-- 
+Kees Cook
+Chrome OS Security
