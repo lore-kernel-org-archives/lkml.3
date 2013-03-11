@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab3CKHkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:40:42 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:60215 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab3CKHkl (ORCPT
+	id S1751676Ab3CKHmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:42:40 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57366 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3CKHmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:40:41 -0400
-Date: Mon, 11 Mar 2013 08:40:36 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <mats.liljegren@enea.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL] context tracking updates for 3.10
-Message-ID: <20130311074036.GA10161@gmail.com>
-References: <1362682201-612-1-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362682201-612-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 03:42:38 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-mips@linux-mips.org
+Cc: ralf@linux-mips.org, juhosg@openwrt.org, blogic@openwrt.org,
+        xsecute@googlemail.com, linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] pci: convert to devm_ioremap_resource()
+Date: Mon, 11 Mar 2013 09:42:33 +0200
+Message-Id: <1362987753-6607-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert all uses of devm_request_and_ioremap() to the newly introduced
+devm_ioremap_resource() which provides more consistent error handling.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+devm_ioremap_resource() provides its own error messages so all explicit
+error messages can be removed from the failure code paths.
 
-> Ingo,
-> 
-> Please pull the latest context tracking and cputime updates that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	sched/cputime
-> 
-> HEAD is 8b43876643a737bb74a0e1e557f634eb2453948b (in case you still get the
-> cache of the previous branch there).
-> 
-> Thanks.
-> 
-> ---
-> Changes include:
-> 
-> * Generalize exception handling
-> 
-> * Fix race in context tracking state restore on return from exception
-> and irq exit kernel preemption
-> 
-> * Fix cputime scaling in full dynticks accounting dynamic off-case
-> 
-> * Fix default Kconfig value
-> 
-> ---
-> Frederic Weisbecker (5):
->   context_tracking: Move exception handling to generic code
->   context_tracking: Restore correct previous context state on exception
->     exit
->   context_tracking: Restore preempted context state after
->     preempt_schedule_irq()
->   cputime: Dynamically scale cputime for full dynticks accounting
->   context_tracking: Enable probes by default for selftesting
-> 
->  arch/x86/include/asm/context_tracking.h |   21 ----
->  arch/x86/kernel/kvm.c                   |    8 +-
->  arch/x86/kernel/traps.c                 |   68 +++++++++-----
->  arch/x86/mm/fault.c                     |    8 +-
->  include/linux/context_tracking.h        |   24 +++++-
->  include/linux/sched.h                   |    4 +-
->  init/Kconfig                            |    1 +
->  kernel/fork.c                           |    2 +-
->  kernel/sched/core.c                     |    6 +-
->  kernel/sched/cputime.c                  |  154 ++++++++++++++++---------------
->  10 files changed, 163 insertions(+), 133 deletions(-)
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ arch/mips/pci/pci-ar724x.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Pulled, thanks Frederic!
+diff --git a/arch/mips/pci/pci-ar724x.c b/arch/mips/pci/pci-ar724x.c
+index 8a0700d..65ec032 100644
+--- a/arch/mips/pci/pci-ar724x.c
++++ b/arch/mips/pci/pci-ar724x.c
+@@ -365,25 +365,25 @@ static int ar724x_pci_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	apc->ctrl_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (apc->ctrl_base == NULL)
+-		return -EBUSY;
++	apc->ctrl_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(apc->ctrl_base))
++		return PTR_ERR(apc->ctrl_base);
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cfg_base");
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	apc->devcfg_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!apc->devcfg_base)
+-		return -EBUSY;
++	apc->devcfg_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(apc->devcfg_base))
++		return PTR_ERR(apc->devcfg_base);
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "crp_base");
+ 	if (!res)
+ 		return -EINVAL;
+ 
+-	apc->crp_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (apc->crp_base == NULL)
+-		return -EBUSY;
++	apc->crp_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(apc->crp_base))
++		return PTR_ERR(apc->crp_base);
+ 
+ 	apc->irq = platform_get_irq(pdev, 0);
+ 	if (apc->irq < 0)
+-- 
+1.7.9.5
 
-	Ingo
