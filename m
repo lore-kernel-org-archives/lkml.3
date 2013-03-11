@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab3CKWae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:30:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37266 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab3CKWac (ORCPT
+	id S1754454Ab3CKWf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:35:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55059 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab3CKWf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:30:32 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST] dma: tegra: assume CONFIG_OF
-Date: Mon, 11 Mar 2013 16:30:26 -0600
-Message-Id: <1363041026-31890-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Mon, 11 Mar 2013 18:35:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 9/9] ARM: spear3xx: Use correct pl080 header file
+Date: Mon, 11 Mar 2013 22:34:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Alessandro Rubini <rubini@gnudd.com>,
+        "spear-devel" <spear-devel@list.st.com>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de> <1362521809-22989-10-git-send-email-arnd@arndb.de> <CAKohponFisFjM9CbpHoR7h-pn1SAOWeck63v3FKZe4UV0cR2DQ@mail.gmail.com>
+In-Reply-To: <CAKohponFisFjM9CbpHoR7h-pn1SAOWeck63v3FKZe4UV0cR2DQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303112234.55748.arnd@arndb.de>
+X-Provags-ID: V02:K0:j/UFjv9aKZyrXIPEgaW8RcnN90qvrMavCtvn5gzysO1
+ P61auOBij4urW4wpk2qI0w5F8zGRpr3Ml3kFPwRhtSNuLOK+9G
+ FbZH44ytEYALZl0dAzVoj7JP0wKMZP6//LT4p4kmzLLnoU8JaB
+ t/e3yDkZYmlsDBGNLIb0bsAl64OojIQzppNILwRi6n1Ebqn0WD
+ 4RvBevMv1EgAPa8yKe1tv5O8sv7Dfq8oszpUDD+jxNgBx0Q3NX
+ TTTYs6A8kZauUaHlLF8qSid3tjyGdayXBfyQYoafNZi+kUgGjl
+ A66rtj3VnxQU3Bhiby6ZpGCv3COe4DVkiM4qO/LYJegLaH36sj
+ /E6ejLBxaeCZtrB9yllY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Tuesday 05 March 2013, Viresh Kumar wrote:
+> On 6 March 2013 06:16, Arnd Bergmann <arnd@arndb.de> wrote:
+> > The definitions have move around recently, causing build errors
+> > in spear3xx for all configurations:
+> >
+> > spear3xx.c:47:5: error: 'PL080_BSIZE_16' undeclared here (not in a function)
+> > spear3xx.c:47:23: error: 'PL080_CONTROL_SB_SIZE_SHIFT' undeclared here (not in a function)
+> > spear3xx.c:48:22: error: 'PL080_CONTROL_DB_SIZE_SHIFT' undeclared here (not in a function)
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Alessandro Rubini <rubini@gnudd.com>
+> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> > ---
+> >  arch/arm/mach-spear3xx/spear3xx.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> You are a bit late in posting this.
+> We already got the same patch from Vipul yesterday :)
 
-Tegra only supports, and always enables, device tree. Remove all ifdefs
-and runtime checks for DT support from the driver.
+Are you going to send a pull request for that one then? Another -rc has
+just passed with the platform being broken.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/dma/tegra20-apb-dma.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index fcee27e..5a0b66c 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1213,7 +1213,6 @@ static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
- 	.support_channel_pause	= false,
- };
- 
--#if defined(CONFIG_OF)
- /* Tegra30 specific DMA controller information */
- static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
- 	.nr_channels		= 32,
-@@ -1243,7 +1242,6 @@ static const struct of_device_id tegra_dma_of_match[] = {
- 	},
- };
- MODULE_DEVICE_TABLE(of, tegra_dma_of_match);
--#endif
- 
- static int tegra_dma_probe(struct platform_device *pdev)
- {
-@@ -1252,20 +1250,14 @@ static int tegra_dma_probe(struct platform_device *pdev)
- 	int ret;
- 	int i;
- 	const struct tegra_dma_chip_data *cdata = NULL;
-+	const struct of_device_id *match;
- 
--	if (pdev->dev.of_node) {
--		const struct of_device_id *match;
--		match = of_match_device(of_match_ptr(tegra_dma_of_match),
--					&pdev->dev);
--		if (!match) {
--			dev_err(&pdev->dev, "Error: No device match found\n");
--			return -ENODEV;
--		}
--		cdata = match->data;
--	} else {
--		/* If no device tree then fallback to tegra20 */
--		cdata = &tegra20_dma_chip_data;
-+	match = of_match_device(tegra_dma_of_match, &pdev->dev);
-+	if (!match) {
-+		dev_err(&pdev->dev, "Error: No device match found\n");
-+		return -ENODEV;
- 	}
-+	cdata = match->data;
- 
- 	tdma = devm_kzalloc(&pdev->dev, sizeof(*tdma) + cdata->nr_channels *
- 			sizeof(struct tegra_dma_channel), GFP_KERNEL);
-@@ -1460,7 +1452,7 @@ static struct platform_driver tegra_dmac_driver = {
- 		.name	= "tegra-apbdma",
- 		.owner = THIS_MODULE,
- 		.pm	= &tegra_dma_dev_pm_ops,
--		.of_match_table = of_match_ptr(tegra_dma_of_match),
-+		.of_match_table = tegra_dma_of_match,
- 	},
- 	.probe		= tegra_dma_probe,
- 	.remove		= tegra_dma_remove,
--- 
-1.7.10.4
-
+	Arnd
