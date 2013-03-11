@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab3CKOAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:00:03 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:61815 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3CKOAA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:00:00 -0400
+	id S1751929Ab3CKOBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:01:48 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:26416 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892Ab3CKOBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 10:01:46 -0400
+Message-ID: <513DE3C4.5000503@siemens.com>
+Date: Mon, 11 Mar 2013 15:01:40 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <51364285.4040406@samba.org>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
-	<512FD1D5.3010106@mit.edu>
-	<20130304211923.GI20389@fieldses.org>
-	<5135250A.30604@samba.org>
-	<20130305181306.GA15816@fieldses.org>
-	<51364285.4040406@samba.org>
-Date: Mon, 11 Mar 2013 17:59:59 +0400
-X-Google-Sender-Auth: b0Qci8hOAGq9umXwFDZ284bmSZU
-Message-ID: <CAKywueR8kFUS46pCOnEaTouavTu69gW_FmP5BtFS2rsX8nHtBw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Simo <simo@samba.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com> <513DBF45.9030803@redhat.com> <20130311115144.GG31619@redhat.com> <513DDCC2.9070807@redhat.com> <20130311135441.GN31619@redhat.com>
+In-Reply-To: <20130311135441.GN31619@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/5 Simo <simo@samba.org>:
-> On 03/05/2013 01:13 PM, J. Bruce Fields wrote:
+On 2013-03-11 14:54, Gleb Natapov wrote:
+> On Mon, Mar 11, 2013 at 02:31:46PM +0100, Paolo Bonzini wrote:
+>> Il 11/03/2013 12:51, Gleb Natapov ha scritto:
+>>>>>
+>>>>> Agreed, but we still have the problem of how to signal from userspace.
+>>>>> For that do you have any other suggestion than mp_state?  And if we keep
+>>>>> mp_state to signal from userspace, giving INIT_RECEIVED the
+>>>>> "wait-for-SIPI" semantics would be wrong.
+>>>>>
+>>> I don't see how can we use mp_state for signaling from userspace either.
+>>> Currently soft reset always reset vcpus, so it is OK for userspace to
+>>> generate reset vcpu state and put it into kernel, mp_state is just one
+>>> of the updated states, but when INIT will be just another signal that
+>>> may or may not reset cpu or have other side effects like #vmexit this
+>>> will not longer work. We will have to have another interface for
+>>> injecting INIT from userspace and userspace soft-reset will use it
+>>> instead of doing reset by itself.
 >>
->> On Mon, Mar 04, 2013 at 05:49:46PM -0500, Simo wrote:
->>>
->>> On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
->>>> I'm a little more worried: these are mandatory locks, and applications
->>>> that use them are used to the locks being enforced correctly.  Are we
->>>> sure that an application that opens a file O_DENYWRITE won't crash if it
->>>> sees the file data change while it holds the open?
->>>
->>> The redirector may simply assume it has full control of that part of
->>> the file and not read nor send data until the lock is released too,
->>> so you get conflicting views of the file contents between different
->>> clients if you let a mandatory lock not be mandatory.
->>>
->>>> In general the idea of making a mandatory lock opt-in makes me nervous.
->>>> I'd prefer something like a mount option, so that we know that everyone
->>>> on that one filesystem is playing by the same rules, but we can still
->>>> mount filesystems like / without the option.
->>>
->>> +1
->>>
->>>> But I'll admit I'm definitely not an expert on Windows locking and may
->>>> be missing something about how these locks are meant to work.
->>>
->>> Mandatory locks really are mandatory in Windows.
->>> That may not be nice to a Unix system but what can you do ?
+>> Setting the mp_state to INIT_RECEIVED is that interface, and it already
+>> works, for APs at least.  This patch extends it to work for the BSP as well.
 >>
->> I wonder if we could repurpose the existing -omand mount option?
+> It does not for AP either. If AP has vmx on mp_sate should not be set to
+> INIT_RECEIVED. mp_sate is a state as you can see from its name and we
+> already had a discussion on the generic device API about importance of
+> separating sending commands from setting state. There is a difference
+> between setting mp_sate during migration and signaling INIT#.
+> 
+>> In the corresponding userspace patch, I don't need to touch the CPU
+>> state at all.  I can just signal the kernel.  If I touch the CPU, I'll
+>> break the nested case, no matter how it is implemented.  So far, the
+>> userspace did not have to worry about nested, and that's something that
+>> should be kept that way.
+> We are discussing two different things here. I'll try to separate them.
+> 1. BSP is broken WRT #INIT
+> 2. nested is broken WRT #INIT
+> 
+> You are fixing 1 with your patches, for that I proposed much easier
+> solution (at last from kernel point of view): if BSP reset it in
+> userspace and make it runnable. Nested virt is still broken, but this is
+> not what you are fixing.
+> 
+> For 2 much more involved fix is needed. Jan fixes it and it will require
+> signaling INIT# from userspace by other means than mp_sate because
+> signaling INIT# does not automatically means that mp_sate changes to
+> INIT_RECEIVED.
+>  
 >>
->> That would be a problem for anyone that wants to allow mandatory fcntl
->> locks without allowing share locks.  I doubt anyone sane actually uses
->> mandatory fcntl locks, but still I suppose it would probably be better
->> to play it safe and use a new mount option.
->
->
-> Maybe we should have a -o win_semantics option :-)
->
-> /me runs
->
+>> If we move away from the INIT_RECEIVED and SIPI_RECEIVED states for
+>> in-kernel APIC -> VCPU communication, then the KVM_SET_MP_STATE ioctl
+>> will have to convert them to the right bits in the requests field or in
+>> the APIC state.  But I'm starting to see less benefit from moving away
+>> from mp_state.
+>>
+> We are not moving away from mp_state, we are moving away from using
+> mp_state for signaling because with nested virt INIT does not always
+> change mp_state, not only that it can change mp_state long after signal
+> is received after vmx off is done.
 
-(CC'ing Al Viro, since these patches should go through his tree)
+Right.
 
-I don't mind to introduce a new mount option for turning this feature
-on/off - something like '-o denylock' to make it mathing names of new
-flags would be ok.
+BTW, for that to happen, we will also need to influence the INIT level.
+Unless I misread the spec, INIT is blocked while in root mode, and if
+you deassert INIT before leaving root (vmxoff, vmenter), nothing
+actually happens. So what matters is the INIT signal level at the exit
+of root mode.
 
-Al, what do you think about this feature overall?
+Jan
 
 -- 
-Best regards,
-Pavel Shilovsky.
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
