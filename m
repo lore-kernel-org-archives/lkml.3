@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab3CKPil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:38:41 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:48962 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab3CKPij (ORCPT
+	id S1753263Ab3CKPka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:40:30 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:55090 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab3CKPk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:38:39 -0400
+	Mon, 11 Mar 2013 11:40:29 -0400
 MIME-Version: 1.0
-Date: Mon, 11 Mar 2013 23:38:38 +0800
-Message-ID: <CAPgLHd9DUb+o9YQADJYhgWoxX0767PnEBkZf_OT6R1WtNhAOKw@mail.gmail.com>
-Subject: [PATCH -next] goldfish: use list_move_tail instead of list_del/list_add_tail
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: yunhong.jiang@intel.com, sheng@linux.intel.com, bruce.j.beare@intel.com,
-        gregkh@linuxfoundation.org, xiaohui.xin@intel.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+In-Reply-To: <20130311152400.GK24522@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+	<513C61B9.5030004@cn.fujitsu.com>
+	<20130310120113.GC24522@htj.dyndns.org>
+	<20130311152400.GK24522@htj.dyndns.org>
+Date: Mon, 11 Mar 2013 23:40:28 +0800
+Message-ID: <CACvQF5204P6YdWvkVuwjbTFmO=vFckOUNJq36UjZJmRwxWHfTQ@mail.gmail.com>
+Subject: Re: [PATCHSET wq/for-3.10-tmp] workqueue: implement workqueue with
+ custom worker attributes
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Mon, Mar 11, 2013 at 11:24 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Sun, Mar 10, 2013 at 05:01:13AM -0700, Tejun Heo wrote:
+>> Hey, Lai.
+>>
+>> On Sun, Mar 10, 2013 at 06:34:33PM +0800, Lai Jiangshan wrote:
+>> > > This patchset contains the following 31 patches.
+>> > >
+>> > >  0001-workqueue-make-sanity-checks-less-punshing-using-WAR.patch
+>> >
+>> > >  0002-workqueue-make-workqueue_lock-irq-safe.patch
+>> >
+>> > workqueue_lock protects too many things. We can introduce different locks
+>> > for different purpose later.
+>>
+>> I don't know.  My general attitude toward locking is the simpler the
+>> better.  None of the paths protected by workqueue_lock are hot.
+>> There's no actual benefit in making them finer grained.
+>
+> Heh, I need to make workqueues and pools protected by a mutex rather
+> than spinlock, so I'm breaking out the locking after all.  This is
+> gonna be a separate series of patches and it seems like there are
+> gonna be three locks - wq_mutex (pool and workqueues), pwq_lock
+> (spinlock protecting pwqs), wq_mayday_lock (lock for the mayday list).
 
-Using list_move_tail() instead of list_del() + list_add_tail().
+Glad to hear this.
+wq_mayday_lock is needed at least. spin_lock_irq(workqueue_lock)
+with long loop in its C.S hurts RT people.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/platform/goldfish/pdev_bus.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Thanks,
+Lai
 
-diff --git a/drivers/platform/goldfish/pdev_bus.c b/drivers/platform/goldfish/pdev_bus.c
-index 92cc4cf..816faf0 100644
---- a/drivers/platform/goldfish/pdev_bus.c
-+++ b/drivers/platform/goldfish/pdev_bus.c
-@@ -91,8 +91,7 @@ static void goldfish_pdev_remove(void)
- 	}
- 	list_for_each_entry_safe(pos, n, &pdev_bus_registered_devices, list) {
- 		if (pos->resources[0].start == base) {
--			list_del(&pos->list);
--			list_add_tail(&pos->list, &pdev_bus_removed_devices);
-+			list_move_tail(&pos->list, &pdev_bus_removed_devices);
- 			schedule_work(&pdev_bus_worker);
- 			return;
- 		}
-
+>
+> Thanks.
+>
+> --
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
