@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3CKSv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:51:56 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3787 "EHLO mail.tpi.com"
+	id S1754425Ab3CKSwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:52:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52321 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754371Ab3CKSvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:51:54 -0400
-Message-ID: <513E27C0.8050108@canonical.com>
-Date: Mon, 11 Mar 2013 12:51:44 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH linux-next v2] SUNRPC: rpcrdma_register_default_external:
- Dynamically allocate ib_phys_buf
-References: <20130310202838.GL31448@fieldses.org> <1363023447-22453-1-git-send-email-tim.gardner@canonical.com> <20130311181450.GC30618@fieldses.org>
-In-Reply-To: <20130311181450.GC30618@fieldses.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754360Ab3CKSwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:52:06 -0400
+Date: Mon, 11 Mar 2013 14:52:01 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v3 4/7] CIFS: Use NT_CREATE_ANDX command for forcemand
+ mounts
+Message-ID: <20130311145201.41d9d8f4@corrin.poochiereds.net>
+In-Reply-To: <1362065133-9490-5-git-send-email-piastry@etersoft.ru>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<1362065133-9490-5-git-send-email-piastry@etersoft.ru>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 12:14 PM, J. Bruce Fields wrote:
-<snip>
->>
->> v2 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_req
->> and pass this request down through rpcrdma_register_external() and
->> rpcrdma_register_default_external(). This is less overhead then using
->> kmalloc() and requires no extra error checking as the allocation burden is
->> shifted to the transport client.
+On Thu, 28 Feb 2013 19:25:30 +0400
+Pavel Shilovsky <piastry@etersoft.ru> wrote:
+
+> forcemand mount option now lets us use Windows mandatory style of
+> byte-range locks even if server supports posix ones - switches on
+> Windows locking mechanism. Share flags is another locking mehanism
+> provided by Windows semantic that can be used by NT_CREATE_ANDX
+> command. This patch combines all Windows locking mechanism in one
+> mount option by using NT_CREATE_ANDX to open files if forcemand is on.
 > 
-> Oh good--so that works, and the req is the right place to put this?  How
-> are you testing this?
+> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> ---
+>  fs/cifs/dir.c  | 1 +
+>  fs/cifs/file.c | 6 ++++--
+>  2 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> (Just want to make it clear: I'm *not* an expert on the rdma code, so my
-> suggestion to put this in the rpcrdma_req was a suggestion for something
-> to look into, not a claim that it's correct.)
-> 
+> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+> index 6975072..139c8bc 100644
+> --- a/fs/cifs/dir.c
+> +++ b/fs/cifs/dir.c
+> @@ -217,6 +217,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
+>  	}
+>  
+>  	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
+> +	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+>  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+>  			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+>  		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 3ad484c..05191da 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -454,8 +454,9 @@ int cifs_open(struct inode *inode, struct file *file)
+>  	else
+>  		oplock = 0;
+>  
+> -	if (!tcon->broken_posix_open && tcon->unix_ext &&
+> -	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> +	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
+> +	    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+> +	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+>  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+>  		/* can not refresh inode info since size could be stale */
+>  		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
+> @@ -623,6 +624,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+>  		oplock = 0;
+>  
+>  	if (tcon->unix_ext && cap_unix(tcon->ses) &&
+> +	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+>  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+>  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+>  		/*
 
-Just compile tested so far. Incidentally, I've been through the call stack:
+Sounds reasonable...
 
-call_transmit
- xprt_transmit
-  xprt->ops->send_request(task)
-   xprt_rdma_send_request
-    rpcrdma_marshal_req
-     rpcrdma_create_chunks
-      rpcrdma_register_external
-       rpcrdma_register_default_external
-
-It appears that the context for kmalloc() should be fine unless there is
-a spinlock held around call_transmit() (which seems unlikely).
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+Acked-by: Jeff Layton <jlayton@redhat.com>
