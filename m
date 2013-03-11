@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab3CKHf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:35:26 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:51354 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab3CKHfY (ORCPT
+	id S1753062Ab3CKHia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:38:30 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42727 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3CKHi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:35:24 -0400
+	Mon, 11 Mar 2013 03:38:28 -0400
 From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: cpufreq@vger.kernel.org
-Cc: rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch, jason@lakedaemon.net,
-        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: linux-watchdog@vger.kernel.org
+Cc: wim@iguana.be, ben-linux@fluff.org, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] kirkwood: fix coccicheck warnings
-Date: Mon, 11 Mar 2013 09:35:19 +0200
-Message-Id: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+Subject: [PATCH] watchdog: convert to devm_ioremap_resource()
+Date: Mon, 11 Mar 2013 09:38:23 +0200
+Message-Id: <1362987503-6449-1-git-send-email-silviupopescu1990@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,66 +29,69 @@ error messages can be removed from the failure code paths.
 
 Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 ---
- drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
- drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
- drivers/thermal/kirkwood_thermal.c |    8 +++-----
- 3 files changed, 9 insertions(+), 13 deletions(-)
+ drivers/watchdog/ath79_wdt.c   |    8 +++-----
+ drivers/watchdog/davinci_wdt.c |    8 +++-----
+ drivers/watchdog/s3c2410_wdt.c |    9 +++------
+ 3 files changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-index 0e83e3c..6052476 100644
---- a/drivers/cpufreq/kirkwood-cpufreq.c
-+++ b/drivers/cpufreq/kirkwood-cpufreq.c
-@@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "Cannot get memory resource\n");
- 		return -ENODEV;
- 	}
--	priv.base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv.base) {
--		dev_err(&pdev->dev, "Cannot ioremap\n");
--		return -EADDRNOTAVAIL;
--	}
-+	priv.base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv.base))
-+		return PTR_ERR(priv.base);
- 
- 	np = of_find_node_by_path("/cpus/cpu@0");
- 	if (!np)
-diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-index 670aa1e..53aad73 100644
---- a/drivers/cpuidle/cpuidle-kirkwood.c
-+++ b/drivers/cpuidle/cpuidle-kirkwood.c
-@@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
- 	if (res == NULL)
+diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
+index 8987990..d184c48 100644
+--- a/drivers/watchdog/ath79_wdt.c
++++ b/drivers/watchdog/ath79_wdt.c
+@@ -253,11 +253,9 @@ static int ath79_wdt_probe(struct platform_device *pdev)
  		return -EINVAL;
+ 	}
  
--	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!ddr_operation_base)
--		return -EADDRNOTAVAIL;
-+	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ddr_operation_base))
-+		return PTR_ERR(ddr_operation_base);
+-	wdt_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!wdt_base) {
+-		dev_err(&pdev->dev, "unable to remap memory region\n");
+-		return -ENOMEM;
+-	}
++	wdt_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(wdt_base))
++		return PTR_ERR(wdt_base);
  
- 	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
- 	device->state_count = KIRKWOOD_MAX_STATES;
-diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
-index 65cb4f0..e5500ed 100644
---- a/drivers/thermal/kirkwood_thermal.c
-+++ b/drivers/thermal/kirkwood_thermal.c
-@@ -85,11 +85,9 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
- 	if (!priv)
- 		return -ENOMEM;
+ 	wdt_clk = devm_clk_get(&pdev->dev, "wdt");
+ 	if (IS_ERR(wdt_clk))
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index 7df1fdc..005fd71 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -221,11 +221,9 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
  
--	priv->sensor = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv->sensor) {
--		dev_err(&pdev->dev, "Failed to request_ioremap memory\n");
+-	wdt_base = devm_request_and_ioremap(dev, wdt_mem);
+-	if (!wdt_base) {
+-		dev_err(dev, "ioremap failed\n");
 -		return -EADDRNOTAVAIL;
 -	}
-+	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->sensor))
-+		return PTR_ERR(priv->sensor);
++	wdt_base = devm_ioremap_resource(dev, wdt_mem);
++	if (IS_ERR(wdt_base))
++		return PTR_ERR(wdt_base);
  
- 	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
- 					       priv, &ops, NULL, 0, 0);
+ 	ret = misc_register(&davinci_wdt_miscdev);
+ 	if (ret < 0) {
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index c1a221c..393496c 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -330,12 +330,9 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* get the memory region for the watchdog timer */
+-	wdt_base = devm_request_and_ioremap(dev, wdt_mem);
+-	if (wdt_base == NULL) {
+-		dev_err(dev, "failed to devm_request_and_ioremap() region\n");
+-		ret = -ENOMEM;
+-		goto err;
+-	}
++	wdt_base = devm_ioremap_resource(dev, wdt_mem);
++	if (IS_ERR(wdt_base))
++		return PTR_ERR(wdt_base);
+ 
+ 	DBG("probe: mapped wdt_base=%p\n", wdt_base);
+ 
 -- 
 1.7.9.5
 
