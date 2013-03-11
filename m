@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab3CKVVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:21:21 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:59273 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab3CKVVS (ORCPT
+	id S932093Ab3CKVPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:15:38 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33462 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3CKVP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:21:18 -0400
-Date: Mon, 11 Mar 2013 14:21:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-        torvalds@linux-foundation.org, keyrings@linux-nfs.org,
-        pmatouse@redhat.com, security@kernel.org, linux-kernel@vger.kernel.org,
-        mguzik@redhat.com, ben@decadent.org.uk
-Subject: Re: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
-Message-ID: <20130311212114.GA1118@kroah.com>
-References: <20130306222412.1255.81929.stgit@warthog.procyon.org.uk>
- <alpine.LRH.2.02.1303071558030.25164@tundra.namei.org>
- <20130311210211.GA13575@kroah.com>
- <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 17:15:28 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v5 33/44] tty: Clarify multiple-references comment in TIOCSETD ioctl
+Date: Mon, 11 Mar 2013 16:44:53 -0400
+Message-Id: <1363034704-28036-34-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+ <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 02:10:32PM -0700, Andrew Morton wrote:
-> On Mon, 11 Mar 2013 14:02:11 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
-> > On Thu, Mar 07, 2013 at 03:59:09PM +1100, James Morris wrote:
-> > > On Wed, 6 Mar 2013, David Howells wrote:
-> > > 
-> > > > Reported-by: Mateusz Guzik <mguzik@redhat.com>
-> > > > Signed-off-by: David Howells <dhowells@redhat.com>
-> > > 
-> > > Acked-by: James Morris <james.l.morris@oracle.com>
-> > 
-> > What happened to this patch?  I don't see it in Linus's tree, James, did
-> > you pick it up?
-> 
-> James has acked it.  I have it queued for processing so it isn't lost. 
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Ok, I'll keep a lookout for it.
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 84ba790..9725c94 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -567,13 +567,15 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 		tty_ldisc_restore(tty, old_ldisc);
+ 	}
+ 
+-	/* At this point we hold a reference to the new ldisc and a
+-	   a reference to the old ldisc. If we ended up flipping back
+-	   to the existing ldisc we have two references to it */
+-
+ 	if (tty->ldisc->ops->num != old_ldisc->ops->num && tty->ops->set_ldisc)
+ 		tty->ops->set_ldisc(tty);
+ 
++	/* At this point we hold a reference to the new ldisc and a
++	   reference to the old ldisc, or we hold two references to
++	   the old ldisc (if it was restored as part of error cleanup
++	   above). In either case, releasing a single reference from
++	   the old ldisc is correct. */
++
+ 	tty_ldisc_put(old_ldisc);
+ 
+ 	/*
+-- 
+1.8.1.2
 
-> It has no cc:stable's in it, but David always forgets that ;)
-
-Yeah, I'm used to that :)
