@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3CKNqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:46:31 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39024 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751695Ab3CKNq3 (ORCPT
+	id S1752447Ab3CKNrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:47:32 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58058 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751122Ab3CKNrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:46:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Dl539oxd4HnjFW4Ufjb3eVOa4GQFlUAQ=
-Date: Mon, 11 Mar 2013 09:46:21 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Cc: cpufreq@vger.kernel.org, rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch,
-        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
-Message-ID: <20130311134621.GA23237@titan.lakedaemon.net>
-References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 11 Mar 2013 09:47:31 -0400
+Message-ID: <1363009649.3137.78.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ARM: imx: fix typo "DEBUG_IMX50_IMX53_UART"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Mon, 11 Mar 2013 14:47:29 +0100
+In-Reply-To: <CAOMZO5AhjKV=ja+Agr_pMg4ghB6Vux2ciBnr_M8SQuS4AQ4Bzg@mail.gmail.com>
+References: <1363007760.3137.69.camel@x61.thuisdomein>
+	 <20130311133720.GB25910@S2101-09.ap.freescale.net>
+	 <CAOMZO5AhjKV=ja+Agr_pMg4ghB6Vux2ciBnr_M8SQuS4AQ4Bzg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 13:47:29.0659 (UTC) FILETIME=[F92D7CB0:01CE1E5E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 09:35:19AM +0200, Silviu-Mihai Popescu wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
+On Mon, 2013-03-11 at 10:41 -0300, Fabio Estevam wrote:
+> Please see my commit:
 > 
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
+> commit 7356420cd34e40fe27bf26555b0bf3f2849a43dd
+> Author: Fabio Estevam <fabio.estevam@freescale.com>
+> Date:   Tue Jan 22 10:40:55 2013 -0200
 > 
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> ---
->  drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
->  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
->  drivers/thermal/kirkwood_thermal.c |    8 +++-----
->  3 files changed, 9 insertions(+), 13 deletions(-)
+>     ARM: imx: Remove mx508 support
+> 
+>     Only mx508 based board is mach-mx50_rdp and it has been marked as BROKEN
+>     for several releases.
+> 
+>     mx508 currently lacks clock support.
+> 
+>     In case someone needs to add mx508 support back, then the
+> recommended approach
+>     is to use device tree.
+> 
+>     Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>     Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> ,it does remove the MX50 reference, so this patch is not needed.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+That's not correct:
+    $ git grep -n DEBUG_IMX50_IMX53_UART v3.9-rc2
+    v3.9-rc2:arch/arm/Kconfig.debug:495:                                            DEBUG_IMX50_IMX53_UART || \
 
-thx,
 
-Jason.
+Paul Bolle
+
