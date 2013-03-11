@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3CKUvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:51:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37317 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753690Ab3CKUvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:51:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
-   d="scan'208";a="276698987"
-Date: Mon, 11 Mar 2013 20:51:25 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: clarify reasoning for the access_ok call
-Message-ID: <20130311205125.GA31324@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-References: <20130311192630.GA18227@www.outflux.net>
+	id S1754557Ab3CKUvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:51:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59773 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab3CKUvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:51:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: multiplatform: Sort the max gpio numbers.
+Date: Mon, 11 Mar 2013 20:51:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1359890688-10336-1-git-send-email-maxime.ripard@free-electrons.com> <20130311163842.GK4977@n2100.arm.linux.org.uk>
+In-Reply-To: <20130311163842.GK4977@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311192630.GA18227@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303112051.02339.arnd@arndb.de>
+X-Provags-ID: V02:K0:n5HCmyG5Bb/wrxGtRAQwR5uT5WoLM4fyV362tlAe0dC
+ PTxqvszMh+OK9BZ6iszyayJkXNkl+mitJdeUWLg0xdc76x4qtc
+ CqlQP1ZozWbMWZIYXoXk+ByY5acjtwf/55q6ytLzayhrQGwe+n
+ 9FZWQIK7f0oh811YXJBOtfwHgwMp1x/Rc1Od4qre/ZUTdEga/W
+ ORiVNmSA9anc7K6X3YLWYjDEfuDyd1RjA3NLPOOn8YG3oacHum
+ 7SAVGPXxNlFjWQj2VDaSbWFVNVI9dOvzeRJulnL4azxiN98UCf
+ UfX3LxWrVKbyUJT/t4TY3zkMQcbAX7tpLMHaORKtObLZ0PG5DZ
+ eQicUOvegqt/m8ilw2AI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 12:26:30PM -0700, Kees Cook wrote:
-> This clarifies the comment above the access_ok check so a missing
-> VERIFY_READ doesn't alarm anyone.
+On Monday 11 March 2013, Russell King - ARM Linux wrote:
+> Arnd, Olof,
+> 
+> Have you merged this for -rc ?
+> 
 
-Do we really need to copy the interface documentation?
+Sorry, I missed it for some reason. Applied to -fixes now.
 
-/**
- * access_ok: - Checks if a user space pointer is valid
- * @type: Type of access: %VERIFY_READ or %VERIFY_WRITE.  Note that
- *        %VERIFY_WRITE is a superset of %VERIFY_READ - if it is safe
- *        to write to a block, it is always safe to read from it.
- * @addr: User space pointer to start of block to check
- * @size: Size of block to check
- */
--Chris
+Thanks for the reminder,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+	Arnd
