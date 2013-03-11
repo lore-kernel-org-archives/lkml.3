@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab3CKSxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:53:00 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62682 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754140Ab3CKSw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:52:58 -0400
-Message-ID: <513E2895.6040904@metafoo.de>
-Date: Mon, 11 Mar 2013 19:55:17 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: adau1373: adau1373_hw_params: Silence overflow
- warning
-References: <1362936878-84443-1-git-send-email-tim.gardner@canonical.com> <513DAB80.1020900@metafoo.de> <513DFA55.2050104@canonical.com>
-In-Reply-To: <513DFA55.2050104@canonical.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754329Ab3CKSyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:54:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab3CKSyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:54:38 -0400
+Date: Mon, 11 Mar 2013 14:54:34 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v3 6/7] NFSv4: Add O_DENY* open flags support
+Message-ID: <20130311145434.707f5ed1@corrin.poochiereds.net>
+In-Reply-To: <1362065133-9490-7-git-send-email-piastry@etersoft.ru>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<1362065133-9490-7-git-send-email-piastry@etersoft.ru>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 04:37 PM, Tim Gardner wrote:
-> On 03/11/2013 04:01 AM, Lars-Peter Clausen wrote:
->> On 03/10/2013 06:34 PM, Tim Gardner wrote:
->>> ADAU1373_BCLKDIV_SOURCE is defined as BIT(5) which uses UL constants. On
->>> amd64 the result of the ones complement operator is then truncated to
->>> unsigned int according to the prototype of snd_soc_update_bits(). I think
->>> gcc is correctly warning that the upper 32 bits are lost.
->>>
->>> sound/soc/codecs/adau1373.c: In function 'adau1373_hw_params':
->>> sound/soc/codecs/adau1373.c:940:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
->>>
->>> gcc version 4.6.3
->>>
->>> Cc: Lars-Peter Clausen <lars@metafoo.de>
->>> Cc: Liam Girdwood <lgirdwood@gmail.com>
->>> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
->>> Cc: Jaroslav Kysela <perex@perex.cz>
->>> Cc: Takashi Iwai <tiwai@suse.de>
->>> Cc: device-drivers-devel@blackfin.uclinux.org
->>> Cc: alsa-devel@alsa-project.org
->>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
->>> ---
->>>  sound/soc/codecs/adau1373.c |    2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
->>> index 068b3ae..56ed788 100644
->>> --- a/sound/soc/codecs/adau1373.c
->>> +++ b/sound/soc/codecs/adau1373.c
->>> @@ -132,7 +132,7 @@ struct adau1373 {
->>>  #define ADAU1373_DAI_FORMAT_I2S		0x2
->>>  #define ADAU1373_DAI_FORMAT_DSP		0x3
->>>  
->>> -#define ADAU1373_BCLKDIV_SOURCE		BIT(5)
->>> +#define ADAU1373_BCLKDIV_SOURCE		(unsigned int)BIT(5)
->>
->> Hm, that's a bit ugly. How about the following instead:
->>
->> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
->> index 068b3ae..1aa10dd 100644
->> --- a/sound/soc/codecs/adau1373.c
->> +++ b/sound/soc/codecs/adau1373.c
->> @@ -133,6 +133,8 @@ struct adau1373 {
->>  #define ADAU1373_DAI_FORMAT_DSP		0x3
->>
->>  #define ADAU1373_BCLKDIV_SOURCE		BIT(5)
->> +#define ADAU1373_BCLKDIV_SR_MASK	(0x07 << 2)
->> +#define ADAU1373_BCLKDIV_BCLK_MASK	0x03
->>  #define ADAU1373_BCLKDIV_32		0x03
->>  #define ADAU1373_BCLKDIV_64		0x02
->>  #define ADAU1373_BCLKDIV_128		0x01
->> @@ -937,7 +939,8 @@ static int adau1373_hw_params(struct snd_pcm_substream
->> *substream,
->>  	adau1373_dai->enable_src = (div != 0);
->>
->>  	snd_soc_update_bits(codec, ADAU1373_BCLKDIV(dai->id),
->> -		~ADAU1373_BCLKDIV_SOURCE, (div << 2) | ADAU1373_BCLKDIV_64);
->> +		ADAU1373_BCLKDIV_SR_MASK | ADAU1373_BCLKDIV_BCLK_MASK,
->> +		(div << 2) | ADAU1373_BCLKDIV_64);
->>
->>  	switch (params_format(params)) {
->>  	case SNDRV_PCM_FORMAT_S16_LE:
->>
->>
+On Thu, 28 Feb 2013 19:25:32 +0400
+Pavel Shilovsky <piastry@etersoft.ru> wrote:
+
+> by passing these flags to NFSv4 open request.
 > 
-> That seems way more complicated then need be. It also uses 2 bits in the
-> mask whereas the original code only used 1, e.g., bit 5. Is that correct ?
-
-The BCLKDIV has three fields. The bitclock divider (bit 0-1), the samplerate
-(bit 2-4) and the source select (bit 5). Here we want to update the bitclock
-divider field and the samplerate field. When I wrote the code I was lazy and
-used ~ADAU1373_BCLKDIV_SOURCE as the mask, which for this register is
-functional equivalent to ADAU1373_BCLKDIV_SR_MASK | ADAU1373_BCLKDIV_BCLK_MASK.
-
+> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> ---
+>  fs/nfs/nfs4xdr.c | 24 ++++++++++++++++++++----
+>  1 file changed, 20 insertions(+), 4 deletions(-)
 > 
-> How about just open coding the macro thusly:
-> 
-> #define ADAU1373_BCLKDIV_SOURCE (1<<5) /*BIT(5)*/
+> diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+> index 26b1439..58ddc74 100644
+> --- a/fs/nfs/nfs4xdr.c
+> +++ b/fs/nfs/nfs4xdr.c
+> @@ -1325,7 +1325,8 @@ static void encode_lookup(struct xdr_stream *xdr, const struct qstr *name, struc
+>  	encode_string(xdr, name->len, name->name);
+>  }
+>  
+> -static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
+> +static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode,
+> +				int open_flags)
+>  {
+>  	__be32 *p;
+>  
+> @@ -1343,7 +1344,22 @@ static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
+>  	default:
+>  		*p++ = cpu_to_be32(0);
+>  	}
+> -	*p = cpu_to_be32(0);		/* for linux, share_deny = 0 always */
+> +	if (open_flags & O_DENYMAND) {
 
-But now there is a inconsistency where we sometimes use (1<<x) and sometimes
-BIT(x). I prefer my solution.
 
-- Lars
+As Bruce mentioned, I think a mount option to enable this on a per-fs
+basis would be a better approach than this new O_DENYMAND flag. 
+
+
+> +		switch (open_flags & (O_DENYREAD|O_DENYWRITE)) {
+> +		case O_DENYREAD:
+> +			*p = cpu_to_be32(NFS4_SHARE_DENY_READ);
+> +			break;
+> +		case O_DENYWRITE:
+> +			*p = cpu_to_be32(NFS4_SHARE_DENY_WRITE);
+> +			break;
+> +		case O_DENYREAD|O_DENYWRITE:
+> +			*p = cpu_to_be32(NFS4_SHARE_DENY_BOTH);
+> +			break;
+> +		default:
+> +			*p = cpu_to_be32(0);
+> +		}
+> +	} else
+> +		*p = cpu_to_be32(0);
+>  }
+>  
+>  static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_openargs *arg)
+> @@ -1354,7 +1370,7 @@ static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_opena
+>   * owner 4 = 32
+>   */
+>  	encode_nfs4_seqid(xdr, arg->seqid);
+> -	encode_share_access(xdr, arg->fmode);
+> +	encode_share_access(xdr, arg->fmode, arg->open_flags);
+>  	p = reserve_space(xdr, 36);
+>  	p = xdr_encode_hyper(p, arg->clientid);
+>  	*p++ = cpu_to_be32(24);
+> @@ -1491,7 +1507,7 @@ static void encode_open_downgrade(struct xdr_stream *xdr, const struct nfs_close
+>  	encode_op_hdr(xdr, OP_OPEN_DOWNGRADE, decode_open_downgrade_maxsz, hdr);
+>  	encode_nfs4_stateid(xdr, arg->stateid);
+>  	encode_nfs4_seqid(xdr, arg->seqid);
+> -	encode_share_access(xdr, arg->fmode);
+> +	encode_share_access(xdr, arg->fmode, 0);
+>  }
+>  
+>  static void
+
+
+Other than that, this seems reasonable.
+
+Acked-by: Jeff Layton <jlayton@redhat.com>
