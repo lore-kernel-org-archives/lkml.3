@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3CKLDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:03:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37827 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab3CKLDC (ORCPT
+	id S1754104Ab3CKLDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:03:39 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54856 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014Ab3CKLDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:03:02 -0400
+	Mon, 11 Mar 2013 07:03:05 -0400
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
 CC: <jason.wessel@windriver.com>, <linuxppc-dev@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [v4][PATCH 5/7] kgdb/kgdbts: support ppc64
-Date: Mon, 11 Mar 2013 19:02:44 +0800
-Message-ID: <1362999766-20897-6-git-send-email-tiejun.chen@windriver.com>
+Subject: [v4][PATCH 6/7] powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's thread_info
+Date: Mon, 11 Mar 2013 19:02:45 +0800
+Message-ID: <1362999766-20897-7-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362999766-20897-1-git-send-email-tiejun.chen@windriver.com>
 References: <1362999766-20897-1-git-send-email-tiejun.chen@windriver.com>
@@ -23,51 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't look up the address of the entry point of the function simply
-via that function symbol for all architectures.
-
-For PPC64 ABI, actually there is a function descriptors structure.
-
-A function descriptor is a three doubleword data structure that contains
-the following values:
-	* The first doubleword contains the address of the entry point of
-		the function.
-	* The second doubleword contains the TOC base address for
-		the function.
-	* The third doubleword contains the environment pointer for
-		languages such as Pascal and PL/1.
-
-So we should call a wapperred dereference_function_descriptor() to get
-the address of the entry point of the function.
-
-Note this is also safe for other architecture after refer to
-"include/asm-generic/sections.h" since:
-
-dereference_function_descriptor(p) always is (p) if without arched definition.
+Use DEFINE_PER_CPU to allocate thread_info statically instead of kmalloc().
+This can avoid introducing more memory check codes.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- drivers/misc/kgdbts.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/kernel/kgdb.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
-index 3aa9a96..4799e1f 100644
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -103,6 +103,7 @@
- #include <linux/delay.h>
- #include <linux/kthread.h>
- #include <linux/module.h>
-+#include <asm/sections.h>
+diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+index 1a57307..cde7818 100644
+--- a/arch/powerpc/kernel/kgdb.c
++++ b/arch/powerpc/kernel/kgdb.c
+@@ -151,15 +151,15 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
+ 	return 1;
+ }
  
- #define v1printk(a...) do { \
- 	if (verbose) \
-@@ -222,6 +223,7 @@ static unsigned long lookup_addr(char *arg)
- 		addr = (unsigned long)do_fork;
- 	else if (!strcmp(arg, "hw_break_val"))
- 		addr = (unsigned long)&hw_break_val;
-+	addr = (unsigned long )dereference_function_descriptor((void *)addr);
- 	return addr;
++static DEFINE_PER_CPU(struct thread_info, kgdb_thread_info);
+ static int kgdb_singlestep(struct pt_regs *regs)
+ {
+ 	struct thread_info *thread_info, *exception_thread_info;
+-	struct thread_info *backup_current_thread_info;
++	struct thread_info *backup_current_thread_info = &__get_cpu_var(kgdb_thread_info);
+ 
+ 	if (user_mode(regs))
+ 		return 0;
+ 
+-	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
+ 	/*
+ 	 * On Book E and perhaps other processors, singlestep is handled on
+ 	 * the critical exception stack.  This causes current_thread_info()
+@@ -185,7 +185,6 @@ static int kgdb_singlestep(struct pt_regs *regs)
+ 		/* Restore current_thread_info lastly. */
+ 		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
+ 
+-	kfree(backup_current_thread_info);
+ 	return 1;
  }
  
 -- 
