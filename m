@@ -1,74 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3CKTlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:41:25 -0400
-Received: from vpn.mirsal.fr ([178.79.141.108]:47704 "EHLO
-	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754172Ab3CKTlX (ORCPT
+	id S1754633Ab3CKTm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:42:59 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:57388 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab3CKTm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:41:23 -0400
-From: Mirsal Ennaime <mirsal@mirsal.fr>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mirsal Ennaime <mirsal@mirsal.fr>
-Subject: [PATCH 3/4] drivers: android: binder: Remove excessive indentation
-Date: Mon, 11 Mar 2013 20:31:54 +0100
-Message-Id: <1363030315-10229-4-git-send-email-mirsal@mirsal.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
-References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
+	Mon, 11 Mar 2013 15:42:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363011868.2291.74.camel@rzhang1-mobl4>
+References: <1361886162-9387-1-git-send-email-laurent.navet@gmail.com>
+	<1363011868.2291.74.camel@rzhang1-mobl4>
+Date: Mon, 11 Mar 2013 20:42:55 +0100
+Message-ID: <CAH7P7NjG1H0S+O-WA9bmj01-VixHkZBREs7i+e+p2dAxA4DE0w@mail.gmail.com>
+Subject: Re: [PATCH] drivers: thermal: cpu_cooling: fix checkpatch warning
+From: Laurent Navet <laurent.navet@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove one level of indentation from the binder proc page release code
-by using slightly different control semantics.
+> why not fix the code in cpufreq_get_max_state() as well, in one patch?
+>
+> thanks,
+> rui
 
-This is a cosmetic patch which removes checkpatch "80-columns" warnings
+right, will do that and re-send.
 
-Signed-off-by: Mirsal Ennaime <mirsal@mirsal.fr>
----
- drivers/staging/android/binder.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 49cc573..18a83e2 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -3002,18 +3002,20 @@ static void binder_deferred_release(struct binder_proc *proc)
- 	if (proc->pages) {
- 		int i;
- 		for (i = 0; i < proc->buffer_size / PAGE_SIZE; i++) {
--			if (proc->pages[i]) {
--				void *page_addr = proc->buffer + i * PAGE_SIZE;
--				binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
--					"binder_release: %d: page %d at %p not freed\n",
--					proc->pid, i,
--					page_addr);
--				unmap_kernel_range((unsigned long)page_addr,
--					PAGE_SIZE);
--				__free_page(proc->pages[i]);
--				page_count++;
--			}
-+			if (!proc->pages[i])
-+				continue;
-+
-+			void *page_addr = proc->buffer + i * PAGE_SIZE;
-+			binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
-+				"binder_release: %d: page %d at %p not freed\n",
-+				proc->pid, i,
-+				page_addr);
-+			unmap_kernel_range((unsigned long)page_addr,
-+				PAGE_SIZE);
-+			__free_page(proc->pages[i]);
-+			page_count++;
- 		}
-+
- 		kfree(proc->pages);
- 		vfree(proc->buffer);
- 	}
--- 
-1.7.10.4
-
+Laurent.
