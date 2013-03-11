@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3CKVDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:03:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754539Ab3CKVDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:03:43 -0400
-Date: Mon, 11 Mar 2013 17:03:34 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130311210333.GF14738@redhat.com>
-References: <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
- <513E28B8.3000502@zytor.com>
- <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com>
- <20130311192021.GF12107@redhat.com>
- <513E36CB.5040908@zytor.com>
- <20130311201245.GC14738@redhat.com>
- <513E3C44.9030402@zytor.com>
- <87hakhk6xu.fsf@xmission.com>
- <20130311204530.GE14738@redhat.com>
- <513E438D.5010303@zytor.com>
+	id S1754693Ab3CKVDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:03:55 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:52051 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab3CKVDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:03:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513E438D.5010303@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 11 Mar 2013 14:03:51 -0700
+Message-ID: <CAA3XVTxhXqo5vJmUjmN1_GPZvftVoNcYGKm1WaVOJTuz3jMNqQ@mail.gmail.com>
+Subject: ext4 change in v3.3-rc2 broke user space
+From: Bryan Whitehead <driver@megahappy.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 01:50:21PM -0700, H. Peter Anvin wrote:
-> On 03/11/2013 01:45 PM, Vivek Goyal wrote:
-> > 
-> > - Now we use dracut generated initramfs and it has been growing in size.
-> >   Now systemd has been pulled in too.
-> > 
-> 
-> And the solution to that isn't obvious?
+Specifically this change:
+http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=d1f5273e9adb40724a85272f248f210dc4ce919a
 
-Sorry, I did not understand what do you mean by above.
+This change has broken gluster when using ext4 as the backing
+filesystem. Details are here:
+http://www.gluster.org/2012/08/glusterfs-bit-by-ext4-structure-change/
 
-If you are suggesting that move away from dracut, it does not work
-in practice. Initially we wrote our custom code to generate custom
-initramfs, and we were always lagging in terms of what dump targets
-can be supported and kept on constantly fixing the issues which had
-been taken care of in dracut one way or other. So it was like
-maintaining a duplicate initramfs generation tool.
+The change is about a year old now but it is finally making its way
+into distribution binaries. As a user it sucks because "ext4" the
+"stable" fs basically breaks. Fortunately for myself I've used xfs as
+suggested by GlusterFS (older versions stated ext4/ext3 was fine).
+However, there are many installs (particularly older installs) that
+used ext4 and are finding they must now run outdated old kernels until
+they can completely reinstall their gluster cluster with non-ext4
+underlying filesystems. Another side effect is users like myself
+dealing with the fallout on mailinglists. I've run across this issue
+on glusterfs maillinglist (obviously) and also cloudstack. It is so
+damn annoying to tell people a kernel change screwed up gluster and
+that is why their cluster is busted. To be frank, most will just
+assume kernel would never do such a bad thing and it is nonsense that
+the kernel is to blame. This sucks.
 
-So we do not want to use non-standard tools just for kdump. dracut
-generates the initramfs for first kernel and then it should be able
-to for second kernel too.
+I'm not hear to bitch (well maybe a little) but I hope changes like
+this STOP happening. I think the biggest blame is on RedHat for
+backporting the above patch and pushing out kernel binaries before a
+workaround in kernel-land was found. On the other hand - a work-around
+should have been part of the original patch. I'm resigned to the fact
+there is NO hope of this being fixed since everyone has moved on and
+it has been accepted for so long. Damnit.
 
-Another problem is that other user space component developers, they don't
-know that they are supposed to work with 64MB in total too. Same is true for
-anybody who is writing driver code. 
+If ext4 is seriously this much in flux - I'd like to politely suggest
+it is marked experimental, non-prod, or dangerous.
 
-And bloated memory usage is detected, after the fact. After that one
-can keep on chasing people, and they say that it is their feature
-requirement. And it is not possible to go and optimize every subsystem
-so that together they can boot and work with 64MB.
-
-> 
-> > - makdumpfile needs more memory to dump large machines.
-> > 
-> > There are so many places where memory usage is going up and trying
-> > to keep track of all that has been very hard.
-> 
-> Seriously, in particular the O(n) memory requirements you may want to
-> think very very hard about.
-
-Well we now also have a mode in makedumpfile where memory requirement is
-O(1). Just that it takes more cpu and takes much longer to dump. May be it
-can be improved further.
-
-I am more worried about kernel drivers, and all the user space we need
-to pull in to initramfs to meet more advanced requirements in kdump
-environment.
-
-Thanks
-Vivek
+-Bryan
