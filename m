@@ -1,56 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3CKU2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:28:07 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:58068 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab3CKU2F (ORCPT
+	id S1754594Ab3CKU2Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:28:25 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38699 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505Ab3CKU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:28:05 -0400
+	Mon, 11 Mar 2013 16:28:23 -0400
+Date: Mon, 11 Mar 2013 13:28:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: David Teigland <teigland@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 67/77] dlm: convert to idr_alloc()
+Message-ID: <20130311202818.GN24522@htj.dyndns.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+ <1360179649-22465-68-git-send-email-tj@kernel.org>
+ <20130311192955.GA23892@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130311131601.GG23018@phenom.dumpdata.com>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-	<1362897887-30808-20-git-send-email-yinghai@kernel.org>
-	<20130311131601.GG23018@phenom.dumpdata.com>
-Date: Mon, 11 Mar 2013 13:28:03 -0700
-X-Google-Sender-Auth: qOq6Ng0Ed3HiSy9bR8gLjbS9xMM
-Message-ID: <CAE9FiQWhR9SG1WyqCCxKS2PkJXKeO-wpxQsuUN8_evKWebpAiA@mail.gmail.com>
-Subject: Re: [PATCH v2 19/20] x86, mm: Make init_mem_mapping be able to be
- called several times
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311192955.GA23892@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 6:16 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Sat, Mar 09, 2013 at 10:44:46PM -0800, Yinghai Lu wrote:
->> Prepare to put page table on local nodes.
->>
->> Move calling of init_mem_mapping to early_initmem_init.
->>
->> Rework alloc_low_pages to alloc page table in following order:
->>       BRK, local node, low range
->>
->> Still only load_cr3 one time, otherwise we would break xen 64bit again.
->>
->
-> We could also fix that. Now that the regression storm has passed
-> and I am able to spend some time on it we could make it a bit more
-> resistant.
+Hello, David.
 
-Never mind, We should only need to call load_cr3 one time.
+On Mon, Mar 11, 2013 at 03:29:55PM -0400, David Teigland wrote:
+> On Wed, Feb 06, 2013 at 11:40:39AM -0800, Tejun Heo wrote:
+> >  static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
+> >  {
+> >  	struct dlm_lkb *lkb;
+> > -	int rv, id;
+> > +	int rv;
+> >  
+> >  	lkb = dlm_allocate_lkb(ls);
+> >  	if (!lkb)
+> > @@ -1199,19 +1199,13 @@ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
+> >  	mutex_init(&lkb->lkb_cb_mutex);
+> >  	INIT_WORK(&lkb->lkb_cb_work, dlm_callback_work);
+> >  
+> > - retry:
+> > -	rv = idr_pre_get(&ls->ls_lkbidr, GFP_NOFS);
+> > -	if (!rv)
+> > -		return -ENOMEM;
+> > -
+> > +	idr_preload(GFP_NOFS);
+> >  	spin_lock(&ls->ls_lkbidr_spin);
+> > -	rv = idr_get_new_above(&ls->ls_lkbidr, lkb, 1, &id);
+> > -	if (!rv)
+> > -		lkb->lkb_id = id;
+> > +	rv = idr_alloc(&ls->ls_lkbidr, lkb, 1, 0, GFP_NOWAIT);
+> 
+> Hi Tejun,
+> I'm seeing a number of new failure/warning messages within this idr_alloc.
+> I've not seen idr_alloc itself return an error yet.  Is this an expected
+> failure where the warnings should be suppressed?
 
-as init_memory_mapping itself flush tlb everytime on 64bit.
+Ah, right, in preloaded section, the allocation is expected to fail
+before falling back to the preload buffer and I forgot to add
+__GFP_NOWARN to the first try.  Something like the following should
+make it go away.  Can you please test it?
 
-Thanks
+Thanks a lot!
 
-Yinghai
+diff --git a/lib/idr.c b/lib/idr.c
+index 00739aa..e410e5d 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -106,8 +106,14 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
+ 	if (layer_idr)
+ 		return get_from_free_list(layer_idr);
+ 
+-	/* try to allocate directly from kmem_cache */
+-	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
++	/*
++	 * Try to allocate directly from kmem_cache.  We want to try this
++	 * before preload buffer; otherwise, non-preloading idr_alloc()
++	 * users will end up taking advantage of preloading ones.  As the
++	 * following is allowed to fail for preloaded cases, suppress
++	 * warning this time.
++	 */
++	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask | __GFP_NOWARN);
+ 	if (new)
+ 		return new;
+ 
+@@ -115,18 +121,24 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
+ 	 * Try to fetch one from the per-cpu preload buffer if in process
+ 	 * context.  See idr_preload() for details.
+ 	 */
+-	if (in_interrupt())
+-		return NULL;
+-
+-	preempt_disable();
+-	new = __this_cpu_read(idr_preload_head);
+-	if (new) {
+-		__this_cpu_write(idr_preload_head, new->ary[0]);
+-		__this_cpu_dec(idr_preload_cnt);
+-		new->ary[0] = NULL;
++	if (!in_interrupt()) {
++		preempt_disable();
++		new = __this_cpu_read(idr_preload_head);
++		if (new) {
++			__this_cpu_write(idr_preload_head, new->ary[0]);
++			__this_cpu_dec(idr_preload_cnt);
++			new->ary[0] = NULL;
++		}
++		preempt_enable();
++		if (new)
++			return new;
+ 	}
+-	preempt_enable();
+-	return new;
++
++	/*
++	 * Both failed.  Try kmem_cache again w/o adding __GFP_NOWARN so
++	 * that memory allocation failure warning is printed as intended.
++	 */
++	return kmem_cache_zalloc(idr_layer_cache, gfp_mask);
+ }
+ 
+ static void idr_layer_rcu_free(struct rcu_head *head)
