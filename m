@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3CKCmR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 22:42:17 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:57779 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab3CKCmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 22:42:16 -0400
-Message-ID: <513D447B.5060906@linux.vnet.ibm.com>
-Date: Mon, 11 Mar 2013 10:42:03 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wakeup buddy
-References: <5136EB06.2050905@linux.vnet.ibm.com> <1362645372.2606.11.camel@laptop> <1362649419.4652.12.camel@marge.simpson.net> <51394EE3.1020706@linux.vnet.ibm.com> <1362725051.31859.40.camel@marge.simpson.net> <5139938A.1040504@linux.vnet.ibm.com> <1362731173.31859.81.camel@marge.simpson.net>
-In-Reply-To: <1362731173.31859.81.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031102-5140-0000-0000-000002DF41D1
+	id S1753554Ab3CKCml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 22:42:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7626 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753820Ab3CKCmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 22:42:37 -0400
+X-IronPort-AV: E=Sophos;i="4.84,820,1355068800"; 
+   d="scan'208";a="6847257"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: rusty@rustcorp.com.au, mst@redhat.com, asias@redhat.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        pbonzini@redhat.com, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V4 3/5] virtio-scsi: push vq lock/unlock into virtscsi_vq_done
+Date: Mon, 11 Mar 2013 10:44:00 +0800
+Message-Id: <1362969842-9145-4-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.rc2
+In-Reply-To: <1362969842-9145-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1362969842-9145-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/11 10:41:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/11 10:41:23,
+	Serialize complete at 2013/03/11 10:41:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 04:26 PM, Mike Galbraith wrote:
-> On Fri, 2013-03-08 at 15:30 +0800, Michael Wang wrote: 
->> On 03/08/2013 02:44 PM, Mike Galbraith wrote:
-> 
->>> In general, I think things would work better if we'd just rate limit how
->>> frequently we can wakeup migrate each individual task.  
->>
->> Isn't the wakeup buddy already limit the rate? and by turning the knob,
->> we could change the rate on our demand.
-> 
-> I was referring to the existing kernel, not as altered. 
-> 
->> We want
->>> jabbering tasks to share L3, but we don't really want to trash L2 at an
->>> awesome rate.
->>
->> I don't get it..., it's a task which has 'sleep' for some time, unless
->> there is no task running on prev_cpu when it's sleeping, otherwise
->> whatever the new cpu is, we will trash L2, isn't it?
-> 
-> I'm thinking if you wake it to it's old home after a microscopic sleep,
-> it has a good chance of evicting the current resident, rescuing its L2.
-> If tasks which do microscopic sleep can't move around at a high rate,
-> they'll poke holes in fewer preempt victims.  If they're _really_ fast
-> switchers, always wake affine.  They can't hurt much, they don't do much
-> other than schedule off.
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-I get your point, it's about the task which sleep frequently for a very
-short time, you are right, keep them around prev_cpu could gain some
-benefit.
+Avoid duplicated code in all of the callers.
 
-There are still many factors need to be considered, for example, if the
-cpu around prev_cpu are busier than those around curr_cpu, then pull
-from prev to curr still likely to be a good choice...for the consider of
-future.
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ drivers/scsi/virtio_scsi.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-Also for sure, that depends on what's the workload in the system, and
-how they cooperate with each other.
-
-IMHO, I think wakeup buddy is a compromising solution for this case,
-before we could figure out the correct formular (and a efficient way to
-collect all the info we rely on), such a flexible optimization is not bad.
-
-Regards,
-Michael Wang
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index fdb0132..3573704 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -167,28 +167,30 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+ 	sc->scsi_done(sc);
+ }
+ 
+-static void virtscsi_vq_done(struct virtio_scsi *vscsi, struct virtqueue *vq,
++static void virtscsi_vq_done(struct virtio_scsi *vscsi,
++			     struct virtio_scsi_vq *virtscsi_vq,
+ 			     void (*fn)(struct virtio_scsi *vscsi, void *buf))
+ {
+ 	void *buf;
+ 	unsigned int len;
++	unsigned long flags;
++	struct virtqueue *vq = virtscsi_vq->vq;
+ 
++	spin_lock_irqsave(&virtscsi_vq->vq_lock, flags);
+ 	do {
+ 		virtqueue_disable_cb(vq);
+ 		while ((buf = virtqueue_get_buf(vq, &len)) != NULL)
+ 			fn(vscsi, buf);
+ 	} while (!virtqueue_enable_cb(vq));
++	spin_unlock_irqrestore(&virtscsi_vq->vq_lock, flags);
+ }
+ 
+ static void virtscsi_req_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_cmd);
+-	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->req_vq, virtscsi_complete_cmd);
+ };
+ 
+ static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+@@ -205,11 +207,8 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->ctrl_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_free);
+-	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
+ };
+ 
+ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
+@@ -344,11 +343,8 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_event);
+-	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->event_vq, virtscsi_complete_event);
+ };
+ 
+ /**
+-- 
+1.8.2.rc2
 
