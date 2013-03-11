@@ -1,181 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3CKM3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 08:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905Ab3CKM3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 08:29:04 -0400
-Date: Mon, 11 Mar 2013 09:28:48 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] EDAC fixes for 3.8
-Message-ID: <20130311092848.652c0d46@redhat.com>
-In-Reply-To: <20130311090746.199a4c06@redhat.com>
-References: <20121211140108.GC4303@liondog.tnic>
-	<20130307095703.03d040ee@redhat.com>
-	<20130307130635.GD5239@pd.tnic>
-	<20130307110213.7a5a9978@redhat.com>
-	<20130309154635.GA18316@pd.tnic>
-	<20130311090746.199a4c06@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754134Ab3CKM3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 08:29:50 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:63600 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab3CKM3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 08:29:48 -0400
+Message-ID: <513DCE2D.6010800@synopsys.com>
+Date: Mon, 11 Mar 2013 17:59:33 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: James Hogan <james.hogan@imgtec.com>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: SYSV IPC broken for no-legacy syscall kernels (was Re: [RFC PATCH
+ v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script)
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-27-git-send-email-vgupta@synopsys.com> <201211071413.49178.arnd@arndb.de>
+In-Reply-To: <201211071413.49178.arnd@arndb.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 11 Mar 2013 09:07:46 -0300
-Mauro Carvalho Chehab <mchehab@redhat.com> escreveu:
+Hi Arnd,
 
-> Em Sat, 9 Mar 2013 16:46:35 +0100
-> Borislav Petkov <bp@alien8.de> escreveu:
-> 
-> > On Thu, Mar 07, 2013 at 11:02:13AM -0300, Mauro Carvalho Chehab wrote:
-> > > Sure. See below:
-> > > 
+On Wednesday 07 November 2012 07:43 PM, Arnd Bergmann wrote:
+> On Wednesday 07 November 2012, Vineet Gupta wrote:
+>
+>> +
+>> +config ARC
+>> +	def_bool y
+>> +	select ARCH_WANT_IPC_PARSE_VERSION
+>> +	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
+>> +	# DEVTMPS in turn needs HOTPLUG
+>> +	select DEVTMPFS if !INITRAMFS_SOURCE=""
+>> +	select GENERIC_ATOMIC64
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select GENERIC_FIND_FIRST_BIT
+>> +	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
+>> +	select GENERIC_IRQ_SHOW
+>> +	select GENERIC_PENDING_IRQ if SMP
+>> +	select GENERIC_SMP_IDLE_THREAD
+>> +	select HAVE_GENERIC_HARDIRQS
+>> +	select HOTPLUG if !INITRAMFS_SOURCE=""
+>> +	select MODULES_USE_ELF_RELA
+> You should not need ARCH_WANT_IPC_PARSE_VERSION
 
-...
+It seems, we have a small bug in sysV IPC.
+A lot of LTP tests have started failing on ARC 3.9-rc1 kernel due to absence of
+ARCH_WANT_IPC_PARSE_VERSION.
 
-> > So, actually to satisfy the new api, you'll probably need to stick down
-> > this information above, i.e. the chip selects *per* DCT which equals
-> > also the ranks.
-> > 
-> 
-> Yes. Basically, we should revert this patchset:
-> 	commit 16a528ee3975c860dc93fbfc718fe9aa25ed92bc
-> 	Author: Borislav Petkov <borislav.petkov@amd.com>
-> 	Date:   Thu Sep 13 18:53:58 2012 +0200
-> 
-> And fill dimm->nr_pages with:
-> 
-> 	dimm->nr_pages = nr_pages / pvt->channel_count;
-> 
-> This way, both new API and the old API will reflect the right size.
-> 
-> The patch below does that.
+I'm assuming that for newer arches, msgctl(2) and friends need to have  need to
+have @cmd of type 0x01nn where 0x0100 is IPC_64.
+However for ! ARCH_WANT_IPC_PARSE_VERSION, ipc/util.h seems to be defining a dummy
+version of ipc_parse_version(), which doesn't strip out the 0x0100 from @cmds,
+causing the code to not enter the switch block in SYSCALL_DEFINE3(msgctl) making
+it fail.
+Adding the above item to arch/arc/Kconfig obviously fixes the breakage.
 
-...
+It seems there is some bogosity in the way ipc_parse_version() is defined. Given
+the way it is used, to strip out the 0x0100 bit, it seems we always need the
+function variant - the IA-64 ish comment in there seems to be bit-rot.
 
-> [PATCH] Fix dimm size on amd64_edac
-> 
-...
-> --- a/drivers/edac/edac_mc_sysfs.c
-> +++ b/drivers/edac/edac_mc_sysfs.c
-> @@ -180,9 +180,6 @@ static ssize_t csrow_size_show(struct device *dev,
->  	int i;
->  	u32 nr_pages = 0;
->  
-> -	if (csrow->mci->csbased)
-> -		return sprintf(data, "%u\n", PAGES_TO_MiB(csrow->nr_pages));
-> -
+What do you think ?
 
-With this patch, mci->csbased field got unused. So, it makes sense to
-also remove it. The enclosed patch does that.
-
-Regards,
-Mauro
-
--
-
-[PATCH] edac: merge mci.mem_is_per_rank with mci.csbased
-
-Both mci.mem_is_per_rank and mci.csbased have the same meaning:
-the memory controller is csrows based. Merge both fields into one.
-
-There's no need for the driver to actually fill it, as the core
-detectsi it by checking if one of the layes has the csrows type
-as part of the memory hierarchy:
-
-	if (layers[i].type == EDAC_MC_LAYER_CHIP_SELECT)
-			per_rank = true;
-...
-	mci->csbased = per_rank;
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 074657d..06e633a 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -2418,7 +2418,6 @@ static int amd64_init_one_instance(struct pci_dev *F2)
- 
- 	mci->pvt_info = pvt;
- 	mci->pdev = &pvt->F2->dev;
--	mci->csbased = 1;
- 
- 	setup_mci_misc_attrs(mci, fam_type);
- 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index cdb81aa..27e86d9 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -86,7 +86,7 @@ static void edac_mc_dump_dimm(struct dimm_info *dimm, int number)
- 	edac_dimm_info_location(dimm, location, sizeof(location));
- 
- 	edac_dbg(4, "%s%i: %smapped as virtual row %d, chan %d\n",
--		 dimm->mci->mem_is_per_rank ? "rank" : "dimm",
-+		 dimm->mci->csbased ? "rank" : "dimm",
- 		 number, location, dimm->csrow, dimm->cschannel);
- 	edac_dbg(4, "  dimm = %p\n", dimm);
- 	edac_dbg(4, "  dimm->label = '%s'\n", dimm->label);
-@@ -341,7 +341,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 	memcpy(mci->layers, layers, sizeof(*layer) * n_layers);
- 	mci->nr_csrows = tot_csrows;
- 	mci->num_cschannel = tot_channels;
--	mci->mem_is_per_rank = per_rank;
-+	mci->csbased = per_rank;
- 
- 	/*
- 	 * Alocate and fill the csrow/channels structs
-@@ -1235,7 +1235,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			 * incrementing the compat API counters
- 			 */
- 			edac_dbg(4, "%s csrows map: (%d,%d)\n",
--				 mci->mem_is_per_rank ? "rank" : "dimm",
-+				 mci->csbased ? "rank" : "dimm",
- 				 dimm->csrow, dimm->cschannel);
- 			if (row == -1)
- 				row = dimm->csrow;
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 5463ed3..6ab4a50 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -609,7 +609,7 @@ static int edac_create_dimm_object(struct mem_ctl_info *mci,
- 	device_initialize(&dimm->dev);
- 
- 	dimm->dev.parent = &mci->dev;
--	if (mci->mem_is_per_rank)
-+	if (mci->csbased)
- 		dev_set_name(&dimm->dev, "rank%d", index);
- 	else
- 		dev_set_name(&dimm->dev, "dimm%d", index);
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index ab1ea98..7f5d8d6 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -675,11 +675,11 @@ struct mem_ctl_info {
- 	 * sees memory sticks ("dimms"), and the ones that sees memory ranks.
- 	 * All old memory controllers enumerate memories per rank, but most
- 	 * of the recent drivers enumerate memories per DIMM, instead.
--	 * When the memory controller is per rank, mem_is_per_rank is true.
-+	 * When the memory controller is per rank, csbased is true.
- 	 */
- 	unsigned n_layers;
- 	struct edac_mc_layer *layers;
--	bool mem_is_per_rank;
-+	bool csbased;
- 
- 	/*
- 	 * DIMM info. Will eventually remove the entire csrows_info some day
-@@ -740,7 +740,6 @@ struct mem_ctl_info {
- 	u32 fake_inject_ue;
- 	u16 fake_inject_count;
- #endif
--	__u8 csbased : 1,	/* csrow-based memory controller */
- 	     __resv  : 7;
- };
- 
+-Vineet
 
