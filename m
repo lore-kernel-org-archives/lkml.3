@@ -1,124 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab3CKU2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:28:25 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38699 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab3CKU2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:28:23 -0400
-Date: Mon, 11 Mar 2013 13:28:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Teigland <teigland@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 67/77] dlm: convert to idr_alloc()
-Message-ID: <20130311202818.GN24522@htj.dyndns.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
- <1360179649-22465-68-git-send-email-tj@kernel.org>
- <20130311192955.GA23892@redhat.com>
+	id S1754318Ab3CKUbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:31:17 -0400
+Received: from fieldses.org ([174.143.236.118]:37787 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753313Ab3CKUbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:31:14 -0400
+Date: Mon, 11 Mar 2013 16:31:10 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Frank S Filz <ffilz@us.ibm.com>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-nfs-owner@vger.kernel.org,
+        Pavel Shilovsky <piastry@etersoft.ru>, wine-devel@winehq.org
+Subject: Re: [PATCH v3 7/7] NFSD: Pass share reservations flags to VFS
+Message-ID: <20130311203110.GF642@fieldses.org>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+ <1362065133-9490-8-git-send-email-piastry@etersoft.ru>
+ <20130311150540.119abd63@corrin.poochiereds.net>
+ <20130311193638.GB642@fieldses.org>
+ <20130311160844.7dedf15a@corrin.poochiereds.net>
+ <20130311201108.GE642@fieldses.org>
+ <OF1D20435B.D7D7B48E-ON87257B2B.006FB8C9-88257B2B.00702F2E@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130311192955.GA23892@redhat.com>
+In-Reply-To: <OF1D20435B.D7D7B48E-ON87257B2B.006FB8C9-88257B2B.00702F2E@us.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
-
-On Mon, Mar 11, 2013 at 03:29:55PM -0400, David Teigland wrote:
-> On Wed, Feb 06, 2013 at 11:40:39AM -0800, Tejun Heo wrote:
-> >  static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
-> >  {
-> >  	struct dlm_lkb *lkb;
-> > -	int rv, id;
-> > +	int rv;
-> >  
-> >  	lkb = dlm_allocate_lkb(ls);
-> >  	if (!lkb)
-> > @@ -1199,19 +1199,13 @@ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
-> >  	mutex_init(&lkb->lkb_cb_mutex);
-> >  	INIT_WORK(&lkb->lkb_cb_work, dlm_callback_work);
-> >  
-> > - retry:
-> > -	rv = idr_pre_get(&ls->ls_lkbidr, GFP_NOFS);
-> > -	if (!rv)
-> > -		return -ENOMEM;
-> > -
-> > +	idr_preload(GFP_NOFS);
-> >  	spin_lock(&ls->ls_lkbidr_spin);
-> > -	rv = idr_get_new_above(&ls->ls_lkbidr, lkb, 1, &id);
-> > -	if (!rv)
-> > -		lkb->lkb_id = id;
-> > +	rv = idr_alloc(&ls->ls_lkbidr, lkb, 1, 0, GFP_NOWAIT);
+On Mon, Mar 11, 2013 at 01:25:20PM -0700, Frank S Filz wrote:
 > 
-> Hi Tejun,
-> I'm seeing a number of new failure/warning messages within this idr_alloc.
-> I've not seen idr_alloc itself return an error yet.  Is this an expected
-> failure where the warnings should be suppressed?
+> "J. Bruce Fields" <bfields@fieldses.org>  wrote
+> > On Mon, Mar 11, 2013 at 04:08:44PM -0400, Jeff Layton wrote:
+> > > On Mon, 11 Mar 2013 15:36:38 -0400
+> > > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > > > > It doesn't look like this patch removes any of that old code
+> though. I
+> > > > > think it probably should, or there ought to be some consideration
+> of
+> > > > > how this new stuff will mesh with it.
+> > > > >
+> > > > > I think you have 2 choices here:
+> > > > >
+> > > > > 1/ rip out the old share reservation code altogether and require
+> that
+> > > > > filesystems mount with -o sharemand or whatever if they want to
+> allow
+> > > > > their enforcement
+> > > > >
+> > > > > 2/ make knfsd fall back to using the internal share reservation
+> code
+> > > > > when the mount option isn't enabled
+> > > > >
+> > > > > Personally, I think #1 would be fine, but Bruce may want to weigh
+> in on
+> > > > > what he'd prefer.
+> > > >
+> > > > #1 sounds good.  Clients that use deny bits are few.  My preference
+> > > > would be to return an error to such clients in the case share locks
+> > > > aren't available.
+> > > >
+> > > > (We're a little out of spec there, so I'm not sure which error.  I
+> think
+> > > > the goal is to notify a human there's a problem with minimal
+> collateral
+> > > > damange.
+> > > >
+> > > > NFS4ERR_SERVERFAULT ("I'm a buggy server, sorry about that!") would
+> > > > probably result in an IO error to the application.
+> > > >
+> > > > SHARE_DENIED strikes me as unsafe: an application would be in its
+> rights
+> > > > not to even check for that e.g. in the case of an exclusive create.
+> 
+> Hmm, shouldn't the client catch that with a "default" case at least?
+> 
+> > > > Maybe DELAY?  Kind of ridiculous, but blocking the application
+> > > > indefinitely would probably get someone's attention quickly enough
+> > > > without doing any damnage.)
+> > > >
+> > >
+> > > I agree that we should return an error, but hadn't considered what
+> > > error. Given that hardly any NFS clients use them, I'd probably just go
+> > > with NFS4ERR_SERVERFAULT, and maybe throw a printk or something on the
+> > > server about enabling share reservations for superblock x:y.
+> >
+> > Sounds reasonable.
+> 
+> If I'm understanding, the suggestion is a mount option to enable share
+> reservations and if so, they will be mandatory?
+> 
+> In that case, perhaps we want to keep the existing knfsd code as a
+> fallback, someone might want to support them, but not have them be
+> mandatory (if nothing else, you may cause consternation from folks running
+> pynfs against a default configured knfsd server....).
 
-Ah, right, in preloaded section, the allocation is expected to fail
-before falling back to the preload buffer and I forgot to add
-__GFP_NOWARN to the first try.  Something like the following should
-make it go away.  Can you please test it?
+Understood, but the benefit is slight and the cost (in complexity) is
+rather large.  On balance I'd far prefer to get rid of any fallback code
+entirely.
 
-Thanks a lot!
+> In the Ganesha project, we provide an internal implementation of share
+> reservations for when the underlying system can not support them.
+> 
+> Another bit to consider, does lockd provide share reservations for NLM?
 
-diff --git a/lib/idr.c b/lib/idr.c
-index 00739aa..e410e5d 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -106,8 +106,14 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
- 	if (layer_idr)
- 		return get_from_free_list(layer_idr);
- 
--	/* try to allocate directly from kmem_cache */
--	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
-+	/*
-+	 * Try to allocate directly from kmem_cache.  We want to try this
-+	 * before preload buffer; otherwise, non-preloading idr_alloc()
-+	 * users will end up taking advantage of preloading ones.  As the
-+	 * following is allowed to fail for preloaded cases, suppress
-+	 * warning this time.
-+	 */
-+	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask | __GFP_NOWARN);
- 	if (new)
- 		return new;
- 
-@@ -115,18 +121,24 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
- 	 * Try to fetch one from the per-cpu preload buffer if in process
- 	 * context.  See idr_preload() for details.
- 	 */
--	if (in_interrupt())
--		return NULL;
--
--	preempt_disable();
--	new = __this_cpu_read(idr_preload_head);
--	if (new) {
--		__this_cpu_write(idr_preload_head, new->ary[0]);
--		__this_cpu_dec(idr_preload_cnt);
--		new->ary[0] = NULL;
-+	if (!in_interrupt()) {
-+		preempt_disable();
-+		new = __this_cpu_read(idr_preload_head);
-+		if (new) {
-+			__this_cpu_write(idr_preload_head, new->ary[0]);
-+			__this_cpu_dec(idr_preload_cnt);
-+			new->ary[0] = NULL;
-+		}
-+		preempt_enable();
-+		if (new)
-+			return new;
- 	}
--	preempt_enable();
--	return new;
-+
-+	/*
-+	 * Both failed.  Try kmem_cache again w/o adding __GFP_NOWARN so
-+	 * that memory allocation failure warning is printed as intended.
-+	 */
-+	return kmem_cache_zalloc(idr_layer_cache, gfp_mask);
- }
- 
- static void idr_layer_rcu_free(struct rcu_head *head)
+Yes.  I don't know if anyone's tested them in recent memory!  But it
+might be interesting to write a few simple tests for them and hook them
+up to this on the server side.  (I don't know if they'd be worth
+implementing on the client side?)
+
+--b.
