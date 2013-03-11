@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3CKFGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 01:06:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45355 "EHLO comal.ext.ti.com"
+	id S1752194Ab3CKFGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 01:06:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45356 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994Ab3CKFG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752006Ab3CKFG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Mar 2013 01:06:26 -0400
 From: Lokesh Vutla <lokeshvutla@ti.com>
 To: <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
         <gregkh@linuxfoundation.org>
 CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Nishanth Menon <nm@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>
-Subject: [PATCH 3/8] memory: emif: handle overflow for timing for LP mode
-Date: Mon, 11 Mar 2013 10:36:00 +0530
-Message-ID: <1362978365-5593-4-git-send-email-lokeshvutla@ti.com>
+        Lokesh Vutla <lokeshvutla@ti.com>
+Subject: [PATCH 8/8] memory: emif: Load the correct custom config values from dt
+Date: Mon, 11 Mar 2013 10:36:05 +0530
+Message-ID: <1362978365-5593-9-git-send-email-lokeshvutla@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com>
 References: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com>
@@ -23,85 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+of_get_property returns value in Big Endian format.
+Before using this value it should be converted to little endian
+using be32_to_cpup().
+Custom configs of emif are read from dt using of_get_property,
+but these are not converted to litte endian format.
+Correcting the same here.
 
-In case the custom timings provide values which overflow
-the maximum possible field value, warn and use maximum
-permissible value.
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
 ---
- drivers/memory/emif.c |   36 ++++++++++++++++++++++++++++--------
- 1 file changed, 28 insertions(+), 8 deletions(-)
+ drivers/memory/emif.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 16f5089..37e0c77 100644
+index 119503a..4866f1b 100644
 --- a/drivers/memory/emif.c
 +++ b/drivers/memory/emif.c
-@@ -715,6 +715,8 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
- 	u32 timeout_perf	= EMIF_LP_MODE_TIMEOUT_PERFORMANCE;
- 	u32 timeout_pwr		= EMIF_LP_MODE_TIMEOUT_POWER;
- 	u32 freq_threshold	= EMIF_LP_MODE_FREQ_THRESHOLD;
-+	u32 mask;
-+	u8 shift;
+@@ -1258,7 +1258,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ {
+ 	struct emif_custom_configs	*cust_cfgs = NULL;
+ 	int				len;
+-	const int			*lpmode, *poll_intvl;
++	const __be32			*lpmode, *poll_intvl;
  
- 	struct emif_custom_configs *cust_cfgs = emif->plat_data->custom_configs;
+ 	lpmode = of_get_property(np_emif, "low-power-mode", &len);
+ 	poll_intvl = of_get_property(np_emif, "temp-alert-poll-interval", &len);
+@@ -1272,7 +1272,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
  
-@@ -739,27 +741,45 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
- 
- 	switch (lpmode) {
- 	case EMIF_LP_MODE_CLOCK_STOP:
--		pwr_mgmt_ctrl = (timeout << CS_TIM_SHIFT) |
--					SR_TIM_MASK | PD_TIM_MASK;
-+		shift = CS_TIM_SHIFT;
-+		mask = CS_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_SELF_REFRESH:
- 		/* Workaround for errata i735 */
- 		if (timeout < 6)
- 			timeout = 6;
- 
--		pwr_mgmt_ctrl = (timeout << SR_TIM_SHIFT) |
--					CS_TIM_MASK | PD_TIM_MASK;
-+		shift = SR_TIM_SHIFT;
-+		mask = SR_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_PWR_DN:
--		pwr_mgmt_ctrl = (timeout << PD_TIM_SHIFT) |
--					CS_TIM_MASK | SR_TIM_MASK;
-+		shift = PD_TIM_SHIFT;
-+		mask = PD_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_DISABLE:
- 	default:
--		pwr_mgmt_ctrl = CS_TIM_MASK |
--					PD_TIM_MASK | SR_TIM_MASK;
-+		mask = 0;
-+		shift = 0;
-+		break;
-+	}
-+	/* Round to maximum in case of overflow, BUT warn! */
-+	if (lpmode != EMIF_LP_MODE_DISABLE && timeout > mask >> shift) {
-+		pr_err("TIMEOUT Overflow - lpmode=%d perf=%d pwr=%d freq=%d\n",
-+		       lpmode,
-+		       timeout_perf,
-+		       timeout_pwr,
-+		       freq_threshold);
-+		WARN(1, "timeout=0x%02x greater than 0x%02x. Using max\n",
-+		     timeout, mask >> shift);
-+		timeout = mask >> shift;
+ 	if (lpmode) {
+ 		cust_cfgs->mask |= EMIF_CUSTOM_CONFIG_LPMODE;
+-		cust_cfgs->lpmode = *lpmode;
++		cust_cfgs->lpmode = be32_to_cpup(lpmode);
+ 		of_property_read_u32(np_emif,
+ 				"low-power-mode-timeout-performance",
+ 				&cust_cfgs->lpmode_timeout_performance);
+@@ -1287,7 +1287,8 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ 	if (poll_intvl) {
+ 		cust_cfgs->mask |=
+ 				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL;
+-		cust_cfgs->temp_alert_poll_interval_ms = *poll_intvl;
++		cust_cfgs->temp_alert_poll_interval_ms =
++						be32_to_cpup(poll_intvl);
  	}
  
-+	/* Setup required timing */
-+	pwr_mgmt_ctrl = (timeout << shift) & mask;
-+	/* setup a default mask for rest of the modes */
-+	pwr_mgmt_ctrl |= (SR_TIM_MASK | CS_TIM_MASK | PD_TIM_MASK) &
-+			  ~mask;
-+
- 	/* No CS_TIM in EMIF_4D5 */
- 	if (ip_rev == EMIF_4D5)
- 		pwr_mgmt_ctrl &= ~CS_TIM_MASK;
+ 	if (of_find_property(np_emif, "extended-temp-part", &len))
 -- 
 1.7.9.5
 
