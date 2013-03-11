@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab3CKEOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 00:14:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35741 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab3CKEOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 00:14:15 -0400
-Message-ID: <513D5962.7000209@zytor.com>
-Date: Sun, 10 Mar 2013 21:11:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1751205Ab3CKEov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 00:44:51 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:49337 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3CKEot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 00:44:49 -0400
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: ebiederm@xmission.com, len.brown@intel.com, fenghua.yu@intel.com,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, tglx@linutronix.de, mingo@elte.hu,
-        vgoyal@redhat.com
-Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-References: <20121026.122406.13396329.d.hatayama@jp.fujitsu.com> <87r4oloopm.fsf@xmission.com> <20130311.100721.32982204.d.hatayama@jp.fujitsu.com> <20130311.111352.105946462.d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20130311.111352.105946462.d.hatayama@jp.fujitsu.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362917693-29589-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1362917693-29589-1-git-send-email-gheorghiuandru@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 11 Mar 2013 10:14:27 +0530
+Message-ID: <CA+V-a8sjKVu_ASQEwYUjK2fqU7tWg3DUheY9cxgEfkjwoe+9Ng@mail.gmail.com>
+Subject: Re: [PATCH] Drivers: staging: media: davinci_vpfe: Use resource_size function
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 07:13 PM, HATAYAMA Daisuke wrote:
-> 
-> It seems to me that at least there needs to be the following design
-> policy for multiple CPUs on the 2nd kenrel:
-> 
-> - There's no firmware, kernel components and modules that depend on
->   BSP flag being kept set on the original BSP flag and never set BSP
->   flag of any of the existing CPUs again at runtime.
-> 
+Hi Alexandru,
 
-And that is provably false in the case of firmware.
+Thanks for the patch!
 
-	-hpa
+On Sun, Mar 10, 2013 at 5:44 PM, Alexandru Gheorghiu
+<gheorghiuandru@gmail.com> wrote:
+> Use resource_size function on resource object instead of explicit
+> computation.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards,
+--Prabhakar Lad
 
+> ---
+>  drivers/staging/media/davinci_vpfe/dm365_ipipeif.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+> index c8cae51..b2f4ef8 100644
+> --- a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+> +++ b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+> @@ -1065,7 +1065,6 @@ vpfe_ipipeif_cleanup(struct vpfe_ipipeif_device *ipipeif,
+>         iounmap(ipipeif->ipipeif_base_addr);
+>         res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+>         if (res)
+> -               release_mem_region(res->start,
+> -                                       res->end - res->start + 1);
+> +               release_mem_region(res->start, resource_size(res));
+>
+>  }
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
