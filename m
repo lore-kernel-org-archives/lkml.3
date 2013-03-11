@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3CKVKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:10:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46912 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab3CKVKf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:10:35 -0400
-Date: Mon, 11 Mar 2013 14:10:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-        torvalds@linux-foundation.org, keyrings@linux-nfs.org,
-        pmatouse@redhat.com, security@kernel.org, linux-kernel@vger.kernel.org,
-        mguzik@redhat.com, ben@decadent.org.uk
-Subject: Re: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
-Message-Id: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
-In-Reply-To: <20130311210211.GA13575@kroah.com>
-References: <20130306222412.1255.81929.stgit@warthog.procyon.org.uk>
-	<alpine.LRH.2.02.1303071558030.25164@tundra.namei.org>
-	<20130311210211.GA13575@kroah.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754674Ab3CKVLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:11:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754102Ab3CKVLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:11:00 -0400
+Date: Mon, 11 Mar 2013 17:10:51 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+Message-ID: <20130311211050.GA16843@redhat.com>
+References: <513E2695.3080707@zytor.com>
+ <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
+ <513E28B8.3000502@zytor.com>
+ <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com>
+ <20130311192021.GF12107@redhat.com>
+ <513E36CB.5040908@zytor.com>
+ <20130311201245.GC14738@redhat.com>
+ <513E3C44.9030402@zytor.com>
+ <87hakhk6xu.fsf@xmission.com>
+ <513E41BD.3030003@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513E41BD.3030003@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013 14:02:11 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Thu, Mar 07, 2013 at 03:59:09PM +1100, James Morris wrote:
-> > On Wed, 6 Mar 2013, David Howells wrote:
+On Mon, Mar 11, 2013 at 01:42:37PM -0700, H. Peter Anvin wrote:
+> On 03/11/2013 01:38 PM, Eric W. Biederman wrote:
 > > 
-> > > Reported-by: Mateusz Guzik <mguzik@redhat.com>
-> > > Signed-off-by: David Howells <dhowells@redhat.com>
+> > I totally makes sense to figure out how to load a kernel high.  I am not
+> > convinced kexec on panic is the best use of that ability.  I would argue
+> > that it might be better to figure out how to use a small memory
+> > foot-print and try to keep that foot-print from growing.
 > > 
-> > Acked-by: James Morris <james.l.morris@oracle.com>
 > 
-> What happened to this patch?  I don't see it in Linus's tree, James, did
-> you pick it up?
+> I could not agree more with this.  The whole reason this is a problem is
+> because we are talking about hundreds of megabytes of crashkernel.  If
+> we can fix *that* problem, we are much better off.
 
-James has acked it.  I have it queued for processing so it isn't lost. 
-It has no cc:stable's in it, but David always forgets that ;)
+This kind of goal is achievable only if we also restrict how much memory
+first kernel can use. Then all the dependent component will be aware of
+how severe boot requirements are. And there is no such requirement. It is
+just a goal that keep memory bloat to the minimum. But bloat does not mean
+that booting is not allowed. To me kdump environment requirement should be
+no different. Otherwise enforcing them becomes a challenge.
 
+Thanks
+Vivek
