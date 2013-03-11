@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3CJXxi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 19:53:38 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:49719 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab3CJXxh (ORCPT
+	id S1753420Ab3CKACL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 20:02:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36455 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260Ab3CKACK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 19:53:37 -0400
+	Sun, 10 Mar 2013 20:02:10 -0400
+Date: Mon, 11 Mar 2013 00:02:07 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG_ON(nd->inode->i_op->follow_link);
+Message-ID: <20130311000207.GD21522@ZenIV.linux.org.uk>
+References: <20130307021645.GA10173@redhat.com>
+ <20130307153052.GA18246@redhat.com>
+ <CA+55aFyVZeDswi=M65ULQkGCvJq5vsASLqGCtufH3TcS--MC1Q@mail.gmail.com>
+ <20130307193501.GA2802@redhat.com>
+ <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
+ <20130307221800.GA572@redhat.com>
+ <CA+55aFwObv7--izbae5YdXX3AhoHfV0YwbSLQoonTf-=e4PzqQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130309082650.GA9944@gmail.com>
-References: <1362790259-7837-1-git-send-email-fweisbec@gmail.com>
-	<20130309082650.GA9944@gmail.com>
-Date: Mon, 11 Mar 2013 00:53:35 +0100
-Message-ID: <CAFTL4hxt5y2hdh0_LNA-08+jNTYwkjeg=QHBfgNf_X_XCHie1w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.9-rc1-nohz1
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <mats.liljegren@enea.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwObv7--izbae5YdXX3AhoHfV0YwbSLQoonTf-=e4PzqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/9 Ingo Molnar <mingo@kernel.org>:
-> We could certainly start tip:sched/dynticks (or tip:timers/dynticks) to accelerate
-> the upstream merging of it. Nobody expressed deep concerns with the approach, so
-> what is left is some more hard work.
+On Thu, Mar 07, 2013 at 02:50:55PM -0800, Linus Torvalds wrote:
 
-Great to see you're ok with that direction! I'm working on that then.
+> and you get the oops, because when it follows that pseudo-symlink for
+> fd3, it will hit that symlink we just looked up. And trigger the
+> BUG_ON() you see.
+> 
+> Al, I think the BUG_ON() is simply bogus. Should we just remove it? Or
+> is there some conceptual reason why we can't handle a symlink there?
 
->
-> Two quick requests:
->
->  - Mind adding a Documentation/... file with a high level description,
->    rough design, open problems, etc.?
+BUG_ON() is bogus these days, but failing ->follow_link() is not.  The thing
+is, what would you do with that sucker?  Suppose you have ->follow_link()
+leaving you in a symlink.  What would you do with it?  Either you were
+not going to follow it (in which case you wouldn't have called ->follow_link()
+in the first place) *or* you need to know which directory it's in.  Which
+we don't have in this case...
 
-Sure! We'll maintain that along the way.
+It really used to be an impossible case, until we'd introduced O_PATH.  And
+IIRC, back when O_PATH had been developed, the plan was to fail attempts
+to follow these suckers with -ELOOP; looks like we forgot to do that.  Mea
+culpa...
 
->
->  - Please outline how the current TODO entries affect upstream
->    mergability. Does it reduce the 'full'-ness of this dynticks mode?
->    Outright buggy behavior? Other trade-offs?
+And no, just removing BUG_ON() is not enough - callers of follow_link() will
+do rather weird stuff (in nested symlink case it'll fail with ENOTDIR, in
+path_lookupat() with LOOKUP_FOLLOW it'll give you a symlink, in case of
+path_openat() with LOOKUP_FOLLOW fail with ELOOP).
 
-Mostly this is about upstream features that won't be working with the
-current state of the art: enqueuing a posix cpu timer on a nohz CPU
-may result in it being ignored by the target due to the lack of
-ticking until expiration, perf events may not be round-robined, etc...
-I'll make sure to document all these items.
-
-Thanks.
+See the patch I'd posted upthread.  Let's make it fail consistently...
