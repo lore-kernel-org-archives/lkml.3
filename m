@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3CKS7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:59:20 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:56053 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab3CKS7R (ORCPT
+	id S1754236Ab3CKTBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:01:37 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:20071 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218Ab3CKTBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:59:17 -0400
+	Mon, 11 Mar 2013 15:01:36 -0400
+Message-ID: <513E2A0A.3080008@siemens.com>
+Date: Mon, 11 Mar 2013 20:01:30 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <20130311143507.737f2ab0@corrin.poochiereds.net>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
-	<1362065133-9490-6-git-send-email-piastry@etersoft.ru>
-	<20130311143507.737f2ab0@corrin.poochiereds.net>
-Date: Mon, 11 Mar 2013 22:59:16 +0400
-X-Google-Sender-Auth: WhDLXbRe2EoXomkl7Wh93vtTFwI
-Message-ID: <CAKywueQV7sc9OzOb7=d=48BaosKDoiGsGPjMt5wvW35yjhuCQw@mail.gmail.com>
-Subject: Re: [PATCH v3 5/7] CIFS: Translate SHARING_VIOLATION to -ETXTBSY
- error code for SMB2
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org, sprabhu@redhat.com
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <513DE8C5.3090209@redhat.com> <513DFA01.1040500@siemens.com> <20130311172342.GS31619@redhat.com> <513E158B.80506@siemens.com> <20130311174155.GU31619@redhat.com> <513E1CFC.6010201@siemens.com> <20130311181306.GW31619@redhat.com> <513E2220.2090501@siemens.com> <20130311183915.GA14689@redhat.com> <513E26A7.4020405@siemens.com> <20130311185132.GB14689@redhat.com>
+In-Reply-To: <20130311185132.GB14689@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/11 Jeff Layton <jlayton@redhat.com>:
-> On Thu, 28 Feb 2013 19:25:31 +0400
-> Pavel Shilovsky <piastry@etersoft.ru> wrote:
->
->> to make it match CIFS and VFS variants.
+On 2013-03-11 19:51, Gleb Natapov wrote:
+>>> On Intel:
+>>> CPU 1                          CPU 2 in a guest mode
+>>> send INIT
+>>> send SIPI
+>>>                                 INIT vmexit
+>>>                                 vmxoff
+>>>                                 reset and start from SIPI vector
 >>
->> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
->> ---
->>  fs/cifs/smb2maperror.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> Is SIPI sticky as well, even if the CPU is not in the wait-for-SIPI
+>> state (but runnable and in vmxon) while receiving it?
 >>
->> diff --git a/fs/cifs/smb2maperror.c b/fs/cifs/smb2maperror.c
->> index 494c912..11e589e 100644
->> --- a/fs/cifs/smb2maperror.c
->> +++ b/fs/cifs/smb2maperror.c
->> @@ -356,7 +356,7 @@ static const struct status_to_posix_error smb2_error_map_table[] = {
->>       {STATUS_PORT_CONNECTION_REFUSED, -ECONNREFUSED,
->>       "STATUS_PORT_CONNECTION_REFUSED"},
->>       {STATUS_INVALID_PORT_HANDLE, -EIO, "STATUS_INVALID_PORT_HANDLE"},
->> -     {STATUS_SHARING_VIOLATION, -EBUSY, "STATUS_SHARING_VIOLATION"},
->> +     {STATUS_SHARING_VIOLATION, -ETXTBSY, "STATUS_SHARING_VIOLATION"},
->>       {STATUS_QUOTA_EXCEEDED, -EDQUOT, "STATUS_QUOTA_EXCEEDED"},
->>       {STATUS_INVALID_PAGE_PROTECTION, -EIO,
->>       "STATUS_INVALID_PAGE_PROTECTION"},
->
-> Actually, I think Sachin is converting the CIFS
-> STATUS_SHARING_VIOLATION to translate to EBUSY, since that seems to
-> better reflect the situation. I'd suggest dropping this patch, unless
-> you have a specific need for this error return here.
+> That what they seams to be saying:
+>  However, an INIT and SIPI interrupts sent to a CPU during time when
+>  it is in a VMX mode are remembered and delivered, perhaps hours later,
+>  when the CPU exits the VMX mode
+> 
+> Otherwise their exploit will not work.
 
-Yes, I am ok to drop this patch - accoring to the previous discussion
-in linux-cifs@ it is no suitable.
+Very weird, specifically as SIPI is not just a binary event but carries
+payload. Will another SIPI event overwrite the previously "saved"
+vector? We are deep into an underspecified area...
+
+Jan
 
 -- 
-Best regards,
-Pavel Shilovsky.
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
