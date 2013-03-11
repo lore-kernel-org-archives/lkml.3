@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3CKK2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:28:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab3CKK2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:28:00 -0400
-Message-ID: <513DB201.80503@ti.com>
-Date: Mon, 11 Mar 2013 15:59:21 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753835Ab3CKK25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:28:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316Ab3CKK2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 06:28:55 -0400
+Date: Mon, 11 Mar 2013 12:28:52 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130311102852.GE31619@redhat.com>
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com>
+ <20130310114646.GM11223@redhat.com>
+ <513C9E82.1020304@redhat.com>
+ <20130310153540.GL24444@redhat.com>
+ <513CC08B.2040800@redhat.com>
+ <20130310181035.GM24444@redhat.com>
+ <513DAE8F.3050102@redhat.com>
 MIME-Version: 1.0
-To: Rickard Andersson <rickard.andersson@stericsson.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 0/4] time: dynamic irq affinity
-References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org> <513CC404.6000200@ti.com> <513CCF60.6060406@linaro.org> <513D4E79.5090307@ti.com> <513D9896.2010304@linaro.org> <513DA009.9080601@ti.com> <513DA3BD.4070003@stericsson.com>
-In-Reply-To: <513DA3BD.4070003@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513DAE8F.3050102@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013 02:58 PM, Rickard Andersson wrote:
-> On 03/11/2013 10:12 AM, Santosh Shilimkar wrote:
->> On Monday 11 March 2013 02:10 PM, Daniel Lezcano wrote:
->>> On 03/11/2013 04:24 AM, Santosh Shilimkar wrote:
->>>> On Sunday 10 March 2013 11:52 PM, Daniel Lezcano wrote:
->>> [ ... ]
->>>
->>>>> I don't think it is the case for all the ARM platforms, at least we
->>>>> tested it on vexpress TC2 and u8500, and the number of IPI were reduced
->>>>> very significantly increasing the idle time for cpu0. TC2 will need
->>>>> another optimization on another area for the idle wake up to gain real
->>>>> improvements.
->>>>>
->>>> You are missing my point. TC2 can be an exception since the SGI can wakeup
->>>> CPUs even from low power states where local timer's are stalled. Is that
->>>> the case with U8500 ?
->>> Well, the cpuidle driver is not going into a deep idle state to check
->>> this out.
->>>
->>> AFAICT this board has a specific firmware with the PRCMU (a device
->>> managing the power on the board) and it replaces the GIC when going to
->>> deep idle state, especially by reconnecting the GIC to the A9 cores
->>> automatically when an interrupt occurs.
->>>
->> But most likely it will be limited to peripheral interrupts. SGI's
->> are per-cpu irq's so you need to check that part.
->>
-> In the U8500 case, when the first CPU is woken up it will work ok for that CPU to send an IPI to the other CPU.
+On Mon, Mar 11, 2013 at 11:14:39AM +0100, Paolo Bonzini wrote:
+> Il 10/03/2013 19:10, Gleb Natapov ha scritto:
+> > On Sun, Mar 10, 2013 at 06:19:07PM +0100, Paolo Bonzini wrote:
+> >> Il 10/03/2013 16:35, Gleb Natapov ha scritto:
+> >>>>> However, it would effectively redefine the meaning of
+> >>>>> KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
+> >>>>> to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
+> >>>>> if this is considered an API change (personally, I would treat it as one).
+> >>>>>
+> >>> If it is kernel module internal it definitely is not API change.
+> >>> INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
+> >>> instance INIT does not really resets VCPU. Only after SIPI it is really
+> >>> reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
+> >>> state.
+> >>
+> >> Yeah, and the current definition is ambiguous (without hypervisor
+> >> patches, there's no way to use it as the names would suggest), so
+> >> perhaps the right thing to do is to rename the states (old names kept
+> >> for backwards compatibility only) and work from there.
+> >>
+> > I do not see how renaming clarify things. From userspace point of view
+> > KVM_MP_STATE_SIPI_RECEIVED does not exists.
 > 
-Nice. So in your case, IPI's will always work as long as one of the CPU is
-active.
+> Not really true---we do exit with that state and EINTR when we get a
+> SIPI.  Perhaps that can be changed.
+> 
+That's implementation detail. We can jump to the beginning of the
+function instead. Nowhere we document that entering
+KVM_MP_STATE_SIPI_RECEIVED state cause KVM_RUN return with EINTR.
 
-Regards
-Santosh
+> > If AP is hard reset
+> > userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
+> > BSP it makes it running no matter what type of reset.
+> 
+> The current name just suggests . 
+> And when getting an INIT in the in-kernel LAPIC, this:
+> 
+> -			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
+> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
+> +				KVM_MP_STATE_SIPI_RECEIVED :
+> +				KVM_MP_STATE_INIT_RECEIVED;
+> 
+> makes much less sense than this:
+> 
+> -			vcpu->arch.mp_state = KVM_MP_STATE_WAIT_FOR_SIPI;
+> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
+> +				KVM_MP_STATE_RESET_NOW :
+> +				KVM_MP_STATE_WAIT_FOR_SIPI;
+> 
+Both of them are equally incorrect. INIT should cause reset, and only if
+vmx is off. An userspace reset is also completely broken in that regard.
+Renaming things gives us nothing, only bring unneeded churn. If the
+names were internal I wouldn't mind, but they are APIs.
 
+> However, there's also Jan's plans for nVMX.  Peeking at his queue (see
+> http://git.kiszka.org/?p=linux-kvm.git;a=commitdiff;h=037fb24ec) I think
+> it's better to always reflect INITs to the hypervisor like I did in these
+> patches.
+> 
+The commit was before we decided that we should not abuse mp_state for
+signaling.
+
+--
+			Gleb.
