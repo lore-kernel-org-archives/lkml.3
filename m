@@ -1,346 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3CKSqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:46:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28404 "EHLO mx1.redhat.com"
+	id S1754247Ab3CKSrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:47:14 -0400
+Received: from david.siemens.de ([192.35.17.14]:23490 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686Ab3CKSqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:46:15 -0400
-Date: Mon, 11 Mar 2013 14:46:09 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v3 2/7] vfs: Add O_DENYREAD/WRITE flags support for open
- syscall
-Message-ID: <20130311144609.2ba86964@corrin.poochiereds.net>
-In-Reply-To: <1362065133-9490-3-git-send-email-piastry@etersoft.ru>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
-	<1362065133-9490-3-git-send-email-piastry@etersoft.ru>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752686Ab3CKSrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:47:13 -0400
+Message-ID: <513E26A7.4020405@siemens.com>
+Date: Mon, 11 Mar 2013 19:47:03 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <513DE3C4.5000503@siemens.com> <20130311140503.GO31619@redhat.com> <513DE8C5.3090209@redhat.com> <513DFA01.1040500@siemens.com> <20130311172342.GS31619@redhat.com> <513E158B.80506@siemens.com> <20130311174155.GU31619@redhat.com> <513E1CFC.6010201@siemens.com> <20130311181306.GW31619@redhat.com> <513E2220.2090501@siemens.com> <20130311183915.GA14689@redhat.com>
+In-Reply-To: <20130311183915.GA14689@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013 19:25:28 +0400
-Pavel Shilovsky <piastry@etersoft.ru> wrote:
+On 2013-03-11 19:39, Gleb Natapov wrote:
+> On Mon, Mar 11, 2013 at 07:27:44PM +0100, Jan Kiszka wrote:
+>> On 2013-03-11 19:13, Gleb Natapov wrote:
+>>> On Mon, Mar 11, 2013 at 07:05:48PM +0100, Jan Kiszka wrote:
+>>>> On 2013-03-11 18:41, Gleb Natapov wrote:
+>>>>> On Mon, Mar 11, 2013 at 06:34:03PM +0100, Jan Kiszka wrote:
+>>>>>> On 2013-03-11 18:23, Gleb Natapov wrote:
+>>>>>>> On Mon, Mar 11, 2013 at 04:36:33PM +0100, Jan Kiszka wrote:
+>>>>>>>> On 2013-03-11 15:23, Paolo Bonzini wrote:
+>>>>>>>>> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
+>>>>>>>>>> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
+>>>>>>>>>>>> We are not moving away from mp_state, we are moving away from using
+>>>>>>>>>>>> mp_state for signaling because with nested virt INIT does not always
+>>>>>>>>>>>> change mp_state, not only that it can change mp_state long after signal
+>>>>>>>>>>>> is received after vmx off is done.
+>>>>>>>>>>>
+>>>>>>>>>>> Right.
+>>>>>>>>>>>
+>>>>>>>>>>> BTW, for that to happen, we will also need to influence the INIT level.
+>>>>>>>>>>> Unless I misread the spec, INIT is blocked while in root mode, and if
+>>>>>>>>>>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
+>>>>>>>>>>> actually happens. So what matters is the INIT signal level at the exit
+>>>>>>>>>>> of root mode.
+>>>>>>>>>>>
+>>>>>>>>>> You are talking about INIT# signal received via CPU pin, right? I think
+>>>>>>>>>> INIT send by IPI cannot go away.
+>>>>>>>>>
+>>>>>>>>> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
+>>>>>>>>>
+>>>>>>>>> Only the Pentium and P6 family processors support the INIT-deassert IPI.
+>>>>>>>>> An INIT-disassert IPI has no affect on the state of the APIC, other than
+>>>>>>>>> to reload the arbitration ID register with the value in the APIC ID
+>>>>>>>>> register.
+>>>>>>>>>
+>>>>>>>>> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
+>>>>>>>>> deassert) are always treated as edge triggered interrupts".
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
+>>>>>>>>> clocks" when a soft reset is requested.  So we can guess that INIT# is
+>>>>>>>>> also edge-triggered.
+>>>>>>>>
+>>>>>>>> Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
+>>>>>>>> form of a reset or a vmexit.
+>>>>>>>>
+>>>>>>> vmexit clears it?
+>>>>>>
+>>>>>> It has to. Otherwise, it would hit the host on vmxoff.
+>>>>>>
+>>>>> Why do you thing this is not happening?
+>>>>>
+>>>>> Look at [1] page 10 "VMX and INIT blocking". Do you think they were
+>>>>> lucky to hit CPU while it was in a root mode?
+>>>>>
+>>>>> [1] http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+>>>>
+>>>> Interesting. And confusing. If a VMM cannot "consume" INIT events by
+>>>> reentering the guest nor postpone those events up to that point if they
+>>>> arrived in root mode, the whole vmexit-on-INIT thing is practically
+>>>> useless. I wonder what use case Intel had in mind while designing this.
+>>>>
+>>> I actually find it very useful. On INIT vmexit hypervisor may call
+>>> vmxoff and do proper reset. I find it less useful on AMD where you need
+>>> to send self INIT IPI, but then how you can send self SIPI?
+>>
+>> Where's the difference? On Intel, SIPI is also not deliverable until
+>> after vmxoff. So that signal has to come from the INIT sender, just like
+>> on AMD.
+>>
+> On Intel:
+> CPU 1                          CPU 2 in a guest mode
+> send INIT
+> send SIPI
+>                                 INIT vmexit
+>                                 vmxoff
+>                                 reset and start from SIPI vector
 
-> If O_DENYMAND flag is specified, O_DENYREAD/WRITE/MAND flags are
-> translated to flock's flags:
+Is SIPI sticky as well, even if the CPU is not in the wait-for-SIPI
+state (but runnable and in vmxon) while receiving it?
+
 > 
-> !O_DENYREAD  -> LOCK_READ
-> !O_DENYWRITE -> LOCK_WRITE
-> O_DENYMAND   -> LOCK_MAND
 > 
-> and set through flock_lock_file on a file.
+> On AMD;
+> CPU 1                           CPU 2 in a guest mode
+> send INIT
+> send SIPI
+>                                 INIT vmexit
+>                                 self INIT IPI
+>                                 ???
 > 
-> This change affects opens that use O_DENYMAND flag - all other
-> native Linux opens don't care about these flags. It allow us to
-> enable this feature for applications that need it (e.g. NFS and
-> Samba servers that export the same directory for Windows clients,
-> or Wine applications that access the same files simultaneously).
 > 
-> Create codepath is slightly changed to prevent data races on
-> newely created files: when open with O_CREAT can return with -ETXTBSY
-> error for successfully created files due to a deny lock set by
-> another task.
-> 
-> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-> ---
->  fs/locks.c         | 116 +++++++++++++++++++++++++++++++++++++++++++++++------
->  fs/namei.c         |  44 ++++++++++++++++++--
->  include/linux/fs.h |   6 +++
->  3 files changed, 151 insertions(+), 15 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index a94e331..0cc7d1b 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -605,20 +605,81 @@ static int posix_locks_conflict(struct file_lock *caller_fl, struct file_lock *s
->  	return (locks_conflict(caller_fl, sys_fl));
->  }
->  
-> -/* Determine if lock sys_fl blocks lock caller_fl. FLOCK specific
-> - * checking before calling the locks_conflict().
-> +static unsigned int
-> +deny_flags_to_cmd(unsigned int flags)
-> +{
-> +	unsigned int cmd = LOCK_MAND;
-> +
-> +	if (!(flags & O_DENYREAD))
-> +		cmd |= LOCK_READ;
-> +	if (!(flags & O_DENYWRITE))
-> +		cmd |= LOCK_WRITE;
-> +
-> +	return cmd;
-> +}
-> +
-> +/*
-> + * locks_mand_conflict - Determine if there's a share reservation conflict
-> + * @caller_fl: lock we're attempting to acquire
-> + * @sys_fl: lock already present on system that we're checking against
-> + *
-> + * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
-> + * tell us whether the reservation allows other readers and writers.
-> + *
-> + * We only check against other LOCK_MAND locks, so applications that want to
-> + * use share mode locking will only conflict against one another. "normal"
-> + * applications that open files won't be affected by and won't themselves
-> + * affect the share reservations.
->   */
-> -static int flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
-> +static int
-> +locks_mand_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
->  {
-> -	/* FLOCK locks referring to the same filp do not conflict with
-> +	unsigned char caller_type = caller_fl->fl_type;
-> +	unsigned char sys_type = sys_fl->fl_type;
-> +	fmode_t caller_fmode = caller_fl->fl_file->f_mode;
-> +	fmode_t sys_fmode = sys_fl->fl_file->f_mode;
-> +
-> +	/* they can only conflict if they're both LOCK_MAND */
-> +	if (!(caller_type & LOCK_MAND) || !(sys_type & LOCK_MAND))
-> +		return 0;
-> +
-> +	if (!(caller_type & LOCK_READ) && (sys_fmode & FMODE_READ))
-> +		return 1;
-> +	if (!(caller_type & LOCK_WRITE) && (sys_fmode & FMODE_WRITE))
-> +		return 1;
-> +	if (!(sys_type & LOCK_READ) && (caller_fmode & FMODE_READ))
-> +		return 1;
-> +	if (!(sys_type & LOCK_WRITE) && (caller_fmode & FMODE_WRITE))
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Determine if lock sys_fl blocks lock caller_fl. FLOCK specific checking
-> + * before calling the locks_conflict(). Boolean is_mand indicates whether
-> + * we should use a share reservation scheme or not.
-> + */
-> +static int
-> +flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl,
-> +		     bool is_mand)
+>> However, AMD allows you to NOT do a reset after leaving virtualization
+>> mode. On Intel, INIT is obviously irreversible, thus of limited use.
+>>
+> Why would hypervisor send INIT to one of its CPUs if it does not want to
+> reset it? :)
 
-I'm not sure you really need to add this new is_mand bool. Won't that
-be equivalent to (caller_fl->fl_type & LOCK_MAND)?
+First of all, to trigger a vmexit. What will happen with this event
+should be the hand of the hypervisor - ideally.
 
-> +{
-> +	/*
-> +	 * FLOCK locks referring to the same filp do not conflict with
->  	 * each other.
->  	 */
-> -	if (!IS_FLOCK(sys_fl) || (caller_fl->fl_file == sys_fl->fl_file))
-> -		return (0);
-> -	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND))
-> +	if (!IS_FLOCK(sys_fl))
-> +		return 0;
-> +	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND)) {
-> +		if (is_mand)
-> +			return locks_mand_conflict(caller_fl, sys_fl);
-> +		else
-> +			return 0;
-> +	}
-> +	if (caller_fl->fl_file == sys_fl->fl_file)
->  		return 0;
->  
-> -	return (locks_conflict(caller_fl, sys_fl));
-> +	return locks_conflict(caller_fl, sys_fl);
->  }
->  
->  void
-> @@ -697,14 +758,19 @@ static int posix_locks_deadlock(struct file_lock *caller_fl,
->  	return 0;
->  }
->  
-> -/* Try to create a FLOCK lock on filp. We always insert new FLOCK locks
-> +/*
-> + * Try to create a FLOCK lock on filp. We always insert new FLOCK locks
->   * after any leases, but before any posix locks.
->   *
->   * Note that if called with an FL_EXISTS argument, the caller may determine
->   * whether or not a lock was successfully freed by testing the return
->   * value for -ENOENT.
-> + *
-> + * Take @is_conflict callback that determines how to check if locks have
-> + * conflicts or not.
->   */
-> -static int flock_lock_file(struct file *filp, struct file_lock *request)
-> +static int
-> +flock_lock_file(struct file *filp, struct file_lock *request, bool is_mand)
-
-Ditto here on the is_mand bool. I think you can determine that from
-request->fl_type. Right?
-
->  {
->  	struct file_lock *new_fl = NULL;
->  	struct file_lock **before;
-> @@ -760,7 +826,7 @@ find_conflict:
->  			break;
->  		if (IS_LEASE(fl))
->  			continue;
-> -		if (!flock_locks_conflict(request, fl))
-> +		if (!flock_locks_conflict(request, fl, is_mand))
->  			continue;
->  		error = -EAGAIN;
->  		if (!(request->fl_flags & FL_SLEEP))
-> @@ -783,6 +849,32 @@ out:
->  	return error;
->  }
->  
-> +/*
-> + * Determine if a file is allowed to be opened with specified access and deny
-> + * modes. Lock the file and return 0 if checks passed, otherwise return a error
-> + * code.
-> + */
-> +int
-> +deny_lock_file(struct file *filp)
-> +{
-> +	struct file_lock *lock;
-> +	int error = 0;
-> +
-> +	if (!(filp->f_flags & O_DENYMAND))
-> +		return error;
-> +
-> +	error = flock_make_lock(filp, &lock, deny_flags_to_cmd(filp->f_flags));
-> +	if (error)
-> +		return error;
-> +
-> +	error = flock_lock_file(filp, lock, true);
-> +	if (error == -EAGAIN)
-> +		error = -ETXTBSY;
-> +
-
-I think EBUSY would be a better return code here. ETXTBSY is returned
-in more specific circumstances -- mostly when you're opening a file for
-write that is being executed.
-
-> +	locks_free_lock(lock);
-> +	return error;
-> +}
-> +
->  static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
->  {
->  	struct file_lock *fl;
-> @@ -1589,7 +1681,7 @@ int flock_lock_file_wait(struct file *filp, struct file_lock *fl)
->  	int error;
->  	might_sleep();
->  	for (;;) {
-> -		error = flock_lock_file(filp, fl);
-> +		error = flock_lock_file(filp, fl, false);
->  		if (error != FILE_LOCK_DEFERRED)
->  			break;
->  		error = wait_event_interruptible(fl->fl_wait, !fl->fl_next);
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 43a97ee..c1f7e08 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2559,9 +2559,14 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
->  	 * here.
->  	 */
->  	error = may_open(&file->f_path, acc_mode, open_flag);
-> -	if (error)
-> +	if (error) {
->  		fput(file);
-> +		goto out;
-> +	}
->  
-> +	error = deny_lock_file(file);
-> +	if (error)
-> +		fput(file);
->  out:
->  	dput(dentry);
->  	return error;
-> @@ -2771,9 +2776,9 @@ retry_lookup:
->  	}
->  	mutex_lock(&dir->d_inode->i_mutex);
->  	error = lookup_open(nd, path, file, op, got_write, opened);
-> -	mutex_unlock(&dir->d_inode->i_mutex);
->  
->  	if (error <= 0) {
-> +		mutex_unlock(&dir->d_inode->i_mutex);
->  		if (error)
->  			goto out;
->  
-> @@ -2791,8 +2796,32 @@ retry_lookup:
->  		will_truncate = false;
->  		acc_mode = MAY_OPEN;
->  		path_to_nameidata(path, nd);
-> -		goto finish_open_created;
-> +
-> +		/*
-> +		 * Unlock parent i_mutex later when the open finishes - prevent
-> +		 * races when a file can be locked with a deny lock by another
-> +		 * task that opens the file.
-> +		 */
-> +		error = may_open(&nd->path, acc_mode, open_flag);
-> +		if (error) {
-> +			mutex_unlock(&dir->d_inode->i_mutex);
-> +			goto out;
-> +		}
-> +		file->f_path.mnt = nd->path.mnt;
-> +		error = finish_open(file, nd->path.dentry, NULL, opened);
-> +		if (error) {
-> +			mutex_unlock(&dir->d_inode->i_mutex);
-> +			if (error == -EOPENSTALE)
-> +				goto stale_open;
-> +			goto out;
-> +		}
-> +		error = deny_lock_file(file);
-> +		mutex_unlock(&dir->d_inode->i_mutex);
-> +		if (error)
-> +			goto exit_fput;
-> +		goto opened;
->  	}
-> +	mutex_unlock(&dir->d_inode->i_mutex);
->  
->  	/*
->  	 * create/update audit record if it already exists.
-> @@ -2885,6 +2914,15 @@ finish_open_created:
->  			goto stale_open;
->  		goto out;
->  	}
-> +	/*
-> +	 * Lock parent i_mutex to prevent races with deny locks on newely
-> +	 * created files.
-> +	 */
-> +	mutex_lock(&dir->d_inode->i_mutex);
-> +	error = deny_lock_file(file);
-> +	mutex_unlock(&dir->d_inode->i_mutex);
-> +	if (error)
-> +		goto exit_fput;
->  opened:
->  	error = open_check_o_direct(file);
->  	if (error)
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 7617ee0..347e1de 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1005,6 +1005,7 @@ extern int lease_modify(struct file_lock **, int);
->  extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
->  extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
->  extern void locks_delete_block(struct file_lock *waiter);
-> +extern int deny_lock_file(struct file *);
->  extern void lock_flocks(void);
->  extern void unlock_flocks(void);
->  #else /* !CONFIG_FILE_LOCKING */
-> @@ -1153,6 +1154,11 @@ static inline void locks_delete_block(struct file_lock *waiter)
->  {
->  }
->  
-> +static inline int deny_lock_file(struct file *filp)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline void lock_flocks(void)
->  {
->  }
-
+Jan
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
