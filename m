@@ -1,147 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab3CKVZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:25:42 -0400
-Received: from fieldses.org ([174.143.236.118]:53070 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754702Ab3CKVZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:25:40 -0400
-Date: Mon, 11 Mar 2013 17:25:35 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH linux-next v3] SUNRPC: rpcrdma_register_default_external:
- Dynamically allocate ib_phys_buf
-Message-ID: <20130311212535.GG642@fieldses.org>
-References: <4FA345DA4F4AE44899BD2B03EEEC2FA9286BA156@sacexcmbx05-prd.hq.netapp.com>
- <1363036508-24935-1-git-send-email-tim.gardner@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363036508-24935-1-git-send-email-tim.gardner@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754888Ab3CKVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:15:28 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33341 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3CKVPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:15:14 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v5 12/44] n_tty: Fully initialize ldisc before restarting buffer work
+Date: Mon, 11 Mar 2013 16:44:32 -0400
+Message-Id: <1363034704-28036-13-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+ <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 03:15:08PM -0600, Tim Gardner wrote:
-> rpcrdma_register_default_external() is several frames into the call stack which
-> goes deeper yet. You run the risk of stack corruption by declaring such a large
-> automatic variable, so move the array of 'struct ib_phys_buf' objects into the
-> transport structure 'struct rpcrdma_xprt' (which is dynamically allocated) in
-> order to silence the frame-larger-than warning. Access to each struct
-> rpcrdma_xprt is serialized by XPRT_LOCKED in xprt_reserve_xprt(), so there is
-> no danger of multiple accessors to the array of struct ib_phys_buf objects.
-> 
-> net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
-> net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
-> 
-> gcc version 4.6.3
-> 
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Tom Tucker <tom@ogc.us>
-> Cc: Haggai Eran <haggaie@mellanox.com>
-> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> Cc: Shani Michaeli <shanim@mellanox.com>
-> Cc: linux-nfs@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
-> v1 - Use kmalloc() to dynamically allocate and free the array of 'struct
-> ib_phys_buf' objects
-> 
-> v2 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_req
-> and pass this request down through rpcrdma_register_external() and
-> rpcrdma_register_default_external(). This is less overhead then using
-> kmalloc() and requires no extra error checking as the allocation burden is
-> shifted to the transport client.
-> 
-> v3 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_xprt.
-> Pass a pointer to this transport structure into rpcrdma_register_default_external().
-> This is less overhead then using kmalloc() and requires no extra error checking
-> as the allocation burden is shifted to the transport client.
+Buffer work may already be pending when the n_tty ldisc is re-opened,
+eg., when setting the ldisc (via TIOCSETD ioctl) and when hanging up
+the tty. Since n_tty_set_room() may restart buffer work, first ensure
+the ldisc is completely initialized.
 
-Looks good to me; wish we could get it tested....
+Factor n_tty_set_room() out of reset_buffer_flags() (only 2 callers)
+and reorganize n_tty_open() to set termios last; buffer work will
+be restarted there if necessary, after the char_map is properly
+initialized.
 
-In future if we do decide to also increase the size of that array we may
-need to allocate it separately from struct rpcrdma_xprt itself, which
-looks already fairly large without it; on x86_64:
+Fixes this WARNING:
 
-	$ gdb net/sunrpc/xprtrdma/xprtrdma.ko
-	...
-	(gdb) p sizeof(struct rpcrdma_xprt)
-	$1 = 2912
+[  549.561769] ------------[ cut here ]------------
+[  549.598755] WARNING: at drivers/tty/n_tty.c:160 n_tty_set_room+0xff/0x130()
+[  549.604058] scheduling buffer work for halted ldisc
+[  549.607741] Pid: 9417, comm: trinity-child28 Tainted: G      D W 3.7.0-next-20121217-sasha-00023-g8689ef9 #219
+[  549.652580] Call Trace:
+[  549.662754]  [<ffffffff81c432cf>] ? n_tty_set_room+0xff/0x130
+[  549.665458]  [<ffffffff8110cae7>] warn_slowpath_common+0x87/0xb0
+[  549.668257]  [<ffffffff8110cb71>] warn_slowpath_fmt+0x41/0x50
+[  549.671007]  [<ffffffff81c432cf>] n_tty_set_room+0xff/0x130
+[  549.673268]  [<ffffffff81c44597>] reset_buffer_flags+0x137/0x150
+[  549.675607]  [<ffffffff81c45b71>] n_tty_open+0x131/0x1c0
+[  549.677699]  [<ffffffff81c47824>] tty_ldisc_open.isra.5+0x54/0x70
+[  549.680147]  [<ffffffff81c482bf>] tty_ldisc_hangup+0x11f/0x1e0
+[  549.682409]  [<ffffffff81c3fa17>] __tty_hangup+0x137/0x440
+[  549.684634]  [<ffffffff81c3fd49>] tty_vhangup+0x9/0x10
+[  549.686443]  [<ffffffff81c4a42c>] pty_close+0x14c/0x160
+[  549.688446]  [<ffffffff81c41225>] tty_release+0xd5/0x490
+[  549.690460]  [<ffffffff8127d8a2>] __fput+0x122/0x250
+[  549.692577]  [<ffffffff8127d9d9>] ____fput+0x9/0x10
+[  549.694534]  [<ffffffff811348c2>] task_work_run+0xb2/0xf0
+[  549.696349]  [<ffffffff81113c6d>] do_exit+0x36d/0x580
+[  549.698286]  [<ffffffff8107d964>] ? syscall_trace_enter+0x24/0x2e0
+[  549.702729]  [<ffffffff81113f4a>] do_group_exit+0x8a/0xc0
+[  549.706775]  [<ffffffff81113f92>] sys_exit_group+0x12/0x20
+[  549.711088]  [<ffffffff83cfab18>] tracesys+0xe1/0xe6
+[  549.728001] ---[ end trace 73eb41728f11f87e ]---
 
-But that shouldn't be a big deal to do.
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---b.
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index a786f4e..66ce178 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -219,9 +219,8 @@ static void check_unthrottle(struct tty_struct *tty)
+  *	Locking: tty_read_lock for read fields.
+  */
+ 
+-static void reset_buffer_flags(struct tty_struct *tty)
++static void reset_buffer_flags(struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
+@@ -234,7 +233,6 @@ static void reset_buffer_flags(struct tty_struct *tty)
+ 
+ 	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
+ 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+-	n_tty_set_room(tty);
+ }
+ 
+ static void n_tty_packet_mode_flush(struct tty_struct *tty)
+@@ -262,7 +260,8 @@ static void n_tty_packet_mode_flush(struct tty_struct *tty)
+ 
+ static void n_tty_flush_buffer(struct tty_struct *tty)
+ {
+-	reset_buffer_flags(tty);
++	reset_buffer_flags(tty->disc_data);
++	n_tty_set_room(tty);
+ 
+ 	if (tty->link)
+ 		n_tty_packet_mode_flush(tty);
+@@ -1654,14 +1653,14 @@ static int n_tty_open(struct tty_struct *tty)
+ 		goto err_free_bufs;
+ 
+ 	tty->disc_data = ldata;
+-	/* indicate buffer work may resume */
+-	clear_bit(TTY_LDISC_HALTED, &tty->flags);
+-	reset_buffer_flags(tty);
+-	tty_unthrottle(tty);
++	reset_buffer_flags(tty->disc_data);
+ 	ldata->column = 0;
+-	n_tty_set_termios(tty, NULL);
+ 	tty->minimum_to_wake = 1;
+ 	tty->closing = 0;
++	/* indicate buffer work may resume */
++	clear_bit(TTY_LDISC_HALTED, &tty->flags);
++	n_tty_set_termios(tty, NULL);
++	tty_unthrottle(tty);
+ 
+ 	return 0;
+ err_free_bufs:
+-- 
+1.8.1.2
 
-> 
->  net/sunrpc/xprtrdma/verbs.c     |   10 ++++++----
->  net/sunrpc/xprtrdma/xprt_rdma.h |    5 ++++-
->  2 files changed, 10 insertions(+), 5 deletions(-)
-> 
-> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-> index 93726560..c7aa3da 100644
-> --- a/net/sunrpc/xprtrdma/verbs.c
-> +++ b/net/sunrpc/xprtrdma/verbs.c
-> @@ -1730,13 +1730,14 @@ rpcrdma_deregister_memwin_external(struct rpcrdma_mr_seg *seg,
->  }
->  
->  static int
-> -rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
-> -			int *nsegs, int writing, struct rpcrdma_ia *ia)
-> +rpcrdma_register_default_external(struct rpcrdma_xprt *r_xprt,
-> +			struct rpcrdma_mr_seg *seg, int *nsegs, int writing,
-> +			struct rpcrdma_ia *ia)
->  {
->  	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
->  				  IB_ACCESS_REMOTE_READ);
->  	struct rpcrdma_mr_seg *seg1 = seg;
-> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
-> +	struct ib_phys_buf *ipb = r_xprt->ipb;
->  	int len, i, rc = 0;
->  
->  	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
-> @@ -1827,7 +1828,8 @@ rpcrdma_register_external(struct rpcrdma_mr_seg *seg,
->  
->  	/* Default registration each time */
->  	default:
-> -		rc = rpcrdma_register_default_external(seg, &nsegs, writing, ia);
-> +		rc = rpcrdma_register_default_external(r_xprt, seg, &nsegs,
-> +			writing, ia);
->  		break;
->  	}
->  	if (rc)
-> diff --git a/net/sunrpc/xprtrdma/xprt_rdma.h b/net/sunrpc/xprtrdma/xprt_rdma.h
-> index cc1445d..d7b440f 100644
-> --- a/net/sunrpc/xprtrdma/xprt_rdma.h
-> +++ b/net/sunrpc/xprtrdma/xprt_rdma.h
-> @@ -269,7 +269,8 @@ struct rpcrdma_stats {
->   * for convenience. This structure need not be visible externally.
->   *
->   * It is allocated and initialized during mount, and released
-> - * during unmount.
-> + * during unmount. Access to this structure is serialized by XPRT_LOCKED
-> + * in xprt_reserve_xprt().
->   */
->  struct rpcrdma_xprt {
->  	struct rpc_xprt		xprt;
-> @@ -279,6 +280,8 @@ struct rpcrdma_xprt {
->  	struct rpcrdma_create_data_internal rx_data;
->  	struct delayed_work	rdma_connect;
->  	struct rpcrdma_stats	rx_stats;
-> +	/* temp work array */
-> +	struct ib_phys_buf	ipb[RPCRDMA_MAX_DATA_SEGS];
->  };
->  
->  #define rpcx_to_rdmax(x) container_of(x, struct rpcrdma_xprt, xprt)
-> -- 
-> 1.7.9.5
-> 
