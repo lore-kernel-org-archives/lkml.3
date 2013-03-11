@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab3CKKPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:15:00 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:54027 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab3CKKOv (ORCPT
+	id S1753775Ab3CKKXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:23:34 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43187 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab3CKKXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:14:51 -0400
-Message-ID: <513DAE85.9010603@windriver.com>
-Date: Mon, 11 Mar 2013 18:14:29 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 11 Mar 2013 06:23:32 -0400
 MIME-Version: 1.0
-To: Alex Grad <alex.grad@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-CC: <sfr@canb.auug.org.au>, <mikey@neuling.org>, <daniel.baluta@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <penberg@kernel.org>,
-        <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH]->[PATCH v2] kgdb: Removed kmalloc returned value cast
-References: <1362955188-3023-1-git-send-email-alex.grad@gmail.com> <513D346E.20009@windriver.com>
-In-Reply-To: <513D346E.20009@windriver.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.178.22]
+In-Reply-To: <1362987503-6449-1-git-send-email-silviupopescu1990@gmail.com>
+References: <1362987503-6449-1-git-send-email-silviupopescu1990@gmail.com>
+Date: Mon, 11 Mar 2013 15:53:31 +0530
+Message-ID: <CAK9yfHxJNtdYdx4pwfq_F2HBvOxvumt+XFsdQQjh2xHB9_s3sg@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: convert to devm_ioremap_resource()
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be, ben-linux@fluff.org,
+        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 09:33 AM, tiejun.chen wrote:
-> On 03/11/2013 06:39 AM, Alex Grad wrote:
->> While at it, check kmalloc return value.
->>
->> Signed-off-by: Alex Grad <alex.grad@gmail.com>
->> ---
->>   arch/powerpc/kernel/kgdb.c |    5 ++++-
->>   1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
->> index 5ca82cd..9e81dd8 100644
->> --- a/arch/powerpc/kernel/kgdb.c
->> +++ b/arch/powerpc/kernel/kgdb.c
->> @@ -159,7 +159,10 @@ static int kgdb_singlestep(struct pt_regs *regs)
->>       if (user_mode(regs))
->>           return 0;
->>
->> -    backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct
->> thread_info), GFP_KERNEL);
->> +    backup_current_thread_info = kmalloc(sizeof(struct thread_info),
->> GFP_KERNEL);
->> +    if (!backup_current_thread_info)
->> +        return -ENOMEM;
+Hi,
+
+On 11 March 2013 13:08, Silviu-Mihai Popescu
+<silviupopescu1990@gmail.com> wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 >
-> I already send a kgdb patchset in "[v3][PATCH 6/6] powerpc/kgdb: remove copying
-> the thread_info" to remove these stuff since its unnecessary to copy current
-> thread_info now.
+> devm_ioremap_resource() provides its own error messages so all explicit
+> error messages can be removed from the failure code paths.
+>
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 
-I guess that patchset needs to be reviewed with more time and I also think I can 
-leave this copying to be compatible for other platforms in the future, but we 
-really should fix this problem I introduced right now. So I'd like to fix this 
-with DEFINE_PER_CPU.
+I have already submitted a similar patchset to do this:
+http://www.spinics.net/lists/linux-watchdog/msg02101.html
 
-I send a patch, "powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's 
-thread_info", so please take a look at if that version is fine to every one.
 
-Any comments are appreciated.
-
-BTW, I will update that kgdb patchset with this change to resend.
-
-Tiejun
+-- 
+With warm regards,
+Sachin
