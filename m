@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3CKOYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:24:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22630 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab3CKOYl (ORCPT
+	id S1753404Ab3CKOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:24:58 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:59476 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3CKOYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:24:41 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=4dEJddBKX3AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrVzYC5FtwsA:10 a=VLD9ylkaxfSdWlIIy78A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363011880.12608.17.camel@gandalf.local.home>
-Subject: Re: [PATCH 00/13] Improvements tracing code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Mon, 11 Mar 2013 10:24:40 -0400
-In-Reply-To: <513D8414.9040005@huawei.com>
-References: <513D8414.9040005@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Mon, 11 Mar 2013 10:24:33 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-56-513de91eee72
+Subject: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
+ section
+To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Date: Mon, 11 Mar 2013 23:22:33 +0900
+Message-ID: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 15:13 +0800, zhangwei(Jovi) wrote:
-> This patch series does several improvements and cleanups in tracing code
-> as follows short stat.
+Beacuse hash_64() is called from the get_kprobe() inside
+int3 handler, kernel causes int3 recursion and crashes if
+kprobes user puts a probe on it.
 
-Except for the patches I replied to (and scsi), I think the rest are
-fine and will queue them up in my 3.10 series.
+Usually hash_64() is inlined into caller function, but in
+some cases, it has instances by gcc's interprocedural
+constant propagation.
 
-These are:
+This patch adds __kprobes tag on the hash_64() and moves
+all those instances into .text.kprobe section so that
+kprobes can refuse probing on the instances.
 
-zhangwei(Jovi) (7):
-  tracing: teach to use pr_warn_once
-  tracing: use TRACE_MAX_PRINT
-  tracing: move find_event_field function into trace_events.c
-  tracing: make trace_destroy_fields as static
-  tracing: change unclear comments on arch_syscall_match_sym_name
-  tracing: rename trace_event_mutex to trace_event_sem
-  tracing: deprecate tracing_is_enabled function
+I've ensured that all hash_64 instances moves to the
+address between __kprobes_text_start and __kprobes_text_end
+with this patch as below.
 
--- Steve
+ffffffff8138bea0 T __kprobes_text_start
+ffffffff8138bec0 t hash_64.constprop.8
+ffffffff8138ef98 t hash_64.constprop.26
+ffffffff8138efae t hash_64
+ffffffff8138f066 t hash_64.constprop.43
+ffffffff8138f649 t hash_64.constprop.25
+ffffffff8139103a t hash_64.constprop.77
+ffffffff81391050 t hash_64.constprop.24
+ffffffff81391066 t hash_64.constprop.40
+ffffffff8139107c t hash_64.constprop.15
+ffffffff81391092 T __kprobes_text_end
 
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ include/linux/hash.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/hash.h b/include/linux/hash.h
+index 61c97ae..d83f62f 100644
+--- a/include/linux/hash.h
++++ b/include/linux/hash.h
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include <asm/types.h>
++#include <linux/kprobes.h>
+ 
+ /* 2^31 + 2^29 - 2^25 + 2^22 - 2^19 - 2^16 + 1 */
+ #define GOLDEN_RATIO_PRIME_32 0x9e370001UL
+@@ -31,7 +32,7 @@
+ #error Wordsize not 32 or 64
+ #endif
+ 
+-static inline u64 hash_64(u64 val, unsigned int bits)
++static __kprobes inline u64 hash_64(u64 val, unsigned int bits)
+ {
+ 	u64 hash = val;
+ 
 
