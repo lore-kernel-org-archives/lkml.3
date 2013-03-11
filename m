@@ -1,37 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3CKRne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:43:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51802 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab3CKRnc (ORCPT
+	id S1753976Ab3CKRnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:43:10 -0400
+Received: from smtp-out-222.synserver.de ([212.40.185.222]:1056 "EHLO
+	smtp-out-222.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab3CKRnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:43:32 -0400
-Message-ID: <513E17C1.1070305@wwwdotorg.org>
-Date: Mon, 11 Mar 2013 11:43:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
-Subject: Re: [PATCH V2 4/5] ARM: DT: tegra114: add KBC controller DT entry
-References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-5-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1362852678-13421-5-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Mar 2013 13:43:07 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32201
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/4] tty: max3100: Use dev_pm_ops
+Date: Mon, 11 Mar 2013 18:44:49 +0100
+Message-Id: <1363023892-15957-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2013 11:11 AM, Laxman Dewangan wrote:
-> NVIDIA's Tegra114 SoCs have the matrix keyboard controller which
-> supports 11x8 type of matrix. The number of rows and columns
-> are configurable.
-> 
-> Add DT entry for KBC controller with compatibility as "nvidia,tegra114-kbc",
-> "nvidia,tegra20-kbc".
+Use dev_pm_ops instead of the deprecated legacy suspend/resume for the
+max3100 driver.
 
-I thought the HW really wasn't compatible with Tegra20 due to the
-reduced number of rows/columns/pins supported?
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/tty/serial/max3100.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/tty/serial/max3100.c b/drivers/tty/serial/max3100.c
+index 32517d4..57da9bb 100644
+--- a/drivers/tty/serial/max3100.c
++++ b/drivers/tty/serial/max3100.c
+@@ -849,11 +849,11 @@ static int max3100_remove(struct spi_device *spi)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ 
+-static int max3100_suspend(struct spi_device *spi, pm_message_t state)
++static int max3100_suspend(struct device *dev)
+ {
+-	struct max3100_port *s = dev_get_drvdata(&spi->dev);
++	struct max3100_port *s = dev_get_drvdata(dev);
+ 
+ 	dev_dbg(&s->spi->dev, "%s\n", __func__);
+ 
+@@ -874,9 +874,9 @@ static int max3100_suspend(struct spi_device *spi, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int max3100_resume(struct spi_device *spi)
++static int max3100_resume(struct device *dev)
+ {
+-	struct max3100_port *s = dev_get_drvdata(&spi->dev);
++	struct max3100_port *s = dev_get_drvdata(dev);
+ 
+ 	dev_dbg(&s->spi->dev, "%s\n", __func__);
+ 
+@@ -894,21 +894,21 @@ static int max3100_resume(struct spi_device *spi)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(max3100_pm_ops, max3100_suspend, max3100_resume);
++#define MAX3100_PM_OPS (&max3100_pm_ops)
++
+ #else
+-#define max3100_suspend NULL
+-#define max3100_resume  NULL
++#define MAX3100_PM_OPS NULL
+ #endif
+ 
+ static struct spi_driver max3100_driver = {
+ 	.driver = {
+ 		.name		= "max3100",
+ 		.owner		= THIS_MODULE,
++		.pm		= MAX3100_PM_OPS,
+ 	},
+-
+ 	.probe		= max3100_probe,
+ 	.remove		= max3100_remove,
+-	.suspend	= max3100_suspend,
+-	.resume		= max3100_resume,
+ };
+ 
+ module_spi_driver(max3100_driver);
+-- 
+1.8.0
+
