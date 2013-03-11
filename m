@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab3CKXMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 19:12:31 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:36717 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab3CKXMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 19:12:30 -0400
-Date: Tue, 12 Mar 2013 00:12:27 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130311231227.GA319@x4>
-References: <20130311171824.GA434@x4>
- <20130311191753.GA439@x4>
- <20130311194159.GB3579@redhat.com>
- <20130311201334.GA444@x4>
- <20130311203738.GB15478@thunk.org>
- <20130311204625.GA433@x4>
- <20130311211833.GC15478@thunk.org>
- <20130311213837.GA438@x4>
+	id S1754637Ab3CKXQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 19:16:08 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52869 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab3CKXQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 19:16:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
+Date: Tue, 12 Mar 2013 00:23:08 +0100
+Message-ID: <3505617.pgqBjPDzlA@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1361550275-5716-1-git-send-email-nzimmer@sgi.com>
+References: <51265E0F.6090209@sgi.com> <1361550275-5716-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311213837.GA438@x4>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.03.11 at 22:38 +0100, Markus Trippelsdorf wrote:
-> On 2013.03.11 at 17:18 -0400, Theodore Ts'o wrote:
-> > On Mon, Mar 11, 2013 at 09:46:25PM +0100, Markus Trippelsdorf wrote:
-> > > > BTW, I'm currently running 3.9-rc2 with some additional fixes from the
-> > > > ext4 dev branch, and I'm not able to reproduce the problem using
-> > > > rtorrent on my laptop.  How reliably is it reproducing for you?  Are
-> > > > you seeing the problem every time you try this?
-> > > 
-> > > Yes, it's 100% reproducible for me. If I boot a 3.8 kernel the issue
-> > > vanishes.
-> > 
-> > Would you be willing to try an experiment? 
-> > 
-> > Try pulling down the master branch from the ext4 git tree here:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
-> > 
-> > This contains all of the ext4 changes which are in 3.9-rc1, based on
-> > top of 3.8-rc3.  See if it reproduces there.  If it does, then it
-> > would tend to confirm the hypothesis that the issue was introduced by
-> > one of the ext4 patches that we merged during the 3.9-rc1 merge
-> > window... and then, since if you can reproduce the problem, if you
-> > could do a git bisect to find the guilty commit, that would really
-> > greatly appreciated.
-> > 
-> > If you can't reproduce it from the ext4.git tree, then the problem is
-> > probably caused by some other change that was introduced between 3.8
-> > and 3.9-rc1.
+On Friday, February 22, 2013 10:24:33 AM Nathan Zimmer wrote:
+> I am noticing the cpufreq_driver_lock is quite hot.
+> On an idle 512 system perf shows me most of the system time is spent on this
+> lock.  This is quite significant as top shows 5% of time in system time.
+> My solution was to first convert the lock to a rwlock and then to the rcu.
 > 
-> I've started a full bisection from v3.8 to todays git tree. It will take
-> ~13 steps. However it's already late here in Germany. I will continue
-> the bisection tomorrow and report back.
+> v2: Rebase
+> 
+> v3: Read the RCU documentation instead of skimming it.  Also I based on 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.9-rc1
+> I assumed that was what you would prefer Rafael.
+> 
+> v4: Removed an unnecessary syncronize_rcu().
+> 
+> 
+> Nathan Zimmer (2):
+>   cpufreq: Convert the cpufreq_driver_lock to a rwlock
+>   cpufreq: Convert the cpufreq_driver_lock to use the rcu
+> 
+>  drivers/cpufreq/cpufreq.c | 286 ++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 211 insertions(+), 75 deletions(-)
 
-The issue started with:
+I'm going to take patch [1/2] for v3.10, but patch [2/2] still needs some
+work it seems.  Is that correct?  If so, are you going to send an update?
 
-74cd15cd02708c7188581f279f33a98b2ae8d322 is the first bad commit
-commit 74cd15cd02708c7188581f279f33a98b2ae8d322
-Author: Zheng Liu <wenqing.lz@taobao.com>
-Date:   Mon Feb 18 00:32:55 2013 -0500
+Rafael
 
-    ext4: reclaim extents from extent status tree
-
-Please note that my local rtorrent version was configured with
-"--with-posix-fallocate". I'm not sure if distributions also enable this
-flag, but it could explain why Ted and Dave weren't able to reproduce
-the problem so far.
 
 -- 
-Markus
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
