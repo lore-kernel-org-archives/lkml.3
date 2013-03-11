@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3CKRmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:42:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57255 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab3CKRmu (ORCPT
+	id S1754028Ab3CKRnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:43:11 -0400
+Received: from smtp-out-222.synserver.de ([212.40.185.222]:1073 "EHLO
+	smtp-out-222.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab3CKRnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:42:50 -0400
-Message-ID: <513E1797.4010808@wwwdotorg.org>
-Date: Mon, 11 Mar 2013 11:42:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
-Subject: Re: [PATCH V2 3/5] ARM: DT: tegra114:add aliases and DMA requestor
- for serial controller
-References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-4-git-send-email-ldewangan@nvidia.com> <20130310224219.GG4743@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130310224219.GG4743@avionic-0098.mockup.avionic-design.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Mar 2013 13:43:08 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32201
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH 2/4] tty: max310x: Use dev_pm_ops
+Date: Mon, 11 Mar 2013 18:44:50 +0100
+Message-Id: <1363023892-15957-2-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1363023892-15957-1-git-send-email-lars@metafoo.de>
+References: <1363023892-15957-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 04:42 PM, Thierry Reding wrote:
-> On Sat, Mar 09, 2013 at 11:41:16PM +0530, Laxman Dewangan wrote: 
-> [...]
->> diff --git a/arch/arm/boot/dts/tegra114.dtsi 
->> b/arch/arm/boot/dts/tegra114.dtsi
-> [...]
->> @@ -99,38 +106,50 @@ 0x70003000 0x40c>;	/* Mux registers */ };
->> 
->> -	serial@70006000 { +	/* +	 * There are two serial driver i.e. 
->> 8250 based simple serial +	 * driver and APB DMA based serial 
->> driver for higher baudrate +	 * and performace. To enable the 
->> 8250 based driver, the compatible +	 * is
->> "nvidia,tegra114-uart", "nvidia,tegra20-uart" and to enable +	 *
->> the APB DMA based serial driver, the comptible is +	 *
->> "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart". +	 */ +	uarta:
->> serial@70006000 {
-> 
-> I'm not sure if this is a good place for this comment. Perhaps it 
-> should go into the binding documentation?
+Use dev_pm_ops instead of the deprecated legacy suspend/resume for the
+max310x driver.
 
-It is at least consistent with previous tegra20/30.dtsi. The two
-compatible values are separate bindings, so a clue here re: which one
-to go look at isn't a bad idea, although I agree that having each
-binding document mention the other one would also be good.
+Cc: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/tty/serial/max310x.c | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
+index 0c2422c..8941e64 100644
+--- a/drivers/tty/serial/max310x.c
++++ b/drivers/tty/serial/max310x.c
+@@ -881,12 +881,14 @@ static struct uart_ops max310x_ops = {
+ 	.verify_port	= max310x_verify_port,
+ };
+ 
+-static int max310x_suspend(struct spi_device *spi, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++
++static int max310x_suspend(struct device *dev)
+ {
+ 	int ret;
+-	struct max310x_port *s = dev_get_drvdata(&spi->dev);
++	struct max310x_port *s = dev_get_drvdata(dev);
+ 
+-	dev_dbg(&spi->dev, "Suspend\n");
++	dev_dbg(dev, "Suspend\n");
+ 
+ 	ret = uart_suspend_port(&s->uart, &s->port);
+ 
+@@ -905,11 +907,11 @@ static int max310x_suspend(struct spi_device *spi, pm_message_t state)
+ 	return ret;
+ }
+ 
+-static int max310x_resume(struct spi_device *spi)
++static int max310x_resume(struct device *dev)
+ {
+-	struct max310x_port *s = dev_get_drvdata(&spi->dev);
++	struct max310x_port *s = dev_get_drvdata(dev);
+ 
+-	dev_dbg(&spi->dev, "Resume\n");
++	dev_dbg(dev, "Resume\n");
+ 
+ 	if (s->pdata->suspend)
+ 		s->pdata->suspend(0);
+@@ -928,6 +930,13 @@ static int max310x_resume(struct spi_device *spi)
+ 	return uart_resume_port(&s->uart, &s->port);
+ }
+ 
++static SIMPLE_DEV_PM_OPS(max310x_pm_ops, max310x_suspend, max310x_resume);
++#define MAX310X_PM_OPS (&max310x_pm_ops)
++
++#else
++#define MAX310X_PM_OPS NULL
++#endif
++
+ #ifdef CONFIG_GPIOLIB
+ static int max310x_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+@@ -1242,11 +1251,10 @@ static struct spi_driver max310x_driver = {
+ 	.driver = {
+ 		.name	= "max310x",
+ 		.owner	= THIS_MODULE,
++		.pm	= MAX310X_PM_OPS,
+ 	},
+ 	.probe		= max310x_probe,
+ 	.remove		= max310x_remove,
+-	.suspend	= max310x_suspend,
+-	.resume		= max310x_resume,
+ 	.id_table	= max310x_id_table,
+ };
+ module_spi_driver(max310x_driver);
+-- 
+1.8.0
+
