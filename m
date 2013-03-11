@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab3CKQer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:34:47 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:55253 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab3CKQep (ORCPT
+	id S1754053Ab3CKQfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:35:18 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:62810 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab3CKQfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:34:45 -0400
+	Mon, 11 Mar 2013 12:35:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303111206100.2246-100000@iolanthe.rowland.org>
-References: <CACVXFVN6zm2gG4v1jhV=8EwAtKs=bg3urJ7dRiOgPGHtKXHYxA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1303111206100.2246-100000@iolanthe.rowland.org>
-Date: Tue, 12 Mar 2013 00:34:44 +0800
-Message-ID: <CACVXFVOwjHOSd=VeJSKDHOCp5vveLVx8ZnLby4fnW4GeHEnu-g@mail.gmail.com>
-Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
- reset a storage device
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans de Goede <hdegoede@redhat.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Date: Tue, 12 Mar 2013 00:35:14 +0800
+Message-ID: <CAPgLHd_DuPDciAt9Qdn-1K2CSL14GDKt6XR+8gaac8hgvLScaw@mail.gmail.com>
+Subject: [PATCH] ASoC: core: fix possible memory leak in snd_soc_bytes_put()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: lgirdwood@gmail.com, broonie@opensource.wolfsonmicro.com, perex@perex.cz,
+        tiwai@suse.de, grant.likely@secretlab.ca, rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 12:08 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Mon, 11 Mar 2013, Ming Lei wrote:
->
->> On Mon, Mar 11, 2013 at 11:32 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> >
->> > Of course you have to lock the device before changing its driver.  What
->> > would happen if two different threads tried to change a device's driver
->> > at the same time?
->>
->> Yes, claim/release interface need device lock, but the patch doesn't
->> touch claim/release command handling.
->
-> Then why did you ask?  You wrote: "Looks device lock isn't required for
-> USB transfer of kernel driver."
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Maybe I didn't expressed clearly, sorry. Here the USB transfer means
-URBs submitting.
+'data' is malloced in snd_soc_bytes_put() and should be freed
+before leaving from the error handling cases, otherwise it will cause
+memory leak.
 
->
->
->> > usbdev_do_ioctl() needs to acquire the device lock in order to prevent
->> > races with driver_disconnect() and usbdev_remove().
->>
->> Looks the patch basically converts the allocation inside URB submit path,
->> and actually I mean why we need to hold device lock in submitting
->> URB path?  Device lock isn't required before submitting URBs
->> in kernel driver.
->
-> In general it isn't, no.  But usbfs uses the lock to prevent races with
-> driver_disconnect() -- it is invalid to submit URBs after the
-> disconnect routine has returned.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ sound/soc/soc-core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-If so, we may introduce another lock to avoid the race.
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index b7e84a7..93341de 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3140,7 +3140,7 @@ int snd_soc_bytes_put(struct snd_kcontrol *kcontrol,
+ 	if (params->mask) {
+ 		ret = regmap_read(codec->control_data, params->base, &val);
+ 		if (ret != 0)
+-			return ret;
++			goto out;
+ 
+ 		val &= params->mask;
+ 
+@@ -3158,13 +3158,15 @@ int snd_soc_bytes_put(struct snd_kcontrol *kcontrol,
+ 			((u32 *)data)[0] |= cpu_to_be32(val);
+ 			break;
+ 		default:
+-			return -EINVAL;
++			ret = -EINVAL;
++			goto out;
+ 		}
+ 	}
+ 
+ 	ret = regmap_raw_write(codec->control_data, params->base,
+ 			       data, len);
+ 
++out:
+ 	kfree(data);
+ 
+ 	return ret;
 
-So I think we may figure out to decrease the device lock
-scope in devio.c, and most of ioctl commands might not require it
-at all, then the problem addressed by the patch can be fixed too.
 
-
-Thanks,
--- 
-Ming Lei
