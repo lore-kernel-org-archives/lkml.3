@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3CKUNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:13:38 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:39802 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab3CKUNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:13:37 -0400
-Date: Mon, 11 Mar 2013 21:13:34 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130311201334.GA444@x4>
-References: <20130311171824.GA434@x4>
- <20130311191753.GA439@x4>
- <20130311194159.GB3579@redhat.com>
+	id S1754326Ab3CKUN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:13:57 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:59839 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab3CKUN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:13:56 -0400
+Date: Mon, 11 Mar 2013 13:13:42 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
+        jln@google.com
+Subject: [PATCH v2] signal: always clear sa_restorer on execve
+Message-ID: <20130311201342.GA19824@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130311194159.GB3579@redhat.com>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.03.11 at 15:41 -0400, Dave Jones wrote:
-> On Mon, Mar 11, 2013 at 08:17:53PM +0100, Markus Trippelsdorf wrote:
->  > On 2013.03.11 at 18:18 +0100, Markus Trippelsdorf wrote:
->  > > I get hash failures on "completed" torrents since 3.9.0-rc1 (Linux 3.8
->  > > seems to be fine). What happens is that the torrents apparently complete
->  > > successfully. After reboot however the hash check fails and there are
->  > > missing (or corrupted) chunks. I've tested this with two different
->  > > clients (rtorrent and aria2c) and both are affected. So I think this
->  > > might be a filesystem issue.
->  > > 
->  > > /dev/sda       ext4      1.4T  666G  640G  51% /var
->  > > /dev/sda on /var type ext4 (rw,noatime,data=ordered)
->  > > 
->  > > I use ECC memory (and there is nothing in the logs).
->  > 
->  > To reproduce this issue just do the following:
->  > 
->  >  % wget http://torrents.linuxmint.com/torrents/linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
->  >  % rtorrent linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
->  >  (Wait until the torrent finishes)
->  >  % sudo echo 3 > /proc/sys/vm/drop_caches
->  >  (Rehash the torrent (Ctrl-R))
->  >  The torrent doesn't rehash successfully and a few hunks are
->  >  missing/corrupted and need to be downloaded again.
-> 
-> Worked fine for me on two separate machines.  Could it be a network problem
-> perhaps ? If something is mangling the packet before it hits the disk,
-> that would explain it.  What NIC do you use ?
+When the new signal handlers are set up, the location of sa_restorer
+is not cleared, leaking a parent process's address space location to
+children. This allows for a potential bypass of the parent's ASLR by
+examining the sa_restorer value returned when calling sigaction().
 
-I normally use ATL1E, but I've dusted off my E100 and the issue is also
-reproducible on the Intel card.
+Based on what should be considered "secret" about addresses, it only
+matters across the exec not the fork (since the VMAs haven't changed
+until the exec). But since exec sets SIG_DFL and keeps sa_restorer,
+this is where it should be fixed.
 
-> Or maybe you could isolate it to a filesystem problem using something
-> like fsx ?
+Given the few uses of sa_restorer, a "set" function was not written
+since this would be the only use. Instead, we use __ARCH_HAS_SA_RESTORER,
+as already done in other places.
 
-I've found fsx on your homepage, but I've no idea on how to use this
-tool. Any pointers?
+Example of the leak before applying this patch:
+
+$ cat /proc/$$/maps
+...
+7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+...
+$ ./leak
+...
+7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+...
+1 0 (nil) 0x7fb9f30b94a0
+2 4000000 (nil) 0x7f278bcaa4a0
+3 4000000 (nil) 0x7f278bcaa4a0
+4 0 (nil) 0x7fb9f30b94a0
+...
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: stable@vger.kernel.org
+---
+v2:
+ - clarify commit, explain use of #ifdef.
+---
+ kernel/signal.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2ec870a..8c8e3ca 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -485,6 +485,9 @@ flush_signal_handlers(struct task_struct *t, int force_default)
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
++#ifdef __ARCH_HAS_SA_RESTORER
++		ka->sa.sa_restorer = NULL;
++#endif
+ 		sigemptyset(&ka->sa.sa_mask);
+ 		ka++;
+ 	}
+-- 
+1.7.9.5
+
 
 -- 
-Markus
+Kees Cook
+Chrome OS Security
