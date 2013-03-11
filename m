@@ -1,232 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3CKHJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:09:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25482 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab3CKHJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:09:18 -0400
-Message-ID: <513D8316.90907@redhat.com>
-Date: Mon, 11 Mar 2013 15:09:10 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: remove tx polling state
-References: <1362630716-57674-1-git-send-email-jasowang@redhat.com> <20130310165030.GA13687@redhat.com>
-In-Reply-To: <20130310165030.GA13687@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752572Ab3CKHJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:09:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:11086 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab3CKHJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 03:09:26 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-8d-513d8325e03b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Paul Bolle'" <pebolle@tiscali.nl>, "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1362856081.3137.19.camel@x61.thuisdomein>
+In-reply-to: <1362856081.3137.19.camel@x61.thuisdomein>
+Subject: RE: [PATCH] ARM: S3C24XX: drop "select MACH_NEO1973"
+Date: Mon, 11 Mar 2013 16:09:24 +0900
+Message-id: <052301ce1e27$5cc9cd10$165d6730$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4c+WzplIGhOdenT1Wy3YBszNDfTwBLbcbg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zY13VZttAg51LWSwmrTvAZLHp8TVW
+	i8u75rBZzDi/j8ni9mVei0W3zjA7sHm0NPewefxd9YLZY/OSeo+N258weXzeJBfAGsVlk5Ka
+	k1mWWqRvl8CVsb59HXPBAq6KWx2djA2MMzi6GDk5JARMJE6dameGsMUkLtxbz9bFyMUhJLCM
+	UWLJ8WWsMEV9y/4xQySmM0rMf94CVfWXUeLLxMfsIFVsAhoSh98/A7NFBIolNu+5xtTFyMHB
+	LJAtseUVE0hYSMBMYuPcDjYQm1PAXGJN2xKwzcICthKHnjaygNgsAqoSbxsfgtXzAsWX/PzK
+	CGELSvyYfI8FYqS6xJQpuSBhZgF5ic1r3jKDhCWAwo/+6kIcYCTx9sJ5NogSEYl9L94xglws
+	IXCPXeLEhMnMEKsEJL5NPsQC0SsrsekANBwkJQ6uuMEygVFiFpLFsxAWz0KyeBaSDQsYWVYx
+	iqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTqxB2M9w9YH2JMBto+kVlKNDkfGOt5JfGGxmZG
+	FqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDk1w5c+9MvaaP1
+	5/zduhb+r6bb6Ui9VLuQs3+ZsuL1/BczjVaFs0yfP3Wu35f+3OR0fZ33rRueFrQes507/wbT
+	nF03Mm9JTCuW/Swlu0/2r/vDeMc5Dh67uaw+GYkzq57qa868+/9nxfMA5wO+S32Cf3GfdXvi
+	8fvVrvXPazLuR39IcyjJT12oxFKckWioxVxUnAgAHdRIhOsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQV2VZttAgyMfbCwmrTvAZLHp8TVW
+	i8u75rBZzDi/j8ni9mVei0W3zjA7sHm0NPewefxd9YLZY/OSeo+N258weXzeJBfAGtXAaJOR
+	mpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdICSQlliTilQ
+	KCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWN9+zrmggVcFbc6OhkbGGdwdDFyckgI
+	mEj0LfvHDGGLSVy4t56ti5GLQ0hgOqPE/OctUM5fRokvEx+zg1SxCWhIHH7/DMwWESiW2Lzn
+	GlMXIwcHs0C2xJZXTCBhIQEziY1zO9hAbE4Bc4k1bUvAFggL2EocetrIAmKzCKhKvG18CFbP
+	CxRf8vMrI4QtKPFj8j0WiJHqElOm5IKEmQXkJTavecsMEpYACj/6qwtxgJHE2wvn2SBKRCT2
+	vXjHOIFRaBaSQbMQBs1CMmgWko4FjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYITwTOp
+	HYwrGywOMQpwMCrx8E7QsQ0UYk0sK67MPcQowcGsJMK7cpNNoBBvSmJlVWpRfnxRaU5q8SHG
+	ZKA3JzJLiSbnA5NUXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFw
+	SjUwTqko+ZC8xa/yy7ab5oduODjcrJHv6zHrr+vaFTibv3XF9IX70qZkTIyedXf7PJePP7+d
+	d8+7KMCr9uwYy4mCmF+ThIOKpLO+3erj85zZNPHycxvpKcGqszbVl07eU555WbJ3X8TSu8k5
+	nvuFvRklTQ9LejxYe+yRvZjYP46irYcCYxKS3yTXKrEUZyQaajEXFScCAMwrpO9IAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 12:50 AM, Michael S. Tsirkin wrote:
-> On Thu, Mar 07, 2013 at 12:31:56PM +0800, Jason Wang wrote:
->> After commit 2b8b328b61c799957a456a5a8dab8cc7dea68575 (vhost_net: handle polling
->> errors when setting backend), we in fact track the polling state through
->> poll->wqh, so there's no need to duplicate the work with an extra
->> vhost_net_polling_state. So this patch removes this and make the code simpler.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> I'd prefer a more radical approach, since I think it can be even
-> simpler: tap and macvtap backends both only send events when tx queue
-> overruns which should almost never happen.
->
-> So let's just start polling when VQ is enabled
-> drop all poll_start/stop calls on data path.
-
-I think then it may damage the performance at least for tx. We
-conditionally enable the tx polling in the past to reduce the
-unnecessary wakeups of vhost thead when zerocopy or sndbuf is used. If
-we don't stop the polling, after each packet were transmitted,
-tap/macvtap will try to wakeup the vhost thread.
-
-Actually, I'm considering the reverse direction. Looks like we can
-disable the rx polling like what we do for tx in handle_tx() to reduce
-the uncessary wakeups.
-> The optimization was written for packet socket backend but I know of no
-> one caring about performance of that one that much.
-> Needs a bit of perf testing to make sure I didn't miss anything though
-> but it's not 3.9 material anyway so there's no rush.
->
->> ---
->>  drivers/vhost/net.c   |   60 ++++++++----------------------------------------
->>  drivers/vhost/vhost.c |    3 ++
->>  2 files changed, 13 insertions(+), 50 deletions(-)
->>
->> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->> index 959b1cd..d1a03dd 100644
->> --- a/drivers/vhost/net.c
->> +++ b/drivers/vhost/net.c
->> @@ -64,20 +64,10 @@ enum {
->>  	VHOST_NET_VQ_MAX = 2,
->>  };
->>  
->> -enum vhost_net_poll_state {
->> -	VHOST_NET_POLL_DISABLED = 0,
->> -	VHOST_NET_POLL_STARTED = 1,
->> -	VHOST_NET_POLL_STOPPED = 2,
->> -};
->> -
->>  struct vhost_net {
->>  	struct vhost_dev dev;
->>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
->>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
->> -	/* Tells us whether we are polling a socket for TX.
->> -	 * We only do this when socket buffer fills up.
->> -	 * Protected by tx vq lock. */
->> -	enum vhost_net_poll_state tx_poll_state;
->>  	/* Number of TX recently submitted.
->>  	 * Protected by tx vq lock. */
->>  	unsigned tx_packets;
->> @@ -155,28 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
->>  	}
->>  }
->>  
->> -/* Caller must have TX VQ lock */
->> -static void tx_poll_stop(struct vhost_net *net)
->> -{
->> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
->> -		return;
->> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
->> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
->> -}
->> -
->> -/* Caller must have TX VQ lock */
->> -static int tx_poll_start(struct vhost_net *net, struct socket *sock)
->> -{
->> -	int ret;
->> -
->> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
->> -		return 0;
->> -	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
->> -	if (!ret)
->> -		net->tx_poll_state = VHOST_NET_POLL_STARTED;
->> -	return ret;
->> -}
->> -
->>  /* In case of DMA done not in order in lower device driver for some reason.
->>   * upend_idx is used to track end of used idx, done_idx is used to track head
->>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
->> @@ -231,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
->>  static void handle_tx(struct vhost_net *net)
->>  {
->>  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
->> +	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
->>  	unsigned out, in, s;
->>  	int head;
->>  	struct msghdr msg = {
->> @@ -256,7 +225,7 @@ static void handle_tx(struct vhost_net *net)
->>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>  	if (wmem >= sock->sk->sk_sndbuf) {
->>  		mutex_lock(&vq->mutex);
->> -		tx_poll_start(net, sock);
->> +		vhost_poll_start(poll, sock->file);
->>  		mutex_unlock(&vq->mutex);
->>  		return;
->>  	}
->> @@ -265,7 +234,7 @@ static void handle_tx(struct vhost_net *net)
->>  	vhost_disable_notify(&net->dev, vq);
->>  
->>  	if (wmem < sock->sk->sk_sndbuf / 2)
->> -		tx_poll_stop(net);
->> +		vhost_poll_stop(poll);
->>  	hdr_size = vq->vhost_hlen;
->>  	zcopy = vq->ubufs;
->>  
->> @@ -287,7 +256,7 @@ static void handle_tx(struct vhost_net *net)
->>  
->>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
->>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
->> -				tx_poll_start(net, sock);
->> +				vhost_poll_start(poll, sock->file);
->>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>  				break;
->>  			}
->> @@ -298,7 +267,7 @@ static void handle_tx(struct vhost_net *net)
->>  				    (vq->upend_idx - vq->done_idx) :
->>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
->>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
->> -				tx_poll_start(net, sock);
->> +				vhost_poll_start(poll, sock->file);
->>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
->>  				break;
->>  			}
->> @@ -364,7 +333,7 @@ static void handle_tx(struct vhost_net *net)
->>  			}
->>  			vhost_discard_vq_desc(vq, 1);
->>  			if (err == -EAGAIN || err == -ENOBUFS)
->> -				tx_poll_start(net, sock);
->> +				vhost_poll_start(poll, sock->file);
->>  			break;
->>  		}
->>  		if (err != len)
->> @@ -627,7 +596,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>  
->>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
->>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
->> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->>  
->>  	f->private_data = n;
->>  
->> @@ -637,32 +605,24 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->>  static void vhost_net_disable_vq(struct vhost_net *n,
->>  				 struct vhost_virtqueue *vq)
->>  {
->> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>  	if (!vq->private_data)
->>  		return;
->> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->> -		tx_poll_stop(n);
->> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
->> -	} else
->> -		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
->> +	vhost_poll_stop(poll);
->>  }
->>  
->>  static int vhost_net_enable_vq(struct vhost_net *n,
->>  				struct vhost_virtqueue *vq)
->>  {
->> +	struct vhost_poll *poll = n->poll + (vq - n->vqs);
->>  	struct socket *sock;
->> -	int ret;
->>  
->>  	sock = rcu_dereference_protected(vq->private_data,
->>  					 lockdep_is_held(&vq->mutex));
->>  	if (!sock)
->>  		return 0;
->> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
->> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
->> -		ret = tx_poll_start(n, sock);
->> -	} else
->> -		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
->>  
->> -	return ret;
->> +	return vhost_poll_start(poll, sock->file);
->>  }
->>  
->>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
->> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
->> index 9759249..4eecdb8 100644
->> --- a/drivers/vhost/vhost.c
->> +++ b/drivers/vhost/vhost.c
->> @@ -89,6 +89,9 @@ int vhost_poll_start(struct vhost_poll *poll, struct file *file)
->>  	unsigned long mask;
->>  	int ret = 0;
->>  
->> +	if (poll->wqh)
->> +		return 0;
->> +
->>  	mask = file->f_op->poll(file, &poll->table);
->>  	if (mask)
->>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
->> -- 
->> 1.7.1
+Paul Bolle wrote:
+> 
+> The Kconfig entry for the Openmoko GTA02 / Freerunner phone selects
+> MACH_NEO1973. But there is no Kconfig symbol MACH_NEO1973. The select
+> statement for that symbol is a nop. It can safely be dropped.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Tested with "git grep".
+> 
+> 1) There appear to be repositories that carry a "config MACH_NEO1973" in
+> their tree. I guess it is used to collect functionality common to the
+> GTA01 and the GTA02. But except for this select statement, MACH_NEO1973
+> was never used in mainline. So if the GTA01 code ever gets merged into
+> mainline, this select statement might be added once more (if it is
+> actually needed then).
+> 
+>  arch/arm/mach-s3c24xx/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+> index 7361b9d..bec43fe 100644
+> --- a/arch/arm/mach-s3c24xx/Kconfig
+> +++ b/arch/arm/mach-s3c24xx/Kconfig
+> @@ -641,7 +641,6 @@ comment "S3C2442 Boards"
+>  config MACH_NEO1973_GTA02
+>  	bool "Openmoko GTA02 / Freerunner phone"
+>  	select I2C
+> -	select MACH_NEO1973
+>  	select MFD_PCF50633
+>  	select PCF50633_GPIO
+>  	select POWER_SUPPLY
 > --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1.7.11.7
+
+Yeah, we don't need it.
+
+Applied, thanks.
+
+- Kukjin
 
