@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab3CKFGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 01:06:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45356 "EHLO comal.ext.ti.com"
+	id S1752290Ab3CKFIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 01:08:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45359 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab3CKFG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 01:06:26 -0400
+	id S1751305Ab3CKFGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 01:06:30 -0400
 From: Lokesh Vutla <lokeshvutla@ti.com>
 To: <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
         <gregkh@linuxfoundation.org>
 CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Ambresh K <ambresh@ti.com>, Nishanth Menon <nm@ti.com>,
         Lokesh Vutla <lokeshvutla@ti.com>
-Subject: [PATCH 8/8] memory: emif: Load the correct custom config values from dt
-Date: Mon, 11 Mar 2013 10:36:05 +0530
-Message-ID: <1362978365-5593-9-git-send-email-lokeshvutla@ti.com>
+Subject: [PATCH 2/8] memory: emif: setup LP settings on freq update
+Date: Mon, 11 Mar 2013 10:35:59 +0530
+Message-ID: <1362978365-5593-3-git-send-email-lokeshvutla@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com>
 References: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com>
@@ -23,50 +24,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_get_property returns value in Big Endian format.
-Before using this value it should be converted to little endian
-using be32_to_cpup().
-Custom configs of emif are read from dt using of_get_property,
-but these are not converted to litte endian format.
-Correcting the same here.
+From: Ambresh K <ambresh@ti.com>
 
+Program the power management shadow register on freq update
+Else the concept of threshold frequencies dont really matter
+as the system always uses the performance mode timing for LP
+which is programmed in at init time.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Ambresh K <ambresh@ti.com>
 Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
 ---
- drivers/memory/emif.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/memory/emif.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 119503a..4866f1b 100644
+index 622638c..16f5089 100644
 --- a/drivers/memory/emif.c
 +++ b/drivers/memory/emif.c
-@@ -1258,7 +1258,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
- {
- 	struct emif_custom_configs	*cust_cfgs = NULL;
- 	int				len;
--	const int			*lpmode, *poll_intvl;
-+	const __be32			*lpmode, *poll_intvl;
+@@ -815,6 +815,8 @@ static void setup_registers(struct emif_data *emif, struct emif_regs *regs)
  
- 	lpmode = of_get_property(np_emif, "low-power-mode", &len);
- 	poll_intvl = of_get_property(np_emif, "temp-alert-poll-interval", &len);
-@@ -1272,7 +1272,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ 	writel(regs->sdram_tim2_shdw, base + EMIF_SDRAM_TIMING_2_SHDW);
+ 	writel(regs->phy_ctrl_1_shdw, base + EMIF_DDR_PHY_CTRL_1_SHDW);
++	writel(regs->pwr_mgmt_ctrl_shdw,
++	       base + EMIF_POWER_MANAGEMENT_CTRL_SHDW);
  
- 	if (lpmode) {
- 		cust_cfgs->mask |= EMIF_CUSTOM_CONFIG_LPMODE;
--		cust_cfgs->lpmode = *lpmode;
-+		cust_cfgs->lpmode = be32_to_cpup(lpmode);
- 		of_property_read_u32(np_emif,
- 				"low-power-mode-timeout-performance",
- 				&cust_cfgs->lpmode_timeout_performance);
-@@ -1287,7 +1287,8 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
- 	if (poll_intvl) {
- 		cust_cfgs->mask |=
- 				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL;
--		cust_cfgs->temp_alert_poll_interval_ms = *poll_intvl;
-+		cust_cfgs->temp_alert_poll_interval_ms =
-+						be32_to_cpup(poll_intvl);
- 	}
- 
- 	if (of_find_property(np_emif, "extended-temp-part", &len))
+ 	/* Settings specific for EMIF4D5 */
+ 	if (emif->plat_data->ip_rev != EMIF_4D5)
 -- 
 1.7.9.5
 
