@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab3CKLbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:31:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3910 "EHLO mx1.redhat.com"
+	id S1754093Ab3CKLcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:32:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2336 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab3CKLbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:31:36 -0400
-Message-ID: <513DC087.6000508@redhat.com>
-Date: Mon, 11 Mar 2013 12:31:19 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1753897Ab3CKLcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 07:32:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,822,1355126400"; 
+   d="scan'208";a="299025976"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: A proposal to check the device in generic way
+Thread-Topic: A proposal to check the device in generic way
+Thread-Index: AQHOHkwes8g2THZZt02CceOgK5RzFQ==
+Date: Mon, 11 Mar 2013 11:32:31 +0000
+Message-ID: <1363001537.18714.3.camel@smile>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.173]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <0B74A1371B575B4FBDE0D763C9FE0F92@intel.com>
 MIME-Version: 1.0
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        asias@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com
-Subject: Re: [PATCH V4 1/5] virtio-scsi: redo allocation of target data
-References: <1362969842-9145-1-git-send-email-gaowanlong@cn.fujitsu.com> <1362969842-9145-2-git-send-email-gaowanlong@cn.fujitsu.com>
-In-Reply-To: <1362969842-9145-2-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2BBWq4W006819
 
-Il 11/03/2013 03:43, Wanlong Gao ha scritto:
-> virtio_scsi_target_state is now empty, but we will find new uses
-> for it in the next few patches.  However, dropping the sglist lets
-> us turn the array-of-pointers into a simple array, which simplifies
-> the allocation.
-> 
-> However, we do not leave the virtio_scsi_target_state structs in the
-> flexible array member at the end of struct virtio_scsi, because
-> we will place the virtqueues there in the next patches.
+Hello.
 
-If you have to respin, consider improving the grammar:
+Currently in linux-next we have the following things:
 
-virtio_scsi_target_state is now empty.  We will find new uses for it in
-the next few patches, so this patch does not drop it completely.
-However, having dropped the sglist flexible array member, we can turn
-the tgt array-of-pointers into a simple array.  This simplifies the
-allocation.
+$ git grep -n 'chan->device->dev->driver' drivers/dma/
 
-Even simpler would be to place the virtio_scsi_target_state structs in a
-flexible array member at the end of struct virtio_scsi.  But we do not
-do that, because we will place the virtqueues there in the next patches.
+drivers/dma/amba-pl08x.c:1594:  if (chan->device->dev->driver !=
+&pl08x_amba_driver.drv)
+drivers/dma/dmaengine.c:190:    return chan->device->dev->driver->owner;
+drivers/dma/edma.c:609: if (chan->device->dev->driver ==
+&edma_driver.driver) {
+drivers/dma/omap-dma.c:654:     if (chan->device->dev->driver ==
+&omap_dma_driver.driver) {
+drivers/dma/pl330.c:2374:       if (chan->device->dev->driver !=
+&pl330_driver.drv)
+drivers/dma/sa11x0-dma.c:1080:  if (chan->device->dev->driver ==
+&sa11x0_dma_driver.driver) 
 
-Paolo
+I think it's a non-generic way to check which driver provides a channel
+into filter function. First of all, I don't get why that comparison goes
+as deep as driver structure. Isn't clearer to check chan->device->dev
+against the struct dev passed in the custom parameter structure? Like:
 
-> Cc: linux-scsi@vger.kernel.org
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+struct filter_params {
+ struct dev *dev;
+ void *param;
+};
 
+bool filter_fn(struct dma_chan *chan, void *fparams)
+{
+  struct filter_params *p = fparams;
+  if (chan->device->dev != p->dev)
+   return false;
+ ...
+}
+
+In case my idea has a right to live, what about to move such check inside
+DMA engine code?
+
+Opinions, comments?
+
+Earlier I tried to discuss this with Arnd here: http://www.spinics.net/lists/arm-kernel/msg220716.html
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
