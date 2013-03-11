@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3CKNzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:55:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53058 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab3CKNzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:55:35 -0400
-Date: Mon, 11 Mar 2013 14:55:32 +0100
-From: Jan Kara <jack@suse.cz>
-To: Ionut-Gabriel Radu <ihonius@gmail.com>
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, artem.bityutskiy@linux.intel.com,
-        shaggy@kernel.org, akpm@linux-foundation.org,
-        reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] reiserfs: Use kstrdup instead of kmalloc/strcpy
-Message-ID: <20130311135532.GF29799@quack.suse.cz>
-References: <1362920783-17093-1-git-send-email-ihonius@gmail.com>
+	id S1751690Ab3CKOAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:00:03 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:61815 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3CKOAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 10:00:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362920783-17093-1-git-send-email-ihonius@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51364285.4040406@samba.org>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<512FD1D5.3010106@mit.edu>
+	<20130304211923.GI20389@fieldses.org>
+	<5135250A.30604@samba.org>
+	<20130305181306.GA15816@fieldses.org>
+	<51364285.4040406@samba.org>
+Date: Mon, 11 Mar 2013 17:59:59 +0400
+X-Google-Sender-Auth: b0Qci8hOAGq9umXwFDZ284bmSZU
+Message-ID: <CAKywueR8kFUS46pCOnEaTouavTu69gW_FmP5BtFS2rsX8nHtBw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Simo <simo@samba.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 10-03-13 15:06:23, Ionut-Gabriel Radu wrote:
-> Signed-off-by: Ionut-Gabriel Radu <ihonius@gmail.com>
-  Thanks. Added to my tree.
+2013/3/5 Simo <simo@samba.org>:
+> On 03/05/2013 01:13 PM, J. Bruce Fields wrote:
+>>
+>> On Mon, Mar 04, 2013 at 05:49:46PM -0500, Simo wrote:
+>>>
+>>> On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
+>>>> I'm a little more worried: these are mandatory locks, and applications
+>>>> that use them are used to the locks being enforced correctly.  Are we
+>>>> sure that an application that opens a file O_DENYWRITE won't crash if it
+>>>> sees the file data change while it holds the open?
+>>>
+>>> The redirector may simply assume it has full control of that part of
+>>> the file and not read nor send data until the lock is released too,
+>>> so you get conflicting views of the file contents between different
+>>> clients if you let a mandatory lock not be mandatory.
+>>>
+>>>> In general the idea of making a mandatory lock opt-in makes me nervous.
+>>>> I'd prefer something like a mount option, so that we know that everyone
+>>>> on that one filesystem is playing by the same rules, but we can still
+>>>> mount filesystems like / without the option.
+>>>
+>>> +1
+>>>
+>>>> But I'll admit I'm definitely not an expert on Windows locking and may
+>>>> be missing something about how these locks are meant to work.
+>>>
+>>> Mandatory locks really are mandatory in Windows.
+>>> That may not be nice to a Unix system but what can you do ?
+>>
+>> I wonder if we could repurpose the existing -omand mount option?
+>>
+>> That would be a problem for anyone that wants to allow mandatory fcntl
+>> locks without allowing share locks.  I doubt anyone sane actually uses
+>> mandatory fcntl locks, but still I suppose it would probably be better
+>> to play it safe and use a new mount option.
+>
+>
+> Maybe we should have a -o win_semantics option :-)
+>
+> /me runs
+>
 
-								Honza
+(CC'ing Al Viro, since these patches should go through his tree)
 
-> ---
->  fs/reiserfs/super.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-> index 194113b..f8a23c3 100644
-> --- a/fs/reiserfs/super.c
-> +++ b/fs/reiserfs/super.c
-> @@ -1147,8 +1147,7 @@ static int reiserfs_parse_options(struct super_block *s, char *options,	/* strin
->  							 "on filesystem root.");
->  					return 0;
->  				}
-> -				qf_names[qtype] =
-> -				    kmalloc(strlen(arg) + 1, GFP_KERNEL);
-> +				qf_names[qtype] = kstrdup(arg, GFP_KERNEL);
->  				if (!qf_names[qtype]) {
->  					reiserfs_warning(s, "reiserfs-2502",
->  							 "not enough memory "
-> @@ -1156,7 +1155,6 @@ static int reiserfs_parse_options(struct super_block *s, char *options,	/* strin
->  							 "quotafile name.");
->  					return 0;
->  				}
-> -				strcpy(qf_names[qtype], arg);
->  				if (qtype == USRQUOTA)
->  					*mount_options |= 1 << REISERFS_USRQUOTA;
->  				else
-> -- 
-> 1.7.10.4
-> 
+I don't mind to introduce a new mount option for turning this feature
+on/off - something like '-o denylock' to make it mathing names of new
+flags would be ok.
+
+Al, what do you think about this feature overall?
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Best regards,
+Pavel Shilovsky.
