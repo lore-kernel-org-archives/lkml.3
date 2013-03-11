@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3CKSeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:34:01 -0400
-Received: from qmta02.westchester.pa.mail.comcast.net ([76.96.62.24]:60863
-	"EHLO qmta02.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751247Ab3CKSeA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:34:00 -0400
-X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Mar 2013 14:34:00 EDT
-Date: Mon, 11 Mar 2013 14:26:51 -0400
-From: Frank Peters <frank.peters@comcast.net>
-To: linux-kernel@vger.kernel.org
-Subject: USB Mouse Disconnect Kernel-3.7/3.8
-Message-Id: <20130311142651.12cc0311887f69db13913986@comcast.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.16; x86_64-unknown-linux-gnu)
+	id S1754118Ab3CKSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:35:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479Ab3CKSfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:35:12 -0400
+Date: Mon, 11 Mar 2013 14:35:07 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org, sprabhu@redhat.com
+Subject: Re: [PATCH v3 5/7] CIFS: Translate SHARING_VIOLATION to -ETXTBSY
+ error code for SMB2
+Message-ID: <20130311143507.737f2ab0@corrin.poochiereds.net>
+In-Reply-To: <1362065133-9490-6-git-send-email-piastry@etersoft.ru>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<1362065133-9490-6-git-send-email-piastry@etersoft.ru>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -21,45 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 28 Feb 2013 19:25:31 +0400
+Pavel Shilovsky <piastry@etersoft.ru> wrote:
 
-When I boot my x64 Linux system to the console a continuous series
-of "USB disconnect/reconnect" messages appears in the kernel log.
-The disconnect/reconnect messages concern the USB mouse:
+> to make it match CIFS and VFS variants.
+> 
+> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> ---
+>  fs/cifs/smb2maperror.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/cifs/smb2maperror.c b/fs/cifs/smb2maperror.c
+> index 494c912..11e589e 100644
+> --- a/fs/cifs/smb2maperror.c
+> +++ b/fs/cifs/smb2maperror.c
+> @@ -356,7 +356,7 @@ static const struct status_to_posix_error smb2_error_map_table[] = {
+>  	{STATUS_PORT_CONNECTION_REFUSED, -ECONNREFUSED,
+>  	"STATUS_PORT_CONNECTION_REFUSED"},
+>  	{STATUS_INVALID_PORT_HANDLE, -EIO, "STATUS_INVALID_PORT_HANDLE"},
+> -	{STATUS_SHARING_VIOLATION, -EBUSY, "STATUS_SHARING_VIOLATION"},
+> +	{STATUS_SHARING_VIOLATION, -ETXTBSY, "STATUS_SHARING_VIOLATION"},
+>  	{STATUS_QUOTA_EXCEEDED, -EDQUOT, "STATUS_QUOTA_EXCEEDED"},
+>  	{STATUS_INVALID_PAGE_PROTECTION, -EIO,
+>  	"STATUS_INVALID_PAGE_PROTECTION"},
 
-usb 1-1.3: USB disconnect, device number N
-usb 1-1.3: new low-speed USB device number N+1 using ehci-pci
-input: Microsoft  Microsoft Basic Optical Mouse v2.0  as /devices/pci0000:00/0000:00:1a.0 usb1/1-1/1-1.3/1-1.3:1.0/input/input5
-hid-generic 0003:045E:00CB.0006: input: USB HID v1.11 Mouse [Microsoft  Microsoft Basic Optical Mouse v2.0 ] on usb-0000:00:1a.0-1.3/input0
-....
+Actually, I think Sachin is converting the CIFS
+STATUS_SHARING_VIOLATION to translate to EBUSY, since that seems to
+better reflect the situation. I'd suggest dropping this patch, unless
+you have a specific need for this error return here.
 
-These "USB disconnect/reconnect" messages will repeat roughly every 40 seconds
-with the device number "N" increasing to "N+1" each time.
-
-The interesting thing about this behavior is that I can stop the messages,
-and presumably the disconnects, by starting the General Purpose Mouse (gpm)
-server:
-
-gpm -m /dev/input/mice -t imps2
-
-If I then terminate the gpm server, the USB disconnect/reconnect messages
-will start to occur once again.
-
-The USB disconnects also stop when I start the graphical X server.
-
-It would seem that if nothing is "grabbing" the USB mouse (i.e. gpm or X)
-then the kernel somehow automatically disconnects it.
-
-My system has the USB built in to the kernel (no modules).
-
-The motherboard I use is Intel DP55KG which has the P55 Express
-chipset to control the USB.
-
-I've seen this behavior on the current kernel-3.8.x and also
-on the previous kernel-3.7.  I have not tested anything earlier.
-
-Please CC to frank.peters@comcast.net as I am not subscribed to
-the list.
-
-Frank Peters
-
+-- 
+Jeff Layton <jlayton@redhat.com>
