@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3CKDLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 23:11:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33954 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753741Ab3CKDLH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 23:11:07 -0400
-Message-ID: <1362971451.3937.29.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Bug#700333: Stack trace
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Venkatesh Pallipadi (Venki)" <venki@google.com>
-Cc: 700333@bugs.debian.org, vitalif@yourcmc.ru,
-        LKML <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>
-Date: Mon, 11 Mar 2013 03:10:51 +0000
-In-Reply-To: <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
-References: <4bded8a24b0719d575f6ffa6b38aebb6@yourcmc.ru>
-	 <1362490501.3768.409.camel@deadeye.wl.decadent.org.uk>
-	 <1b81bc6219ee47a5b8e53d03e9944939@yourcmc.ru>
-	 <20130305203952.GZ9079@decadent.org.uk>
-	 <4e8c511dcfd811c0f2ab822adaf52e50@yourcmc.ru>
-	 <1362536476.3768.416.camel@deadeye.wl.decadent.org.uk>
-	 <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-y+D7Ymbc+kblDSjmSnCt"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753817Ab3CKDXb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 23:23:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43590 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753554Ab3CKDXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 23:23:30 -0400
+Message-ID: <513D4E79.5090307@ti.com>
+Date: Mon, 11 Mar 2013 08:54:41 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: <john.stultz@linaro.org>, <tglx@linutronix.de>, <viresh.kumar@linaro.org>,
+        <jacob.jun.pan@linux.intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 0/4] time: dynamic irq affinity
+References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org> <513CC404.6000200@ti.com> <513CCF60.6060406@linaro.org>
+In-Reply-To: <513CCF60.6060406@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 10 March 2013 11:52 PM, Daniel Lezcano wrote:
+> On 03/10/2013 06:33 PM, Santosh Shilimkar wrote:
+>> On Wednesday 27 February 2013 03:47 AM, Daniel Lezcano wrote:
+>>> When a cpu goes to a deep idle state where its local timer is shutdown,
+>>> it notifies the time framework to use the broadcast timer instead.
+>>>
+>>> Unfortunately, the broadcast device could wake up any CPU, including an
+>>> idle one which is not concerned by the wake up at all.
+>>>
+>>> This implies, in the worst case, an idle CPU will wake up to send an IPI
+>>> to another idle cpu.
+>>>
+>>> This patch solves this by setting the irq affinity to the cpu concerned
+>>> by the nearest timer event, by this way, the CPU which is wake up is
+>>> guarantee to be the one concerned by the next event and we are safe with
+>>> unnecessary wakeup for another idle CPU.
+>>>
+>>> As the irq affinity is not supported by all the archs, a flag is needed
+>>> to specify which clocksource can handle it.
+>>>
+>>> Daniel Lezcano (3):
+>>>   time : pass broadcast parameter
+>>>   time : set broadcast irq affinity
+>>>   ARM: nomadik: add dynamic irq flag to the timer
+>>>
+>>> Viresh Kumar (1):
+>>>   ARM: timer-sp: Set dynamic irq affinity
+>>>
+>> Thanks Daniel for addressing the comments from earlier version. This
+>> version looks good to me.
+>>
+>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> Regards,
+>> Santosh
+>> P.S: As I mentioned 'CLOCK_EVT_FEAT_DYNIRQ' optimization on
+>> OMAP at least I found risky because you might end up missing
+>> the asynchronous IPI wakeups because of the current SGI's
+>> implementation. This must be true for other ARM platforms
+>> as well.
+> 
+> I don't think it is the case for all the ARM platforms, at least we
+> tested it on vexpress TC2 and u8500, and the number of IPI were reduced
+> very significantly increasing the idle time for cpu0. TC2 will need
+> another optimization on another area for the idle wake up to gain real
+> improvements.
+> 
+You are missing my point. TC2 can be an exception since the SGI can wakeup
+CPUs even from low power states where local timer's are stalled. Is that
+the case with U8500 ?
 
---=-y+D7Ymbc+kblDSjmSnCt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> I will test it on OMAP but with the coupled idle state, I am not sure of
+> the behavior. Could elaborate a bit the specificity of OMAP ? I am not
+> sure to understand why I may miss some IPI wakeups.
+> 
+I already mention the issue here [1]. You might not see any major issues
+because the missed asynchronous IPIs might eventually get executed when
+CPU's wakeup from deeper states because of idle wakeups. OMAP is no
+different from idle wakeup optimisation and it will surely benefit and work.
+The main reason I didn't pursue it because of not having solution for
+[1] which as discussed in past is very much essential from kernel
+functional correctness perspective. You might want to verify that by
+adding a tracepoint on IPI's on other reasons except the timer wakeup.
 
-On Wed, 2013-03-06 at 15:27 +0400, vitalif@yourcmc.ru wrote:
-[...]
-> Stack trace picture is here:=20
-> http://vmx.yourcmc.ru/var/pics/IMG_20130306_141045.jpg
+Regards,
+Santosh
 
-Vitaliy reported that his system crashes when suspending to disk.  This
-was a regression from 3.2 to 3.7, and remains in 3.8.  Some details of
-this system are in the bug log at <http://bugs.debian.org/700333>.
-
-The photo shows a BUG in hrtimer_interrupt() after making the
-hibernation image and while resuming the non-boot CPUs.  The HPET
-interrupt handler was called immediately after it was registered for CPU
-2 (?), before the corresponding clock_event_device was registered.
-
-Seems like an obvious race condition, but then shouldn't the HPET have
-been stopped while the CPU was previously offlined?  And it's strange
-that this system apparently hits the race quite reliably.
-
-Ben.
-
---=20
-Ben Hutchings
-The obvious mathematical breakthrough [to break modern encryption] would be
-development of an easy way to factor large prime numbers. - Bill Gates
-
---=-y+D7Ymbc+kblDSjmSnCt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUT1LO+e/yOyVhhEJAQpr9g//dRiTdOcEV87jOim9lykdY0JCyty1gWFd
-gkWUZRknUSm7rx0oy2EtUFK24NBCESh6VsTocfwBWJJEnysVcfjgHQiWAZtLB6Fg
-0zaRS+T7oeqsSmT8iu2qXngOftnjrwk3MBDRVv20zd9OXKsC+gy2GakcJWBc7+AC
-cIhdcczYeSCXE8g63TWKB8VsI1ls4nGGrp5ZlgSQ/rCf7bG8kMZMC3KmB7IYwAUq
-r7mmurECw2ojzlCF9KK+woru8cvoadgs9/ANYoy2DMhm27V5o4QDg0k7R+f7Z/aL
-nrxz2BBBUzBd0/sbhTZAh7qfviNDj0quJMghFIDgyV84wlgrvuwrau1Z5h3vd0IW
-5KACunjJVc4way2okNV1GMqBt/XZa0qAU6Vt1bw5tDNCj8BooUmRhajWCbx8R0a0
-8p0Q0fS1Nq+G8xTr3Pj+w9/WYClLwMXLSMPUxtvyH/vuTj27EMrMYCSryajlfxaT
-bGoUh94H9Mqrcq5pqWaqH87aXO0JK5EwHL3zAtS2yKRXb9tDV0ogvGmLNOvYmT4c
-0bB51CWBVU7jA2Xyks0A3JRIBtbAohNX922OATCDOzbYSxSWRTubYaeV1imzGLsR
-V7tGlPGTpcTJFeRJ89iue1C6klbnn3F1A/uYj/tCPRPJaqJ0faaJP+b+HIYnJ1oN
-J4vmqGaqm9Y=
-=8MMK
------END PGP SIGNATURE-----
-
---=-y+D7Ymbc+kblDSjmSnCt--
+[1] https://lkml.org/lkml/2013/2/27/39
