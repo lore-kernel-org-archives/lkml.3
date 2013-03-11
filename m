@@ -1,74 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3CKVZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:25:18 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:45254 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754132Ab3CKVZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:25:14 -0400
-Date: Mon, 11 Mar 2013 17:25:10 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: Re: wfcqueue (in Userspace RCU) for Linux kernel (for epoll)
-Message-ID: <20130311212510.GA9829@Krystal>
-References: <20130311193541.GA11149@dcvr.yhbt.net>
+	id S932250Ab3CKVZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:25:42 -0400
+Received: from fieldses.org ([174.143.236.118]:53070 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754702Ab3CKVZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:25:40 -0400
+Date: Mon, 11 Mar 2013 17:25:35 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH linux-next v3] SUNRPC: rpcrdma_register_default_external:
+ Dynamically allocate ib_phys_buf
+Message-ID: <20130311212535.GG642@fieldses.org>
+References: <4FA345DA4F4AE44899BD2B03EEEC2FA9286BA156@sacexcmbx05-prd.hq.netapp.com>
+ <1363036508-24935-1-git-send-email-tim.gardner@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130311193541.GA11149@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1363036508-24935-1-git-send-email-tim.gardner@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> Hi, I'm looking to reduce contention for the ep->lock spin lock in epoll.
+On Mon, Mar 11, 2013 at 03:15:08PM -0600, Tim Gardner wrote:
+> rpcrdma_register_default_external() is several frames into the call stack which
+> goes deeper yet. You run the risk of stack corruption by declaring such a large
+> automatic variable, so move the array of 'struct ib_phys_buf' objects into the
+> transport structure 'struct rpcrdma_xprt' (which is dynamically allocated) in
+> order to silence the frame-larger-than warning. Access to each struct
+> rpcrdma_xprt is serialized by XPRT_LOCKED in xprt_reserve_xprt(), so there is
+> no danger of multiple accessors to the array of struct ib_phys_buf objects.
 > 
-> I came across wfcqueue in Userspace RCU and am wondering if there's any
-> reason (other that lack of developer time/users) it hasn't been adapted
-> for the Linux kernel.
+> net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
+> net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
 > 
-> I'd be happy to do the work if it's suitable (and omit parts which
-> may not be, such as busy wait).
+> gcc version 4.6.3
+> 
+> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Tom Tucker <tom@ogc.us>
+> Cc: Haggai Eran <haggaie@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Cc: Shani Michaeli <shanim@mellanox.com>
+> Cc: linux-nfs@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+> v1 - Use kmalloc() to dynamically allocate and free the array of 'struct
+> ib_phys_buf' objects
+> 
+> v2 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_req
+> and pass this request down through rpcrdma_register_external() and
+> rpcrdma_register_default_external(). This is less overhead then using
+> kmalloc() and requires no extra error checking as the allocation burden is
+> shifted to the transport client.
+> 
+> v3 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_xprt.
+> Pass a pointer to this transport structure into rpcrdma_register_default_external().
+> This is less overhead then using kmalloc() and requires no extra error checking
+> as the allocation burden is shifted to the transport client.
 
-Hi Eric,
+Looks good to me; wish we could get it tested....
 
-I'm glad you're interested in our data structure!
+In future if we do decide to also increase the size of that array we may
+need to allocate it separately from struct rpcrdma_xprt itself, which
+looks already fairly large without it; on x86_64:
 
-I actually have a port ready, I just lacked the time for thorough
-testing and also lacked users of the API at kernel-level. It looks like
-now would be a good time to send the patch your way as a RFC!
+	$ gdb net/sunrpc/xprtrdma/xprtrdma.ko
+	...
+	(gdb) p sizeof(struct rpcrdma_xprt)
+	$1 = 2912
 
-> Using a mutex lock (while in process context) for dequeue works for
-> epoll.  I mainly want a lock-free enqueue for ep_poll_callback since
-> that may be called in IRQ context.
+But that shouldn't be a big deal to do.
 
-You'd get even better than this: wait-free enqueue, with a simple xchg
-and store.
+--b.
 
 > 
-> I suppose I can also use the llist LIFO in ep_poll_callback and
-> reverse that while in process context, too...
-
-Yeah, but that seems more expensive than just having the list in the
-right order already. ;)
-
-Patch incoming in a separate post,
-
-Thanks,
-
-Mathieu
-
+>  net/sunrpc/xprtrdma/verbs.c     |   10 ++++++----
+>  net/sunrpc/xprtrdma/xprt_rdma.h |    5 ++++-
+>  2 files changed, 10 insertions(+), 5 deletions(-)
 > 
+> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+> index 93726560..c7aa3da 100644
+> --- a/net/sunrpc/xprtrdma/verbs.c
+> +++ b/net/sunrpc/xprtrdma/verbs.c
+> @@ -1730,13 +1730,14 @@ rpcrdma_deregister_memwin_external(struct rpcrdma_mr_seg *seg,
+>  }
+>  
+>  static int
+> -rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+> -			int *nsegs, int writing, struct rpcrdma_ia *ia)
+> +rpcrdma_register_default_external(struct rpcrdma_xprt *r_xprt,
+> +			struct rpcrdma_mr_seg *seg, int *nsegs, int writing,
+> +			struct rpcrdma_ia *ia)
+>  {
+>  	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+>  				  IB_ACCESS_REMOTE_READ);
+>  	struct rpcrdma_mr_seg *seg1 = seg;
+> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
+> +	struct ib_phys_buf *ipb = r_xprt->ipb;
+>  	int len, i, rc = 0;
+>  
+>  	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+> @@ -1827,7 +1828,8 @@ rpcrdma_register_external(struct rpcrdma_mr_seg *seg,
+>  
+>  	/* Default registration each time */
+>  	default:
+> -		rc = rpcrdma_register_default_external(seg, &nsegs, writing, ia);
+> +		rc = rpcrdma_register_default_external(r_xprt, seg, &nsegs,
+> +			writing, ia);
+>  		break;
+>  	}
+>  	if (rc)
+> diff --git a/net/sunrpc/xprtrdma/xprt_rdma.h b/net/sunrpc/xprtrdma/xprt_rdma.h
+> index cc1445d..d7b440f 100644
+> --- a/net/sunrpc/xprtrdma/xprt_rdma.h
+> +++ b/net/sunrpc/xprtrdma/xprt_rdma.h
+> @@ -269,7 +269,8 @@ struct rpcrdma_stats {
+>   * for convenience. This structure need not be visible externally.
+>   *
+>   * It is allocated and initialized during mount, and released
+> - * during unmount.
+> + * during unmount. Access to this structure is serialized by XPRT_LOCKED
+> + * in xprt_reserve_xprt().
+>   */
+>  struct rpcrdma_xprt {
+>  	struct rpc_xprt		xprt;
+> @@ -279,6 +280,8 @@ struct rpcrdma_xprt {
+>  	struct rpcrdma_create_data_internal rx_data;
+>  	struct delayed_work	rdma_connect;
+>  	struct rpcrdma_stats	rx_stats;
+> +	/* temp work array */
+> +	struct ib_phys_buf	ipb[RPCRDMA_MAX_DATA_SEGS];
+>  };
+>  
+>  #define rpcx_to_rdmax(x) container_of(x, struct rpcrdma_xprt, xprt)
+> -- 
+> 1.7.9.5
 > 
-> ref: http://git.lttng.org/userspace-rcu.git
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
