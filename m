@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3CKTmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:42:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360Ab3CKTmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:42:06 -0400
-Date: Mon, 11 Mar 2013 15:41:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130311194159.GB3579@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130311171824.GA434@x4>
- <20130311191753.GA439@x4>
+	id S1754683Ab3CKTmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:42:18 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53883 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab3CKTmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:42:14 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>
+References: <20130311191156.GA17763@www.outflux.net>
+	<20130311192805.GA19428@redhat.com>
+	<CAGXu5jJEhDHgVR_iAdf27G0+Mip82vYBHv-r0Q_vZwDodfADRQ@mail.gmail.com>
+Date: Mon, 11 Mar 2013 12:42:05 -0700
+In-Reply-To: <CAGXu5jJEhDHgVR_iAdf27G0+Mip82vYBHv-r0Q_vZwDodfADRQ@mail.gmail.com>
+	(Kees Cook's message of "Mon, 11 Mar 2013 12:34:39 -0700")
+Message-ID: <87ip4xlo4y.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311191753.GA439@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19Ptt1SxCv2cXU2jqT/Lvlz1jJMSqmTRE4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] signal: always clear sa_restorer on execve
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 08:17:53PM +0100, Markus Trippelsdorf wrote:
- > On 2013.03.11 at 18:18 +0100, Markus Trippelsdorf wrote:
- > > I get hash failures on "completed" torrents since 3.9.0-rc1 (Linux 3.8
- > > seems to be fine). What happens is that the torrents apparently complete
- > > successfully. After reboot however the hash check fails and there are
- > > missing (or corrupted) chunks. I've tested this with two different
- > > clients (rtorrent and aria2c) and both are affected. So I think this
- > > might be a filesystem issue.
- > > 
- > > /dev/sda       ext4      1.4T  666G  640G  51% /var
- > > /dev/sda on /var type ext4 (rw,noatime,data=ordered)
- > > 
- > > I use ECC memory (and there is nothing in the logs).
- > 
- > To reproduce this issue just do the following:
- > 
- >  % wget http://torrents.linuxmint.com/torrents/linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
- >  % rtorrent linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
- >  (Wait until the torrent finishes)
- >  % sudo echo 3 > /proc/sys/vm/drop_caches
- >  (Rehash the torrent (Ctrl-R))
- >  The torrent doesn't rehash successfully and a few hunks are
- >  missing/corrupted and need to be downloaded again.
+Kees Cook <keescook@chromium.org> writes:
 
-Worked fine for me on two separate machines.  Could it be a network problem
-perhaps ? If something is mangling the packet before it hits the disk,
-that would explain it.  What NIC do you use ?
+> On Mon, Mar 11, 2013 at 12:28 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 03/11, Kees Cook wrote:
+>>>
+>>> When the new signal handlers are set up for a fork, the location of
+>>> sa_restorer is not cleared, leaking a parent process's address space
+>>> location to children. This allows for a potential bypass of the parent's
+>>> ASLR by examining the sa_restorer value returned when calling sigaction().
+>>
+>> I don't understand.
+>>
+>> fork() should not change restorer/etc, and the child has the same address
+>> space anyway. There is no any leak and the patch can't make any difference
+>> in this case because flush_signal_handlers() is not called by fork().
+>
+> I probably failed to explain this correctly. From the perspective of
+> what should be considered "secret", it only matters across the exec,
+> not the fork (since the VMAs haven't changed until the exec). But the
+> info leak is easy to see, and this patch fixes it. As you say, since
+> other things were reset, so should sa_restorer.
 
-Or maybe you could isolate it to a filesystem problem using something
-like fsx ?
+At the very least please correct the explanation in your patch
+description.
 
-	Dave
+Too often I have had seen a confused patch description, indicate
+confusion elsewhere in the patch.  Let's make it easy for reviewers
+and future bisectors to understand what is intended.
 
+>>> @@ -485,6 +485,9 @@ flush_signal_handlers(struct task_struct *t, int force_default)
+>>>               if (force_default || ka->sa.sa_handler != SIG_IGN)
+>>>                       ka->sa.sa_handler = SIG_DFL;
+>>>               ka->sa.sa_flags = 0;
+>>> +#ifdef __ARCH_HAS_SA_RESTORER
+>>> +             ka->sa.sa_restorer = NULL;
+>>> +#endif
+
+Also I am inclined to suggest this should be an inline function in a
+header.
+		clear_sa_restorer(ka);
+
+Just so we don't litter the code with #ifdefs.
+
+Eric
