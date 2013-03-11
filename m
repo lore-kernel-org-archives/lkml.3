@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3CKNbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:31:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63458 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab3CKNbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:31:52 -0400
-Message-ID: <513DDCC2.9070807@redhat.com>
-Date: Mon, 11 Mar 2013 14:31:46 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1751565Ab3CKNea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:34:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50553 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab3CKNe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 09:34:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [char-misc-next 01/12 v3] mei: Rename mei_device to mei_host
+Date: Mon, 11 Mar 2013 13:34:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Winkler, Tomas" <tomas.winkler@intel.com>
+References: <1360694222-27632-1-git-send-email-sameo@linux.intel.com> <20130220105731.GT18295@sortiz-mobl> <20130311104418.GA1438@zurbaran>
+In-Reply-To: <20130311104418.GA1438@zurbaran>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com> <513DBF45.9030803@redhat.com> <20130311115144.GG31619@redhat.com>
-In-Reply-To: <20130311115144.GG31619@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303111334.21652.arnd@arndb.de>
+X-Provags-ID: V02:K0:jNfv/dfO9oo+GhJ4Z73ARajguwlWi/fdTHD37sY5Syn
+ huOuR9lCD6+v2hj0oHNyMR7X2uGENlV1zZNtpqA6YpI63hwAkD
+ kTacx8/DOxEeCPtxNXbu0WsVYW/1jNzgf+0FsI6DSr9XWgFC+r
+ 35XTkc046yVNyEPlCvG5jP00aeS5FHpxgJuQO+l4N7UQTHOMSx
+ Ul0vV/H/wA2j/bmy2qmqOJTmDxYCWkGTdQidBOXjo1kPTY+c7w
+ VBcovOAo4gUhe+OdufY3/mDBLkYFE0q8YElqsOC9264FRpfaF9
+ f9BGokdt1eT75gCflw+R1Urehm1nr6qM0eDLoboJUZfyulgw3b
+ xV+1lf2QdXfmHkdpoWEQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/03/2013 12:51, Gleb Natapov ha scritto:
->> > 
->> > Agreed, but we still have the problem of how to signal from userspace.
->> > For that do you have any other suggestion than mp_state?  And if we keep
->> > mp_state to signal from userspace, giving INIT_RECEIVED the
->> > "wait-for-SIPI" semantics would be wrong.
->> > 
-> I don't see how can we use mp_state for signaling from userspace either.
-> Currently soft reset always reset vcpus, so it is OK for userspace to
-> generate reset vcpu state and put it into kernel, mp_state is just one
-> of the updated states, but when INIT will be just another signal that
-> may or may not reset cpu or have other side effects like #vmexit this
-> will not longer work. We will have to have another interface for
-> injecting INIT from userspace and userspace soft-reset will use it
-> instead of doing reset by itself.
+On Monday 11 March 2013, Samuel Ortiz wrote:
+> > I don't have a strong opinion here, so that would be fine with me.
+> > Greg, Arnd, would mei_cl_device and mei_cl_driver be an acceptable compromise?
+> I'm re-opening this topic now that the merge window is closed: So would you
+> guys take mei_cl_device and mei_cl_driver as an acceptable solution or (as you
+> hinted earlier) are mei_device and mei_driver the only naming scheme that
+> you'd accept ?
 
-Setting the mp_state to INIT_RECEIVED is that interface, and it already
-works, for APs at least.  This patch extends it to work for the BSP as well.
+I'd prefer the latter, but I wouldn't insist on it if you have good reasons
+to use the former.
 
-In the corresponding userspace patch, I don't need to touch the CPU
-state at all.  I can just signal the kernel.  If I touch the CPU, I'll
-break the nested case, no matter how it is implemented.  So far, the
-userspace did not have to worry about nested, and that's something that
-should be kept that way.
-
-If we move away from the INIT_RECEIVED and SIPI_RECEIVED states for
-in-kernel APIC -> VCPU communication, then the KVM_SET_MP_STATE ioctl
-will have to convert them to the right bits in the requests field or in
-the APIC state.  But I'm starting to see less benefit from moving away
-from mp_state.
-
-Paolo
+	Arnd
