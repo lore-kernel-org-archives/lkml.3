@@ -1,123 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3CKKbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:31:01 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51412 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753212Ab3CKKbA (ORCPT
+	id S1753821Ab3CKKgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:36:22 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:52787 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753320Ab3CKKgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:31:00 -0400
-Message-ID: <1362997664.3137.52.camel@x61.thuisdomein>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-From: Paul Bolle <pebolle@tiscali.nl>
-To: NeilBrown <neilb@suse.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Kees Cook <keescook@chromium.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 11 Mar 2013 11:27:44 +0100
-In-Reply-To: <20130228091110.7da87b53@notabene.brown>
-References: <20130223074001.GA5199@www.outflux.net>
-	 <CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-	 <20130228091110.7da87b53@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Mar 2013 10:27:44.0465 (UTC) FILETIME=[11720410:01CE1E43]
-X-RcptDomain: vger.kernel.org
+	Mon, 11 Mar 2013 06:36:21 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275dh6d523h5e7bkz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Mon, 11 Mar 2013 18:35:42 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v6 2/2] mfd: syscon: Add non-DT support
+Message-ID: <20130311103541.GC6280@b29396-Latitude-E6410>
+References: <1362063434-8318-1-git-send-email-shc_work@mail.ru>
+ <1362063434-8318-2-git-send-email-shc_work@mail.ru>
+ <20130311094005.GA6280@b29396-Latitude-E6410>
+ <1362997004.885485377@f319.mail.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1362997004.885485377@f319.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Following will be in -next shortly.
+On Mon, Mar 11, 2013 at 02:16:44PM +0400, Alexander Shiyan wrote:
+> > On Thu, Feb 28, 2013 at 06:57:14PM +0400, Alexander Shiyan wrote:
+> > > This patch allow using syscon driver from the platform data, i.e.
+> > > possibility using driver on systems without oftree support.
+> > > For search syscon device from the client drivers,
+> > > "syscon_regmap_lookup_by_pdevname" function was added.
+> > > 
+> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > > ---
+> > >  drivers/mfd/Kconfig        |  1 -
+> > >  drivers/mfd/syscon.c       | 77 +++++++++++++++++++++++++++-------------------
+> > >  include/linux/mfd/syscon.h |  1 +
+> > >  3 files changed, 47 insertions(+), 32 deletions(-)
+> > > 
+> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > index 671f5b1..8fdd87e 100644
+> > > --- a/drivers/mfd/Kconfig
+> > > +++ b/drivers/mfd/Kconfig
+> > > @@ -1070,7 +1070,6 @@ config MFD_STA2X11
+> > >  
+> > >  config MFD_SYSCON
+> > >  	bool "System Controller Register R/W Based on Regmap"
+> > > -	depends on OF
+> > >  	select REGMAP_MMIO
+> > >  	help
+> > >  	  Select this option to enable accessing system control registers
+> > > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > > index 674af14..e5b6be1 100644
+> > > --- a/drivers/mfd/syscon.c
+> > > +++ b/drivers/mfd/syscon.c
+> > > @@ -29,7 +29,7 @@ struct syscon {
+> > >  	struct regmap *regmap;
+> > >  };
+> > >  
+> > > -static int syscon_match(struct device *dev, void *data)
+> > > +static int syscon_match_node(struct device *dev, void *data)
+> > >  {
+> > >  	struct device_node *dn = data;
+> > >  
+> > > @@ -42,7 +42,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
+> > >  	struct device *dev;
+> > >  
+> > >  	dev = driver_find_device(&syscon_driver.driver, NULL, np,
+> > > -				 syscon_match);
+> > > +				 syscon_match_node);
+> > >  	if (!dev)
+> > >  		return ERR_PTR(-EPROBE_DEFER);
+> > >  
+> > > @@ -68,6 +68,34 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+> > >  }
+> > >  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+> > >  
+> > > +static int syscon_match_pdevname(struct device *dev, void *data)
+> > > +{
+> > > +	struct platform_device *pdev = to_platform_device(dev);
+> > > +	const struct platform_device_id *id = platform_get_device_id(pdev);
+> > > +
+> > > +	if (id)
+> > > +		if (!strcmp(id->name, (const char *)data))
+> > > +			return 1;
+> > > +
+> > > +	return !strcmp(dev_name(dev), (const char *)data);
+> > > +}
+> > > +
+> > > +struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+> > > +{
+> > > +	struct device *dev;
+> > > +	struct syscon *syscon;
+> > > +
+> > > +	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> > > +				 syscon_match_pdevname);
+> > > +	if (!dev)
+> > > +		return ERR_PTR(-ENODEV);
+> > 
+> > Should it be ERR_PTR(-EPROBE_DEFER)?
 > 
-> NeilBrown
+> I have no idea what better using here. Think that is not so important
+> since we may have only one possible error code here.
+
+I'm not quite understand your meaning.
+Since the syscon device may be still not registered,
+so it may be better to return a EPROBE_DERFER which is the same
+as dt version.
+
 > 
+> > > +
+> > > +	syscon = dev_get_drvdata(dev);
+> > > +
+> > > +	return syscon->regmap;
+> > > +}
+> > > +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> > > +
+> > >  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+> > >  					const char *property)
+> > >  {
+> > > @@ -99,30 +127,24 @@ static struct regmap_config syscon_regmap_config = {
+> > >  static int syscon_probe(struct platform_device *pdev)
+> > >  {
+> > >  	struct device *dev = &pdev->dev;
+> > > -	struct device_node *np = dev->of_node;
+> > >  	struct syscon *syscon;
+> > > -	struct resource res;
+> > > -	int ret;
+> > > -
+> > > -	if (!np)
+> > > -		return -ENOENT;
+> > > +	struct resource *res;
+> > >  
+> > > -	syscon = devm_kzalloc(dev, sizeof(struct syscon),
+> > > -			    GFP_KERNEL);
+> > > +	syscon = devm_kzalloc(dev, sizeof(struct syscon), GFP_KERNEL);
+> > >  	if (!syscon)
+> > >  		return -ENOMEM;
+> > >  
+> > > -	syscon->base = of_iomap(np, 0);
+> > > -	if (!syscon->base)
+> > > -		return -EADDRNOTAVAIL;
+> > > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > > +	if (!res)
+> > > +		return -ENOENT;
+> > >  
+> > > -	ret = of_address_to_resource(np, 0, &res);
+> > > -	if (ret)
+> > > -		return ret;
+> > > +	syscon->base = devm_ioremap(dev, res->start, resource_size(res));
+> > > +	if (!syscon->base)
+> > > +		return -ENOMEM;
+> > >  
+> > > -	syscon_regmap_config.max_register = res.end - res.start - 3;
+> > > +	syscon_regmap_config.max_register = res->end - res->start - 3;
+> > >  	syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
+> > > -					&syscon_regmap_config);
+> > > +					       &syscon_regmap_config);
+> > 
+> > Unneeded change to me
+> > 
+> > >  	if (IS_ERR(syscon->regmap)) {
+> > >  		dev_err(dev, "regmap init failed\n");
+> > >  		return PTR_ERR(syscon->regmap);
+> > > @@ -130,22 +152,15 @@ static int syscon_probe(struct platform_device *pdev)
+> > >  
+> > >  	platform_set_drvdata(pdev, syscon);
+> > >  
+> > > -	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> > > -		res.start, res.end);
+> > > +	dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
+> > 
+> > Doesn't with a 'syscon' prefix look better?
 > 
-> From 51acbcec6c42b24482bac18e42befc822524535d Mon Sep 17 00:00:00 2001
-> From: NeilBrown <neilb@suse.de>
-> Date: Thu, 28 Feb 2013 09:08:34 +1100
-> Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456
+> Prefix is added by dev_info, so no need to print it twice.
+
+Reasonable to me.
+
+Regards
+Dong Aisheng
+
+> > >  
+> > >  	return 0;
+> > >  }
+> > >  
+> > > -static int syscon_remove(struct platform_device *pdev)
+> > > -{
+> > > -	struct syscon *syscon;
+> > > -
+> > > -	syscon = platform_get_drvdata(pdev);
+> > > -	iounmap(syscon->base);
+> > > -	platform_set_drvdata(pdev, NULL);
+> > > -
+> > > -	return 0;
+> > > -}
+> > > +static const struct platform_device_id syscon_ids[] = {
+> > > +	{ "syscon", },
+> > > +	{ }
+> > > +};
+> > >  
+> > >  static struct platform_driver syscon_driver = {
+> > >  	.driver = {
+> > > @@ -154,7 +169,7 @@ static struct platform_driver syscon_driver = {
+> > >  		.of_match_table = of_syscon_match,
+> > >  	},
+> > >  	.probe		= syscon_probe,
+> > > -	.remove		= syscon_remove,
+> > 
+> > So you reply on the managed resource to address the resource leak issue
+> > raised by Dmitry on doing manually unbind here, right?
 > 
-> This doesn't seem to actually help and we have an alternate
-> multi-threading approach waiting in the wings, so just get
-> rid of this config option and associated code.
+> Yes. We are killing "remove"-entry since all our resources are "managed" now.
 > 
-> As a bonus, we remove one use of CONFIG_EXPERIMENTAL
+> > this looks ok to me.
+> > 
+> > So, besides above minor comments,
+> > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Regards
+> > Dong Aisheng
+> > 
+> > > +	.id_table	= syscon_ids,
+> > >  };
+> > >  
+> > >  static int __init syscon_init(void)
+> > > diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+> > > index 6aeb6b8..5c9ee6e 100644
+> > > --- a/include/linux/mfd/syscon.h
+> > > +++ b/include/linux/mfd/syscon.h
+> > > @@ -17,6 +17,7 @@
+> > >  
+> > >  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
+> > >  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+> > > +extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+> > >  extern struct regmap *syscon_regmap_lookup_by_phandle(
+> > >  					struct device_node *np,
+> > >  					const char *property);
+> > > -- 
+> > > 1.7.12.4
 > 
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Signed-off-by: NeilBrown <neilb@suse.de>
-
-That commit entered mainline in v3.9-rc2 (still as commit
-51acbcec6c42b24482bac18e42befc822524535d). It missed one instance of
-CONFIG_MULTICORE_RAID456, so this additional patch is needed (which also
-cleans that macro from two defconfig files). Compile tested, by the way.
-
-
-Paul Bolle
-
->From ab10e19eeca5ae271ae965418ff736db0230aab6 Mon Sep 17 00:00:00 2001
-From: Paul Bolle <pebolle@tiscali.nl>
-Date: Mon, 11 Mar 2013 11:16:25 +0100
-Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456 entirely
-
-Once instance of this Kconfig macro remained after commit
-51acbcec6c42b24482bac18e42befc822524535d ("md: remove
-CONFIG_MULTICORE_RAID456"). Remove that one too. And, while we're at it,
-also remove it from the defconfig files that carry it.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- arch/tile/configs/tilegx_defconfig  | 1 -
- arch/tile/configs/tilepro_defconfig | 1 -
- drivers/md/raid5.h                  | 4 ----
- 3 files changed, 6 deletions(-)
-
-diff --git a/arch/tile/configs/tilegx_defconfig b/arch/tile/configs/tilegx_defconfig
-index 8c5eff6..4768481 100644
---- a/arch/tile/configs/tilegx_defconfig
-+++ b/arch/tile/configs/tilegx_defconfig
-@@ -330,7 +330,6 @@ CONFIG_MD_RAID0=m
- CONFIG_MD_RAID1=m
- CONFIG_MD_RAID10=m
- CONFIG_MD_RAID456=m
--CONFIG_MULTICORE_RAID456=y
- CONFIG_MD_FAULTY=m
- CONFIG_BLK_DEV_DM=m
- CONFIG_DM_DEBUG=y
-diff --git a/arch/tile/configs/tilepro_defconfig b/arch/tile/configs/tilepro_defconfig
-index e7a3dfc..dd2b8f0 100644
---- a/arch/tile/configs/tilepro_defconfig
-+++ b/arch/tile/configs/tilepro_defconfig
-@@ -324,7 +324,6 @@ CONFIG_MD_RAID0=m
- CONFIG_MD_RAID1=m
- CONFIG_MD_RAID10=m
- CONFIG_MD_RAID456=m
--CONFIG_MULTICORE_RAID456=y
- CONFIG_MD_FAULTY=m
- CONFIG_BLK_DEV_DM=m
- CONFIG_DM_DEBUG=y
-diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
-index 18b2c4a..31e2ec1 100644
---- a/drivers/md/raid5.h
-+++ b/drivers/md/raid5.h
-@@ -221,10 +221,6 @@ struct stripe_head {
- 	struct stripe_operations {
- 		int 		     target, target2;
- 		enum sum_check_flags zero_sum_result;
--		#ifdef CONFIG_MULTICORE_RAID456
--		unsigned long	     request;
--		wait_queue_head_t    wait_for_ops;
--		#endif
- 	} ops;
- 	struct r5dev {
- 		/* rreq and rvec are used for the replacement device when
--- 
-1.7.11.7
-
+> ---
 
