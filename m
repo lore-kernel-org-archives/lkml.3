@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3CKD6p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 23:58:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:30302 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3CKD6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 23:58:44 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-2f-513d56716e6b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: l4f00242t03: check return value of
- regulator_enable()
-Date: Mon, 11 Mar 2013 12:58:41 +0900
-Message-id: <005f01ce1e0c$b7dbcfc0$27936f40$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4eDLe8BOOG3YaaQN2mW67zG6BGFQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zQ93CMNtAg60L9Cwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG3nWvmQve8VZsfXyevYHxJncXIyeHhICJxOybzYwQtpjEhXvr
-	2boYuTiEBJYxSrx8v4gNpujxlTZmiMQiRonGRzPYIZzZTBKvO06wgFSxCahJfPlyGCjBwSEi
-	oC/R1qIBEmYWKJXY+uA9WImwQLDEk5fTmUFKWARUJfY3pIKEeQVsJdbM+MMCYQtK/Jh8jwWi
-	VUti87YmVghbXmLzmrdgrRIC6hKP/uqChEUE9CSutG9jgygRkdj34h0jyGUSAu3sEvsmtzOB
-	JFgEBCS+TT7EAtErK7HpADPEW5ISB1fcYJnAKDYLyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQn
-	pReZ6BUn5haX5qXrJefnbmKExMmEHYz3DlgfYkwGWj+RWUo0OR8YZ3kl8YbGZkYWpiamxkbm
-	lmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYIyd0P77zUSelbf3L1jyMvL9
-	zbcSVZNE7nJGzzphf7faYXejSFX1sz42nxXc7VH/p0x1XihzYe3Cn11hx9SK+QV1kz+/Zlkj
-	WsDFUx82xWttI+dRJ42Zgv9qXZeXnTMK8fSZl2mWpSBhIGsfGfdkk9x8GYFJsz+/4IxlcVJX
-	VDOI/210fOIbSyWW4oxEQy3mouJEAHTo7/apAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd3CMNtAg0P9WhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY++618wF73grtj4+z97A
-	eJO7i5GTQ0LAROLxlTZmCFtM4sK99WxdjFwcQgKLGCUaH81gh3BmM0m87jjBAlLFJqAm8eXL
-	YaAEB4eIgL5EW4sGSJhZoFRi64P3YCXCAsEST15OZwYpYRFQldjfkAoS5hWwlVgz4w8LhC0o
-	8WPyPRaIVi2JzduaWCFseYnNa96CtUoIqEs8+qsLEhYR0JO40r6NDaJERGLfi3eMExgFZiGZ
-	NAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAUPpPewbiqweIQowAH
-	oxIP7wQd20Ah1sSy4srcQ4wSHMxKIrwrN9kECvGmJFZWpRblxxeV5qQWH2JMBvpzIrOUaHI+
-	MEHklcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjffm8oA2T
-	3ppJPUq3F6yv5cr/4PreXfK3+f89fztlGme/c9h1c75D83L1Vb75Bqu9rc6FH204PTk3fylD
-	4VbWni8BbclddZPlg+w051nofoqy3B2wpZzzVcCM0lmG2gtne9uXF927+ObMRrkFjf3OZfOu
-	FngbTzusF+Jj12qmf9XKkFNx8zQlluKMREMt5qLiRAB4HZy/BgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751241Ab3CKEKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 00:10:33 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:24771
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750912Ab3CKEKb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 00:10:31 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.115;KIP:(null);UIP:(null);IPV:NLI;H:avcashub1.qlogic.com;RD:avcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI936eI1432I4015Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2ei2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1b0ah1155h)
+Date: Sun, 10 Mar 2013 21:10:19 -0700
+From: Andrew Vasquez <andrew.vasquez@qlogic.com>
+To: James Bottomley <jbottomley@parallels.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>
+Subject: Re: [PATCH -mmotm] scsi: fix the wrong position of the comment
+Message-ID: <20130311041019.GB37523@n8021av7gqvyn1.qlogic.org>
+References: <1362902990-25137-1-git-send-email-akinobu.mita@gmail.com>
+ <1362903765.3003.2.camel@dabdike.int.hansenpartnership.com>
+ <20130310005718.2d6579ea.akpm@linux-foundation.org>
+ <1362905945.3003.4.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1362905945.3003.4.camel@dabdike.int.hansenpartnership.com>
+Organization: QLogic Corporation
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.8.6.109]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator_enable() was marked as as __must_check, therefore,
-the return value of regulator_enable() should be checked.
-Also, this patch checks return value of regulator_set_voltage().
+On Sun, 10 Mar 2013, James Bottomley wrote:
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/l4f00242t03.c |   27 ++++++++++++++++++++++-----
- 1 files changed, 22 insertions(+), 5 deletions(-)
+> On Sun, 2013-03-10 at 00:57 -0800, Andrew Morton wrote:
+> > On Sun, 10 Mar 2013 08:22:47 +0000 James Bottomley <jbottomley@parallels.com> wrote:
+> >
+> > > [missing SCSI cc added]
+> > > On Sun, 2013-03-10 at 17:09 +0900, Akinobu Mita wrote:
+> > > > This fixes the wrong position of the comment introduced by
+> > > > scsi-rename-random32-to-prandom_u32.patch in the -mm tree.
+> > > >
+> > > > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> > > > Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> > > > Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+> > > > ---
+> > > >  drivers/scsi/qla2xxx/qla_attr.c | 6 +++---
+> > > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > >
+> > > > diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+> > > > index 04bf7b8..e44d47e 100644
+> > > > --- a/drivers/scsi/qla2xxx/qla_attr.c
+> > > > +++ b/drivers/scsi/qla2xxx/qla_attr.c
+> > > > @@ -1939,13 +1939,13 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
+> > > >         }
+> > > >
+> > > >         /* No pending activities shall be there on the vha now */
+> > > > -       if (ql2xextended_error_logging & ql_dbg_user)
+> > > > -               msleep(prandom_u32() % 10);
+> > > > +       if (ql2xextended_error_logging & ql_dbg_user) {
+> > > >                 /*
+> > > >                  * Just to see if something falls on the net we have placed
+> > > >                  * below
+> > > >                  */
+> > > > -
+> > > > +               msleep(prandom_u32() % 10);
+> > > > +       }
+> > >
+> > > I don't git a toss if it's random or prandom: Andrew: get rid of it; we
+> > > do not sleep in kernel for random intervals whatever the provocation ...
+> > > if this is supposed to be a warning or error condition then print
+> > > something.
+> >
+> > That msleep was added by
+> >
+> > commit feafb7b1714cf599a6d0fed45801ab3f66046cbd
+> > Author:     Arun Easi <arun.easi@qlogic.com>
+> > AuthorDate: Fri Sep 3 14:57:00 2010 -0700
+> > Commit:     James Bottomley <James.Bottomley@suse.de>
+> > CommitDate: Sun Sep 5 15:13:12 2010 -0300
+> >
+> >     [SCSI] qla2xxx: Fix vport delete issues
+>
+> Sorry, I didn't notice multiple Andrews on the cc list.  I meant Andrew
+> Vasquez (or other member of the qla team) remove this, please (and
+> preferably do something correct).
+>
 
-diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-index fb61557..8d54c3c 100644
---- a/drivers/video/backlight/l4f00242t03.c
-+++ b/drivers/video/backlight/l4f00242t03.c
-@@ -51,14 +51,31 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
- 	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
- 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
- 	const u16 cmd[] = { 0x36, param(0), 0x3A, param(0x60) };
-+	int ret;
- 
- 	dev_dbg(&spi->dev, "initializing LCD\n");
- 
--	regulator_set_voltage(priv->io_reg, 1800000, 1800000);
--	regulator_enable(priv->io_reg);
-+	ret = regulator_set_voltage(priv->io_reg, 1800000, 1800000);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to set the IO regulator voltage.\n");
-+		return;
-+	}
-+	ret = regulator_enable(priv->io_reg);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to enable the IO regulator.\n");
-+		return;
-+	}
- 
--	regulator_set_voltage(priv->core_reg, 2800000, 2800000);
--	regulator_enable(priv->core_reg);
-+	ret = regulator_set_voltage(priv->core_reg, 2800000, 2800000);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to set the core regulator voltage.\n");
-+		return;
-+	}
-+	ret = regulator_enable(priv->core_reg);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to enable the core regulator.\n");
-+		return;
-+	}
- 
- 	l4f00242t03_reset(pdata->reset_gpio);
- 
--- 
-1.7.2.5
+James,
 
+We'll take a look at this, yes.  Adding Giri and Co. to the CC.
+
+Thanks, AV
+
+________________________________
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
