@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3CKIMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:12:10 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:49669 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3CKIMJ (ORCPT
+	id S1752646Ab3CKISH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 04:18:07 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:36239 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab3CKISF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:12:09 -0400
+	Mon, 11 Mar 2013 04:18:05 -0400
+Message-ID: <513D9338.20402@hp.com>
+Date: Mon, 11 Mar 2013 16:18:00 +0800
+From: Jingbai Ma <jingbai.ma@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomzM8zcY1gcBqsO7_WXKcNC5p3zhYvAu1cm=Z5WcuT6Vg@mail.gmail.com>
-References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130307062041.GE13370@intel.com>
-	<1362748282.28241.163.camel@smile>
-	<CAKohpomzM8zcY1gcBqsO7_WXKcNC5p3zhYvAu1cm=Z5WcuT6Vg@mail.gmail.com>
-Date: Mon, 11 Mar 2013 10:12:07 +0200
-Message-ID: <CAHp75VcN-W3B+pfHDSFwvQuEidYD81JagNNkrbHXVj7wkaNmOA@mail.gmail.com>
-Subject: Re: [PATCH 00/10] dmatest: update the module to use debugfs
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jingbai Ma <jingbai.ma@hp.com>, mingo@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, hpa@zytor.com, yinghai@kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net> <20130307152108.GC2790@redhat.com> <87k3piri3e.fsf@xmission.com> <20130308155216.GB8219@redhat.com>
+In-Reply-To: <20130308155216.GB8219@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 3:44 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 8 March 2013 21:11, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> On Thu, 2013-03-07 at 11:50 +0530, Vinod Koul wrote:
->>> On Mon, Mar 04, 2013 at 11:09:24AM +0200, Andy Shevchenko wrote:
->>> > The first approach to get dmatest module more flexible and easier to play with.
->>> > The amount of patches could be reduced, but I would like to get a comments
->>> > first on smaller pieces. The entire series creates dmatest.txt file in the
->>> > Documentation folder. Similar description is scattered through the commit
->>> > messages.
->>> >
->>> > Module was tested on Intel Medfield and Lynxpoint systems with dw_dmac DMA
->>> > controller embedded.
->>> Overall the series looks good. I think it can applied in this form as well.
+On 03/08/2013 11:52 PM, Vivek Goyal wrote:
+> On Thu, Mar 07, 2013 at 01:54:45PM -0800, Eric W. Biederman wrote:
+>> Vivek Goyal<vgoyal@redhat.com>  writes:
 >>
->> Viresh, so, you are the only one who speaks about reducing amount of
->> patches. Do you think is better to either reduce, or leave as is? In
->> case of go with smaller amount, could you provide simple scheme which
->> patch should be merged with which?
+>>> On Thu, Mar 07, 2013 at 10:58:18PM +0800, Jingbai Ma wrote:
+>>>> This patch intend to speedup the memory pages scanning process in
+>>>> selective dump mode.
+>>>>
+>>>> Test result (On HP ProLiant DL980 G7 with 1TB RAM, makedumpfile
+>>>> v1.5.3):
+>>>>
+>>>> 						Total scan Time
+>>>> Original kernel
+>>>> 	+ makedumpfile v1.5.3 cyclic mode	1958.05 seconds
+>>>> Original kernel
+>>>> 	+ makedumpfile v1.5.3 non-cyclic mode	1151.50 seconds
+>>>> Patched kernel
+>>>> 	+ patched makedumpfile v1.5.3		17.50 seconds
+>>>>
+>>>> Traditionally, to reduce the size of dump file, dumper scans all memory
+>>>> pages to exclude the unnecessary memory pages after capture kernel
+>>>> booted, and scan it in userspace code (makedumpfile).
+>>>
+>>> I think this is not a good idea. It has several issues.
+>>
+>> Actually it does not appear to be doing any work in the first kernel.
+>
+> Looks like patch3 in series is doing that.
+>
+>                          machine_crash_shutdown(&fixed_regs);
+> +                       generate_crash_dump_bitmap();
+>                          machine_kexec(kexec_crash_image);
+>
+> So this bitmap seems to be being set just before transitioning into
+> second kernel.
+>
+> I am sure you would not like this extra code in this path. :-)
 
-> I have been damn busy with Linaro Connect last week and couldn't review all
-> patches too. Probably you can just go ahead with this patchset only as Vinod
-> is okay with it.
+I was thought this function code is pretty simple, could be called here 
+safely.
+If it's not proper for here, how about before the function 
+machine_crash_shutdown(&fixed_regs)?
+Furthermore, could you explain the real risks to execute more codes here?
 
-It seems Vinod is on vacation. So, take your time to finish review. I
-appreciate it.
+Thanks!
+
+>
+> Thanks
+> Vivek
+
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Jingbai Ma (jingbai.ma@hp.com)
