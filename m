@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3CKPK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:10:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11637 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab3CKPKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:10:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,824,1355126400"; 
-   d="scan'208,223";a="300024216"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>
-Subject: [PATCH] Xen/acpi: remove redundant acpi/acpi_drivers.h include
-Thread-Topic: [PATCH] Xen/acpi: remove redundant acpi/acpi_drivers.h include
-Thread-Index: Ac4eapbhmCuu9fC9QyugkXZ4r0AnOQ==
-Date: Mon, 11 Mar 2013 15:10:40 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335422404@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335422404SHSMSX101ccrcorpi_"
-MIME-Version: 1.0
+	id S1753588Ab3CKPLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:11:05 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37208 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751821Ab3CKPLB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 11:11:01 -0400
+Message-ID: <1363014655.2395.69.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: dgilbert@interlog.com
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Mon, 11 Mar 2013 15:10:55 +0000
+In-Reply-To: <513DEED6.3090709@interlog.com>
+References: <20130308120215.GB18712@longonot.mountain>
+	 <513A2678.5000803@interlog.com>
+	 <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
+	 <20130311131032.GO9189@mwanda> <513DEED6.3090709@interlog.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC8292335422404SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-03-11 at 10:48 -0400, Douglas Gilbert wrote:
+> On 13-03-11 09:10 AM, Dan Carpenter wrote:
+> > On Fri, Mar 08, 2013 at 10:50:19PM +0000, James Bottomley wrote:
+> >> On Fri, 2013-03-08 at 12:57 -0500, Douglas Gilbert wrote:
+> >>> On 13-03-08 07:02 AM, Dan Carpenter wrote:
+> >>>> Static checkers complain that this allocation isn't checked.  We
+> >>>> should return zero if the allocation fails.
+> >>>>
+> >>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> >>>>
+> >>>> diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
+> >>>> index 1b68142..a022997 100644
+> >>>> --- a/drivers/scsi/scsi_transport_sas.c
+> >>>> +++ b/drivers/scsi/scsi_transport_sas.c
+> >>>> @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
+> >>>>    {
+> >>>>    	const int vpd_len = 32;
+> >>>>    	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
+> >>>> -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
+> >>>> +	char *buffer;
+> >>>>    	int ret = 0;
+> >>>>
+> >>>> +	buffer = kzalloc(vpd_len, GFP_KERNEL);
+> >>>> +	if (!buffer)
+> >>>> +		goto out;
+> >>>>    	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
+> >>>>    		goto out;
+> >>>>
+> >>>
+> >>> For 32 bytes, why not use the stack?
+> >>
+> >> Because the buffer is a DMA target.  You can't DMA to stack because of
+> >> padding and cacheline issues.
+> >>
+> >
+> > I think stack data works here.  scsi_execute() calls
+> > blk_rq_map_kern() which handles stack memory and alignment issues.
+> 
+> That being the case, several other callers of
+> scsi_get_vpd_page() 9and friends) could be
+> simplified and sped up.
 
->From 3e039eaf865a98971d7316e28c4ee5f3cba1d634 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Tue, 12 Mar 2013 06:42:16 +0800
-Subject: [PATCH] Xen/acpi: remove redundant acpi/acpi_drivers.h include
+Um, I'm not sure you'll speed stuff up by doing this: have you seen what
+bio_copy_kern() does?  it will allocate a page per iov entry (in this
+case probably only a single entry) and copy the data into and out of
+that page, so not only do we get the copy overhead. We also get page
+allocation overheads instead of the small number of bytes we might need,
+which could cause quite a stall in a low memory situation.
 
-It's redundant since linux/acpi.h has include it when CONFIG_ACPI enabled,
-and when CONFIG_ACPI disabled it will trigger compiling warning
+I'm not saying don't do it, I'm just saying think of the consequences
+over the fiddle of doing a small kmalloc.
 
-In file included from drivers/xen/xen-stub.c:28:0:
-include/acpi/acpi_drivers.h:103:31:
-warning: 'struct acpi_device' declared inside parameter list [enabled by de=
-fault]
-include/acpi/acpi_drivers.h:103:31:
-warning: its scope is only this definition or declaration, which is probabl=
-y not what you want [enabled by default]
-include/acpi/acpi_drivers.h:107:43:
-warning: 'struct acpi_pci_root' declared inside parameter list [enabled by =
-default]
+> Also since VPD pages don't change and they can carry
+> a lot of disparate information (e.g. the Extended
+> Inquiry and Block Limits pages) perhaps they could
+> be cached by the appropriate level (e.g. Extended
+> Inquiry cached by mid-level; Block Limits cached
+> by sd driver).
 
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- drivers/xen/xen-stub.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+We cache the ones we care about, but we could always add more if there's
+enough call, I suppose.
 
-diff --git a/drivers/xen/xen-stub.c b/drivers/xen/xen-stub.c
-index d85e411..bbef194 100644
---- a/drivers/xen/xen-stub.c
-+++ b/drivers/xen/xen-stub.c
-@@ -25,7 +25,6 @@
- #include <linux/export.h>
- #include <linux/types.h>
- #include <linux/acpi.h>
--#include <acpi/acpi_drivers.h>
- #include <xen/acpi.h>
-=20
- #ifdef CONFIG_ACPI
---=20
-1.7.1
+James
 
---_002_DE8DF0795D48FD4CA783C40EC8292335422404SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0001-Xen-acpi-remove-redundant-acpi-acpi_drivers.h-includ.patch"
-Content-Description: 0001-Xen-acpi-remove-redundant-acpi-acpi_drivers.h-includ.patch
-Content-Disposition: attachment;
-	filename="0001-Xen-acpi-remove-redundant-acpi-acpi_drivers.h-includ.patch";
-	size=1329; creation-date="Mon, 11 Mar 2013 15:07:30 GMT";
-	modification-date="Mon, 11 Mar 2013 22:52:04 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSAzZTAzOWVhZjg2NWE5ODk3MWQ3MzE2ZTI4YzRlZTVmM2NiYTFkNjM0IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgpE
-YXRlOiBUdWUsIDEyIE1hciAyMDEzIDA2OjQyOjE2ICswODAwClN1YmplY3Q6IFtQQVRDSF0gWGVu
-L2FjcGk6IHJlbW92ZSByZWR1bmRhbnQgYWNwaS9hY3BpX2RyaXZlcnMuaCBpbmNsdWRlCgpJdCdz
-IHJlZHVuZGFudCBzaW5jZSBsaW51eC9hY3BpLmggaGFzIGluY2x1ZGUgaXQgd2hlbiBDT05GSUdf
-QUNQSSBlbmFibGVkLAphbmQgd2hlbiBDT05GSUdfQUNQSSBkaXNhYmxlZCBpdCB3aWxsIHRyaWdn
-ZXIgY29tcGlsaW5nIHdhcm5pbmcKCkluIGZpbGUgaW5jbHVkZWQgZnJvbSBkcml2ZXJzL3hlbi94
-ZW4tc3R1Yi5jOjI4OjA6CmluY2x1ZGUvYWNwaS9hY3BpX2RyaXZlcnMuaDoxMDM6MzE6Cndhcm5p
-bmc6ICdzdHJ1Y3QgYWNwaV9kZXZpY2UnIGRlY2xhcmVkIGluc2lkZSBwYXJhbWV0ZXIgbGlzdCBb
-ZW5hYmxlZCBieSBkZWZhdWx0XQppbmNsdWRlL2FjcGkvYWNwaV9kcml2ZXJzLmg6MTAzOjMxOgp3
-YXJuaW5nOiBpdHMgc2NvcGUgaXMgb25seSB0aGlzIGRlZmluaXRpb24gb3IgZGVjbGFyYXRpb24s
-IHdoaWNoIGlzIHByb2JhYmx5IG5vdCB3aGF0IHlvdSB3YW50IFtlbmFibGVkIGJ5IGRlZmF1bHRd
-CmluY2x1ZGUvYWNwaS9hY3BpX2RyaXZlcnMuaDoxMDc6NDM6Cndhcm5pbmc6ICdzdHJ1Y3QgYWNw
-aV9wY2lfcm9vdCcgZGVjbGFyZWQgaW5zaWRlIHBhcmFtZXRlciBsaXN0IFtlbmFibGVkIGJ5IGRl
-ZmF1bHRdCgpSZXBvcnRlZC1ieTogV3UgRmVuZ2d1YW5nIDxmZW5nZ3Vhbmcud3VAaW50ZWwuY29t
-PgpTaWduZWQtb2ZmLWJ5OiBMaXUgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgotLS0K
-IGRyaXZlcnMveGVuL3hlbi1zdHViLmMgfCAgICAxIC0KIDEgZmlsZXMgY2hhbmdlZCwgMCBpbnNl
-cnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMveGVuL3hlbi1z
-dHViLmMgYi9kcml2ZXJzL3hlbi94ZW4tc3R1Yi5jCmluZGV4IGQ4NWU0MTEuLmJiZWYxOTQgMTAw
-NjQ0Ci0tLSBhL2RyaXZlcnMveGVuL3hlbi1zdHViLmMKKysrIGIvZHJpdmVycy94ZW4veGVuLXN0
-dWIuYwpAQCAtMjUsNyArMjUsNiBAQAogI2luY2x1ZGUgPGxpbnV4L2V4cG9ydC5oPgogI2luY2x1
-ZGUgPGxpbnV4L3R5cGVzLmg+CiAjaW5jbHVkZSA8bGludXgvYWNwaS5oPgotI2luY2x1ZGUgPGFj
-cGkvYWNwaV9kcml2ZXJzLmg+CiAjaW5jbHVkZSA8eGVuL2FjcGkuaD4KIAogI2lmZGVmIENPTkZJ
-R19BQ1BJCi0tIAoxLjcuMQoK
-
---_002_DE8DF0795D48FD4CA783C40EC8292335422404SHSMSX101ccrcorpi_--
