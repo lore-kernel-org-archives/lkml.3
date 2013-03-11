@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab3CKQ3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:29:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60649 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3CKQ3a (ORCPT
+	id S1754167Ab3CKQbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:31:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54030 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3CKQbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:29:30 -0400
-Date: Mon, 11 Mar 2013 16:22:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: john.stultz@linaro.org, tglx@linutronix.de, viresh.kumar@linaro.org,
-        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, rickard.andersson@stericsson.com,
-        vincent.guittot@linaro.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 4/4][V2] ARM: timer-sp: Set dynamic irq affinity
-Message-ID: <20130311162255.GI4977@n2100.arm.linux.org.uk>
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-5-git-send-email-daniel.lezcano@linaro.org> <513A03B7.7000004@linaro.org>
+	Mon, 11 Mar 2013 12:31:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/9] mfd: max8925: fix trivial build warning for non-dt
+Date: Mon, 11 Mar 2013 16:31:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Qing Xu <qingx@marvell.com>,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+References: <1360880818-4071454-1-git-send-email-arnd@arndb.de> <1360880818-4071454-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1360880818-4071454-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A03B7.7000004@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303111631.06866.arnd@arndb.de>
+X-Provags-ID: V02:K0:u0FifKXkOxlz0ftXPX/+/AniUdU83Cz5GXlRV8EPocc
+ PdvTB+5J0yNZNho1csGAJhT/A3kjRnmw/iao5xbzpJqh+co/Gk
+ 0HcTLJDd/JIK41saUN3jJ6hHi4fOiy4jHcMcCn1hYkieAF9TdE
+ 2O/NezKgZD4dN3CqBAKVd298Br2Sou8xt/5MFaqXnGd5UrhMRw
+ M8U8lvviEFOkh4ln+uPRQAMUSv1iczxMCWjyZGnMXGApqNRCda
+ T9L1smkyfhnn5n8C27rePOJI43ZWEh3CTtmgEMSotxMi0xvSgN
+ E1FJ9d6YIsRbMs/QSsGlhv0Mto4aUM78enNzL1A4D+AW1SXopJ
+ VuDX6fhd9/ljjgXjtWjg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 04:28:55PM +0100, Daniel Lezcano wrote:
-> On 03/02/2013 11:10 AM, Daniel Lezcano wrote:
-> > From: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
-> > When a cpu goes to a deep idle state where its local timer is shutdown, it
-> > notifies the time frame work to use the broadcast timer instead.
-> > 
-> > Unfortunately, the broadcast device could wake up any CPU, including an idle one
-> > which is not concerned by the wake up at all.
-> > 
-> > This implies, in the worst case, an idle CPU will wake up to send an IPI to
-> > another idle cpu.
-> > 
-> > This patch fixes this for ARM platforms using timer-sp, by setting
-> > CLOCK_EVT_FEAT_DYNIRQ feature.
-> > 
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > ---
+On Thursday 14 February 2013, Arnd Bergmann wrote:
+> Patch fe527ea5a "mfd: max8925: Support dt for backlight"
+> added a new function for DT probing but introduced a
+> build warning for the case where CONFIG_OF is disabled:
 > 
-> Hi Russell,
+> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
 > 
-> I asked Thomas if he could take this patch in its tree but it falls
-> under your umbrella. Thomas agreed to take it if you ack this patch.
+> A much nicer fix is to use the IS_ENABLED keyword to
+> have the same effect of dropping the device tree specific
+> function when it's not needed.
 > 
-> Is this patch acceptable for you ?
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Qing Xu <qingx@marvell.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 
-It's simple enough.
+Hmm, it seems I already had this patch for the issue, but for some reason it
+didn't apply for some time and when I looked at the problem again now, I found
+more issues, and I'd suggest reverting commit fe527ea5a completely. There are
+similar problems in the max8925_power patch.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+	Arnd
