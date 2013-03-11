@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3CKLeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:34:24 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61727 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab3CKLeX (ORCPT
+	id S1754065Ab3CKLkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:40:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60243 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3CKLkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:34:23 -0400
-X-AuditID: 9c93016f-b7b46ae000000e4b-73-513dc13d121b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/2] perf: Reset detached siblings' group_flags
-References: <1362629990-10053-1-git-send-email-namhyung@kernel.org>
-	<1362995984.14933.0.camel@laptop>
-Date: Mon, 11 Mar 2013 20:34:21 +0900
-In-Reply-To: <1362995984.14933.0.camel@laptop> (Peter Zijlstra's message of
-	"Mon, 11 Mar 2013 10:59:44 +0100")
-Message-ID: <87a9qaqif6.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 11 Mar 2013 07:40:39 -0400
+Date: Mon, 11 Mar 2013 07:40:44 -0400 (EDT)
+Message-Id: <20130311.074044.1360965348131709747.davem@davemloft.net>
+To: socketcan@hartkopp.net
+Cc: valentin.ilie@gmail.com, linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] net: can: af_can.c: Fix checkpatch warnings
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <513D8193.3080405@hartkopp.net>
+References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
+	<1362950113-25515-1-git-send-email-valentin.ilie@gmail.com>
+	<513D8193.3080405@hartkopp.net>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 11 Mar 2013 04:40:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013 10:59:44 +0100, Peter Zijlstra wrote:
-> On Thu, 2013-03-07 at 13:19 +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Currently if a group_leader event is deleted, the sibling events are
->> upgraded to singleton events of a same group list.  At this time, the
->> siblings inherit the leader's group_flags.
->> 
->> However, if the group has mixed hw/sw events the leader's group_flag
->> does not contain PERF_GROUP_SOFTWARE so sibling sw events will miss
->> the flag also.  Fix it.
->> 
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  kernel/events/core.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->> 
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 5c75791d7269..007dfe846d4d 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -1107,8 +1107,9 @@ static void perf_group_detach(struct perf_event *event)
->>  			list_move_tail(&sibling->group_entry, list);
->>  		sibling->group_leader = sibling;
->>  
->> -		/* Inherit group flags from the previous leader */
->> -		sibling->group_flags = event->group_flags;
->> +		/* Reset group flags for each siblings */
->> +		sibling->group_flags = is_software_event(sibling) ?
->> +						PERF_GROUP_SOFTWARE : 0;
->>  	}
->
->
-> In such a case, does the event not continue to live on the hw pmu? That
-> is, after this patch we'll have a software event on the hardware pmu
-> list with PERF_GROUP_SOFTWARE set, right? Seems odd.
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Mon, 11 Mar 2013 08:02:43 +0100
 
-Right.
+> On 10.03.2013 22:15, Valentin Ilie wrote:
+> 
+>> Replace printk(KERN_ERR with pr_err
+>> Add space before {
+>> Removed OOM messages
+>> 
+>> Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+> 
+> 
+> Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 
-Just curious that dropping this one and applying just patch 2 will set
-the PERF_GROUP_MIXED for them and it'll fix the mixed group problem
-without migrating those events.  What do you think about this approach?
-
-Thanks,
-Namhyung
+Applied, thanks.
