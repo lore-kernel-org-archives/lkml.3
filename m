@@ -1,80 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3CKMpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 08:45:07 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:1848 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754060Ab3CKMpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 08:45:03 -0400
-Message-ID: <513DD1C6.4040401@imgtec.com>
-Date: Mon, 11 Mar 2013 12:44:54 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754112Ab3CKMrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 08:47:04 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63470 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab3CKMrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 08:47:02 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 11 Mar 2013 05:46:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        devicetree-discuss@lists.ozlabs.org, khali@linux-fr.org,
+        dianders@chromium.org, naveenkrishna.ch@gmail.com,
+        dg77.kim@samsung.com
+Subject: Re: [PATCH 2/2] hwmon: NTC: add IIO get channel and read support
+Message-ID: <20130311124658.GB30159@roeck-us.net>
+References: <1362967787-22557-1-git-send-email-ch.naveen@samsung.com>
+ <1362967787-22557-2-git-send-email-ch.naveen@samsung.com>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Markos <markos.chandras@imgtec.com>
-Subject: Re: SYSV IPC broken for no-legacy syscall kernels (was Re: [RFC PATCH
- v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script)
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-27-git-send-email-vgupta@synopsys.com> <201211071413.49178.arnd@arndb.de> <513DCE2D.6010800@synopsys.com>
-In-Reply-To: <513DCE2D.6010800@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_03_11_12_44_54
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362967787-22557-2-git-send-email-ch.naveen@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
-
-On 11/03/13 12:29, Vineet Gupta wrote:
-> On Wednesday 07 November 2012 07:43 PM, Arnd Bergmann wrote:
->> On Wednesday 07 November 2012, Vineet Gupta wrote:
->>
->>> +
->>> +config ARC
->>> +	def_bool y
->>> +	select ARCH_WANT_IPC_PARSE_VERSION
->>> +	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
->>> +	# DEVTMPS in turn needs HOTPLUG
->>> +	select DEVTMPFS if !INITRAMFS_SOURCE=""
->>> +	select GENERIC_ATOMIC64
->>> +	select GENERIC_CLOCKEVENTS
->>> +	select GENERIC_FIND_FIRST_BIT
->>> +	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
->>> +	select GENERIC_IRQ_SHOW
->>> +	select GENERIC_PENDING_IRQ if SMP
->>> +	select GENERIC_SMP_IDLE_THREAD
->>> +	select HAVE_GENERIC_HARDIRQS
->>> +	select HOTPLUG if !INITRAMFS_SOURCE=""
->>> +	select MODULES_USE_ELF_RELA
->> You should not need ARCH_WANT_IPC_PARSE_VERSION
+On Mon, Mar 11, 2013 at 07:39:47AM +0530, Naveen Krishna Chatradhi wrote:
+> This patch adds the support to work as a iio device.
+> iio_get_channel and iio_raw_read works.
 > 
-> It seems, we have a small bug in sysV IPC.
-> A lot of LTP tests have started failing on ARC 3.9-rc1 kernel due to absence of
-> ARCH_WANT_IPC_PARSE_VERSION.
+> During the probe ntc driver gets the respective channels of ADC
+> and uses iio_raw_read calls to get the ADC converted value.
 > 
-> I'm assuming that for newer arches, msgctl(2) and friends need to have  need to
-> have @cmd of type 0x01nn where 0x0100 is IPC_64.
-> However for ! ARCH_WANT_IPC_PARSE_VERSION, ipc/util.h seems to be defining a dummy
-> version of ipc_parse_version(), which doesn't strip out the 0x0100 from @cmds,
-> causing the code to not enter the switch block in SYSCALL_DEFINE3(msgctl) making
-> it fail.
-> Adding the above item to arch/arc/Kconfig obviously fixes the breakage.
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
 > 
-> It seems there is some bogosity in the way ipc_parse_version() is defined. Given
-> the way it is used, to strip out the 0x0100 bit, it seems we always need the
-> function variant - the IA-64 ish comment in there seems to be bit-rot.
+> Still not sure about the read_uV function parameter change and placement.
 > 
-> What do you think ?
+Me not either. Is the parameter change really necessary ? There was a good
+reason to pass pdev, as it lets the called function deal with the device, eg for
+error messages.
 
-FYI, for metag we assumed this was intentional and that IPC_64 shouldn't
-be passed since it is the default behaviour for new arches.
-You may find the following uClibc commit relevant:
-http://git.uclibc.org/uClibc/commit/?id=6c2fa3451f35f8d78a31689044b2d19efa4eaca2
+> There were a few CamelCase warnings during checkpatch run.
+> I can clean them if anyone insists.
+> 
+I actually have a patch sitting somewhere doing just that. Might make sense if I
+send it out for review and you rebase your patches on top of it.
 
-Cheers
-James
+>  drivers/hwmon/ntc_thermistor.c               |   36 +++++++++++++++++++++++++-
+>  include/linux/platform_data/ntc_thermistor.h |    7 ++++-
+>  2 files changed, 41 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
+> index cfedbd3..1d31260 100644
+> --- a/drivers/hwmon/ntc_thermistor.c
+> +++ b/drivers/hwmon/ntc_thermistor.c
+> @@ -30,6 +30,11 @@
+>  
+>  #include <linux/platform_data/ntc_thermistor.h>
+>  
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/machine.h>
+> +#include <linux/iio/driver.h>
+> +#include <linux/iio/consumer.h>
+> +
 
+One problem with this change is that the driver now mandates the existence of
+the IIO subsystem, even if not needed (ie if CONFIG_OF is not defined. We'll
+have to limit that impact. I would suggest to keep all the ioo code in the
+#ifdef CONFIG_OF block. also, you'll have to add a conditional dependency to
+Kconfig.
+
+>  #include <linux/hwmon.h>
+>  #include <linux/hwmon-sysfs.h>
+>  
+> @@ -162,6 +167,28 @@ struct ntc_data {
+>  	char name[PLATFORM_NAME_SIZE];
+>  };
+>  
+> +static int ntc_adc_read(struct ntc_thermistor_platform_data *pdata)
+> +{
+
+Better name it ntc_adc_iio_read.
+
+> +	struct iio_channel *channel = pdata->chan;
+> +	unsigned int result;
+> +	int val, ret;
+> +
+> +	if (!channel)
+> +		return -EINVAL;
+> +
+You should check this earlier (see below).
+
+> +	ret = iio_read_channel_raw(channel, &val);
+> +	if (ret < 0) {
+> +		pr_err("read channel() error: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	/* unit: mV */
+> +	result = pdata->pullup_uV * (s64) val;
+> +	result >>= 12;
+> +
+> +	return result;
+> +}
+> +
+>  #ifdef CONFIG_OF
+>  static void ntc_thermistor_parse_dt(struct ntc_thermistor_platform_data *pdata,
+>  							struct device_node *np)
+> @@ -173,6 +200,8 @@ static void ntc_thermistor_parse_dt(struct ntc_thermistor_platform_data *pdata,
+>  		pdata->connect = NTC_CONNECTED_POSITIVE;
+>  	else /* status change should be possible if not always on. */
+>  		pdata->connect = NTC_CONNECTED_GROUND;
+> +
+> +	pdata->read_uV = ntc_adc_read;
+>  }
+>  #else
+>  static void
+> @@ -317,7 +346,7 @@ static int ntc_thermistor_get_ohm(struct ntc_data *data)
+>  		return data->pdata->read_ohm(data->pdev);
+>  
+>  	if (data->pdata->read_uV) {
+> -		read_uV = data->pdata->read_uV(data->pdev);
+> +		read_uV = data->pdata->read_uV(data->pdata);
+
+I am really not happy with this parameter change.
+you should be able to get the pointer to pdata with
+		data = platform_get_drvdata(pdev);
+		pdata = data->pdata;
+
+>  		if (read_uV < 0)
+>  			return read_uV;
+>  		return get_ohm_of_thermistor(data, read_uV);
+> @@ -417,6 +446,8 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
+>  	if (!data)
+>  		return -ENOMEM;
+>  
+> +	pdata->chan = iio_channel_get(&pdev->dev, NULL);
+> +
+I think this should be assigned together with read_uV in ntc_thermistor_parse_dt,
+and bail out if it returns an error. It does not make sense to instantiate
+the driver otherwise if OF is used to construct pdata.
+
+Also, iio_channel_get can return an error, so you have to check the returned
+value for an error return with IS_ERR. This error can be EDEFER, so make
+sure it is returned to the caller to cause the probe t be called again later.
+
+>  	data->dev = &pdev->dev;
+>  	data->pdev = pdev;
+>  	data->pdata = pdata;
+> @@ -457,15 +488,18 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
+>  	return 0;
+>  err_after_sysfs:
+>  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+> +	iio_channel_release(pdata->chan);
+
+That will crash nicely if pdata->chan is not set or has an error.
+
+>  	return ret;
+>  }
+>  
+>  static int ntc_thermistor_remove(struct platform_device *pdev)
+>  {
+>  	struct ntc_data *data = platform_get_drvdata(pdev);
+> +	struct ntc_thermistor_platform_data *pdata = data->pdata;
+>  
+>  	hwmon_device_unregister(data->hwmon_dev);
+>  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
+> +	iio_channel_release(pdata->chan);
+
+Same here - you'll have to make sure pdata->chan is valid.
+
+>  	platform_set_drvdata(pdev, NULL);
+>  
+>  	return 0;
+> diff --git a/include/linux/platform_data/ntc_thermistor.h b/include/linux/platform_data/ntc_thermistor.h
+> index 18f3c3a..671d056 100644
+> --- a/include/linux/platform_data/ntc_thermistor.h
+> +++ b/include/linux/platform_data/ntc_thermistor.h
+> @@ -34,19 +34,24 @@ struct ntc_thermistor_platform_data {
+>  	 *
+>  	 * pullup_uV, pullup_ohm, pulldown_ohm, and connect are required to use
+>  	 * read_uV()
+> +	 * takes the platform data structure as the parameter
+
+Please undo this change.
+
+>  	 *
+>  	 * How to setup pullup_ohm, pulldown_ohm, and connect is
+>  	 * described at Documentation/hwmon/ntc_thermistor
+>  	 *
+>  	 * pullup/down_ohm: 0 for infinite / not-connected
+> +	 *
+> +	 * iio_channel to communicate with the ADC which the
+> +	 * thermistor is using for conversion of the analog values.
+>  	 */
+> -	int (*read_uV)(struct platform_device *);
+> +	int (*read_uV)(struct ntc_thermistor_platform_data *);
+
+Please undo this change.
+
+>  	int (*read_ohm)(struct platform_device *);
+>  	unsigned int pullup_uV;
+>  
+>  	unsigned int pullup_ohm;
+>  	unsigned int pulldown_ohm;
+>  	enum { NTC_CONNECTED_POSITIVE, NTC_CONNECTED_GROUND } connect;
+> +	struct iio_channel *chan;
+>  };
+>  
+>  #endif /* _LINUX_NTC_H */
+> -- 
+> 1.7.9.5
+> 
+> 
