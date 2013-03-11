@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3CKVS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:18:29 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33601 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab3CKVPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:46 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 13/44] tty: Don't reenable already enabled ldisc
-Date: Mon, 11 Mar 2013 16:44:33 -0400
-Message-Id: <1363034704-28036-14-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
- <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1754978Ab3CKVSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:18:42 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52642 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754142Ab3CKVSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:18:39 -0400
+Date: Mon, 11 Mar 2013 17:18:33 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311211833.GC15478@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311204625.GA433@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_ldisc_hangup() guarantees the ldisc is enabled (or that there
-is no ldisc). Since __tty_hangup() was the only user, re-define
-tty_ldisc_enable() in file-scope.
+On Mon, Mar 11, 2013 at 09:46:25PM +0100, Markus Trippelsdorf wrote:
+> > BTW, I'm currently running 3.9-rc2 with some additional fixes from the
+> > ext4 dev branch, and I'm not able to reproduce the problem using
+> > rtorrent on my laptop.  How reliably is it reproducing for you?  Are
+> > you seeing the problem every time you try this?
+> 
+> Yes, it's 100% reproducible for me. If I boot a 3.8 kernel the issue
+> vanishes.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_io.c    | 1 -
- drivers/tty/tty_ldisc.c | 2 +-
- include/linux/tty.h     | 2 --
- 3 files changed, 1 insertion(+), 4 deletions(-)
+Would you be willing to try an experiment? 
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index fd47363..1ee318a 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -666,7 +666,6 @@ static void __tty_hangup(struct tty_struct *tty)
- 	 */
- 	set_bit(TTY_HUPPED, &tty->flags);
- 	clear_bit(TTY_HUPPING, &tty->flags);
--	tty_ldisc_enable(tty);
- 
- 	tty_unlock(tty);
- 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 37671fcc..9c727da 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -373,7 +373,7 @@ static inline void tty_ldisc_put(struct tty_ldisc *ld)
-  *	Clearing directly is allowed.
-  */
- 
--void tty_ldisc_enable(struct tty_struct *tty)
-+static void tty_ldisc_enable(struct tty_struct *tty)
- {
- 	clear_bit(TTY_LDISC_HALTED, &tty->flags);
- 	set_bit(TTY_LDISC, &tty->flags);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 7aa4be6..bfa6fca 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -527,8 +527,6 @@ extern void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty);
- extern void tty_ldisc_init(struct tty_struct *tty);
- extern void tty_ldisc_deinit(struct tty_struct *tty);
- extern void tty_ldisc_begin(void);
--/* This last one is just for the tty layer internals and shouldn't be used elsewhere */
--extern void tty_ldisc_enable(struct tty_struct *tty);
- 
- 
- /* n_tty.c */
--- 
-1.8.1.2
+Try pulling down the master branch from the ext4 git tree here:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
+
+This contains all of the ext4 changes which are in 3.9-rc1, based on
+top of 3.8-rc3.  See if it reproduces there.  If it does, then it
+would tend to confirm the hypothesis that the issue was introduced by
+one of the ext4 patches that we merged during the 3.9-rc1 merge
+window... and then, since if you can reproduce the problem, if you
+could do a git bisect to find the guilty commit, that would really
+greatly appreciated.
+
+If you can't reproduce it from the ext4.git tree, then the problem is
+probably caused by some other change that was introduced between 3.8
+and 3.9-rc1.
+
+Thanks in advance,
+
+					- Ted
