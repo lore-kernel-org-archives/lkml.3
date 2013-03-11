@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3CKTPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:15:54 -0400
-Received: from fieldses.org ([174.143.236.118]:57939 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab3CKTPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:15:50 -0400
-Date: Mon, 11 Mar 2013 15:15:45 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH linux-next v2] SUNRPC: rpcrdma_register_default_external:
- Dynamically allocate ib_phys_buf
-Message-ID: <20130311191545.GA642@fieldses.org>
-References: <20130310202838.GL31448@fieldses.org>
- <1363023447-22453-1-git-send-email-tim.gardner@canonical.com>
- <20130311181450.GC30618@fieldses.org>
- <513E27C0.8050108@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513E27C0.8050108@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753621Ab3CKTQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:16:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54242 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3CKTQk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:16:40 -0400
+Message-ID: <1363029394.3138.3.camel@fafadora.lan>
+Subject: [PATCH] acpi: fix suspend and resume on Sony Vaio VGN-FW21M
+From: Fabio Valentini <fafatheone@gmail.com>
+To: rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 20:16:34 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 12:51:44PM -0600, Tim Gardner wrote:
-> On 03/11/2013 12:14 PM, J. Bruce Fields wrote:
-> <snip>
-> >>
-> >> v2 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_req
-> >> and pass this request down through rpcrdma_register_external() and
-> >> rpcrdma_register_default_external(). This is less overhead then using
-> >> kmalloc() and requires no extra error checking as the allocation burden is
-> >> shifted to the transport client.
-> > 
-> > Oh good--so that works, and the req is the right place to put this?  How
-> > are you testing this?
-> > 
-> > (Just want to make it clear: I'm *not* an expert on the rdma code, so my
-> > suggestion to put this in the rpcrdma_req was a suggestion for something
-> > to look into, not a claim that it's correct.)
-> > 
-> 
-> Just compile tested so far. Incidentally, I've been through the call stack:
-> 
-> call_transmit
->  xprt_transmit
->   xprt->ops->send_request(task)
->    xprt_rdma_send_request
->     rpcrdma_marshal_req
->      rpcrdma_create_chunks
->       rpcrdma_register_external
->        rpcrdma_register_default_external
-> 
-> It appears that the context for kmalloc() should be fine unless there is
-> a spinlock held around call_transmit() (which seems unlikely).
+    From: Fabio Valentini <fafatheone@gmail.com>
 
-Right, though I think it shouldn't be GFP_KERNEL--looks like writes
-could wait on it.
+    Add Sony Vaio VGN-FW21M to the device blacklist in drivers/acpi/sleep.c.
+    Fixes suspend/resume on this device (device no longer reboots instead of resuming).
+    Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55001
 
-In any case, the embedding-in-rpcrdma_req solution does look cleaner if
-that's correct (e.g. if we can be sure there won't be two simultaneous
-users of that array).
+    Signed-off-by: Fabio Valentini <fafatheone@gmail.com>
+---
+    Patch applies cleanly to latest master (3.9-rc2) and stable (3.8.2).
+     drivers/acpi/sleep.c | 8 ++++++++
+     1 file changed, 8 insertions(+)
 
---b.
+--- linux/drivers/acpi/sleep.c.orig	2013-03-09 16:46:41.407984555 +0100
++++ linux/drivers/acpi/sleep.c	2013-03-09 16:49:03.693005658 +0100
+@@ -193,6 +193,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW21M",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW21M"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VPCEB17FX",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+
+
