@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab3CKQUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:20:44 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33581 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3CKQUn (ORCPT
+	id S1754092Ab3CKQVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:21:11 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:37841 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753320Ab3CKQVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:20:43 -0400
+	Mon, 11 Mar 2013 12:21:09 -0400
+Message-ID: <513E0471.6@semaphore.gr>
+Date: Mon, 11 Mar 2013 18:21:05 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd1c:91af:8cf4:88c4:7a10]
-In-Reply-To: <1363016099.3348.47.camel@sauron.fi.intel.com>
-References: <1363016099.3348.47.camel@sauron.fi.intel.com>
-Date: Mon, 11 Mar 2013 09:20:41 -0700
-Message-ID: <CAOesGMhy6YceRr3T4ZALhYeSQfEuASO+ajJy1Htwws=OMtvrTg@mail.gmail.com>
-Subject: Re: Dead mappings and drivers in MTD
-From: Olof Johansson <olof@lixom.net>
-To: dedekind1@gmail.com
-Cc: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline function
+ to evaluate freq_target
+References: <51366C77.3080309@semaphore.gr> <CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com> <51374F8D.9040300@semaphore.gr> <CAKohponZrMyZkUBDAnMv=B+fVpqYdQ62bP2iQGsg1=uOKfyPdQ@mail.gmail.com>
+In-Reply-To: <CAKohponZrMyZkUBDAnMv=B+fVpqYdQ62bP2iQGsg1=uOKfyPdQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 8:34 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> Hi MTD folks,
->
-> we have huge amount of drivers, espacially mapping drives in
-> 'drivers/mtd', and for sure may of them are for ancient devices which
-> are long dead and not supported by modern kernels anyway. I would like
-> to do a small clean-up. It is difficult to judge which ones are dead for
-> me, so I am asking the community to help. Thanks!
->
-> There are few easy cases - some drivers depend on Kconfig symbols which
-> are not defined anywhere - I guess these are clear candidates for
-> removal. For example this one:
->
-> config MTD_DBOX2
->         tristate "CFI Flash device mapped on D-Box2"
->         depends on DBOX2 && MTD_CFI_INTELSTD && MTD_CFI_INTELEXT && MTD_CFI_AMDSTD
->         help
->           This enables access routines for the flash chips on the Nokia/Sagem
->           D-Box 2 board. If you have one of these boards and would like to use
->
-> Grepping for "DBOX2" gives nothing.
+> On 6 March 2013 22:15, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> Use an inline function to evaluate freq_target to avoid duplicate code.
+>>
+>> Also, define a macro for the default frequency step.
+>>
+>> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+>> ---
+>>   drivers/cpufreq/cpufreq_conservative.c | 27 +++++++++++++++------------
+>>   1 file changed, 15 insertions(+), 12 deletions(-)
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-In 2.6.14, it dropped two dependencies that used to be there for PPC32
-and 8xx. There still was no DBOX2 symbol to fulfill that dependency
-back then.
+Hi Rafael,
 
-Take it out, if someone finds a user later on it can always be
-reverted. Seems very very unlikely in this case.
+Could you please let me know if this patchset is going to be 
+applied or not?
 
-
--Olof
+Thank you in advance for your time,
+Stratos
