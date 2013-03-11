@@ -1,40 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab3CKRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:41:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51111 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab3CKRlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:41:07 -0400
-Message-ID: <513E1730.7040109@wwwdotorg.org>
-Date: Mon, 11 Mar 2013 11:41:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753801Ab3CKRl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:41:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26789 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379Ab3CKRl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 13:41:58 -0400
+Date: Mon, 11 Mar 2013 19:41:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130311174155.GU31619@redhat.com>
+References: <513DBF45.9030803@redhat.com>
+ <20130311115144.GG31619@redhat.com>
+ <513DDCC2.9070807@redhat.com>
+ <20130311135441.GN31619@redhat.com>
+ <513DE3C4.5000503@siemens.com>
+ <20130311140503.GO31619@redhat.com>
+ <513DE8C5.3090209@redhat.com>
+ <513DFA01.1040500@siemens.com>
+ <20130311172342.GS31619@redhat.com>
+ <513E158B.80506@siemens.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
-Subject: Re: [PATCH V2 2/5] ARM: DT: tegra114: Add i2c controller DT entry
-References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1362852678-13421-3-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513E158B.80506@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2013 11:11 AM, Laxman Dewangan wrote:
-> NVIDIA's Tegra114 has 5 i2c controllers. These controllers have
-> additional feature/configurations to make it functional over
-> Tegra30's i2c controller driver.
+On Mon, Mar 11, 2013 at 06:34:03PM +0100, Jan Kiszka wrote:
+> On 2013-03-11 18:23, Gleb Natapov wrote:
+> > On Mon, Mar 11, 2013 at 04:36:33PM +0100, Jan Kiszka wrote:
+> >> On 2013-03-11 15:23, Paolo Bonzini wrote:
+> >>> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
+> >>>> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
+> >>>>>> We are not moving away from mp_state, we are moving away from using
+> >>>>>> mp_state for signaling because with nested virt INIT does not always
+> >>>>>> change mp_state, not only that it can change mp_state long after signal
+> >>>>>> is received after vmx off is done.
+> >>>>>
+> >>>>> Right.
+> >>>>>
+> >>>>> BTW, for that to happen, we will also need to influence the INIT level.
+> >>>>> Unless I misread the spec, INIT is blocked while in root mode, and if
+> >>>>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
+> >>>>> actually happens. So what matters is the INIT signal level at the exit
+> >>>>> of root mode.
+> >>>>>
+> >>>> You are talking about INIT# signal received via CPU pin, right? I think
+> >>>> INIT send by IPI cannot go away.
+> >>>
+> >>> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
+> >>>
+> >>> Only the Pentium and P6 family processors support the INIT-deassert IPI.
+> >>> An INIT-disassert IPI has no affect on the state of the APIC, other than
+> >>> to reload the arbitration ID register with the value in the APIC ID
+> >>> register.
+> >>>
+> >>> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
+> >>> deassert) are always treated as edge triggered interrupts".
+> >>>
+> >>>
+> >>> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
+> >>> clocks" when a soft reset is requested.  So we can guess that INIT# is
+> >>> also edge-triggered.
+> >>
+> >> Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
+> >> form of a reset or a vmexit.
+> >>
+> > vmexit clears it?
 > 
-> Add DT entry for i2c controllers and make it compatible with
-> "nvidia,tegra114-i2c".
+> It has to. Otherwise, it would hit the host on vmxoff.
+> 
+Why do you thing this is not happening?
 
-Hmm. We're missing a binding document for the Tegra I2C module! Can you
-please submit a separate patch to add one. When you do, since the
-Tegra114 nodes need just a "div-clk" clock, and the Tegra20/30 nodes
-need both div-clk and fast-clk, please be sure to mention this in the
-document. Thanks.
+Look at [1] page 10 "VMX and INIT blocking". Do you think they were
+lucky to hit CPU while it was in a root mode?
+
+[1] http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+
+--
+			Gleb.
