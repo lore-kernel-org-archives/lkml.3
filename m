@@ -1,73 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3CKM3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 08:29:50 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:63600 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab3CKM3s (ORCPT
+	id S1754128Ab3CKMan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 08:30:43 -0400
+Received: from fallback6.mail.ru ([94.100.176.134]:35114 "EHLO
+	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab3CKMam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 08:29:48 -0400
-Message-ID: <513DCE2D.6010800@synopsys.com>
-Date: Mon, 11 Mar 2013 17:59:33 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: SYSV IPC broken for no-legacy syscall kernels (was Re: [RFC PATCH
- v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script)
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-27-git-send-email-vgupta@synopsys.com> <201211071413.49178.arnd@arndb.de>
-In-Reply-To: <201211071413.49178.arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.217]
+	Mon, 11 Mar 2013 08:30:42 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?RG9uZyBBaXNoZW5n?= <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
+        =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
+        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
+        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
+        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
+        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?RG1pdHJ5IFRvcm9raG92?= <dmitry.torokhov@gmail.com>,
+        =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2NiAyLzJdIG1mZDogc3lzY29uOiBBZGQgbm9uLURUIHN1?=
+ =?UTF-8?B?cHBvcnQ=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Mon, 11 Mar 2013 14:16:44 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1362997004.885485377@f319.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
+In-Reply-To: <20130311094005.GA6280@b29396-Latitude-E6410>
+References: <1362063434-8318-1-git-send-email-shc_work@mail.ru> <1362063434-8318-2-git-send-email-shc_work@mail.ru> <20130311094005.GA6280@b29396-Latitude-E6410>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2BCUhZW007008
 
-Hi Arnd,
+> On Thu, Feb 28, 2013 at 06:57:14PM +0400, Alexander Shiyan wrote:
+> > This patch allow using syscon driver from the platform data, i.e.
+> > possibility using driver on systems without oftree support.
+> > For search syscon device from the client drivers,
+> > "syscon_regmap_lookup_by_pdevname" function was added.
+> > 
+> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > ---
+> >  drivers/mfd/Kconfig        |  1 -
+> >  drivers/mfd/syscon.c       | 77 +++++++++++++++++++++++++++-------------------
+> >  include/linux/mfd/syscon.h |  1 +
+> >  3 files changed, 47 insertions(+), 32 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 671f5b1..8fdd87e 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -1070,7 +1070,6 @@ config MFD_STA2X11
+> >  
+> >  config MFD_SYSCON
+> >  	bool "System Controller Register R/W Based on Regmap"
+> > -	depends on OF
+> >  	select REGMAP_MMIO
+> >  	help
+> >  	  Select this option to enable accessing system control registers
+> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > index 674af14..e5b6be1 100644
+> > --- a/drivers/mfd/syscon.c
+> > +++ b/drivers/mfd/syscon.c
+> > @@ -29,7 +29,7 @@ struct syscon {
+> >  	struct regmap *regmap;
+> >  };
+> >  
+> > -static int syscon_match(struct device *dev, void *data)
+> > +static int syscon_match_node(struct device *dev, void *data)
+> >  {
+> >  	struct device_node *dn = data;
+> >  
+> > @@ -42,7 +42,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
+> >  	struct device *dev;
+> >  
+> >  	dev = driver_find_device(&syscon_driver.driver, NULL, np,
+> > -				 syscon_match);
+> > +				 syscon_match_node);
+> >  	if (!dev)
+> >  		return ERR_PTR(-EPROBE_DEFER);
+> >  
+> > @@ -68,6 +68,34 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+> >  }
+> >  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+> >  
+> > +static int syscon_match_pdevname(struct device *dev, void *data)
+> > +{
+> > +	struct platform_device *pdev = to_platform_device(dev);
+> > +	const struct platform_device_id *id = platform_get_device_id(pdev);
+> > +
+> > +	if (id)
+> > +		if (!strcmp(id->name, (const char *)data))
+> > +			return 1;
+> > +
+> > +	return !strcmp(dev_name(dev), (const char *)data);
+> > +}
+> > +
+> > +struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+> > +{
+> > +	struct device *dev;
+> > +	struct syscon *syscon;
+> > +
+> > +	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> > +				 syscon_match_pdevname);
+> > +	if (!dev)
+> > +		return ERR_PTR(-ENODEV);
+> 
+> Should it be ERR_PTR(-EPROBE_DEFER)?
 
-On Wednesday 07 November 2012 07:43 PM, Arnd Bergmann wrote:
-> On Wednesday 07 November 2012, Vineet Gupta wrote:
->
->> +
->> +config ARC
->> +	def_bool y
->> +	select ARCH_WANT_IPC_PARSE_VERSION
->> +	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
->> +	# DEVTMPS in turn needs HOTPLUG
->> +	select DEVTMPFS if !INITRAMFS_SOURCE=""
->> +	select GENERIC_ATOMIC64
->> +	select GENERIC_CLOCKEVENTS
->> +	select GENERIC_FIND_FIRST_BIT
->> +	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
->> +	select GENERIC_IRQ_SHOW
->> +	select GENERIC_PENDING_IRQ if SMP
->> +	select GENERIC_SMP_IDLE_THREAD
->> +	select HAVE_GENERIC_HARDIRQS
->> +	select HOTPLUG if !INITRAMFS_SOURCE=""
->> +	select MODULES_USE_ELF_RELA
-> You should not need ARCH_WANT_IPC_PARSE_VERSION
+I have no idea what better using here. Think that is not so important
+since we may have only one possible error code here.
 
-It seems, we have a small bug in sysV IPC.
-A lot of LTP tests have started failing on ARC 3.9-rc1 kernel due to absence of
-ARCH_WANT_IPC_PARSE_VERSION.
+> > +
+> > +	syscon = dev_get_drvdata(dev);
+> > +
+> > +	return syscon->regmap;
+> > +}
+> > +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> > +
+> >  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+> >  					const char *property)
+> >  {
+> > @@ -99,30 +127,24 @@ static struct regmap_config syscon_regmap_config = {
+> >  static int syscon_probe(struct platform_device *pdev)
+> >  {
+> >  	struct device *dev = &pdev->dev;
+> > -	struct device_node *np = dev->of_node;
+> >  	struct syscon *syscon;
+> > -	struct resource res;
+> > -	int ret;
+> > -
+> > -	if (!np)
+> > -		return -ENOENT;
+> > +	struct resource *res;
+> >  
+> > -	syscon = devm_kzalloc(dev, sizeof(struct syscon),
+> > -			    GFP_KERNEL);
+> > +	syscon = devm_kzalloc(dev, sizeof(struct syscon), GFP_KERNEL);
+> >  	if (!syscon)
+> >  		return -ENOMEM;
+> >  
+> > -	syscon->base = of_iomap(np, 0);
+> > -	if (!syscon->base)
+> > -		return -EADDRNOTAVAIL;
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	if (!res)
+> > +		return -ENOENT;
+> >  
+> > -	ret = of_address_to_resource(np, 0, &res);
+> > -	if (ret)
+> > -		return ret;
+> > +	syscon->base = devm_ioremap(dev, res->start, resource_size(res));
+> > +	if (!syscon->base)
+> > +		return -ENOMEM;
+> >  
+> > -	syscon_regmap_config.max_register = res.end - res.start - 3;
+> > +	syscon_regmap_config.max_register = res->end - res->start - 3;
+> >  	syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
+> > -					&syscon_regmap_config);
+> > +					       &syscon_regmap_config);
+> 
+> Unneeded change to me
+> 
+> >  	if (IS_ERR(syscon->regmap)) {
+> >  		dev_err(dev, "regmap init failed\n");
+> >  		return PTR_ERR(syscon->regmap);
+> > @@ -130,22 +152,15 @@ static int syscon_probe(struct platform_device *pdev)
+> >  
+> >  	platform_set_drvdata(pdev, syscon);
+> >  
+> > -	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> > -		res.start, res.end);
+> > +	dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
+> 
+> Doesn't with a 'syscon' prefix look better?
 
-I'm assuming that for newer arches, msgctl(2) and friends need to have  need to
-have @cmd of type 0x01nn where 0x0100 is IPC_64.
-However for ! ARCH_WANT_IPC_PARSE_VERSION, ipc/util.h seems to be defining a dummy
-version of ipc_parse_version(), which doesn't strip out the 0x0100 from @cmds,
-causing the code to not enter the switch block in SYSCALL_DEFINE3(msgctl) making
-it fail.
-Adding the above item to arch/arc/Kconfig obviously fixes the breakage.
+Prefix is added by dev_info, so no need to print it twice.
 
-It seems there is some bogosity in the way ipc_parse_version() is defined. Given
-the way it is used, to strip out the 0x0100 bit, it seems we always need the
-function variant - the IA-64 ish comment in there seems to be bit-rot.
+> >  
+> >  	return 0;
+> >  }
+> >  
+> > -static int syscon_remove(struct platform_device *pdev)
+> > -{
+> > -	struct syscon *syscon;
+> > -
+> > -	syscon = platform_get_drvdata(pdev);
+> > -	iounmap(syscon->base);
+> > -	platform_set_drvdata(pdev, NULL);
+> > -
+> > -	return 0;
+> > -}
+> > +static const struct platform_device_id syscon_ids[] = {
+> > +	{ "syscon", },
+> > +	{ }
+> > +};
+> >  
+> >  static struct platform_driver syscon_driver = {
+> >  	.driver = {
+> > @@ -154,7 +169,7 @@ static struct platform_driver syscon_driver = {
+> >  		.of_match_table = of_syscon_match,
+> >  	},
+> >  	.probe		= syscon_probe,
+> > -	.remove		= syscon_remove,
+> 
+> So you reply on the managed resource to address the resource leak issue
+> raised by Dmitry on doing manually unbind here, right?
 
-What do you think ?
+Yes. We are killing "remove"-entry since all our resources are "managed" now.
 
--Vineet
+> this looks ok to me.
+> 
+> So, besides above minor comments,
+> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Regards
+> Dong Aisheng
+> 
+> > +	.id_table	= syscon_ids,
+> >  };
+> >  
+> >  static int __init syscon_init(void)
+> > diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+> > index 6aeb6b8..5c9ee6e 100644
+> > --- a/include/linux/mfd/syscon.h
+> > +++ b/include/linux/mfd/syscon.h
+> > @@ -17,6 +17,7 @@
+> >  
+> >  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
+> >  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+> > +extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+> >  extern struct regmap *syscon_regmap_lookup_by_phandle(
+> >  					struct device_node *np,
+> >  					const char *property);
+> > -- 
+> > 1.7.12.4
 
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
