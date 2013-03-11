@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab3CKQVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:21:11 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:37841 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753320Ab3CKQVJ (ORCPT
+	id S1753566Ab3CKQWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:22:33 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:55657 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab3CKQWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:21:09 -0400
-Message-ID: <513E0471.6@semaphore.gr>
-Date: Mon, 11 Mar 2013 18:21:05 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline function
- to evaluate freq_target
-References: <51366C77.3080309@semaphore.gr> <CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com> <51374F8D.9040300@semaphore.gr> <CAKohponZrMyZkUBDAnMv=B+fVpqYdQ62bP2iQGsg1=uOKfyPdQ@mail.gmail.com>
-In-Reply-To: <CAKohponZrMyZkUBDAnMv=B+fVpqYdQ62bP2iQGsg1=uOKfyPdQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Mar 2013 12:22:32 -0400
+From: Stelian Nirlu <steliannirlu@gmail.com>
+To: schwidefsky@de.ibm.com
+Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, penberg@kernel.org,
+        Stelian Nirlu <steliannirlu@gmail.com>
+Subject: [PATCH v2] s390: use kcalloc instead of kmalloc and memset
+Date: Mon, 11 Mar 2013 18:22:10 +0200
+Message-Id: <1363018931-9628-1-git-send-email-steliannirlu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 6 March 2013 22:15, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> Use an inline function to evaluate freq_target to avoid duplicate code.
->>
->> Also, define a macro for the default frequency step.
->>
->> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
->> ---
->>   drivers/cpufreq/cpufreq_conservative.c | 27 +++++++++++++++------------
->>   1 file changed, 15 insertions(+), 12 deletions(-)
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Stelian Nirlu <steliannirlu@gmail.com>
+---
+ arch/s390/net/bpf_jit_comp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Hi Rafael,
+diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
+index 0972e91..82f165f 100644
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -747,10 +747,9 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 
+ 	if (!bpf_jit_enable)
+ 		return;
+-	addrs = kmalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
++	addrs = kcalloc(fp->len, sizeof(*addrs), GFP_KERNEL);
+ 	if (addrs == NULL)
+ 		return;
+-	memset(addrs, 0, fp->len * sizeof(*addrs));
+ 	memset(&jit, 0, sizeof(cjit));
+ 	memset(&cjit, 0, sizeof(cjit));
+ 
+-- 
+1.7.9.5
 
-Could you please let me know if this patchset is going to be 
-applied or not?
-
-Thank you in advance for your time,
-Stratos
