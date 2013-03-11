@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab3CKT0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:26:35 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37656 "EHLO smtp.outflux.net"
+	id S1754195Ab3CKT1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:27:12 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38736 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab3CKT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:26:33 -0400
-Date: Mon, 11 Mar 2013 12:26:30 -0700
+	id S1752194Ab3CKT1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:27:11 -0400
+Date: Mon, 11 Mar 2013 12:25:57 -0700
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+Cc: David Airlie <airlied@linux.ie>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/i915: clarify reasoning for the access_ok call
-Message-ID: <20130311192630.GA18227@www.outflux.net>
+Subject: [PATCH] drm/radeon: check incoming cliprects pointer
+Message-ID: <20130311192557.GA18210@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,32 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This clarifies the comment above the access_ok check so a missing
-VERIFY_READ doesn't alarm anyone.
+The "boxes" parameter points into userspace memory. It should be verified
+like any other operation against user memory.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: stable@vger.kernel.org
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r300_cmdbuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index 2f2daeb..752e399 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -747,7 +747,11 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+diff --git a/drivers/gpu/drm/radeon/r300_cmdbuf.c b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+index 865e2c9..60170ea 100644
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -75,7 +75,7 @@ static int r300_emit_cliprects(drm_radeon_private_t *dev_priv,
+ 		OUT_RING(CP_PACKET0(R300_RE_CLIPRECT_TL_0, nr * 2 - 1));
  
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
--		/* we may also need to update the presumed offsets */
-+		/*
-+		 * Validate memory range. Since we may need to update the
-+		 * presumed offsets, use VERIFY_WRITE. (Writable implies
-+		 * readable.)
-+		 */
- 		if (!access_ok(VERIFY_WRITE, ptr, length))
- 			return -EFAULT;
- 
+ 		for (i = 0; i < nr; ++i) {
+-			if (DRM_COPY_FROM_USER_UNCHECKED
++			if (DRM_COPY_FROM_USER
+ 			    (&box, &cmdbuf->boxes[n + i], sizeof(box))) {
+ 				DRM_ERROR("copy cliprect faulted\n");
+ 				return -EFAULT;
 -- 
 1.7.9.5
 
