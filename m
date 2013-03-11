@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3CKUxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:53:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58258 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754043Ab3CKUw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:52:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
-   d="scan'208";a="300274032"
-Date: Mon, 11 Mar 2013 20:52:51 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: bounds check execbuffer relocations
-Message-ID: <20130311205251.GB31324@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-References: <20130311192716.GA18244@www.outflux.net>
+	id S1754550Ab3CKUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:53:25 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:58474 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab3CKUxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:53:24 -0400
+Date: Mon, 11 Mar 2013 17:53:16 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 00/12] perf annotate: Add support for event group view
+ (v2)
+Message-ID: <20130311205316.GA11779@ghostprotocols.net>
+References: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130311192716.GA18244@www.outflux.net>
+In-Reply-To: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 12:27:16PM -0700, Kees Cook wrote:
-> It is possible to wrap the counter used to allocate the buffer for
-> relocation copies. This could lead to heap writing overflows.
+Em Tue, Mar 05, 2013 at 02:53:20PM +0900, Namhyung Kim escreveu:
+> This patchset implements event group view on perf annotate.  It's
+> basically a rebased version and major difference to prior version is
+> the GTK annotation browser support.
 
-Seems a sensible check, just in the wrong location. You need to do the
-checking upfront in validate_exec_list() so that the error condition is
-always hit and that the limits are applied consistently to all
-execbuffers.
--Chris
+> Here goes an example:
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+>  $ perf annotate --group --stdio
+
+>   crtstuff.c:0
+>      8.08    2.40    5.29 :        387dc0aa50:   mov    %rdi,%rdx
+
+
+I applied this series minus the TUI enabling one, as it is not working,
+so right now my perf/core has --group --stdio and --group --gtk working,
+please take a look at --group --tui.
+
+I need to go thru this more thoroughly, as at least one thing caught my
+attention, in some cases ->nr_pcnt is used and in others
+evsel->nr_members, do we need both?
+
+- Arnaldo
