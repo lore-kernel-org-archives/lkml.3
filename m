@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3CKUvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:51:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59773 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3CKUvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:51:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: multiplatform: Sort the max gpio numbers.
-Date: Mon, 11 Mar 2013 20:51:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1359890688-10336-1-git-send-email-maxime.ripard@free-electrons.com> <20130311163842.GK4977@n2100.arm.linux.org.uk>
-In-Reply-To: <20130311163842.GK4977@n2100.arm.linux.org.uk>
+	id S1754320Ab3CKUwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:52:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46045 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab3CKUwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:52:40 -0400
+Message-ID: <513E438D.5010303@zytor.com>
+Date: Mon, 11 Mar 2013 13:50:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+References: <20130311182655.GB12107@redhat.com> <513E2695.3080707@zytor.com> <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com> <513E28B8.3000502@zytor.com> <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com> <20130311192021.GF12107@redhat.com> <513E36CB.5040908@zytor.com> <20130311201245.GC14738@redhat.com> <513E3C44.9030402@zytor.com> <87hakhk6xu.fsf@xmission.com> <20130311204530.GE14738@redhat.com>
+In-Reply-To: <20130311204530.GE14738@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303112051.02339.arnd@arndb.de>
-X-Provags-ID: V02:K0:n5HCmyG5Bb/wrxGtRAQwR5uT5WoLM4fyV362tlAe0dC
- PTxqvszMh+OK9BZ6iszyayJkXNkl+mitJdeUWLg0xdc76x4qtc
- CqlQP1ZozWbMWZIYXoXk+ByY5acjtwf/55q6ytLzayhrQGwe+n
- 9FZWQIK7f0oh811YXJBOtfwHgwMp1x/Rc1Od4qre/ZUTdEga/W
- ORiVNmSA9anc7K6X3YLWYjDEfuDyd1RjA3NLPOOn8YG3oacHum
- 7SAVGPXxNlFjWQj2VDaSbWFVNVI9dOvzeRJulnL4azxiN98UCf
- UfX3LxWrVKbyUJT/t4TY3zkMQcbAX7tpLMHaORKtObLZ0PG5DZ
- eQicUOvegqt/m8ilw2AI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013, Russell King - ARM Linux wrote:
-> Arnd, Olof,
+On 03/11/2013 01:45 PM, Vivek Goyal wrote:
 > 
-> Have you merged this for -rc ?
+> - Now we use dracut generated initramfs and it has been growing in size.
+>   Now systemd has been pulled in too.
 > 
 
-Sorry, I missed it for some reason. Applied to -fixes now.
+And the solution to that isn't obvious?
 
-Thanks for the reminder,
+> - makdumpfile needs more memory to dump large machines.
+> 
+> There are so many places where memory usage is going up and trying
+> to keep track of all that has been very hard.
 
-	Arnd
+Seriously, in particular the O(n) memory requirements you may want to
+think very very hard about.
+
+	-hpa
+
+
