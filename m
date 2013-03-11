@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3CKJjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:39:14 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:41405 "EHLO
+	id S1753595Ab3CKJjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:39:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:41477 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab3CKJjN (ORCPT
+	with ESMTP id S1753362Ab3CKJjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:39:13 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-bb-513da640e79e
+	Mon, 11 Mar 2013 05:39:33 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-49-513da654de02
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
@@ -15,40 +15,39 @@ Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <00c901ce1e3c$26d976a0$748c63e0$%han@samsung.com>
 In-reply-to: <00c901ce1e3c$26d976a0$748c63e0$%han@samsung.com>
-Subject: [PATCH 2/3] backlight: omap1: use dev_info() instead of pr_info()
-Date: Mon, 11 Mar 2013 18:39:11 +0900
-Message-id: <00ca01ce1e3c$494f06f0$dbed14d0$%han@samsung.com>
+Subject: [PATCH 3/3] backlight: generic_bl: use dev_info() instead of pr_info()
+Date: Mon, 11 Mar 2013 18:39:32 +0900
+Message-id: <00cb01ce1e3c$558ba810$00a2f830$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ePCa8v3pUfLowT1qxE3rZdWcGSgAABd8w
+Thread-index: Ac4ePCa8v3pUfLowT1qxE3rZdWcGSgAACPKA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zA12HZbaBBofXClnMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBkr5m5g
-	K9jBXjF9lkYD42y2LkZODgkBE4m3r6cxQdhiEhfurQeKc3EICSxjlGhr6YcrejGrjxkiMZ1R
-	4vm+bVDOL0aJeZcvsYNUsQmoSXz5chjI5uAQEdAH6tYACTMLlEpsffCeBcQWErCVOD/xHTOI
-	zSlgJ/HxzyGwcmEBL4n185xAwiwCqhKnrp4G28sLVP73yVZmCFtQ4sfkeywQI7UkNm9rYoWw
-	5SU2r3nLDDJGQkBd4tFfXZCwiICRxP7HT5kgSkQk9r14xwhysYTAOXaJzX3LWSB2CUh8m3yI
-	BaJXVmLTAWaIdyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1StOzC0u
-	zUvXS87P3cQIiciJOxjvH7A+xJgMtH4is5Rocj4wovNK4g2NzYwsTE1MjY3MLc1IE1YS51Vv
-	sQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwCjZOlnCYruO5unoctd8FYcPX2Na2U5Xveb/
-	5Z5TtO2bUEsy++/YX77bX7J8tHry7/95g1n7ft1Y3FycmDIz6uf5VL2UdQy291guGUxKmRof
-	cu/AP6Oa2EyLuUavjkXdYv/cb7D67/IXFYKPSo0ZVxy/Mc0jX0dG4DPbrIl3/c/v49BQsP4y
-	6a8SS3FGoqEWc1FxIgC4y//z3gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQV2HZbaBBksO8VnMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZK+ZuYCvYwV4xfZZGA+Nsti5GTg4JAROJF7P6mCFsMYkL99YD
-	xbk4hASmM0o837eNGcL5xSgx7/IldpAqNgE1iS9fDgPZHBwiAvoSbS0aIGFmgVKJrQ/es4DY
-	QgK2EucnvgMbyilgJ/HxzyGwcmEBL4n185xAwiwCqhKnrp4Gu4EXqPzvk63MELagxI/J91gg
-	RmpJbN7WxAphy0tsXvOWGWSMhIC6xKO/uiBhEQEjif2PnzJBlIhI7HvxjnECo9AsJJNmIZk0
-	C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjvdn0jsYVzVYHGIU4GBU4uGd
-	oGMbKMSaWFZcmXuIUYKDWUmEd+Umm0Ah3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemoryS
-	eENjEzMjSyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYAya5X80hGtqsMUe
-	mf8h3Oc/THvGlqAmftfp1iyBPUvnPNKZviTo2++LOZ4dQnrvrPef0VOc8vvf+80WN3YfyQk5
-	MPWl4VO1mev3xe/Ql/sikPX6Zb5NaP3tl16+E7+8fLttx1JWsaQpL4/r7rn9OnmFd4J5YrLZ
-	xstWRreu73UUOfVau39l229uJZbijERDLeai4kQArYQkTDsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY92QZbaBBpffyVlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MXS+uMBbc4qi48K+ogXE+excjJ4eEgIlE69OlrBC2mMSFe+vZ
+	uhi5OIQEljFKfFt2gAmm6OSL24wQiUWMEuebLzNBOLOZJE53bAJrZxNQk/jy5TDQWA4OEQF9
+	ibYWDZAws0CpxNYH71lAbCEBW4nzE98xg9icAnYSH/8cArtCWMBfovnxW0YQm0VAVWJmw0Sw
+	OC9Q/fpLixkhbEGJH5PvsUDM1JLYvK2JFcKWl9i85i0zyFoJAXWJR391QcIiAkYSR7dNYoQo
+	EZHY9+Id2P0SAovYJWZe7meF2CUg8W3yIRaIXlmJTQeYIf6VlDi44gbLBEaJWUg2z0KyeRaS
+	zbOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIySu+nYw3jxgfYgxGWj9RGYp0eR8
+	YFzmlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoEx
+	ZetslZNFX3e33tT1ftDKKGbk3VERJz1lxrVikROXT9k+3tVw1eP5k+YQb+GpwXJ+H7dUT39n
+	d+/puqCr3/NnuvFuXpR6S+HfnH/9L5x+/3adJS525Vd04MKEkNLwqYtSm94d2rz7md3rg4Gq
+	fyYkKcjHpC7h5lQMucvBftgjTGzK+xSB5uZaJZbijERDLeai4kQAO0RqUsECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG7IMttAgyvfJS0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxq4XVxgLbnFUXPhX1MA4
+	n72LkZNDQsBE4uSL24wQtpjEhXvr2boYuTiEBBYxSpxvvswE4cxmkjjdsYkVpIpNQE3iy5fD
+	QN0cHCIC+hJtLRogYWaBUomtD96zgNhCArYS5ye+YwaxOQXsJD7+OQS2TFjAX6L58VuwZSwC
+	qhIzGyaCxXmB6tdfWswIYQtK/Jh8jwVippbE5m1NrBC2vMTmNW+ZQdZKCKhLPPqrCxIWETCS
+	OLptEiNEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS9
+	5PzcTYzgqH0mtYNxZYPFIUYBDkYlHt4JOraBQqyJZcWVuYcYJTiYlUR4V26yCRTiTUmsrEot
+	yo8vKs1JLT7EmAz06ERmKdHkfGBCySuJNzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2
+	ampBahHMFiYOTqkGRivl50ve5J5/YqS6P9PWzOdU1sLakCXHFx5Im6Sb+92qLGpyuRJXRv5r
+	RxX5OYb3gpeIKQoI9J9P/9oosjF3SbnTUXG1/arxE5bOURFZOn/Sr2tWKWub/up1PpNvmtnm
+	OKkrf8bfl+f0mtTuiQTlt9/eErKyVqF25v33C/8671wX4CA40cjpsRJLcUaioRZzUXEiAJ4D
+	Jm4eAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,15 +59,15 @@ dev_info() is more preferred than pr_info().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/omap1_bl.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/video/backlight/generic_bl.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/omap1_bl.c b/drivers/video/backlight/omap1_bl.c
-index 6271101..0aed176 100644
---- a/drivers/video/backlight/omap1_bl.c
-+++ b/drivers/video/backlight/omap1_bl.c
-@@ -18,8 +18,6 @@
-  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+diff --git a/drivers/video/backlight/generic_bl.c b/drivers/video/backlight/generic_bl.c
+index 0ae155b..19e393b 100644
+--- a/drivers/video/backlight/generic_bl.c
++++ b/drivers/video/backlight/generic_bl.c
+@@ -9,8 +9,6 @@
+  *
   */
  
 -#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -76,15 +75,24 @@ index 6271101..0aed176 100644
  #include <linux/module.h>
  #include <linux/kernel.h>
  #include <linux/init.h>
-@@ -170,7 +168,7 @@ static int omapbl_probe(struct platform_device *pdev)
- 	dev->props.brightness = pdata->default_intensity;
- 	omapbl_update_status(dev);
+@@ -108,7 +106,7 @@ static int genericbl_probe(struct platform_device *pdev)
  
--	pr_info("OMAP LCD backlight initialised\n");
-+	dev_info(&pdev->dev, "OMAP LCD backlight initialised\n");
+ 	generic_backlight_device = bd;
  
+-	pr_info("Generic Backlight Driver Initialized.\n");
++	dev_info(&pdev->dev, "Generic Backlight Driver Initialized.\n");
  	return 0;
  }
+ 
+@@ -122,7 +120,7 @@ static int genericbl_remove(struct platform_device *pdev)
+ 
+ 	backlight_device_unregister(bd);
+ 
+-	pr_info("Generic Backlight Driver Unloaded\n");
++	dev_info(&pdev->dev, "Generic Backlight Driver Unloaded\n");
+ 	return 0;
+ }
+ 
 -- 
 1.7.2.5
 
