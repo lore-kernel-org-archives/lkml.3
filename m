@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3CKVSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:18:42 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:52642 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142Ab3CKVSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:18:39 -0400
-Date: Mon, 11 Mar 2013 17:18:33 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130311211833.GC15478@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20130311171824.GA434@x4>
- <20130311191753.GA439@x4>
- <20130311194159.GB3579@redhat.com>
- <20130311201334.GA444@x4>
- <20130311203738.GB15478@thunk.org>
- <20130311204625.GA433@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311204625.GA433@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S932109Ab3CKVPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:15:40 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33474 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab3CKVPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:15:30 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v5 34/44] tty: Fix tty_ldisc_lock name collision
+Date: Mon, 11 Mar 2013 16:44:54 -0400
+Message-Id: <1363034704-28036-35-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+ <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 09:46:25PM +0100, Markus Trippelsdorf wrote:
-> > BTW, I'm currently running 3.9-rc2 with some additional fixes from the
-> > ext4 dev branch, and I'm not able to reproduce the problem using
-> > rtorrent on my laptop.  How reliably is it reproducing for you?  Are
-> > you seeing the problem every time you try this?
-> 
-> Yes, it's 100% reproducible for me. If I boot a 3.8 kernel the issue
-> vanishes.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-Would you be willing to try an experiment? 
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 9725c94..ba49c0e 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -44,7 +44,7 @@ enum {
+  *	callers who will do ldisc lookups and cannot sleep.
+  */
+ 
+-static DEFINE_RAW_SPINLOCK(tty_ldisc_lock);
++static DEFINE_RAW_SPINLOCK(tty_ldiscs_lock);
+ /* Line disc dispatch table */
+ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+ 
+@@ -58,7 +58,7 @@ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+  *	from this point onwards.
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
+@@ -69,11 +69,11 @@ int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
+ 	if (disc < N_TTY || disc >= NR_LDISCS)
+ 		return -EINVAL;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	tty_ldiscs[disc] = new_ldisc;
+ 	new_ldisc->num = disc;
+ 	new_ldisc->refcount = 0;
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -88,7 +88,7 @@ EXPORT_SYMBOL(tty_register_ldisc);
+  *	currently in use.
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ int tty_unregister_ldisc(int disc)
+@@ -99,12 +99,12 @@ int tty_unregister_ldisc(int disc)
+ 	if (disc < N_TTY || disc >= NR_LDISCS)
+ 		return -EINVAL;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	if (tty_ldiscs[disc]->refcount)
+ 		ret = -EBUSY;
+ 	else
+ 		tty_ldiscs[disc] = NULL;
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -115,7 +115,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
+ 	unsigned long flags;
+ 	struct tty_ldisc_ops *ldops, *ret;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	ret = ERR_PTR(-EINVAL);
+ 	ldops = tty_ldiscs[disc];
+ 	if (ldops) {
+@@ -125,7 +125,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
+ 			ret = ldops;
+ 		}
+ 	}
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 	return ret;
+ }
+ 
+@@ -133,10 +133,10 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	ldops->refcount--;
+ 	module_put(ldops->owner);
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ }
+ 
+ /**
+@@ -149,7 +149,7 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
+  *	available
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ static struct tty_ldisc *tty_ldisc_get(struct tty_struct *tty, int disc)
+-- 
+1.8.1.2
 
-Try pulling down the master branch from the ext4 git tree here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
-
-This contains all of the ext4 changes which are in 3.9-rc1, based on
-top of 3.8-rc3.  See if it reproduces there.  If it does, then it
-would tend to confirm the hypothesis that the issue was introduced by
-one of the ext4 patches that we merged during the 3.9-rc1 merge
-window... and then, since if you can reproduce the problem, if you
-could do a git bisect to find the guilty commit, that would really
-greatly appreciated.
-
-If you can't reproduce it from the ext4.git tree, then the problem is
-probably caused by some other change that was introduced between 3.8
-and 3.9-rc1.
-
-Thanks in advance,
-
-					- Ted
