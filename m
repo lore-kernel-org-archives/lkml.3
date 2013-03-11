@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab3CKLdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:33:24 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:40510 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab3CKLdX (ORCPT
+	id S1753970Ab3CKLeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:34:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61727 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3CKLeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:33:23 -0400
-Date: Mon, 11 Mar 2013 12:33:03 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Stelian Nirlu <steliannirlu@gmail.com>, schwidefsky@de.ibm.com,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: replace kmalloc + memset with kzalloc
-Message-ID: <20130311113303.GB12193@osiris>
-References: <1362921205-10295-1-git-send-email-steliannirlu@gmail.com>
- <CAOJsxLGZ=6r85D5OBrFehbpjVSTvK-vaMGQGD9W0ssymT4QyTw@mail.gmail.com>
+	Mon, 11 Mar 2013 07:34:23 -0400
+X-AuditID: 9c93016f-b7b46ae000000e4b-73-513dc13d121b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/2] perf: Reset detached siblings' group_flags
+References: <1362629990-10053-1-git-send-email-namhyung@kernel.org>
+	<1362995984.14933.0.camel@laptop>
+Date: Mon, 11 Mar 2013 20:34:21 +0900
+In-Reply-To: <1362995984.14933.0.camel@laptop> (Peter Zijlstra's message of
+	"Mon, 11 Mar 2013 10:59:44 +0100")
+Message-ID: <87a9qaqif6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLGZ=6r85D5OBrFehbpjVSTvK-vaMGQGD9W0ssymT4QyTw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031111-2966-0000-0000-000006F392C1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 04:14:00PM +0200, Pekka Enberg wrote:
-> On Sun, Mar 10, 2013 at 3:13 PM, Stelian Nirlu <steliannirlu@gmail.com> wrote:
-> > Signed-off-by: Stelian Nirlu <steliannirlu@gmail.com>
-> > ---
-> >  arch/s390/net/bpf_jit_comp.c |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-> > index 0972e91..e645528 100644
-> > --- a/arch/s390/net/bpf_jit_comp.c
-> > +++ b/arch/s390/net/bpf_jit_comp.c
-> > @@ -747,10 +747,9 @@ void bpf_jit_compile(struct sk_filter *fp)
-> >
-> >         if (!bpf_jit_enable)
-> >                 return;
-> > -       addrs = kmalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
-> > +       addrs = kzalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
-> 
-> kcalloc() might be more appropriate here to protect against integer
-> overflow if "fp->len" is too large.
+On Mon, 11 Mar 2013 10:59:44 +0100, Peter Zijlstra wrote:
+> On Thu, 2013-03-07 at 13:19 +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Currently if a group_leader event is deleted, the sibling events are
+>> upgraded to singleton events of a same group list.  At this time, the
+>> siblings inherit the leader's group_flags.
+>> 
+>> However, if the group has mixed hw/sw events the leader's group_flag
+>> does not contain PERF_GROUP_SOFTWARE so sibling sw events will miss
+>> the flag also.  Fix it.
+>> 
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  kernel/events/core.c | 5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index 5c75791d7269..007dfe846d4d 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -1107,8 +1107,9 @@ static void perf_group_detach(struct perf_event *event)
+>>  			list_move_tail(&sibling->group_entry, list);
+>>  		sibling->group_leader = sibling;
+>>  
+>> -		/* Inherit group flags from the previous leader */
+>> -		sibling->group_flags = event->group_flags;
+>> +		/* Reset group flags for each siblings */
+>> +		sibling->group_flags = is_software_event(sibling) ?
+>> +						PERF_GROUP_SOFTWARE : 0;
+>>  	}
+>
+>
+> In such a case, does the event not continue to live on the hw pmu? That
+> is, after this patch we'll have a software event on the hardware pmu
+> list with PERF_GROUP_SOFTWARE set, right? Seems odd.
 
-Stelian, care to send an updated patch which uses kcalloc()
-instead of kzalloc()?
+Right.
 
+Just curious that dropping this one and applying just patch 2 will set
+the PERF_GROUP_MIXED for them and it'll fix the mixed group problem
+without migrating those events.  What do you think about this approach?
+
+Thanks,
+Namhyung
