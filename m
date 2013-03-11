@@ -1,148 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3CKBld (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 21:41:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55199 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab3CKBlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 21:41:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,819,1355126400"; 
-   d="scan'208";a="299519656"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Li, Fei" <fei.li@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>
-Subject: RE: [PATCH] pm: print the name of failed suspend function for
- platform device
-Thread-Topic: [PATCH] pm: print the name of failed suspend function for
- platform device
-Thread-Index: AQHOA1+2yq2QFiWxoU21cM2hUaCfK5if6wOQ
-Date: Mon, 11 Mar 2013 01:41:28 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A254DD3@SHSMSX101.ccr.corp.intel.com>
-References: <1360041183.15311.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-In-Reply-To: <1360041183.15311.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753684Ab3CKBvq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 21:51:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:52899 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab3CKBvp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 21:51:45 -0400
+Message-ID: <513D387F.6060101@huawei.com>
+Date: Mon, 11 Mar 2013 09:50:55 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/1] do not abuse ->cred_guard_mutex in threadgroup_lock()
+References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org> <513A9A67.60909@huawei.com> <20130309032936.GT14556@mtj.dyndns.org> <513AE918.7020704@huawei.com> <20130309200046.GA8149@redhat.com> <20130309200106.GB8149@redhat.com>
+In-Reply-To: <20130309200106.GB8149@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2B1fXF9004862
 
-Hi Greg,
+On 2013/3/10 4:01, Oleg Nesterov wrote:
+> threadgroup_lock() takes signal->cred_guard_mutex to ensure that
+> thread_group_leader() is stable. This doesn't look nice, the scope
+> of this lock in do_execve() is huge.
+> 
+> And as Dave pointed out this can lead to deadlock, we have the
+> following dependencies:
+> 
+> 	do_execve:		cred_guard_mutex -> i_mutex
+> 	cgroup_mount:		i_mutex -> cgroup_mutex
+> 	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
+> 
+> Change de_thread() to take threadgroup_change_begin() around the
+> switch-the-leader code and change threadgroup_lock() to avoid
+> ->cred_guard_mutex.
+> 
+> Note that de_thread() can't sleep with ->group_rwsem held, this
+> can obviously deadlock with the exiting leader if the writer is
+> active, so it does threadgroup_change_end() before schedule().
+> 
+> Reported-by: Dave Jones <davej@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-I just noticed some other cases need the more log also.
-https://lkml.org/lkml/2013/3/8/71
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-Could you consider the below patch, thanks?
-
-Best Regards
-Liu chuansheng
-
-> -----Original Message-----
-> From: Li, Fei
-> Sent: Tuesday, February 05, 2013 1:13 PM
-> To: gregkh@linuxfoundation.org; rjw@sisk.pl; akpm@linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org; Liu, Chuansheng; Li, Fei
-> Subject: [PATCH] pm: print the name of failed suspend function for platform
-> device
-> 
-> 
-> Print more info when platform device suspend function failed.
-> Without this patch, we can not get the real platform device suspend
-> API info.
-> 
-> Example without this patch:
-> pm_op(): platform_pm_suspend+0x0/0x50 returns -11
-> PM: Device power.0 failed to suspend: error -11
-> 
-> And with this patch:
-> platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
-> pm_op(): platform_pm_suspend+0x0/0x80 returns -11
-> PM: Device power.0 failed to suspend: error -11
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> Signed-off-by: Li Fei <fei.li@intel.com>
-> ---
->  drivers/base/platform.c |   19 +++++++++++++++----
->  1 files changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index c0b8df3..96a452a 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -747,8 +747,10 @@ static int platform_legacy_suspend(struct device
-> *dev, pm_message_t mesg)
->  	struct platform_device *pdev = to_platform_device(dev);
->  	int ret = 0;
-> 
-> -	if (dev->driver && pdrv->suspend)
-> +	if (dev->driver && pdrv->suspend) {
->  		ret = pdrv->suspend(pdev, mesg);
-> +		suspend_report_result(pdrv->suspend, ret);
-> +	}
-> 
->  	return ret;
->  }
-> @@ -778,10 +780,13 @@ int platform_pm_suspend(struct device *dev)
->  		return 0;
-> 
->  	if (drv->pm) {
-> -		if (drv->pm->suspend)
-> +		if (drv->pm->suspend) {
->  			ret = drv->pm->suspend(dev);
-> +			suspend_report_result(drv->pm->suspend, ret);
-> +		}
->  	} else {
->  		ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
-> +		suspend_report_result(platform_legacy_suspend, ret);
->  	}
-> 
->  	return ret;
-> @@ -818,10 +823,13 @@ int platform_pm_freeze(struct device *dev)
->  		return 0;
-> 
->  	if (drv->pm) {
-> -		if (drv->pm->freeze)
-> +		if (drv->pm->freeze) {
->  			ret = drv->pm->freeze(dev);
-> +			suspend_report_result(drv->pm->freeze, ret);
-> +		}
->  	} else {
->  		ret = platform_legacy_suspend(dev, PMSG_FREEZE);
-> +		suspend_report_result(platform_legacy_suspend, ret);
->  	}
-> 
->  	return ret;
-> @@ -854,10 +862,13 @@ int platform_pm_poweroff(struct device *dev)
->  		return 0;
-> 
->  	if (drv->pm) {
-> -		if (drv->pm->poweroff)
-> +		if (drv->pm->poweroff) {
->  			ret = drv->pm->poweroff(dev);
-> +			suspend_report_result(drv->pm->poweroff, ret);
-> +		}
->  	} else {
->  		ret = platform_legacy_suspend(dev, PMSG_HIBERNATE);
-> +		suspend_report_result(platform_legacy_suspend, ret);
->  	}
-> 
->  	return ret;
-> --
-> 1.7.4.1
-> 
-> 
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
