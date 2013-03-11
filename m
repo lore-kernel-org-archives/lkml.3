@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3CKUps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:45:48 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:59122 "EHLO
+	id S1754572Ab3CKUpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:45:54 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:59135 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab3CKUpq (ORCPT
+	with ESMTP id S1754367Ab3CKUpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:45:46 -0400
+	Mon, 11 Mar 2013 16:45:49 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
@@ -14,9 +14,9 @@ Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 01/44] tty: Add diagnostic for halted line discipline
-Date: Mon, 11 Mar 2013 16:44:21 -0400
-Message-Id: <1363034704-28036-2-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v5 02/44] n_tty: Factor packet mode status change for reuse
+Date: Mon, 11 Mar 2013 16:44:22 -0400
+Message-Id: <1363034704-28036-3-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
 References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
@@ -26,89 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flip buffer work must not be scheduled by the line discipline
-after the line discipline has been halted; issue warning.
-
-Note: drivers can still schedule flip buffer work.
+Factor the packet mode status change from n_tty_flush_buffer
+for use by follow-on patch.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c     | 8 ++++++++
- drivers/tty/tty_ldisc.c | 7 ++++++-
- include/linux/tty.h     | 1 +
- 3 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/tty/n_tty.c | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 05e72be..9c18e37 100644
+index 9c18e37..4d3ab2c 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -153,6 +153,12 @@ static void n_tty_set_room(struct tty_struct *tty)
- 	if (left && !old_left) {
- 		WARN_RATELIMIT(tty->port->itty == NULL,
- 				"scheduling with invalid itty\n");
-+		/* see if ldisc has been killed - if so, this means that
-+		 * even though the ldisc has been halted and ->buf.work
-+		 * cancelled, ->buf.work is about to be rescheduled
-+		 */
-+		WARN_RATELIMIT(test_bit(TTY_LDISC_HALTED, &tty->flags),
-+			       "scheduling buffer work for halted ldisc\n");
- 		schedule_work(&tty->port->buf.work);
- 	}
+@@ -238,6 +238,18 @@ static void reset_buffer_flags(struct tty_struct *tty)
+ 	n_tty_set_room(tty);
  }
-@@ -1645,6 +1651,8 @@ static int n_tty_open(struct tty_struct *tty)
- 		goto err_free_bufs;
  
- 	tty->disc_data = ldata;
-+	/* indicate buffer work may resume */
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
++static void n_tty_packet_mode_flush(struct tty_struct *tty)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
++	if (tty->link->packet) {
++		tty->ctrl_status |= TIOCPKT_FLUSHREAD;
++		wake_up_interruptible(&tty->link->read_wait);
++	}
++	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++}
++
+ /**
+  *	n_tty_flush_buffer	-	clean input queue
+  *	@tty:	terminal device
+@@ -252,19 +264,11 @@ static void reset_buffer_flags(struct tty_struct *tty)
+ 
+ static void n_tty_flush_buffer(struct tty_struct *tty)
+ {
+-	unsigned long flags;
+ 	/* clear everything and unthrottle the driver */
  	reset_buffer_flags(tty);
- 	tty_unthrottle(tty);
- 	ldata->column = 0;
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index d794087..c641321 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -375,6 +375,7 @@ static inline void tty_ldisc_put(struct tty_ldisc *ld)
  
- void tty_ldisc_enable(struct tty_struct *tty)
- {
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
- 	set_bit(TTY_LDISC, &tty->flags);
- 	clear_bit(TTY_LDISC_CHANGING, &tty->flags);
- 	wake_up(&tty_ldisc_wait);
-@@ -513,8 +514,11 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
- 
- static int tty_ldisc_halt(struct tty_struct *tty)
- {
-+	int scheduled;
- 	clear_bit(TTY_LDISC, &tty->flags);
--	return cancel_work_sync(&tty->port->buf.work);
-+	scheduled = cancel_work_sync(&tty->port->buf.work);
-+	set_bit(TTY_LDISC_HALTED, &tty->flags);
-+	return scheduled;
+-	if (!tty->link)
+-		return;
+-
+-	spin_lock_irqsave(&tty->ctrl_lock, flags);
+-	if (tty->link->packet) {
+-		tty->ctrl_status |= TIOCPKT_FLUSHREAD;
+-		wake_up_interruptible(&tty->link->read_wait);
+-	}
+-	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++	if (tty->link)
++		n_tty_packet_mode_flush(tty);
  }
  
  /**
-@@ -820,6 +824,7 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	clear_bit(TTY_LDISC, &tty->flags);
- 	tty_unlock(tty);
- 	cancel_work_sync(&tty->port->buf.work);
-+	set_bit(TTY_LDISC_HALTED, &tty->flags);
- 	mutex_unlock(&tty->ldisc_mutex);
- retry:
- 	tty_lock(tty);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index c75d886..7aa4be6 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -315,6 +315,7 @@ struct tty_file_private {
- #define TTY_NO_WRITE_SPLIT 	17	/* Preserve write boundaries to driver */
- #define TTY_HUPPED 		18	/* Post driver->hangup() */
- #define TTY_HUPPING 		21	/* ->hangup() in progress */
-+#define TTY_LDISC_HALTED	22	/* Line discipline is halted */
- 
- #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
- 
 -- 
 1.8.1.2
 
