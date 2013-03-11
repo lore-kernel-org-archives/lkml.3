@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3CKPDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:03:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab3CKPDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:03:17 -0400
-Date: Mon, 11 Mar 2013 11:02:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130311150256.GC8482@redhat.com>
-References: <513D52BA.3070206@redhat.com>
- <1362977817-23297-1-git-send-email-yinghai@kernel.org>
- <20130311144853.GB8482@redhat.com>
+	id S1753540Ab3CKPD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:03:28 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:48043 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab3CKPDZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 11:03:25 -0400
+X-Authority-Analysis: v=2.0 cv=XNeyuHdE c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=djqtFF5C5r8A:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=VrFzeNeFecIA:10 a=pSy6a87nxj3EpRuEWu0A:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.78.168.186
+Message-ID: <513DF239.2000806@ubuntu.com>
+Date: Mon, 11 Mar 2013 11:03:21 -0400
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311144853.GB8482@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: Howard Chu <hyc@symas.com>, Chris Friesen <chris.friesen@genband.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: mmap vs fs cache
+References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name> <5139B214.3040303@symas.com> <5139FA13.8090305@genband.com> <5139FD27.1030208@symas.com> <513A8ECB.8000504@ubuntu.com> <20130311115220.GB29799@quack.suse.cz>
+In-Reply-To: <20130311115220.GB29799@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 10:48:53AM -0400, Vivek Goyal wrote:
-> On Sun, Mar 10, 2013 at 09:56:57PM -0700, Yinghai Lu wrote:
-> > Current code does not set low range for crashkernel if the user
-> > does not specify that.
-> > 
-> > That cause regressions on system that does not support intel_iommu
-> > properly.
-> > 
-> > Chao said that his system does work well on 3.8 without extra parameter.
-> > even iommu does not work with kdump.
-> > 
-> > Set crashkernel_low automatically if the user does not specify that.
-> > 
-> > For system that does support IOMMU with kdump properly, user could
-> > specify crashkernel_low=0 to save that 72M low ram.
-> > 
-> 
-> Hi Yinghai,
-> 
-> Had a question about crashkernel_auto_low. So this is the amount of
-> memory rerved under 4G. I am not very clear about the semantics here.
-> 
-> So by default memory wil always come from areas above 4G (when
-> crashkernel=X specified) and if user needs reserveation in lower memory
-> area, it needs to be sepcified explicitly using crashkernel_low?
-> 
-> But will that not break the case of exising bzImage which are 32bit.
-> They currently work if I specify crashkernel=256M. Now suddenly memory
-> will come from higher addresses and 32bit bzImage can't be loaded there.
-> Or I understood the syntax part wrong.
-> 
+On 3/11/2013 7:52 AM, Jan Kara wrote:
+>> Yep, that's because it isn't implemented.
+>    Why do you think so? AFAICS it is implemented by setting VM_RAND_READ
+> flag in the VMA and do_async_mmap_readahead() and do_sync_mmap_readahead()
+> check for the flag and don't do anything if it is set...
 
-IOW, wouldn't it be better that crashkernel=X first tries to find
-requested amount of memory in lowest memory area available/possible.
+Oh, don't know how I missed that... I was just looking for it the other 
+day and couldn't find any references to VM_RandomReadHint so I assumed 
+it hadn't been implemented.
 
-Thanks
-Vivek
+
