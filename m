@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab3CKDwM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 23:52:12 -0400
-Received: from mail-ve0-f201.google.com ([209.85.128.201]:63878 "EHLO
-	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3CKDwL (ORCPT
+	id S1753788Ab3CKD6p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 23:58:45 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:30302 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab3CKD6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 23:52:11 -0400
-X-Greylist: delayed 5115 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Mar 2013 23:52:11 EDT
-From: David Helstroom <helstroom@google.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: eldad@fogrefinery.com, damien@zamaudio.com, clemens@ladisch.de,
-        pete.leigh@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Dave Helstroom <helstroom@google.com>
-Subject: [PATCH][RESEND] Add a USB audio quirk for the NuForce UDH-100 device.
-Date: Sun, 10 Mar 2013 20:52:00 -0700
-Message-Id: <1362973920-4942-1-git-send-email-helstroom@google.com>
-X-Mailer: git-send-email 1.8.1.3
+	Sun, 10 Mar 2013 23:58:44 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-2f-513d56716e6b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: l4f00242t03: check return value of
+ regulator_enable()
+Date: Mon, 11 Mar 2013 12:58:41 +0900
+Message-id: <005f01ce1e0c$b7dbcfc0$27936f40$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4eDLe8BOOG3YaaQN2mW67zG6BGFQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zQ93CMNtAg60L9Cwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG3nWvmQve8VZsfXyevYHxJncXIyeHhICJxOybzYwQtpjEhXvr
+	2boYuTiEBJYxSrx8v4gNpujxlTZmiMQiRonGRzPYIZzZTBKvO06wgFSxCahJfPlyGCjBwSEi
+	oC/R1qIBEmYWKJXY+uA9WImwQLDEk5fTmUFKWARUJfY3pIKEeQVsJdbM+MMCYQtK/Jh8jwWi
+	VUti87YmVghbXmLzmrdgrRIC6hKP/uqChEUE9CSutG9jgygRkdj34h0jyGUSAu3sEvsmtzOB
+	JFgEBCS+TT7EAtErK7HpADPEW5ISB1fcYJnAKDYLyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQn
+	pReZ6BUn5haX5qXrJefnbmKExMmEHYz3DlgfYkwGWj+RWUo0OR8YZ3kl8YbGZkYWpiamxkbm
+	lmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYIyd0P77zUSelbf3L1jyMvL9
+	zbcSVZNE7nJGzzphf7faYXejSFX1sz42nxXc7VH/p0x1XihzYe3Cn11hx9SK+QV1kz+/Zlkj
+	WsDFUx82xWttI+dRJ42Zgv9qXZeXnTMK8fSZl2mWpSBhIGsfGfdkk9x8GYFJsz+/4IxlcVJX
+	VDOI/210fOIbSyWW4oxEQy3mouJEAHTo7/apAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd3CMNtAg0P9WhaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY++618wF73grtj4+z97A
+	eJO7i5GTQ0LAROLxlTZmCFtM4sK99WxdjFwcQgKLGCUaH81gh3BmM0m87jjBAlLFJqAm8eXL
+	YaAEB4eIgL5EW4sGSJhZoFRi64P3YCXCAsEST15OZwYpYRFQldjfkAoS5hWwlVgz4w8LhC0o
+	8WPyPRaIVi2JzduaWCFseYnNa96CtUoIqEs8+qsLEhYR0JO40r6NDaJERGLfi3eMExgFZiGZ
+	NAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAUPpPewbiqweIQowAH
+	oxIP7wQd20Ah1sSy4srcQ4wSHMxKIrwrN9kECvGmJFZWpRblxxeV5qQWH2JMBvpzIrOUaHI+
+	MEHklcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjffm8oA2T
+	3ppJPUq3F6yv5cr/4PreXfK3+f89fztlGme/c9h1c75D83L1Vb75Bqu9rc6FH204PTk3fylD
+	4VbWni8BbclddZPlg+w051nofoqy3B2wpZzzVcCM0lmG2gtne9uXF927+ObMRrkFjf3OZfOu
+	FngbTzusF+Jj12qmf9XKkFNx8zQlluKMREMt5qLiRAB4HZy/BgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Helstroom <helstroom@google.com>
+The regulator_enable() was marked as as __must_check, therefore,
+the return value of regulator_enable() should be checked.
+Also, this patch checks return value of regulator_set_voltage().
 
-Interface 1 does not exist and Interface 0 should be ignored. Before this
-patch, the device would not show up in /dev/snd (and dmesg showed Error -5
-from the snd-alsa-usb module); after this patch, the device shows up
-correctly in /dev/snd and ALSA/Pulseaudio can access it.
-
-
-Signed-off-by: Dave Helstroom <helstroom@google.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- sound/usb/quirks-table.h | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ drivers/video/backlight/l4f00242t03.c |   27 ++++++++++++++++++++++-----
+ 1 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-index c39f898..62d29ca 100644
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -2795,6 +2795,38 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	}
- },
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index fb61557..8d54c3c 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -51,14 +51,31 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
+ 	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
+ 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
+ 	const u16 cmd[] = { 0x36, param(0), 0x3A, param(0x60) };
++	int ret;
  
-+/* NuForce devices */
-+{
-+	USB_DEVICE(0x16d0, 0x0631),
-+		.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
-+		.vendor_name = "Nuforce",
-+		.product_name = "UDH-100",
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 0,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 3,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
+ 	dev_dbg(&spi->dev, "initializing LCD\n");
+ 
+-	regulator_set_voltage(priv->io_reg, 1800000, 1800000);
+-	regulator_enable(priv->io_reg);
++	ret = regulator_set_voltage(priv->io_reg, 1800000, 1800000);
++	if (ret) {
++		dev_err(&spi->dev, "failed to set the IO regulator voltage.\n");
++		return;
 +	}
-+},
-+
- /* Native Instruments MK2 series */
- {
- 	/* Komplete Audio 6 */
++	ret = regulator_enable(priv->io_reg);
++	if (ret) {
++		dev_err(&spi->dev, "failed to enable the IO regulator.\n");
++		return;
++	}
+ 
+-	regulator_set_voltage(priv->core_reg, 2800000, 2800000);
+-	regulator_enable(priv->core_reg);
++	ret = regulator_set_voltage(priv->core_reg, 2800000, 2800000);
++	if (ret) {
++		dev_err(&spi->dev, "failed to set the core regulator voltage.\n");
++		return;
++	}
++	ret = regulator_enable(priv->core_reg);
++	if (ret) {
++		dev_err(&spi->dev, "failed to enable the core regulator.\n");
++		return;
++	}
+ 
+ 	l4f00242t03_reset(pdata->reset_gpio);
+ 
 -- 
-1.8.1.3
+1.7.2.5
+
 
