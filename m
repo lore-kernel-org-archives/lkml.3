@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab3CKEx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 00:53:29 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:42592 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab3CKEx2 (ORCPT
+	id S1751392Ab3CKE50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 00:57:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49757 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab3CKE5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 00:53:28 -0400
-X-Spam-Score: -100.8
-Message-ID: <513D632C.7030709@asianux.com>
-Date: Mon, 11 Mar 2013 12:53:00 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux@arm.linux.org.uk, mgherzan@gmail.com, nschichan@freebox.fr,
-        daniel.borkmann@tik.ee.ethz.ch, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
-References: <513BECDA.3030803@asianux.com> <20130310.171238.330349067962026661.davem@davemloft.net>
-In-Reply-To: <20130310.171238.330349067962026661.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 11 Mar 2013 00:57:25 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86, kdump: Set crashkernel_low automatically
+Date: Sun, 10 Mar 2013 21:56:57 -0700
+Message-Id: <1362977817-23297-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <513D52BA.3070206@redhat.com>
+References: <513D52BA.3070206@redhat.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月11日 05:12, David Miller 写道:
-> From: Chen Gang <gang.chen@asianux.com>
-> Date: Sun, 10 Mar 2013 10:15:54 +0800
-> 
->> > 
->> >   k is u32 which never < 0, need type cast, or cause issue.
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> Who will apply this, ARM folks or me?
-> 
-> 
+Current code does not set low range for crashkernel if the user
+does not specify that.
 
-  sorry I don't know, either. I get the mail addresses by
-./scripts/get_maintainers.pl. it includes you.
+That cause regressions on system that does not support intel_iommu
+properly.
 
-  if no others reply within a week, I hope you can help to check and
-apply it.
+Chao said that his system does work well on 3.8 without extra parameter.
+even iommu does not work with kdump.
 
-  thanks.
+Set crashkernel_low automatically if the user does not specify that.
 
--- 
-Chen Gang
+For system that does support IOMMU with kdump properly, user could
+specify crashkernel_low=0 to save that 72M low ram.
 
-Asianux Corporation
+Reported-by: WANG Chao <chaowang@redhat.com>
+Tested-by: WANG Chao <chaowang@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/kernel/setup.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -547,19 +547,28 @@ static void __init reserve_crashkernel_l
+ 	unsigned long long low_base = 0, low_size = 0;
+ 	unsigned long total_low_mem;
+ 	unsigned long long base;
++	bool auto_set = false;
+ 	int ret;
+ 
+ 	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
+ 	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
+ 						&low_size, &base);
+-	if (ret != 0 || low_size <= 0)
+-		return;
++	if (ret != 0) {
++		/* default swiotlb size and overflow: 64M + 8M */
++		low_size = 72UL<<20;
++		auto_set = true;
++	} else {
++		/* passed with crashkernel_low=0 ? */
++		if (!low_size)
++			return;
++	}
+ 
+ 	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+ 					low_size, alignment);
+ 
+ 	if (!low_base) {
+-		pr_info("crashkernel low reservation failed - No suitable area found.\n");
++		if (!auto_set)
++			pr_info("crashkernel low reservation failed - No suitable area found.\n");
+ 
+ 		return;
+ 	}
