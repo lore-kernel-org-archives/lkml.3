@@ -1,163 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3CKHQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:16:44 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:26280 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3CKHOO (ORCPT
+	id S1752309Ab3CKHTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:19:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62896 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3CKHS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:14:14 -0400
-Message-ID: <513D843B.40109@huawei.com>
-Date: Mon, 11 Mar 2013 15:14:03 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 11 Mar 2013 03:18:58 -0400
+Date: Mon, 11 Mar 2013 08:18:51 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Arto Merilainen <amerilainen@nvidia.com>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5,RESEND 3/8] gpu: host1x: Add channel support
+Message-ID: <20130311071851.GA6033@avionic-0098.mockup.avionic-design.de>
+References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
+ <1358250244-9678-4-git-send-email-tbergstrom@nvidia.com>
+ <20130225152457.GA29545@avionic-0098.mockup.avionic-design.de>
+ <512C84E2.5090201@nvidia.com>
+ <513A0ED0.4070701@nvidia.com>
+ <20130308204301.GA30742@avionic-0098.mockup.avionic-design.de>
+ <513D79E7.5000801@nvidia.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 08/13] tracing: rename trace_event_mutex to trace_event_sem
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Disposition: inline
+In-Reply-To: <513D79E7.5000801@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:051iJyMF5YE09iIjxAKX6ZCDXCT81CwdM7j1FT+y4PV
+ Sup56eA+OVb5S6b4tSgkWOen0Sx7lnCjsF0UqFvm5GRZ3Lhekq
+ V9xFkKUv0pJsWDYg76grqH/277t3HlwEe2+3msRGKyuHpCz+T1
+ Q7YKvy6SiU/SDw94xgTyQbhs2oGZyW0ZENH0l6lsEbWYdk8Rc4
+ JWWvXCbG3rnY8ZGsMCwZ+aYnAGOAJ+k3Ax0uRo93jJ2GW/tDl9
+ wh+exG4TdRlMiiLe0193iU6RotmW/B8RdwPZvOAlDn3/Lz9WM5
+ LAydCWxJMqpHFBLgXr9phnIvth/v66Q9mPXy1WrzDyE2EmIXWK
+ /gBWTimsJwregtzsdl4AgulAgGSJEfCWYBAYc/BwN9NFbO2hpw
+ ctJWM2D8zz8+u0G50ROrQ7UMm2mX74+sf0IWZXMR1+P/HHhimo
+ RmjS7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trace_event_mutex is rw semaphore now, not mutex,
-change the name.
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
----
- kernel/trace/trace_events.c |   10 +++++-----
- kernel/trace/trace_output.c |   16 ++++++++--------
- kernel/trace/trace_output.h |    2 +-
- 3 files changed, 14 insertions(+), 14 deletions(-)
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 0626792..61243a4 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1319,7 +1319,7 @@ static void remove_subsystem_dir(const char *name)
- }
+On Mon, Mar 11, 2013 at 08:29:59AM +0200, Terje Bergstr=C3=B6m wrote:
+> On 08.03.2013 22:43, Thierry Reding wrote:
+> > A bo is just a buffer object, so I don't see why the name shouldn't
+> > be used. The name is in no way specific to DRM or GEM. But the point
+> > that I was trying to make was that there is nothing to suggest that
+> > we couldn't use drm_gem_object as the underlying scaffold to base all
+> > host1x buffer objects on.
+> >=20
+> > Furthermore I don't understand why you've chosen this approach. It
+> > is completely different from what other drivers do and therefore
+> > makes it more difficult to comprehend. That alone I could live with
+> > if there were any advantages to that approach, but as far as I can
+> > tell there are none.
+>=20
+> I was following the plan we agreed on earlier in email discussion with
+> you and Lucas:
+>=20
+> On 29.11.2012 11:09, Lucas Stach wrote:
+> > We should aim for a clean split here. GEM handles are something which
+> > is really specific to how DRM works and as such should be constructed
+> > by tegradrm. nvhost should really just manage allocations/virtual
+> > address space and provide something that is able to back all the GEM
+> > handle operations.
+> >=20
+> > nvhost has really no reason at all to even know about GEM handles.
+> > If you back a GEM object by a nvhost object you can just peel out
+> > the nvhost handles from the GEM wrapper in the tegradrm submit ioctl
+> > handler and queue the job to nvhost using it's native handles.
+> >=20
+> > This way you would also be able to construct different handles (like
+> > GEM obj or V4L2 buffers) from the same backing nvhost object. Note
+> > that I'm not sure how useful this would be, but it seems like a
+> > reasonable design to me being able to do so.
+>=20
+> With this structure, we are already prepared for non-DRM APIs. Tt's a
+> matter of familiarity of code versus future expansion. Code paths for
+> both are as simple/complex, so neither has a direct technical
+> superiority in performance.
+>=20
+> I know other DRM drivers have opted to hard code GEM dependency
+> throughout the code. Then again, host1x hardware is managing much more
+> than graphics, so we need to think outside the DRM box, too.
 
- /*
-- * Must be called under locking both of event_mutex and trace_event_mutex.
-+ * Must be called under locking both of event_mutex and trace_event_sem.
-  */
- static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
-@@ -1334,9 +1334,9 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
- void trace_remove_event_call(struct ftrace_event_call *call)
- {
- 	mutex_lock(&event_mutex);
--	down_write(&trace_event_mutex);
-+	down_write(&trace_event_sem);
- 	__trace_remove_event_call(call);
--	up_write(&trace_event_mutex);
-+	up_write(&trace_event_sem);
- 	mutex_unlock(&event_mutex);
- }
+This sound a bit over-engineered at this point in time. DRM is currently
+the only user. Is anybody working on any non-DRM drivers that would use
+this?
 
-@@ -1425,7 +1425,7 @@ static void trace_module_remove_events(struct module *mod)
- 	struct ftrace_event_call *call, *p;
- 	bool found = false;
+Even that aside, I don't think host1x_mem_handle is a good choice of
+name here. The objects are much more than handles. They are in fact
+buffer objects, which can optionally be attached to a handle. I also
+think that using a void * to store the handle specific data isn't such a
+good idea.
 
--	down_write(&trace_event_mutex);
-+	down_write(&trace_event_sem);
- 	list_for_each_entry_safe(call, p, &ftrace_events, list) {
- 		if (call->mod == mod) {
- 			found = true;
-@@ -1449,7 +1449,7 @@ static void trace_module_remove_events(struct module *mod)
- 	 */
- 	if (found)
- 		tracing_reset_current_online_cpus();
--	up_write(&trace_event_mutex);
-+	up_write(&trace_event_sem);
- }
+So how about the following proposal, which I think might satisfy both of
+us:
 
- static int trace_module_notify(struct notifier_block *self,
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 697e88d..6fa709b 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -14,7 +14,7 @@
- /* must be a power of 2 */
- #define EVENT_HASHSIZE	128
+	struct host1x_bo;
 
--DECLARE_RWSEM(trace_event_mutex);
-+DECLARE_RWSEM(trace_event_sem);
+	struct host1x_bo_ops {
+		struct host1x_bo *(*get)(struct host1x_bo *bo);
+		void (*put)(struct host1x_bo *bo);
+		dma_addr_t (*pin)(struct host1x_bo *bo, struct sg_table **sgt);
+		...
+	};
 
- static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
+	struct host1x_bo *host1x_bo_get(struct host1x_bo *bo);
+	void host1x_bo_put(struct host1x_bo *bo);
+	dma_addr_t host1x_bo_pin(struct host1x_bo *bo, struct sg_table **sgt);
+	...
 
-@@ -783,12 +783,12 @@ static int trace_search_list(struct list_head **list)
+	struct host1x_bo {
+		const struct host1x_bo_ops *ops;
+		...
+	};
 
- void trace_event_read_lock(void)
- {
--	down_read(&trace_event_mutex);
-+	down_read(&trace_event_sem);
- }
+	struct tegra_drm_bo {
+		struct host1x_bo base;
+		...
+	};
 
- void trace_event_read_unlock(void)
- {
--	up_read(&trace_event_mutex);
-+	up_read(&trace_event_sem);
- }
+That way you can get rid of the host1x_memmgr_create_handle() helper and
+instead embed host1x_bo into driver-/framework-specific structures with
+the necessary initialization.
 
- /**
-@@ -811,7 +811,7 @@ int register_ftrace_event(struct trace_event *event)
- 	unsigned key;
- 	int ret = 0;
+It also allows you to interact directly with the objects instead of
+having to go through the memmgr API. The memory manager doesn't really
+exist anymore so keeping the name in the API is only confusing. Your
+current proposal deals with memory handles directly already so it's
+really just making the naming more consistent.
 
--	down_write(&trace_event_mutex);
-+	down_write(&trace_event_sem);
+Thierry
 
- 	if (WARN_ON(!event))
- 		goto out;
-@@ -866,14 +866,14 @@ int register_ftrace_event(struct trace_event *event)
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature
 
- 	ret = event->type;
-  out:
--	up_write(&trace_event_mutex);
-+	up_write(&trace_event_sem);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(register_ftrace_event);
+iQIcBAEBAgAGBQJRPYVbAAoJEN0jrNd/PrOh1zwP/11O6tlCkJxYl7LC+ujY1ZZl
+MZB/7Ge+pnzm5bc1Wb2gI4lnwZ3jfCKcqHqUNcifeKO/6JlZhytuH+M0h1oZtp3P
+/LR56mFwnq832+qKYvZDNr0ZtosV1Gz/QcqAzwvgBk1fX/r2rTDCAxED05CTxCfe
+n2mdHtWDZwBAKlyoE/JyJxmFN9JxXZ6cgIgXq9IcX0u7ZwiTh11ZJRojo4Vqtuhj
+Ef2CaPPVx6MNT9WSnV0MohNtGrM+atHwH9FURYGGjsCItM49Yqkg7Y80eLNfyunk
+kEWUFx2UElGhokmbL44548Lkcx//bNF7b8D7poBWJM73royLyjCpRU9RpTNYL7Yp
+l8Agh7i4xuC6YXxtwVGJy5iNwhpkzPgJHh9qWwJGpcDE3rDTHy1uDrROCYtf8A1m
+98W4rXf8tXXZpOqLTCQD8BY3wIccoRUhlv7fsQeiswO4RvOZBHskf7FYJvvih3K5
+PbNBK/pPXmsu7Er0+8/pzIlT4jG7XKqYZY8HDdDI8Q3LTkwgQFNLKxrtWcpf+YTu
+Fy4Yeh+O0wt0IIOJ5mipFtFZK1MI2XZljAhpmlN/2StdAnmJ2uZLidMVDpJHBLbx
+C6MSduyOlFOdyZqM37ngWKVsvQZvIX1Nk1QZLkc8gt3FLZBoQQidAKVrd3LBfl5a
+TZhh7FWkDw2ipz4by2AR
+=O5tA
+-----END PGP SIGNATURE-----
 
- /*
-- * Used by module code with the trace_event_mutex held for write.
-+ * Used by module code with the trace_event_sem held for write.
-  */
- int __unregister_ftrace_event(struct trace_event *event)
- {
-@@ -888,9 +888,9 @@ int __unregister_ftrace_event(struct trace_event *event)
-  */
- int unregister_ftrace_event(struct trace_event *event)
- {
--	down_write(&trace_event_mutex);
-+	down_write(&trace_event_sem);
- 	__unregister_ftrace_event(event);
--	up_write(&trace_event_mutex);
-+	up_write(&trace_event_sem);
-
- 	return 0;
- }
-diff --git a/kernel/trace/trace_output.h b/kernel/trace/trace_output.h
-index c038eba..4d96de5 100644
---- a/kernel/trace/trace_output.h
-+++ b/kernel/trace/trace_output.h
-@@ -31,7 +31,7 @@ trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry);
-
- /* used by module unregistering */
- extern int __unregister_ftrace_event(struct trace_event *event);
--extern struct rw_semaphore trace_event_mutex;
-+extern struct rw_semaphore trace_event_sem;
-
- #define MAX_MEMHEX_BYTES	8
- #define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
--- 
-1.7.9.7
-
-
+--jRHKVT23PllUwdXP--
