@@ -1,142 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3CKRhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:37:55 -0400
-Received: from mail.tpi.com ([70.99.223.143]:2950 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352Ab3CKRhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:37:53 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH linux-next v2] SUNRPC: rpcrdma_register_default_external: Dynamically allocate ib_phys_buf
-Date: Mon, 11 Mar 2013 11:37:27 -0600
-Message-Id: <1363023447-22453-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130310202838.GL31448@fieldses.org>
-References: <20130310202838.GL31448@fieldses.org>
+	id S1753859Ab3CKRiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:38:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43057 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab3CKRiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 13:38:10 -0400
+Message-ID: <513E167E.8030000@wwwdotorg.org>
+Date: Mon, 11 Mar 2013 11:38:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
+Subject: Re: [PATCH V2 3/5] ARM: DT: tegra114:add aliases and DMA requestor
+ for serial controller
+References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1362852678-13421-4-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rpcrdma_register_default_external() is several frames into the call stack which
-goes deeper yet. You run the risk of stack corruption by declaring such a large
-automatic variable, so move the array of 'struct ib_phys_buf' objects into the
-requestor structure 'struct rpcrdma_req' (which is dynamically allocated) in
-order to silence the frame-larger-than warning.
+On 03/09/2013 11:11 AM, Laxman Dewangan wrote:
+> Add APB DMA requestor and serial aliases for serial controller.
+> There will be two serial driver i.e. 8250 based simple serial driver
+> and APB DMA based serial driver for higher baudrate and performace.
+> 
+> The simple serial driver get enabled with compatible "nvidia,tegra114-uart",
+> "nvidia,tegra20-uart" and APB DMA based driver will get enabled with
+> compatible "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart".
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1:
+> - Remove UARTB car id correction. Make the compatible with tegra114 and
+>   tegra30 for hsuart and tegra20 for simple uart driver.
 
-net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
-net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
-
-gcc version 4.6.3
-
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Tom Tucker <tom@ogc.us>
-Cc: Haggai Eran <haggaie@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Shani Michaeli <shanim@mellanox.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: netdev@vger.kernel.org
-
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
-
-v1 - Use kmalloc() to dynamically allocate and free the array of 'struct
-ib_phys_buf' objects
-
-v2 - Move the array of 'struct ib_phys_buf' objects into struct rpcrdma_req
-and pass this request down through rpcrdma_register_external() and
-rpcrdma_register_default_external(). This is less overhead then using
-kmalloc() and requires no extra error checking as the allocation burden is
-shifted to the transport client.
-
- net/sunrpc/xprtrdma/rpc_rdma.c  |    2 +-
- net/sunrpc/xprtrdma/verbs.c     |   11 ++++++-----
- net/sunrpc/xprtrdma/xprt_rdma.h |    3 ++-
- 3 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/net/sunrpc/xprtrdma/rpc_rdma.c b/net/sunrpc/xprtrdma/rpc_rdma.c
-index e03725b..c89448b 100644
---- a/net/sunrpc/xprtrdma/rpc_rdma.c
-+++ b/net/sunrpc/xprtrdma/rpc_rdma.c
-@@ -203,7 +203,7 @@ rpcrdma_create_chunks(struct rpc_rqst *rqst, struct xdr_buf *target,
- 
- 	do {
- 		/* bind/register the memory, then build chunk from result. */
--		int n = rpcrdma_register_external(seg, nsegs,
-+		int n = rpcrdma_register_external(req, seg, nsegs,
- 						cur_wchunk != NULL, r_xprt);
- 		if (n <= 0)
- 			goto out;
-diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-index 93726560..5b439ed 100644
---- a/net/sunrpc/xprtrdma/verbs.c
-+++ b/net/sunrpc/xprtrdma/verbs.c
-@@ -1730,13 +1730,14 @@ rpcrdma_deregister_memwin_external(struct rpcrdma_mr_seg *seg,
- }
- 
- static int
--rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
--			int *nsegs, int writing, struct rpcrdma_ia *ia)
-+rpcrdma_register_default_external(struct rpcrdma_req *req,
-+			struct rpcrdma_mr_seg *seg, int *nsegs, int writing,
-+			struct rpcrdma_ia *ia)
- {
- 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
- 				  IB_ACCESS_REMOTE_READ);
- 	struct rpcrdma_mr_seg *seg1 = seg;
--	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
-+	struct ib_phys_buf *ipb = req->rl_ipb;
- 	int len, i, rc = 0;
- 
- 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
-@@ -1791,7 +1792,7 @@ rpcrdma_deregister_default_external(struct rpcrdma_mr_seg *seg,
- }
- 
- int
--rpcrdma_register_external(struct rpcrdma_mr_seg *seg,
-+rpcrdma_register_external(struct rpcrdma_req *req, struct rpcrdma_mr_seg *seg,
- 			int nsegs, int writing, struct rpcrdma_xprt *r_xprt)
- {
- 	struct rpcrdma_ia *ia = &r_xprt->rx_ia;
-@@ -1827,7 +1828,7 @@ rpcrdma_register_external(struct rpcrdma_mr_seg *seg,
- 
- 	/* Default registration each time */
- 	default:
--		rc = rpcrdma_register_default_external(seg, &nsegs, writing, ia);
-+		rc = rpcrdma_register_default_external(req, seg, &nsegs, writing, ia);
- 		break;
- 	}
- 	if (rc)
-diff --git a/net/sunrpc/xprtrdma/xprt_rdma.h b/net/sunrpc/xprtrdma/xprt_rdma.h
-index cc1445d..b10ed34 100644
---- a/net/sunrpc/xprtrdma/xprt_rdma.h
-+++ b/net/sunrpc/xprtrdma/xprt_rdma.h
-@@ -192,6 +192,7 @@ struct rpcrdma_req {
- 	struct ib_sge	rl_send_iov[4];	/* for active requests */
- 	struct ib_sge	rl_iov;		/* for posting */
- 	struct ib_mr	*rl_handle;	/* handle for mem in rl_iov */
-+	struct ib_phys_buf rl_ipb[RPCRDMA_MAX_DATA_SEGS]; /* temp work array */
- 	char		rl_base[MAX_RPCRDMAHDR]; /* start of actual buffer */
- 	__u32 		rl_xdr_buf[0];	/* start of returned rpc rq_buffer */
- };
-@@ -327,7 +328,7 @@ int rpcrdma_register_internal(struct rpcrdma_ia *, void *, int,
- int rpcrdma_deregister_internal(struct rpcrdma_ia *,
- 				struct ib_mr *, struct ib_sge *);
- 
--int rpcrdma_register_external(struct rpcrdma_mr_seg *,
-+int rpcrdma_register_external(struct rpcrdma_req *, struct rpcrdma_mr_seg *,
- 				int, int, struct rpcrdma_xprt *);
- int rpcrdma_deregister_external(struct rpcrdma_mr_seg *,
- 				struct rpcrdma_xprt *, void *);
--- 
-1.7.9.5
-
+Why the difference for the two drivers? Either the HW is compatible with
+all 3 of 114/30/20 (in which case you only need list 114/20 in the
+compatible value), or it's not compatible with either 30/20, since we
+already know that 30/20 are compatible with each-other (in which case
+you should only list 114 in the compatible property).
