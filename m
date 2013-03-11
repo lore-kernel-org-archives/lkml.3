@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3CKWPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:15:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40430 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab3CKWPQ (ORCPT
+	id S932086Ab3CKWPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:15:38 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:54216 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab3CKWPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:15:16 -0400
-Message-ID: <513E5771.9000408@wwwdotorg.org>
-Date: Mon, 11 Mar 2013 16:15:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 11 Mar 2013 18:15:37 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
-Subject: Re: [PATCH V2 0/5] ARM: DT: tegra114: Add DT entry for different
- controller
-References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
+References: <20130306222412.1255.81929.stgit@warthog.procyon.org.uk>
+	<alpine.LRH.2.02.1303071558030.25164@tundra.namei.org>
+	<20130311210211.GA13575@kroah.com>
+	<20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
+Date: Mon, 11 Mar 2013 15:15:36 -0700
+X-Google-Sender-Auth: w_y8FwEFB7uQoFYh_XkFfEe2eWI
+Message-ID: <CA+55aFwBXZn9QizRAHNWQXuj6vE1Z9jrMDKVtQmoFZUH=yRf5A@mail.gmail.com>
+Subject: Re: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, James Morris <jmorris@namei.org>,
+        David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org,
+        Petr Matousek <pmatouse@redhat.com>,
+        "security@kernel.org" <security@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        mguzik@redhat.com, Ben Hutchings <ben@decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2013 11:11 AM, Laxman Dewangan wrote:
-> This patch series add DT entry for APB DMA, I2C, UART, KBC and SPI.
-> 
-> This patch series is generated on top of CCF work for T114 done by Peter
-> and hence it should be applied on top of T114 CCF patches.
-> 
-> Changes from V1:
-> - Add reeason why APBDMA is not compatible with older driver
->   in description.
-> - Remove UARTB car id correction. Make the compatible with tegra114 and
->   older chip.
-> - Add compatible for kbc as nvidia,tegra114-kbc and nvidia,tegra20-kbc.
-> 
-> Laxman Dewangan (5):
->   ARM: DT: tegra114: add APB DMA controller DT entry
->   ARM: DT: tegra114: Add i2c controller DT entry
->   ARM: DT: tegra114:add aliases and DMA requestor for serial controller
->   ARM: DT: tegra114: add KBC controller DT entry
->   ARM: DT: tegra114: Add spi controller DT entry
+On Mon, Mar 11, 2013 at 2:10 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 11 Mar 2013 14:02:11 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+>> On Thu, Mar 07, 2013 at 03:59:09PM +1100, James Morris wrote:
+>> > On Wed, 6 Mar 2013, David Howells wrote:
+>> >
+>> > > Reported-by: Mateusz Guzik <mguzik@redhat.com>
+>> > > Signed-off-by: David Howells <dhowells@redhat.com>
+>> >
+>> > Acked-by: James Morris <james.l.morris@oracle.com>
+>>
+>> What happened to this patch?  I don't see it in Linus's tree, James, did
+>> you pick it up?
+>
+> James has acked it.  I have it queued for processing so it isn't lost.
+> It has no cc:stable's in it, but David always forgets that ;)
 
-What branch is this series based on? I tried to apply these for testing,
-but git am failed to apply it to Tegra's for-3.10/dt, and Tegra's
-for-next, and my local work branch, and next-20130307.
+I usually expect that if the subsystem maintainer is involved, he's
+the one to pick it up.
 
-Can you please rebase onto Tegra's for-3.10/dt. Thanks.
+If James' ack was "Linus, please take this directly, I'm busy and have
+nothing else pending", then I really would prefer to hear that exact
+thing. Otherwise I'm just going to ignore the patch "safe" in the
+knowledge that clearly the subsystem maintainer is aware of it.
+
+             Linus
