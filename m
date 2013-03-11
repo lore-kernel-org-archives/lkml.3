@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab3CKH4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:56:34 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:38730 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab3CKH4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:56:32 -0400
-Date: Mon, 11 Mar 2013 08:56:09 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Cc: cpufreq@vger.kernel.org, rjw@sisk.pl, rui.zhang@intel.com, andrew@lunn.ch,
-        jason@lakedaemon.net, rob.lee@linaro.org, len.brown@intel.com,
-        khilman@ti.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
-Message-ID: <20130311075609.GP30638@lunn.ch>
-References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+	id S1752194Ab3CKH6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:58:20 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:62637 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3CKH6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 03:58:19 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqoaAEyNPVFbdWOb/2dsb2JhbABDvzGFFwIBgVEWdIIpAQUnUhALISUPBUmIKrtijkRKB4JfYQOTEINEkHaDCzs
+X-IPAS-Result: AqoaAEyNPVFbdWOb/2dsb2JhbABDvzGFFwIBgVEWdIIpAQUnUhALISUPBUmIKrtijkRKB4JfYQOTEINEkHaDCzs
+X-IronPort-AV: E=Sophos;i="4.84,822,1355094000"; 
+   d="asc'?scan'208";a="15563701"
+Date: Mon, 11 Mar 2013 08:58:17 +0100
+From: Samuel Iglesias =?utf-8?Q?Gons=C3=A1lvez?= <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jens Taprogge <jens.taprogge@taprogge.org>
+Subject: Re: [PATCH 1/3] ipack: avoid double free on device->id
+Message-ID: <20130311075746.GA6429@fourier>
+References: <512DCB33.6030500@igalia.com>
+ <1362730907-10047-1-git-send-email-siglesias@igalia.com>
+ <20130308174701.GA13276@kroah.com>
+ <513A29B6.9080008@igalia.com>
+ <20130308193624.GD14144@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
 Content-Disposition: inline
-In-Reply-To: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com>
+In-Reply-To: <20130308193624.GD14144@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 09:35:19AM +0200, Silviu-Mihai Popescu wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
-> 
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
-> 
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> ---
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+--eAbsdosE1cNLO4uF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    Thanks
-	  Andrew
+On Fri, Mar 08, 2013 at 11:36:24AM -0800, Greg Kroah-Hartman wrote:
+[...]
+> If the others require this one to be applied, in order for them to apply
+> properly, yes, it would be great to resend.  If not, I'll just skip the
+> first one.
+>
 
+They don't require the first one. You can skip it.
 
->  drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
->  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
->  drivers/thermal/kirkwood_thermal.c |    8 +++-----
->  3 files changed, 9 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-> index 0e83e3c..6052476 100644
-> --- a/drivers/cpufreq/kirkwood-cpufreq.c
-> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
-> @@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev, "Cannot get memory resource\n");
->  		return -ENODEV;
->  	}
-> -	priv.base = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!priv.base) {
-> -		dev_err(&pdev->dev, "Cannot ioremap\n");
-> -		return -EADDRNOTAVAIL;
-> -	}
-> +	priv.base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(priv.base))
-> +		return PTR_ERR(priv.base);
->  
->  	np = of_find_node_by_path("/cpus/cpu@0");
->  	if (!np)
-> diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-> index 670aa1e..53aad73 100644
-> --- a/drivers/cpuidle/cpuidle-kirkwood.c
-> +++ b/drivers/cpuidle/cpuidle-kirkwood.c
-> @@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
->  	if (res == NULL)
->  		return -EINVAL;
->  
-> -	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!ddr_operation_base)
-> -		return -EADDRNOTAVAIL;
-> +	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(ddr_operation_base))
-> +		return PTR_ERR(ddr_operation_base);
->  
->  	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
->  	device->state_count = KIRKWOOD_MAX_STATES;
-> diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
-> index 65cb4f0..e5500ed 100644
-> --- a/drivers/thermal/kirkwood_thermal.c
-> +++ b/drivers/thermal/kirkwood_thermal.c
-> @@ -85,11 +85,9 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
->  	if (!priv)
->  		return -ENOMEM;
->  
-> -	priv->sensor = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!priv->sensor) {
-> -		dev_err(&pdev->dev, "Failed to request_ioremap memory\n");
-> -		return -EADDRNOTAVAIL;
-> -	}
-> +	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(priv->sensor))
-> +		return PTR_ERR(priv->sensor);
->  
->  	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
->  					       priv, &ops, NULL, 0, 0);
-> -- 
-> 1.7.9.5
-> 
+Thanks,
+
+Sam
+
+--eAbsdosE1cNLO4uF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRPY6ZAAoJEH/0ujLxfcNDiuIP/2guo7qBEX2znMyUdnhVT6HB
+sHL4psOX7TlgG/qcDcn92K5B9tMW9nIEaJ73XBXBpYKraFpPuC3F+IBw+tIte1i/
+psGW+EK4MjNvgZNklrVWCYLjZMub0UYPjaKA+ixIQ5nLZTk/y6c2WzGfoVUbudTt
+J/396sTY0vdTnb7Fl8sjjlfbZXOh/hrwXD8l+XEVhnhY9fuVD+2nDJQRBjmdwJtn
+K/xFr3MNBxcxlImiwNlpruYoy6nzMQyxKjl9YTSh5MWRHXkuTUeNLrxwlnBEPcT4
+MPvXyd1HNC2IXNy6N4eG6fFUcWabtuCHWo9zOPaKq6ByzPuIxKszYDaY7CLo7shh
+MR0WYrA1zDOfdKNGQ7GZx3TdVbkYgUNlwvseatZzUlWU0d/kW3OOeVfq20Ea1CPw
+UqbF8qWODULfBmDTSZxqoRdm4jamBzcrKSGaSfo+lPNsiiGuMnUFyLqBnLRN4vQC
+AhpNA7xCi0OkzKgLJ1TkeiOe6nI/eR1qiqhfu+NFCsM2ABar95TZrieYfvLKTtHp
+BCddzjz1ffctX3mFADHddUJyschFfIGklB6FhZanNvsOjDou/15ZXrMG69ZtLfp4
+PPdTqYPuoO0M4jky3MJb3/ohT3Lu8SCRv3lSd3ddMTBOcS53aua/sZD8TWVSLsm0
+VZTQNm1fM2dqyW9euSML
+=1THH
+-----END PGP SIGNATURE-----
+
+--eAbsdosE1cNLO4uF--
