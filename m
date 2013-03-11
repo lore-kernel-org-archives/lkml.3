@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3CKPgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:36:40 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:31210 "EHLO thoth.sbs.de"
+	id S1754156Ab3CKPiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:38:13 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1473 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab3CKPgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:36:39 -0400
-Message-ID: <513DFA01.1040500@siemens.com>
-Date: Mon, 11 Mar 2013 16:36:33 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752041Ab3CKPiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 11:38:11 -0400
+Message-ID: <513DFA55.2050104@canonical.com>
+Date: Mon, 11 Mar 2013 09:37:57 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com> <513DBF45.9030803@redhat.com> <20130311115144.GG31619@redhat.com> <513DDCC2.9070807@redhat.com> <20130311135441.GN31619@redhat.com> <513DE3C4.5000503@siemens.com> <20130311140503.GO31619@redhat.com> <513DE8C5.3090209@redhat.com>
-In-Reply-To: <513DE8C5.3090209@redhat.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: adau1373: adau1373_hw_params: Silence overflow
+ warning
+References: <1362936878-84443-1-git-send-email-tim.gardner@canonical.com> <513DAB80.1020900@metafoo.de>
+In-Reply-To: <513DAB80.1020900@metafoo.de>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-11 15:23, Paolo Bonzini wrote:
-> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
->> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
->>>> We are not moving away from mp_state, we are moving away from using
->>>> mp_state for signaling because with nested virt INIT does not always
->>>> change mp_state, not only that it can change mp_state long after signal
->>>> is received after vmx off is done.
->>>
->>> Right.
->>>
->>> BTW, for that to happen, we will also need to influence the INIT level.
->>> Unless I misread the spec, INIT is blocked while in root mode, and if
->>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
->>> actually happens. So what matters is the INIT signal level at the exit
->>> of root mode.
->>>
->> You are talking about INIT# signal received via CPU pin, right? I think
->> INIT send by IPI cannot go away.
+On 03/11/2013 04:01 AM, Lars-Peter Clausen wrote:
+> On 03/10/2013 06:34 PM, Tim Gardner wrote:
+>> ADAU1373_BCLKDIV_SOURCE is defined as BIT(5) which uses UL constants. On
+>> amd64 the result of the ones complement operator is then truncated to
+>> unsigned int according to the prototype of snd_soc_update_bits(). I think
+>> gcc is correctly warning that the upper 32 bits are lost.
+>>
+>> sound/soc/codecs/adau1373.c: In function 'adau1373_hw_params':
+>> sound/soc/codecs/adau1373.c:940:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+>>
+>> gcc version 4.6.3
+>>
+>> Cc: Lars-Peter Clausen <lars@metafoo.de>
+>> Cc: Liam Girdwood <lgirdwood@gmail.com>
+>> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>> Cc: Jaroslav Kysela <perex@perex.cz>
+>> Cc: Takashi Iwai <tiwai@suse.de>
+>> Cc: device-drivers-devel@blackfin.uclinux.org
+>> Cc: alsa-devel@alsa-project.org
+>> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+>> ---
+>>  sound/soc/codecs/adau1373.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
+>> index 068b3ae..56ed788 100644
+>> --- a/sound/soc/codecs/adau1373.c
+>> +++ b/sound/soc/codecs/adau1373.c
+>> @@ -132,7 +132,7 @@ struct adau1373 {
+>>  #define ADAU1373_DAI_FORMAT_I2S		0x2
+>>  #define ADAU1373_DAI_FORMAT_DSP		0x3
+>>  
+>> -#define ADAU1373_BCLKDIV_SOURCE		BIT(5)
+>> +#define ADAU1373_BCLKDIV_SOURCE		(unsigned int)BIT(5)
 > 
-> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
+> Hm, that's a bit ugly. How about the following instead:
 > 
-> Only the Pentium and P6 family processors support the INIT-deassert IPI.
-> An INIT-disassert IPI has no affect on the state of the APIC, other than
-> to reload the arbitration ID register with the value in the APIC ID
-> register.
+> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
+> index 068b3ae..1aa10dd 100644
+> --- a/sound/soc/codecs/adau1373.c
+> +++ b/sound/soc/codecs/adau1373.c
+> @@ -133,6 +133,8 @@ struct adau1373 {
+>  #define ADAU1373_DAI_FORMAT_DSP		0x3
 > 
-> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
-> deassert) are always treated as edge triggered interrupts".
+>  #define ADAU1373_BCLKDIV_SOURCE		BIT(5)
+> +#define ADAU1373_BCLKDIV_SR_MASK	(0x07 << 2)
+> +#define ADAU1373_BCLKDIV_BCLK_MASK	0x03
+>  #define ADAU1373_BCLKDIV_32		0x03
+>  #define ADAU1373_BCLKDIV_64		0x02
+>  #define ADAU1373_BCLKDIV_128		0x01
+> @@ -937,7 +939,8 @@ static int adau1373_hw_params(struct snd_pcm_substream
+> *substream,
+>  	adau1373_dai->enable_src = (div != 0);
+> 
+>  	snd_soc_update_bits(codec, ADAU1373_BCLKDIV(dai->id),
+> -		~ADAU1373_BCLKDIV_SOURCE, (div << 2) | ADAU1373_BCLKDIV_64);
+> +		ADAU1373_BCLKDIV_SR_MASK | ADAU1373_BCLKDIV_BCLK_MASK,
+> +		(div << 2) | ADAU1373_BCLKDIV_64);
+> 
+>  	switch (params_format(params)) {
+>  	case SNDRV_PCM_FORMAT_S16_LE:
 > 
 > 
-> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
-> clocks" when a soft reset is requested.  So we can guess that INIT# is
-> also edge-triggered.
 
-Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
-form of a reset or a vmexit.
+That seems way more complicated then need be. It also uses 2 bits in the
+mask whereas the original code only used 1, e.g., bit 5. Is that correct ?
 
-Jan
+How about just open coding the macro thusly:
 
+#define ADAU1373_BCLKDIV_SOURCE (1<<5) /*BIT(5)*/
+
+rtg
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Tim Gardner tim.gardner@canonical.com
