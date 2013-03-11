@@ -1,245 +1,439 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3CKMan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 08:30:43 -0400
-Received: from fallback6.mail.ru ([94.100.176.134]:35114 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab3CKMam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 08:30:42 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?RG9uZyBBaXNoZW5n?= <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
-        =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
-        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
-        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?RG1pdHJ5IFRvcm9raG92?= <dmitry.torokhov@gmail.com>,
-        =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2NiAyLzJdIG1mZDogc3lzY29uOiBBZGQgbm9uLURUIHN1?=
- =?UTF-8?B?cHBvcnQ=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Mon, 11 Mar 2013 14:16:44 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1362997004.885485377@f319.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <20130311094005.GA6280@b29396-Latitude-E6410>
-References: <1362063434-8318-1-git-send-email-shc_work@mail.ru> <1362063434-8318-2-git-send-email-shc_work@mail.ru> <20130311094005.GA6280@b29396-Latitude-E6410>
+	id S1754124Ab3CKMco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 08:32:44 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:40341 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753905Ab3CKMcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 08:32:43 -0400
+Date: Mon, 11 Mar 2013 07:32:41 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
+        wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: no zeroing of hugetlbfs pages at boot
+Message-ID: <20130311123241.GA15323@sgi.com>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com> <CAJd=RBC=efJfbztqLLSr5EnTUFYAHnAp5qGFbSX3d21JdsjFDg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBC=efJfbztqLLSr5EnTUFYAHnAp5qGFbSX3d21JdsjFDg@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2BCUhZW007008
 
-> On Thu, Feb 28, 2013 at 06:57:14PM +0400, Alexander Shiyan wrote:
-> > This patch allow using syscon driver from the platform data, i.e.
-> > possibility using driver on systems without oftree support.
-> > For search syscon device from the client drivers,
-> > "syscon_regmap_lookup_by_pdevname" function was added.
-> > 
-> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+On Sun, Mar 10, 2013 at 01:55:10PM +0800, Hillf Danton wrote:
+> On Thu, Mar 7, 2013 at 5:50 AM, Cliff Wickman <cpw@sgi.com> wrote:
+> > From: Cliff Wickman <cpw@sgi.com>
+> >
+> > Allocating a large number of 1GB hugetlbfs pages at boot takes a
+> > very long time.
+> >
+> > Large system sites would at times like to allocate a very large amount of
+> > memory as 1GB pages.  They would put this on the kernel boot line:
+> >    default_hugepagesz=1G hugepagesz=1G hugepages=4096
+> > [Dynamic allocation of 1G pages is not an option, as zone pages only go
+> >  up to MAX_ORDER, and MAX_ORDER cannot exceed the section size.]
+> >
+> > Each page is zeroed as it is allocated, and all allocation is done by
+> > cpu 0, as this path is early in boot:
+> >       start_kernel
+> >         kernel_init
+> >           do_pre_smp_initcalls
+> >             hugetlb_init
+> >               hugetlb_init_hstates
+> >                 hugetlb_hstate_alloc_pages
+> >
+> > Zeroing remote (offnode) memory takes ~1GB/sec (and most memory is offnode
+> > on large numa systems).
+> > This estimate is approximate (it depends on core frequency & number of hops
+> > to remote memory) but should be within a factor of 2 on most systems.
+> > A benchmark attempting to reserve a TB for 1GB pages would thus require
+> > ~1000 seconds of boot time just for this allocating.  32TB would take 8 hours.
+> >
+> > I propose passing a flag to the early allocator to indicate that no zeroing
+> > of a page should be done.  The 'no zeroing' flag would have to be passed
+> > down this code path:
+> >
+> 
+> FYI: huge pages are cleared just after allocated, for instance,
+> clear_huge_page() in hugetlb_no_page()
+> 
+> Hillf
+
+Yes, I should have added that comment to the changelog.  And because
+this is true there is no need to clear a huge page at boot time.
+
+-Cliff
+> >   hugetlb_hstate_alloc_pages
+> >     alloc_bootmem_huge_page
+> >       __alloc_bootmem_node_nopanic NO_ZERO  (nobootmem.c)
+> >         __alloc_memory_core_early  NO_ZERO
+> >           if (!(flags & NO_ZERO))
+> >             memset(ptr, 0, size);
+> >
+> > Or this path if CONFIG_NO_BOOTMEM is not set:
+> >
+> >   hugetlb_hstate_alloc_pages
+> >     alloc_bootmem_huge_page
+> >       __alloc_bootmem_node_nopanic  NO_ZERO  (bootmem.c)
+> >         alloc_bootmem_core          NO_ZERO
+> >           if (!(flags & NO_ZERO))
+> >             memset(region, 0, size);
+> >         __alloc_bootmem_nopanic     NO_ZERO
+> >           ___alloc_bootmem_nopanic  NO_ZERO
+> >             alloc_bootmem_core      NO_ZERO
+> >               if (!(flags & NO_ZERO))
+> >                 memset(region, 0, size);
+> >
+> > Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> >
 > > ---
-> >  drivers/mfd/Kconfig        |  1 -
-> >  drivers/mfd/syscon.c       | 77 +++++++++++++++++++++++++++-------------------
-> >  include/linux/mfd/syscon.h |  1 +
-> >  3 files changed, 47 insertions(+), 32 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > index 671f5b1..8fdd87e 100644
-> > --- a/drivers/mfd/Kconfig
-> > +++ b/drivers/mfd/Kconfig
-> > @@ -1070,7 +1070,6 @@ config MFD_STA2X11
-> >  
-> >  config MFD_SYSCON
-> >  	bool "System Controller Register R/W Based on Regmap"
-> > -	depends on OF
-> >  	select REGMAP_MMIO
-> >  	help
-> >  	  Select this option to enable accessing system control registers
-> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> > index 674af14..e5b6be1 100644
-> > --- a/drivers/mfd/syscon.c
-> > +++ b/drivers/mfd/syscon.c
-> > @@ -29,7 +29,7 @@ struct syscon {
-> >  	struct regmap *regmap;
-> >  };
-> >  
-> > -static int syscon_match(struct device *dev, void *data)
-> > +static int syscon_match_node(struct device *dev, void *data)
+> >  arch/x86/kernel/setup_percpu.c |    4 ++--
+> >  include/linux/bootmem.h        |   23 ++++++++++++++++-------
+> >  mm/bootmem.c                   |   12 +++++++-----
+> >  mm/hugetlb.c                   |    3 ++-
+> >  mm/nobootmem.c                 |   41 +++++++++++++++++++++++------------------
+> >  mm/page_cgroup.c               |    2 +-
+> >  mm/sparse.c                    |    2 +-
+> >  7 files changed, 52 insertions(+), 35 deletions(-)
+> >
+> > Index: linux/include/linux/bootmem.h
+> > ===================================================================
+> > --- linux.orig/include/linux/bootmem.h
+> > +++ linux/include/linux/bootmem.h
+> > @@ -8,6 +8,11 @@
+> >  #include <asm/dma.h>
+> >
+> >  /*
+> > + * allocation flags
+> > + */
+> > +#define NO_ZERO                0x00000001
+> > +
+> > +/*
+> >   *  simple boot-time physical memory area allocator.
+> >   */
+> >
+> > @@ -79,7 +84,8 @@ extern void *__alloc_bootmem(unsigned lo
+> >                              unsigned long goal);
+> >  extern void *__alloc_bootmem_nopanic(unsigned long size,
+> >                                      unsigned long align,
+> > -                                    unsigned long goal);
+> > +                                    unsigned long goal,
+> > +                                    u32 flags);
+> >  extern void *__alloc_bootmem_node(pg_data_t *pgdat,
+> >                                   unsigned long size,
+> >                                   unsigned long align,
+> > @@ -91,12 +97,14 @@ void *__alloc_bootmem_node_high(pg_data_
+> >  extern void *__alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+> >                                   unsigned long size,
+> >                                   unsigned long align,
+> > -                                 unsigned long goal);
+> > +                                 unsigned long goal,
+> > +                                 u32 flags);
+> >  void *___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+> >                                   unsigned long size,
+> >                                   unsigned long align,
+> >                                   unsigned long goal,
+> > -                                 unsigned long limit);
+> > +                                 unsigned long limit,
+> > +                                 u32 flags);
+> >  extern void *__alloc_bootmem_low(unsigned long size,
+> >                                  unsigned long align,
+> >                                  unsigned long goal);
+> > @@ -120,19 +128,20 @@ extern void *__alloc_bootmem_low_node(pg
+> >  #define alloc_bootmem_align(x, align) \
+> >         __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
+> >  #define alloc_bootmem_nopanic(x) \
+> > -       __alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> > +       __alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT, 0)
+> >  #define alloc_bootmem_pages(x) \
+> >         __alloc_bootmem(x, PAGE_SIZE, BOOTMEM_LOW_LIMIT)
+> >  #define alloc_bootmem_pages_nopanic(x) \
+> > -       __alloc_bootmem_nopanic(x, PAGE_SIZE, BOOTMEM_LOW_LIMIT)
+> > +       __alloc_bootmem_nopanic(x, PAGE_SIZE, BOOTMEM_LOW_LIMIT, 0)
+> >  #define alloc_bootmem_node(pgdat, x) \
+> >         __alloc_bootmem_node(pgdat, x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> >  #define alloc_bootmem_node_nopanic(pgdat, x) \
+> > -       __alloc_bootmem_node_nopanic(pgdat, x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+> > +       __alloc_bootmem_node_nopanic(pgdat, x, SMP_CACHE_BYTES, \
+> > +                                    BOOTMEM_LOW_LIMIT, 0)
+> >  #define alloc_bootmem_pages_node(pgdat, x) \
+> >         __alloc_bootmem_node(pgdat, x, PAGE_SIZE, BOOTMEM_LOW_LIMIT)
+> >  #define alloc_bootmem_pages_node_nopanic(pgdat, x) \
+> > -       __alloc_bootmem_node_nopanic(pgdat, x, PAGE_SIZE, BOOTMEM_LOW_LIMIT)
+> > +       __alloc_bootmem_node_nopanic(pgdat, x, PAGE_SIZE, BOOTMEM_LOW_LIMIT, 0)
+> >
+> >  #define alloc_bootmem_low(x) \
+> >         __alloc_bootmem_low(x, SMP_CACHE_BYTES, 0)
+> > Index: linux/arch/x86/kernel/setup_percpu.c
+> > ===================================================================
+> > --- linux.orig/arch/x86/kernel/setup_percpu.c
+> > +++ linux/arch/x86/kernel/setup_percpu.c
+> > @@ -104,14 +104,14 @@ static void * __init pcpu_alloc_bootmem(
+> >         void *ptr;
+> >
+> >         if (!node_online(node) || !NODE_DATA(node)) {
+> > -               ptr = __alloc_bootmem_nopanic(size, align, goal);
+> > +               ptr = __alloc_bootmem_nopanic(size, align, goal, 0);
+> >                 pr_info("cpu %d has no node %d or node-local memory\n",
+> >                         cpu, node);
+> >                 pr_debug("per cpu data for cpu%d %lu bytes at %016lx\n",
+> >                          cpu, size, __pa(ptr));
+> >         } else {
+> >                 ptr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
+> > -                                                  size, align, goal);
+> > +                                                  size, align, goal, 0);
+> >                 pr_debug("per cpu data for cpu%d %lu bytes on node%d at %016lx\n",
+> >                          cpu, size, node, __pa(ptr));
+> >         }
+> > Index: linux/mm/nobootmem.c
+> > ===================================================================
+> > --- linux.orig/mm/nobootmem.c
+> > +++ linux/mm/nobootmem.c
+> > @@ -33,7 +33,7 @@ unsigned long min_low_pfn;
+> >  unsigned long max_pfn;
+> >
+> >  static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+> > -                                       u64 goal, u64 limit)
+> > +                                       u64 goal, u64 limit, u32 flags)
 > >  {
-> >  	struct device_node *dn = data;
-> >  
-> > @@ -42,7 +42,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
-> >  	struct device *dev;
-> >  
-> >  	dev = driver_find_device(&syscon_driver.driver, NULL, np,
-> > -				 syscon_match);
-> > +				 syscon_match_node);
-> >  	if (!dev)
-> >  		return ERR_PTR(-EPROBE_DEFER);
-> >  
-> > @@ -68,6 +68,34 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+> >         void *ptr;
+> >         u64 addr;
+> > @@ -46,7 +46,8 @@ static void * __init __alloc_memory_core
+> >                 return NULL;
+> >
+> >         ptr = phys_to_virt(addr);
+> > -       memset(ptr, 0, size);
+> > +       if (!(flags & NO_ZERO))
+> > +               memset(ptr, 0, size);
+> >         memblock_reserve(addr, size);
+> >         /*
+> >          * The min_count is set to 0 so that bootmem allocated blocks
+> > @@ -208,7 +209,8 @@ void __init free_bootmem(unsigned long a
+> >  static void * __init ___alloc_bootmem_nopanic(unsigned long size,
+> >                                         unsigned long align,
+> >                                         unsigned long goal,
+> > -                                       unsigned long limit)
+> > +                                       unsigned long limit,
+> > +                                       u32 flags)
+> >  {
+> >         void *ptr;
+> >
+> > @@ -217,7 +219,8 @@ static void * __init ___alloc_bootmem_no
+> >
+> >  restart:
+> >
+> > -       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align, goal, limit);
+> > +       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align, goal,
+> > +                                       limit, 0);
+> >
+> >         if (ptr)
+> >                 return ptr;
+> > @@ -244,17 +247,17 @@ restart:
+> >   * Returns NULL on failure.
+> >   */
+> >  void * __init __alloc_bootmem_nopanic(unsigned long size, unsigned long align,
+> > -                                       unsigned long goal)
+> > +                                       unsigned long goal, u32 flags)
+> >  {
+> >         unsigned long limit = -1UL;
+> >
+> > -       return ___alloc_bootmem_nopanic(size, align, goal, limit);
+> > +       return ___alloc_bootmem_nopanic(size, align, goal, limit, flags);
 > >  }
-> >  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
-> >  
-> > +static int syscon_match_pdevname(struct device *dev, void *data)
-> > +{
-> > +	struct platform_device *pdev = to_platform_device(dev);
-> > +	const struct platform_device_id *id = platform_get_device_id(pdev);
-> > +
-> > +	if (id)
-> > +		if (!strcmp(id->name, (const char *)data))
-> > +			return 1;
-> > +
-> > +	return !strcmp(dev_name(dev), (const char *)data);
-> > +}
-> > +
-> > +struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
-> > +{
-> > +	struct device *dev;
-> > +	struct syscon *syscon;
-> > +
-> > +	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
-> > +				 syscon_match_pdevname);
-> > +	if (!dev)
-> > +		return ERR_PTR(-ENODEV);
-> 
-> Should it be ERR_PTR(-EPROBE_DEFER)?
-
-I have no idea what better using here. Think that is not so important
-since we may have only one possible error code here.
-
-> > +
-> > +	syscon = dev_get_drvdata(dev);
-> > +
-> > +	return syscon->regmap;
-> > +}
-> > +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
-> > +
-> >  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
-> >  					const char *property)
+> >
+> >  static void * __init ___alloc_bootmem(unsigned long size, unsigned long align,
+> > -                                       unsigned long goal, unsigned long limit)
+> > +                       unsigned long goal, unsigned long limit, u32 flags)
 > >  {
-> > @@ -99,30 +127,24 @@ static struct regmap_config syscon_regmap_config = {
-> >  static int syscon_probe(struct platform_device *pdev)
+> > -       void *mem = ___alloc_bootmem_nopanic(size, align, goal, limit);
+> > +       void *mem = ___alloc_bootmem_nopanic(size, align, goal, limit, flags);
+> >
+> >         if (mem)
+> >                 return mem;
+> > @@ -284,25 +287,26 @@ void * __init __alloc_bootmem(unsigned l
 > >  {
-> >  	struct device *dev = &pdev->dev;
-> > -	struct device_node *np = dev->of_node;
-> >  	struct syscon *syscon;
-> > -	struct resource res;
-> > -	int ret;
-> > -
-> > -	if (!np)
-> > -		return -ENOENT;
-> > +	struct resource *res;
-> >  
-> > -	syscon = devm_kzalloc(dev, sizeof(struct syscon),
-> > -			    GFP_KERNEL);
-> > +	syscon = devm_kzalloc(dev, sizeof(struct syscon), GFP_KERNEL);
-> >  	if (!syscon)
-> >  		return -ENOMEM;
-> >  
-> > -	syscon->base = of_iomap(np, 0);
-> > -	if (!syscon->base)
-> > -		return -EADDRNOTAVAIL;
-> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	if (!res)
-> > +		return -ENOENT;
-> >  
-> > -	ret = of_address_to_resource(np, 0, &res);
-> > -	if (ret)
-> > -		return ret;
-> > +	syscon->base = devm_ioremap(dev, res->start, resource_size(res));
-> > +	if (!syscon->base)
-> > +		return -ENOMEM;
-> >  
-> > -	syscon_regmap_config.max_register = res.end - res.start - 3;
-> > +	syscon_regmap_config.max_register = res->end - res->start - 3;
-> >  	syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
-> > -					&syscon_regmap_config);
-> > +					       &syscon_regmap_config);
-> 
-> Unneeded change to me
-> 
-> >  	if (IS_ERR(syscon->regmap)) {
-> >  		dev_err(dev, "regmap init failed\n");
-> >  		return PTR_ERR(syscon->regmap);
-> > @@ -130,22 +152,15 @@ static int syscon_probe(struct platform_device *pdev)
-> >  
-> >  	platform_set_drvdata(pdev, syscon);
-> >  
-> > -	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
-> > -		res.start, res.end);
-> > +	dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
-> 
-> Doesn't with a 'syscon' prefix look better?
-
-Prefix is added by dev_info, so no need to print it twice.
-
-> >  
-> >  	return 0;
+> >         unsigned long limit = -1UL;
+> >
+> > -       return ___alloc_bootmem(size, align, goal, limit);
+> > +       return ___alloc_bootmem(size, align, goal, limit, 0);
 > >  }
-> >  
-> > -static int syscon_remove(struct platform_device *pdev)
-> > -{
-> > -	struct syscon *syscon;
-> > -
-> > -	syscon = platform_get_drvdata(pdev);
-> > -	iounmap(syscon->base);
-> > -	platform_set_drvdata(pdev, NULL);
-> > -
-> > -	return 0;
-> > -}
-> > +static const struct platform_device_id syscon_ids[] = {
-> > +	{ "syscon", },
-> > +	{ }
-> > +};
-> >  
-> >  static struct platform_driver syscon_driver = {
-> >  	.driver = {
-> > @@ -154,7 +169,7 @@ static struct platform_driver syscon_driver = {
-> >  		.of_match_table = of_syscon_match,
-> >  	},
-> >  	.probe		= syscon_probe,
-> > -	.remove		= syscon_remove,
-> 
-> So you reply on the managed resource to address the resource leak issue
-> raised by Dmitry on doing manually unbind here, right?
+> >
+> >  void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+> >                                                    unsigned long size,
+> >                                                    unsigned long align,
+> >                                                    unsigned long goal,
+> > -                                                  unsigned long limit)
+> > +                                                  unsigned long limit,
+> > +                                                  u32 flags)
+> >  {
+> >         void *ptr;
+> >
+> >  again:
+> >         ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
+> > -                                       goal, limit);
+> > +                                       goal, limit, flags);
+> >         if (ptr)
+> >                 return ptr;
+> >
+> >         ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+> > -                                       goal, limit);
+> > +                                       goal, limit, flags);
+> >         if (ptr)
+> >                 return ptr;
+> >
+> > @@ -315,12 +319,13 @@ again:
+> >  }
+> >
+> >  void * __init __alloc_bootmem_node_nopanic(pg_data_t *pgdat, unsigned long size,
+> > -                                  unsigned long align, unsigned long goal)
+> > +                       unsigned long align, unsigned long goal, u32 flags)
+> >  {
+> >         if (WARN_ON_ONCE(slab_is_available()))
+> >                 return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+> >
+> > -       return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0);
+> > +       return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal,
+> > +                       0, flags);
+> >  }
+> >
+> >  void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+> > @@ -329,7 +334,7 @@ void * __init ___alloc_bootmem_node(pg_d
+> >  {
+> >         void *ptr;
+> >
+> > -       ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, limit);
+> > +       ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, limit, 0);
+> >         if (ptr)
+> >                 return ptr;
+> >
+> > @@ -354,7 +359,7 @@ void * __init ___alloc_bootmem_node(pg_d
+> >   * The function panics if the request can not be satisfied.
+> >   */
+> >  void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+> > -                                  unsigned long align, unsigned long goal)
+> > +                       unsigned long align, unsigned long goal)
+> >  {
+> >         if (WARN_ON_ONCE(slab_is_available()))
+> >                 return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+> > @@ -388,7 +393,7 @@ void * __init __alloc_bootmem_node_high(
+> >  void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
+> >                                   unsigned long goal)
+> >  {
+> > -       return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT);
+> > +       return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT, 0);
+> >  }
+> >
+> >  void * __init __alloc_bootmem_low_nopanic(unsigned long size,
+> > @@ -396,7 +401,7 @@ void * __init __alloc_bootmem_low_nopani
+> >                                           unsigned long goal)
+> >  {
+> >         return ___alloc_bootmem_nopanic(size, align, goal,
+> > -                                       ARCH_LOW_ADDRESS_LIMIT);
+> > +                                       ARCH_LOW_ADDRESS_LIMIT, 0);
+> >  }
+> >
+> >  /**
+> > Index: linux/mm/sparse.c
+> > ===================================================================
+> > --- linux.orig/mm/sparse.c
+> > +++ linux/mm/sparse.c
+> > @@ -281,7 +281,7 @@ sparse_early_usemaps_alloc_pgdat_section
+> >         nid = early_pfn_to_nid(goal >> PAGE_SHIFT);
+> >  again:
+> >         p = ___alloc_bootmem_node_nopanic(NODE_DATA(nid), size,
+> > -                                         SMP_CACHE_BYTES, goal, limit);
+> > +                                         SMP_CACHE_BYTES, goal, limit, 0);
+> >         if (!p && limit) {
+> >                 limit = 0;
+> >                 goto again;
+> > Index: linux/mm/hugetlb.c
+> > ===================================================================
+> > --- linux.orig/mm/hugetlb.c
+> > +++ linux/mm/hugetlb.c
+> > @@ -1188,7 +1188,8 @@ int __weak alloc_bootmem_huge_page(struc
+> >                 addr = __alloc_bootmem_node_nopanic(
+> >                                 NODE_DATA(hstate_next_node_to_alloc(h,
+> >                                                 &node_states[N_MEMORY])),
+> > -                               huge_page_size(h), huge_page_size(h), 0);
+> > +                               huge_page_size(h), huge_page_size(h),
+> > +                               0, NO_ZERO);
+> >
+> >                 if (addr) {
+> >                         /*
+> > Index: linux/mm/bootmem.c
+> > ===================================================================
+> > --- linux.orig/mm/bootmem.c
+> > +++ linux/mm/bootmem.c
+> > @@ -660,7 +660,7 @@ restart:
+> >   * Returns NULL on failure.
+> >   */
+> >  void * __init __alloc_bootmem_nopanic(unsigned long size, unsigned long align,
+> > -                                       unsigned long goal)
+> > +                                       unsigned long goal, u32 flags)
+> >  {
+> >         unsigned long limit = 0;
+> >
+> > @@ -705,7 +705,8 @@ void * __init __alloc_bootmem(unsigned l
+> >
+> >  void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+> >                                 unsigned long size, unsigned long align,
+> > -                               unsigned long goal, unsigned long limit)
+> > +                               unsigned long goal, unsigned long limit,
+> > +                               u32 flags)
+> >  {
+> >         void *ptr;
+> >
+> > @@ -734,12 +735,13 @@ again:
+> >  }
+> >
+> >  void * __init __alloc_bootmem_node_nopanic(pg_data_t *pgdat, unsigned long size,
+> > -                                  unsigned long align, unsigned long goal)
+> > +                       unsigned long align, unsigned long goal, u32 flags)
+> >  {
+> >         if (WARN_ON_ONCE(slab_is_available()))
+> >                 return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+> >
+> > -       return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0);
+> > +       return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal,
+> > +                                            0, flags);
+> >  }
+> >
+> >  void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+> > @@ -748,7 +750,7 @@ void * __init ___alloc_bootmem_node(pg_d
+> >  {
+> >         void *ptr;
+> >
+> > -       ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0);
+> > +       ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0, 0);
+> >         if (ptr)
+> >                 return ptr;
+> >
+> > Index: linux/mm/page_cgroup.c
+> > ===================================================================
+> > --- linux.orig/mm/page_cgroup.c
+> > +++ linux/mm/page_cgroup.c
+> > @@ -55,7 +55,7 @@ static int __init alloc_node_page_cgroup
+> >         table_size = sizeof(struct page_cgroup) * nr_pages;
+> >
+> >         base = __alloc_bootmem_node_nopanic(NODE_DATA(nid),
+> > -                       table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
+> > +                       table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS), 0);
+> >         if (!base)
+> >                 return -ENOMEM;
+> >         NODE_DATA(nid)->node_page_cgroup = base;
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> >
 
-Yes. We are killing "remove"-entry since all our resources are "managed" now.
-
-> this looks ok to me.
-> 
-> So, besides above minor comments,
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> Regards
-> Dong Aisheng
-> 
-> > +	.id_table	= syscon_ids,
-> >  };
-> >  
-> >  static int __init syscon_init(void)
-> > diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-> > index 6aeb6b8..5c9ee6e 100644
-> > --- a/include/linux/mfd/syscon.h
-> > +++ b/include/linux/mfd/syscon.h
-> > @@ -17,6 +17,7 @@
-> >  
-> >  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
-> >  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
-> > +extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
-> >  extern struct regmap *syscon_regmap_lookup_by_phandle(
-> >  					struct device_node *np,
-> >  					const char *property);
-> > -- 
-> > 1.7.12.4
-
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
