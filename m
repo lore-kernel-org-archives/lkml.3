@@ -1,105 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab3CKJUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:20:34 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17692 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab3CKJUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:20:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 11 Mar 2013 02:13:58 -0700
-Message-ID: <513DA201.9010707@nvidia.com>
-Date: Mon, 11 Mar 2013 11:21:05 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1753425Ab3CKJ1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:27:48 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:59268 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752724Ab3CKJ1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 05:27:47 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: 3.9-rc2  this dont compile / link    dwc3_gadget ,
+ usb_gadget_map_request
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Mon, 11 Mar 2013 05:27:40 -0400
+Message-ID: <web-853669895@zbackend1.aha.ru>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Arto Merilainen <amerilainen@nvidia.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5,RESEND 3/8] gpu: host1x: Add channel support
-References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com> <1358250244-9678-4-git-send-email-tbergstrom@nvidia.com> <20130225152457.GA29545@avionic-0098.mockup.avionic-design.de> <512C84E2.5090201@nvidia.com> <513A0ED0.4070701@nvidia.com> <20130308204301.GA30742@avionic-0098.mockup.avionic-design.de> <513D79E7.5000801@nvidia.com> <20130311071851.GA6033@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130311071851.GA6033@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.03.2013 09:18, Thierry Reding wrote:
-> This sound a bit over-engineered at this point in time. DRM is currently
-> the only user. Is anybody working on any non-DRM drivers that would use
-> this?
 
-Well, this contains beginning of that:
 
-http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=blob;f=drivers/media/video/tegra_v4l2_camera.c;h=644d0be5380367aca4c826c49724c03aad08387c;hb=l4t/l4t-r16-r2
+   MODPOST vmlinux.o
+WARNING: vmlinux.o(.text+0x2a64a): Section mismatch in 
+reference from the function apply_microcode_early() to the 
+function .cpuinit.text:print_ucode()
+The function apply_microcode_early() references
+the function __cpuinit print_ucode().
+This is often because apply_microcode_early lacks a 
+__cpuinit
+annotation or the annotation of print_ucode is wrong.
 
-I don't want to give these guys any excuse not to port it over to host1x
-code base. :-)
+WARNING: vmlinux.o(.text+0x76e662): Section mismatch in 
+reference from the function acpi_sleep_dmi_check() to the 
+variable .init.data:acpisleep_dmi_table
+The function acpi_sleep_dmi_check() references
+the variable __initdata acpisleep_dmi_table.
+This is often because acpi_sleep_dmi_check lacks a 
+__initdata
+annotation or the annotation of acpisleep_dmi_table is 
+wrong.
 
-> Even that aside, I don't think host1x_mem_handle is a good choice of
-> name here. The objects are much more than handles. They are in fact
-> buffer objects, which can optionally be attached to a handle. I also
-> think that using a void * to store the handle specific data isn't such a
-> good idea.
+WARNING: vmlinux.o(.text+0x9e3716): Section mismatch in 
+reference from the function cpqarray_register_ctlr() to 
+the function .init.text:ida_procinit()
+The function cpqarray_register_ctlr() references
+the function __init ida_procinit().
+This is often because cpqarray_register_ctlr lacks a 
+__init
+annotation or the annotation of ida_procinit is wrong.
 
-Naming if not an issue for me - we can easily agree on using _bo.
+WARNING: vmlinux.o(.text+0xa4197f): Section mismatch in 
+reference from the function bmp085_init_client() to the 
+function .init.text:bmp085_get_of_properties()
+The function bmp085_init_client() references
+the function __init bmp085_get_of_properties().
+This is often because bmp085_init_client lacks a __init
+annotation or the annotation of bmp085_get_of_properties 
+is wrong.
 
-> So how about the following proposal, which I think might satisfy both of
-> us:
-> 
-> 	struct host1x_bo;
-> 
-> 	struct host1x_bo_ops {
-> 		struct host1x_bo *(*get)(struct host1x_bo *bo);
-> 		void (*put)(struct host1x_bo *bo);
-> 		dma_addr_t (*pin)(struct host1x_bo *bo, struct sg_table **sgt);
-> 		...
-> 	};
-> 
-> 	struct host1x_bo *host1x_bo_get(struct host1x_bo *bo);
-> 	void host1x_bo_put(struct host1x_bo *bo);
-> 	dma_addr_t host1x_bo_pin(struct host1x_bo *bo, struct sg_table **sgt);
-> 	...
-> 
-> 	struct host1x_bo {
-> 		const struct host1x_bo_ops *ops;
-> 		...
-> 	};
-> 
-> 	struct tegra_drm_bo {
-> 		struct host1x_bo base;
-> 		...
-> 	};
-> 
-> That way you can get rid of the host1x_memmgr_create_handle() helper and
-> instead embed host1x_bo into driver-/framework-specific structures with
-> the necessary initialization.
+WARNING: vmlinux.o(.data+0xa5c78): Section mismatch in 
+reference from the variable sim710_eisa_driver to the 
+function .init.text:sim710_eisa_probe()
+The variable sim710_eisa_driver references
+the function __init sim710_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
 
-This would make sense. We'll get back when we have enough of
-implementation done to understand it all. One consequence is that we
-cannot use drm_gem_cma_create() anymore. We'll have to introduce a
-function that does the same as drm_gem_cma_create(), but it takes a
-pre-allocated drm_gem_cma_object pointer. That way we can allocate the
-struct, and use DRM CMA just to initialize the drm_gem_cma_object.
+WARNING: vmlinux.o(.data+0xe16b0): Section mismatch in 
+reference from the variable el3_eisa_driver to the 
+function .init.text:el3_eisa_probe()
+The variable el3_eisa_driver references
+the function __init el3_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
 
-Other way would be just taking a copy of DRM CMA helper, but I'd like to
-defer that to the next step when we implement IOMMU aware allocator.
+WARNING: vmlinux.o(.data+0xe1d74): Section mismatch in 
+reference from the variable vortex_eisa_driver to the 
+function .init.text:vortex_eisa_probe()
+The variable vortex_eisa_driver references
+the function __init vortex_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
 
-> It also allows you to interact directly with the objects instead of
-> having to go through the memmgr API. The memory manager doesn't really
-> exist anymore so keeping the name in the API is only confusing. Your
-> current proposal deals with memory handles directly already so it's
-> really just making the naming more consistent.
+WARNING: vmlinux.o(.data+0xe6b1c): Section mismatch in 
+reference from the variable de4x5_eisa_driver to the 
+function .init.text:de4x5_eisa_probe()
+The variable de4x5_eisa_driver references
+the function __init de4x5_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
 
-The memmgr APIs are currently just a shortcut wrapper to the ops, so in
-that sense the memmgr does not really exist. I think it might still make
-sense to keep static inline wrappers for calling the ops within, but we
-could rename them to host1x_bo_somethingandother. Then it'd follow the
-pattern we are using for the hw ops in the latest set.
+WARNING: vmlinux.o(.data+0xe73a0): Section mismatch in 
+reference from the variable hp100_eisa_driver to the 
+function .init.text:hp100_eisa_probe()
+The variable hp100_eisa_driver references
+the function __init hp100_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
 
-Terje
+   GEN     .version
+   CHK     include/generated/compile.h
+   UPD     include/generated/compile.h
+   CC      init/version.o
+   LD      init/built-in.o
+drivers/built-in.o: In function 
+`__dwc3_gadget_kick_transfer':
+gadget.c:(.text+0xbb21d9): undefined reference to 
+`usb_gadget_unmap_request'
+drivers/built-in.o: In function `__dwc3_gadget_ep_queue':
+gadget.c:(.text+0xbb22a9): undefined reference to 
+`usb_gadget_map_request'
+drivers/built-in.o: In function `dwc3_gadget_giveback':
+(.text+0xbb24db): undefined reference to 
+`usb_gadget_unmap_request'
+drivers/built-in.o: In function `dwc3_gadget_exit':
+(.text+0xbb2e52): undefined reference to 
+`usb_del_gadget_udc'
+drivers/built-in.o: In function `dwc3_gadget_init':
+(.text+0xbb3a88): undefined reference to 
+`usb_add_gadget_udc'
+drivers/built-in.o: In function 
+`__dwc3_ep0_do_control_data':
+ep0.c:(.text+0xbb3f10): undefined reference to 
+`usb_gadget_map_request'
+ep0.c:(.text+0xbb3f6a): undefined reference to 
+`usb_gadget_map_request'
+make: [vmlinux] Error 1 (ignored)
+   CC      arch/x86/boot/a20.o
+   AS      arch/x86/boot/bioscall.o
+   CC      arch/x86/boot/cmdline.o
+   AS      arch/x86/boot/copy.o
+   HOSTCC  arch/x86/boot/mkcpustr
+   CPUSTR  arch/x86/boot/cpustr.h
+   CC      arch/x86/boot/cpu.o
+   CC      arch/x86/boot/cpucheck.o
+   CC      arch/x86/boot/early_serial_console.o
+   CC      arch/x86/boot/edd.o
+make[1]: *** No rule to make target `vmlinux', needed by 
+`arch/x86/boot/voffset.h'.
+---
+Professional hosting for everyone - http://www.host.ru
