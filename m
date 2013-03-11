@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab3CKVT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:19:57 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36259 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932125Ab3CKVTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:19:35 -0400
-Message-ID: <1363036774.2056.59.camel@joe-AO722>
-Subject: Re: [PATCH] drivers: gpu: drm: i915: Replaced calls to kmalloc &
- memcpy with kmemdup
-From: Joe Perches <joe@perches.com>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Mar 2013 14:19:34 -0700
-In-Reply-To: <1363034382-22752-1-git-send-email-gheorghiuandru@gmail.com>
-References: <1363034382-22752-1-git-send-email-gheorghiuandru@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932208Ab3CKVUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:20:09 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:64924 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754682Ab3CKVUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:20:05 -0400
+From: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org,
+        "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+Subject: [PATCH 1/1] kernel/pid.c: Improve flow of a loop inside alloc_pidmap.
+Date: Mon, 11 Mar 2013 18:18:56 -0300
+Message-Id: <1363036736-14209-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 22:39 +0200, Alexandru Gheorghiu wrote:
-> Replaced calls to kmalloc followed by memcpy with a single call to kmemdup.
-> Also removed a now redundant if statement.
-[]
-> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-[]
-> @@ -2335,11 +2335,8 @@ intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
->  			return NULL;
->  
->  		size = (intel_connector->edid->extensions + 1) * EDID_LENGTH;
-> -		edid = kmalloc(size, GFP_KERNEL);
-> -		if (!edid)
-> -			return NULL;
-> +		edid = kmemdup(intel_connector->edid, size, GFP_KERNEL);
->  
-> -		memcpy(edid, intel_connector->edid, size);
->  		return edid;
->  	}
->  
+From: Raphael S.Carvalho <raphael.scarv@gmail.com>
 
-Might as well get rid of the stack variable edid altogether.
-Maybe get rid of size too and use:
+Notes: find_next_offset searches for an available "cleaned bit"
+in the respective pid bitmap (page), so returns the offset if found,
+otherwise it returns a value equals to BITS_PER_PAGE.
 
-	if (intel_connector->edid) {
-		/* invalid edid */
-		if (IS_ERR(intel_connector->edid))
-			return NULL;
+For example, suppose find_next_offset didn't find any available
+bit, so there's no purpose to call mk_pid (Wasteful Cpu Cycles).
 
-		return kmemdup(intel_connector->edid,
-			       (intel_connector->edid->extensions + 1) * EDID_LENGTH,
-			       GFP_KERNEL);
-	}
+Therefore, I found it could be better to call mk_pid after
+the checking (offset < BITS_PER_PAGE) returned sucessfully!
+Another point: If (offset < BITS_PER_PAGE) results in a "failure",
+then mk_pid would be called again afterwards.
 
+Signed-off-by: Raphael S. Carvalho <raphael.scarv@gmail.com>
+---
+ kernel/pid.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 047dc62..7ecb09a 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -190,8 +190,8 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 					return pid;
+ 				}
+ 				offset = find_next_offset(map, offset);
+-				pid = mk_pid(pid_ns, map, offset);
+-			} while (offset < BITS_PER_PAGE && pid < pid_max);
++			} while (offset < BITS_PER_PAGE && 
++				(pid = mk_pid(pid_ns, map, offset)) < pid_max);
+ 		}
+ 		if (map < &pid_ns->pidmap[(pid_max-1)/BITS_PER_PAGE]) {
+ 			++map;
+-- 
+1.7.2.5
 
