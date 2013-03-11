@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab3CKTQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:16:43 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54242 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab3CKTQk (ORCPT
+	id S1754102Ab3CKTQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:16:50 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33357 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753937Ab3CKTQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:16:40 -0400
-Message-ID: <1363029394.3138.3.camel@fafadora.lan>
-Subject: [PATCH] acpi: fix suspend and resume on Sony Vaio VGN-FW21M
-From: Fabio Valentini <fafatheone@gmail.com>
-To: rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Mar 2013 20:16:34 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
-Mime-Version: 1.0
+	Mon, 11 Mar 2013 15:16:48 -0400
+X-Sasl-enc: +/t3ksD4J7xERw1TQOERgw7KLmQktJK5SMIIAHP+x2n6 1363029406
+Message-ID: <513E2D56.8070902@ladisch.de>
+Date: Mon, 11 Mar 2013 20:15:34 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Dave Helstroom <helstroom@google.com>
+CC: perex@perex.cz, tiwai@suse.de, eldad@fogrefinery.com, damien@zamaudio.com,
+        pete.leigh@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] Add a USB audio quirk for the NuForce UDH-100
+ device.
+References: <1362973920-4942-1-git-send-email-helstroom@google.com>	<513D968C.1060905@ladisch.de> <CAOcFWma6fMqwqzMxFfCM7hOqk04FBk9JkKZjwekki_GFUR2jSQ@mail.gmail.com>
+In-Reply-To: <CAOcFWma6fMqwqzMxFfCM7hOqk04FBk9JkKZjwekki_GFUR2jSQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    From: Fabio Valentini <fafatheone@gmail.com>
+>> David Helstroom wrote:
+>>> Interface 1 does not exist
 
-    Add Sony Vaio VGN-FW21M to the device blacklist in drivers/acpi/sleep.c.
-    Fixes suspend/resume on this device (device no longer reboots instead of resuming).
-    Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55001
+Please try the patch below.
 
-    Signed-off-by: Fabio Valentini <fafatheone@gmail.com>
+
+Regards,
+Clemens
+
+
+--8<---------------------------------------------------------------->8--
+ALSA: usb-audio: add a workaround for the NuForce UDH-100
+
+The NuForce UDH-100 numbers its interfaces incorrectly, which makes the
+interface associations come out wrong, which results in the driver
+erroring out with the message "Audio class v2 interfaces need an
+interface association".
+
+Work around this by searching for the interface association descriptor
+also in some other place where it might have ended up.
+
+Reported-by: Dave Helstroom <helstroom@google.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 ---
-    Patch applies cleanly to latest master (3.9-rc2) and stable (3.8.2).
-     drivers/acpi/sleep.c | 8 ++++++++
-     1 file changed, 8 insertions(+)
+ sound/usb/card.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- linux/drivers/acpi/sleep.c.orig	2013-03-09 16:46:41.407984555 +0100
-+++ linux/drivers/acpi/sleep.c	2013-03-09 16:49:03.693005658 +0100
-@@ -193,6 +193,14 @@ static struct dmi_system_id __initdata a
- 	},
- 	{
- 	.callback = init_nvs_nosave,
-+	.ident = "Sony Vaio VGN-FW21M",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW21M"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
- 	.ident = "Sony Vaio VPCEB17FX",
- 	.matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index df2f6d0..34dc3e8 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -245,6 +245,21 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
+ 			usb_ifnum_to_if(dev, ctrlif)->intf_assoc;
 
+ 		if (!assoc) {
++			/*
++			 * Firmware writers cannot count to three.  So to find
++			 * the IAD on the NuForce UDH-100, also check the next
++			 * interface.
++			 */
++			struct usb_interface *iface =
++				usb_ifnum_to_if(dev, ctrlif + 1);
++			if (iface &&
++			    iface->intf_assoc &&
++			    iface->intf_assoc->bFunctionClass == USB_CLASS_AUDIO &&
++			    iface->intf_assoc->bFunctionProtocol == UAC_VERSION_2)
++				assoc = iface->intf_assoc;
++		}
++
++		if (!assoc) {
+ 			snd_printk(KERN_ERR "Audio class v2 interfaces need an interface association\n");
+ 			return -EINVAL;
+ 		}
 
