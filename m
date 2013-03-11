@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3CKTbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:31:23 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:59291 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab3CKTbW (ORCPT
+	id S1754371Ab3CKTbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:31:37 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3799 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab3CKTbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:31:22 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] drivers: gpu: drm: i915: Replaced calls to kmalloc & memcpy with kmemdup
-Date: Mon, 11 Mar 2013 21:30:40 +0200
-Message-Id: <1363030240-22250-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Mar 2013 15:31:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 11 Mar 2013 12:31:33 -0700
+Message-ID: <513E30A5.8020104@nvidia.com>
+Date: Tue, 12 Mar 2013 00:59:41 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] rtc: tegra: use module_platform_driver_probe for
+ module init/exit
+References: <1362852588-13362-1-git-send-email-ldewangan@nvidia.com> <1362852588-13362-4-git-send-email-ldewangan@nvidia.com> <513E1153.20207@wwwdotorg.org>
+In-Reply-To: <513E1153.20207@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced calls to kmalloc followed by memcpy with a single call to kmemdup.
-This patch was found using coccinelle.
+On Monday 11 March 2013 10:46 PM, Stephen Warren wrote:
+> On 03/09/2013 11:09 AM, Laxman Dewangan wrote:
+>> Use macro module_platform_driver_probe() to reduce some of the
+>> boilerplate code in the driver.
+>>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> ---
+>>   drivers/rtc/rtc-tegra.c |   12 +-----------
+>>   1 files changed, 1 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
+>> index f7718de..4cba10d 100644
+>> --- a/drivers/rtc/rtc-tegra.c
+>> +++ b/drivers/rtc/rtc-tegra.c
+>> @@ -451,17 +451,7 @@ static struct platform_driver tegra_rtc_driver = {
+>>   	},
+>>   };
+>>   
+>> -static int __init tegra_rtc_init(void)
+>> -{
+>> -	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
+>> -}
+>> -module_init(tegra_rtc_init);
+>> -
+>> -static void __exit tegra_rtc_exit(void)
+>> -{
+>> -	platform_driver_unregister(&tegra_rtc_driver);
+>> -}
+>> -module_exit(tegra_rtc_exit);
+>> +module_platform_driver_probe(tegra_rtc_driver, tegra_rtc_probe);
+> Out of curiosity here, why not just module_platform_driver(); can't the
+> instantiation of the RTC device be driven by the presence of the DT
+> node, and hence the creation of the platform device object, just like
+> any other driver/device?
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- drivers/gpu/drm/i915/intel_dp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Theoretically it should work but I will work with John (original author) 
+about using the platform_driver_probe().
+If he agrees then  I will send patch to convert it to 
+module_platform_driver().
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index f61cb79..a3fdd65 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2335,11 +2335,10 @@ intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
- 			return NULL;
- 
- 		size = (intel_connector->edid->extensions + 1) * EDID_LENGTH;
--		edid = kmalloc(size, GFP_KERNEL);
-+		edid = kmemdup(intel_connector->edid, size, GFP_KERNEL);
- 		if (!edid)
- 			return NULL;
- 
--		memcpy(edid, intel_connector->edid, size);
- 		return edid;
- 	}
- 
--- 
-1.7.9.5
+
 
