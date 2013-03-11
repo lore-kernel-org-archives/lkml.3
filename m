@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab3CKWvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:51:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58500 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab3CKWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:51:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
-   d="scan'208";a="268854984"
-Date: Mon, 11 Mar 2013 22:51:31 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Julien Tinnes <jln@google.com>, marcheu@chromium.org
-Subject: Re: [PATCH v2] drm/i915: bounds check execbuffer relocation count
-Message-ID: <20130311225131.GB18499@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Kees Cook <keescook@chromium.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	Julien Tinnes <jln@google.com>, marcheu@chromium.org
-References: <20130311212329.GA21629@www.outflux.net>
- <20130311220059.GA18499@cantiga.alporthouse.com>
- <CAGXu5jJrszKtqwQxWFT3gbjubn4iRedaZHbyJ6LJRy7EVzbftw@mail.gmail.com>
+	id S1754543Ab3CKWwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:52:12 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:47228 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab3CKWwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 18:52:11 -0400
+Date: Mon, 11 Mar 2013 23:52:05 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, daniel.vetter@ffwll.ch, airlied@linux.ie,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpu: don't cast kzalloc() return value
+Message-ID: <20130311225205.GB3872@bremse>
+Mail-Followup-To: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>,
+	dri-devel@lists.freedesktop.org, airlied@linux.ie,
+	linux-kernel@vger.kernel.org
+References: <1362918168-20271-1-git-send-email-mihneadb@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJrszKtqwQxWFT3gbjubn4iRedaZHbyJ6LJRy7EVzbftw@mail.gmail.com>
+In-Reply-To: <1362918168-20271-1-git-send-email-mihneadb@gmail.com>
+X-Operating-System: Linux bremse 3.8.0-rc6+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 03:25:59PM -0700, Kees Cook wrote:
-> On Mon, Mar 11, 2013 at 3:00 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Mon, Mar 11, 2013 at 02:23:29PM -0700, Kees Cook wrote:
-> >> It is possible to wrap the counter used to allocate the buffer for
-> >> relocation copies. This could lead to heap writing overflows.
-> >
-> > I'd keep the return value as EINVAL so that we can continue to
-> > distinguish between the user passing garbage and hitting an oom. And
-> > total_relocs is preferrable to total, which also leads us to think more
-> > carefully about the error condition. I think the check should be against
-> > INT_MAX / sizeof(struct reloc_entry) for consistency with our other
-> > guard against overflows whilst allocating.
-> 
-> I've ended up with this:
-> 
->         int max_alloc = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
-> ...
->                 /* First check for malicious input causing overflow */
->                 if (exec[i].relocation_count > max_alloc)
->                         return -EINVAL;
->                 if (exec[i].relocation_count > max_alloc - total_relocs)
->                         return -EINVAL;
->                 total_relocs += exec[i].relocation_count;
-> 
-> And looking at that, I wonder if we should just eliminate the first if entirely?
+On Sun, Mar 10, 2013 at 02:22:48PM +0200, Mihnea Dobrescu-Balaur wrote:
+> Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
 
-Aye, seems reasonable. So perhaps,
-
-/* First check for malicious input causing overflow in the worst case
- * where we need to allocate the entire relocation tree as a single
- * array.
- */
--Chris
-
+Queued for -next, thanks for the patch.
+-Daniel
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
