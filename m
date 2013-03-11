@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3CKTca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:32:30 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15158 "EHLO
+	id S1754430Ab3CKTci (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:32:38 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15174 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab3CKTc3 (ORCPT
+	with ESMTP id S1754393Ab3CKTcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:32:29 -0400
+	Mon, 11 Mar 2013 15:32:36 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 11 Mar 2013 12:25:30 -0700
+	by hqnvupgp07.nvidia.com on Mon, 11 Mar 2013 12:32:08 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <akpm@linux-foundation.org>, <a.zummo@towertech.it>
 CC: <swarren@wwwdotorg.org>, <rtc-linux@googlegroups.com>,
         <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <thierry.reding@avionic-design.de>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 0/5] rtc: tegra: cleanups to remove warning/code lines
-Date: Tue, 12 Mar 2013 00:59:56 +0530
-Message-ID: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 3/5] rtc: tegra: use module_platform_driver_probe for module init/exit
+Date: Tue, 12 Mar 2013 00:59:59 +0530
+Message-ID: <1363030201-14717-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
+References: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series does the cleanups in the rtc driver as follows:
-- Protect suspend/resume with CONFIG_PM_SLEEP.
-- Use dev_pm_ops in place of legacy way for suspend/resume.
-- Properly reflect teh irq name when doing cat /proc/interrupts.
-- Use module_platform_probe() to remove boilerplate code.
-- use devm_rtc_device_register.
+Use macro module_platform_driver_probe() to reduce some of the
+boilerplate code in the driver.
 
-Changes from V1: 
-- Use SIMPLE_DEV_PM_OPS
-- Correctd the acronym case rtc to RTC in description.
-- Add Thierry reviewed by on some of patches.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from V1:
+- Add Thierry's reviewed by.
+- No change in code.
 
 Changes from V2:
-- define tegra_rtc_pm_ops as static.
-- Added Stephen's reviewed by on all patches.
+- Add Stephen's reviewed by.
+- No change in code.
 
-Laxman Dewangan (5):
-  rtc: tegra: protect suspend/resume callbacks with CONFIG_PM_SLEEP
-  rtc: tegra: Use struct dev_pm_ops for power management
-  rtc: tegra: use module_platform_driver_probe for module init/exit
-  rtc: tegra: set irq name as device name
-  rtc: tegra: use managed rtc_device_register
+ drivers/rtc/rtc-tegra.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
- drivers/rtc/rtc-tegra.c |   61 +++++++++++-----------------------------------
- 1 files changed, 15 insertions(+), 46 deletions(-)
+diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
+index 9b00bb7..0ef028b 100644
+--- a/drivers/rtc/rtc-tegra.c
++++ b/drivers/rtc/rtc-tegra.c
+@@ -450,17 +450,7 @@ static struct platform_driver tegra_rtc_driver = {
+ 	},
+ };
+ 
+-static int __init tegra_rtc_init(void)
+-{
+-	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
+-}
+-module_init(tegra_rtc_init);
+-
+-static void __exit tegra_rtc_exit(void)
+-{
+-	platform_driver_unregister(&tegra_rtc_driver);
+-}
+-module_exit(tegra_rtc_exit);
++module_platform_driver_probe(tegra_rtc_driver, tegra_rtc_probe);
+ 
+ MODULE_AUTHOR("Jon Mayo <jmayo@nvidia.com>");
+ MODULE_DESCRIPTION("driver for Tegra internal RTC");
+-- 
+1.7.1.1
 
