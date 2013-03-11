@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3CKPYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:24:43 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:52227 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3CKPYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:24:41 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-mips@linux-mips.org
-Cc: ralf@linux-mips.org, juhosg@openwrt.org, blogic@openwrt.org,
-        kaloz@openwrt.org, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] pci: use newly introduced devm_ioremap_resource()
-Date: Mon, 11 Mar 2013 17:24:37 +0200
-Message-Id: <1363015477-29685-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753549Ab3CKP1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:27:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51491 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751919Ab3CKP1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 11:27:50 -0400
+Message-ID: <513DF856.7070400@ti.com>
+Date: Mon, 11 Mar 2013 20:59:26 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] ARM: OMAP2+: Divorce from local timer API
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-5-git-send-email-sboyd@codeaurora.org> <20130308195058.GH11806@atomide.com>
+In-Reply-To: <20130308195058.GH11806@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+On Saturday 09 March 2013 01:20 AM, Tony Lindgren wrote:
+> * Stephen Boyd <sboyd@codeaurora.org> [130306 16:22]:
+>> Now that the TWD doesn't rely on the local timer API, OMAP can
+>> stop selecting it in Kconfig and relying on the config option to
+>> decide if it should call smp_twd functions.
+>>
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+> 
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> 
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- arch/mips/pci/pci-ar71xx.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/mips/pci/pci-ar71xx.c b/arch/mips/pci/pci-ar71xx.c
-index 412ec02..18517dd 100644
---- a/arch/mips/pci/pci-ar71xx.c
-+++ b/arch/mips/pci/pci-ar71xx.c
-@@ -366,9 +366,9 @@ static int ar71xx_pci_probe(struct platform_device *pdev)
- 	if (!res)
- 		return -EINVAL;
- 
--	apc->cfg_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!apc->cfg_base)
--		return -ENOMEM;
-+	apc->cfg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(apc->cfg_base))
-+		return PTR_ERR(apc->cfg_base);
- 
- 	apc->irq = platform_get_irq(pdev, 0);
- 	if (apc->irq < 0)
--- 
-1.7.9.5
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
