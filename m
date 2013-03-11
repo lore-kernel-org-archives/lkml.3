@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3CKVP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:15:28 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33341 "EHLO
+	id S1754855Ab3CKVP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:15:26 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33347 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab3CKVPO (ORCPT
+	with ESMTP id S1754718Ab3CKVPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:14 -0400
+	Mon, 11 Mar 2013 17:15:15 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
@@ -14,9 +14,9 @@ Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 12/44] n_tty: Fully initialize ldisc before restarting buffer work
-Date: Mon, 11 Mar 2013 16:44:32 -0400
-Message-Id: <1363034704-28036-13-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v5 16/44] tty: Fix 'deferred reopen' ldisc comment
+Date: Mon, 11 Mar 2013 16:44:36 -0400
+Message-Id: <1363034704-28036-17-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
 References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
@@ -26,104 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buffer work may already be pending when the n_tty ldisc is re-opened,
-eg., when setting the ldisc (via TIOCSETD ioctl) and when hanging up
-the tty. Since n_tty_set_room() may restart buffer work, first ensure
-the ldisc is completely initialized.
+This comment is a victim of code migration from
+"tty: Fix the ldisc hangup race"; re-parent it.
 
-Factor n_tty_set_room() out of reset_buffer_flags() (only 2 callers)
-and reorganize n_tty_open() to set termios last; buffer work will
-be restarted there if necessary, after the char_map is properly
-initialized.
-
-Fixes this WARNING:
-
-[  549.561769] ------------[ cut here ]------------
-[  549.598755] WARNING: at drivers/tty/n_tty.c:160 n_tty_set_room+0xff/0x130()
-[  549.604058] scheduling buffer work for halted ldisc
-[  549.607741] Pid: 9417, comm: trinity-child28 Tainted: G      D W 3.7.0-next-20121217-sasha-00023-g8689ef9 #219
-[  549.652580] Call Trace:
-[  549.662754]  [<ffffffff81c432cf>] ? n_tty_set_room+0xff/0x130
-[  549.665458]  [<ffffffff8110cae7>] warn_slowpath_common+0x87/0xb0
-[  549.668257]  [<ffffffff8110cb71>] warn_slowpath_fmt+0x41/0x50
-[  549.671007]  [<ffffffff81c432cf>] n_tty_set_room+0xff/0x130
-[  549.673268]  [<ffffffff81c44597>] reset_buffer_flags+0x137/0x150
-[  549.675607]  [<ffffffff81c45b71>] n_tty_open+0x131/0x1c0
-[  549.677699]  [<ffffffff81c47824>] tty_ldisc_open.isra.5+0x54/0x70
-[  549.680147]  [<ffffffff81c482bf>] tty_ldisc_hangup+0x11f/0x1e0
-[  549.682409]  [<ffffffff81c3fa17>] __tty_hangup+0x137/0x440
-[  549.684634]  [<ffffffff81c3fd49>] tty_vhangup+0x9/0x10
-[  549.686443]  [<ffffffff81c4a42c>] pty_close+0x14c/0x160
-[  549.688446]  [<ffffffff81c41225>] tty_release+0xd5/0x490
-[  549.690460]  [<ffffffff8127d8a2>] __fput+0x122/0x250
-[  549.692577]  [<ffffffff8127d9d9>] ____fput+0x9/0x10
-[  549.694534]  [<ffffffff811348c2>] task_work_run+0xb2/0xf0
-[  549.696349]  [<ffffffff81113c6d>] do_exit+0x36d/0x580
-[  549.698286]  [<ffffffff8107d964>] ? syscall_trace_enter+0x24/0x2e0
-[  549.702729]  [<ffffffff81113f4a>] do_group_exit+0x8a/0xc0
-[  549.706775]  [<ffffffff81113f92>] sys_exit_group+0x12/0x20
-[  549.711088]  [<ffffffff83cfab18>] tracesys+0xe1/0xe6
-[  549.728001] ---[ end trace 73eb41728f11f87e ]---
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/tty/tty_ldisc.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index a786f4e..66ce178 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -219,9 +219,8 @@ static void check_unthrottle(struct tty_struct *tty)
-  *	Locking: tty_read_lock for read fields.
-  */
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 7f7e1a3..0030d55 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -854,11 +854,12 @@ void tty_ldisc_hangup(struct tty_struct *tty)
+ 	 */
+ 	mutex_lock(&tty->ldisc_mutex);
  
--static void reset_buffer_flags(struct tty_struct *tty)
-+static void reset_buffer_flags(struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
+-	/* At this point we have a closed ldisc and we want to
+-	   reopen it. We could defer this to the next open but
+-	   it means auditing a lot of other paths so this is
+-	   a FIXME */
+ 	if (tty_ldisc_hangup_halt(tty)) {
++
++		/* At this point we have a halted ldisc; we want to close it and
++		   reopen a new ldisc. We could defer the reopen to the next
++		   open but it means auditing a lot of other paths so this is
++		   a FIXME */
+ 		if (reset == 0) {
  
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
-@@ -234,7 +233,6 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 
- 	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
- 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
--	n_tty_set_room(tty);
- }
- 
- static void n_tty_packet_mode_flush(struct tty_struct *tty)
-@@ -262,7 +260,8 @@ static void n_tty_packet_mode_flush(struct tty_struct *tty)
- 
- static void n_tty_flush_buffer(struct tty_struct *tty)
- {
--	reset_buffer_flags(tty);
-+	reset_buffer_flags(tty->disc_data);
-+	n_tty_set_room(tty);
- 
- 	if (tty->link)
- 		n_tty_packet_mode_flush(tty);
-@@ -1654,14 +1653,14 @@ static int n_tty_open(struct tty_struct *tty)
- 		goto err_free_bufs;
- 
- 	tty->disc_data = ldata;
--	/* indicate buffer work may resume */
--	clear_bit(TTY_LDISC_HALTED, &tty->flags);
--	reset_buffer_flags(tty);
--	tty_unthrottle(tty);
-+	reset_buffer_flags(tty->disc_data);
- 	ldata->column = 0;
--	n_tty_set_termios(tty, NULL);
- 	tty->minimum_to_wake = 1;
- 	tty->closing = 0;
-+	/* indicate buffer work may resume */
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-+	n_tty_set_termios(tty, NULL);
-+	tty_unthrottle(tty);
- 
- 	return 0;
- err_free_bufs:
+ 			if (!tty_ldisc_reinit(tty, tty->termios.c_line))
 -- 
 1.8.1.2
 
