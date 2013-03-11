@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3CKQIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:08:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50257 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751526Ab3CKQIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:08:47 -0400
-Date: Mon, 11 Mar 2013 12:08:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <tom.leiming@gmail.com>
-cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans de Goede <hdegoede@redhat.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
- reset a storage device
-In-Reply-To: <CACVXFVN6zm2gG4v1jhV=8EwAtKs=bg3urJ7dRiOgPGHtKXHYxA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1303111206100.2246-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753816Ab3CKQLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:11:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab3CKQLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 12:11:17 -0400
+Subject: Re: [PATCH] GFS2: return error if malloc failed in gfs2_rs_alloc()
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: yongjun_wei@trendmicro.com.cn, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAPgLHd9eg02c+HiLN9AGNDYUCx1qey7sSr6DoR6tJnp20eAvcw@mail.gmail.com>
+References: <CAPgLHd9eg02c+HiLN9AGNDYUCx1qey7sSr6DoR6tJnp20eAvcw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 11 Mar 2013 16:09:23 +0000
+Message-ID: <1363018163.2698.25.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013, Ming Lei wrote:
+Hi,
 
-> On Mon, Mar 11, 2013 at 11:32 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >
-> > Of course you have to lock the device before changing its driver.  What
-> > would happen if two different threads tried to change a device's driver
-> > at the same time?
+Now in the GFS2 -nmw tree. Thanks,
+
+Steve.
+
+On Mon, 2013-03-11 at 23:01 +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Yes, claim/release interface need device lock, but the patch doesn't
-> touch claim/release command handling.
-
-Then why did you ask?  You wrote: "Looks device lock isn't required for
-USB transfer of kernel driver."
-
-
-> > usbdev_do_ioctl() needs to acquire the device lock in order to prevent
-> > races with driver_disconnect() and usbdev_remove().
+> The error code in gfs2_rs_alloc() is set to ENOMEM when error
+> but never be used, instead, gfs2_rs_alloc() always return 0.
+> Fix to return 'error'.
 > 
-> Looks the patch basically converts the allocation inside URB submit path,
-> and actually I mean why we need to hold device lock in submitting
-> URB path?  Device lock isn't required before submitting URBs
-> in kernel driver.
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  fs/gfs2/rgrp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+> index 9d16a6f..b850198 100644
+> --- a/fs/gfs2/rgrp.c
+> +++ b/fs/gfs2/rgrp.c
+> @@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
+>  	RB_CLEAR_NODE(&ip->i_res->rs_node);
+>  out:
+>  	up_write(&ip->i_rw_mutex);
+> -	return 0;
+> +	return error;
+>  }
+>  
+>  static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
+> 
+> 
 
-In general it isn't, no.  But usbfs uses the lock to prevent races with 
-driver_disconnect() -- it is invalid to submit URBs after the 
-disconnect routine has returned.
-
-Alan Stern
 
