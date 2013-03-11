@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab3CKTfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:35:43 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:57319 "EHLO dcvr.yhbt.net"
+	id S1754459Ab3CKTgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:36:42 -0400
+Received: from fieldses.org ([174.143.236.118]:43984 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754236Ab3CKTfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:35:42 -0400
-Date: Mon, 11 Mar 2013 19:35:41 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>
-Subject: wfcqueue (in Userspace RCU) for Linux kernel (for epoll)
-Message-ID: <20130311193541.GA11149@dcvr.yhbt.net>
+	id S1754245Ab3CKTgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:36:40 -0400
+Date: Mon, 11 Mar 2013 15:36:38 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v3 7/7] NFSD: Pass share reservations flags to VFS
+Message-ID: <20130311193638.GB642@fieldses.org>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+ <1362065133-9490-8-git-send-email-piastry@etersoft.ru>
+ <20130311150540.119abd63@corrin.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130311150540.119abd63@corrin.poochiereds.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I'm looking to reduce contention for the ep->lock spin lock in epoll.
+On Mon, Mar 11, 2013 at 03:05:40PM -0400, Jeff Layton wrote:
+> knfsd has some code already to handle share reservations internally.
+> Nothing outside of knfsd is aware of these reservations, of course so
+> moving to a vfs-level object for it would be a marked improvement.
+> 
+> It doesn't look like this patch removes any of that old code though. I
+> think it probably should, or there ought to be some consideration of
+> how this new stuff will mesh with it.
+> 
+> I think you have 2 choices here:
+> 
+> 1/ rip out the old share reservation code altogether and require that
+> filesystems mount with -o sharemand or whatever if they want to allow
+> their enforcement
+> 
+> 2/ make knfsd fall back to using the internal share reservation code
+> when the mount option isn't enabled
+> 
+> Personally, I think #1 would be fine, but Bruce may want to weigh in on
+> what he'd prefer.
 
-I came across wfcqueue in Userspace RCU and am wondering if there's any
-reason (other that lack of developer time/users) it hasn't been adapted
-for the Linux kernel.
+#1 sounds good.  Clients that use deny bits are few.  My preference
+would be to return an error to such clients in the case share locks
+aren't available.
 
-I'd be happy to do the work if it's suitable (and omit parts which
-may not be, such as busy wait).
+(We're a little out of spec there, so I'm not sure which error.  I think
+the goal is to notify a human there's a problem with minimal collateral
+damange.
 
-Using a mutex lock (while in process context) for dequeue works for
-epoll.  I mainly want a lock-free enqueue for ep_poll_callback since
-that may be called in IRQ context.
+NFS4ERR_SERVERFAULT ("I'm a buggy server, sorry about that!") would
+probably result in an IO error to the application.
 
-I suppose I can also use the llist LIFO in ep_poll_callback and
-reverse that while in process context, too...
+SHARE_DENIED strikes me as unsafe: an application would be in its rights
+not to even check for that e.g. in the case of an exclusive create.
 
+Maybe DELAY?  Kind of ridiculous, but blocking the application
+indefinitely would probably get someone's attention quickly enough
+without doing any damnage.)
 
-ref: http://git.lttng.org/userspace-rcu.git
+--b.
