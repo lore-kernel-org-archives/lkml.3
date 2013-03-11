@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab3CKLBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:01:11 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:56083 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab3CKLBJ (ORCPT
+	id S1753963Ab3CKLCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:02:55 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:54835 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3CKLCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:01:09 -0400
+	Mon, 11 Mar 2013 07:02:53 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
+CC: <jason.wessel@windriver.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [v4][PATCH 0/7] powerpc/book3e: powerpc/book3e: make kgdb to work well
+Date: Mon, 11 Mar 2013 19:02:39 +0800
+Message-ID: <1362999766-20897-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20130311050546.GA21863@quad.lixom.net>
-References: <20130306193332.GA6022@amd.pavel.ucw.cz> <5137C404.9060902@wwwdotorg.org>
- <20130307144506.GB7344@amd.pavel.ucw.cz> <5138FDAE.8060202@wwwdotorg.org> <20130311050546.GA21863@quad.lixom.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 11 Mar 2013 19:00:47 +0800
-X-Google-Sender-Auth: jEEieHm9ZXdVbSDUjb5APmNwMKY
-Message-ID: <CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com>
-Subject: Re: 3.9-rc1 regression in arm dtb build
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 1:05 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Thu, Mar 07, 2013 at 01:50:54PM -0700, Stephen Warren wrote:
->> On 03/07/2013 07:45 AM, Pavel Machek wrote:
->> > Hi!
->> >>> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
->> >>> Author: Grant Likely <grant.likely@secretlab.ca>
->> >>> Date:   Tue Nov 27 16:29:11 2012 -0700
->> > ...
->> >>> 1) it is inconsistent with 3.8, making switching between 3.9-rc1 and
->> >>> 3.8 tricky
->> >>
->> >> It's pretty easy to locate the DTB by automatically looking in
->> >> arch/*/boot/dts first, then if the file doesn't exist there, looking in
->> >> arch/*/boot instead as a legacy fallback.
->> >
->> > Unfortunately, that does not work. See 2) below. Stale files even
->> > survive "make clean".
->>
->> Oh right. I guess it works fine when having built 3.7 and then building
->> 3.8, since you'd look in the new location first and only fall back to
->> the old location if missing. However, if you then switch back to 3.7 to
->> test something, I guess that doesn't work so well.
->>
->> I tend to always build the dtbs target, so I wasn't affected by this.
->> And, often run "git clean -f -d -x" too.
->>
->> Grant, what's your call on this issue; should I/you look into ways to
->> clean the files better, or do you want to revert this?
->
-> I'm not Grant, but I think we're better off cleaning up the current situation
-> instead of reverting. Otherwise 3.8 will be the oddball weird release; it's
-> better to get people moved over to the new location.
+This patchset is used to support kgdb/gdb on book3e.
 
-Don't revert. It needs to be fixed up. Pavel, if you're really choked
-up about this we can symlink the files from the old location to the
-new. I personally don't think it is that onerous a change though since
-the files are easy to find and build systems can adapt.
+Validated on p4080ds and p5040ds with test single step and breakpoint
 
-g.
+v4:
+
+* use DEFINE_PER_CPU to allocate kgdb's thread_info
+* add patch 7 to make usre copy thread_info only !__check_irq_replay
+* leave "andi.   r14,r11,MSR_PR" out of "#ifndef CONFIG_KGDB"
+  since cr0 is still used lately.
+* retest
+
+v3:
+
+* make work when enable CONFIG_RELOCATABLE
+* fix one typo in patch,
+  "powerpc/book3e: store critical/machine/debug exception thread info": 
+	ld	r1,PACAKSAVE(r13);
+    ->  ld	r14,PACAKSAVE(r13);
+* remove copying the thread_info since booke and book3e always copy
+  the thead_info now when we enter the debug exception, and so drop
+  the v2 patch, "book3e/kgdb: Fix a single stgep case of lazy IRQ"
+
+v2:
+
+* Make sure we cover CONFIG_PPC_BOOK3E_64 safely
+* Use LOAD_REG_IMMEDIATE() to load properly
+	the value of the constant expression in load debug exception stack 
+* Copy thread infor form the kernel stack coming from usr
+* Rebase latest powerpc git tree
+
+v1:
+* Copy thread info only when we are from !user mode since we'll get kernel stack
+  coming from usr directly.
+* remove save/restore EX_R14/EX_R15 since DBG_EXCEPTION_PROLOG already covered
+  this.
+* use CURRENT_THREAD_INFO() conveniently to get thread.
+* fix some typos
+* add a patch to make sure gdb can generate a single step properly to invoke a
+  kgdb state.
+* add a patch to if we need to replay an interrupt, we shouldn't restore that
+  previous backup thread info to make sure we can replay an interrupt lately
+  with a proper thread info.
+* rebase latest powerpc git tree
+
+v0:
+This patchset is used to support kgdb for book3e.
+
+------
+Tiejun Chen (7):
+      powerpc/book3e: load critical/machine/debug exception stack
+      powerpc/book3e: store critical/machine/debug exception thread info
+      book3e/kgdb: update thread's dbcr0
+      powerpc/book3e: support kgdb for kernel space
+      kgdb/kgdbts: support ppc64
+      powerpc/kgdb: use DEFINE_PER_CPU to allocate kgdb's thread_info
+      book3e/kgdb: Fix a single stgep case of lazy IRQ
+
+ arch/powerpc/kernel/exceptions-64e.S |   68 ++++++++++++++++++++++++++++++++--
+ arch/powerpc/kernel/irq.c            |   10 +++++
+ arch/powerpc/kernel/kgdb.c           |   21 +++++++----
+ drivers/misc/kgdbts.c                |    2 +
+ 4 files changed, 90 insertions(+), 11 deletions(-)
+
+Tiejun
