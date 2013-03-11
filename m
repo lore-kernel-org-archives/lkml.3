@@ -1,156 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab3CKNbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:31:38 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39884 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab3CKNbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:31:36 -0400
-Date: Mon, 11 Mar 2013 09:31:21 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Xufeng Zhang <xufengzhang.main@gmail.com>
-Cc: Xufeng Zhang <xufeng.zhang@windriver.com>, vyasevich@gmail.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
- so as to find the matched transport
-Message-ID: <20130311133121.GD12682@hmsreliant.think-freely.org>
-References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
- <20130308142720.GA9873@hmsreliant.think-freely.org>
- <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com>
+	id S1752714Ab3CKNbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:31:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63458 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab3CKNbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 09:31:52 -0400
+Message-ID: <513DDCC2.9070807@redhat.com>
+Date: Mon, 11 Mar 2013 14:31:46 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com> <513DBF45.9030803@redhat.com> <20130311115144.GG31619@redhat.com>
+In-Reply-To: <20130311115144.GG31619@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 10:14:50AM +0800, Xufeng Zhang wrote:
-> On 3/8/13, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
-> >> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
-> >> was sent on, if not found in the active_path transport, then go search
-> >> all the other transports in the peer's transport_addr_list, however, we
-> >> should continue to the next entry rather than break the loop when meet
-> >> the active_path transport.
-> >>
-> >> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> >> ---
-> >>  net/sctp/associola.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> >> index 43cd0dd..d2709e2 100644
-> >> --- a/net/sctp/associola.c
-> >> +++ b/net/sctp/associola.c
-> >> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
-> >> sctp_association *asoc,
-> >>  			transports) {
-> >>
-> >>  		if (transport == active)
-> >> -			break;
-> >> +			continue;
-> >>  		list_for_each_entry(chunk, &transport->transmitted,
-> >>  				transmitted_list) {
-> >>  			if (key == chunk->subh.data_hdr->tsn) {
-> >> --
-> >> 1.7.0.2
-> >>
-> >>
-> >
-> > This works, but what might be better would be if we did a move to front
-> > heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move
-> > the
-> > requisite transport to the front of the transport_addr_list.  If we did
-> > that,
-> > then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
-> > implicitly check the active path first without having to check it seprately
-> > and
-> > skip it in the second for loop.
-> 
-> Thanks for your review, Neil!
-> 
-> I know what you mean, yes, it's most probably that the searched TSN was
-> transmitted in the currently active_path, but what should we do if not.
-> 
-> Check the comment in sctp_assoc_lookup_tsn() function:
-> /* Let's be hopeful and check the active_path first. */
-> /* If not found, go search all the other transports. */
-> 
-> It has checked the active_path first and then traverse all the other
-> transports in
-> the transport_addr_list except the active_path.
-> 
-> So what I want to fix here is the inconsistency between the function
-> should do and
-> the code actually does.
-> 
-I understand what you're doing, and I agree that the fix is functional (Hence
-my "This works" statement in my last note).  What I'm suggesting is that, since
-you're messing about in that code anyway that you clean it up while your at it,
-so that we don't need to have the if (transport == active) check at all.  We
-trade in some extra work in a non-critical path (sctp_assoc_set_primary), for
-the removal of an extra for loop operation and a conditional check in a much
-hotter path.  Something like this (completely untested), is what I was thinking
+Il 11/03/2013 12:51, Gleb Natapov ha scritto:
+>> > 
+>> > Agreed, but we still have the problem of how to signal from userspace.
+>> > For that do you have any other suggestion than mp_state?  And if we keep
+>> > mp_state to signal from userspace, giving INIT_RECEIVED the
+>> > "wait-for-SIPI" semantics would be wrong.
+>> > 
+> I don't see how can we use mp_state for signaling from userspace either.
+> Currently soft reset always reset vcpus, so it is OK for userspace to
+> generate reset vcpu state and put it into kernel, mp_state is just one
+> of the updated states, but when INIT will be just another signal that
+> may or may not reset cpu or have other side effects like #vmexit this
+> will not longer work. We will have to have another interface for
+> injecting INIT from userspace and userspace soft-reset will use it
+> instead of doing reset by itself.
 
+Setting the mp_state to INIT_RECEIVED is that interface, and it already
+works, for APs at least.  This patch extends it to work for the BSP as well.
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 43cd0dd..8ae873c 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association *asoc,
- 
- 	asoc->peer.primary_path = transport;
- 
-+	list_del_rcu(&transport->transports);
-+	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
-+
- 	/* Set a default msg_name for events. */
- 	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
- 	       sizeof(union sctp_addr));
-@@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct sctp_association *asoc)
- struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
- 					     __u32 tsn)
- {
--	struct sctp_transport *active;
- 	struct sctp_transport *match;
- 	struct sctp_transport *transport;
- 	struct sctp_chunk *chunk;
-@@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
- 	 * The general strategy is to search each transport's transmitted
- 	 * list.   Return which transport this TSN lives on.
- 	 *
--	 * Let's be hopeful and check the active_path first.
--	 * Another optimization would be to know if there is only one
--	 * outbound path and not have to look for the TSN at all.
-+	 * Note, that sctp_assoc_set_primary does a move to front operation
-+	 * on the active_path transport, so this code implicitly checks
-+	 * the active_path first, as we most commonly expect to find our TSN
-+	 * there.
- 	 *
- 	 */
- 
--	active = asoc->peer.active_path;
--
--	list_for_each_entry(chunk, &active->transmitted,
--			transmitted_list) {
--
--		if (key == chunk->subh.data_hdr->tsn) {
--			match = active;
--			goto out;
--		}
--	}
--
--	/* If not found, go search all the other transports. */
- 	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
- 			transports) {
- 
--		if (transport == active)
--			break;
- 		list_for_each_entry(chunk, &transport->transmitted,
- 				transmitted_list) {
- 			if (key == chunk->subh.data_hdr->tsn) {
+In the corresponding userspace patch, I don't need to touch the CPU
+state at all.  I can just signal the kernel.  If I touch the CPU, I'll
+break the nested case, no matter how it is implemented.  So far, the
+userspace did not have to worry about nested, and that's something that
+should be kept that way.
+
+If we move away from the INIT_RECEIVED and SIPI_RECEIVED states for
+in-kernel APIC -> VCPU communication, then the KVM_SET_MP_STATE ioctl
+will have to convert them to the right bits in the requests field or in
+the APIC state.  But I'm starting to see less benefit from moving away
+from mp_state.
+
+Paolo
