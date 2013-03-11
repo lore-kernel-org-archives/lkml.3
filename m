@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3CKLZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 07:25:13 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:38474 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab3CKLZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 07:25:11 -0400
-Date: Mon, 11 Mar 2013 07:25:00 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-Message-ID: <20130311112500.GA12682@hmsreliant.think-freely.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
- <20130309204940.GA31808@neilslaptop.think-freely.org>
- <CAL-B5D15YY6L01q6BCNnP5VCJN7=LeHJSYLjNGXZPRx7VhsZCg@mail.gmail.com>
+	id S1754056Ab3CKL0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 07:26:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753954Ab3CKL0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 07:26:02 -0400
+Message-ID: <513DBF45.9030803@redhat.com>
+Date: Mon, 11 Mar 2013 12:25:57 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL-B5D15YY6L01q6BCNnP5VCJN7=LeHJSYLjNGXZPRx7VhsZCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com> <513CC08B.2040800@redhat.com> <20130310181035.GM24444@redhat.com> <513DAE8F.3050102@redhat.com> <20130311102852.GE31619@redhat.com>
+In-Reply-To: <20130311102852.GE31619@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 03:20:57PM -0700, Myron Stowe wrote:
-> On Sat, Mar 9, 2013 at 1:49 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > On Mon, Mar 04, 2013 at 02:04:19PM -0500, Neil Horman wrote:
-> >> A few years back intel published a spec update:
-> >> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
-> >>
-> >> For the 5520 and 5500 chipsets which contained an errata (specificially errata
-> >> 53), which noted that these chipsets can't properly do interrupt remapping, and
-> >> as a result the recommend that interrupt remapping be disabled in bios.  While
-> >> many vendors have a bios update to do exactly that, not all do, and of course
-> >> not all users update their bios to a level that corrects the problem.  As a
-> >> result, occasionally interrupts can arrive at a cpu even after affinity for that
-> >> interrupt has be moved, leading to lost or spurrious interrupts (usually
-> >> characterized by the message:
-> >> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
-> >>
-> >> There have been several incidents recently of people seeing this error, and
-> >> investigation has shown that they have system for which their BIOS level is such
-> >> that this feature was not properly turned off.  As such, it would be good to
-> >> give them a reminder that their systems are vulnurable to this problem.
-> >>
-> >> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> >> CC: Prarit Bhargava <prarit@redhat.com>
-> >> CC: Don Zickus <dzickus@redhat.com>
-> >> CC: Don Dutile <ddutile@redhat.com>
-> >> CC: Bjorn Helgaas <bhelgaas@google.com>
-> >> CC: Asit Mallick <asit.k.mallick@intel.com>
-> >> CC: linux-pci@vger.kernel.org
-> >>
-> > Ping, anyone want to Ack/Nack this?
+Il 11/03/2013 11:28, Gleb Natapov ha scritto:
+>> Not really true---we do exit with that state and EINTR when we get a
+>> SIPI.  Perhaps that can be changed.
+>
+> That's implementation detail. We can jump to the beginning of the
+> function instead. Nowhere we document that entering
+> KVM_MP_STATE_SIPI_RECEIVED state cause KVM_RUN return with EINTR.
+
+Yes, that would be nice.
+
+>>> If AP is hard reset
+>>> userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
+>>> BSP it makes it running no matter what type of reset.
+>>
+>> The current name just suggests . 
+>> And when getting an INIT in the in-kernel LAPIC, this:
+>>
+>> -			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
+>> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
+>> +				KVM_MP_STATE_SIPI_RECEIVED :
+>> +				KVM_MP_STATE_INIT_RECEIVED;
+>>
+>> makes much less sense than this:
+>>
+>> -			vcpu->arch.mp_state = KVM_MP_STATE_WAIT_FOR_SIPI;
+>> +			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
+>> +				KVM_MP_STATE_RESET_NOW :
+>> +				KVM_MP_STATE_WAIT_FOR_SIPI;
+>>
+> Both of them are equally incorrect. INIT should cause reset, and only if
+> vmx is off. An userspace reset is also completely broken in that regard.
+> Renaming things gives us nothing, only bring unneeded churn. If the
+> names were internal I wouldn't mind, but they are APIs.
 > 
-> Don's comment earlier seems to imply that this is a short term fix and
-> that a more long term fix may be coming soon.  If that is the case
-> wouldn't we want to wait for the long term fix and just pull that in?
-> 
-> Myron
-> 
-As Don and Prarit have mentioned, an alternate change is being worked on and
-tested that may work around this issue, but we're not yet sure that it will, and
-we're not sure of the time frame for this fix.  Normally I would agree, that it
-would be easier just to wait for the long term fix, but as Prarit noted, since
-this hardware is in fact broken, I would rather do a both approach.  Its fine if
-this gets reverted tomorrow with a longer term fix as far as I'm concerned, its
-just caused enough problems already that I'd like to see it in place until the
-better solution arrives.
-Neil
- 
+>> However, there's also Jan's plans for nVMX.  Peeking at his queue (see
+>> http://git.kiszka.org/?p=linux-kvm.git;a=commitdiff;h=037fb24ec) I think
+>> it's better to always reflect INITs to the hypervisor like I did in these
+>> patches.
+>>
+> The commit was before we decided that we should not abuse mp_state for
+> signaling.
+
+Agreed, but we still have the problem of how to signal from userspace.
+For that do you have any other suggestion than mp_state?  And if we keep
+mp_state to signal from userspace, giving INIT_RECEIVED the
+"wait-for-SIPI" semantics would be wrong.
+
+Paolo
+
