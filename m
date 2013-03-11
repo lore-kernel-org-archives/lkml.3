@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3CKVPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:15:24 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33352 "EHLO
+	id S1754797Ab3CKVPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:15:23 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33360 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3CKVPQ (ORCPT
+	with ESMTP id S1754723Ab3CKVPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:16 -0400
+	Mon, 11 Mar 2013 17:15:17 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
@@ -14,9 +14,9 @@ Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 15/44] tty: Make core responsible for synchronizing its work
-Date: Mon, 11 Mar 2013 16:44:35 -0400
-Message-Id: <1363034704-28036-16-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v5 19/44] tty: Don't protect atomic operation with mutex
+Date: Mon, 11 Mar 2013 16:44:39 -0400
+Message-Id: <1363034704-28036-20-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
 References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
@@ -26,108 +26,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tty core relies on the ldisc layer for synchronizing destruction
-of the tty. Instead, the final tty release must wait for any pending tty
-work to complete prior to tty destruction.
+test_bit() is already atomic; drop mutex lock/unlock.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c    | 17 +++++++++++++++++
- drivers/tty/tty_ldisc.c | 24 ++++--------------------
- 2 files changed, 21 insertions(+), 20 deletions(-)
+ drivers/tty/tty_io.c | 2 --
+ 1 file changed, 2 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 3613d8b..9e8ff84 100644
+index 2ac516d..bf33440 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1464,6 +1464,17 @@ void tty_free_termios(struct tty_struct *tty)
+@@ -1345,9 +1345,7 @@ static int tty_reopen(struct tty_struct *tty)
+ 	}
+ 	tty->count++;
+ 
+-	mutex_lock(&tty->ldisc_mutex);
+ 	WARN_ON(!test_bit(TTY_LDISC, &tty->flags));
+-	mutex_unlock(&tty->ldisc_mutex);
+ 
+ 	return 0;
  }
- EXPORT_SYMBOL(tty_free_termios);
- 
-+/**
-+ *	tty_flush_works		-	flush all works of a tty
-+ *	@tty: tty device to flush works for
-+ *
-+ *	Sync flush all works belonging to @tty.
-+ */
-+static void tty_flush_works(struct tty_struct *tty)
-+{
-+	flush_work(&tty->SAK_work);
-+	flush_work(&tty->hangup_work);
-+}
- 
- /**
-  *	release_one_tty		-	release tty structure memory
-@@ -1785,6 +1796,12 @@ int tty_release(struct inode *inode, struct file *filp)
- 	 * Ask the line discipline code to release its structures
- 	 */
- 	tty_ldisc_release(tty, o_tty);
-+
-+	/* Wait for pending work before tty destruction commmences */
-+	tty_flush_works(tty);
-+	if (o_tty)
-+		tty_flush_works(o_tty);
-+
- 	/*
- 	 * The release_tty function takes care of the details of clearing
- 	 * the slots and preserving the termios structure. The tty_unlock_pair
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index cbb945b..7f7e1a3 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -499,18 +499,6 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
- }
- 
- /**
-- *	tty_ldisc_flush_works	-	flush all works of a tty
-- *	@tty: tty device to flush works for
-- *
-- *	Sync flush all works belonging to @tty.
-- */
--static void tty_ldisc_flush_works(struct tty_struct *tty)
--{
--	flush_work(&tty->SAK_work);
--	flush_work(&tty->hangup_work);
--}
--
--/**
-  *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
-  *	@tty: tty to wait for
-  *	@timeout: for how long to wait at most
-@@ -698,13 +686,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	retval = tty_ldisc_halt(tty, o_tty, 5 * HZ);
- 
- 	/*
--	 * Wait for ->hangup_work and ->buf.work handlers to terminate.
-+	 * Wait for hangup to complete, if pending.
- 	 * We must drop the mutex here in case a hangup is also in process.
- 	 */
- 
- 	mutex_unlock(&tty->ldisc_mutex);
- 
--	tty_ldisc_flush_works(tty);
-+	flush_work(&tty->hangup_work);
- 
- 	tty_lock(tty);
- 	mutex_lock(&tty->ldisc_mutex);
-@@ -951,15 +939,11 @@ static void tty_ldisc_kill(struct tty_struct *tty)
- void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- {
- 	/*
--	 * Prevent flush_to_ldisc() from rescheduling the work for later.  Then
--	 * kill any delayed work. As this is the final close it does not
--	 * race with the set_ldisc code path.
-+	 * Shutdown this line discipline. As this is the final close,
-+	 * it does not race with the set_ldisc code path.
- 	 */
- 
- 	tty_ldisc_halt(tty, o_tty, MAX_SCHEDULE_TIMEOUT);
--	tty_ldisc_flush_works(tty);
--	if (o_tty)
--		tty_ldisc_flush_works(o_tty);
- 
- 	tty_lock_pair(tty, o_tty);
- 	/* This will need doing differently if we need to lock */
 -- 
 1.8.1.2
 
