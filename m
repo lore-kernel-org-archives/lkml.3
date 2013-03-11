@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3CKI6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:58:33 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15585 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3CKI6c (ORCPT
+	id S1753394Ab3CKJCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:02:47 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:18035 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3CKJCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:58:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 11 Mar 2013 01:52:05 -0700
-Message-ID: <513D9C48.8090505@nvidia.com>
-Date: Mon, 11 Mar 2013 14:26:40 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 11 Mar 2013 05:02:46 -0400
+Message-ID: <513D9DB1.7040100@hp.com>
+Date: Mon, 11 Mar 2013 17:02:41 +0800
+From: Jingbai Ma <jingbai.ma@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 2/5] rtc: tegra: Use struct dev_pm_ops for power management
-References: <1362991468-30226-1-git-send-email-ldewangan@nvidia.com> <1362991468-30226-3-git-send-email-ldewangan@nvidia.com> <20130311085132.GA7900@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130311085132.GA7900@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: jingbai.ma@hp.com, vgoyal@redhat.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com, mingo@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        hpa@zytor.com, yinghai@kernel.org
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net> <20130307152108.GC2790@redhat.com> <5139B827.3050500@hp.com> <20130309.133118.214580151.d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20130309.133118.214580151.d.hatayama@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013 02:21 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
+On 03/09/2013 12:31 PM, HATAYAMA Daisuke wrote:
+> From: Jingbai Ma<jingbai.ma@hp.com>
+> Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel to speedup kernel dump process
+> Date: Fri, 8 Mar 2013 18:06:31 +0800
 >
-> On Mon, Mar 11, 2013 at 02:14:25PM +0530, Laxman Dewangan wrote:
-> [...]
->> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-> [...]
->> @@ -431,6 +430,8 @@ static int tegra_rtc_resume(struct platform_device *pdev)
->>   }
->>   #endif
->>   
->> +SIMPLE_DEV_PM_OPS(tegra_rtc_pm_ops, tegra_rtc_suspend, tegra_rtc_resume);
-> I should've been more explicit. Since you had this marked as static in
-> the previous patch, this needs to be static SIMPLE_DEV_PM_OPS.
-Yaah, I should keep the static.
+>> On 03/07/2013 11:21 PM, Vivek Goyal wrote:
+>>> On Thu, Mar 07, 2013 at 10:58:18PM +0800, Jingbai Ma wrote:
+> ...
+>>> First of all 64MB per TB should not be a huge deal. And makedumpfile
+>>> also has this cyclic mode where you process a map, discard it and then
+>>> move on to next section. So memory usage remains constant at the
+>>> expense
+>>> of processing time.
+>>
+>> Yes, that's true. But in cyclic mode, makedumpfile will have to
+>> write/read bitmap from storage, it will also impact the performance.
+>> I have measured the penalty for cyclic mode is about 70%
+>> slowdown. Maybe could be faster after mmap implemented.
+>
+> I guess the slowdown came from the issue that enough VMCOREINFO was
+> not provided from the kernel, and unnecessary filtering processing for
+> free pages is done multiple times.
 
-I think I will need to respin this patch only in place of whole series.
+Thanks for your comments! It would be very helpful.
+I will test it on the machine again.
 
-Andrew,
-
-Let me know if this is fine.
-
-Thanks,
-Laxman
-
+-- 
+Jingbai Ma (jingbai.ma@hp.com)
