@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab3CKNea (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:34:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab3CKNe3 (ORCPT
+	id S1751721Ab3CKNfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:35:03 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:59171 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3CKNfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:34:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [char-misc-next 01/12 v3] mei: Rename mei_device to mei_host
-Date: Mon, 11 Mar 2013 13:34:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Winkler, Tomas" <tomas.winkler@intel.com>
-References: <1360694222-27632-1-git-send-email-sameo@linux.intel.com> <20130220105731.GT18295@sortiz-mobl> <20130311104418.GA1438@zurbaran>
-In-Reply-To: <20130311104418.GA1438@zurbaran>
+	Mon, 11 Mar 2013 09:35:01 -0400
+Message-ID: <513DDD59.6000903@cogentembedded.com>
+Date: Mon, 11 Mar 2013 17:34:17 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Russell King <linux@arm.linux.org.uk>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: imx: fix typo "DEBUG_IMX50_IMX53_UART"
+References: <1363007760.3137.69.camel@x61.thuisdomein>
+In-Reply-To: <1363007760.3137.69.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303111334.21652.arnd@arndb.de>
-X-Provags-ID: V02:K0:jNfv/dfO9oo+GhJ4Z73ARajguwlWi/fdTHD37sY5Syn
- huOuR9lCD6+v2hj0oHNyMR7X2uGENlV1zZNtpqA6YpI63hwAkD
- kTacx8/DOxEeCPtxNXbu0WsVYW/1jNzgf+0FsI6DSr9XWgFC+r
- 35XTkc046yVNyEPlCvG5jP00aeS5FHpxgJuQO+l4N7UQTHOMSx
- Ul0vV/H/wA2j/bmy2qmqOJTmDxYCWkGTdQidBOXjo1kPTY+c7w
- VBcovOAo4gUhe+OdufY3/mDBLkYFE0q8YElqsOC9264FRpfaF9
- f9BGokdt1eT75gCflw+R1Urehm1nr6qM0eDLoboJUZfyulgw3b
- xV+1lf2QdXfmHkdpoWEQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013, Samuel Ortiz wrote:
-> > I don't have a strong opinion here, so that would be fine with me.
-> > Greg, Arnd, would mei_cl_device and mei_cl_driver be an acceptable compromise?
-> I'm re-opening this topic now that the merge window is closed: So would you
-> guys take mei_cl_device and mei_cl_driver as an acceptable solution or (as you
-> hinted earlier) are mei_device and mei_driver the only naming scheme that
-> you'd accept ?
+Hello.
 
-I'd prefer the latter, but I wouldn't insist on it if you have good reasons
-to use the former.
+On 11-03-2013 17:16, Paul Bolle wrote:
 
-	Arnd
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Tested by grepping the tree.
+
+> 1) Typo was added in commit f8c95fe6d9adad72fc7bce90f4ab68d119f50c5b
+> ("ARM: imx: support DEBUG_LL uart port selection for all i.MX SoCs").
+> Looking at that patch and at the tree makes clear that DEBUG_IMX53_UART
+> was intended here.
+
+    Should probably be in the changelog instead.
+
+WBR, Sergei
+
