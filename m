@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3CKTl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:41:28 -0400
-Received: from vpn.mirsal.fr ([178.79.141.108]:47705 "EHLO
-	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754069Ab3CKTlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:41:23 -0400
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Mar 2013 15:41:23 EDT
-From: Mirsal Ennaime <mirsal@mirsal.fr>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mirsal Ennaime <mirsal@mirsal.fr>
-Subject: [PATCH 4/4] drivers: android: binder: Fix compiler warning
-Date: Mon, 11 Mar 2013 20:31:55 +0100
-Message-Id: <1363030315-10229-5-git-send-email-mirsal@mirsal.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
-References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
+	id S1754659Ab3CKTmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:42:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754360Ab3CKTmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:42:06 -0400
+Date: Mon, 11 Mar 2013 15:41:59 -0400
+From: Dave Jones <davej@redhat.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311194159.GB3579@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311191753.GA439@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix an instance of -Wdeclaration-after-statement
+On Mon, Mar 11, 2013 at 08:17:53PM +0100, Markus Trippelsdorf wrote:
+ > On 2013.03.11 at 18:18 +0100, Markus Trippelsdorf wrote:
+ > > I get hash failures on "completed" torrents since 3.9.0-rc1 (Linux 3.8
+ > > seems to be fine). What happens is that the torrents apparently complete
+ > > successfully. After reboot however the hash check fails and there are
+ > > missing (or corrupted) chunks. I've tested this with two different
+ > > clients (rtorrent and aria2c) and both are affected. So I think this
+ > > might be a filesystem issue.
+ > > 
+ > > /dev/sda       ext4      1.4T  666G  640G  51% /var
+ > > /dev/sda on /var type ext4 (rw,noatime,data=ordered)
+ > > 
+ > > I use ECC memory (and there is nothing in the logs).
+ > 
+ > To reproduce this issue just do the following:
+ > 
+ >  % wget http://torrents.linuxmint.com/torrents/linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
+ >  % rtorrent linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
+ >  (Wait until the torrent finishes)
+ >  % sudo echo 3 > /proc/sys/vm/drop_caches
+ >  (Rehash the torrent (Ctrl-R))
+ >  The torrent doesn't rehash successfully and a few hunks are
+ >  missing/corrupted and need to be downloaded again.
 
-Signed-off-by: Mirsal Ennaime <mirsal@mirsal.fr>
----
- drivers/staging/android/binder.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Worked fine for me on two separate machines.  Could it be a network problem
+perhaps ? If something is mangling the packet before it hits the disk,
+that would explain it.  What NIC do you use ?
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 18a83e2..c833b53 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -3001,11 +3001,12 @@ static void binder_deferred_release(struct binder_proc *proc)
- 	page_count = 0;
- 	if (proc->pages) {
- 		int i;
-+		void *page_addr;
- 		for (i = 0; i < proc->buffer_size / PAGE_SIZE; i++) {
- 			if (!proc->pages[i])
- 				continue;
- 
--			void *page_addr = proc->buffer + i * PAGE_SIZE;
-+			page_addr = proc->buffer + i * PAGE_SIZE;
- 			binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
- 				"binder_release: %d: page %d at %p not freed\n",
- 				proc->pid, i,
--- 
-1.7.10.4
+Or maybe you could isolate it to a filesystem problem using something
+like fsx ?
+
+	Dave
 
