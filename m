@@ -1,164 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3CKNT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:19:29 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:57030 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3CKNT1 (ORCPT
+	id S1751319Ab3CKNXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:23:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63331 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3CKNXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:19:27 -0400
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Frederic Crozat <fcrozat@suse.com>
-In-Reply-To: <1362664663.15011.194.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-	 <1362555258.23932.573.camel@linux-s257.site>
-	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362652440.28562.26.camel@linux-s257.site>
-	 <1362656348.15011.166.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362664663.15011.194.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Mar 2013 21:17:53 +0800
-Message-ID: <1363007873.13754.44.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 11 Mar 2013 09:23:37 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Subject: Re: A proposal to check the device in generic way
+Date: Mon, 11 Mar 2013 13:23:26 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+References: <1363001537.18714.3.camel@smile>
+In-Reply-To: <1363001537.18714.3.camel@smile>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303111323.26783.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:C5YPx1GFjD3dqsO0IHu+9+aoJNAEkmmofmmXwIeqFu8
+ P7jwf/P7/6UwK7hY1d2+cFLdsyBKyf1ftbMyghgTaCsdxszp1V
+ uIbMCbb0t4klsv9OjtAWUAnsXza2oOVH7t3mvVhx2jAZFYdssj
+ 5r4QQ4pZorPq4WsFhrfETZ/7WUgNj24pNo5NH5mWUHfTppgai/
+ aONcH//eVjx9DfH7ZdpAuOvfF8agY07S3dwtR8uWC7eOBd0dD9
+ zDE7iezR8t0jfaaWt1kinxURgNmmHh3MHycwnYD9xhvpgHlFZW
+ POZXUbTpR2kYW6TuzZyLCYqEmLk3owh1VHu95LdikEUUidw+0I
+ kvCcCnNkQhZjcW7VzGfwu7x/MxtvhgcLjKNktFk7f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt, 
-
-於 四，2013-03-07 於 13:57 +0000，Matt Fleming 提到：
-> On Thu, 2013-03-07 at 11:39 +0000, Matt Fleming wrote:
-> > On Thu, 2013-03-07 at 18:34 +0800, joeyli wrote:
-> > > The VariableNameSize is not reliable when EFI_SUCCESS is returned
-> > > because UEFI 2.3.1 spec only mention VariableNameSize should updated
-> > > when EFI_BUFFER_TOO_SMALL is returned. And, the 1024 bytes of buffer is
-> > > from old UEFI spec. There doesn't have any size condition of variable
-> > > data or variable name in 2.3.1 spec.
-> > 
-> > The spec may only mention what happens in the EFI_BUFFER_TOO_SMALL case,
-> > but for EFI_SUCCESS, any behaviour other than leaving VariableNameSize
-> > alone or updating it with the required size of the buffer is just
-> > completely insane.
-> > 
-> > > I modified the patch to grab VariableNameSize when EFI_BUFFER_TOO_SMALL,
-> > > the behavior like what we do in efivarfs_file_read().
-> > 
-> > Thanks, this does seem like the most robust solution.
+On Monday 11 March 2013, Shevchenko, Andriy wrote:
+> Hello.
 > 
-> Also, you're probably going to need to update
-> efivar_update_sysfs_entries() too.
+> Currently in linux-next we have the following things:
 > 
+> $ git grep -n 'chan->device->dev->driver' drivers/dma/
+> 
+> drivers/dma/amba-pl08x.c:1594:  if (chan->device->dev->driver !=
+> &pl08x_amba_driver.drv)
+> drivers/dma/dmaengine.c:190:    return chan->device->dev->driver->owner;
+> drivers/dma/edma.c:609: if (chan->device->dev->driver ==
+> &edma_driver.driver) {
+> drivers/dma/omap-dma.c:654:     if (chan->device->dev->driver ==
+> &omap_dma_driver.driver) {
+> drivers/dma/pl330.c:2374:       if (chan->device->dev->driver !=
+> &pl330_driver.drv)
+> drivers/dma/sa11x0-dma.c:1080:  if (chan->device->dev->driver ==
+> &sa11x0_dma_driver.driver) 
+> 
+> I think it's a non-generic way to check which driver provides a channel
+> into filter function. First of all, I don't get why that comparison goes
+> as deep as driver structure. Isn't clearer to check chan->device->dev
+> against the struct dev passed in the custom parameter structure? Like:
 
-Sorry for after I wrote patch, I think it's better we still use your
-original patch to fix this bug, because I found the
-efi_variable->VariableName allocated 1024 size and it also used by old
-vars system. 
+I agree that checking the driver is wrong and that we should check the
+device instead, if we have a filter function called from ->xlate(), which
+in turn gets called by dma_request_slave_channel().
 
-The following is my patch for reference, but I think your original patch
-is better for backward compatible on variable name.
+Some of the filter functions above are passed to device drivers and
+are not used in combination with the DT binding, which implies that
+there is nothing to check the device against, so it would not work.
 
-Please consider to merge your original patch!
+If you look for instance at the pl330 driver, there
+are two filter functions: pl330_dt_filter correctly compares the
+device pointer, while pl330_filter only gets an integer argument
+and cannot compare that to the device.
 
+> struct filter_params {
+>  struct dev *dev;
+>  void *param;
+> };
+> 
+> bool filter_fn(struct dma_chan *chan, void *fparams)
+> {
+>   struct filter_params *p = fparams;
+>   if (chan->device->dev != p->dev)
+>    return false;
+>  ...
+> }
+> 
+> In case my idea has a right to live, what about to move such check inside
+> DMA engine code?
 
-Thanks a lot!
-Joey Lee
+> Opinions, comments?
+> 
+> Earlier I tried to discuss this with Arnd here: http://www.spinics.net/lists/arm-kernel/msg220716.html
 
+I think the right solution is to provide an interface in the dmaengine
+common code that lets the ->xlate() callback get right at the channel
+it wants, rather than call dma_request_channel(). It is rather silly d
+a dmaengine driver that has all the information about the dma channel
+it wants to return, we have to call back into a common function that
+then searches all the channel known to the system.
 
->From c067288dbbb963b9cf9be4c5f59f5e39e88361ad Mon Sep 17 00:00:00 2001
-From: Lee, Chun-Yi <jlee@suse.com>
-Date: Mon, 11 Mar 2013 18:26:04 +0800
-Subject: [PATCH] efivars: Sanitise length of variable name for register
-
-
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/firmware/efivars.c |   39 ++++++++++++++++++++++++++++++---------
- 1 files changed, 30 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 3edade0..1e854b3 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -111,7 +111,7 @@ MODULE_VERSION(EFIVARS_VERSION);
-  */
- 
- struct efi_variable {
--	efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
-+	efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];		/* PROBLEM: 1024 size, need backward compatible to old vars */
- 	efi_guid_t    VendorGuid;
- 	unsigned long DataSize;
- 	__u8          Data[1024];
-@@ -1903,10 +1903,11 @@ int register_efivars(struct efivars *efivars,
- 	efi_status_t status = EFI_NOT_FOUND;
- 	efi_guid_t vendor_guid;
- 	efi_char16_t *variable_name;
--	unsigned long variable_name_size = 1024;
-+	unsigned long variable_name_size;
-+	unsigned long variable_name_buff_size = 1024;
- 	int error = 0;
- 
--	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+	variable_name = kzalloc(variable_name_buff_size, GFP_KERNEL);
- 	if (!variable_name) {
- 		printk(KERN_ERR "efivars: Memory allocation failed.\n");
- 		return -ENOMEM;
-@@ -1937,17 +1938,37 @@ int register_efivars(struct efivars *efivars,
- 	 */
- 
- 	do {
--		variable_name_size = 1024;
-+		variable_name_size = 0;
- 
- 		status = ops->get_next_variable(&variable_name_size,
- 						variable_name,
- 						&vendor_guid);
- 		switch (status) {
--		case EFI_SUCCESS:
--			efivar_create_sysfs_entry(efivars,
--						  variable_name_size,
--						  variable_name,
--						  &vendor_guid);
-+		case EFI_BUFFER_TOO_SMALL:
-+			if (variable_name_size < sizeof(efi_char16_t) * 2) {
-+				/* Bogus size - expect at least one char + NULL */
-+				variable_name_size = variable_name_buff_size;
-+			} else if (variable_name_size > variable_name_buff_size) {
-+				kfree(variable_name);
-+				variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+				if (!variable_name) {
-+					printk(KERN_ERR "efivars: Memory allocation failed.\n");
-+					return -ENOMEM;
-+				}
-+				variable_name_buff_size = variable_name_size;
-+			}
-+			status = ops->get_next_variable(&variable_name_size,
-+							variable_name,
-+							&vendor_guid);
-+			/* Length of the variable_name, plus terminating NULL */
-+			variable_name_size = utf16_strsize(
-+					variable_name, variable_name_buff_size)
-+					+ sizeof(efi_char16_t);
-+			if (status == EFI_SUCCESS)
-+				efivar_create_sysfs_entry(efivars,
-+							  variable_name_size,	/* PROBLEM: variable_name_size could not larger then new_efivar->var.VariableName = 1024 */
-+							  variable_name,
-+							  &vendor_guid);
- 			break;
- 		case EFI_NOT_FOUND:
- 			break;
--- 
-1.6.4.2
-
-
-
+	Arnd
