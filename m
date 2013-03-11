@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3CKVPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:15:23 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33360 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab3CKVPR (ORCPT
+	id S1754845Ab3CKV1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:27:17 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:57455 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab3CKVPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:17 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 19/44] tty: Don't protect atomic operation with mutex
-Date: Mon, 11 Mar 2013 16:44:39 -0400
-Message-Id: <1363034704-28036-20-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
- <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 11 Mar 2013 17:15:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130311210628.GG14738@redhat.com>
+References: <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
+	<513E28B8.3000502@zytor.com>
+	<CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com>
+	<20130311192021.GF12107@redhat.com>
+	<513E36CB.5040908@zytor.com>
+	<20130311201245.GC14738@redhat.com>
+	<513E3C44.9030402@zytor.com>
+	<87hakhk6xu.fsf@xmission.com>
+	<20130311204530.GE14738@redhat.com>
+	<CAE9FiQUPVP59Ngo2TGABD-vwVRA7rhgE+MgBCT1b=U_EQgsUdQ@mail.gmail.com>
+	<20130311210628.GG14738@redhat.com>
+Date: Mon, 11 Mar 2013 14:15:21 -0700
+X-Google-Sender-Auth: xrWHOJC4Mycv1ol1NC-bOrFZDZs
+Message-ID: <CAE9FiQVNgCgnzTJzrZNvuj7b0M7pKsFqGL6D2FKw_9Y955HLVg@mail.gmail.com>
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-test_bit() is already atomic; drop mutex lock/unlock.
+On Mon, Mar 11, 2013 at 2:06 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Mon, Mar 11, 2013 at 01:57:41PM -0700, Yinghai Lu wrote:
+>> On Mon, Mar 11, 2013 at 1:45 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > In my experience, trying to keep foot-print small has kind of been a
+>> > losing battle.
+>> >
+>> > - People want more functionality in second kernel, want to dump to more
+>> >   complicated IO stacks and that requires pulling in more drivers,
+>> >   more libraries, more daemons, more user space tools and what not.
+>> >
+>> > - Now we use dracut generated initramfs and it has been growing in size.
+>> >   Now systemd has been pulled in too.
+>> >
+>> > - Drivers keep on increasing their memory usage.
+>>
+>> If the dump file will be only put one place, why should all the drivers
+>> for all devices get loaded?
+>> for example: dump will be on disk with one scsi controller, can you only
+>> load driver that contoller? and forget about all other storage controller and
+>> network etc drivers.
+>
+> We do try to optimize things this way. Only include drivers as needed. But
+> a single driver might be handling lots of cards and then try to bring
+> up all the cards in second kernel.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_io.c | 2 --
- 1 file changed, 2 deletions(-)
+Can you disable auto_probe at first? and then use /sys bind driver to specific
+device.
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 2ac516d..bf33440 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1345,9 +1345,7 @@ static int tty_reopen(struct tty_struct *tty)
- 	}
- 	tty->count++;
- 
--	mutex_lock(&tty->ldisc_mutex);
- 	WARN_ON(!test_bit(TTY_LDISC, &tty->flags));
--	mutex_unlock(&tty->ldisc_mutex);
- 
- 	return 0;
- }
--- 
-1.8.1.2
+>
+> Just fixed some issues with one driver where around 40MB extra memory
+> was benig consumed because of multiqueue support. Just bunch of allocation
+> in driver. And we used kernel command line to disable it.
 
+Yes that the is one problem, we should have some facility or helpers to reject
+ those invalid request. and driver should reduce their foot print step by step.
+for example, we only have 64M, but first driver want to alloc 32M, it
+should be just rejected.
