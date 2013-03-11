@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3CKIp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:45:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31691 "EHLO mx1.redhat.com"
+	id S1753239Ab3CKIqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 04:46:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55186 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994Ab3CKIp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:45:27 -0400
-Message-ID: <513D9998.5030106@redhat.com>
-Date: Mon, 11 Mar 2013 16:45:12 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: remove tx polling state
-References: <1362630716-57674-1-git-send-email-jasowang@redhat.com> <20130310165030.GA13687@redhat.com> <513D8316.90907@redhat.com> <20130311082923.GB21086@redhat.com>
-In-Reply-To: <20130311082923.GB21086@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751895Ab3CKIqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 04:46:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,822,1355126400"; 
+   d="scan'208";a="303703684"
+Subject: [PATCH 2/3] genirq: Do not consider the irqs with disabling and
+ IRQF_NO_SUSPEND
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+In-Reply-To: <1363024396.31506.60.camel@cliu38-desktop-build>
+References: <1363024396.31506.60.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Mar 2013 01:57:11 +0800
+Message-ID: <1363024631.31506.64.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 04:29 PM, Michael S. Tsirkin wrote:
-> On Mon, Mar 11, 2013 at 03:09:10PM +0800, Jason Wang wrote:
->> On 03/11/2013 12:50 AM, Michael S. Tsirkin wrote:
->>> On Thu, Mar 07, 2013 at 12:31:56PM +0800, Jason Wang wrote:
->>>> After commit 2b8b328b61c799957a456a5a8dab8cc7dea68575 (vhost_net: handle polling
->>>> errors when setting backend), we in fact track the polling state through
->>>> poll->wqh, so there's no need to duplicate the work with an extra
->>>> vhost_net_polling_state. So this patch removes this and make the code simpler.
->>>>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>> I'd prefer a more radical approach, since I think it can be even
->>> simpler: tap and macvtap backends both only send events when tx queue
->>> overruns which should almost never happen.
->>>
->>> So let's just start polling when VQ is enabled
->>> drop all poll_start/stop calls on data path.
->> I think then it may damage the performance at least for tx. We
->> conditionally enable the tx polling in the past to reduce the
->> unnecessary wakeups of vhost thead when zerocopy or sndbuf is used. If
->> we don't stop the polling, after each packet were transmitted,
->> tap/macvtap will try to wakeup the vhost thread.
-> It won't actually.
-> static void macvtap_sock_write_space(struct sock *sk)
-> {
->         wait_queue_head_t *wqueue;
->
->         if (!sock_writeable(sk) ||
->             !test_and_clear_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags))
->                 return;
->
->         wqueue = sk_sleep(sk);
->         if (wqueue && waitqueue_active(wqueue))
->                 wake_up_interruptible_poll(wqueue, POLLOUT | POLLWRNORM | POLLWRBAND);
-> }
->
-> As long as SOCK_ASYNC_NOSPACE is not set, there's no wakeup.
->
 
-Ok, will send V2 which removes all the polling start/stop in datapath.
+According to commit 9c6079aa1bf(genirq: Do not consider disabled
+wakeup irqs), we should not break the suspend when one irq is pending
+but has been disabled before suspending.
 
-Thanks
+But there is another case missed, that one irq with flag IRQF_NO_SUSPEND,
+which has been disabled before suspending, and irq pending there,
+in this case, we still should not break the suspending, otherwise,
+the suspend abort over and over.
+
+Here also checking if the desc->istate & IRQS_SUSPENDED is true.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/irq/pm.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index cb228bf..1470c1b 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -109,7 +109,8 @@ int check_wakeup_irqs(void)
+ 		 * can abort suspend.
+ 		 */
+ 		if (irqd_is_wakeup_set(&desc->irq_data)) {
+-			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
++			if (desc->depth == 1 && (desc->istate & IRQS_PENDING)
++				&& (desc->istate & IRQS_SUSPENDED))
+ 				return -EBUSY;
+ 			continue;
+ 		}
+-- 
+1.7.0.4
+
+
+
