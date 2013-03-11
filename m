@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3CKIg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:36:57 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:40248 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab3CKIg4 (ORCPT
+	id S1753127Ab3CKIlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 04:41:00 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:36186 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3CKIk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:36:56 -0400
-Date: Mon, 11 Mar 2013 09:36:52 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Vinson Lee <vlee@twitter.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v2] perf tools: Fix LIBNUMA build with glibc 2.12 and
- older.
-Message-ID: <20130311083652.GE12742@gmail.com>
-References: <CAKixpbiLtuYW4Tt770EEHxJK03Kq=LKtQzXULb2p5E_zh2Oc4w@mail.gmail.com>
- <1362710535-7219-1-git-send-email-vlee@twitter.com>
- <1362710535-7219-2-git-send-email-vlee@twitter.com>
+	Mon, 11 Mar 2013 04:40:58 -0400
+Message-ID: <513D9896.2010304@linaro.org>
+Date: Mon, 11 Mar 2013 09:40:54 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362710535-7219-2-git-send-email-vlee@twitter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: john.stultz@linaro.org, tglx@linutronix.de, viresh.kumar@linaro.org,
+        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 0/4] time: dynamic irq affinity
+References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org> <513CC404.6000200@ti.com> <513CCF60.6060406@linaro.org> <513D4E79.5090307@ti.com>
+In-Reply-To: <513D4E79.5090307@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/11/2013 04:24 AM, Santosh Shilimkar wrote:
+> On Sunday 10 March 2013 11:52 PM, Daniel Lezcano wrote:
 
-* Vinson Lee <vlee@twitter.com> wrote:
+[ ... ]
 
-> The tokens MADV_HUGEPAGE and MADV_NOHUGEPAGE are not available with
-> glibc 2.12 and older. Define these tokens if they are not already
-> defined.
+>> I don't think it is the case for all the ARM platforms, at least we
+>> tested it on vexpress TC2 and u8500, and the number of IPI were reduced
+>> very significantly increasing the idle time for cpu0. TC2 will need
+>> another optimization on another area for the idle wake up to gain real
+>> improvements.
+>>
+> You are missing my point. TC2 can be an exception since the SGI can wakeup
+> CPUs even from low power states where local timer's are stalled. Is that
+> the case with U8500 ?
+
+Well, the cpuidle driver is not going into a deep idle state to check
+this out.
+
+AFAICT this board has a specific firmware with the PRCMU (a device
+managing the power on the board) and it replaces the GIC when going to
+deep idle state, especially by reconnecting the GIC to the A9 cores
+automatically when an interrupt occurs.
+
+But definitively worth to check.
+
+>> I will test it on OMAP but with the coupled idle state, I am not sure of
+>> the behavior. Could elaborate a bit the specificity of OMAP ? I am not
+>> sure to understand why I may miss some IPI wakeups.
+>>
+> I already mention the issue here [1]. You might not see any major issues
+> because the missed asynchronous IPIs might eventually get executed when
+> CPU's wakeup from deeper states because of idle wakeups. OMAP is no
+> different from idle wakeup optimisation and it will surely benefit and work.
+> The main reason I didn't pursue it because of not having solution for
+> [1] which as discussed in past is very much essential from kernel
+> functional correctness perspective. You might want to verify that by
+> adding a tracepoint on IPI's on other reasons except the timer wakeup.
+
+Oh, ok. I didn't make the connection. I got the point now.
+
+If we can raise a fake hardware interrupt on the GIC (not sure that
+could be done), may be we can implement something similar to the
+broadcast timer mechanism to replace the IPI when the cores are not IPI
+wakeup capable.
+
+
+> [1] https://lkml.org/lkml/2013/2/27/39
 > 
-> This patch fixes these build errors with older versions of glibc.
-> 
->     CC bench/numa.o
-> bench/numa.c: In function ???alloc_data???:
-> bench/numa.c:334: error: ???MADV_HUGEPAGE??? undeclared (first use in this function)
-> bench/numa.c:334: error: (Each undeclared identifier is reported only once
-> bench/numa.c:334: error: for each function it appears in.)
-> bench/numa.c:341: error: ???MADV_NOHUGEPAGE??? undeclared (first use in this function)
-> make: *** [bench/numa.o] Error 1
-> 
-> Signed-off-by: Vinson Lee <vlee@twitter.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Irina Tirdea <irina.tirdea@intel.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  tools/perf/bench/bench.h |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-> index a5223e6..ed4ae8b 100644
-> --- a/tools/perf/bench/bench.h
-> +++ b/tools/perf/bench/bench.h
-> @@ -1,6 +1,22 @@
->  #ifndef BENCH_H
->  #define BENCH_H
->  
-> +#ifdef __hppa__
-> +#ifndef MADV_HUGEPAGE
-> +#define MADV_HUGEPAGE 67
-> +#endif
-> +#ifndef MADV_NOHUGEPAGE
-> +#define MADV_NOHUGEPAGE 68
-> +#endif
-> +#else
-> +#ifndef MADV_HUGEPAGE
-> +#define MADV_HUGEPAGE 14
-> +#endif
-> +#ifndef MADV_NOHUGEPAGE
-> +#define MADV_NOHUGEPAGE 15
-> +#endif
-> +#endif
 
-This looks good to me. Two minor stylistic nits:
 
- - I think we want a short comment explaining what it's about,
-   that this is for old glibc and that hppa messed up its madvise() 
-   constants and needs a non-generic kludge.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
- - for such multi-level #ifdef blocks we generally prefer this
-   more readable form:
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-#ifdef __hppa__
-# ifndef MADV_HUGEPAGE
-#  define MADV_HUGEPAGE		67
-# endif
-# ifndef MADV_NOHUGEPAGE
-#  define MADV_NOHUGEPAGE	68
-# endif
-#else
-# ifndef MADV_HUGEPAGE
-#  define MADV_HUGEPAGE		14
-# endif
-# ifndef MADV_NOHUGEPAGE
-#  define MADV_NOHUGEPAGE	15
-# endif
-#endif
-
-Thanks,
-
-	Ingo
