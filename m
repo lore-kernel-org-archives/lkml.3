@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab3CKJhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:37:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57866 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3CKJhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:37:33 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-89-513da5db833d
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: adp8870: add missing braces
-Date: Mon, 11 Mar 2013 18:37:30 +0900
-Message-id: <00c801ce1e3c$0d5023f0$27f06bd0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ePA0xuiLT2nkYRcS0gOTrPXZXFw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zA93bS20DDfrXilpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MlqWTWQvecVR8XNXA2sC4jL2LkZNDQsBE4vuvh8wQtpjEhXvr
-	2boYuTiEBJYxSrz5PZcRpuj6loksEIlFjBK3f08C6xASmM0ksaJXC8RmE1CT+PLlMNBUDg4R
-	AX2JthYNkDCzQKnE1gfvWUBsYQFzifPPdoLNZBFQlXi5exMriM0rYCvxYvlTRghbUOLH5Hss
-	EL1aEpu3NbFC2PISm9e8ZQYZLyGgLvHory5IWERAT2LLweVMECUiEvtevGMEOVNCoJtdomHV
-	dKhdAhLfJh9igeiVldh0AOpfSYmDK26wTGAUm4Vk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPS
-	i4z1ihNzi0vz0vWS83M3MULipH8H490D1ocYk4HWT2SWEk3OB8ZZXkm8obGZkYWpiamxkbml
-	GWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYtZW3JtytEVDmlpDMWBjc2bn2
-	3p2lggEXzByuyYvJi0tVnH1W8r2waO9J98eK37bP/HVkMVvt8mPXOIPjlV323OJdsNPva+8O
-	5curS1Q8zjeKV0c+zzmelXKatdF0nsOLE+8/Wk848zCUYW1G/6v0L2xHQkXvHm4W+vRc9sOj
-	UubQFYKfnVfNVGIpzkg01GIuKk4EAOg0Y82pAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd3bS20DDRad4re4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGS1LJ7MWvOOo+LiqgbWB
-	cRl7FyMnh4SAicT1LRNZIGwxiQv31rN1MXJxCAksYpS4/XsSM0hCSGA2k8SKXi0Qm01ATeLL
-	l8NAzRwcIgL6Em0tGiBhZoFSia0P3oPNERYwlzj/bCcjiM0ioCrxcvcmVhCbV8BW4sXyp4wQ
-	tqDEj8n3WCB6tSQ2b2tihbDlJTavecsMMl5CQF3i0V9dkLCIgJ7EloPLmSBKRCT2vXjHOIFR
-	YBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH4TOpHYwrGywO
-	MQpwMCrx8E7QsQ0UYk0sK67MPcQowcGsJMK7cpNNoBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJL
-	iSbnAxNEXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwTlvx
-	OUaQNeaWZFCF36zS9mn2YjrlH8xDj2u/zfZVrju16WDdg0NCIiETv82bfd5ZPTLRTK1dMJFV
-	etlP7td5txykp7i8lz85lcPz09HC6ZaV54veHlGY9tTh0a3fXJ5pJjfE5ou7P2Vfm3jDxbBq
-	6p9dOQ/cW9+GZE86PTG+9d/L53w6v25kKbEUZyQaajEXFScCAGveumMGAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753404Ab3CKJi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:38:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab3CKJiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 05:38:25 -0400
+Date: Mon, 11 Mar 2013 11:38:08 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Better yield_to candidate using preemption
+ notifiers
+Message-ID: <20130311093808.GB31619@redhat.com>
+References: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing braces to include error message.
-The error message is related to the return value for
-sysfs_create_group(). However, sysfs_create_group() is called
-when pdata->en_ambl_sens is not zero. Thus, the checking return
-value should be included in the if statement.
+On Mon, Mar 04, 2013 at 11:31:46PM +0530, Raghavendra K T wrote:
+>  This patch series further filters better vcpu candidate to yield to
+> in PLE handler. The main idea is to record the preempted vcpus using
+> preempt notifiers and iterate only those preempted vcpus in the
+> handler. Note that the vcpus which were in spinloop during pause loop
+> exit are already filtered.
+> 
+> Thanks Jiannan, Avi for bringing the idea and Gleb, PeterZ for
+> precious suggestions during the discussion. 
+> Thanks Srikar for suggesting to avoid rcu lock while checking task state
+> that has improved overcommit cases.
+> 
+> There are basically two approches for the implementation.
+> 
+> Method 1: Uses per vcpu preempt flag (this series).
+> 
+> Method 2: We keep a bitmap of preempted vcpus. using this we can easily
+> iterate over preempted vcpus.
+> 
+> Note that method 2 needs an extra index variable to identify/map bitmap to
+> vcpu and it also needs static vcpu allocation.
+> 
+> I am also posting Method 2 approach for reference in case it interests.
+> 
+> Result: decent improvement for kernbench and ebizzy.
+> 
+> base = 3.8.0 + undercommit patches 
+> patched = base + preempt patches
+> 
+> Tested on 32 core (no HT) mx3850 machine with 32 vcpu guest 8GB RAM
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                kernbench (exec time in sec lower is beter) 
+> --+-----------+-----------+-----------+------------+-----------+
+>       base       stdev       patched       stdev      %improve 
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x    47.0383     4.6977     44.2584     1.2899	    5.90986
+> 2x    96.0071     7.1873     91.2605     7.3567	    4.94401
+> 3x   164.0157    10.3613    156.6750    11.4267	    4.47561
+> 4x   212.5768    23.7326    204.4800    13.2908	    3.80888
+> --+-----------+-----------+-----------+------------+-----------+
+> no ple kernbench 1x result for reference: 46.056133
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                ebizzy (record/sec higher is better)
+> --+-----------+-----------+-----------+------------+-----------+
+>       base       stdev       patched       stdev      %improve 
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  5609.2000    56.9343    6263.7000    64.7097     11.66833
+> 2x  2071.9000   108.4829    2653.5000   181.8395     28.07085
+> 3x  1557.4167   109.7141    1993.5000   166.3176     28.00043
+> 4x  1254.7500    91.2997    1765.5000   237.5410     40.70532
+> --+-----------+-----------+-----------+------------+-----------+
+> no ple ebizzy 1x result for reference : 7394.9 rec/sec
+> 
+> Please let me know if you have any suggestions and comments.
+> 
+> Raghavendra K T (2):
+>    kvm: Record the preemption status of vcpus using preempt notifiers
+>    kvm: Iterate over only vcpus that are preempted
+> 	
+Applied, thanks!
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/adp8870_bl.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-index 712c25a..7930ab3 100644
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -895,13 +895,13 @@ static int adp8870_probe(struct i2c_client *client,
- 
- 	data->bl = bl;
- 
--	if (pdata->en_ambl_sens)
-+	if (pdata->en_ambl_sens) {
- 		ret = sysfs_create_group(&bl->dev.kobj,
- 			&adp8870_bl_attr_group);
--
--	if (ret) {
--		dev_err(&client->dev, "failed to register sysfs\n");
--		goto out1;
-+		if (ret) {
-+			dev_err(&client->dev, "failed to register sysfs\n");
-+			goto out1;
-+		}
- 	}
- 
- 	ret = adp8870_bl_setup(bl);
--- 
-1.7.2.5
-
-
+--
+			Gleb.
