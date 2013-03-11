@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3CKAll (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 20:41:41 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:42106 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3CKAlj (ORCPT
+	id S1753636Ab3CKA5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 20:57:53 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:49543 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab3CKA5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 20:41:39 -0400
-From: ycnian@gmail.com
-To: bfields@fieldses.org
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: [PATCH] nfsd: fix bug on nfs4 stateid deallocation
-Date: Mon, 11 Mar 2013 08:29:46 +0800
-Message-Id: <1362961786-4452-1-git-send-email-ycnian@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sun, 10 Mar 2013 20:57:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <513CAD9B.908@gmail.com>
+References: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
+	<513CAD9B.908@gmail.com>
+Date: Mon, 11 Mar 2013 08:57:49 +0800
+Message-ID: <CAKohponV8MR=J8bbNFxGF9JXQB0uadv7iDcbW9D-qr2N53U_kQ@mail.gmail.com>
+Subject: Re: [PATCH V2] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+ and its DT glue
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Francesco Lavra <francescolavra.fl@gmail.com>
+Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux@arm.linux.org.uk,
+        linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, Liviu.Dudau@arm.com,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        robin.randhawa@arm.com, linux-arm-kernel@lists.infradead.org,
+        mark.hambleton@broadcom.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFS4_OO_PURGE_CLOSE is not handled properly. To avoid memory leak, nfs4 
-stateid which is pointed by oo_last_closed_stid is freed in nfsd4_close(),
-but NFS4_OO_PURGE_CLOSE isn't cleared meanwhile. So the stateid released 
-in THIS close procedure may be freed immediately in the coming encoding
-function.
+On 10 March 2013 23:58, Francesco Lavra <francescolavra.fl@gmail.com> wrote:
+> On 03/07/2013 06:14 PM, Viresh Kumar wrote:
+>> +void bL_cpufreq_unregister(struct cpufreq_arm_bL_ops *ops)
+>> +{
+>> +     if (arm_bL_ops != ops) {
+>> +             pr_info("%s: Registered with: %s, can't unregister, exiting\n",
+>> +                             __func__, arm_bL_ops->name);
+>> +     }
+>
+> The code is not doing what the info message says.
 
----
- fs/nfsd/nfs4state.c | 1 +
- 1 file changed, 1 insertion(+)
+Yes, following is the improvement:
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 75c873d..7499c91 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3850,6 +3850,7 @@ nfsd4_close(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
- 
- 	nfsd4_close_open_stateid(stp);
- 	release_last_closed_stateid(oo);
-+	oo->oo_flags &= ~NFS4_OO_PURGE_CLOSE;
- 	oo->oo_last_closed_stid = stp;
- 
- 	if (list_empty(&oo->oo_owner.so_stateids)) {
--- 
-1.8.0.1
-
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index 8b8b07e..9d449cf 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -264,8 +264,9 @@ EXPORT_SYMBOL_GPL(bL_cpufreq_register);
+ void bL_cpufreq_unregister(struct cpufreq_arm_bL_ops *ops)
+ {
+        if (arm_bL_ops != ops) {
+-               pr_info("%s: Registered with: %s, can't unregister, exiting\n",
++               pr_err("%s: Registered with: %s, can't unregister, exiting\n",
+                                __func__, arm_bL_ops->name);
++               return;
+        }
