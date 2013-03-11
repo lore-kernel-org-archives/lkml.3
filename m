@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3CKKDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:03:53 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49026 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab3CKKDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:03:37 -0400
-From: Andrei Epure <epure.andrei@gmail.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Andrei Epure <epure.andrei@gmail.com>
-Subject: [PATCH] kernel:sched hyphened compound adjective before noun
-Date: Mon, 11 Mar 2013 12:03:20 +0200
-Message-Id: <1362996200-2674-1-git-send-email-epure.andrei@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753584Ab3CKKE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:04:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753812Ab3CKKEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 06:04:25 -0400
+Date: Mon, 11 Mar 2013 12:04:17 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Ioan Orghici <ioanorghici@gmail.com>
+Cc: mtosatti@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Ioan Orghici <ioan.orghici@gmail.com>
+Subject: Re: [PATCH] kvm: remove cast for kmalloc return value
+Message-ID: <20130311100417.GD31619@redhat.com>
+References: <1362923160-26300-1-git-send-email-ioan.orghici@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362923160-26300-1-git-send-email-ioan.orghici@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
----
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sun, Mar 10, 2013 at 03:46:00PM +0200, Ioan Orghici wrote:
+> Signed-off-by: Ioan Orghici<ioan.orghici@gmail.com>
+> ---
+>  arch/x86/kvm/vmx.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 7cc566b..35c2c8f 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -5261,8 +5261,7 @@ static struct loaded_vmcs *nested_get_current_vmcs02(struct vcpu_vmx *vmx)
+>  	}
+>  
+>  	/* Create a new VMCS */
+> -	item = (struct vmcs02_list *)
+> -		kmalloc(sizeof(struct vmcs02_list), GFP_KERNEL);
+> +	item = kmalloc(sizeof(struct vmcs02_list), GFP_KERNEL);
+>  	if (!item)
+>  		return NULL;
+>  	item->vmcs02.vmcs = alloc_vmcs();
+Applied, thanks.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..3220639 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -652,7 +652,7 @@ static u64 sched_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
- }
- 
- /*
-- * We calculate the vruntime slice of a to be inserted task
-+ * We calculate the vruntime slice of a to-be-inserted task.
-  *
-  * vs = s/w
-  */
--- 
-1.7.9.5
-
+--
+			Gleb.
