@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933782Ab3CLWh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:37:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60428 "EHLO
+	id S1756106Ab3CLWde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60303 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab3CLWdg (ORCPT
+	with ESMTP id S1755937Ab3CLWdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:36 -0400
+	Tue, 12 Mar 2013 18:33:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Baatz <gmbnomis@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [ 087/100] rtc: rtc-mv: Add support for clk to avoid lockups
-Date: Tue, 12 Mar 2013 15:32:12 -0700
-Message-Id: <20130312223132.288737142@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Tim McGrath <tmhikaru@gmail.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 059/100] dmi_scan: fix missing check for _DMI_ signature in smbios_present()
+Date: Tue, 12 Mar 2013 15:31:44 -0700
+Message-Id: <20130312223129.354909464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,125 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 89c58c198b252f2bc20657fdd72a2aea788c435c upstream.
+commit a40e7cf8f06b4e322ba902e4e9f6a6b0c2daa907 upstream.
 
-The Marvell RTC on Kirkwood makes use of the runit clock. Ensure the
-driver clk_prepare_enable() this clock, otherwise there is a danger
-the SoC will lockup when accessing RTC registers with the clock
-disabled.
+Commit 9f9c9cbb6057 ("drivers/firmware/dmi_scan.c: fetch dmi version
+from SMBIOS if it exists") hoisted the check for "_DMI_" into
+dmi_scan_machine(), which means that we don't bother to check for
+"_DMI_" at offset 16 in an SMBIOS entry.  smbios_present() may also call
+dmi_present() for an address where we found "_SM_", if it failed further
+validation.
 
-Reported-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Check for "_DMI_" in smbios_present() before calling dmi_present().
+
+[akpm@linux-foundation.org: fix build]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Tim McGrath <tmhikaru@gmail.com>
+Tested-by: Tim Mcgrath <tmhikaru@gmail.com>
+Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/kirkwood.dtsi |    1 +
- drivers/rtc/rtc-mv.c            |   28 ++++++++++++++++++++++++----
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/firmware/dmi_scan.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/arm/boot/dts/kirkwood.dtsi
-+++ b/arch/arm/boot/dts/kirkwood.dtsi
-@@ -75,6 +75,7 @@
- 			compatible = "marvell,kirkwood-rtc", "marvell,orion-rtc";
- 			reg = <0x10300 0x20>;
- 			interrupts = <53>;
-+			clocks = <&gate_clk 7>;
- 		};
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -442,7 +442,6 @@ static int __init dmi_present(const char
+ static int __init smbios_present(const char __iomem *p)
+ {
+ 	u8 buf[32];
+-	int offset = 0;
  
- 		spi@10600 {
---- a/drivers/rtc/rtc-mv.c
-+++ b/drivers/rtc/rtc-mv.c
-@@ -14,6 +14,7 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/delay.h>
-+#include <linux/clk.h>
- #include <linux/gfp.h>
- #include <linux/module.h>
- 
-@@ -41,6 +42,7 @@ struct rtc_plat_data {
- 	struct rtc_device *rtc;
- 	void __iomem *ioaddr;
- 	int		irq;
-+	struct clk	*clk;
- };
- 
- static int mv_rtc_set_time(struct device *dev, struct rtc_time *tm)
-@@ -221,6 +223,7 @@ static int mv_rtc_probe(struct platform_
- 	struct rtc_plat_data *pdata;
- 	resource_size_t size;
- 	u32 rtc_time;
-+	int ret = 0;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
-@@ -239,11 +242,17 @@ static int mv_rtc_probe(struct platform_
- 	if (!pdata->ioaddr)
- 		return -ENOMEM;
- 
-+	pdata->clk = devm_clk_get(&pdev->dev, NULL);
-+	/* Not all SoCs require a clock.*/
-+	if (!IS_ERR(pdata->clk))
-+		clk_prepare_enable(pdata->clk);
-+
- 	/* make sure the 24 hours mode is enabled */
- 	rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
- 	if (rtc_time & RTC_HOURS_12H_MODE) {
- 		dev_err(&pdev->dev, "24 Hours mode not supported.\n");
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out;
- 	}
- 
- 	/* make sure it is actually functional */
-@@ -252,7 +261,8 @@ static int mv_rtc_probe(struct platform_
- 		rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
- 		if (rtc_time == 0x01000000) {
- 			dev_err(&pdev->dev, "internal RTC not ticking\n");
--			return -ENODEV;
-+			ret = -ENODEV;
-+			goto out;
+ 	memcpy_fromio(buf, p, 32);
+ 	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
+@@ -461,9 +460,9 @@ static int __init smbios_present(const c
+ 			dmi_ver = 0x0206;
+ 			break;
  		}
+-		offset = 16;
++		return memcmp(p + 16, "_DMI_", 5) || dmi_present(p + 16);
  	}
- 
-@@ -268,8 +278,10 @@ static int mv_rtc_probe(struct platform_
- 	} else
- 		pdata->rtc = rtc_device_register(pdev->name, &pdev->dev,
- 						 &mv_rtc_ops, THIS_MODULE);
--	if (IS_ERR(pdata->rtc))
--		return PTR_ERR(pdata->rtc);
-+	if (IS_ERR(pdata->rtc)) {
-+		ret = PTR_ERR(pdata->rtc);
-+		goto out;
-+	}
- 
- 	if (pdata->irq >= 0) {
- 		writel(0, pdata->ioaddr + RTC_ALARM_INTERRUPT_MASK_REG_OFFS);
-@@ -282,6 +294,11 @@ static int mv_rtc_probe(struct platform_
- 	}
- 
- 	return 0;
-+out:
-+	if (!IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
-+	return ret;
+-	return dmi_present(buf + offset);
++	return 1;
  }
  
- static int __exit mv_rtc_remove(struct platform_device *pdev)
-@@ -292,6 +309,9 @@ static int __exit mv_rtc_remove(struct p
- 		device_init_wakeup(&pdev->dev, 0);
- 
- 	rtc_device_unregister(pdata->rtc);
-+	if (!IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
- 	return 0;
- }
- 
+ void __init dmi_scan_machine(void)
 
 
