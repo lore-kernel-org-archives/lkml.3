@@ -1,160 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab3CLBgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 21:36:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48090 "EHLO mx2.suse.de"
+	id S932098Ab3CLBnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 21:43:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48199 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab3CLBgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 21:36:47 -0400
-Date: Tue, 12 Mar 2013 12:36:30 +1100
+	id S1754951Ab3CLBnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 21:43:45 -0400
+Date: Tue, 12 Mar 2013 12:43:31 +1100
 From: NeilBrown <neilb@suse.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Kees Cook <keescook@chromium.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130312123630.36df75da@notabene.brown>
-In-Reply-To: <1362997664.3137.52.camel@x61.thuisdomein>
-References: <20130223074001.GA5199@www.outflux.net>
-	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-	<20130228091110.7da87b53@notabene.brown>
-	<1362997664.3137.52.camel@x61.thuisdomein>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-arch@vger.kernel.org,
+        sfr@canb.auug.org.au, Joakim.Tjernlund@transmode.se, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 3/4] UAPI: Fix endianness conditionals in
+ linux/raid/md_p.h
+Message-ID: <20130312124331.221fcc15@notabene.brown>
+In-Reply-To: <20130306204751.31327.18239.stgit@warthog.procyon.org.uk>
+References: <20130306204724.31327.43118.stgit@warthog.procyon.org.uk>
+	<20130306204751.31327.18239.stgit@warthog.procyon.org.uk>
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/xj5Yz6NJqb9.XvN6tYAc.uw"; protocol="application/pgp-signature"
+ boundary="Sig_/ZJTX6adI9zZ/4/IrFenN+b2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xj5Yz6NJqb9.XvN6tYAc.uw
+--Sig_/ZJTX6adI9zZ/4/IrFenN+b2
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 11 Mar 2013 11:27:44 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
+On Wed, 06 Mar 2013 20:47:51 +0000 David Howells <dhowells@redhat.com> wrot=
+e:
 
-> > Following will be in -next shortly.
-> >=20
-> > NeilBrown
-> >=20
-> >=20
-> > From 51acbcec6c42b24482bac18e42befc822524535d Mon Sep 17 00:00:00 2001
-> > From: NeilBrown <neilb@suse.de>
-> > Date: Thu, 28 Feb 2013 09:08:34 +1100
-> > Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456
-> >=20
-> > This doesn't seem to actually help and we have an alternate
-> > multi-threading approach waiting in the wings, so just get
-> > rid of this config option and associated code.
-> >=20
-> > As a bonus, we remove one use of CONFIG_EXPERIMENTAL
-> >=20
-> > Cc: Dan Williams <djbw@fb.com>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
+> In the UAPI header files, __BIG_ENDIAN and __LITTLE_ENDIAN must be compar=
+ed
+> against __BYTE_ORDER in preprocessor conditionals where these are exposed=
+ to
+> userspace (that is they're not inside __KERNEL__ conditionals).
 >=20
-> That commit entered mainline in v3.9-rc2 (still as commit
-> 51acbcec6c42b24482bac18e42befc822524535d). It missed one instance of
-> CONFIG_MULTICORE_RAID456, so this additional patch is needed (which also
-> cleans that macro from two defconfig files). Compile tested, by the way.
+> However, in the main kernel the norm is to check for "defined(__XXX_ENDIA=
+N)"
+> rather than comparing against __BYTE_ORDER and this has incorrectly leaked
+> into the userspace headers.
 >=20
+> The definition of struct mdp_superblock_s in linux/raid/md_p.h is wrong i=
+n this
+> way.  Note that userspace will likely interpret the ordering of the fields
+> incorrectly as the big-endian variant on a little-endian machines - depen=
+ding
+> on header inclusion order.
 >=20
-> Paul Bolle
+> [!!!] NOTE [!!!]  This patch may adversely change the userspace API.  It =
+might
+> be better to fix the ordering of events_hi, events_lo, cp_events_hi and
+> cp_events_lo in struct mdp_superblock_s / typedef mdp_super_t.
 
-Thanks Paul.
+Thanks David - looks good to me.
+Changing the ordering of fields isn't really an option at this stage - over
+10 years too late :-(.
+I think any user-space tools that use this data structure have their own co=
+py
+of the include file.
 
-I'll send this off to Linus some time in the next week or so.
-
+Acked-by: NeilBrown <neilb@suse.de>
 
 Thanks,
 NeilBrown
 
 
 >=20
-> >From ab10e19eeca5ae271ae965418ff736db0230aab6 Mon Sep 17 00:00:00 2001
-> From: Paul Bolle <pebolle@tiscali.nl>
-> Date: Mon, 11 Mar 2013 11:16:25 +0100
-> Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456 entirely
->=20
-> Once instance of this Kconfig macro remained after commit
-> 51acbcec6c42b24482bac18e42befc822524535d ("md: remove
-> CONFIG_MULTICORE_RAID456"). Remove that one too. And, while we're at it,
-> also remove it from the defconfig files that carry it.
->=20
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: Neil Brown <neilb@suse.de>
+> cc: linux-raid@vger.kernel.org
 > ---
->  arch/tile/configs/tilegx_defconfig  | 1 -
->  arch/tile/configs/tilepro_defconfig | 1 -
->  drivers/md/raid5.h                  | 4 ----
->  3 files changed, 6 deletions(-)
 >=20
-> diff --git a/arch/tile/configs/tilegx_defconfig b/arch/tile/configs/tileg=
-x_defconfig
-> index 8c5eff6..4768481 100644
-> --- a/arch/tile/configs/tilegx_defconfig
-> +++ b/arch/tile/configs/tilegx_defconfig
-> @@ -330,7 +330,6 @@ CONFIG_MD_RAID0=3Dm
->  CONFIG_MD_RAID1=3Dm
->  CONFIG_MD_RAID10=3Dm
->  CONFIG_MD_RAID456=3Dm
-> -CONFIG_MULTICORE_RAID456=3Dy
->  CONFIG_MD_FAULTY=3Dm
->  CONFIG_BLK_DEV_DM=3Dm
->  CONFIG_DM_DEBUG=3Dy
-> diff --git a/arch/tile/configs/tilepro_defconfig b/arch/tile/configs/tile=
-pro_defconfig
-> index e7a3dfc..dd2b8f0 100644
-> --- a/arch/tile/configs/tilepro_defconfig
-> +++ b/arch/tile/configs/tilepro_defconfig
-> @@ -324,7 +324,6 @@ CONFIG_MD_RAID0=3Dm
->  CONFIG_MD_RAID1=3Dm
->  CONFIG_MD_RAID10=3Dm
->  CONFIG_MD_RAID456=3Dm
-> -CONFIG_MULTICORE_RAID456=3Dy
->  CONFIG_MD_FAULTY=3Dm
->  CONFIG_BLK_DEV_DM=3Dm
->  CONFIG_DM_DEBUG=3Dy
-> diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
-> index 18b2c4a..31e2ec1 100644
-> --- a/drivers/md/raid5.h
-> +++ b/drivers/md/raid5.h
-> @@ -221,10 +221,6 @@ struct stripe_head {
->  	struct stripe_operations {
->  		int 		     target, target2;
->  		enum sum_check_flags zero_sum_result;
-> -		#ifdef CONFIG_MULTICORE_RAID456
-> -		unsigned long	     request;
-> -		wait_queue_head_t    wait_for_ops;
-> -		#endif
->  	} ops;
->  	struct r5dev {
->  		/* rreq and rvec are used for the replacement device when
+>  include/uapi/linux/raid/md_p.h |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/include/uapi/linux/raid/md_p.h b/include/uapi/linux/raid/md_=
+p.h
+> index ee75353..fe1a540 100644
+> --- a/include/uapi/linux/raid/md_p.h
+> +++ b/include/uapi/linux/raid/md_p.h
+> @@ -145,16 +145,18 @@ typedef struct mdp_superblock_s {
+>  	__u32 failed_disks;	/*  4 Number of failed disks		      */
+>  	__u32 spare_disks;	/*  5 Number of spare disks		      */
+>  	__u32 sb_csum;		/*  6 checksum of the whole superblock        */
+> -#ifdef __BIG_ENDIAN
+> +#if defined(__BYTE_ORDER) ? __BYTE_ORDER =3D=3D __BIG_ENDIAN : defined(_=
+_BIG_ENDIAN)
+>  	__u32 events_hi;	/*  7 high-order of superblock update count   */
+>  	__u32 events_lo;	/*  8 low-order of superblock update count    */
+>  	__u32 cp_events_hi;	/*  9 high-order of checkpoint update count   */
+>  	__u32 cp_events_lo;	/* 10 low-order of checkpoint update count    */
+> -#else
+> +#elif defined(__BYTE_ORDER) ? __BYTE_ORDER =3D=3D __LITTLE_ENDIAN : defi=
+ned(__LITTLE_ENDIAN)
+>  	__u32 events_lo;	/*  7 low-order of superblock update count    */
+>  	__u32 events_hi;	/*  8 high-order of superblock update count   */
+>  	__u32 cp_events_lo;	/*  9 low-order of checkpoint update count    */
+>  	__u32 cp_events_hi;	/* 10 high-order of checkpoint update count   */
+> +#else
+> +#error unspecified endianness
+>  #endif
+>  	__u32 recovery_cp;	/* 11 recovery checkpoint sector count	      */
+>  	/* There are only valid for minor_version > 90 */
 
 
---Sig_/xj5Yz6NJqb9.XvN6tYAc.uw
+--Sig_/ZJTX6adI9zZ/4/IrFenN+b2
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIVAwUBUT6Gnjnsnt1WYoG5AQIcVQ//eM7QYT4BJ2p3U1YXkRvxJBlSqt321NLJ
-HOhHlpZNwIYG5bUlD7GkYiLbotYKMF2QUv8l3ERzXGoumJr11shGkDIV/1NgmmUd
-QHHWxIVw0pJ6hN7bRsMoUokLREhdAiw5t0HlX1NRLkN1mVfQ1HcDI8+zNgochE05
-Pwg0YyeFEF+2GgZudg2YPn/MSwMRyDKV9O3+tJdaky13JHToNO2XSt6QL+S7deGd
-NOOIPt5oPnAKCEmflVMkDryHMe5+TUOQ6589Bue3hnhvwC2DplxeOktmD4+QxR8c
-+tV4BQL2QZWbLYuKVNxZ9qkJhp7F1BESXUZqCYPHS6PsP68vKml75vTJeoTQunwW
-f/hxRaLnXadIGJ18hBjmUAwQsz0b0R2CCKUkVEfvcCEwmVyLFJaZV4cfmXimSObX
-ZCaBA0T2NxTUs9LTdgv0zw1UOwXWcf1al8bqZ65Ap113iMJcY8TFOz0vGlVeqQ9j
-9pXy511XELWbfS/8xHS7PrB5xtJOoTmyy3p79l58oIo+4MPYUE7DugKtPXTREGHa
-GFyM5qoK0CI6cYYJhucwYm9KZbbxDpkNfBr/daJi/Ux4/ZaSMBzZHSu74BzlIQKs
-rQz/sBRrVAB3hvR9WSW+7GZP2p/Owk/mJ4FD9hQAOZM1aoy3bQMOoOFJ4c8dw2/B
-AIxI2J5KItM=
-=0XQW
+iQIVAwUBUT6IQznsnt1WYoG5AQI+hxAAurxPHJ36bjQjs/USfO+oq3bIT3v/7amX
+s3BsLjj+8TAsWXHSNWMLnCKackt6p59PZS73urB1sZ/kIxmw2Gw+A8Ih977P8RhU
+XrNEY08ob4N+oqHKmopdAVixfq4Siv/Mz6DcBrMsjA1oDctuT8Kv8T8OgDA96gVD
+t71oICUZZreVROU1sknDxkqIi5WK7DwSyQpOq4Zhwn5t3juLq8LF3lrxTqxj/Ez4
+I3JjF8WzR7EGRSl6D9+mZekLJeLMdz7RXzd38xxlIAOjsQUTCbTf6Y/PVJUWUL3L
+yn4kTyozjSh5FHpRPHkYIsZNHVXAM++6JPIlAFfn3MRByjDJMhkwx5QnojKHPsub
+8rSI86/LzOu/qbqDtUK7EGVUnCxCHme+7/dqhGSwmYxgrQCRXsS4hZHIc1uOGWOW
+l0AbGLN0cNGozyCKobjgO2DkpO2oq6nkVXdQdFPz4l6hYWt6mG5ahIe1h82du2AB
+AjorZDzEkA4K2Uk4OzgDCM1teYUmZdRLwLLYBJLDM6giqfxHnSaZQRk8QaTUsD1L
+XD8aSPR9yxokDUl4EN9/JLh6yoE0JL1YOHc2Cea9yvXuk1bLJSmeMihwt1PpzjmV
+IziX4K+1HV5MJZ6bgSOg6Yim4Cvl1XEtcOBsrY2iAf570Meqagvd5l4sTyLJuEyH
+0uusZJUDi2c=
+=9Sit
 -----END PGP SIGNATURE-----
 
---Sig_/xj5Yz6NJqb9.XvN6tYAc.uw--
+--Sig_/ZJTX6adI9zZ/4/IrFenN+b2--
