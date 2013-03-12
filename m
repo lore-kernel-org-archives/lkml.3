@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964972Ab3CLXFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:05:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60279 "EHLO
+	id S933656Ab3CLWdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933659Ab3CLWdO (ORCPT
+	with ESMTP id S1755770Ab3CLWcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:14 -0400
+	Tue, 12 Mar 2013 18:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 054/100] drm/i915: reorder setup sequence to have irqs for output setup
-Date: Tue, 12 Mar 2013 15:31:39 -0700
-Message-Id: <20130312223128.792253799@linuxfoundation.org>
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 007/100] xen/pat: Disable PAT using pat_enabled value.
+Date: Tue, 12 Mar 2013 15:30:52 -0700
+Message-Id: <20130312223123.709506172@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,124 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 52d7ecedac3f96fb562cb482c139015372728638 upstream.
+commit c79c49826270b8b0061b2fca840fc3f013c8a78a upstream.
 
-Otherwise the new&shiny irq-driven gmbus and dp aux code won't work that
-well. Noticed since the dp aux code doesn't have an automatic fallback
-with a timeout (since the hw provides for that already).
+The git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+(xen/pat: Disable PAT support for now) explains in details why
+we want to disable PAT for right now. However that
+change was not enough and we should have also disabled
+the pat_enabled value. Otherwise we end up with:
 
-v2: Simple move drm_irq_install before intel_modeset_gem_init, as
-suggested by Ben Widawsky.
+mmap-example:3481 map pfn expected mapping type write-back for
+[mem 0x00010000-0x00010fff], got uncached-minus
+ ------------[ cut here ]------------
+WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774 untrack_pfn+0xb8/0xd0()
+mem 0x00010000-0x00010fff], got uncached-minus
+------------[ cut here ]------------
+WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774
+untrack_pfn+0xb8/0xd0()
+...
+Pid: 3481, comm: mmap-example Tainted: GF 3.8.0-6-generic #13-Ubuntu
+Call Trace:
+ [<ffffffff8105879f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff810587fa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8104bcc8>] untrack_pfn+0xb8/0xd0
+ [<ffffffff81156c1c>] unmap_single_vma+0xac/0x100
+ [<ffffffff81157459>] unmap_vmas+0x49/0x90
+ [<ffffffff8115f808>] exit_mmap+0x98/0x170
+ [<ffffffff810559a4>] mmput+0x64/0x100
+ [<ffffffff810560f5>] dup_mm+0x445/0x660
+ [<ffffffff81056d9f>] copy_process.part.22+0xa5f/0x1510
+ [<ffffffff81057931>] do_fork+0x91/0x350
+ [<ffffffff81057c76>] sys_clone+0x16/0x20
+ [<ffffffff816ccbf9>] stub_clone+0x69/0x90
+ [<ffffffff816cc89d>] ? system_call_fastpath+0x1a/0x1f
+---[ end trace 4918cdd0a4c9fea4 ]---
 
-v3: Now that interrupts are enabled before all connectors are fully
-set up, we might fall over serving a HPD interrupt while things are
-still being set up. Instead of jumping through massive hoops and
-complicating the code with a separate hpd irq enable step, simply
-block out the hotplug work item from doing anything until things are
-in place.
+(a similar message shows up if you end up launching 'mcelog')
 
-v4: Actually, we can enable hotplug processing only after the fbdev is
-fully set up, since we call down into the fbdev from the hotplug work
-functions. So stick the hpd enabling right next to the poll helper
-initialization.
+The call chain is (as analyzed by Liu, Jinsong):
+do_fork
+  --> copy_process
+    --> dup_mm
+      --> dup_mmap
+       	--> copy_page_range
+          --> track_pfn_copy
+            --> reserve_pfn_range
+              --> line 624: flags != want_flags
+It comes from different memory types of page table (_PAGE_CACHE_WB) and MTRR
+(_PAGE_CACHE_UC_MINUS).
 
-v5: We need to enable irqs before intel_modeset_init, since that
-function sets up the outputs.
+Stefan Bader dug in this deep and found out that:
+"That makes it clearer as this will do
 
-v6: Fixup cleanup sequence, too.
+reserve_memtype(...)
+--> pat_x_mtrr_type
+  --> mtrr_type_lookup
+    --> __mtrr_type_lookup
 
-Reviewed-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+And that can return -1/0xff in case of MTRR not being enabled/initialized. Which
+is not the case (given there are no messages for it in dmesg). This is not equal
+to MTRR_TYPE_WRBACK and thus becomes _PAGE_CACHE_UC_MINUS.
+
+It looks like the problem starts early in reserve_memtype:
+
+       	if (!pat_enabled) {
+                /* This is identical to page table setting without PAT */
+                if (new_type) {
+                        if (req_type == _PAGE_CACHE_WC)
+                                *new_type = _PAGE_CACHE_UC_MINUS;
+                        else
+                               	*new_type = req_type & _PAGE_CACHE_MASK;
+               	}
+                return 0;
+        }
+
+This would be what we want, that is clearing the PWT and PCD flags from the
+supported flags - if pat_enabled is disabled."
+
+This patch does that - disabling PAT.
+
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-and-Tested-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |   23 ++++++++++++++---------
- drivers/gpu/drm/i915/i915_drv.h |    1 +
- drivers/gpu/drm/i915/i915_irq.c |    4 ++++
- 3 files changed, 19 insertions(+), 9 deletions(-)
+ arch/x86/xen/enlighten.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1297,19 +1297,21 @@ static int i915_load_modeset_init(struct
- 	if (ret)
- 		goto cleanup_vga_switcheroo;
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -67,6 +67,7 @@
+ #include <asm/hypervisor.h>
+ #include <asm/mwait.h>
+ #include <asm/pci_x86.h>
++#include <asm/pat.h>
  
-+	ret = drm_irq_install(dev);
-+	if (ret)
-+		goto cleanup_gem_stolen;
-+
-+	/* Important: The output setup functions called by modeset_init need
-+	 * working irqs for e.g. gmbus and dp aux transfers. */
- 	intel_modeset_init(dev);
- 
- 	ret = i915_gem_init(dev);
- 	if (ret)
--		goto cleanup_gem_stolen;
+ #ifdef CONFIG_ACPI
+ #include <linux/acpi.h>
+@@ -1417,7 +1418,14 @@ asmlinkage void __init xen_start_kernel(
+ 	 */
+ 	acpi_numa = -1;
+ #endif
 -
--	intel_modeset_gem_init(dev);
-+		goto cleanup_irq;
- 
- 	INIT_WORK(&dev_priv->console_resume_work, intel_console_resume);
- 
--	ret = drm_irq_install(dev);
--	if (ret)
--		goto cleanup_gem;
-+	intel_modeset_gem_init(dev);
- 
- 	/* Always safe in the mode setting case. */
- 	/* FIXME: do pre/post-mode set stuff in core KMS code */
-@@ -1317,7 +1319,10 @@ static int i915_load_modeset_init(struct
- 
- 	ret = intel_fbdev_init(dev);
- 	if (ret)
--		goto cleanup_irq;
-+		goto cleanup_gem;
-+
-+	/* Only enable hotplug handling once the fbdev is fully set up. */
-+	dev_priv->enable_hotplug_processing = true;
- 
- 	drm_kms_helper_poll_init(dev);
- 
-@@ -1326,13 +1331,13 @@ static int i915_load_modeset_init(struct
- 
- 	return 0;
- 
--cleanup_irq:
--	drm_irq_uninstall(dev);
- cleanup_gem:
- 	mutex_lock(&dev->struct_mutex);
- 	i915_gem_cleanup_ringbuffer(dev);
- 	mutex_unlock(&dev->struct_mutex);
- 	i915_gem_cleanup_aliasing_ppgtt(dev);
-+cleanup_irq:
-+	drm_irq_uninstall(dev);
- cleanup_gem_stolen:
- 	i915_gem_cleanup_stolen(dev);
- cleanup_vga_switcheroo:
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -672,6 +672,7 @@ typedef struct drm_i915_private {
- 
- 	u32 hotplug_supported_mask;
- 	struct work_struct hotplug_work;
-+	bool enable_hotplug_processing;
- 
- 	int num_pipe;
- 	int num_pch_pll;
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -287,6 +287,10 @@ static void i915_hotplug_work_func(struc
- 	struct drm_mode_config *mode_config = &dev->mode_config;
- 	struct intel_encoder *encoder;
- 
-+	/* HPD irq before everything is fully set up. */
-+	if (!dev_priv->enable_hotplug_processing)
-+		return;
-+
- 	mutex_lock(&mode_config->mutex);
- 	DRM_DEBUG_KMS("running encoder hotplug functions\n");
- 
++#ifdef CONFIG_X86_PAT
++	/*
++	 * For right now disable the PAT. We should remove this once
++	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
++	 * (xen/pat: Disable PAT support for now) is reverted.
++	 */
++	pat_enabled = 0;
++#endif
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
 
 
