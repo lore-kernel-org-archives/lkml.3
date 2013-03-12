@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593Ab3CLVVF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 17:21:05 -0400
-Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:58095 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755716Ab3CLVVD convert rfc822-to-8bit (ORCPT
+	id S933582Ab3CLVWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 17:22:39 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:47816 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932583Ab3CLVWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 17:21:03 -0400
-X-Greylist: delayed 3330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 17:21:03 EDT
+	Tue, 12 Mar 2013 17:22:37 -0400
+Date: Tue, 12 Mar 2013 14:22:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, David Teigland <teigland@redhat.com>
+Subject: [PATCH] idr: idr_alloc() shouldn't trigger lowmem warning when
+ preloaded
+Message-ID: <20130312212233.GK25266@htj.dyndns.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+ <1360179649-22465-68-git-send-email-tj@kernel.org>
+ <20130311192955.GA23892@redhat.com>
+ <20130311202818.GN24522@htj.dyndns.org>
+ <20130312151745.GB7436@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: w1-gpio: fix erroneous gpio requests
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <20130312202028.GA6060@kroah.com>
-Date: Wed, 13 Mar 2013 04:24:20 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Johan Hovold <jhovold@gmail.com>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Mack <zonque@gmail.com>,
-        =?iso-8859-1?Q?Ville_Syrj=E4l=E4?= <syrjala@sci.fi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FE853F2C-A85A-4D0E-BF0E-80698F3E6567@jcrosoft.com>
-References: <1363116094-8630-1-git-send-email-jhovold@gmail.com> <20130312202028.GA6060@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1499)
-X-Ovh-Tracer-Id: 10304235947661962102
-X-Ovh-Remote: 124.77.162.22 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Disposition: inline
+In-Reply-To: <20130312151745.GB7436@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+GFP_NOIO is often used for idr_alloc() inside preloaded section as the
+allocation mask doesn't really matter.  If the idr tree needs to be
+expanded, idr_alloc() first tries to allocate using the specified
+allocation mask and if it fails falls back to the preloaded buffer.
+This order prevent non-preloading idr_alloc() users from taking
+advantage of preloading ones by using preload buffer without filling
+it shifting the burden of allocation to the preload users.
 
-On Mar 13, 2013, at 4:20 AM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+Unfortunately, this allowed/expected-to-fail kmem_cache allocation
+ends up generating spurious slab lowmem warning before succeeding the
+request from the preload buffer.
 
-> On Tue, Mar 12, 2013 at 08:21:34PM +0100, Johan Hovold wrote:
->> Fix regression introduced by commit d2323cf773 ("onewire: w1-gpio: add
->> ext_pullup_enable pin in platform data") which added a gpio entry to the
->> platform data, but did not add the required initialisers to the board
->> files using it. Consequently, the driver would request gpio 0 at probe,
->> which could break other uses of the corresponding pin.
->> 
->> On AT91 requesting gpio 0 changes the pin muxing for PIOA0, which, for
->> instance, breaks SPI0 on at91sam9g20.
+This patch makes idr_layer_alloc() add __GFP_NOWARN to the first
+kmem_cache attempt and try kmem_cache again w/o __GFP_NOWARN after
+allocation from preload_buffer fails so that lowmem warning is
+generated if not suppressed by the original @gfp_mask.
 
-not only on AT91, 0 is a valid gpio
->> 
->> Cc: stable <stable@vger.kernel.org>
->> Signed-off-by: Johan Hovold <jhovold@gmail.com>
->> ---
->> 
->> Not sure whose tree this should go in through, so adding relevant maintainers
->> and authors as CC.
-> 
-> As I took the offending patch, I might as well take this fix for it as
-> well.
-> 
-> Unless anyone else objects?
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: David Teigland <teigland@redhat.com>
+Tested-by: David Teigland <teigland@redhat.com>
+---
+Hello, Andrew.
 
-Best Regards,
-J.
+I forgot about slab lowmem warning when swapping the positions of
+kmem_cache alloc and preload buffer alloc and it's generating spurious
+lowmem warnings.  Should probably be shipped to Linus soonish.
 
+Thanks!
+
+ lib/idr.c |   38 +++++++++++++++++++++++++-------------
+ 1 file changed, 25 insertions(+), 13 deletions(-)
+
+diff --git a/lib/idr.c b/lib/idr.c
+index 00739aa..e410e5d 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -106,8 +106,14 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
+ 	if (layer_idr)
+ 		return get_from_free_list(layer_idr);
+ 
+-	/* try to allocate directly from kmem_cache */
+-	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
++	/*
++	 * Try to allocate directly from kmem_cache.  We want to try this
++	 * before preload buffer; otherwise, non-preloading idr_alloc()
++	 * users will end up taking advantage of preloading ones.  As the
++	 * following is allowed to fail for preloaded cases, suppress
++	 * warning this time.
++	 */
++	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask | __GFP_NOWARN);
+ 	if (new)
+ 		return new;
+ 
+@@ -115,18 +121,24 @@ static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
+ 	 * Try to fetch one from the per-cpu preload buffer if in process
+ 	 * context.  See idr_preload() for details.
+ 	 */
+-	if (in_interrupt())
+-		return NULL;
+-
+-	preempt_disable();
+-	new = __this_cpu_read(idr_preload_head);
+-	if (new) {
+-		__this_cpu_write(idr_preload_head, new->ary[0]);
+-		__this_cpu_dec(idr_preload_cnt);
+-		new->ary[0] = NULL;
++	if (!in_interrupt()) {
++		preempt_disable();
++		new = __this_cpu_read(idr_preload_head);
++		if (new) {
++			__this_cpu_write(idr_preload_head, new->ary[0]);
++			__this_cpu_dec(idr_preload_cnt);
++			new->ary[0] = NULL;
++		}
++		preempt_enable();
++		if (new)
++			return new;
+ 	}
+-	preempt_enable();
+-	return new;
++
++	/*
++	 * Both failed.  Try kmem_cache again w/o adding __GFP_NOWARN so
++	 * that memory allocation failure warning is printed as intended.
++	 */
++	return kmem_cache_zalloc(idr_layer_cache, gfp_mask);
+ }
+ 
+ static void idr_layer_rcu_free(struct rcu_head *head)
