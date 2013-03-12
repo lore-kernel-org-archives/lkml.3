@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab3CLE7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 00:59:34 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45867 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab3CLE7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 00:59:33 -0400
-X-AuditID: 9c93016f-b7bfaae000003db8-3e-513eb6332179
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf trace: Get rid of a duplicate code
-Date: Tue, 12 Mar 2013 13:59:20 +0900
-Message-Id: <1363064360-7641-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	id S932090Ab3CLE7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 00:59:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31804 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab3CLE7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 00:59:37 -0400
+X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
+   d="scan'208";a="6856238"
+Message-ID: <513EB5DA.2010300@cn.fujitsu.com>
+Date: Tue, 12 Mar 2013 12:58:02 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/18] x86: platform: mrst: remove cast for kmalloc return
+ value
+References: <513EB23D.7020303@cn.fujitsu.com>
+In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 12:58:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 12:58:23,
+	Serialize complete at 2013/03/12 12:58:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+remove cast for kmalloc return value.
 
-Checking of sample.raw_data is duplicated and seems an artifact of
-some git auto merging stuff.  Kill it.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "x86@kernel.org" <x86@kernel.org>
 ---
- tools/perf/builtin-trace.c | 7 -------
- 1 file changed, 7 deletions(-)
+ arch/x86/platform/mrst/mrst.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f0c20ef0cd1c..49fedb51d569 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -527,13 +527,6 @@ again:
- 				continue;
- 			}
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index e31bcd8..a0a0a43 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -356,8 +356,7 @@ static int __init sfi_parse_gpio(struct sfi_table_header *table)
+ 	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
+ 	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
  
--			if (sample.raw_data == NULL) {
--				printf("%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
--				       perf_evsel__name(evsel), sample.tid,
--				       sample.cpu, sample.raw_size);
--				continue;
--			}
--
- 			handler = evsel->handler.func;
- 			handler(trace, evsel, &sample);
- 		}
+-	gpio_table = (struct sfi_gpio_table_entry *)
+-				kmalloc(num * sizeof(*pentry), GFP_KERNEL);
++	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
+ 	if (!gpio_table)
+ 		return -1;
+ 	memcpy(gpio_table, pentry, num * sizeof(*pentry));
 -- 
-1.7.11.7
+1.7.1
 
