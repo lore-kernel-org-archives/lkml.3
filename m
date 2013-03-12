@@ -1,109 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab3CLRsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 13:48:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36755 "EHLO mx1.redhat.com"
+	id S933161Ab3CLRtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 13:49:12 -0400
+Received: from mout.web.de ([212.227.17.11]:62026 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932724Ab3CLRsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 13:48:43 -0400
-Date: Tue, 12 Mar 2013 18:46:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Feng Hong <hongfeng@marvell.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: Regression with orderly_poweroff()
-Message-ID: <20130312174623.GA14509@redhat.com>
-References: <1363058712.4534.12.camel@pasglop> <CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com>
+	id S932454Ab3CLRtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 13:49:11 -0400
+From: Markus <M4rkusXXL@web.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: hybrid raid1 with trim support
+Date: Tue, 12 Mar 2013 18:49:03 +0100
+Message-ID: <3387108.NX1Tlx8b5x@f209>
+User-Agent: KMail/4.9.5 (Linux/3.8.2-gentoo; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9eYNkHnCioQ+Kau8bLFSQMrZDSYbUv4TrGU5xZQ2lrO
+ XjmaNy50q5vJ5UOVYTb1MTDyXpO1CD1NgdZ9/8guDr6KH4T0pO
+ w9p0P5p2OVoLeEhuuE2FYYg5Jhyoop0jR42jiK47zbQCGxE4cd
+ 1eEnkqZL3YZHO9Ro0qfVE7CaZi7I5Bkt8TeoIziUVn6r50oyo4
+ 2yrBPj2riYAPCTtabevKQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12, Linus Torvalds wrote:
->
-> On Mon, Mar 11, 2013 at 8:25 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> >
-> > A couple of weeks ago, David sent an email that went unanswered about a
-> > regression concerning orderly_poweroff(). I think the original patch
-> > causing it should be reverted, here's the actual email with the
-> > explanation:
->
-> Hmm.. You should really have cc'd the people who acked it and were in
-> the sign-off chain too, because all those people are involved with the
-> patch as well.
->
-> Also, the patch doesn't revert cleanly any more after commit
-> 7ff6764061ec ("usermodehelper: cleanup/fix __orderly_poweroff() &&
-> argv_free()") which seems to be a real bug-fix for a double free, but
-> which really doesn't seem to work together with UMH_NO_WAIT.
->
-> So before reverting that one too, let's at least get the people who
-> were involved with the original patch (and the bugfix that relies on
-> it) in the email thread.
->
-> I'm leaving David's quoted report for the new people..
->
->                 Linus
->
-> ---
-> > Subject: orderly_poweroff() is no longer safe in atomic context
-> >
-> > Commit 6c0c0d4d1080840eabb3d055d2fd81911111c5fd "poweroff: fix bug in
-> > orderly_poweroff()" apparently fixes one bug in orderly_poweroff(),
-> > but introduces another.  The comments on orderly_poweroff() claim it
-> > can be called from any context - and indeed we call it from interrupt
-> > context in arch/powerpc/platforms/pseries/ras.c for example.  But
-> > since that commit this is no longer safe, since
-> > call_usermodehelper_fns() is not safe in interrupt context without the
-> > UMH_NO_WAIT option.
-> >
-> > I'm having trouble understanding the commit message to see what the
-> > original bug being fixed was.  Specifically I can't make sense of:
-> >
-> >   |  The bug here is, step 1 is always successful with param
-> >   |  UMH_NO_WAIT, which obey the design goal of orderly_poweroff.
+Hello!
 
-I guess this means that UMH_NO_WAIT is pointless, it (almost) never
-fails and thus we do not do kernel_power_off() if, say, there is no
-/sbin/poweroff.
+I created a hybrid raid1 with one ssd and one hdd. Used writemostly and writebehind and put ext4 with discard enabled on it.
+This setup worked quite well for the last months (last kernel was 3.7.6). But now as I booted 3.8.2 the hdd was dropped from the raid with:
+> md/raid1:md2: Disk failure on sdb1, disabling device.
+> md/raid1:md2: Operation continuing on 1 devices.
 
-Well, if it can be called from interrupt, we should either skip
-call_usermodehelper() or use schedule_work() for that...
+Re-adding this drive it will try to resync but the hdd will be dropped short time after. Now I remounted the device without the discard flag and the resync and usage works as before.
+After remounting it again with discard enabled the hdd is dropped again. So I think this is the culprit as the hdd does obviously not support TRIM...
 
-And I didn't notice argv_split(GFP_ATOMIC), this is pointless because
-we are going to sleep anyway.
+As it worked fine before, I think this is a regression? Or is this an intended change?
 
-So,
 
-	- We can simply change orderly_poweroff() to use queue_work().
-
-	  This makes it asynchronous even if we do not run the command.
-
-	  And with this change it can only return the error if powerof_work
-	  is already pending, perhaps this is fine. Only 2 callers check
-	  the returned error just to print the warning. And this way
-	  we can kill inprog/shutting_down in envctrl_do_shutdown() and
-	  do_envctrl_shutdown().
-
-	- We can add orderly_poweroff_async() which does this, and change
-	  the in_atomic() callers.
-
-	- We can add "bool in_atomic" argument which means do-not-exec
-	  or use-workqueue.
-
-	- Anything else?
-
-Oleg.
-
+Thanks,
+Markus
