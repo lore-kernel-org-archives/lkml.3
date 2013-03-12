@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab3CLLqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:46:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54128 "EHLO bear.ext.ti.com"
+	id S932809Ab3CLLq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:46:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39602 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932633Ab3CLLoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:44:19 -0400
+	id S1755506Ab3CLLoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:44:13 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 20/24] ARM: dts: omap4-panda: Add USB Host support
-Date: Tue, 12 Mar 2013 13:43:22 +0200
-Message-ID: <1363088606-2692-21-git-send-email-rogerq@ti.com>
+Subject: [PATCH 17/24] ARM: OMAP3: overo: Adapt to ehci-omap changes
+Date: Tue, 12 Mar 2013 13:43:19 +0200
+Message-ID: <1363088606-2692-18-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
 References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
@@ -23,102 +23,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the RESET and Power regulators for the USB PHY,
-the USB Host port mode and the PHY device.
+Add platform device for 'nop-usb-xceiv'. This will be used as a
+PHY for HS USB Port 2, so provide binding information for it.
 
-Also provide pin multiplexer information for the USB host
-pins.
+Model RESET for HS USB Port 2 as GPIO fixed regulator and link
+it to the 'nop-usb-xceiv' PHY.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/boot/dts/omap4-panda.dts |   56 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 56 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/board-overo.c |   54 ++++++++++++++++++++++++++++++++----
+ 1 files changed, 48 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 4122efe..cfc7683 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -57,6 +57,36 @@
- 			"AFML", "Line In",
- 			"AFMR", "Line In";
- 	};
-+
-+	/* HS USB Port 1 RESET */
-+	hsusb1_reset: hsusb1_reset_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_reset";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio2 30 0>;	/* gpio_62 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
-+
-+	/* HS USB Port 1 Power */
-+	hsusb1_power: hsusb1_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio1 1 0>;	/* gpio_1 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
-+
-+	/* HS USB Host PHY on PORT 1 */
-+	hsusb1_phy: hsusb1_phy {
-+		compatible = "usb-nop-xceiv";
-+		reset-supply = <&hsusb1_reset>;
-+		vcc-supply = <&hsusb1_power>;
-+		clock-frequency = <19200000>;
-+	};
- };
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index 86bab51..5f93ba0 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -31,6 +31,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/spi/spi.h>
++#include <linux/usb/phy.h>
  
- &omap4_pmx_core {
-@@ -67,6 +97,7 @@
- 			&mcbsp1_pins
- 			&dss_hdmi_pins
- 			&tpd12s015_pins
-+			&hsusbb1_pins
- 	>;
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+@@ -458,14 +459,51 @@ static int __init overo_spi_init(void)
+ 	return 0;
+ }
  
- 	twl6040_pins: pinmux_twl6040_pins {
-@@ -110,6 +141,23 @@
- 			0x58 0x10b	/* hdmi_hpd.gpio_63 INPUT PULLDOWN | MODE3 */
- 		>;
- 	};
-+
-+	hsusbb1_pins: pinmux_hsusbb1_pins {
-+		pinctrl-single,pins = <
-+			0x82 0x10C	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_clk INPUT | PULLDOWN */
-+			0x84 0x4	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_stp OUTPUT */
-+			0x86 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dir INPUT | PULLDOWN */
-+			0x88 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_nxt INPUT | PULLDOWN */
-+			0x8a 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat0 INPUT | PULLDOWN */
-+			0x8c 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat1 INPUT | PULLDOWN */
-+			0x8e 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat2 INPUT | PULLDOWN */
-+			0x90 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat3 INPUT | PULLDOWN */
-+			0x92 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat4 INPUT | PULLDOWN */
-+			0x94 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat5 INPUT | PULLDOWN */
-+			0x96 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat6 INPUT | PULLDOWN */
-+			0x98 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat7 INPUT | PULLDOWN */
-+		>;
-+	    };
- };
- 
- &i2c1 {
-@@ -206,3 +254,11 @@
- &twl_usb_comparator {
- 	usb-supply = <&vusb>;
- };
-+
-+&usbhshost {
-+	port1-mode = "ehci-phy";
++/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
++static struct platform_device hsusb2_phy_device = {
++	.name = "nop_usb_xceiv",
++	.id = 2,
 +};
 +
-+&usbhsehci {
-+	phys = <&hsusb1_phy>;
++/* Regulator for HS USB Port 2 PHY reset */
++static struct regulator_consumer_supply hsusb2_reset_supplies[] = {
++	/* Link PHY device to reset supply so it gets used in the PHY driver */
++	REGULATOR_SUPPLY("reset", "nop_usb_xceiv.2"),
 +};
++
++static struct regulator_init_data hsusb2_reset_data = {
++	.constraints = {
++		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++	},
++	.consumer_supplies = hsusb2_reset_supplies,
++	.num_consumer_supplies = ARRAY_SIZE(hsusb2_reset_supplies),
++};
++
++static struct fixed_voltage_config hsusb2_reset_config = {
++	.supply_name = "hsusb2_reset",
++	.microvolts = 3300000,
++	.gpio = OVERO_GPIO_USBH_NRESET,
++	.startup_delay = 70000, /* 70msec */
++	.enable_high = 1,
++	.enabled_at_boot = 0,   /* keep in RESET */
++	.init_data = &hsusb2_reset_data,
++};
++
++static struct platform_device hsusb2_reset_device = {
++	.name = "reg-fixed-voltage",
++	.id = PLATFORM_DEVID_AUTO,
++	.dev = {
++		.platform_data = &hsusb2_reset_config,
++	},
++};
++
++static struct platform_device *overo_devices[] __initdata = {
++	&hsusb2_phy_device,
++	&hsusb2_reset_device,
++};
++
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+-	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+-	.phy_reset  = true,
+-	.reset_gpio_port[0]  = -EINVAL,
+-	.reset_gpio_port[1]  = OVERO_GPIO_USBH_NRESET,
+-	.reset_gpio_port[2]  = -EINVAL
+ };
+ 
+ #ifdef CONFIG_OMAP_MUX
+@@ -502,6 +540,10 @@ static void __init overo_init(void)
+ 			ARRAY_SIZE(overo_nand_partitions), NAND_CS, 0, NULL);
+ 	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
++
++	platform_add_devices(overo_devices, ARRAY_SIZE(overo_devices));
++	/* PHY on HSUSB Port 2 i.e. index 1 */
++	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
+ 	usbhs_init(&usbhs_bdata);
+ 	overo_spi_init();
+ 	overo_init_smsc911x();
 -- 
 1.7.4.1
 
