@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab3CLItG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 04:49:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64097 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab3CLItC (ORCPT
+	id S1755245Ab3CLIwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 04:52:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51184 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756Ab3CLIwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 04:49:02 -0400
-Date: Tue, 12 Mar 2013 09:48:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wakeup buddy
-Message-ID: <20130312084857.GA4859@gmail.com>
-References: <5136EB06.2050905@linux.vnet.ibm.com>
- <1362645372.2606.11.camel@laptop>
- <20130311082105.GB12742@gmail.com>
- <513DA076.80009@linux.vnet.ibm.com>
- <20130311094031.GA14221@gmail.com>
- <513EC47E.9040602@linux.vnet.ibm.com>
+	Tue, 12 Mar 2013 04:52:05 -0400
+Date: Tue, 12 Mar 2013 01:50:35 -0700
+From: tip-bot for Zhang Yanfei <tipbot@zytor.com>
+Message-ID: <tip-ad0304cfd90f46bfcae3a6cd2b69067741541730@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        tglx@linutronix.de
+In-Reply-To: <513EB5DA.2010300@cn.fujitsu.com>
+References: <513EB5DA.2010300@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/platform/intel/mrst:
+  Remove cast for kmalloc() return value
+Git-Commit-ID: ad0304cfd90f46bfcae3a6cd2b69067741541730
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <513EC47E.9040602@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 12 Mar 2013 01:50:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  ad0304cfd90f46bfcae3a6cd2b69067741541730
+Gitweb:     http://git.kernel.org/tip/ad0304cfd90f46bfcae3a6cd2b69067741541730
+Author:     Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+AuthorDate: Tue, 12 Mar 2013 12:58:02 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 12 Mar 2013 09:10:20 +0100
 
-* Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+x86/platform/intel/mrst: Remove cast for kmalloc() return value
 
-> On 03/11/2013 05:40 PM, Ingo Molnar wrote:
-> > 
-> > * Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
-> > 
-> >> Hi, Ingo
-> >>
-> >> On 03/11/2013 04:21 PM, Ingo Molnar wrote:
-> >> [snip]
-> >>>
-> >>> I have actually written the prctl() approach before, for instrumentation 
-> >>> purposes, and it does wonders to system analysis.
-> >>
-> >> The idea sounds great, we could get many new info to implement more
-> >> smart scheduler, that's amazing :)
-> >>
-> >>>
-> >>> Any objections?
-> >>
-> >> Just one concern, may be I have misunderstand you, but will it cause 
-> >> trouble if the prctl() was indiscriminately used by some applications, 
-> >> will we get fake data?
-> > 
-> > It's their problem: overusing it will increase their CPU overhead. The two 
-> > boundary worst-cases are that they either call it too frequently or too 
-> > rarely:
-> > 
-> >  - too frequently: it approximates the current cpu-runtime work metric
-> > 
-> >  - too infrequently: we just ignore it and fall back to a runtime metric
-> >    if it does not change.
-> > 
-> > It's not like it can be used to get preferential treatment - we don't ever 
-> > balance other tasks against these tasks based on work throughput, we try 
-> > to maximize this workload's work throughput.
-> > 
-> > What could happen is if an app is 'optimized' for a buggy scheduler by 
-> > changing the work metric frequency. We offer no guarantee - apps will be 
-> > best off (and users will be least annoyed) if apps honestly report their 
-> > work metric.
-> > 
-> > Instrumentation/stats/profiling will also double check the correctness of 
-> > this data: if developers/users start relying on the work metric as a 
-> > substitute benchmark number, then app writers will have an additional 
-> > incentive to make them correct.
-> 
-> I see, I could not figure out how to wisely using the info currently, 
-> but I have the feeling that it will make scheduler very different ;-)
-> 
-> May be we could implement the API and get those info ready firstly 
-> (along with the new sched-pipe which provide work tick info), then think 
-> about the way to use them in scheduler, is there any patches on the way?
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/513EB5DA.2010300@cn.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/platform/mrst/mrst.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Absolutely.
-
-Beyond the new prctl no new API is needed: a perf soft event could be 
-added, and/or a tracepoint. Then perf stat and perf record could be used 
-with it. 'perf bench' could be extended to generate the work tick in its 
-'perf bench sched ...' workloads - and for 'perf bench mem numa' as well.
-
-vsyscall-accelerating it could be a separate, more complex step: it needs 
-a per thread writable vsyscall data area to make the overhead to 
-applications near zero. Performance critical apps won't call an extra 
-syscall.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index e31bcd8..a0a0a43 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -356,8 +356,7 @@ static int __init sfi_parse_gpio(struct sfi_table_header *table)
+ 	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
+ 	pentry = (struct sfi_gpio_table_entry *)sb->pentry;
+ 
+-	gpio_table = (struct sfi_gpio_table_entry *)
+-				kmalloc(num * sizeof(*pentry), GFP_KERNEL);
++	gpio_table = kmalloc(num * sizeof(*pentry), GFP_KERNEL);
+ 	if (!gpio_table)
+ 		return -1;
+ 	memcpy(gpio_table, pentry, num * sizeof(*pentry));
