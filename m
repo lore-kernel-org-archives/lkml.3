@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab3CLKp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:45:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36987 "EHLO arroyo.ext.ti.com"
+	id S932692Ab3CLKrh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:47:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36984 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932519Ab3CLKpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:45:24 -0400
+	id S1755397Ab3CLKpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:45:19 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
         <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 08/12] USB: ohci-omap3: Get platform resources by index rather than by name
-Date: Tue, 12 Mar 2013 12:44:46 +0200
-Message-ID: <1363085090-24676-9-git-send-email-rogerq@ti.com>
+Subject: [PATCH 07/12] USB: ehci-omap: Get platform resources by index rather than by name
+Date: Tue, 12 Mar 2013 12:44:45 +0200
+Message-ID: <1363085090-24676-8-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363085090-24676-1-git-send-email-rogerq@ti.com>
 References: <1363085090-24676-1-git-send-email-rogerq@ti.com>
@@ -31,30 +31,30 @@ for device tree adaptation.
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ohci-omap3.c |    5 ++---
+ drivers/usb/host/ehci-omap.c |    5 ++---
  1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
-index eb35d96..5ed28c5 100644
---- a/drivers/usb/host/ohci-omap3.c
-+++ b/drivers/usb/host/ohci-omap3.c
-@@ -141,14 +141,13 @@ static int ohci_hcd_omap3_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 57fe985..7d05cce 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -148,14 +148,13 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
  		return -ENODEV;
  	}
  
--	irq = platform_get_irq_byname(pdev, "ohci-irq");
+-	irq = platform_get_irq_byname(pdev, "ehci-irq");
 +	irq = platform_get_irq(pdev, 0);
  	if (irq < 0) {
- 		dev_err(dev, "OHCI irq failed\n");
+ 		dev_err(dev, "EHCI irq failed\n");
  		return -ENODEV;
  	}
  
--	res = platform_get_resource_byname(pdev,
--				IORESOURCE_MEM, "ohci");
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev, "UHH OHCI get resource failed\n");
- 		return -ENOMEM;
+-	res =  platform_get_resource_byname(pdev,
+-				IORESOURCE_MEM, "ehci");
++	res =  platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	regs = devm_ioremap_resource(dev, res);
+ 	if (IS_ERR(regs))
+ 		return PTR_ERR(regs);
 -- 
 1.7.4.1
 
