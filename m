@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3CLTUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:20:22 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:39309 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab3CLTUU (ORCPT
+	id S932875Ab3CLTXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:23:24 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:34571 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236Ab3CLTXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:20:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130312191118.GA17439@redhat.com>
-References: <1363058712.4534.12.camel@pasglop>
-	<CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com>
-	<CAKi4VALkUhOtP_8BOi3Mi8fTz8TUPwmwQq7WW27BEDue2wFNRw@mail.gmail.com>
-	<20130312182210.GA15862@redhat.com>
-	<CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com>
-	<20130312191118.GA17439@redhat.com>
-Date: Tue, 12 Mar 2013 12:20:19 -0700
-X-Google-Sender-Auth: W0VfZJCOHc7yvQUkVwGpZ9pMbfs
-Message-ID: <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
-Subject: Re: Regression with orderly_poweroff()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Tue, 12 Mar 2013 15:23:22 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Mack <zonque@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Feng Hong <hongfeng@marvell.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Content-Type: text/plain; charset=UTF-8
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH] ARM: w1-gpio: fix erroneous gpio requests
+Date: Tue, 12 Mar 2013 20:21:34 +0100
+Message-Id: <1363116094-8630-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 12:11 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Confused... which arguments? The only argument is poweroff_cmd, it can't
-> go away and kmalloc(GFP_KERNEL) is fine in work->func() ?
+Fix regression introduced by commit d2323cf773 ("onewire: w1-gpio: add
+ext_pullup_enable pin in platform data") which added a gpio entry to the
+platform data, but did not add the required initialisers to the board
+files using it. Consequently, the driver would request gpio 0 at probe,
+which could break other uses of the corresponding pin.
 
-Hmm. I guess in this particular situation, we really don't have any
-arguments from callers, no. I was confused by the fact that we had
-that argv_split/argv_free thing, but that doesn't actually come from
-the callers, it just comes from our own buffer. So yeah, I guess
-everything could just go into a workqueue.
+On AT91 requesting gpio 0 changes the pin muxing for PIOA0, which, for
+instance, breaks SPI0 on at91sam9g20.
 
-               Linus
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+
+Not sure whose tree this should go in through, so adding relevant maintainers
+and authors as CC.
+
+/Johan
+
+ arch/arm/mach-at91/board-foxg20.c    | 1 +
+ arch/arm/mach-at91/board-stamp9g20.c | 1 +
+ arch/arm/mach-ixp4xx/vulcan-setup.c  | 1 +
+ arch/arm/mach-pxa/raumfeld.c         | 1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/arch/arm/mach-at91/board-foxg20.c b/arch/arm/mach-at91/board-foxg20.c
+index 191d37c..1478294 100644
+--- a/arch/arm/mach-at91/board-foxg20.c
++++ b/arch/arm/mach-at91/board-foxg20.c
+@@ -176,6 +176,7 @@ static struct w1_gpio_platform_data w1_gpio_pdata = {
+ 	/* If you choose to use a pin other than PB16 it needs to be 3.3V */
+ 	.pin		= AT91_PIN_PB16,
+ 	.is_open_drain  = 1,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ static struct platform_device w1_device = {
+diff --git a/arch/arm/mach-at91/board-stamp9g20.c b/arch/arm/mach-at91/board-stamp9g20.c
+index 48a962b..58a6758 100644
+--- a/arch/arm/mach-at91/board-stamp9g20.c
++++ b/arch/arm/mach-at91/board-stamp9g20.c
+@@ -188,6 +188,7 @@ static struct spi_board_info portuxg20_spi_devices[] = {
+ static struct w1_gpio_platform_data w1_gpio_pdata = {
+ 	.pin		= AT91_PIN_PA29,
+ 	.is_open_drain	= 1,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ static struct platform_device w1_device = {
+diff --git a/arch/arm/mach-ixp4xx/vulcan-setup.c b/arch/arm/mach-ixp4xx/vulcan-setup.c
+index 2798f43..1dddc1b 100644
+--- a/arch/arm/mach-ixp4xx/vulcan-setup.c
++++ b/arch/arm/mach-ixp4xx/vulcan-setup.c
+@@ -163,6 +163,7 @@ static struct platform_device vulcan_max6369 = {
+ 
+ static struct w1_gpio_platform_data vulcan_w1_gpio_pdata = {
+ 	.pin			= 14,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ static struct platform_device vulcan_w1_gpio = {
+diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
+index 25b08bfa..6283fcb 100644
+--- a/arch/arm/mach-pxa/raumfeld.c
++++ b/arch/arm/mach-pxa/raumfeld.c
+@@ -505,6 +505,7 @@ static struct w1_gpio_platform_data w1_gpio_platform_data = {
+ 	.pin			= GPIO_ONE_WIRE,
+ 	.is_open_drain		= 0,
+ 	.enable_external_pullup	= w1_enable_external_pullup,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ struct platform_device raumfeld_w1_gpio_device = {
+-- 
+1.8.1.5
+
