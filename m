@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab3CLWcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:32:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60061 "EHLO
+	id S934025Ab3CLXR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:17:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab3CLWcf (ORCPT
+	with ESMTP id S933421Ab3CLWcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:35 -0400
+	Tue, 12 Mar 2013 18:32:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Pisati <p.pisati@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 002/100] ARM: fix scheduling while atomic warning in alignment handling code
-Date: Tue, 12 Mar 2013 15:30:47 -0700
-Message-Id: <20130312223123.145457971@linuxfoundation.org>
+        Benny Halevy <bhalevy@tonian.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 028/100] pnfs: fix resend_to_mds for directio
+Date: Tue, 12 Mar 2013 15:31:13 -0700
+Message-Id: <20130312223126.069643910@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,77 +27,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Benny Halevy <bhalevy@tonian.com>
 
-commit b255188f90e2bade1bd11a986dd1ca4861869f4d upstream.
+commit 78f33277f96430ea001c39e952f6b8200b2ab850 upstream.
 
-Paolo Pisati reports that IPv6 triggers this warning:
+Pass the directio request on pageio_init to clean up the API.
 
-BUG: scheduling while atomic: swapper/0/0/0x40000100
-Modules linked in:
-[<c001b1c4>] (unwind_backtrace+0x0/0xf0) from [<c0503c5c>] (__schedule_bug+0x48/0x5c)
-[<c0503c5c>] (__schedule_bug+0x48/0x5c) from [<c0508608>] (__schedule+0x700/0x740)
-[<c0508608>] (__schedule+0x700/0x740) from [<c007007c>] (__cond_resched+0x24/0x34)
-[<c007007c>] (__cond_resched+0x24/0x34) from [<c05086dc>] (_cond_resched+0x3c/0x44)
-[<c05086dc>] (_cond_resched+0x3c/0x44) from [<c0021f6c>] (do_alignment+0x178/0x78c)
-[<c0021f6c>] (do_alignment+0x178/0x78c) from [<c00083e0>] (do_DataAbort+0x34/0x98)
-[<c00083e0>] (do_DataAbort+0x34/0x98) from [<c0509a60>] (__dabt_svc+0x40/0x60)
-Exception stack(0xc0763d70 to 0xc0763db8)
-3d60:                                     e97e805e e97e806e 2c000000 11000000
-3d80: ea86bb00 0000002c 00000011 e97e807e c076d2a8 e97e805e e97e806e 0000002c
-3da0: 3d000000 c0763dbc c04b98fc c02a8490 00000113 ffffffff
-[<c0509a60>] (__dabt_svc+0x40/0x60) from [<c02a8490>] (__csum_ipv6_magic+0x8/0xc8)
+Percolate pg_dreq from original nfs_pageio_descriptor to the
+pnfs_{read,write}_done_resend_to_mds and use it on respective
+call to nfs_pageio_init_{read,write} on the newly created
+nfs_pageio_descriptor.
 
-Fix this by using probe_kernel_address() stead of __get_user().
+Reproduced by command:
+ mount -o vers=4.1 server:/ /mnt
+ dd bs=128k count=8 if=/dev/zero of=/mnt/dd.out oflag=direct
 
-Reported-by: Paolo Pisati <p.pisati@gmail.com>
-Tested-by: Paolo Pisati <p.pisati@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+IP: [<ffffffffa021a3a8>] atomic_inc+0x4/0x9 [nfs]
+PGD 34786067 PUD 34794067 PMD 0
+Oops: 0002 [#1] SMP
+Modules linked in: nfs_layout_nfsv41_files nfsv4 nfs nfsd lockd nfs_acl auth_rpcgss exportfs sunrpc btrfs zlib_deflate libcrc32c ipv6 autofs4
+CPU 1
+Pid: 259, comm: kworker/1:2 Not tainted 3.8.0-rc6 #2 Bochs Bochs
+RIP: 0010:[<ffffffffa021a3a8>]  [<ffffffffa021a3a8>] atomic_inc+0x4/0x9 [nfs]
+RSP: 0018:ffff880038f8fa68  EFLAGS: 00010206
+RAX: ffffffffa021a6a9 RBX: ffff880038f8fb48 RCX: 00000000000a0000
+RDX: ffffffffa021e616 RSI: ffff8800385e9a40 RDI: 0000000000000028
+RBP: ffff880038f8fa68 R08: ffffffff81ad6720 R09: ffff8800385e9510
+R10: ffffffffa0228450 R11: ffff880038e87418 R12: ffff8800385e9a40
+R13: ffff8800385e9a70 R14: ffff880038f8fb38 R15: ffffffffa0148878
+FS:  0000000000000000(0000) GS:ffff88003e400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000028 CR3: 0000000034789000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process kworker/1:2 (pid: 259, threadinfo ffff880038f8e000, task ffff880038302480)
+Stack:
+ ffff880038f8fa78 ffffffffa021a6bf ffff880038f8fa88 ffffffffa021bb82
+ ffff880038f8fae8 ffffffffa021f454 ffff880038f8fae8 ffffffff8109689d
+ ffff880038f8fab8 ffffffff00000006 0000000000000000 ffff880038f8fb48
+Call Trace:
+ [<ffffffffa021a6bf>] nfs_direct_pgio_init+0x16/0x18 [nfs]
+ [<ffffffffa021bb82>] nfs_pgheader_init+0x6a/0x6c [nfs]
+ [<ffffffffa021f454>] nfs_generic_pg_writepages+0x51/0xf8 [nfs]
+ [<ffffffff8109689d>] ? mark_held_locks+0x71/0x99
+ [<ffffffffa0148878>] ? rpc_release_resources_task+0x37/0x37 [sunrpc]
+ [<ffffffffa021bc25>] nfs_pageio_doio+0x1a/0x43 [nfs]
+ [<ffffffffa021be7c>] nfs_pageio_complete+0x16/0x2c [nfs]
+ [<ffffffffa02608be>] pnfs_write_done_resend_to_mds+0x95/0xc5 [nfsv4]
+ [<ffffffffa0148878>] ? rpc_release_resources_task+0x37/0x37 [sunrpc]
+ [<ffffffffa028e27f>] filelayout_reset_write+0x8c/0x99 [nfs_layout_nfsv41_files]
+ [<ffffffffa028e5f9>] filelayout_write_done_cb+0x4d/0xc1 [nfs_layout_nfsv41_files]
+ [<ffffffffa024587a>] nfs4_write_done+0x36/0x49 [nfsv4]
+ [<ffffffffa021f996>] nfs_writeback_done+0x53/0x1cc [nfs]
+ [<ffffffffa021fb1d>] nfs_writeback_done_common+0xe/0x10 [nfs]
+ [<ffffffffa028e03d>] filelayout_write_call_done+0x28/0x2a [nfs_layout_nfsv41_files]
+ [<ffffffffa01488a1>] rpc_exit_task+0x29/0x87 [sunrpc]
+ [<ffffffffa014a0c9>] __rpc_execute+0x11d/0x3cc [sunrpc]
+ [<ffffffff810969dc>] ? trace_hardirqs_on_caller+0x117/0x173
+ [<ffffffffa014a39f>] rpc_async_schedule+0x27/0x32 [sunrpc]
+ [<ffffffffa014a378>] ? __rpc_execute+0x3cc/0x3cc [sunrpc]
+ [<ffffffff8105f8c1>] process_one_work+0x226/0x422
+ [<ffffffff8105f7f4>] ? process_one_work+0x159/0x422
+ [<ffffffff81094757>] ? lock_acquired+0x210/0x249
+ [<ffffffffa014a378>] ? __rpc_execute+0x3cc/0x3cc [sunrpc]
+ [<ffffffff810600d8>] worker_thread+0x126/0x1c4
+ [<ffffffff8105ffb2>] ? manage_workers+0x240/0x240
+ [<ffffffff81064ef8>] kthread+0xb1/0xb9
+ [<ffffffff81064e47>] ? __kthread_parkme+0x65/0x65
+ [<ffffffff815206ec>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81064e47>] ? __kthread_parkme+0x65/0x65
+Code: 00 83 38 02 74 12 48 81 4b 50 00 00 01 00 c7 83 60 07 00 00 01 00 00 00 48 89 df e8 55 fe ff ff 5b 41 5c 5d c3 66 90 55 48 89 e5 <f0> ff 07 5d c3 55 48 89 e5 f0 ff 0f 0f 94 c0 84 c0 0f 95 c0 0f
+RIP  [<ffffffffa021a3a8>] atomic_inc+0x4/0x9 [nfs]
+ RSP <ffff880038f8fa68>
+CR2: 0000000000000028
+
+Signed-off-by: Benny Halevy <bhalevy@tonian.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/alignment.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ fs/nfs/nfs4filelayout.c |    6 ++++--
+ fs/nfs/pnfs.c           |   14 ++++++++++----
+ fs/nfs/pnfs.h           |    6 ++++--
+ 3 files changed, 18 insertions(+), 8 deletions(-)
 
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -749,7 +749,6 @@ do_alignment(unsigned long addr, unsigne
- 	unsigned long instr = 0, instrptr;
- 	int (*handler)(unsigned long addr, unsigned long instr, struct pt_regs *regs);
- 	unsigned int type;
--	mm_segment_t fs;
- 	unsigned int fault;
- 	u16 tinstr = 0;
- 	int isize = 4;
-@@ -760,16 +759,15 @@ do_alignment(unsigned long addr, unsigne
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -99,7 +99,8 @@ static void filelayout_reset_write(struc
  
- 	instrptr = instruction_pointer(regs);
+ 		task->tk_status = pnfs_write_done_resend_to_mds(hdr->inode,
+ 							&hdr->pages,
+-							hdr->completion_ops);
++							hdr->completion_ops,
++							hdr->dreq);
+ 	}
+ }
  
--	fs = get_fs();
--	set_fs(KERNEL_DS);
- 	if (thumb_mode(regs)) {
--		fault = __get_user(tinstr, (u16 *)(instrptr & ~1));
-+		u16 *ptr = (u16 *)(instrptr & ~1);
-+		fault = probe_kernel_address(ptr, tinstr);
- 		if (!fault) {
- 			if (cpu_architecture() >= CPU_ARCH_ARMv7 &&
- 			    IS_T32(tinstr)) {
- 				/* Thumb-2 32-bit */
- 				u16 tinst2 = 0;
--				fault = __get_user(tinst2, (u16 *)(instrptr+2));
-+				fault = probe_kernel_address(ptr + 1, tinst2);
- 				instr = (tinstr << 16) | tinst2;
- 				thumb2_32b = 1;
- 			} else {
-@@ -778,8 +776,7 @@ do_alignment(unsigned long addr, unsigne
- 			}
- 		}
- 	} else
--		fault = __get_user(instr, (u32 *)instrptr);
--	set_fs(fs);
-+		fault = probe_kernel_address(instrptr, instr);
+@@ -119,7 +120,8 @@ static void filelayout_reset_read(struct
  
- 	if (fault) {
- 		type = TYPE_FAULT;
+ 		task->tk_status = pnfs_read_done_resend_to_mds(hdr->inode,
+ 							&hdr->pages,
+-							hdr->completion_ops);
++							hdr->completion_ops,
++							hdr->dreq);
+ 	}
+ }
+ 
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1422,13 +1422,15 @@ EXPORT_SYMBOL_GPL(pnfs_generic_pg_test);
+ 
+ int pnfs_write_done_resend_to_mds(struct inode *inode,
+ 				struct list_head *head,
+-				const struct nfs_pgio_completion_ops *compl_ops)
++				const struct nfs_pgio_completion_ops *compl_ops,
++				struct nfs_direct_req *dreq)
+ {
+ 	struct nfs_pageio_descriptor pgio;
+ 	LIST_HEAD(failed);
+ 
+ 	/* Resend all requests through the MDS */
+ 	nfs_pageio_init_write(&pgio, inode, FLUSH_STABLE, compl_ops);
++	pgio.pg_dreq = dreq;
+ 	while (!list_empty(head)) {
+ 		struct nfs_page *req = nfs_list_entry(head->next);
+ 
+@@ -1463,7 +1465,8 @@ static void pnfs_ld_handle_write_error(s
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
+ 		data->task.tk_status = pnfs_write_done_resend_to_mds(hdr->inode,
+ 							&hdr->pages,
+-							hdr->completion_ops);
++							hdr->completion_ops,
++							hdr->dreq);
+ }
+ 
+ /*
+@@ -1578,13 +1581,15 @@ EXPORT_SYMBOL_GPL(pnfs_generic_pg_writep
+ 
+ int pnfs_read_done_resend_to_mds(struct inode *inode,
+ 				struct list_head *head,
+-				const struct nfs_pgio_completion_ops *compl_ops)
++				const struct nfs_pgio_completion_ops *compl_ops,
++				struct nfs_direct_req *dreq)
+ {
+ 	struct nfs_pageio_descriptor pgio;
+ 	LIST_HEAD(failed);
+ 
+ 	/* Resend all requests through the MDS */
+ 	nfs_pageio_init_read(&pgio, inode, compl_ops);
++	pgio.pg_dreq = dreq;
+ 	while (!list_empty(head)) {
+ 		struct nfs_page *req = nfs_list_entry(head->next);
+ 
+@@ -1615,7 +1620,8 @@ static void pnfs_ld_handle_read_error(st
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
+ 		data->task.tk_status = pnfs_read_done_resend_to_mds(hdr->inode,
+ 							&hdr->pages,
+-							hdr->completion_ops);
++							hdr->completion_ops,
++							hdr->dreq);
+ }
+ 
+ /*
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -230,9 +230,11 @@ struct pnfs_layout_segment *pnfs_update_
+ 
+ void nfs4_deviceid_mark_client_invalid(struct nfs_client *clp);
+ int pnfs_read_done_resend_to_mds(struct inode *inode, struct list_head *head,
+-			const struct nfs_pgio_completion_ops *compl_ops);
++			const struct nfs_pgio_completion_ops *compl_ops,
++			struct nfs_direct_req *dreq);
+ int pnfs_write_done_resend_to_mds(struct inode *inode, struct list_head *head,
+-			const struct nfs_pgio_completion_ops *compl_ops);
++			const struct nfs_pgio_completion_ops *compl_ops,
++			struct nfs_direct_req *dreq);
+ struct nfs4_threshold *pnfs_mdsthreshold_alloc(void);
+ 
+ /* nfs4_deviceid_flags */
 
 
