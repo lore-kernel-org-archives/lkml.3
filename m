@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964807Ab3CLWxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:53:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60635 "EHLO
+	id S964785Ab3CLWxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:53:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933870Ab3CLWoY (ORCPT
+	with ESMTP id S933874Ab3CLWoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:44:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 29/40] crypto: user - fix info leaks in report API
-Date: Tue, 12 Mar 2013 15:43:50 -0700
-Message-Id: <20130312223214.592530767@linuxfoundation.org>
+        David Howells <dhowells@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 30/40] keys: fix race with concurrent install_user_keyrings()
+Date: Tue, 12 Mar 2013 15:43:51 -0700
+Message-Id: <20130312223214.693614971@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -28,209 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
+commit 0da9dfdd2cd9889201bc6f6f43580c99165cd087 upstream.
 
-Three errors resulting in kernel memory disclosure:
+This fixes CVE-2013-1792.
 
-1/ The structures used for the netlink based crypto algorithm report API
-are located on the stack. As snprintf() does not fill the remainder of
-the buffer with null bytes, those stack bytes will be disclosed to users
-of the API. Switch to strncpy() to fix this.
+There is a race in install_user_keyrings() that can cause a NULL pointer
+dereference when called concurrently for the same user if the uid and
+uid-session keyrings are not yet created.  It might be possible for an
+unprivileged user to trigger this by calling keyctl() from userspace in
+parallel immediately after logging in.
 
-2/ crypto_report_one() does not initialize all field of struct
-crypto_user_alg. Fix this to fix the heap info leak.
+Assume that we have two threads both executing lookup_user_key(), both
+looking for KEY_SPEC_USER_SESSION_KEYRING.
 
-3/ For the module name we should copy only as many bytes as
-module_name() returns -- not as much as the destination buffer could
-hold. But the current code does not and therefore copies random data
-from behind the end of the module name, as the module name is always
-shorter than CRYPTO_MAX_ALG_NAME.
+	THREAD A			THREAD B
+	===============================	===============================
+					==>call install_user_keyrings();
+	if (!cred->user->session_keyring)
+	==>call install_user_keyrings()
+					...
+					user->uid_keyring = uid_keyring;
+	if (user->uid_keyring)
+		return 0;
+	<==
+	key = cred->user->session_keyring [== NULL]
+					user->session_keyring = session_keyring;
+	atomic_inc(&key->usage); [oops]
 
-Also switch to use strncpy() to copy the algorithm's name and
-driver_name. They are strings, after all.
+At the point thread A dereferences cred->user->session_keyring, thread B
+hasn't updated user->session_keyring yet, but thread A assumes it is
+populated because install_user_keyrings() returned ok.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+The race window is really small but can be exploited if, for example,
+thread B is interrupted or preempted after initializing uid_keyring, but
+before doing setting session_keyring.
+
+This couldn't be reproduced on a stock kernel.  However, after placing
+systemtap probe on 'user->session_keyring = session_keyring;' that
+introduced some delay, the kernel could be crashed reliably.
+
+Fix this by checking both pointers before deciding whether to return.
+Alternatively, the test could be done away with entirely as it is checked
+inside the mutex - but since the mutex is global, that may not be the best
+way.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/ablkcipher.c  |   12 ++++++------
- crypto/aead.c        |    9 ++++-----
- crypto/ahash.c       |    2 +-
- crypto/blkcipher.c   |    6 +++---
- crypto/crypto_user.c |   20 ++++++++++----------
- crypto/pcompress.c   |    3 +--
- crypto/rng.c         |    2 +-
- crypto/shash.c       |    3 ++-
- 8 files changed, 28 insertions(+), 29 deletions(-)
+ security/keys/process_keys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/crypto/ablkcipher.c
-+++ b/crypto/ablkcipher.c
-@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
- {
- 	struct crypto_report_blkcipher rblkcipher;
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -54,7 +54,7 @@ int install_user_keyrings(void)
  
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
+ 	kenter("%p{%u}", user, user->uid);
  
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
-@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<built-in>");
-+	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
---- a/crypto/aead.c
-+++ b/crypto/aead.c
-@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 aead->geniv ?: "<built-in>");
-+	strncpy(raead.type, "aead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
-@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
-+	strncpy(raead.type, "nivaead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
- {
- 	struct crypto_report_hash rhash;
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
-+	strncpy(rhash.type, "ahash", sizeof(rhash.type));
- 
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_blkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -75,7 +75,7 @@ static int crypto_report_cipher(struct s
- {
- 	struct crypto_report_cipher rcipher;
- 
--	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
-+	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
- 
- 	rcipher.blocksize = alg->cra_blocksize;
- 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
-@@ -94,8 +94,7 @@ static int crypto_report_comp(struct sk_
- {
- 	struct crypto_report_comp rcomp;
- 
--	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
--
-+	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
- 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		sizeof(struct crypto_report_comp), &rcomp);
- 
-@@ -108,12 +107,14 @@ nla_put_failure:
- static int crypto_report_one(struct crypto_alg *alg,
- 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
- {
--	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
--	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
--	       sizeof(ualg->cru_driver_name));
--	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
--	       CRYPTO_MAX_ALG_NAME);
-+	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
-+	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
-+		sizeof(ualg->cru_driver_name));
-+	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
-+		sizeof(ualg->cru_module_name));
- 
-+	ualg->cru_type = 0;
-+	ualg->cru_mask = 0;
- 	ualg->cru_flags = alg->cra_flags;
- 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
- 
-@@ -122,8 +123,7 @@ static int crypto_report_one(struct cryp
- 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
- 		struct crypto_report_larval rl;
- 
--		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
--
-+		strncpy(rl.type, "larval", sizeof(rl.type));
- 		NLA_PUT(skb, CRYPTOCFGA_REPORT_LARVAL,
- 			sizeof(struct crypto_report_larval), &rl);
- 
---- a/crypto/pcompress.c
-+++ b/crypto/pcompress.c
-@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
- {
- 	struct crypto_report_comp rpcomp;
- 
--	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
--
-+	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
- 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		sizeof(struct crypto_report_comp), &rpcomp);
- 
---- a/crypto/rng.c
-+++ b/crypto/rng.c
-@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
- {
- 	struct crypto_report_rng rrng;
- 
--	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
-+	strncpy(rrng.type, "rng", sizeof(rrng.type));
- 
- 	rrng.seedsize = alg->cra_rng.seedsize;
- 
---- a/crypto/shash.c
-+++ b/crypto/shash.c
-@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
- 	struct crypto_report_hash rhash;
- 	struct shash_alg *salg = __crypto_shash_alg(alg);
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
-+	strncpy(rhash.type, "shash", sizeof(rhash.type));
-+
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = salg->digestsize;
- 
+-	if (user->uid_keyring) {
++	if (user->uid_keyring && user->session_keyring) {
+ 		kleave(" = 0 [exist]");
+ 		return 0;
+ 	}
 
 
