@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105Ab3CLQQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:16:31 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:36567 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab3CLQQ3 (ORCPT
+	id S933126Ab3CLQQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:16:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:41077 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932923Ab3CLQQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:16:29 -0400
-Date: Tue, 12 Mar 2013 09:17:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+	Tue, 12 Mar 2013 12:16:32 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, "Nori\, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson\, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH] device: separate all subsys mutexes (was: Re: [BUG]
- potential deadlock led by cpu_hotplug lock (memcg involved))
-Message-ID: <20130312161702.GA4159@kroah.com>
-References: <513ECCFE.3070201@huawei.com>
- <20130312101555.GB30758@dhcp22.suse.cz>
- <20130312110750.GC30758@dhcp22.suse.cz>
- <20130312130504.GD30758@dhcp22.suse.cz>
- <1363102105.24558.4.camel@laptop>
- <20130312154341.GB18852@kroah.com>
- <1363104578.24558.9.camel@laptop>
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 5/9] dmaengine: edma: Add TI EDMA device tree binding
+References: <1362586540-10393-1-git-send-email-mporter@ti.com>
+	<1362586540-10393-6-git-send-email-mporter@ti.com>
+	<90c29a73df9e495f907517c49dd45b88@DFLE72.ent.ti.com>
+	<20130312160945.GX6209@beef>
+Date: Tue, 12 Mar 2013 17:16:26 +0100
+In-Reply-To: <20130312160945.GX6209@beef> (Matt Porter's message of "Tue, 12
+	Mar 2013 12:09:45 -0400")
+Message-ID: <878v5stwyt.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363104578.24558.9.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 05:09:38PM +0100, Peter Zijlstra wrote:
-> On Tue, 2013-03-12 at 08:43 -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Mar 12, 2013 at 04:28:25PM +0100, Peter Zijlstra wrote:
-> > > On Tue, 2013-03-12 at 14:05 +0100, Michal Hocko wrote:
-> > > > @@ -111,17 +111,17 @@ struct bus_type {
-> > > >         struct iommu_ops *iommu_ops;
-> > > >  
-> > > >         struct subsys_private *p;
-> > > > +       struct lock_class_key __key;
-> > > >  };
-> > > 
-> > > Is struct bus_type constrained to static storage or can people go an
-> > > allocate this stuff dynamically? If so, this patch is broken.
-> > 
-> > I don't think anyone is creating this dynamically, it should be static.
-> > Why does this matter, does the lockdep code care about where the
-> > variable is declared (heap vs. static)?
-> 
-> Yeah, lockdep needs keys to be in static storage since its data
-> structures are append-only. Dynamic stuff would require being able to
-> remove everything related to a key so that we can re-purpose it for the
-> next allocation etc.
+>>>>> "Matt" == Matt Porter <mporter@ti.com> writes:
 
-Ah, that makes sense, thanks.
+Hi,
 
-> Lockdep will in fact warn (and disable itself) if you try and feed it
-> dynamic addresses, so using it like this will effectively check your
-> bus_type static storage 'requirement'.
+ Matt> +edma: edma@49000000 {
+ Matt> +	reg = <0x49000000 0x10000>;
+ Matt> +	interrupt-parent = <&intc>;
+ Matt> +	interrupts = <12 13 14>;
+ >> 
+ >> Probably interrupt-parent should be removed from the example as well to
+ >> match am33xx.dtsi
 
-Ok, then it should be fine.  Michal, care to redo this and resend it?
+ Matt> On second thought, I'm not sure we're going to get any direction
+ Matt> on this one so let's just do what feels right and make it reflect
+ Matt> common usage like you suggested.
 
-thanks,
+Sounds good to me!
 
-greg k-h
+-- 
+Bye, Peter Korsgaard
