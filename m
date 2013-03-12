@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab3CLQce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:32:34 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:37561 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab3CLQcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:32:33 -0400
-Message-ID: <513F5864.6090006@imgtec.com>
-Date: Tue, 12 Mar 2013 16:31:32 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH] mmc: dw_mmc: setpower on MMC_POWER_{UP,OFF}
-References: <1363085012-9220-1-git-send-email-james.hogan@imgtec.com> <513F10D9.9060402@samsung.com>
-In-Reply-To: <513F10D9.9060402@samsung.com>
-X-Enigmail-Version: 1.4.6
+	id S933166Ab3CLQcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:32:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50006 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933109Ab3CLQcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 12:32:54 -0400
+Message-ID: <1363105973.2125.11.camel@joe-AO722>
+Subject: Re: [PATCH 12/18] driver: scsi: remove cast for kmalloc/kzalloc
+ return value
+From: Joe Perches <joe@perches.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Mar 2013 09:32:53 -0700
+In-Reply-To: <1363080469.2401.26.camel@dabdike.int.hansenpartnership.com>
+References: <513EB23D.7020303@cn.fujitsu.com>
+	 <513EBC2F.6030601@cn.fujitsu.com>
+	 <1363080469.2401.26.camel@dabdike.int.hansenpartnership.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_03_12_16_32_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/13 11:26, Jaehoon Chung wrote:
-> Looks good to me.
+On Tue, 2013-03-12 at 09:27 +0000, James Bottomley wrote:
+> On Tue, 2013-03-12 at 13:25 +0800, Zhang Yanfei wrote:
+> > remove cast for kmalloc/kzalloc return value.
 > 
-> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+> I've got to ask why?  Just because void * can be assigned to any pointer
+> doesn't mean we should religiously eliminate all casts of void *.  If
+> the driver writer believes there's value making sure of the pointer
+> type, I'm happy to keep the cast.
 
-Thanks Jaehoon
+This view is why scsi has many different styles
+instead of a more consistent kernel style.
 
-Cheers
-James
+For the cciss/hpsa example shown:
 
-> 
-> Best Regards,
-> Jaehoon Chung
-> 
-> On 03/12/2013 07:43 PM, James Hogan wrote:
->> Call the setpower platform callback in response to set_ios with
->> ios->power_mode == MMC_POWER_UP or MMC_POWER_OFF, instead of from the
->> card detect work function.
->>
->> This appears to fix a problem I have where a card stuck in a funny state
->> doesn't get properly cleared by the power being turned off, presumably
->> due to lack of power sequencing. This resulted in the following log
->> messages after boot:
->>
->> mmc0: error -110 whilst initialising SD card
->> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
->> mmc0: error -110 whilst initialising SD card
->> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 200000Hz, actual 199680HZ div = 250)
->> mmc0: error -110 whilst initialising SD card
->> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 195765Hz, actual 195764HZ div = 255)
->> mmc0: error -110 whilst initialising SD card
->> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 400000Hz, actual 399360HZ div = 125)
->> mmc0: error -110 whilst initialising SD card
->> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> Cc: Seungwon Jeon <tgih.jun@samsung.com>
->> Cc: Jaehoon Chung <jh80.chung@samsung.com>
->> Cc: Chris Ball <cjb@laptop.org>
->> ---
->>  drivers/mmc/host/dw_mmc.c | 16 ++++++++--------
->>  1 file changed, 8 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> index 60063cc..1a42c7c 100644
->> --- a/drivers/mmc/host/dw_mmc.c
->> +++ b/drivers/mmc/host/dw_mmc.c
->> @@ -818,6 +818,14 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->>  	switch (ios->power_mode) {
->>  	case MMC_POWER_UP:
->>  		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
->> +		/* Power up slot */
->> +		if (slot->host->pdata->setpower)
->> +			slot->host->pdata->setpower(slot->id, mmc->ocr_avail);
->> +		break;
->> +	case MMC_POWER_OFF:
->> +		/* Power down slot */
->> +		if (slot->host->pdata->setpower)
->> +			slot->host->pdata->setpower(slot->id, 0);
->>  		break;
->>  	default:
->>  		break;
->> @@ -1674,10 +1682,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
->>  			dev_dbg(&slot->mmc->class_dev, "card %s\n",
->>  				present ? "inserted" : "removed");
->>  
->> -			/* Power up slot (before spin_lock, may sleep) */
->> -			if (present != 0 && host->pdata->setpower)
->> -				host->pdata->setpower(slot->id, mmc->ocr_avail);
->> -
->>  			spin_lock_bh(&host->lock);
->>  
->>  			/* Card change detected */
->> @@ -1760,10 +1764,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
->>  
->>  			spin_unlock_bh(&host->lock);
->>  
->> -			/* Power down slot (after spin_unlock, may sleep) */
->> -			if (present == 0 && host->pdata->setpower)
->> -				host->pdata->setpower(slot->id, 0);
->> -
->>  			present = dw_mci_get_cd(mmc);
->>  		}
->>  
->>
-> 
+Do you suggest indirecting structs with typedefs like
+BIG_IOCTL_Command_struct is a good thing as well
+because the driver writer thinks it so?
+
 
