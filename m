@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab3CLUOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:14:01 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33645 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab3CLUN7 (ORCPT
+	id S933493Ab3CLUR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:17:29 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:42359 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab3CLUR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:13:59 -0400
-Date: Tue, 12 Mar 2013 20:13:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: Add support for ARMv7-M's NVIC
-Message-ID: <20130312201342.GY4977@n2100.arm.linux.org.uk>
-References: <1363103673-24720-1-git-send-email-u.kleine-koenig@pengutronix.de> <20130312160101.GW4977@n2100.arm.linux.org.uk> <20130312192702.GQ15375@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130312192702.GQ15375@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 12 Mar 2013 16:17:28 -0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: ben@decadent.org.uk, tmhikaru@gmail.com
+Cc: akpm@linux-foundation.org, zhenzhong.duan@oracle.com,
+        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
+Subject: [PATCH] dmi_scan: proper buf type in dmi_present()
+Date: Wed, 13 Mar 2013 00:17:07 +0400
+Message-Id: <1363119427-4371-1-git-send-email-artem.savkov@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 08:27:02PM +0100, Uwe Kleine-König wrote:
-> On Tue, Mar 12, 2013 at 04:01:01PM +0000, Russell King - ARM Linux wrote:
-> > On Tue, Mar 12, 2013 at 04:54:33PM +0100, Uwe Kleine-König wrote:
-> > > +#include <asm/irq.h>
-> > > +#include <asm/io.h>
-> > 
-> > linux/io.h
-> > 
-> > > +	unsigned int irqs, i, irq_base;
-> > > +
-> > > +	irq_base = irq_alloc_descs(-1, 16, irqs - 16, numa_node_id());
-> > > +	if (IS_ERR_VALUE(irq_base)) {
-> > 
-> > Erm... irq_alloc_descs() returns a negative number on error.
-> > 
-> > 	if ((int)irq_base < 0)
-> > 
-> > or make irq_base an int, and use:
-> > 
-> > 	if (irq_base < 0)
-> Just for me: So the check using IS_ERR_VALUE is as wrong as the other
-> occurences in arch/arm that you just kicked out or is it just ugly?
+buf needs to be unsigned in dmi_present(), otherwise dmi_base calculation
+doesn't work properly leading to a wraparound during dmi_ioremap:
 
-See my recent patch removing all but one.
+[    0.000000] ------------[ cut here ]------------
+[    0.000000] WARNING: at arch/x86/mm/ioremap.c:524 __early_ioremap+0x85/0x18a()
+[    0.000000] Modules linked in:
+[    0.000000] Pid: 0, comm: swapper Not tainted 3.9.0-rc2-next-20130312 #283
+[    0.000000] Call Trace:
+[    0.000000]  [<c1036992>] warn_slowpath_common+0x72/0xa0
+[    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
+[    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
+[    0.000000]  [<c10369e2>] warn_slowpath_null+0x22/0x30
+[    0.000000]  [<c19cc176>] __early_ioremap+0x85/0x18a
+[    0.000000]  [<c19cc1ed>] ? __early_ioremap+0xfc/0x18a
+[    0.000000]  [<c19cc412>] early_ioremap+0xd/0xf
+[    0.000000]  [<c19fbba9>] dmi_present+0xf5/0x22a
+[    0.000000]  [<c19fbd9d>] dmi_scan_machine+0xbf/0x11c
+[    0.000000]  [<c19bd781>] setup_arch+0x4db/0xca0
+[    0.000000]  [<c168105c>] ? printk+0x3d/0x3f
+[    0.000000]  [<c19ba763>] start_kernel+0x7b/0x329
+[    0.000000]  [<c19ba361>] i386_start_kernel+0x137/0x13a
+[    0.000000] ---[ end trace 4eaa2a86a8e2da22 ]---
+[    0.000000] DMI not present or invalid.
 
-What we're suffering from here is a mentality problem - one which seems
-to be basically this:
+Introduced in "dmi_scan: refactor dmi_scan_machine(), {smbios,dmi}_present()"
 
-	If a macro exists which looks like it does the job I need,
-	I must use it.  I won't look at the function and check its
-	range of values that it returns, I'll just use it and hope
-	it's the right thing.
+Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
+---
+ drivers/firmware/dmi_scan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The IS_ERR_VALUE() patch and my IS_ERR_OR_NULL() patches, I've spent on
-each one less than a minute, greping, reading the function, checking its
-range of return values, sometimes longer if I need to look at other
-functions, and worked out what the valid range of return values are.
-
-However, the general pattern in the kernel is this:
-
-	For any function that returns an int, values of success will
-	be positive.  Values indicating errors will be negative.
-
-There are very few int-returning functions which violate that.  There
-is one big, well known exception, and that's in the mmap() stuff,
-where there's a need to return valid values in the range (0..TASK_SIZE)
-but differentiate them from -ve errnos.  This is where IS_ERR_VALUE()
-came from, and why it was created.  See 07ab67c8d0d7c (Fix
-get_unmapped_area sanity tests).
-
-
-Today, it seems that IS_ERR_VALUE() is now being used just as a subsitute
-for testing for < 0... and it needs to stop.  See above - unless there's
-a *good* reason, treat +ve values as success, -ve values as failure from
-functions returning int.  Always design functions in the kernel like that.
-Again - unless there's a *good* reason like needing to return 0..TASK_SIZE.
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index 3439f59..40e940d 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -410,7 +410,7 @@ static void __init dmi_dump_ids(void)
+ 	printk(KERN_CONT "\n");
+ }
+ 
+-static int __init dmi_present(const char *buf)
++static int __init dmi_present(const u8 *buf)
+ {
+ 	int smbios_ver;
+ 
+-- 
+1.8.1.5
 
