@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab3CLKOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:14:41 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4085 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590Ab3CLKOj (ORCPT
+	id S932669Ab3CLKOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:14:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13905 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab3CLKOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:14:39 -0400
+	Tue, 12 Mar 2013 06:14:32 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:07:51 -0700
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:07:45 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -29,9 +29,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Max Filippov <jcmvbkbc@gmail.com>
 CC: Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 12/17] mips: pnx833x: remove requirement for GENERIC_GPIO
-Date: Tue, 12 Mar 2013 19:12:25 +0900
-Message-ID: <1363083150-30964-13-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 11/17] mips: alchemy: require gpiolib
+Date: Tue, 12 Mar 2013 19:12:24 +0900
+Message-ID: <1363083150-30964-12-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
 References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
@@ -42,25 +42,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pnx833x does not seem to use the generic gpio API.
+Require gpiolib instead of just GENERIC_GPIO.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/mips/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+ arch/mips/Kconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 5cfa818..c1c6549 100644
+index ae70ab1..5cfa818 100644
 --- a/arch/mips/Kconfig
 +++ b/arch/mips/Kconfig
-@@ -1107,7 +1107,6 @@ config SOC_PNX833X
+@@ -61,8 +61,7 @@ config MIPS_ALCHEMY
+ 	select SYS_HAS_CPU_MIPS32_R1
  	select SYS_SUPPORTS_32BIT_KERNEL
- 	select SYS_SUPPORTS_LITTLE_ENDIAN
- 	select SYS_SUPPORTS_BIG_ENDIAN
+ 	select SYS_SUPPORTS_APM_EMULATION
 -	select GENERIC_GPIO
- 	select CPU_MIPSR2_IRQ_VI
- 
- config SOC_PNX8335
+-	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select ARCH_REQUIRE_GPIOLIB
+ 	select SYS_SUPPORTS_ZBOOT
+ 	select USB_ARCH_HAS_OHCI
+ 	select USB_ARCH_HAS_EHCI
 -- 
 1.8.1.5
 
