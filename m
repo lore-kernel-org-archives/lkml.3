@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964872Ab3CLWvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:51:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60669 "EHLO
+	id S964982Ab3CLWwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:52:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964804Ab3CLWo3 (ORCPT
+	with ESMTP id S964798Ab3CLWo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:29 -0400
+	Tue, 12 Mar 2013 18:44:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 38/40] USB: Prepare for refactoring by adding extra udev checks.
-Date: Tue, 12 Mar 2013 15:43:59 -0700
-Message-Id: <20130312223215.563430792@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Tim McGrath <tmhikaru@gmail.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 36/40] dmi_scan: fix missing check for _DMI_ signature in smbios_present()
+Date: Tue, 12 Mar 2013 15:43:57 -0700
+Message-Id: <20130312223215.344938494@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,72 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-[This is upstream commit 2d4fa940f99663c82ba55b2244638833b388e4e2.
-It needs to be backported to kernels as old as 3.2, because it fixes the
-buggy commit 9dbcaec830cd97f44a0b91b315844e0d7144746b "USB: Handle warm
-reset failure on empty port."]
+commit a40e7cf8f06b4e322ba902e4e9f6a6b0c2daa907 upstream.
 
-The next patch will refactor the hub port code to rip out the recursive
-call to hub_port_reset on a failed hot reset.  In preparation for that,
-make sure all code paths can deal with being called with a NULL udev.
-The usb_device will not be valid if warm reset was issued because a port
-transitioned to the Inactive or Compliance Mode on a device connect.
+Commit 9f9c9cbb6057 ("drivers/firmware/dmi_scan.c: fetch dmi version
+from SMBIOS if it exists") hoisted the check for "_DMI_" into
+dmi_scan_machine(), which means that we don't bother to check for
+"_DMI_" at offset 16 in an SMBIOS entry.  smbios_present() may also call
+dmi_present() for an address where we found "_SM_", if it failed further
+validation.
 
-This patch should have no effect on current behavior.
+Check for "_DMI_" in smbios_present() before calling dmi_present().
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[akpm@linux-foundation.org: fix build]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Tim McGrath <tmhikaru@gmail.com>
+Tested-by: Tim Mcgrath <tmhikaru@gmail.com>
+Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/firmware/dmi_scan.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2253,6 +2253,9 @@ static int hub_port_wait_reset(struct us
- 				return -ENOTCONN;
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -442,7 +442,6 @@ static int __init dmi_present(const char
+ static int __init smbios_present(const char __iomem *p)
+ {
+ 	u8 buf[32];
+-	int offset = 0;
  
- 			if ((portstatus & USB_PORT_STAT_ENABLE)) {
-+				if (!udev)
-+					return 0;
-+
- 				if (hub_is_wusb(hub))
- 					udev->speed = USB_SPEED_WIRELESS;
- 				else if (hub_is_superspeed(hub->hdev))
-@@ -2296,13 +2299,15 @@ static void hub_port_finish_reset(struct
- 			struct usb_hcd *hcd;
- 			/* TRSTRCY = 10 ms; plus some extra */
- 			msleep(10 + 40);
--			update_devnum(udev, 0);
--			hcd = bus_to_hcd(udev->bus);
--			/* The xHC may think the device is already reset,
--			 * so ignore the status.
--			 */
--			if (hcd->driver->reset_device)
--				hcd->driver->reset_device(hcd, udev);
-+			if (udev) {
-+				update_devnum(udev, 0);
-+				hcd = bus_to_hcd(udev->bus);
-+				/* The xHC may think the device is already
-+				 * reset, so ignore the status.
-+				 */
-+				if (hcd->driver->reset_device)
-+					hcd->driver->reset_device(hcd, udev);
-+			}
+ 	memcpy_fromio(buf, p, 32);
+ 	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
+@@ -461,9 +460,9 @@ static int __init smbios_present(const c
+ 			dmi_ver = 0x0206;
+ 			break;
  		}
- 		/* FALL THROUGH */
- 	case -ENOTCONN:
-@@ -2316,7 +2321,7 @@ static void hub_port_finish_reset(struct
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_PORT_LINK_STATE);
- 		}
--		if (!warm)
-+		if (!warm && udev)
- 			usb_set_device_state(udev, *status
- 					? USB_STATE_NOTATTACHED
- 					: USB_STATE_DEFAULT);
+-		offset = 16;
++		return memcmp(p + 16, "_DMI_", 5) || dmi_present(p + 16);
+ 	}
+-	return dmi_present(buf + offset);
++	return 1;
+ }
+ 
+ void __init dmi_scan_machine(void)
 
 
