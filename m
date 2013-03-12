@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434Ab3CLUBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:01:49 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43955 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab3CLUBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:01:47 -0400
+	id S933462Ab3CLUCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:02:24 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42864 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755533Ab3CLUCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 16:02:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=F2szMvaICj9gGAjbddY/V+PJ4IvAoHmX
+	kacmkWuh16mJZFELnggWL+aiRIxiKWnOEl58gqAAAB5TZTWunRiYvyQYO0LmVwjK
+	bOAuI7iSQdsMJke3Wta/Ywv/hWVbJ0W1lOwZM9L6e5vKUObFUyTgfLLAXOwy1emW
+	gCAUBAOWPSM=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, James Morris <jmorris@namei.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: linux-next: unneeded merge in the security tree
+References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
+ <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
+ <20130312041641.GE18595@thunk.org>
+ <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com>
+ <7vsj40760d.fsf@alter.siamese.dyndns.org>
+Date: Tue, 12 Mar 2013 13:02:19 -0700
+In-Reply-To: <7vsj40760d.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
+ message of "Tue, 12 Mar 2013 12:49:38 -0700")
+Message-ID: <7vobeo75f8.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <9427.1363108933@jrobl>
-References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
-	<9427.1363108933@jrobl>
-Date: Tue, 12 Mar 2013 21:01:45 +0100
-Message-ID: <CAJfpegvFGaN4udS6O7_=FnWrO6tUSmNMasddWAChxHhS08yBdQ@mail.gmail.com>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: C016A4C0-8B4F-11E2-8500-26A52E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 6:22 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->
-> Miklos Szeredi:
->> Please consider overlayfs for inclusion into 3.10.
->
-> Thank you for CCing me.
->
-> First, I'd suggest you to follow some recent activities in mainline
-> kernel such as
-> - MODULE_ALIAS_FS
-> - file_inode()
+Junio C Hamano <gitster@pobox.com> writes:
 
-Okay, thanks for the comments.  Will fix.
+> Then under the "--no-ff activates the magic" rule:
+>
+> 	git merge v3.9-rc2
+>
+> will fast-forward, but this
+>
+> 	git merge --no-ff v3.9-rc2
+>
+> creates a real merge with the "mergetag" signature block.  The one
+> that caused trouble in the "security tree", i.e.
+>
+>         git pull linus v3.9-rc2
+>
+> or its equivalent
+>
+>         git fetch linus v3.9-rc2
+>         git merge FETCH_HEAD
+>
+> would still fast-forward under this rule.  The maintainer needs to
+> do
+>
+> 	git pull --no-ff git://git.kernel.org/... for-linus
+>
+> if the pull could fast-forward under this rule, though.
 
-Miklos
+Scratch the last sentence.  It should have been
+
+"whether the pull fast-forwards or not".  You'd always need to.
