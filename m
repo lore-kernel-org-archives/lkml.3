@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3CLLoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:44:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53340 "EHLO comal.ext.ti.com"
+	id S932683Ab3CLLoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:44:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39609 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944Ab3CLLoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:44:01 -0400
+	id S1755519Ab3CLLoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:44:17 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 11/24] ARM: OMAP: devkit8000: Adapt to ehci-omap changes
-Date: Tue, 12 Mar 2013 13:43:13 +0200
-Message-ID: <1363088606-2692-12-git-send-email-rogerq@ti.com>
+Subject: [PATCH 19/24] ARM: dts: OMAP4: Add HS USB Host IP nodes
+Date: Tue, 12 Mar 2013 13:43:21 +0200
+Message-ID: <1363088606-2692-20-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
 References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
@@ -23,68 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform device for 'nop-usb-xceiv'. This will be used as a
-PHY for HS USB Port 1, so provide binding information for it.
+Adds device nodes for HS USB Host module, TLL module,
+OHCI and EHCI controllers.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ arch/arm/boot/dts/omap4.dtsi |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 53056c3..922ca91 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -33,6 +33,7 @@
- 
- #include <linux/regulator/machine.h>
- #include <linux/i2c/twl.h>
-+#include <linux/usb/phy.h>
- #include "id.h"
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -430,22 +431,21 @@ static void __init omap_dm9000_init(void)
- 	eth_addr[5] = (odi.id_0 & 0x000000ff);
- }
- 
-+/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
-+static struct platform_device hsusb1_phy_device = {
-+	.name = "nop_usb_xceiv",
-+	.id = 1,
-+};
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 739bb79..b7db1a2 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -529,5 +529,35 @@
+ 			ti,hwmods = "timer11";
+ 			ti,timer-pwm;
+ 		};
 +
- static struct platform_device *devkit8000_devices[] __initdata = {
- 	&leds_gpio,
- 	&keys_gpio,
- 	&omap_dm9000_dev,
-+	&hsusb1_phy_device,
++		usbhstll: usbhstll@4a062000 {
++			compatible = "ti,usbhs-tll";
++			reg = <0x4a062000 0x1000>;
++			interrupts = <0 78 0x4>;
++			ti,hwmods = "usb_tll_hs";
++		};
++
++		usbhshost: usbhshost@4a064000 {
++			compatible = "ti,usbhs-host";
++			reg = <0x4a064000 0x800>;
++			ti,hwmods = "usb_host_hs";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			usbhsohci: ohci@4a064800 {
++				compatible = "ti,ohci-omap3", "usb-ohci";
++				reg = <0x4a064800 0x400>;
++				interrupt-parent = <&gic>;
++				interrupts = <0 76 0x4>;
++			};
++
++			usbhsehci: ehci@4a064c00 {
++				compatible = "ti,ehci-omap", "usb-ehci";
++				reg = <0x4a064c00 0x400>;
++				interrupt-parent = <&gic>;
++				interrupts = <0 77 0x4>;
++			};
++		};
+ 	};
  };
- 
- static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
--
- 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
--	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
--	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
--
--	.phy_reset  = true,
--	.reset_gpio_port[0]  = -EINVAL,
--	.reset_gpio_port[1]  = -EINVAL,
--	.reset_gpio_port[2]  = -EINVAL
- };
- 
- #ifdef CONFIG_OMAP_MUX
-@@ -625,6 +625,10 @@ static void __init devkit8000_init(void)
- 
- 	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
- 	usb_musb_init(NULL);
-+
-+	/* PHY on HSUSB Port 1 i.e. index 0 */
-+	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
-+
- 	usbhs_init(&usbhs_bdata);
- 	board_nand_init(devkit8000_nand_partitions,
- 			ARRAY_SIZE(devkit8000_nand_partitions), NAND_CS,
 -- 
 1.7.4.1
 
