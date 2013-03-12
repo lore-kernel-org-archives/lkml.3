@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933591Ab3CLVUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 17:20:36 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:52956 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755682Ab3CLVUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 17:20:34 -0400
-Date: Tue, 12 Mar 2013 17:20:27 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Git Mailing List <git@vger.kernel.org>,
-        Junio C Hamano <gitster@pobox.com>
-Subject: Re: linux-next: unneeded merge in the security tree
-Message-ID: <20130312212027.GE14792@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	James Morris <jmorris@namei.org>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Git Mailing List <git@vger.kernel.org>,
-	Junio C Hamano <gitster@pobox.com>
-References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
- <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
- <20130312041641.GE18595@thunk.org>
- <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com>
-MIME-Version: 1.0
+	id S933593Ab3CLVVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 17:21:05 -0400
+Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:58095 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755716Ab3CLVVD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 17:21:03 -0400
+X-Greylist: delayed 3330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 17:21:03 EDT
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: w1-gpio: fix erroneous gpio requests
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <20130312202028.GA6060@kroah.com>
+Date: Wed, 13 Mar 2013 04:24:20 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Johan Hovold <jhovold@gmail.com>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Mack <zonque@gmail.com>,
+        =?iso-8859-1?Q?Ville_Syrj=E4l=E4?= <syrjala@sci.fi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FE853F2C-A85A-4D0E-BF0E-80698F3E6567@jcrosoft.com>
+References: <1363116094-8630-1-git-send-email-jhovold@gmail.com> <20130312202028.GA6060@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1499)
+X-Ovh-Tracer-Id: 10304235947661962102
+X-Ovh-Remote: 124.77.162.22 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What if we added the ability to do something like this:
 
-[remote "origin"]
-	url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-	fetch = +refs/heads/master:refs/heads/master
-	mergeoptions = --ff-only
+On Mar 13, 2013, at 4:20 AM, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-This would be an analog to branch.<name>.mergeoptions, but it would
-apply to the source of the pull request, instead of the destination.
+> On Tue, Mar 12, 2013 at 08:21:34PM +0100, Johan Hovold wrote:
+>> Fix regression introduced by commit d2323cf773 ("onewire: w1-gpio: add
+>> ext_pullup_enable pin in platform data") which added a gpio entry to the
+>> platform data, but did not add the required initialisers to the board
+>> files using it. Consequently, the driver would request gpio 0 at probe,
+>> which could break other uses of the corresponding pin.
+>> 
+>> On AT91 requesting gpio 0 changes the pin muxing for PIOA0, which, for
+>> instance, breaks SPI0 on at91sam9g20.
 
-That way, people who do a "git pull" from Linus's tree would get the
-protection of --ff-only, while pulls from submaintainer trees would
-automatically get a merge commit, which is what we want.
+not only on AT91, 0 is a valid gpio
+>> 
+>> Cc: stable <stable@vger.kernel.org>
+>> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+>> ---
+>> 
+>> Not sure whose tree this should go in through, so adding relevant maintainers
+>> and authors as CC.
+> 
+> As I took the offending patch, I might as well take this fix for it as
+> well.
+> 
+> Unless anyone else objects?
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-It doesn't handle the case of a submaintainer pulling from a
-maintainer in a back-merge scenario, but that should be a pretty rare
-case, so maybe that's OK.
+Best Regards,
+J.
 
-      	     	       	   	- Ted
