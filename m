@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab3CLKOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:14:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13875 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab3CLKOY (ORCPT
+	id S932683Ab3CLKOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:14:41 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4085 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590Ab3CLKOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:14:24 -0400
+	Tue, 12 Mar 2013 06:14:39 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 03:13:42 -0700
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:07:51 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -29,9 +29,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Max Filippov <jcmvbkbc@gmail.com>
 CC: Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 06/17] mips: txx9: change GENERIC_GPIO to GPIOLIB
-Date: Tue, 12 Mar 2013 19:12:19 +0900
-Message-ID: <1363083150-30964-7-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 12/17] mips: pnx833x: remove requirement for GENERIC_GPIO
+Date: Tue, 12 Mar 2013 19:12:25 +0900
+Message-ID: <1363083150-30964-13-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
 References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
@@ -42,27 +42,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO driver for txx9 requires gpiolib, so this is more accurate and
-let us get rid of one mention of GENERIC_GPIO which is due to disappear.
+pnx833x does not seem to use the generic gpio API.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/mips/txx9/generic/setup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/mips/txx9/generic/setup.c b/arch/mips/txx9/generic/setup.c
-index 5524f2c..5364aab 100644
---- a/arch/mips/txx9/generic/setup.c
-+++ b/arch/mips/txx9/generic/setup.c
-@@ -118,7 +118,7 @@ EXPORT_SYMBOL(clk_put);
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 5cfa818..c1c6549 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -1107,7 +1107,6 @@ config SOC_PNX833X
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+ 	select SYS_SUPPORTS_LITTLE_ENDIAN
+ 	select SYS_SUPPORTS_BIG_ENDIAN
+-	select GENERIC_GPIO
+ 	select CPU_MIPSR2_IRQ_VI
  
- /* GPIO support */
- 
--#ifdef CONFIG_GENERIC_GPIO
-+#ifdef CONFIG_GPIOLIB
- int gpio_to_irq(unsigned gpio)
- {
- 	return -EINVAL;
+ config SOC_PNX8335
 -- 
 1.8.1.5
 
