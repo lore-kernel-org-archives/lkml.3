@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3CLFSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:18:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54221 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab3CLFSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:18:31 -0400
-Date: Tue, 12 Mar 2013 16:18:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: James Morris <jmorris@namei.org>, Linus <torvalds@linux-foundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: unneeded merge in the security tree
-Message-Id: <20130312161823.86ea101fc4e45285b205817f@canb.auug.org.au>
-In-Reply-To: <20130312041641.GE18595@thunk.org>
-References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
-	<alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
-	<20130312041641.GE18595@thunk.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_16_18_23_+1100_0StuvUJ+KDk9c6XO"
+	id S932155Ab3CLFUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:20:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34346 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753910Ab3CLFUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:20:21 -0400
+X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
+   d="scan'208";a="6856380"
+Message-ID: <513EBAB7.1030606@cn.fujitsu.com>
+Date: Tue, 12 Mar 2013 13:18:47 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux390@de.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/18] driver: s390: block: remove cast for kzalloc return
+ value
+References: <513EB23D.7020303@cn.fujitsu.com>
+In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 13:19:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 13:19:07,
+	Serialize complete at 2013/03/12 13:19:07
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_16_18_23_+1100_0StuvUJ+KDk9c6XO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+remove cast for kzalloc return value.
 
-On Tue, 12 Mar 2013 00:16:41 -0400 Theodore Ts'o <tytso@mit.edu> wrote:
->
-> On Tue, Mar 12, 2013 at 03:10:53PM +1100, James Morris wrote:
-> > On Tue, 12 Mar 2013, Stephen Rothwell wrote:
-> > > The top commit in the security tree today is a merge of v3.9-rc2.  Th=
-is
-> > > is a completely unnecessary merge as the tree before the merge was a
-> > > subset of v3.9-rc1 and so if the merge had been done using anything b=
-ut
-> > > the tag, it would have just been a fast forward.  I know that this is=
- now
-> > > deliberate behaviour on git's behalf, but isn't there some way we can
-> > > make this easier on maintainers who are just really just trying to pi=
-ck a
-> > > new starting point for their trees after a release?  (at least I assu=
-me
-> > > that is what James was trying to do)
-> >=20
-> > Yes, and I was merging to a tag as required by Linus.
->=20
-> Why not just force the head of the security tree to be v3.9-rc2?  Then
-> you don't end up creating a completely unnecessary merge commit, and
-> users who were at the previous head of the security tree will
-> experience a fast forward when they pull your new head.
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux390@de.ibm.com
+---
+ drivers/s390/block/dasd_devmap.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Well, you used to be able to merge a tag and it would just fast forward
-if possible.  That was changed (for good reason), but now gives us this
-outcome.   Also, "git merge --ff" does not override that behaviour, but
-"git merge --ff-only" does.  Also, of course, if (say) origin/master had
-been v3.9-rc2, then "git merge origin/master" would have also just done a
-fast forward.
+diff --git a/drivers/s390/block/dasd_devmap.c b/drivers/s390/block/dasd_devmap.c
+index c196827..a71bb8a 100644
+--- a/drivers/s390/block/dasd_devmap.c
++++ b/drivers/s390/block/dasd_devmap.c
+@@ -410,8 +410,7 @@ dasd_add_busid(const char *bus_id, int features)
+ 	struct dasd_devmap *devmap, *new, *tmp;
+ 	int hash;
+ 
+-	new = (struct dasd_devmap *)
+-		kzalloc(sizeof(struct dasd_devmap), GFP_KERNEL);
++	new = kzalloc(sizeof(struct dasd_devmap), GFP_KERNEL);
+ 	if (!new)
+ 		return ERR_PTR(-ENOMEM);
+ 	spin_lock(&dasd_devmap_lock);
+-- 
+1.7.1
 
-I wonder if "git merge v3.9-rc2^{}" should work (git says "fatal: v3.9-rc2{}
- - not something we can merge").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__12_Mar_2013_16_18_23_+1100_0StuvUJ+KDk9c6XO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPrqfAAoJEECxmPOUX5FEyrQP/1K+K0QUrnUGV+NI8OwAbsE4
-OIZlvQ3jCB0dSjeLLFiji+96dVOFye2ycfC79TqosFCii8X01W7Obglr6D2wFKvf
-oZotOehgU3ufQRLssLzmiVJ+cBNUOdeXjnlQUXJtq4OFvWQTp+VuXqLoTkz2rGO+
-JroatEOPRbKmZbiuFrSxMN6Yvs1tovtFGSwEwj3y/3g1EmqgikSSP8Qs26Y4oG77
-/n1u+EWCzKJSIoxZHwuyvoRZevtB9L6yhrnu8GOof4KACtTDjAziSOwq6J0PkDfr
-mk6RhD9JZpiOvkKxPzNehXWiMpB3dgIMwt//H8hCMVAms/z2/n5dIwUK2bd5N6B8
-LwGvZV2nuM28N7NlP2ecNCzBf4KDXSZDxSYMxdQrmjmLpowpet++n7MUCjfatANf
-3ef5FvPyPbrQUeLjmor2BH4B13KmhfLe+lDWAahijwJs2zrWluCxxRgTfuDzzDHf
-NWQZEkPvFf6KiWTtOHtc3klKl27+vWOZ+rUdFFBYjd00dtb3i+Qs3rSsPcwK9gqP
-hm6GbHu31phn7ZOYW15SG1G0aetJmzE+iQq5YFS6Fn6yOrJrm5Kd0DUjlm4jORAt
-wFLTspREHqfpkG2ZJpVXRvy/zmJ4bfDp3p5fp9qTGx8/qggaKeLJBwT4ECWI4BT5
-3OYaRgC5puuUJrsAIjbk
-=1TCO
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_16_18_23_+1100_0StuvUJ+KDk9c6XO--
