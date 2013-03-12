@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab3CLQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:02:29 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33383 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3CLQC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:02:28 -0400
-Date: Tue, 12 Mar 2013 16:01:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: Add support for ARMv7-M's NVIC
-Message-ID: <20130312160101.GW4977@n2100.arm.linux.org.uk>
-References: <1363103673-24720-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S932938Ab3CLQCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:02:53 -0400
+Received: from ioctl.codeblau.de ([80.190.240.67]:35113 "EHLO codeblau.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932390Ab3CLQCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 12:02:52 -0400
+Date: Tue, 12 Mar 2013 17:02:49 +0100
+From: felix-linuxkernel@fefe.de
+To: linux-kernel@vger.kernel.org
+Subject: Who is responsible for radeon driver bugs?
+Message-ID: <20130312160249.GA32182@codeblau.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363103673-24720-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 04:54:33PM +0100, Uwe Kleine-König wrote:
-> +#include <asm/irq.h>
-> +#include <asm/io.h>
+The radeon driver does not work on my laptop.
+I sent a bug report here a week ago, but got no responses.
+What is the right place to send bug reports for the radeon driver?
 
-linux/io.h
+The bug is that LVDS output does not work.  This is, according to lspci,
+a 5000M series Madison Radeon.
 
-> +	unsigned int irqs, i, irq_base;
-> +
-> +	irq_base = irq_alloc_descs(-1, 16, irqs - 16, numa_node_id());
-> +	if (IS_ERR_VALUE(irq_base)) {
+When I insmod the module, the screen stays in text mode and appears
+locked up.
 
-Erm... irq_alloc_descs() returns a negative number on error.
+If something is connected to the HDMI port, I get a framebuffer console
+there.  LVDS stays in broken text mode though.
 
-	if ((int)irq_base < 0)
+When I start X, the HDMI screen turns dark and stays dark and the LVDS
+screen also stays dark and I have to reboot.
 
-or make irq_base an int, and use:
+The driver loads the REDWOOD firmware OK.
 
-	if (irq_base < 0)
+Who is responsible for this?  Where do I send my bug report?
+
+Thanks,
+
+Felix
