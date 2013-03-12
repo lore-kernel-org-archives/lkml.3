@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3CLWxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:53:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60626 "EHLO
+	id S964807Ab3CLWxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:53:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964773Ab3CLWoZ (ORCPT
+	with ESMTP id S933870Ab3CLWoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:25 -0400
+	Tue, 12 Mar 2013 18:44:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [ 31/40] Fix: compat_rw_copy_check_uvector() misuse in aio, readv, writev, and security keys
-Date: Tue, 12 Mar 2013 15:43:52 -0700
-Message-Id: <20130312223214.785524949@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 29/40] crypto: user - fix info leaks in report API
+Date: Tue, 12 Mar 2013 15:43:50 -0700
+Message-Id: <20130312223214.592530767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -28,127 +28,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 8aec0f5d4137532de14e6554fd5dd201ff3a3c49 upstream.
+commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
 
-Looking at mm/process_vm_access.c:process_vm_rw() and comparing it to
-compat_process_vm_rw() shows that the compatibility code requires an
-explicit "access_ok()" check before calling
-compat_rw_copy_check_uvector(). The same difference seems to appear when
-we compare fs/read_write.c:do_readv_writev() to
-fs/compat.c:compat_do_readv_writev().
+Three errors resulting in kernel memory disclosure:
 
-This subtle difference between the compat and non-compat requirements
-should probably be debated, as it seems to be error-prone. In fact,
-there are two others sites that use this function in the Linux kernel,
-and they both seem to get it wrong:
+1/ The structures used for the netlink based crypto algorithm report API
+are located on the stack. As snprintf() does not fill the remainder of
+the buffer with null bytes, those stack bytes will be disclosed to users
+of the API. Switch to strncpy() to fix this.
 
-Now shifting our attention to fs/aio.c, we see that aio_setup_iocb()
-also ends up calling compat_rw_copy_check_uvector() through
-aio_setup_vectored_rw(). Unfortunately, the access_ok() check appears to
-be missing. Same situation for
-security/keys/compat.c:compat_keyctl_instantiate_key_iov().
+2/ crypto_report_one() does not initialize all field of struct
+crypto_user_alg. Fix this to fix the heap info leak.
 
-I propose that we add the access_ok() check directly into
-compat_rw_copy_check_uvector(), so callers don't have to worry about it,
-and it therefore makes the compat call code similar to its non-compat
-counterpart. Place the access_ok() check in the same location where
-copy_from_user() can trigger a -EFAULT error in the non-compat code, so
-the ABI behaviors are alike on both compat and non-compat.
+3/ For the module name we should copy only as many bytes as
+module_name() returns -- not as much as the destination buffer could
+hold. But the current code does not and therefore copies random data
+from behind the end of the module name, as the module name is always
+shorter than CRYPTO_MAX_ALG_NAME.
 
-While we are here, fix compat_do_readv_writev() so it checks for
-compat_rw_copy_check_uvector() negative return values.
+Also switch to use strncpy() to copy the algorithm's name and
+driver_name. They are strings, after all.
 
-And also, fix a memory leak in compat_keyctl_instantiate_key_iov() error
-handling.
-
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/compat.c            |   15 +++++++--------
- mm/process_vm_access.c |    8 --------
- security/keys/compat.c |    4 ++--
- 3 files changed, 9 insertions(+), 18 deletions(-)
+ crypto/ablkcipher.c  |   12 ++++++------
+ crypto/aead.c        |    9 ++++-----
+ crypto/ahash.c       |    2 +-
+ crypto/blkcipher.c   |    6 +++---
+ crypto/crypto_user.c |   20 ++++++++++----------
+ crypto/pcompress.c   |    3 +--
+ crypto/rng.c         |    2 +-
+ crypto/shash.c       |    3 ++-
+ 8 files changed, 28 insertions(+), 29 deletions(-)
 
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -558,6 +558,10 @@ ssize_t compat_rw_copy_check_uvector(int
- 	}
- 	*ret_pointer = iov;
+--- a/crypto/ablkcipher.c
++++ b/crypto/ablkcipher.c
+@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
  
-+	ret = -EFAULT;
-+	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
-+		goto out;
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<built-in>");
++	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+--- a/crypto/aead.c
++++ b/crypto/aead.c
+@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 aead->geniv ?: "<built-in>");
++	strncpy(raead.type, "aead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
++	strncpy(raead.type, "nivaead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+--- a/crypto/ahash.c
++++ b/crypto/ahash.c
+@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
+ {
+ 	struct crypto_report_hash rhash;
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
++	strncpy(rhash.type, "ahash", sizeof(rhash.type));
+ 
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
+--- a/crypto/blkcipher.c
++++ b/crypto/blkcipher.c
+@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_blkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -75,7 +75,7 @@ static int crypto_report_cipher(struct s
+ {
+ 	struct crypto_report_cipher rcipher;
+ 
+-	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
++	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
+ 
+ 	rcipher.blocksize = alg->cra_blocksize;
+ 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
+@@ -94,8 +94,7 @@ static int crypto_report_comp(struct sk_
+ {
+ 	struct crypto_report_comp rcomp;
+ 
+-	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
+-
++	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
+ 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		sizeof(struct crypto_report_comp), &rcomp);
+ 
+@@ -108,12 +107,14 @@ nla_put_failure:
+ static int crypto_report_one(struct crypto_alg *alg,
+ 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
+ {
+-	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
+-	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
+-	       sizeof(ualg->cru_driver_name));
+-	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
+-	       CRYPTO_MAX_ALG_NAME);
++	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
++	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
++		sizeof(ualg->cru_driver_name));
++	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
++		sizeof(ualg->cru_module_name));
+ 
++	ualg->cru_type = 0;
++	ualg->cru_mask = 0;
+ 	ualg->cru_flags = alg->cra_flags;
+ 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
+ 
+@@ -122,8 +123,7 @@ static int crypto_report_one(struct cryp
+ 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
+ 		struct crypto_report_larval rl;
+ 
+-		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
+-
++		strncpy(rl.type, "larval", sizeof(rl.type));
+ 		NLA_PUT(skb, CRYPTOCFGA_REPORT_LARVAL,
+ 			sizeof(struct crypto_report_larval), &rl);
+ 
+--- a/crypto/pcompress.c
++++ b/crypto/pcompress.c
+@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
+ {
+ 	struct crypto_report_comp rpcomp;
+ 
+-	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
+-
++	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
+ 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		sizeof(struct crypto_report_comp), &rpcomp);
+ 
+--- a/crypto/rng.c
++++ b/crypto/rng.c
+@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
+ {
+ 	struct crypto_report_rng rrng;
+ 
+-	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
++	strncpy(rrng.type, "rng", sizeof(rrng.type));
+ 
+ 	rrng.seedsize = alg->cra_rng.seedsize;
+ 
+--- a/crypto/shash.c
++++ b/crypto/shash.c
+@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
+ 	struct crypto_report_hash rhash;
+ 	struct shash_alg *salg = __crypto_shash_alg(alg);
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
++	strncpy(rhash.type, "shash", sizeof(rhash.type));
 +
- 	/*
- 	 * Single unix specification:
- 	 * We should -EINVAL if an element length is not >= 0 and fitting an
-@@ -1089,17 +1093,12 @@ static ssize_t compat_do_readv_writev(in
- 	if (!file->f_op)
- 		goto out;
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = salg->digestsize;
  
--	ret = -EFAULT;
--	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
--		goto out;
--
--	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
-+	ret = compat_rw_copy_check_uvector(type, uvector, nr_segs,
- 					       UIO_FASTIOV, iovstack, &iov, 1);
--	if (tot_len == 0) {
--		ret = 0;
-+	if (ret <= 0)
- 		goto out;
--	}
- 
-+	tot_len = ret;
- 	ret = rw_verify_area(type, file, pos, tot_len);
- 	if (ret < 0)
- 		goto out;
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -429,12 +429,6 @@ compat_process_vm_rw(compat_pid_t pid,
- 	if (flags != 0)
- 		return -EINVAL;
- 
--	if (!access_ok(VERIFY_READ, lvec, liovcnt * sizeof(*lvec)))
--		goto out;
--
--	if (!access_ok(VERIFY_READ, rvec, riovcnt * sizeof(*rvec)))
--		goto out;
--
- 	if (vm_write)
- 		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
- 						  UIO_FASTIOV, iovstack_l,
-@@ -459,8 +453,6 @@ free_iovecs:
- 		kfree(iov_r);
- 	if (iov_l != iovstack_l)
- 		kfree(iov_l);
--
--out:
- 	return rc;
- }
- 
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -40,12 +40,12 @@ long compat_keyctl_instantiate_key_iov(
- 					   ARRAY_SIZE(iovstack),
- 					   iovstack, &iov, 1);
- 	if (ret < 0)
--		return ret;
-+		goto err;
- 	if (ret == 0)
- 		goto no_payload_free;
- 
- 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
--
-+err:
- 	if (iov != iovstack)
- 		kfree(iov);
- 	return ret;
 
 
