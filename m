@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab3CLLgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:36:21 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56271 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932852Ab3CLLgS (ORCPT
+	id S932962Ab3CLLhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:37:31 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:57584 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3CLLh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:36:18 -0400
-Date: Tue, 12 Mar 2013 07:35:48 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-sctp@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 18/18] net: sctp: remove cast for kmalloc/kzalloc return
- value
-Message-ID: <20130312113548.GB25870@hmsreliant.think-freely.org>
-References: <513EB23D.7020303@cn.fujitsu.com>
- <513EBFA3.4070303@cn.fujitsu.com>
+	Tue, 12 Mar 2013 07:37:29 -0400
+Message-ID: <513F132B.4060606@ahsoftware.de>
+Date: Tue, 12 Mar 2013 12:36:11 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513EBFA3.4070303@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+CC: Lubomir Rintel <lkundrak@v3.sk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Lubomir Rintel <lubo.rintel@gooddata.com>
+Subject: Re: [PATCH] mv643xx_eth: Fix a possible deadlock upon ifdown
+References: <1357308422-19639-1-git-send-email-lkundrak@v3.sk> <20130104202509.GX27530@wantstofly.org> <5130E5A5.90303@ahsoftware.de> <20130312024932.GF850@wantstofly.org> <513EEF83.9070806@ahsoftware.de>
+In-Reply-To: <513EEF83.9070806@ahsoftware.de>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 01:39:47PM +0800, Zhang Yanfei wrote:
-> remove cast for kmalloc/kzalloc return value.
-> 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Sridhar Samudrala <sri@us.ibm.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: linux-sctp@vger.kernel.org
-> ---
->  include/net/sctp/sctp.h |    2 +-
->  net/sctp/protocol.c     |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
-> index df85a0c..cd89510 100644
-> --- a/include/net/sctp/sctp.h
-> +++ b/include/net/sctp/sctp.h
-> @@ -576,7 +576,7 @@ for (pos = chunk->subh.fwdtsn_hdr->skip;\
->  #define WORD_ROUND(s) (((s)+3)&~3)
->  
->  /* Make a new instance of type.  */
-> -#define t_new(type, flags)	(type *)kzalloc(sizeof(type), flags)
-> +#define t_new(type, flags)	kzalloc(sizeof(type), flags)
->  
->  /* Compare two timevals.  */
->  #define tv_lt(s, t) \
-> diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-> index 1c2e46c..eaee00c 100644
-> --- a/net/sctp/protocol.c
-> +++ b/net/sctp/protocol.c
-> @@ -1403,7 +1403,7 @@ SCTP_STATIC __init int sctp_init(void)
->  
->  	/* Allocate and initialize the endpoint hash table.  */
->  	sctp_ep_hashsize = 64;
-> -	sctp_ep_hashtable = (struct sctp_hashbucket *)
-> +	sctp_ep_hashtable =
->  		kmalloc(64 * sizeof(struct sctp_hashbucket), GFP_KERNEL);
->  	if (!sctp_ep_hashtable) {
->  		pr_err("Failed endpoint_hash alloc\n");
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Am 12.03.2013 10:04, schrieb Alexander Holler:
+
+> I don't think so. Internally the driver calls mv643xx_eth_stop()
+> therefore lockdep issues almost the same warning as when the interface
+> is shut down (see below). And reading the code, I haven't seen how a
+
+Btw. I consider the shutdown of the interface for just changing the MTU 
+more a problem than that lockdep-warning.
+
+E.g. I had serious problems with dhcpcd which sets the MTU to 1500 when 
+an interface appears. What then happened was the following:
+
+(1) interface comes up
+(2) dhcpcd sets MTU to 1500
+(3) a different MTU comes through DHCP
+(4) driver shuts down if, sets MTU, turns on IF
+back to (1) (endless loop)
+
+I'm not sure if dhcpcd still does that (it's some time since I 
+discovered and reported that), but I consider it a crude way to shut 
+down the IF to set the MTU.
+
+Regards,
+
+Alexander
 
