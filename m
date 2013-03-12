@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab3CLFqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:46:43 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:52365 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754504Ab3CLFqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:46:42 -0400
-Date: Mon, 11 Mar 2013 22:46:31 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
-Subject: [PATCH] drm/i915: use do_div() as needed in debugfs code
-Message-ID: <20130312054631.GA21167@www.outflux.net>
+	id S932237Ab3CLFq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:46:59 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:32768 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab3CLFq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:46:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
+References: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
+Date: Mon, 11 Mar 2013 22:46:56 -0700
+X-Google-Sender-Auth: cm6-fmpgAdpt9piUBdDpOA7IVng
+Message-ID: <CAGXu5jJm2QM-s6DV3e5guQc5i-qEK52uRR6xc=ViqrvCibHEUw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (drm-intel tree related)
+From: Kees Cook <keescook@chromium.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces the open-coded divisions in the debugfs code by calls
-to do_div().
+On Mon, Mar 11, 2013 at 9:22 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
+>
+> drivers/built-in.o: In function `i915_min_freq_set':
+> i915_debugfs.c:(.text+0xb1adc): undefined reference to `__udivdi3'
+> drivers/built-in.o: In function `i915_max_freq_set':
+> i915_debugfs.c:(.text+0xb1bac): undefined reference to `__udivdi3'
+>
+> Caused by commit 2389cc500686 ("drm/i915: use simple attribute in debugfs
+> routines") from the drm-intel tree.
+>
+> I have reverted that commit for today.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/i915_debugfs.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Ah-ha, thanks. I've sent a follow-up patch to fix this.
 
-diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-index d86c304..6f3cbf8 100644
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -1814,9 +1814,9 @@ i915_max_freq_set(void *data, u64 val)
- 	/*
- 	 * Turbo will still be enabled, but won't go above the set value.
- 	 */
--	dev_priv->rps.max_delay = val / GT_FREQUENCY_MULTIPLIER;
--
--	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
-+	do_div(val, GT_FREQUENCY_MULTIPLIER);
-+	dev_priv->rps.max_delay = val;
-+	gen6_set_rps(dev, val);
- 	mutex_unlock(&dev_priv->rps.hw_lock);
- 
- 	return 0;
-@@ -1865,9 +1865,9 @@ i915_min_freq_set(void *data, u64 val)
- 	/*
- 	 * Turbo will still be enabled, but won't go below the set value.
- 	 */
--	dev_priv->rps.min_delay = val / GT_FREQUENCY_MULTIPLIER;
--
--	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
-+	do_div(val, GT_FREQUENCY_MULTIPLIER);
-+	dev_priv->rps.min_delay = val;
-+	gen6_set_rps(dev, val);
- 	mutex_unlock(&dev_priv->rps.hw_lock);
- 
- 	return 0;
--- 
-1.7.9.5
-
+-Kees
 
 -- 
 Kees Cook
