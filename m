@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab3CLLfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:35:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115Ab3CLLfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:35:02 -0400
-Date: Tue, 12 Mar 2013 08:34:48 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] EDAC fixes for 3.8
-Message-ID: <20130312083448.6f3ce5f9@redhat.com>
-In-Reply-To: <20130312091630.GC5455@pd.tnic>
-References: <20121211140108.GC4303@liondog.tnic>
-	<20130307095703.03d040ee@redhat.com>
-	<20130307130635.GD5239@pd.tnic>
-	<20130307110213.7a5a9978@redhat.com>
-	<20130309154635.GA18316@pd.tnic>
-	<20130311090746.199a4c06@redhat.com>
-	<20130311092848.652c0d46@redhat.com>
-	<20130312085855.GB5455@pd.tnic>
-	<20130312091630.GC5455@pd.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932946Ab3CLLgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:36:21 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:56271 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932852Ab3CLLgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:36:18 -0400
+Date: Tue, 12 Mar 2013 07:35:48 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-sctp@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/18] net: sctp: remove cast for kmalloc/kzalloc return
+ value
+Message-ID: <20130312113548.GB25870@hmsreliant.think-freely.org>
+References: <513EB23D.7020303@cn.fujitsu.com>
+ <513EBFA3.4070303@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513EBFA3.4070303@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 12 Mar 2013 10:16:30 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
-
-> Btw,
+On Tue, Mar 12, 2013 at 01:39:47PM +0800, Zhang Yanfei wrote:
+> remove cast for kmalloc/kzalloc return value.
 > 
-> the first one I changed to not divide by the channel_count, see below.
-> Now I'll go and run them to check everything's fine.
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Cc: Vlad Yasevich <vyasevich@gmail.com>
+> Cc: Sridhar Samudrala <sri@us.ibm.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: linux-sctp@vger.kernel.org
+> ---
+>  include/net/sctp/sctp.h |    2 +-
+>  net/sctp/protocol.c     |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+> index df85a0c..cd89510 100644
+> --- a/include/net/sctp/sctp.h
+> +++ b/include/net/sctp/sctp.h
+> @@ -576,7 +576,7 @@ for (pos = chunk->subh.fwdtsn_hdr->skip;\
+>  #define WORD_ROUND(s) (((s)+3)&~3)
+>  
+>  /* Make a new instance of type.  */
+> -#define t_new(type, flags)	(type *)kzalloc(sizeof(type), flags)
+> +#define t_new(type, flags)	kzalloc(sizeof(type), flags)
+>  
+>  /* Compare two timevals.  */
+>  #define tv_lt(s, t) \
+> diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+> index 1c2e46c..eaee00c 100644
+> --- a/net/sctp/protocol.c
+> +++ b/net/sctp/protocol.c
+> @@ -1403,7 +1403,7 @@ SCTP_STATIC __init int sctp_init(void)
+>  
+>  	/* Allocate and initialize the endpoint hash table.  */
+>  	sctp_ep_hashsize = 64;
+> -	sctp_ep_hashtable = (struct sctp_hashbucket *)
+> +	sctp_ep_hashtable =
+>  		kmalloc(64 * sizeof(struct sctp_hashbucket), GFP_KERNEL);
+>  	if (!sctp_ep_hashtable) {
+>  		pr_err("Failed endpoint_hash alloc\n");
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Looks ok on my eyes. I'll test it here on both systems, with both this
-patch and the second one:
-
-http://git.infradead.org/users/mchehab/edac.git/commitdiff/56ba4c93d909ef9dfab4f1101a8c3bf75bc4cdab
-
-It should take some time to finish compilation.
-
-Thanks!
-Mauro
