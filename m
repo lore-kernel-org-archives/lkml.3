@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836Ab3CLWnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:43:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60347 "EHLO
+	id S1756056Ab3CLWn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:43:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015Ab3CLWdY (ORCPT
+	with ESMTP id S1755788Ab3CLWdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 069/100] e1000e: fix pci-device enable-counter balance
-Date: Tue, 12 Mar 2013 15:31:54 -0700
-Message-Id: <20130312223130.360294627@linuxfoundation.org>
+        Ben Greear <greearb@candelatech.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 068/100] mac80211: Fix crash due to un-canceled work-items
+Date: Tue, 12 Mar 2013 15:31:53 -0700
+Message-Id: <20130312223130.243283379@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -30,39 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Ben Greear <greearb@candelatech.com>
 
-commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
+commit 499218595a2e8296b7492af32fcca141b7b8184a upstream.
 
-This patch removes redundant and unbalanced pci_disable_device() from
-__e1000_shutdown(). pci_clear_master() is enough, device can go into
-suspended state with elevated enable_cnt.
+Some mlme work structs are not cancelled on disassociation
+nor interface deletion, which leads to them running after
+the memory has been freed
 
-Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+There is not a clean way to cancel these in the disassociation
+logic because they must be canceled outside of the ifmgd->mtx
+lock, so just cancel them in mgd_stop logic that tears down
+the station.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Borislav Petkov <bp@suse.de>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+This fixes the crashes we see in 3.7.9+.  The crash stack
+trace itself isn't so helpful, but this warning gives
+more useful info:
+
+WARNING: at /home/greearb/git/linux-3.7.dev.y/lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
+ODEBUG: free active (active state 0) object type: work_struct hint: ieee80211_sta_monitor_work+0x0/0x14 [mac80211]
+Modules linked in: [...]
+Pid: 14743, comm: iw Tainted: G         C O 3.7.9+ #11
+Call Trace:
+ [<ffffffff81087ef8>] warn_slowpath_common+0x80/0x98
+ [<ffffffff81087fa4>] warn_slowpath_fmt+0x41/0x43
+ [<ffffffff812a2608>] debug_print_object+0x7c/0x8d
+ [<ffffffff812a2bca>] debug_check_no_obj_freed+0x95/0x1c3
+ [<ffffffff8114cc69>] slab_free_hook+0x70/0x79
+ [<ffffffff8114ea3e>] kfree+0x62/0xb7
+ [<ffffffff8149f465>] netdev_release+0x39/0x3e
+ [<ffffffff8136ad67>] device_release+0x52/0x8a
+ [<ffffffff812937db>] kobject_release+0x121/0x158
+ [<ffffffff81293612>] kobject_put+0x4c/0x50
+ [<ffffffff8148f0d7>] netdev_run_todo+0x25c/0x27e
+
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/mlme.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5549,7 +5549,7 @@ static int __e1000_shutdown(struct pci_d
- 	 */
- 	e1000e_release_hw_control(adapter);
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -4072,6 +4072,17 @@ void ieee80211_mgd_stop(struct ieee80211
+ {
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
  
--	pci_disable_device(pdev);
-+	pci_clear_master(pdev);
- 
- 	return 0;
- }
++	/*
++	 * Make sure some work items will not run after this,
++	 * they will not do anything but might not have been
++	 * cancelled when disconnecting.
++	 */
++	cancel_work_sync(&ifmgd->monitor_work);
++	cancel_work_sync(&ifmgd->beacon_connection_loss_work);
++	cancel_work_sync(&ifmgd->request_smps_work);
++	cancel_work_sync(&ifmgd->csa_connection_drop_work);
++	cancel_work_sync(&ifmgd->chswitch_work);
++
+ 	mutex_lock(&ifmgd->mtx);
+ 	if (ifmgd->assoc_data)
+ 		ieee80211_destroy_assoc_data(sdata, false);
 
 
