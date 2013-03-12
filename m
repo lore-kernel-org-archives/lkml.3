@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab3CLKoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:44:05 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:42792 "EHLO multi.imgtec.com"
+	id S1755327Ab3CLKpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:45:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36950 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932519Ab3CLKoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:44:00 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH] mmc: dw_mmc: move host->data_offset init earlier
-Date: Tue, 12 Mar 2013 10:43:54 +0000
-Message-ID: <1363085034-9270-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752076Ab3CLKpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:45:04 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
+Subject: [PATCH 00/12] USB: ehci-omap: Device tree support for 3.10
+Date: Tue, 12 Mar 2013 12:44:38 +0200
+Message-ID: <1363085090-24676-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_12_10_43_57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-host->data_offset is initialised at the end of the probe function
-depending on the VERID register, and is used for PIO operations. Move
-this initialisation earlier, before IRQs or slots are initialised, to be
-sure that PIO won't occur prior to host->data_offset being initialised.
+Hi Greg,
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>
----
-Note, I didn't actually observe this problem occuring, but I think in
-theory it could happen.
+These patches implement device tree support for the OMAP's
+EHCI host controller. The corresponding MFD/SoC patches will be sent
+separately and this set has no dependeny with them.
 
- drivers/mmc/host/dw_mmc.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+NOTE: Last 2 patches are new and still need and Ack from Alan Stern.
+Please accept this set after he has acked them. Thanks.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 1a42c7c..7556456 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2289,6 +2289,18 @@ int dw_mci_probe(struct dw_mci *host)
- 	mci_writel(host, CLKENA, 0);
- 	mci_writel(host, CLKSRC, 0);
- 
-+	/*
-+	 * In 2.40a spec, Data offset is changed.
-+	 * Need to check the version-id and set data-offset for DATA register.
-+	 */
-+	host->verid = SDMMC_GET_VERID(mci_readl(host, VERID));
-+	dev_info(host->dev, "Version ID is %04x\n", host->verid);
-+
-+	if (host->verid < DW_MMC_240A)
-+		host->data_offset = DATA_OFFSET;
-+	else
-+		host->data_offset = DATA_240A_OFFSET;
-+
- 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
- 	host->card_workqueue = alloc_workqueue("dw-mci-card",
- 			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
-@@ -2337,18 +2349,6 @@ int dw_mci_probe(struct dw_mci *host)
- 		goto err_workqueue;
- 	}
- 
--	/*
--	 * In 2.40a spec, Data offset is changed.
--	 * Need to check the version-id and set data-offset for DATA register.
--	 */
--	host->verid = SDMMC_GET_VERID(mci_readl(host, VERID));
--	dev_info(host->dev, "Version ID is %04x\n", host->verid);
--
--	if (host->verid < DW_MMC_240A)
--		host->data_offset = DATA_OFFSET;
--	else
--		host->data_offset = DATA_240A_OFFSET;
--
- 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
- 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
- 
+cheers,
+-roger
+
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+
+are available in the git repository at:
+  git://github.com/rogerq/linux.git usbhost-usb-next
+
+Alan Stern (1):
+  USB: EHCI: split ehci-omap out to a separate driver
+
+Roger Quadros (11):
+  USB: ehci-omap: Use devm_ioremap_resource()
+  USB: ehci-omap: Use PHY APIs to get the PHY device and put it out of
+    suspend
+  USB: ehci-omap: Remove PHY reset handling code
+  USB: ehci-omap: Remove PHY regulator handling code
+  USB: ehci-omap: Select NOP USB transceiver driver
+  USB: ehci-omap: Get platform resources by index rather than by name
+  USB: ohci-omap3: Get platform resources by index rather than by name
+  USB: ohci-omap3: Add device tree support and binding information
+  USB: ehci-omap: Add device tree support and binding information
+  USB: ehci-omap: Try to get PHY even if not in PHY mode
+  USB: ehci-omap: Fix detection in HSIC mode
+
+ .../devicetree/bindings/usb/ehci-omap.txt          |   32 ++
+ .../devicetree/bindings/usb/ohci-omap3.txt         |   15 +
+ drivers/usb/host/Kconfig                           |    3 +-
+ drivers/usb/host/Makefile                          |    1 +
+ drivers/usb/host/ehci-hcd.c                        |    6 +-
+ drivers/usb/host/ehci-omap.c                       |  312 +++++++++-----------
+ drivers/usb/host/ohci-omap3.c                      |   24 ++-
+ 7 files changed, 214 insertions(+), 179 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/ehci-omap.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ohci-omap3.txt
+
 -- 
-1.8.1.2
-
+1.7.4.1
 
