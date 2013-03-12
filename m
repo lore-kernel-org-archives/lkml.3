@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab3CLKOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:14:35 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13905 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656Ab3CLKOc (ORCPT
+	id S932702Ab3CLKOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:14:47 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4105 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590Ab3CLKOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:14:32 -0400
+	Tue, 12 Mar 2013 06:14:44 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:07:45 -0700
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:07:57 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -29,9 +29,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Max Filippov <jcmvbkbc@gmail.com>
 CC: Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 11/17] mips: alchemy: require gpiolib
-Date: Tue, 12 Mar 2013 19:12:24 +0900
-Message-ID: <1363083150-30964-12-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 13/17] avr32: default GENERIC_GPIO to false
+Date: Tue, 12 Mar 2013 19:12:26 +0900
+Message-ID: <1363083150-30964-14-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
 References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
@@ -42,27 +42,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Require gpiolib instead of just GENERIC_GPIO.
+This will help removing the GENERIC_GPIO option.
+
+GPIO access is done through gpiolib, which selects GENERIC_GPIO anyway.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/mips/Kconfig | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/avr32/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index ae70ab1..5cfa818 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -61,8 +61,7 @@ config MIPS_ALCHEMY
- 	select SYS_HAS_CPU_MIPS32_R1
- 	select SYS_SUPPORTS_32BIT_KERNEL
- 	select SYS_SUPPORTS_APM_EMULATION
--	select GENERIC_GPIO
--	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select ARCH_REQUIRE_GPIOLIB
- 	select SYS_SUPPORTS_ZBOOT
- 	select USB_ARCH_HAS_OHCI
- 	select USB_ARCH_HAS_EHCI
+diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+index 9b89257..85c377e 100644
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -27,7 +27,7 @@ config AVR32
+ 	  http://avr32linux.org/.
+ 
+ config GENERIC_GPIO
+-	def_bool y
++	def_bool n
+ 
+ config STACKTRACE_SUPPORT
+ 	def_bool y
 -- 
 1.8.1.5
 
