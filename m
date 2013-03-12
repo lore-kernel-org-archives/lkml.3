@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3CLHfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:35:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56497 "EHLO mx2.suse.de"
+	id S1754623Ab3CLHgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:36:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56541 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab3CLHfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:35:02 -0400
-Date: Tue, 12 Mar 2013 08:34:55 +0100
-Message-ID: <s5hsj41kr4w.wl%tiwai@suse.de>
+	id S1753114Ab3CLHgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 03:36:31 -0400
+Date: Tue, 12 Mar 2013 08:36:29 +0100
+Message-ID: <s5hr4jlkr2a.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: perex@perex.cz, yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: asihpi - fix potential NULL pointer dereference
-In-Reply-To: <CAPgLHd8oUa=YMtQ1P5Qo4=M0ysqJV4L7U9RCN0W7aB+A4xLbvA@mail.gmail.com>
-References: <CAPgLHd8oUa=YMtQ1P5Qo4=M0ysqJV4L7U9RCN0W7aB+A4xLbvA@mail.gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Dave Helstroom <helstroom@google.com>, perex@perex.cz,
+        eldad@fogrefinery.com, damien@zamaudio.com, pete.leigh@gmail.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] Add a USB audio quirk for the NuForce UDH-100 device.
+In-Reply-To: <513E2D56.8070902@ladisch.de>
+References: <1362973920-4942-1-git-send-email-helstroom@google.com>
+	<513D968C.1060905@ladisch.de>
+	<CAOcFWma6fMqwqzMxFfCM7hOqk04FBk9JkKZjwekki_GFUR2jSQ@mail.gmail.com>
+	<513E2D56.8070902@ladisch.de>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,44 +28,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 12 Mar 2013 00:16:40 +0800,
-Wei Yongjun wrote:
+At Mon, 11 Mar 2013 20:15:34 +0100,
+Clemens Ladisch wrote:
 > 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> >> David Helstroom wrote:
+> >>> Interface 1 does not exist
 > 
-> The dereference should be moved below the NULL test.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Please try the patch below.
 
-Applied now.  Thanks.
+Since the patch seems working, I merge it now.
 
+
+thanks,
 
 Takashi
 
+> 
+> 
+> Regards,
+> Clemens
+> 
+> 
+> --8<---------------------------------------------------------------->8--
+> ALSA: usb-audio: add a workaround for the NuForce UDH-100
+> 
+> The NuForce UDH-100 numbers its interfaces incorrectly, which makes the
+> interface associations come out wrong, which results in the driver
+> erroring out with the message "Audio class v2 interfaces need an
+> interface association".
+> 
+> Work around this by searching for the interface association descriptor
+> also in some other place where it might have ended up.
+> 
+> Reported-by: Dave Helstroom <helstroom@google.com>
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 > ---
->  sound/pci/asihpi/asihpi.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  sound/usb/card.c |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
 > 
-> diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
-> index 3536b07..0aabfed 100644
-> --- a/sound/pci/asihpi/asihpi.c
-> +++ b/sound/pci/asihpi/asihpi.c
-> @@ -2549,7 +2549,7 @@ static int snd_asihpi_sampleclock_add(struct snd_card_asihpi *asihpi,
->  
->  static int snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
->  {
-> -	struct snd_card *card = asihpi->card;
-> +	struct snd_card *card;
->  	unsigned int idx = 0;
->  	unsigned int subindex = 0;
->  	int err;
-> @@ -2557,6 +2557,7 @@ static int snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
->  
->  	if (snd_BUG_ON(!asihpi))
->  		return -EINVAL;
-> +	card = asihpi->card;
->  	strcpy(card->mixername, "Asihpi Mixer");
->  
->  	err =
+> diff --git a/sound/usb/card.c b/sound/usb/card.c
+> index df2f6d0..34dc3e8 100644
+> --- a/sound/usb/card.c
+> +++ b/sound/usb/card.c
+> @@ -245,6 +245,21 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
+>  			usb_ifnum_to_if(dev, ctrlif)->intf_assoc;
 > 
+>  		if (!assoc) {
+> +			/*
+> +			 * Firmware writers cannot count to three.  So to find
+> +			 * the IAD on the NuForce UDH-100, also check the next
+> +			 * interface.
+> +			 */
+> +			struct usb_interface *iface =
+> +				usb_ifnum_to_if(dev, ctrlif + 1);
+> +			if (iface &&
+> +			    iface->intf_assoc &&
+> +			    iface->intf_assoc->bFunctionClass == USB_CLASS_AUDIO &&
+> +			    iface->intf_assoc->bFunctionProtocol == UAC_VERSION_2)
+> +				assoc = iface->intf_assoc;
+> +		}
+> +
+> +		if (!assoc) {
+>  			snd_printk(KERN_ERR "Audio class v2 interfaces need an interface association\n");
+>  			return -EINVAL;
+>  		}
 > 
