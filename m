@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3CLNci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:32:38 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:24035 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753611Ab3CLNcg (ORCPT
+	id S1755457Ab3CLNd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:33:57 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:42654 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967Ab3CLNdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:32:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/N58qu8Ex0N4EqWdhjZiVc4pHx0v/r9f4=
-Date: Tue, 12 Mar 2013 09:32:25 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Lunn <andrew@lunn.ch>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+	Tue, 12 Mar 2013 09:33:55 -0400
+Date: Tue, 12 Mar 2013 06:34:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
+        cgroups <cgroups@vger.kernel.org>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
-Message-ID: <20130312133225.GG12700@titan.lakedaemon.net>
-References: <20130312144714.39749c5b0bd1aea14c4d2ff8@canb.auug.org.au>
- <CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com>
- <20130312115339.GF12700@titan.lakedaemon.net>
- <201303121248.24736.arnd@arndb.de>
+        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH] device: separate all subsys mutexes (was: Re: [BUG]
+ potential deadlock led by cpu_hotplug lock (memcg involved))
+Message-ID: <20130312133446.GA3514@kroah.com>
+References: <513ECCFE.3070201@huawei.com>
+ <20130312101555.GB30758@dhcp22.suse.cz>
+ <20130312110750.GC30758@dhcp22.suse.cz>
+ <20130312130504.GD30758@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201303121248.24736.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130312130504.GD30758@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 12:48:24PM +0000, Arnd Bergmann wrote:
-> On Tuesday 12 March 2013, Jason Cooper wrote:
-> > I chose to keep them together to maintain bisectability.  Either you
-> > have all of the fix (you landed on this branch), or you don't.  Was this
-> > the correct decision in this case, or did I miss something?
-> 
-> I think you don't need to worry about bisection in this case, especially
-> as you mentioned that 3.8 is already broken.
-> 
-> From all I can tell, these are four separate fixes, and you want to have
-> all of them get merged, but applying just one of them will not make the
-> state of the kernel tree any worse than what it is before the patches.
+On Tue, Mar 12, 2013 at 02:05:04PM +0100, Michal Hocko wrote:
+> The fix is quite simple. We can pull the key inside bus_type structure
+> because they are defined per device so the pointer will be unique as
+> well. bus_register doesn't need to be a macro anymore so change it
+> to the inline. We could get rid of __bus_register as there is no other
+> caller but maybe somebody will want to use a different key so keep it
+> around for now.
 
-Ok, thanks for the clarification.  I'll ease up on the bisectability
-requirement for fixes in the future.
+Nice work, but just drop __bus_register(), no one should need to use a
+new key for this type of thing, now that you have added a per-bus_type
+variable.
 
-thx,
+thanks,
 
-Jason.
+greg k-h
