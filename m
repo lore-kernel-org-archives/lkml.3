@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab3CLEX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 00:23:28 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:43001 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3CLEX1 (ORCPT
+	id S1753877Ab3CLEav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 00:30:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52433 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab3CLEau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 00:23:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130312002429.GA24360@google.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
-	<1356050997-2688-5-git-send-email-walken@google.com>
-	<CA+ydwtqD67m9_JLCNwvdP72rko93aTkVgC-aK4TacyyM5DoCTA@mail.gmail.com>
-	<20130311160322.830cc6b670fd24faa8366413@linux-foundation.org>
-	<20130312002429.GA24360@google.com>
-Date: Tue, 12 Mar 2013 12:23:26 +0800
-Message-ID: <CAJd=RBCihXorfLcjHxNUcJcm+CxpnDwMgB9kcC+VrN9bTK0Gkg@mail.gmail.com>
-Subject: Re: [PATCH 4/9] mm: use mm_populate() for blocking remap_file_pages()
-From: Hillf Danton <dhillf@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Mar 2013 00:30:50 -0400
+Date: Tue, 12 Mar 2013 15:30:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Hellstrom <daniel@gaisler.com>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20130312153047.dc10eb2392d07af8822e45f1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Mar_2013_15_30_47_+1100_bcwKL/VCAPw8jBHc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 8:24 AM, Michel Lespinasse <walken@google.com> wrote:
-> (Sorry for the late reply)
->
-> On Mon, Mar 11, 2013 at 4:03 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> On Sun, 10 Mar 2013 20:55:21 +0200 Tommi Rantala <tt.rantala@gmail.com> wrote:
->>
->>> 2012/12/21 Michel Lespinasse <walken@google.com>:
->>> > Signed-off-by: Michel Lespinasse <walken@google.com>
->>>
->>> Hello, this patch introduced the following bug, seen while fuzzing with trinity:
->>>
->>> [  396.825414] BUG: unable to handle kernel NULL pointer dereference
->>> at 0000000000000050
->
-> Good catch...
->
->> From: Andrew Morton <akpm@linux-foundation.org>
->> Subject: mm/fremap.c: fix oops on error path
->>
->> If find_vma() fails, sys_remap_file_pages() will dereference `vma', which
->> contains NULL.  Fix it by checking the pointer.
->>
->> (We could alternatively check for err==0, but this seems more direct)
->>
->> (The vm_flags change is to squish a bogus used-uninitialised warning
->> without adding extra code).
->>
->> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
->> Cc: Michel Lespinasse <walken@google.com>
->> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> ---
->>
->>  mm/fremap.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff -puN mm/fremap.c~mm-fremapc-fix-oops-on-error-path mm/fremap.c
->> --- a/mm/fremap.c~mm-fremapc-fix-oops-on-error-path
->> +++ a/mm/fremap.c
->> @@ -163,7 +163,8 @@ SYSCALL_DEFINE5(remap_file_pages, unsign
->>          * and that the remapped range is valid and fully within
->>          * the single existing vma.
->>          */
->> -       if (!vma || !(vma->vm_flags & VM_SHARED))
->> +       vm_flags = vma->vm_flags;
->> +       if (!vma || !(vm_flags & VM_SHARED))
->>                 goto out;
->
-> Your commit message indicates the vm_flags load here doesn't generate any code, but this seems very brittle and compiler dependent. If the compiler was to generate an actual load here, the issue with vma == NULL would reappear.
->
->>         if (!vma->vm_ops || !vma->vm_ops->remap_pages)
->> @@ -254,7 +255,8 @@ get_write_lock:
->>          */
->>
->>  out:
->> -       vm_flags = vma->vm_flags;
->> +       if (vma)
->> +               vm_flags = vma->vm_flags;
->>         if (likely(!has_write_lock))
->>                 up_read(&mm->mmap_sem);
->>         else
->
->
->
-> Would the following work ? I think it's simpler, and with the compiler
-> I'm using here it doesn't emit warnings:
->
-> diff --git a/mm/fremap.c b/mm/fremap.c
-> index 0cd4c11488ed..329507e832fb 100644
-> --- a/mm/fremap.c
-> +++ b/mm/fremap.c
-> @@ -254,7 +254,8 @@ get_write_lock:
->          */
->
->  out:
-> -       vm_flags = vma->vm_flags;
-> +       if (!err)
-> +               vm_flags = vma->vm_flags;
->         if (likely(!has_write_lock))
->                 up_read(&mm->mmap_sem);
->         else
->
-Is it still necessary to populate mm if bail out due
-to a linear mapping encountered?
+--Signature=_Tue__12_Mar_2013_15_30_47_+1100_bcwKL/VCAPw8jBHc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hillf
+Hi all,
+
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/input/serio/apbps2.c: In function 'apbps2_of_probe':
+drivers/input/serio/apbps2.c:176:2: error: implicit declaration of function=
+ 'kzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/input/serio/apbps2.c:176:11: warning: assignment makes pointer from=
+ integer without a cast [enabled by default]
+
+Caused by commit 928a48c9e40e ("Input: add support for GRLIB APBPS2 PS/2
+Keyboard/Mouse") from the input tree.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__12_Mar_2013_15_30_47_+1100_bcwKL/VCAPw8jBHc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRPq93AAoJEECxmPOUX5FEHRIP/RNv0tCGuh5SkHFW6BYy7yMJ
+HkqLClD2+7Qw96dVOyv85vM2e0OQD7e6lcLF6nY8YdwDGqlqHNM6DBw+67q6PDMW
+4i8oh+vaNbV30SvUbxwx0tqh7YRcXqqO81wY+i8RWTWBnz0plSOsgzQbKNh1bw+R
+pauxKIidlRTf/udJspXqtzE9vW56SwkvSe1+hYlC4PBc6Z570h5frLQfPGH3h20Q
+oIgdhW1P1tFSgnJDh9GhcOpr3Oo7HQg2jIm+MDgoZX1qm5KX+D+9Grzfmk7e8jx+
+FsEVtyWMNG999JyhvVgq4jtl78t1uM6ZBHEdrEsBxOekDzSQ9WSC/xab/DldHDBi
+LCizxVnQMPql5ZqbqTiFvWbFOajNdIHWRz5FJvlv0xYckS8KDVWkzd9h/d7wOI4T
+x/UhW0/DXslfcMtIcXofY6U2HBxWA7mF9zokyHBHQ5RwkG1/kFKOwkWpkfVI6Oe3
+nHZKvcr/4CJ7AdLIxJhPgI1DvL4OXYPAN0NSTtN3cG4Q1BhK+FfJUUWdJVO165wA
+rmH1PqX7mbmVWLGKkNreWjFtX1xZSowPIRsDxhyE7ECqO/AnmHP75OcjHXxBQ8ZX
+JGJHG8C00s+2V/NgxP6rzPSW5ElzWWIVMQ2gs/gv7FuUpYocsYlLE9u5L80yYsTY
+CyxdWDLRMPFNVLG4uooV
+=Ed2j
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Mar_2013_15_30_47_+1100_bcwKL/VCAPw8jBHc--
