@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3CLC2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 22:28:39 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:61042 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3CLC2h (ORCPT
+	id S932175Ab3CLC24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 22:28:56 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:54439 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab3CLC2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 22:28:37 -0400
+	Mon, 11 Mar 2013 22:28:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-	<1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-Date: Mon, 11 Mar 2013 19:28:36 -0700
-Message-ID: <CANN689HvZK3gHyxRBPZyXwz2cJfheiEoQMA23oRARMCp=7GUCQ@mail.gmail.com>
-Subject: Re: [PATCH v5 00/44] ldisc patchset
-From: Michel Lespinasse <walken@google.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
+In-Reply-To: <CAJtEV7ZsOd=c6_+A3W+NYBtrWAUPH7NrVEk-J+_+ZgoJQTBZVg@mail.gmail.com>
+References: <CAJtEV7ZsOd=c6_+A3W+NYBtrWAUPH7NrVEk-J+_+ZgoJQTBZVg@mail.gmail.com>
+Date: Tue, 12 Mar 2013 10:28:53 +0800
+Message-ID: <CAJtEV7YfgcxuEAj+a8SbNmsoMHaEgY1RQ1RoR=8nAi4=8qwT_w@mail.gmail.com>
+Subject: Re: Bug involving dynamic_debug and '-p' modifier
+From: Andrew Cooks <acooks@gmail.com>
+To: Jason Baron <jbaron@redhat.com>, Jim Cromie <jim.cromie@gmail.com>
+Cc: open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 1:44 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> Greg,
-> This patchset includes
->   'tty: Drop lock contention stat from ldsem trylocks'
-> so no need to apply that on this series. Also, I noticed you
-> kept the 'tty is NULL' removal on a different branch so I left
-> my patch in this series that removes it.
+On Tue, Mar 12, 2013 at 9:14 AM, Andrew Cooks <acooks@gmail.com> wrote:
+> Hi Jason
 >
-> This series applies cleanly to tty-next.
+> When I specify a '-p' modifier in the dynamic debug options in the
+> kernel command line, I get a kernel panic during boot. The panic
+> happens after userspace starts doing graphical stuff, but I haven't
+> been able to pinpoint exactly what.
 >
-> v5 changes:
+> If I use '=_' instead of '-p', or boot to a recovery mode, or change
+> the modifier after booting using debugfs, the panic doesn't occur. For
+> example, booting to runlevel 3 with '=_', then flipping the same
+> modifier to first to '+p' and then to '-p', before starting X does not
+> result in a panic.
 >
-> After completing an audit of the recursive use of ldisc
-> references, I discovered the _blocking_ recursive acquisition
-> of ldisc references was limited to line disciplines misusing
-> the tty_perform_flush() function.
-> With that now resolved in,
->   'tty: Fix recursive deadlock in tty_perform_flush()'
-> the recursion design in ldsem has been removed.
+> Booting to runlevel 3 (or even 1!), with '-p' results in a panic, but
+> 'rdshell' is OK.
 >
-> The recursion removal is in its own patch,
->   'tty: Remove ldsem recursion support'
-> to ease review for those that have already reviewed the
-> ldsem implementation.
+> I also tried the Red Hat kernel (just because it's installed - I
+> haven't figured out how to tell the package manager that I don't want
+> a kernel). This also panics, but it says that '-p' is not supported.
 >
-> In addition, this patchset implements lock stealing derived
-> from the work of Michel Lespinasse <walken@google.com> on
-> writer lock stealing in rwsem.
+> Please let me know if you need me to do any other tests.
 >
-> Although the rwsem write lock stealing changes are motivated
-> by performance criteria, these changes are motivated by reduced
-> code line count and simplicity of design.
+> '-p', panic: http://pastebin.com/8yAcBQdY
+> '-p', rdshell, no panic: http://pastebin.com/Hi2a7BZA
 >
-> *** Edited below to remove recursion discussion ***
->
-> Back in early December I realized that a classic read/write semaphore
-> with writer priority was the ideal mechanism for handling the
-> line discipline referencing.
->
-> Line discipline references act as "readers"; closing or changing the
-> line discipline is prevented while these references are outstanding.
-> Conversely, line discipline references should not be granted while
-> the line discipline is closing or changing; these are the "writers".
->
-> Unfortunately, the existing rwsem uses a FIFO priority for
-> waiting threads and does not support timeouts.
->
-> So this implements just that: a writer-priority
-> read/write semaphore with timed waits.
+> --
+> a.
 
-Thanks for eliminating the recursion requirement. I think this really
-helps - I didn't like that multiple readers with a colliding current
-hash could basically starve out a writer forever.
-
-Not knowing anything about the tty layer, I am curious about the
-context for your other requirements. What are ldisc references taken
-for and for how long are they held ? I am surprised that the writers
-may hit a 5 second timeout (because I didn't expect the references to
-be held for very long).
-
-Also why the write-priority requirement rather than reader-writer
-fairness ? Is it to make it less likely to hit the writer timeouts ?
-
-In short: I am worried about the introduciton of a new lock type, and
-would be happier if rwsem could be made to fit. BTW, extending rwsem
-itself to add writer timeouts seems quite doable (but making it work
-as a write priority lock would seem like a bad idea).
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Jason's mail bounced, so redirecting to Jim Cromie, who made the most
+recent significant changes to dynamic_debug...
