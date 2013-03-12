@@ -1,56 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3CLQGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:06:44 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:54119 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932924Ab3CLQGm (ORCPT
+	id S933065Ab3CLQHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:07:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42026 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933006Ab3CLQHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:06:42 -0400
-Date: Tue, 12 Mar 2013 09:07:22 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 5/6] Drivers: hv: balloon: Implement hot-add functionality
-Message-ID: <20130312160722.GA21109@kroah.com>
-References: <1362780945-9796-1-git-send-email-kys@microsoft.com>
- <1362780973-9837-1-git-send-email-kys@microsoft.com>
- <1362780973-9837-5-git-send-email-kys@microsoft.com>
- <924741bf41f14975af2f8f52b3251730@SN2PR03MB061.namprd03.prod.outlook.com>
+	Tue, 12 Mar 2013 12:07:03 -0400
+Message-ID: <513F5298.6000500@pengutronix.de>
+Date: Tue, 12 Mar 2013 17:06:48 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <924741bf41f14975af2f8f52b3251730@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>
+CC: balbi@ti.com, tony@atomide.com, mark.rutland@arm.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
+Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
+References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de> <513F3B7E.8000002@ti.com> <513F3EF0.3030609@pengutronix.de> <513F47B4.2060004@ti.com>
+In-Reply-To: <513F47B4.2060004@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2CGKASVCESFBPGLHQVWVG"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 02:54:23AM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> > Sent: Friday, March 08, 2013 5:16 PM
-> > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > jasowang@redhat.com
-> > Cc: KY Srinivasan
-> > Subject: [PATCH 5/6] Drivers: hv: balloon: Implement hot-add functionality
-> > 
-> > Implement the memory hot-add functionality. With this, Linux guests can fully
-> > participate in the Dynamic Memory protocol implemented in the Windows hosts.
-> 
-> Greg,
-> 
-> I forgot to modify the Kconfig file to include the new dependency of the balloon driver on
-> MEMORY_HOTPLUG. Should I send a separate patch for  Kconfig, or resend this one patch
-> with the Kconfig changes folded in. Or, do you want me to resend the whole series.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2CGKASVCESFBPGLHQVWVG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Just resend the whole series, I'll drop this one.
+On 03/12/2013 04:20 PM, Roger Quadros wrote:
+> On 03/12/2013 04:42 PM, Marc Kleine-Budde wrote:
+>> On 03/12/2013 03:28 PM, Roger Quadros wrote:
+>>> On 03/12/2013 04:17 PM, Marc Kleine-Budde wrote:
+>>>> On 03/12/2013 03:12 PM, Roger Quadros wrote:
+>>>>> On 03/12/2013 01:54 PM, Marc Kleine-Budde wrote:
+>>>>>> On 03/12/2013 12:24 PM, Roger Quadros wrote:
+>>>>>>> Add clk_rate parameter to platform data. If supplied, the
+>>>>>>> NOP phy driver will program the clock to that rate during probe.
+>>>>>>>
+>>>>>>> Also add 2 flags, needs_vcc and needs_reset.
+>>>>>>> If the flag is set and the regulator couldn't be found
+>>>>>>> then the driver will bail out with -EPROBE_DEFER.
+>>>>>>
+>>>>>> Is there a platform which fills out pdata.needs_vcc and
+>>>>>> pdata.needs_reset? IMHO it makes no sense to add features for the =
+non DT
+>>>>>> case, if there isn't any user for it.
+>>>>>>
+>>>>>
+>>>>> There can be a user in the non DT case as well. Consider the follow=
+ing example:
+>>>>
+>>>> I'm just saying, let the implementation up to a real user for the no=
+n DT
+>>>> case. Beagleboard is ARM and there's no point of implementing non DT=
 
-greg k-h
+>>>> fall backs for ARM, IMHO.
+>>>>
+>>>
+>>> Why do you say so?
+>>>
+>>> It doesn't depend on the CPU architecture. It depends on how the boar=
+d designer
+>>> wired the board. A non ARM platform could also face the same problem =
+as beagle.
+>>
+>> Using -EPROBE_DEFER ist the way to solve the problem.
+>=20
+> did you mean isn't? If you did then what is the other option?
+
+You're using -EPROBE_DEFER, that's all perfectly fine.
+
+>>> It is not a non DT fallback. I believe many are still using non DT bo=
+ot and it
+>>> needs to work at least till we move all functionality to purely DT.
+>>
+>> From my point of view, it makes no sense today to implement new featur=
+es
+>> which have a fallback for the non-DT case, if there isn't a real user =
+of
+>> this feature. So IMHO don't add needs_vcc and needs_reset flags to the=
+
+>> pdata, just take the information from the DT. As soon as there is a
+>> non-DT user of this feature she/he can implement it or even better
+>> switch to DT.
+>=20
+> Adding Peter to the loop. I faintly remember him mentioning this issue =
+before
+> for beagle. We really need the deferred probe mechanism or we need to r=
+esort
+> to device registering order.
+
+> The first user for needs_vcc flag will be the beagleboard file. I just =
+didn't
+> implement it in this patch [1].
+
+Okay, I wrongly assumed that there wouldn't be added any new features to
+the old non-DT board files.
+
+> On second thoughts, since [1] does work on beagleboard without requirin=
+g the
+> needs_vcc flag, I think we can just live without it.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+------enig2CGKASVCESFBPGLHQVWVG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlE/UpsACgkQjTAFq1RaXHPoPgCfYxKeyNZejjADDKEVIFvuoEZL
+eSMAnAs+6wcktL34QPVqPjcoPvxKGca6
+=bv+y
+-----END PGP SIGNATURE-----
+
+------enig2CGKASVCESFBPGLHQVWVG--
