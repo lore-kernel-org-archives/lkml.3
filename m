@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab3CLGu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:50:56 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:61439 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121Ab3CLGuy (ORCPT
+	id S932379Ab3CLGvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:51:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10126 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755125Ab3CLGvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 02:50:54 -0400
-Message-ID: <513ED047.9060507@huawei.com>
-Date: Tue, 12 Mar 2013 14:50:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 12 Mar 2013 02:51:09 -0400
+X-IronPort-AV: E=Sophos;i="4.84,827,1355126400"; 
+   d="scan'208";a="28671960"
+From: David Brown <davidb@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/6] platform-drivers: msm: add single-wire serial bus interface (SSBI) driver
+References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
+	<1362616187-21089-2-git-send-email-davidb@codeaurora.org>
+	<20130307013008.GA2910@kroah.com>
+Date: Mon, 11 Mar 2013 23:51:08 -0700
+In-Reply-To: <20130307013008.GA2910@kroah.com> (Greg Kroah-Hartman's message
+	of "Thu, 7 Mar 2013 09:30:08 +0800")
+Message-ID: <8yamwu9nmar.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 4/8] cgroup: don't bother to resize pid array
-References: <513ED010.5060906@huawei.com>
-In-Reply-To: <513ED010.5060906@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we open cgroup.procs, we'll allocate an buffer and store all tasks'
-tgid in it, and then duplicate entries will be stripped. If that results
-in a much smaller pid list, we'll re-allocate a smaller buffer.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-But we've already sucessfully allocated memory and reading the procs
-file is a short period and the memory will be freed very soon, so why
-bother to re-allocate memory.
+>> +static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
+>> +{
+>> +	u32 timeout = SSBI_TIMEOUT_US;
+>> +	u32 val;
+>> +
+>> +	while (timeout--) {
+>> +		val = ssbi_readl(ssbi, SSBI2_STATUS);
+>> +		if (((val & set_mask) == set_mask) && ((val & clr_mask) == 0))
+>> +			return 0;
+>> +		udelay(1);
+>
+> Busy loop?  Really?
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 37 +++----------------------------------
- 1 file changed, 3 insertions(+), 34 deletions(-)
+Finally was able to dig up some of the reason for this.  The
+transactions typically take about 5us.  In the case of contention with
+another CPU, it could take as much as 20us.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index be524ac..58ae040 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3400,35 +3400,14 @@ static void pidlist_free(void *p)
- 	else
- 		kfree(p);
- }
--static void *pidlist_resize(void *p, int newcount)
--{
--	void *newlist;
--	/* note: if new alloc fails, old p will still be valid either way */
--	if (is_vmalloc_addr(p)) {
--		newlist = vmalloc(newcount * sizeof(pid_t));
--		if (!newlist)
--			return NULL;
--		memcpy(newlist, p, newcount * sizeof(pid_t));
--		vfree(p);
--	} else {
--		newlist = krealloc(p, newcount * sizeof(pid_t), GFP_KERNEL);
--	}
--	return newlist;
--}
- 
- /*
-  * pidlist_uniq - given a kmalloc()ed list, strip out all duplicate entries
-- * If the new stripped list is sufficiently smaller and there's enough memory
-- * to allocate a new buffer, will let go of the unneeded memory. Returns the
-- * number of unique elements.
-+ * Returns the number of unique elements.
-  */
--/* is the size difference enough that we should re-allocate the array? */
--#define PIDLIST_REALLOC_DIFFERENCE(old, new) ((old) - PAGE_SIZE >= (new))
--static int pidlist_uniq(pid_t **p, int length)
-+static int pidlist_uniq(pid_t *list, int length)
- {
- 	int src, dest = 1;
--	pid_t *list = *p;
--	pid_t *newlist;
- 
- 	/*
- 	 * we presume the 0th element is unique, so i starts at 1. trivial
-@@ -3449,16 +3428,6 @@ static int pidlist_uniq(pid_t **p, int length)
- 		dest++;
- 	}
- after:
--	/*
--	 * if the length difference is large enough, we want to allocate a
--	 * smaller buffer to save memory. if this fails due to out of memory,
--	 * we'll just stay with what we've got.
--	 */
--	if (PIDLIST_REALLOC_DIFFERENCE(length, dest)) {
--		newlist = pidlist_resize(list, dest);
--		if (newlist)
--			*p = newlist;
--	}
- 	return dest;
- }
- 
-@@ -3554,7 +3523,7 @@ static int pidlist_array_load(struct cgroup *cgrp, enum cgroup_filetype type,
- 	/* now sort & (if procs) strip out duplicates */
- 	sort(array, length, sizeof(pid_t), cmppid, NULL);
- 	if (type == CGROUP_FILE_PROCS)
--		length = pidlist_uniq(&array, length);
-+		length = pidlist_uniq(array, length);
- 	l = cgroup_pidlist_find(cgrp, type);
- 	if (!l) {
- 		pidlist_free(array);
--- 
-1.8.0.2
+Would it be sufficient to just explain this in a comment?
+
+David
