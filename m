@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab3CLHkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:40:04 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50656 "EHLO
+	id S932388Ab3CLHki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:40:38 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60299 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355Ab3CLHjA (ORCPT
+	with ESMTP id S932313Ab3CLHi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:39:00 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-58-513edb8ee8ea
+	Tue, 12 Mar 2013 03:38:56 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-48-513edb8c0370
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC v7 09/11] Get rid of depenceny that all pages is from a zone in shrink_page_list
-Date: Tue, 12 Mar 2013 16:38:33 +0900
-Message-Id: <1363073915-25000-10-git-send-email-minchan@kernel.org>
+Subject: [RFC v7 06/11] send SIGBUS when user try to access purged page
+Date: Tue, 12 Mar 2013 16:38:30 +0900
+Message-Id: <1363073915-25000-7-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
 References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
@@ -34,62 +34,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now shrink_page_list expect all pages come from a same zone
-but it's too limited to use it.
+By vrange(2) semantic, user should see SIGBUG if he try to access
+purged page without vrange(...VRANGE_NOVOLATILE).
 
-This patch removes the dependency and add may_discard in scan_control
-so next patch can use shrink_page_list with pages from multiple zonnes.
+This patch implements it.
+
+I reused PSE bit for quick prototype without enough considering
+so need time to see what's empty bit and I am surely missing
+many places to handle vrange pte bit. I should investigate all of
+pte handling places, especially pte_none case. TODO
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/vmscan.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |  2 ++
+ include/asm-generic/pgtable.h        | 11 +++++++++++
+ include/linux/vrange.h               |  2 ++
+ mm/memory.c                          | 23 +++++++++++++++++++++--
+ mm/vrange.c                          | 26 ++++++++++++++++++++++++--
+ 5 files changed, 60 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6ba4e8ea..e36ee51 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -77,6 +77,9 @@ struct scan_control {
- 	/* Can pages be swapped as part of reclaim? */
- 	int may_swap;
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 567b5d0..8c5163f 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -64,6 +64,8 @@
+ #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
+ #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
  
-+	/* Discard pages in vrange */
-+	int may_discard;
++#define _PAGE_VRANGE	_PAGE_BIT_PSE
 +
- 	int order;
+ /*
+  * _PAGE_NUMA indicates that this page will trigger a numa hinting
+  * minor page fault to gather numa placement statistics (see
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index bfd8768..1486d42 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -469,6 +469,17 @@ static inline unsigned long my_zero_pfn(unsigned long addr)
  
- 	/* Scan (total_size >> priority) pages at once */
-@@ -714,7 +717,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			goto keep;
+ #ifdef CONFIG_MMU
  
- 		VM_BUG_ON(PageActive(page));
--		VM_BUG_ON(page_zone(page) != zone);
-+		if (zone)
-+			VM_BUG_ON(page_zone(page) != zone);
++static inline pte_t pte_mkvrange(pte_t pte)
++{
++	pte = pte_set_flags(pte, _PAGE_VRANGE);
++	return pte_clear_flags(pte, _PAGE_PRESENT);
++}
++
++static inline int pte_vrange(pte_t pte)
++{
++	return ((pte_flags(pte) | _PAGE_PRESENT) == _PAGE_VRANGE);
++}
++
+ #ifndef CONFIG_TRANSPARENT_HUGEPAGE
+ static inline int pmd_trans_huge(pmd_t pmd)
+ {
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index eb3f941..24ed4c1 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -41,6 +41,8 @@ int discard_vpage(struct page *page);
+ bool vrange_address(struct mm_struct *mm, unsigned long start,
+ 			unsigned long end);
  
- 		sc->nr_scanned++;
++extern bool is_purged_vrange(struct mm_struct *mm, unsigned long address);
++
+ #else
  
-@@ -785,6 +789,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			; /* try to reclaim the page below */
+ static inline void vrange_init(void) {};
+diff --git a/mm/memory.c b/mm/memory.c
+index 494526a..cc369ab 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -59,6 +59,7 @@
+ #include <linux/gfp.h>
+ #include <linux/migrate.h>
+ #include <linux/string.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -840,7 +841,7 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 
+ 	/* pte contains position in swap or file, so copy. */
+ 	if (unlikely(!pte_present(pte))) {
+-		if (!pte_file(pte)) {
++		if (!pte_file(pte) && !pte_vrange(pte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(pte);
+ 
+ 			if (swap_duplicate(entry) < 0)
+@@ -1180,7 +1181,7 @@ again:
+ 		if (pte_file(ptent)) {
+ 			if (unlikely(!(vma->vm_flags & VM_NONLINEAR)))
+ 				print_bad_pte(vma, addr, ptent, NULL);
+-		} else {
++		} else if (!pte_vrange(ptent)) {
+ 			swp_entry_t entry = pte_to_swp_entry(ptent);
+ 
+ 			if (!non_swap_entry(entry))
+@@ -3663,9 +3664,27 @@ int handle_pte_fault(struct mm_struct *mm,
+ 					return do_linear_fault(mm, vma, address,
+ 						pte, pmd, flags, entry);
+ 			}
++anon:
+ 			return do_anonymous_page(mm, vma, address,
+ 						 pte, pmd, flags);
  		}
++
++		if (unlikely(pte_vrange(entry))) {
++			if (!is_purged_vrange(mm, address)) {
++				/* zap pte */
++				ptl = pte_lockptr(mm, pmd);
++				spin_lock(ptl);
++				if (unlikely(!pte_same(*pte, entry)))
++					goto unlock;
++				flush_cache_page(vma, address, pte_pfn(*pte));
++				ptep_clear_flush(vma, address, pte);
++				pte_unmap_unlock(pte, ptl);
++				goto anon;
++			}
++
++			return VM_FAULT_SIGBUS;
++		}
++
+ 		if (pte_file(entry))
+ 			return do_nonlinear_fault(mm, vma, address,
+ 					pte, pmd, flags, entry);
+diff --git a/mm/vrange.c b/mm/vrange.c
+index 78aa252..89fcae4 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -343,7 +343,9 @@ int try_to_discard_one(struct page *page, struct vm_area_struct *vma,
  
-+		/* Fail to discard a page and returns a page to caller */
-+		if (sc->may_discard)
-+			goto keep_locked;
-+				
- 		/*
- 		 * Anonymous process memory has backing store?
- 		 * Try to allocate it some swap space here.
-@@ -963,7 +971,8 @@ keep:
- 	 * back off and wait for congestion to clear because further reclaim
- 	 * will encounter the same problem
- 	 */
--	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
-+	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc) &&
-+		zone)
- 		zone_set_flag(zone, ZONE_CONGESTED);
+ 	present = pte_present(*pte);
+ 	flush_cache_page(vma, address, page_to_pfn(page));
+-	pteval = ptep_clear_flush(vma, address, pte);
++
++	ptep_clear_flush(vma, address, pte);
++	pteval = pte_mkvrange(*pte);
  
- 	free_hot_cold_page_list(&free_pages, 1);
+ 	update_hiwater_rss(mm);
+ 	dec_mm_counter(mm, MM_ANONPAGES);
+@@ -357,10 +359,12 @@ int try_to_discard_one(struct page *page, struct vm_area_struct *vma,
+ 			BUG_ON(1);
+ 	}
+ 
++	set_pte_at(mm, address, pte, pteval);
++	__vrange_purge(mm, address, address + PAGE_SIZE -1);
+ 	pte_unmap_unlock(pte, ptl);
+ 	mmu_notifier_invalidate_page(mm, address);
++	vrange_unlock(mm);
+ 	ret = 1;
+-	__vrange_purge(mm, address, address + PAGE_SIZE -1);
+ out:
+ 	return ret;
+ }
+@@ -448,3 +452,21 @@ int discard_vpage(struct page *page)
+ 
+ 	return 0;
+ }
++
++bool is_purged_vrange(struct mm_struct *mm, unsigned long address)
++{
++	struct rb_root *root = &mm->v_rb;
++	struct interval_tree_node *node;
++	struct vrange *range;
++	bool ret = false;
++
++	vrange_lock(mm);
++	node = interval_tree_iter_first(root, address, address + PAGE_SIZE - 1);
++	if (node) {
++		range = container_of(node, struct vrange, node);
++		if (range->purged)
++			ret = true;
++	}
++	vrange_unlock(mm);
++	return ret;
++}
 -- 
 1.8.1.1
 
