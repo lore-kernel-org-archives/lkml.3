@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab3CLWdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60088 "EHLO
+	id S933868Ab3CLXLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:11:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60215 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751Ab3CLWcj (ORCPT
+	with ESMTP id S1755853Ab3CLWdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:39 -0400
+	Tue, 12 Mar 2013 18:33:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 005/100] USB: EHCI: revert "remove ASS/PSS polling timeout"
-Date: Tue, 12 Mar 2013 15:30:50 -0700
-Message-Id: <20130312223123.482987282@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 037/100] proc connector: reject unprivileged listener bumps
+Date: Tue, 12 Mar 2013 15:31:22 -0700
+Message-Id: <20130312223127.001765289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,84 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Kees Cook <keescook@chromium.org>
 
-commit 221f8dfca89276d8aec54c6d07fbe20c281668f0 upstream.
+commit e70ab977991964a5a7ad1182799451d067e62669 upstream.
 
-This patch (as1649) reverts commit
-55bcdce8a8228223ec4d17d8ded8134ed265d2c5 (USB: EHCI: remove ASS/PSS
-polling timeout).  That commit was written under the assumption that
-some controllers may take a very long time to turn off their async and
-periodic schedules.  It now appears that in fact the schedules do get
-turned off reasonably quickly, but some controllers occasionally leave
-the schedules' status bits turned on and consequently ehci-hcd can't
-tell that the schedules are off.
+While PROC_CN_MCAST_LISTEN/IGNORE is entirely advisory, it was possible
+for an unprivileged user to turn off notifications for all listeners by
+sending PROC_CN_MCAST_IGNORE. Instead, require the same privileges as
+required for a multicast bind.
 
-VIA controllers in particular have this problem.  ehci-hcd tells the
-hardware to turn off the async schedule, the schedule does get turned
-off, but the status bit remains on.  Since the EHCI spec requires that
-the schedules not be re-enabled until the previous disable has taken
-effect, with an unlimited timeout the async schedule never gets turned
-back on.  The resulting symptom is that the system is unable to
-communicate with USB devices.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Ronald <ronald645@gmail.com>
-Reported-and-tested-by: Paul Hartman <paul.hartman@gmail.com>
-Reported-and-tested-by: Dieter Nützel <dieter@nuetzel-hh.de>
-Reported-and-tested-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Acked-by: Matt Helsley <matthltc@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-timer.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ drivers/connector/cn_proc.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/host/ehci-timer.c
-+++ b/drivers/usb/host/ehci-timer.c
-@@ -113,15 +113,14 @@ static void ehci_poll_ASS(struct ehci_hc
+--- a/drivers/connector/cn_proc.c
++++ b/drivers/connector/cn_proc.c
+@@ -313,6 +313,12 @@ static void cn_proc_mcast_ctl(struct cn_
+ 	    (task_active_pid_ns(current) != &init_pid_ns))
+ 		return;
  
- 	if (want != actual) {
- 
--		/* Poll again later */
--		ehci_enable_event(ehci, EHCI_HRTIMER_POLL_ASS, true);
--		++ehci->ASS_poll_count;
--		return;
-+		/* Poll again later, but give up after about 20 ms */
-+		if (ehci->ASS_poll_count++ < 20) {
-+			ehci_enable_event(ehci, EHCI_HRTIMER_POLL_ASS, true);
-+			return;
-+		}
-+		ehci_dbg(ehci, "Waited too long for the async schedule status (%x/%x), giving up\n",
-+				want, actual);
++	/* Can only change if privileged. */
++	if (!capable(CAP_NET_ADMIN)) {
++		err = EPERM;
++		goto out;
++	}
++
+ 	mc_op = (enum proc_cn_mcast_op *)msg->data;
+ 	switch (*mc_op) {
+ 	case PROC_CN_MCAST_LISTEN:
+@@ -325,6 +331,8 @@ static void cn_proc_mcast_ctl(struct cn_
+ 		err = EINVAL;
+ 		break;
  	}
--
--	if (ehci->ASS_poll_count > 20)
--		ehci_dbg(ehci, "ASS poll count reached %d\n",
--				ehci->ASS_poll_count);
- 	ehci->ASS_poll_count = 0;
++
++out:
+ 	cn_proc_ack(err, msg->seq, msg->ack);
+ }
  
- 	/* The status is up-to-date; restart or stop the schedule as needed */
-@@ -160,14 +159,14 @@ static void ehci_poll_PSS(struct ehci_hc
- 
- 	if (want != actual) {
- 
--		/* Poll again later */
--		ehci_enable_event(ehci, EHCI_HRTIMER_POLL_PSS, true);
--		return;
-+		/* Poll again later, but give up after about 20 ms */
-+		if (ehci->PSS_poll_count++ < 20) {
-+			ehci_enable_event(ehci, EHCI_HRTIMER_POLL_PSS, true);
-+			return;
-+		}
-+		ehci_dbg(ehci, "Waited too long for the periodic schedule status (%x/%x), giving up\n",
-+				want, actual);
- 	}
--
--	if (ehci->PSS_poll_count > 20)
--		ehci_dbg(ehci, "PSS poll count reached %d\n",
--				ehci->PSS_poll_count);
- 	ehci->PSS_poll_count = 0;
- 
- 	/* The status is up-to-date; restart or stop the schedule as needed */
 
 
