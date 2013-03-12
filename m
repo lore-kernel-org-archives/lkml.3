@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab3CLQcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:32:10 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:56674 "EHLO kanga.kvack.org"
+	id S933155Ab3CLQce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:32:34 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:37561 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab3CLQcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:32:09 -0400
-Date: Tue, 12 Mar 2013 12:32:07 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-arch@vger.kernel.org,
-        sfr@canb.auug.org.au, Joakim.Tjernlund@transmode.se, arnd@arndb.de,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] UAPI: Fix endianness conditionals in linux/aio_abi.h
-Message-ID: <20130312163207.GI8869@kvack.org>
-References: <20130306204724.31327.43118.stgit@warthog.procyon.org.uk> <20130306204733.31327.97388.stgit@warthog.procyon.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306204733.31327.97388.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.4.2.2i
+	id S932206Ab3CLQcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 12:32:33 -0400
+Message-ID: <513F5864.6090006@imgtec.com>
+Date: Tue, 12 Mar 2013 16:31:32 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jaehoon Chung <jh80.chung@samsung.com>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH] mmc: dw_mmc: setpower on MMC_POWER_{UP,OFF}
+References: <1363085012-9220-1-git-send-email-james.hogan@imgtec.com> <513F10D9.9060402@samsung.com>
+In-Reply-To: <513F10D9.9060402@samsung.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_03_12_16_32_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 08:47:33PM +0000, David Howells wrote:
-> In the UAPI header files, __BIG_ENDIAN and __LITTLE_ENDIAN must be compared
-> against __BYTE_ORDER in preprocessor conditionals where these are exposed to
-> userspace (that is they're not inside __KERNEL__ conditionals).
+On 12/03/13 11:26, Jaehoon Chung wrote:
+> Looks good to me.
 > 
-> However, in the main kernel the norm is to check for "defined(__XXX_ENDIAN)"
-> rather than comparing against __BYTE_ORDER and this has incorrectly leaked
-> into the userspace headers.
-> 
-> The definition of PADDED() in linux/aio_abi.h is wrong in this way.  Note that
-> userspace will likely interpret this and thus the order of fields in struct
-> iocb incorrectly as the little-endian variant on big-endian machines -
-> depending on header inclusion order.
-> 
-> [!!!] NOTE [!!!]  This patch may adversely change the userspace API.  It might
-> be better to fix the ordering of aio_key and aio_reserved1 in struct iocb.
+> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
 
-It is unlikely that anyone has used the existing kernel headers and hit this 
-issue given that most existing users use the libaio.h include (which does not 
-get the endianness tests wrong).  Given that the kernel has always used the 
-correct endian mappings, this change is correct.
+Thanks Jaehoon
 
-Acked-by: Benjamin LaHaise <bcrl@kvack.org>
+Cheers
+James
 
-		-ben
-
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Benjamin LaHaise <bcrl@kvack.org>
-> cc: linux-aio@kvack.org
-> ---
 > 
->  include/uapi/linux/aio_abi.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> Best Regards,
+> Jaehoon Chung
 > 
-> diff --git a/include/uapi/linux/aio_abi.h b/include/uapi/linux/aio_abi.h
-> index 86fa7a7..bb2554f 100644
-> --- a/include/uapi/linux/aio_abi.h
-> +++ b/include/uapi/linux/aio_abi.h
-> @@ -62,9 +62,9 @@ struct io_event {
->  	__s64		res2;		/* secondary result */
->  };
->  
-> -#if defined(__LITTLE_ENDIAN)
-> +#if defined(__BYTE_ORDER) ? __BYTE_ORDER == __LITTLE_ENDIAN : defined(__LITTLE_ENDIAN)
->  #define PADDED(x,y)	x, y
-> -#elif defined(__BIG_ENDIAN)
-> +#elif defined(__BYTE_ORDER) ? __BYTE_ORDER == __BIG_ENDIAN : defined(__BIG_ENDIAN)
->  #define PADDED(x,y)	y, x
->  #else
->  #error edit for your odd byteorder.
+> On 03/12/2013 07:43 PM, James Hogan wrote:
+>> Call the setpower platform callback in response to set_ios with
+>> ios->power_mode == MMC_POWER_UP or MMC_POWER_OFF, instead of from the
+>> card detect work function.
+>>
+>> This appears to fix a problem I have where a card stuck in a funny state
+>> doesn't get properly cleared by the power being turned off, presumably
+>> due to lack of power sequencing. This resulted in the following log
+>> messages after boot:
+>>
+>> mmc0: error -110 whilst initialising SD card
+>> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
+>> mmc0: error -110 whilst initialising SD card
+>> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 200000Hz, actual 199680HZ div = 250)
+>> mmc0: error -110 whilst initialising SD card
+>> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 195765Hz, actual 195764HZ div = 255)
+>> mmc0: error -110 whilst initialising SD card
+>> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 400000Hz, actual 399360HZ div = 125)
+>> mmc0: error -110 whilst initialising SD card
+>> mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> Cc: Seungwon Jeon <tgih.jun@samsung.com>
+>> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+>> Cc: Chris Ball <cjb@laptop.org>
+>> ---
+>>  drivers/mmc/host/dw_mmc.c | 16 ++++++++--------
+>>  1 file changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> index 60063cc..1a42c7c 100644
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -818,6 +818,14 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+>>  	switch (ios->power_mode) {
+>>  	case MMC_POWER_UP:
+>>  		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
+>> +		/* Power up slot */
+>> +		if (slot->host->pdata->setpower)
+>> +			slot->host->pdata->setpower(slot->id, mmc->ocr_avail);
+>> +		break;
+>> +	case MMC_POWER_OFF:
+>> +		/* Power down slot */
+>> +		if (slot->host->pdata->setpower)
+>> +			slot->host->pdata->setpower(slot->id, 0);
+>>  		break;
+>>  	default:
+>>  		break;
+>> @@ -1674,10 +1682,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>>  			dev_dbg(&slot->mmc->class_dev, "card %s\n",
+>>  				present ? "inserted" : "removed");
+>>  
+>> -			/* Power up slot (before spin_lock, may sleep) */
+>> -			if (present != 0 && host->pdata->setpower)
+>> -				host->pdata->setpower(slot->id, mmc->ocr_avail);
+>> -
+>>  			spin_lock_bh(&host->lock);
+>>  
+>>  			/* Card change detected */
+>> @@ -1760,10 +1764,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>>  
+>>  			spin_unlock_bh(&host->lock);
+>>  
+>> -			/* Power down slot (after spin_unlock, may sleep) */
+>> -			if (present == 0 && host->pdata->setpower)
+>> -				host->pdata->setpower(slot->id, 0);
+>> -
+>>  			present = dw_mci_get_cd(mmc);
+>>  		}
+>>  
+>>
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-aio' in
-> the body to majordomo@kvack.org.  For more info on Linux AIO,
-> see: http://www.kvack.org/aio/
-> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
 
--- 
-"Thought is the essence of where you are now."
