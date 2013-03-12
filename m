@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223Ab3CLRci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 13:32:38 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:38280
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3CLRce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 13:32:34 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 1/6] Drivers: hv: balloon: Do not request completion notification
-Date: Tue, 12 Mar 2013 11:02:17 -0700
-Message-Id: <1363111342-30242-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363111313-30201-1-git-send-email-kys@microsoft.com>
-References: <1363111313-30201-1-git-send-email-kys@microsoft.com>
+	id S933232Ab3CLRcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 13:32:50 -0400
+Received: from mfb01-md.ns.itscom.net ([175.177.155.109]:34964 "EHLO
+	mfb01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933198Ab3CLRch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 13:32:37 -0400
+X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 13:32:36 EDT
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        mszeredi@suse.cz
+In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+Date: Wed, 13 Mar 2013 02:22:13 +0900
+Message-ID: <9427.1363108933@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to request completion notification; get rid of it.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/hv_balloon.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Miklos Szeredi:
+> Please consider overlayfs for inclusion into 3.10.
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 3787321..7fb72dd 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -962,8 +962,7 @@ static int balloon_probe(struct hv_device *dev,
- 	ret = vmbus_sendpacket(dev->channel, &version_req,
- 				sizeof(struct dm_version_request),
- 				(unsigned long)NULL,
--				VM_PKT_DATA_INBAND,
--				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+				VM_PKT_DATA_INBAND, 0);
- 	if (ret)
- 		goto probe_error2;
- 
-@@ -1009,8 +1008,7 @@ static int balloon_probe(struct hv_device *dev,
- 	ret = vmbus_sendpacket(dev->channel, &cap_msg,
- 				sizeof(struct dm_capabilities),
- 				(unsigned long)NULL,
--				VM_PKT_DATA_INBAND,
--				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+				VM_PKT_DATA_INBAND, 0);
- 	if (ret)
- 		goto probe_error2;
- 
--- 
-1.7.4.1
+Thank you for CCing me.
 
+First, I'd suggest you to follow some recent activities in mainline
+kernel such as
+- MODULE_ALIAS_FS
+- file_inode()
+- d_weak_revalidate() which may not be necessary for overlayfs as long
+  as it prohibit users the direct-access to layers (bypassing
+  overlayfs).
+
+
+> It's included in Ubuntu and openSUSE, used by OpenWrt and various other
+> projects.  I regularly get emails asking when it will be included in mainline.
+
+Such situation is very similar which AUFS had a few years ago. At that
+time, AUFS was rejected since UnionMount was chosen. Years passed, the
+development of UnionMount seems to stop and linux mainline doesn't have
+generic stackable filesytem yet. I had pointed out some defects in
+overlayfs (and UnionMount too). They are all based upon the "name-based"
+behaviour instead of "inode-based" one. Other than "Non-standard
+behavior" in the overlayfs document, the are, for example,
+- read(2) may get an obsoleted filedata (fstat(2) for metadata too).
+- fcntl(F_SETLK) may be broken by copy-up.
+- inotify may not work when it refers to the file before being
+  copied-up.
+- unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+  open(O_RDWR).
+
+AUFS is an "inode-based" stackable filesystem and solved them many years
+ago. But I have to admit that AUFS is big. Yes it is grown up.
+I don't stop including overlayfs into mainline, but if the development
+of UnionMount is really stopped, then I'd ask people to consider merging
+aufs as well as overlayfs.
+
+
+J. R. Okajima
