@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab3CLGvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:51:32 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23038 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329Ab3CLGv3 (ORCPT
+	id S932387Ab3CLGva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:51:30 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43642 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab3CLGv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 02:51:29 -0400
-Message-ID: <513ED06A.5020803@huawei.com>
-Date: Tue, 12 Mar 2013 14:51:22 +0800
+Message-ID: <513ED052.7080907@huawei.com>
+Date: Tue, 12 Mar 2013 14:50:58 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 0/8] cgroup: a bunch of cleanups
+Subject: [PATCH 5/8] cgroup: remove useless code in cgroup_write_event_control()
 References: <513ED010.5060906@huawei.com>
 In-Reply-To: <513ED010.5060906@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -25,37 +25,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 6/8] cgroup: remove unneeded includes from cgroup.h
+eventfd_poll() never returns POLLHUP.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- include/linux/cgroup.h | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ kernel/cgroup.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7e818a3..1f75a59 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -9,11 +9,8 @@
-  */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 58ae040..3206137 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3938,12 +3938,6 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
+ 	if (ret)
+ 		goto fail;
  
- #include <linux/sched.h>
--#include <linux/cpumask.h>
--#include <linux/nodemask.h>
- #include <linux/rcupdate.h>
- #include <linux/rculist.h>
--#include <linux/cgroupstats.h>
- #include <linux/prio_heap.h>
- #include <linux/rwsem.h>
- #include <linux/idr.h>
-@@ -22,6 +19,7 @@
- 
- #ifdef CONFIG_CGROUPS
- 
-+struct cgroupstats;
- struct cgroupfs_root;
- struct cgroup_subsys;
- struct inode;
+-	if (efile->f_op->poll(efile, &event->pt) & POLLHUP) {
+-		event->cft->unregister_event(cgrp, event->cft, event->eventfd);
+-		ret = 0;
+-		goto fail;
+-	}
+-
+ 	/*
+ 	 * Events should be removed after rmdir of cgroup directory, but before
+ 	 * destroying subsystem state objects. Let's take reference to cgroup
 -- 
 1.8.0.2
-
