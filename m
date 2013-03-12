@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891Ab3CLWtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:49:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60702 "EHLO
+	id S964913Ab3CLWti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:49:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964850Ab3CLWoh (ORCPT
+	with ESMTP id S964843Ab3CLWog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:37 -0400
+	Tue, 12 Mar 2013 18:44:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 05/21] btrfs: Init io_lock after cloning btrfs device struct
-Date: Tue, 12 Mar 2013 15:44:07 -0700
-Message-Id: <20130312223245.779061555@linuxfoundation.org>
+        Sean Connor <sconnor004@allyinics.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 13/21] ALSA: ice1712: Initialize card->private_data properly
+Date: Tue, 12 Mar 2013 15:44:15 -0700
+Message-Id: <20130312223246.666834181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -27,37 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Sean Connor <sconnor004@allyinics.org>
 
-commit 1cba0cdf5e4dbcd9e5fa5b54d7a028e55e2ca057 upstream.
+commit 69a4cfdd444d1fe5c24d29b3a063964ac165d2cd upstream.
 
-__btrfs_close_devices() clones btrfs device structs with
-memcpy(). Some of the fields in the clone are reinitialized, but it's
-missing to init io_lock. In mainline this goes unnoticed, but on RT it
-leaves the plist pointing to the original about to be freed lock
-struct.
+Set card->private_data in snd_ice1712_create for fixing NULL
+dereference in snd_ice1712_remove().
 
-Initialize io_lock after cloning, so no references to the original
-struct are left.
-
-Reported-and-tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Sean Connor <sconnor004@allyinics.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/ice1712/ice1712.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -512,6 +512,7 @@ static int __btrfs_close_devices(struct
- 		new_device->writeable = 0;
- 		new_device->in_fs_metadata = 0;
- 		new_device->can_discard = 0;
-+		spin_lock_init(&new_device->io_lock);
- 		list_replace_rcu(&device->dev_list, &new_device->dev_list);
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -2595,6 +2595,8 @@ static int __devinit snd_ice1712_create(
+ 	snd_ice1712_proc_init(ice);
+ 	synchronize_irq(pci->irq);
  
- 		call_rcu(&device->rcu, free_device);
++	card->private_data = ice;
++
+ 	err = pci_request_regions(pci, "ICE1712");
+ 	if (err < 0) {
+ 		kfree(ice);
 
 
