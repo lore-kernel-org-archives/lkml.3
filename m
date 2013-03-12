@@ -1,59 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723Ab3CLWdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933397Ab3CLWdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:51 -0400
-Date: Tue, 12 Mar 2013 18:33:45 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: ipc/testmsg GPF.
-Message-ID: <20130312223345.GA22747@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20130307213819.GB19543@redhat.com>
- <1362788821.7755.12.camel@thor.lan>
- <20130311182621.GA24965@redhat.com>
- <1363028602.3234.38.camel@thor.lan>
- <20130312150236.27ba998a00d31470a2d8aca0@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312150236.27ba998a00d31470a2d8aca0@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933735Ab3CLWeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:34:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60486 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab3CLWdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 18:33:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: [ 094/100] efi: be more paranoid about available space when creating variables
+Date: Tue, 12 Mar 2013 15:32:19 -0700
+Message-Id: <20130312223132.986538699@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
+References: <20130312223122.884099393@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 03:02:36PM -0700, Andrew Morton wrote:
- > On Mon, 11 Mar 2013 15:03:22 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
- > 
- > > On Mon, 2013-03-11 at 14:26 -0400, Dave Jones wrote:
- > > >  > >         {
- > > > 
- > > > I just hit this again on rc2 which looks like it has the fixes that
- > > > Peter mentions above.  This time rdi was 6b6b6b6b6b6b6b7b
- > > > 
- > > > 	Dave
- > > 
- > > Sorry, Dave. The fix must be in the other 8 patches that Andrew didn't
- > > want to apply. I run trinity 10 or more times a day and can't get this
- > > to trigger with the whole series.
- > 
- > Are you able to reproduce the bug with current mainline?
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Yep.
-I'll give this patchset a try tomorrow.
+------------------
 
-	Dave
+From: Matthew Garrett <matthew.garrett@nebula.com>
+
+commit 68d929862e29a8b52a7f2f2f86a0600423b093cd upstream.
+
+UEFI variables are typically stored in flash. For various reasons, avaiable
+space is typically not reclaimed immediately upon the deletion of a
+variable - instead, the system will garbage collect during initialisation
+after a reboot.
+
+Some systems appear to handle this garbage collection extremely poorly,
+failing if more than 50% of the system flash is in use. This can result in
+the machine refusing to boot. The safest thing to do for the moment is to
+forbid writes if they'd end up using more than half of the storage space.
+We can make this more finegrained later if we come up with a method for
+identifying the broken machines.
+
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/firmware/efivars.c |  106 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 79 insertions(+), 27 deletions(-)
+
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -419,6 +419,44 @@ get_var_data(struct efivars *efivars, st
+ 	return status;
+ }
+ 
++static efi_status_t
++check_var_size_locked(struct efivars *efivars, u32 attributes,
++			unsigned long size)
++{
++	u64 storage_size, remaining_size, max_size;
++	efi_status_t status;
++	const struct efivar_operations *fops = efivars->ops;
++
++	if (!efivars->ops->query_variable_info)
++		return EFI_UNSUPPORTED;
++
++	status = fops->query_variable_info(attributes, &storage_size,
++					   &remaining_size, &max_size);
++
++	if (status != EFI_SUCCESS)
++		return status;
++
++	if (!storage_size || size > remaining_size || size > max_size ||
++	    (remaining_size - size) < (storage_size / 2))
++		return EFI_OUT_OF_RESOURCES;
++
++	return status;
++}
++
++
++static efi_status_t
++check_var_size(struct efivars *efivars, u32 attributes, unsigned long size)
++{
++	efi_status_t status;
++	unsigned long flags;
++
++	spin_lock_irqsave(&efivars->lock, flags);
++	status = check_var_size_locked(efivars, attributes, size);
++	spin_unlock_irqrestore(&efivars->lock, flags);
++
++	return status;
++}
++
+ static ssize_t
+ efivar_guid_read(struct efivar_entry *entry, char *buf)
+ {
+@@ -540,11 +578,16 @@ efivar_store_raw(struct efivar_entry *en
+ 	}
+ 
+ 	spin_lock_irq(&efivars->lock);
+-	status = efivars->ops->set_variable(new_var->VariableName,
+-					    &new_var->VendorGuid,
+-					    new_var->Attributes,
+-					    new_var->DataSize,
+-					    new_var->Data);
++
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
++		status = efivars->ops->set_variable(new_var->VariableName,
++						    &new_var->VendorGuid,
++						    new_var->Attributes,
++						    new_var->DataSize,
++						    new_var->Data);
+ 
+ 	spin_unlock_irq(&efivars->lock);
+ 
+@@ -695,8 +738,7 @@ static ssize_t efivarfs_file_write(struc
+ 	u32 attributes;
+ 	struct inode *inode = file->f_mapping->host;
+ 	unsigned long datasize = count - sizeof(attributes);
+-	unsigned long newdatasize;
+-	u64 storage_size, remaining_size, max_size;
++	unsigned long newdatasize, varsize;
+ 	ssize_t bytes = 0;
+ 
+ 	if (count < sizeof(attributes))
+@@ -715,28 +757,18 @@ static ssize_t efivarfs_file_write(struc
+ 	 * amounts of memory. Pick a default size of 64K if
+ 	 * QueryVariableInfo() isn't supported by the firmware.
+ 	 */
+-	spin_lock_irq(&efivars->lock);
+ 
+-	if (!efivars->ops->query_variable_info)
+-		status = EFI_UNSUPPORTED;
+-	else {
+-		const struct efivar_operations *fops = efivars->ops;
+-		status = fops->query_variable_info(attributes, &storage_size,
+-						   &remaining_size, &max_size);
+-	}
+-
+-	spin_unlock_irq(&efivars->lock);
++	varsize = datasize + utf16_strsize(var->var.VariableName, 1024);
++	status = check_var_size(efivars, attributes, varsize);
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		if (status != EFI_UNSUPPORTED)
+ 			return efi_status_to_err(status);
+ 
+-		remaining_size = 65536;
++		if (datasize > 65536)
++			return -ENOSPC;
+ 	}
+ 
+-	if (datasize > remaining_size)
+-		return -ENOSPC;
+-
+ 	data = kmalloc(datasize, GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+@@ -758,6 +790,19 @@ static ssize_t efivarfs_file_write(struc
+ 	 */
+ 	spin_lock_irq(&efivars->lock);
+ 
++	/*
++	 * Ensure that the available space hasn't shrunk below the safe level
++	 */
++
++	status = check_var_size_locked(efivars, attributes, varsize);
++
++	if (status != EFI_SUCCESS && status != EFI_UNSUPPORTED) {
++		spin_unlock_irq(&efivars->lock);
++		kfree(data);
++
++		return efi_status_to_err(status);
++	}
++
+ 	status = efivars->ops->set_variable(var->var.VariableName,
+ 					    &var->var.VendorGuid,
+ 					    attributes, datasize,
+@@ -1348,7 +1393,6 @@ static int efi_pstore_write(enum pstore_
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+ 	struct efivars *efivars = psi->data;
+ 	int i, ret = 0;
+-	u64 storage_space, remaining_space, max_variable_size;
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	unsigned long flags;
+ 
+@@ -1359,11 +1403,11 @@ static int efi_pstore_write(enum pstore_
+ 	 * size: a size of logging data
+ 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
+ 	 */
+-	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
+-						   &storage_space,
+-						   &remaining_space,
+-						   &max_variable_size);
+-	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++
++	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
++					 size + DUMP_NAME_LEN * 2);
++
++	if (status) {
+ 		spin_unlock_irqrestore(&efivars->lock, flags);
+ 		*id = part;
+ 		return -ENOSPC;
+@@ -1541,6 +1585,14 @@ static ssize_t efivar_create(struct file
+ 		return -EINVAL;
+ 	}
+ 
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status && status != EFI_UNSUPPORTED) {
++		spin_unlock_irq(&efivars->lock);
++		return efi_status_to_err(status);
++	}
++
+ 	/* now *really* create the variable via EFI */
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+
 
