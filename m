@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3CLCPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 22:15:44 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:59379 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3CLCPn (ORCPT
+	id S932127Ab3CLCP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 22:15:56 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:58591 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab3CLCPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Mar 2013 22:15:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hyO7HxGYOL=Fvq-g3LY37PY2f+xR6+stA7-wNkh3wkV=Q@mail.gmail.com>
-References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
-	<CAFTL4hyO7HxGYOL=Fvq-g3LY37PY2f+xR6+stA7-wNkh3wkV=Q@mail.gmail.com>
-Date: Tue, 12 Mar 2013 10:15:42 +0800
-Message-ID: <CACVXFVMu9FNTghOQjNryY59S6xkRqg9DR5=OshngUDEZ5Fb=4w@mail.gmail.com>
-Subject: Re: [PATCH] atomic: improve atomic_inc_unless_negative/atomic_dec_unless_positive
-From: Ming Lei <tom.leiming@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 12 Mar 2013 10:15:43 +0800
+Message-ID: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
+Subject: Re: doing lots of disk writes causes oom killer to kill processes
+From: Hillf Danton <dhillf@gmail.com>
+To: Michal Suchanek <hramrach@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 7:59 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/3/9 Ming Lei <tom.leiming@gmail.com>:
->> Generally, both atomic_inc_unless_negative() and
->> atomic_dec_unless_positive() need at least two atomic_cmpxchg()
->> to complete the atomic operation. In fact, the 1st atomic_cmpxchg()
->> is just used to read current value of the atomic variable at most times.
+>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
+>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
+>> Hello,
 >>
->> Considered memory barrier, bus lock, cache walking, etc. things may be
->> involved in atomic_cmpxchg(), it is much expensive than atomic_read(),
->> which is just the simple below:
+>> I am dealing with VM disk images and performing something like wiping
+>> free space to prepare image for compressing and storing on server or
+>> copying it to external USB disk causes
 >>
->>         (*(volatile int *)&(v)->counter)
+>> 1) system lockup in order of a few tens of seconds when all CPU cores
+>> are 100% used by system and the machine is basicaly unusable
 >>
->> so this patch can save one extra atomic_cmpxchg() for the two
->> helpers under general situation, and should improve them a bit.
+>> 2) oom killer killing processes
 >>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Shaohua Li <shli@kernel.org>
->> Cc: Al Viro <viro@zeniv.linux.org.uk>
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> ---
->>  include/linux/atomic.h |   28 ++++++++++++++++++----------
->>  1 file changed, 18 insertions(+), 10 deletions(-)
+>> This all on system with 8G ram so there should be plenty space to work with.
 >>
->> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
->> index 5b08a85..aa951d8 100644
->> --- a/include/linux/atomic.h
->> +++ b/include/linux/atomic.h
->> @@ -63,26 +63,34 @@ static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
->>  #ifndef atomic_inc_unless_negative
->>  static inline int atomic_inc_unless_negative(atomic_t *p)
->>  {
->> -       int v, v1;
->> -       for (v = 0; v >= 0; v = v1) {
->> -               v1 = atomic_cmpxchg(p, v, v + 1);
->> -               if (likely(v1 == v))
->> +       int v, t;
->> +
->> +       v = atomic_read(p);
->> +       while (1) {
->> +               if (unlikely(v < 0))
->> +                       return 0;
+>> This happens with kernels 3.6.4 or 3.7.1
+>>
+>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
+>> problem even with less ram.
+>>
+>> I have  vm.swappiness = 0 set for a long  time already.
+>>
+>>
+>I did some testing with 3.7.1 and with swappiness as much as 75 the
+>kernel still causes all cores to loop somewhere in system when writing
+>lots of data to disk.
 >
-> But atomic_read() lacks the full memory barrier that is needed for
-> proper atomicity here.
+>With swappiness as much as 90 processes still get killed on large disk writes.
 >
-> For example if the initial value of p is -1 and another CPU just did
-> an atomic_inc() that resulted in the new value to be 0, the above
-> atomic_read() might return -1 because there is no guarantee it's
-> seeing the recent update on the remote CPU.
+>Given that the max is 100 the interval in which mm works at all is
+>going to be very narrow, less than 10% of the paramater range. This is
+>a severe regression as is the cpu time consumed by the kernel.
+>
+>The io scheduler is the default cfq.
+>
+>If you have any idea what to try other than downgrading to an earlier
+>unaffected kernel I would like to hear.
+>
+Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
+deadlock caused by too_many_isolated())?
 
-Yes, you are right. Also looks memory barrier is needed around
-atomic_inc() too.
+Or try 3.8 and/or 3.9, additionally?
 
-But I have a question, why a memory barrier can guarantee that
-remote CPU can see the recent update?  I understand that memory
-barrier only orders consecutive memory access, and but here
-not see this kind of pattern. Sorry for a possibly stupid question.
-
-
-Thanks,
--- 
-Ming Lei
+Hillf
