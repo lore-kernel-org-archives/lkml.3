@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab3CLKv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:51:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42062 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab3CLKvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:51:25 -0400
-Message-ID: <513F089B.5080004@ti.com>
-Date: Tue, 12 Mar 2013 16:21:07 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932603Ab3CLKxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:53:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48932 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752919Ab3CLKxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:53:20 -0400
+Date: Tue, 12 Mar 2013 11:53:00 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCHv3] perf: Fix vmalloc ring buffer free function
+Message-ID: <20130312105300.GD1348@krava.brq.redhat.com>
+References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
+ <1362994843.10972.40.camel@laptop>
+ <20130311112105.GA9737@krava.brq.redhat.com>
+ <1363019193.14933.14.camel@laptop>
+ <20130311164309.GG13679@krava.brq.redhat.com>
+ <1363023885.14933.16.camel@laptop>
+ <20130311180229.GI13679@krava.brq.redhat.com>
+ <20130312100502.GC1348@krava.brq.redhat.com>
+ <1363084030.14933.23.camel@laptop>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
-        <b-cousson@ti.com>, <mark.rutland@arm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 12/12] USB: ehci-omap: Fix detection in HSIC mode
-References: <1363085090-24676-1-git-send-email-rogerq@ti.com> <1363085090-24676-13-git-send-email-rogerq@ti.com>
-In-Reply-To: <1363085090-24676-13-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363084030.14933.23.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Mar 12, 2013 at 11:27:10AM +0100, Peter Zijlstra wrote:
+> On Tue, 2013-03-12 at 11:05 +0100, Jiri Olsa wrote:
+> > +/*
+> > + * Returns the total number of pages allocated
+> > + * by ring buffer including the user page.
+> > + */
+> > +static int page_nr(struct ring_buffer *rb)
+> > +{
+> > +       return page_order(rb) == -1 ?
+> > +               1 :                        /* no data, just user page */
+> > +               1 + (1 << page_order(rb)); /* user page + data pages */
+> > +}
+> 
+> > @@ -371,9 +381,24 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
+> >                 goto fail_all_buf;
+> >  
+> >         rb->user_page = all_buf;
+> > -       rb->data_pages[0] = all_buf + PAGE_SIZE;
+> > -       rb->page_order = ilog2(nr_pages);
+> > -       rb->nr_pages = 1;
+> 
+> > +
+> > +       rb->data_pages[0] = nr_pages ? all_buf + PAGE_SIZE : NULL;
+> > +       rb->nr_pages      = nr_pages ? 1 : 0;
+> > +       rb->page_order    = ilog2(nr_pages);
+> >  
+> >         ring_buffer_init(rb, watermark, flags);
+> 
+> Still somewhat confused by this.. wouldn't something 'simple' like the
+> below suffice?
+> 
+> Note how the !vmalloc branch also sets rb->nr_pages = nr_pages.
 
-On Tuesday 12 March 2013 04:14 PM, Roger Quadros wrote:
-> The HSIC devices need to be kept in reset while the EHCI controller
-> is being initialized and only brought out of reset after the
-> initialization is complete, else HSIC devices will not be detected.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> CC: Alan Stern <stern@rowland.harvard.edu>
+yep it would ;-) though I find it little confusing for:
+
+> 
 > ---
->   drivers/usb/host/ehci-omap.c |   28 +++++++++++-----------------
->   1 files changed, 11 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 1ba1df8..52a2d46 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -50,6 +50,7 @@
->   #include <linux/usb/hcd.h>
->   #include <linux/of.h>
->   #include <linux/dma-mapping.h>
-> +#include <linux/delay.h>
+>  kernel/events/ring_buffer.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> index 23cb34f..4f48d02 100644
+> --- a/kernel/events/ring_buffer.c
+> +++ b/kernel/events/ring_buffer.c
+> @@ -316,7 +316,7 @@ void rb_free(struct ring_buffer *rb)
+>  struct page *
+>  perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
+>  {
+> -	if (pgoff > (1UL << page_order(rb)))
+> +	if (pgoff > rb->nr_pages)
+>  		return NULL;
 
-not needed here I guess.
->
->   #include "ehci.h"
->
-> @@ -90,26 +91,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
->   static int omap_ehci_init(struct usb_hcd *hcd)
->   {
->   	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
-> -	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
-> -	int rc, i;
-> -
-> -	/* Hold PHYs in reset while initializing EHCI controller */
-> -	for (i = 0; i < omap->nports; i++) {
-> -		if (omap->phy[i])
-> -			usb_phy_shutdown(omap->phy[i]);
-> -	}
-> +	int rc;
->
->   	/* we know this is the memory we want, no need to ioremap again */
->   	ehci->caps = hcd->regs;
->
->   	rc = ehci_setup(hcd);
->
-> -	/* Bring PHYs out of reset */
-> -	for (i = 0; i < omap->nports; i++) {
-> -		if (omap->phy[i])
-> -			usb_phy_init(omap->phy[i]);
-> -	}
-> -
->   	return rc;
->   }
->
-> @@ -219,9 +207,6 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
->   		}
->
->   		omap->phy[i] = phy;
-> -		usb_phy_init(omap->phy[i]);
-> -		/* bring PHY out of suspend */
-> -		usb_phy_set_suspend(omap->phy[i], 0);
->   	}
->
->   	pm_runtime_enable(dev);
-> @@ -245,6 +230,15 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
->   		goto err_pm_runtime;
->   	}
->
-> +	/* Bring PHYs out of reset */
-> +	for (i = 0; i < omap->nports; i++) {
-> +		if (!omap->phy[i])
-> +			continue;
-> +
-> +		usb_phy_init(omap->phy[i]);
-> +		/* bring PHY out of suspend */
-> +		usb_phy_set_suspend(omap->phy[i], 0);
-> +	}
+here it's the '>' that masks that there's actually (rb->nr_pages + 1) pages
 
-But isn't HSIC supposed to be PHYless devices. Maybe a comment 
-explaining it might be helpful.
+>  
+>  	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
+> @@ -336,7 +336,7 @@ static void rb_free_work(struct work_struct *work)
+>  	int i, nr;
+>  
+>  	rb = container_of(work, struct ring_buffer, work);
+> -	nr = 1 << page_order(rb);
+> +	nr = rb->nr_pages;
+>  
+>  	base = rb->user_page;
+>  	for (i = 0; i < nr + 1; i++)
 
-Thanks
-Kishon
+and here's the user plus one
+
+> @@ -373,7 +373,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
+>  	rb->user_page = all_buf;
+>  	rb->data_pages[0] = all_buf + PAGE_SIZE;
+>  	rb->page_order = ilog2(nr_pages);
+> -	rb->nr_pages = 1;
+> +	rb->nr_pages = nr_pages;
+>  
+>  	ring_buffer_init(rb, watermark, flags);
+
+but I'll get used to it np.. ;)
+
+jirka
