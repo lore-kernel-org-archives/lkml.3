@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933757Ab3CLWlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:41:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60382 "EHLO
+	id S933800Ab3CLWlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:41:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab3CLWd3 (ORCPT
+	with ESMTP id S1756071Ab3CLWd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei WANG <wei_wang@realsil.com.cn>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tim Gardner <rtg.canonical@gmail.com>
-Subject: [ 079/100] mfd: rtsx: Optimize card detect flow
-Date: Tue, 12 Mar 2013 15:32:04 -0700
-Message-Id: <20130312223131.419492516@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [ 078/100] x86/kvm: Fix pvclock vsyscall fixmap
+Date: Tue, 12 Mar 2013 15:32:03 -0700
+Message-Id: <20130312223131.322574387@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,97 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 504decc0a063e6a09a1e5b203ca68bc21dfffde9 upstream.
+commit 3d2a80a230250c2534ce5b17503670adaf1d7fff upstream.
 
-1. Schedule card detect work at the end of the ISR
-2. Callback function ops->cd_deglitch may delay for a period of time.
-It is not proper to call this callback when local irq disabled.
-3. Card detect flow can't be executed in parallel with other card reader
-operations, so it's better to be protected by mutex.
+The physical memory fixmapped for the pvclock clock_gettime vsyscall
+was allocated, and thus is not a kernel symbol. __pa() is the proper
+method to use in this case.
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Tim Gardner <rtg.canonical@gmail.com>
+Fixes the crash below when booting a next-20130204+ smp guest on a
+3.8-rc5+ KVM host.
+
+[    0.666410] udevd[97]: starting version 175
+[    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020
+     ip 00007fff069e277f sp 00007fff068c9ef8 error d
+
+Acked-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/rtsx_pcr.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ arch/x86/kernel/pvclock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -758,7 +758,7 @@ static void rtsx_pci_card_detect(struct
- 	struct delayed_work *dwork;
- 	struct rtsx_pcr *pcr;
- 	unsigned long flags;
--	unsigned int card_detect = 0;
-+	unsigned int card_detect = 0, card_inserted, card_removed;
- 	u32 irq_status;
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -185,7 +185,7 @@ int __init pvclock_init_vsyscall(struct
  
- 	dwork = to_delayed_work(work);
-@@ -766,25 +766,32 @@ static void rtsx_pci_card_detect(struct
- 
- 	dev_dbg(&(pcr->pci->dev), "--> %s\n", __func__);
- 
-+	mutex_lock(&pcr->pcr_mutex);
- 	spin_lock_irqsave(&pcr->lock, flags);
- 
- 	irq_status = rtsx_pci_readl(pcr, RTSX_BIPR);
- 	dev_dbg(&(pcr->pci->dev), "irq_status: 0x%08x\n", irq_status);
- 
--	if (pcr->card_inserted || pcr->card_removed) {
-+	irq_status &= CARD_EXIST;
-+	card_inserted = pcr->card_inserted & irq_status;
-+	card_removed = pcr->card_removed;
-+	pcr->card_inserted = 0;
-+	pcr->card_removed = 0;
-+
-+	spin_unlock_irqrestore(&pcr->lock, flags);
-+
-+	if (card_inserted || card_removed) {
- 		dev_dbg(&(pcr->pci->dev),
- 				"card_inserted: 0x%x, card_removed: 0x%x\n",
--				pcr->card_inserted, pcr->card_removed);
-+				card_inserted, card_removed);
- 
- 		if (pcr->ops->cd_deglitch)
--			pcr->card_inserted = pcr->ops->cd_deglitch(pcr);
-+			card_inserted = pcr->ops->cd_deglitch(pcr);
- 
--		card_detect = pcr->card_inserted | pcr->card_removed;
--		pcr->card_inserted = 0;
--		pcr->card_removed = 0;
-+		card_detect = card_inserted | card_removed;
+ 	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
+ 		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
+-			     __pa_symbol(i) + (idx*PAGE_SIZE),
++			     __pa(i) + (idx*PAGE_SIZE),
+ 			     PAGE_KERNEL_VVAR);
  	}
  
--	spin_unlock_irqrestore(&pcr->lock, flags);
-+	mutex_unlock(&pcr->pcr_mutex);
- 
- 	if ((card_detect & SD_EXIST) && pcr->slots[RTSX_SD_CARD].card_event)
- 		pcr->slots[RTSX_SD_CARD].card_event(
-@@ -836,10 +843,6 @@ static irqreturn_t rtsx_pci_isr(int irq,
- 		}
- 	}
- 
--	if (pcr->card_inserted || pcr->card_removed)
--		schedule_delayed_work(&pcr->carddet_work,
--				msecs_to_jiffies(200));
--
- 	if (int_reg & (NEED_COMPLETE_INT | DELINK_INT)) {
- 		if (int_reg & (TRANS_FAIL_INT | DELINK_INT)) {
- 			pcr->trans_result = TRANS_RESULT_FAIL;
-@@ -852,6 +855,10 @@ static irqreturn_t rtsx_pci_isr(int irq,
- 		}
- 	}
- 
-+	if (pcr->card_inserted || pcr->card_removed)
-+		schedule_delayed_work(&pcr->carddet_work,
-+				msecs_to_jiffies(200));
-+
- 	spin_unlock(&pcr->lock);
- 	return IRQ_HANDLED;
- }
 
 
