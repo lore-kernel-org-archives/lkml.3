@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226Ab3CLSEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:04:44 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:55115 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3CLSEk (ORCPT
+	id S933178Ab3CLSIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:08:06 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:53169 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3CLSIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:04:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130311205345.GA9410@Krystal>
-References: <20130225152036.GA3405@Krystal>
-	<20130311204601.GA22369@kroah.com>
-	<20130311205345.GA9410@Krystal>
-Date: Tue, 12 Mar 2013 11:04:39 -0700
-X-Google-Sender-Auth: ZdvC3oYMpQ8bSfyYoFqWDOZbWFs
-Message-ID: <CA+55aFxjw0hhDTaCBW-Gy0EW2WjkfmWPC-QS_iQpZ98-kvuJwA@mail.gmail.com>
-Subject: Re: [PATCH] Fix: compat_rw_copy_check_uvector() misuse in aio, readv,
- writev, and security keys
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Security Officers <security@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Mar 2013 14:08:04 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: netfilter-devel@vger.kernel.org
+Cc: pablo@netfilter.org, kaber@trash.net, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] ipv4: netfilter: use PTR_RET instead of IS_ERR + PTR_ERR
+Date: Tue, 12 Mar 2013 20:07:55 +0200
+Message-Id: <1363111675-21457-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 1:53 PM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->
-> Not sure. My guess would be that there is missing proof that I actually
-> tested the patch
+This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
+readability.
 
-Well, it was actually mostly that the early patches I saw had very
-tentative messages which made me go "Mathieu isn't sure" and kind of
-waited for more forceful messages and acks from people. It wasn't
-helped by the fact that Al was basically offline for a while.
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ net/ipv4/netfilter/arptable_filter.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-That said, the patch definitely looks like the right thing to do. I'll apply it.
+diff --git a/net/ipv4/netfilter/arptable_filter.c b/net/ipv4/netfilter/arptable_filter.c
+index 79ca5e7..eadab1e 100644
+--- a/net/ipv4/netfilter/arptable_filter.c
++++ b/net/ipv4/netfilter/arptable_filter.c
+@@ -48,9 +48,7 @@ static int __net_init arptable_filter_net_init(struct net *net)
+ 	net->ipv4.arptable_filter =
+ 		arpt_register_table(net, &packet_filter, repl);
+ 	kfree(repl);
+-	if (IS_ERR(net->ipv4.arptable_filter))
+-		return PTR_ERR(net->ipv4.arptable_filter);
+-	return 0;
++	return PTR_RET(net->ipv4.arptable_filter);
+ }
+ 
+ static void __net_exit arptable_filter_net_exit(struct net *net)
+-- 
+1.7.9.5
 
-              Linus
