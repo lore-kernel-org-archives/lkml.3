@@ -1,109 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3CLQtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:49:21 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:38014 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab3CLQtT (ORCPT
+	id S932931Ab3CLQzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:55:04 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:46590 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449Ab3CLQzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:49:19 -0400
+	Tue, 12 Mar 2013 12:55:03 -0400
 MIME-Version: 1.0
 Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
-References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
-Date: Tue, 12 Mar 2013 17:49:18 +0100
-Message-ID: <CA+icZUVgTS=nuCJ=_ectE-ryWtY1kvuP+RpvkJzFRZs3fK11NQ@mail.gmail.com>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
+Date: Tue, 12 Mar 2013 17:55:01 +0100
+Message-ID: <CA+icZUUqSCZeb2JOFv-OSRXAQyD+crvGqg9E0FAUF=+ZAg5vFA@mail.gmail.com>
+Subject: Status of union-mount?
 From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+To: Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 4:41 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Al and Linus,
->
-> Please consider overlayfs for inclusion into 3.10.
->
-> It's included in Ubuntu and openSUSE, used by OpenWrt and various other
-> projects.  I regularly get emails asking when it will be included in mainline.
->
-> Git tree is here:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v16
->
-> Thanks,
-> Miklos
->
-> ---
-> Andy Whitcroft (3):
->       overlayfs-add-statfs-support
->       ovl-switch-to-inode_permission
->       overlayfs-copy-up-i_uid-i_gid-from-the-underlying-inode
->
-> Erez Zadok (1):
->       overlayfs-implement-show_options
->
-> Miklos Szeredi (6):
->       vfs-add-i_op-dentry_open
->       vfs-export-do_splice_direct-to-modules
->       vfs-introduce-clone_private_mount
->       overlay filesystem
->       fs-limit-filesystem-stacking-depth
->       vfs-export-inode_permission-to-modules
->
-> Neil Brown (1):
->       overlay-overlay-filesystem-documentation
->
-> Robin Dong (2):
->       overlayfs-fix-possible-leak-in-ovl_new_inode
->       overlayfs-create-new-inode-in-ovl_link
->
+Hi,
 
-What happened to the subject lines (see v15)?
+what's the status of union-mount?
+Where does the development happen - in [1]?
 
+Regards,
 - Sedat -
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/mszeredi/vfs.git/log/?h=overlayfs.v15
-
-> ---
->  Documentation/filesystems/Locking       |    2 +
->  Documentation/filesystems/overlayfs.txt |  199 +++++++++
->  Documentation/filesystems/vfs.txt       |    7 +
->  MAINTAINERS                             |    7 +
->  fs/Kconfig                              |    1 +
->  fs/Makefile                             |    1 +
->  fs/ecryptfs/main.c                      |    7 +
->  fs/internal.h                           |    5 -
->  fs/namei.c                              |   10 +-
->  fs/namespace.c                          |   18 +
->  fs/open.c                               |   23 +-
->  fs/overlayfs/Kconfig                    |    4 +
->  fs/overlayfs/Makefile                   |    7 +
->  fs/overlayfs/copy_up.c                  |  385 +++++++++++++++++
->  fs/overlayfs/dir.c                      |  604 +++++++++++++++++++++++++++
->  fs/overlayfs/inode.c                    |  372 +++++++++++++++++
->  fs/overlayfs/overlayfs.h                |   70 ++++
->  fs/overlayfs/readdir.c                  |  566 +++++++++++++++++++++++++
->  fs/overlayfs/super.c                    |  685 +++++++++++++++++++++++++++++++
->  fs/splice.c                             |    1 +
->  include/linux/fs.h                      |   14 +
->  include/linux/mount.h                   |    3 +
->  22 files changed, 2981 insertions(+), 10 deletions(-)
->  create mode 100644 Documentation/filesystems/overlayfs.txt
->  create mode 100644 fs/overlayfs/Kconfig
->  create mode 100644 fs/overlayfs/Makefile
->  create mode 100644 fs/overlayfs/copy_up.c
->  create mode 100644 fs/overlayfs/dir.c
->  create mode 100644 fs/overlayfs/inode.c
->  create mode 100644 fs/overlayfs/overlayfs.h
->  create mode 100644 fs/overlayfs/readdir.c
->  create mode 100644 fs/overlayfs/super.c
->
+[1] http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=unionmount
