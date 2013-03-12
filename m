@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933814Ab3CLWjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:39:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60407 "EHLO
+	id S933833Ab3CLWk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:40:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796Ab3CLWdc (ORCPT
+	with ESMTP id S1756085Ab3CLWdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:32 -0400
+	Tue, 12 Mar 2013 18:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 077/100] Btrfs: cleanup orphan reservation if truncate fails
-Date: Tue, 12 Mar 2013 15:32:02 -0700
-Message-Id: <20130312223131.210109191@linuxfoundation.org>
+        Wei WANG <wei_wang@realsil.com.cn>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Tim Gardner <rtg.canonical@gmail.com>
+Subject: [ 080/100] mfd: rtsx: Fix issue that booting OS with SD card inserted
+Date: Tue, 12 Mar 2013 15:32:05 -0700
+Message-Id: <20130312223131.552172761@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,32 +28,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-commit 4a7d0f6854c4a4ad1dba00a3b128a32d39b9a742 upstream.
+commit c3481955f6c78c8dd99921759306d7469c999ec2 upstream.
 
-I noticed we were getting lots of warnings with xfstest 83 because we have
-reservations outstanding.  This is because we moved the orphan add outside
-of the truncate, but we don't actually cleanup our reservation if something
-fails.  This fixes the problem and I no longer see warnings.  Thanks,
+Realtek card reader supports both SD and MS card. According to the
+settings of rtsx MFD driver, SD host will be probed before MS host.
+If we boot/reboot Linux with SD card inserted, the resetting flow of SD
+card will succeed, and the following resetting flow of MS is sure to fail.
+Then MS upper-level driver will ask rtsx driver to turn power off. This
+request leads to the result that the following SD commands fail and SD card
+can't be accessed again.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+In this commit, Realtek's SD and MS host driver will check whether the card
+that upper driver requesting is the one existing in the slot. If not, Realtek's
+host driver will refuse the operation to make sure the exlusive accessing
+at the same time.
+
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Tim Gardner <rtg.canonical@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/memstick/host/rtsx_pci_ms.c |    7 +++++++
+ drivers/mfd/rtsx_pcr.c              |   30 ++++++++++++++++++++++++++++++
+ drivers/mmc/host/rtsx_pci_sdmmc.c   |   18 ++++++++++++++++++
+ include/linux/mfd/rtsx_pci.h        |    2 ++
+ 4 files changed, 57 insertions(+)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -2493,6 +2493,8 @@ int btrfs_orphan_cleanup(struct btrfs_ro
- 				goto out;
+--- a/drivers/memstick/host/rtsx_pci_ms.c
++++ b/drivers/memstick/host/rtsx_pci_ms.c
+@@ -426,6 +426,9 @@ static void rtsx_pci_ms_request(struct m
  
- 			ret = btrfs_truncate(inode);
-+			if (ret)
-+				btrfs_orphan_del(NULL, inode);
- 		} else {
- 			nr_unlink++;
- 		}
+ 	dev_dbg(ms_dev(host), "--> %s\n", __func__);
+ 
++	if (rtsx_pci_card_exclusive_check(host->pcr, RTSX_MS_CARD))
++		return;
++
+ 	schedule_work(&host->handle_req);
+ }
+ 
+@@ -441,6 +444,10 @@ static int rtsx_pci_ms_set_param(struct
+ 	dev_dbg(ms_dev(host), "%s: param = %d, value = %d\n",
+ 			__func__, param, value);
+ 
++	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_MS_CARD);
++	if (err)
++		return err;
++
+ 	switch (param) {
+ 	case MEMSTICK_POWER:
+ 		if (value == MEMSTICK_POWER_ON)
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -713,6 +713,25 @@ int rtsx_pci_card_power_off(struct rtsx_
+ }
+ EXPORT_SYMBOL_GPL(rtsx_pci_card_power_off);
+ 
++int rtsx_pci_card_exclusive_check(struct rtsx_pcr *pcr, int card)
++{
++	unsigned int cd_mask[] = {
++		[RTSX_SD_CARD] = SD_EXIST,
++		[RTSX_MS_CARD] = MS_EXIST
++	};
++
++	if (!pcr->ms_pmos) {
++		/* When using single PMOS, accessing card is not permitted
++		 * if the existing card is not the designated one.
++		 */
++		if (pcr->card_exist & (~cd_mask[card]))
++			return -EIO;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_exclusive_check);
++
+ int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ {
+ 	if (pcr->ops->switch_output_voltage)
+@@ -789,6 +808,9 @@ static void rtsx_pci_card_detect(struct
+ 			card_inserted = pcr->ops->cd_deglitch(pcr);
+ 
+ 		card_detect = card_inserted | card_removed;
++
++		pcr->card_exist |= card_inserted;
++		pcr->card_exist &= ~card_removed;
+ 	}
+ 
+ 	mutex_unlock(&pcr->pcr_mutex);
+@@ -981,6 +1003,14 @@ static int rtsx_pci_init_hw(struct rtsx_
+ 			return err;
+ 	}
+ 
++	/* No CD interrupt if probing driver with card inserted.
++	 * So we need to initialize pcr->card_exist here.
++	 */
++	if (pcr->ops->cd_deglitch)
++		pcr->card_exist = pcr->ops->cd_deglitch(pcr);
++	else
++		pcr->card_exist = rtsx_pci_readl(pcr, RTSX_BIPR) & CARD_EXIST;
++
+ 	return 0;
+ }
+ 
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -678,12 +678,19 @@ static void sdmmc_request(struct mmc_hos
+ 	struct mmc_command *cmd = mrq->cmd;
+ 	struct mmc_data *data = mrq->data;
+ 	unsigned int data_size = 0;
++	int err;
+ 
+ 	if (host->eject) {
+ 		cmd->error = -ENOMEDIUM;
+ 		goto finish;
+ 	}
+ 
++	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
++	if (err) {
++		cmd->error = err;
++		goto finish;
++	}
++
+ 	mutex_lock(&pcr->pcr_mutex);
+ 
+ 	rtsx_pci_start_run(pcr);
+@@ -901,6 +908,9 @@ static void sdmmc_set_ios(struct mmc_hos
+ 	if (host->eject)
+ 		return;
+ 
++	if (rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD))
++		return;
++
+ 	mutex_lock(&pcr->pcr_mutex);
+ 
+ 	rtsx_pci_start_run(pcr);
+@@ -1073,6 +1083,10 @@ static int sdmmc_switch_voltage(struct m
+ 	if (host->eject)
+ 		return -ENOMEDIUM;
+ 
++	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
++	if (err)
++		return err;
++
+ 	mutex_lock(&pcr->pcr_mutex);
+ 
+ 	rtsx_pci_start_run(pcr);
+@@ -1122,6 +1136,10 @@ static int sdmmc_execute_tuning(struct m
+ 	if (host->eject)
+ 		return -ENOMEDIUM;
+ 
++	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
++	if (err)
++		return err;
++
+ 	mutex_lock(&pcr->pcr_mutex);
+ 
+ 	rtsx_pci_start_run(pcr);
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -735,6 +735,7 @@ struct rtsx_pcr {
+ 
+ 	unsigned int			card_inserted;
+ 	unsigned int			card_removed;
++	unsigned int			card_exist;
+ 
+ 	struct delayed_work		carddet_work;
+ 	struct delayed_work		idle_work;
+@@ -799,6 +800,7 @@ int rtsx_pci_switch_clock(struct rtsx_pc
+ 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk);
+ int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card);
+ int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card);
++int rtsx_pci_card_exclusive_check(struct rtsx_pcr *pcr, int card);
+ int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage);
+ unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr);
+ void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr);
 
 
