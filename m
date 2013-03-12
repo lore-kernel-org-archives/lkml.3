@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933920Ab3CLW7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:59:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60534 "EHLO
+	id S1756099Ab3CLW7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:59:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025Ab3CLWoH (ORCPT
+	with ESMTP id S1755987Ab3CLWoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:07 -0400
+	Tue, 12 Mar 2013 18:44:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 05/40] SCSI: storvsc: Initialize the sglist
-Date: Tue, 12 Mar 2013 15:43:26 -0700
-Message-Id: <20130312223212.055492883@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 03/40] xen/pci: We dont do multiple MSIs.
+Date: Tue, 12 Mar 2013 15:43:24 -0700
+Message-Id: <20130312223211.849805452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,29 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 9d2696e658ef4f209955ddaa987d43f1a1bd81a1 upstream.
+commit 884ac2978a295b7df3c4a686d3bff6932bbbb460 upstream.
 
-Properly initialize scatterlist before using it.
+There is no hypercall to setup multiple MSI per PCI device.
+As such with these two new commits:
+-  08261d87f7d1b6253ab3223756625a5c74532293
+   PCI/MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+- 5ca72c4f7c412c2002363218901eba5516c476b1
+   AHCI: Support multiple MSIs
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+we would call the PHYSDEVOP_map_pirq 'nvec' times with the same
+contents of the PCI device. Sander discovered that we would get
+the same PIRQ value 'nvec' times and return said values to the
+caller. That of course meant that the device was configured only
+with one MSI and AHCI would fail with:
+
+ahci 0000:00:11.0: version 3.0
+xen: registering gsi 19 triggering 0 polarity 1
+xen: --> pirq=19 -> irq=19 (gsi=19)
+(XEN) [2013-02-27 19:43:07] IOAPIC[0]: Set PCI routing entry (6-19 -> 0x99 -> IRQ 19 Mode:1 Active:1)
+ahci 0000:00:11.0: AHCI 0001.0200 32 slots 4 ports 6 Gbps 0xf impl SATA mode
+ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part
+ahci: probe of 0000:00:11.0 failed with error -22
+
+That is b/c in ahci_host_activate the second call to
+devm_request_threaded_irq  would return -EINVAL as we passed in
+(on the second run) an IRQ that was never initialized.
+
+Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/pci/xen.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -467,6 +467,7 @@ static struct scatterlist *create_bounce
- 	if (!bounce_sgl)
- 		return NULL;
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -162,6 +162,9 @@ static int xen_setup_msi_irqs(struct pci
+ 	struct msi_desc *msidesc;
+ 	int *v;
  
-+	sg_init_table(bounce_sgl, num_pages);
- 	for (i = 0; i < num_pages; i++) {
- 		page_buf = alloc_page(GFP_ATOMIC);
- 		if (!page_buf)
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	v = kzalloc(sizeof(int) * max(1, nvec), GFP_KERNEL);
+ 	if (!v)
+ 		return -ENOMEM;
+@@ -220,6 +223,9 @@ static int xen_hvm_setup_msi_irqs(struct
+ 	struct msi_desc *msidesc;
+ 	struct msi_msg msg;
+ 
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		__read_msi_msg(msidesc, &msg);
+ 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
+@@ -263,6 +269,9 @@ static int xen_initdom_setup_msi_irqs(st
+ 	int ret = 0;
+ 	struct msi_desc *msidesc;
+ 
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		struct physdev_map_pirq map_irq;
+ 		domid_t domid;
 
 
