@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3CLAr4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:47:56 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:42358 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3CLAry (ORCPT
+	id S932087Ab3CLArn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:47:43 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:33494 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab3CLAri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:47:54 -0400
+	Mon, 11 Mar 2013 20:47:38 -0400
 From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
@@ -14,9 +14,9 @@ Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCH v3 7/7] kmod: remove call_usermodehelper_fns()
-Date: Mon, 11 Mar 2013 21:48:11 -0300
-Message-Id: <1363049291-946-7-git-send-email-lucas.demarchi@profusion.mobi>
+Subject: [PATCH v3 4/7] KEYS: split call to call_usermodehelper_fns()
+Date: Mon, 11 Mar 2013 21:48:08 -0300
+Message-Id: <1363049291-946-4-git-send-email-lucas.demarchi@profusion.mobi>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
 References: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
@@ -24,105 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function suffers from not being able to determine if the cleanup is
-called in case it returns -ENOMEM. Nobody is using it anymore, so let's
-remove it.
+Use call_usermodehelper_setup() + call_usermodehelper_exec() instead of
+calling call_usermodehelper_fns(). In case there's an OOM in this last
+function the cleanup function may not be called - in this case we would
+miss a call to key_put().
 
 Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 ---
- include/linux/kmod.h | 11 +----------
- kernel/kmod.c        | 31 +++++++++++++++++--------------
- 2 files changed, 18 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index 7eebcf5..0555cc6 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -67,9 +67,7 @@ struct subprocess_info {
- };
- 
- extern int
--call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
--			int (*init)(struct subprocess_info *info, struct cred *new),
--			void (*cleanup)(struct subprocess_info *), void *data);
-+call_usermodehelper(char *path, char **argv, char **envp, int wait);
- 
- extern struct subprocess_info *
- call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
-@@ -79,13 +77,6 @@ call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
- extern int
- call_usermodehelper_exec(struct subprocess_info *info, int wait);
- 
--static inline int
--call_usermodehelper(char *path, char **argv, char **envp, int wait)
--{
--	return call_usermodehelper_fns(path, argv, envp, wait,
--				       NULL, NULL, NULL);
--}
--
- extern struct ctl_table usermodehelper_table[];
- 
- enum umh_disable_depth {
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index ae255a3..166aff5 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -554,8 +554,8 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
-  * call_usermodehelper_exec - start a usermode application
-  * @sub_info: information about the subprocessa
-  * @wait: wait for the application to finish and return status.
-- *        when -1 don't wait at all, but you get no useful error back when
-- *        the program couldn't be exec'ed. This makes it safe to call
-+ *        when UMH_NO_WAIT don't wait at all, but you get no useful error back
-+ *        when the program couldn't be exec'ed. This makes it safe to call
-  *        from interrupt context.
-  *
-  * Runs a user-space application.  The application is started
-@@ -615,29 +615,32 @@ unlock:
- }
- EXPORT_SYMBOL(call_usermodehelper_exec);
- 
--/*
-- * call_usermodehelper_fns() will not run the caller-provided cleanup function
-- * if a memory allocation failure is experienced.  So the caller might need to
-- * check the call_usermodehelper_fns() return value: if it is -ENOMEM, perform
-- * the necessaary cleanup within the caller.
-+/**
-+ * call_usermodehelper() - prepare and start a usermode application
-+ * @path: path to usermode executable
-+ * @argv: arg vector for process
-+ * @envp: environment for process
-+ * @wait: wait for the application to finish and return status.
-+ *        when UMH_NO_WAIT don't wait at all, but you get no useful error back
-+ *        when the program couldn't be exec'ed. This makes it safe to call
-+ *        from interrupt context.
-+ *
-+ * This function is the equivalent to use call_usermodehelper_setup() and
-+ * call_usermodehelper_exec().
-  */
--int call_usermodehelper_fns(
--	char *path, char **argv, char **envp, int wait,
--	int (*init)(struct subprocess_info *info, struct cred *new),
--	void (*cleanup)(struct subprocess_info *), void *data)
-+int call_usermodehelper(char *path, char **argv, char **envp, int wait)
+Changes from v2: simplify error handling as suggested by Oleg.
+
+ security/keys/request_key.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 4bd6bdb..c411f9b 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -93,9 +93,16 @@ static void umh_keys_cleanup(struct subprocess_info *info)
+ static int call_usermodehelper_keys(char *path, char **argv, char **envp,
+ 					struct key *session_keyring, int wait)
  {
- 	struct subprocess_info *info;
- 	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
- 
- 	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
--					 init, cleanup, data);
--
-+					 NULL, NULL, NULL);
- 	if (info == NULL)
- 		return -ENOMEM;
- 
- 	return call_usermodehelper_exec(info, wait);
+-	return call_usermodehelper_fns(path, argv, envp, wait,
+-				       umh_keys_init, umh_keys_cleanup,
+-				       key_get(session_keyring));
++	struct subprocess_info *info;
++
++	info = call_usermodehelper_setup(path, argv, envp, GFP_KERNEL,
++					  umh_keys_init, umh_keys_cleanup,
++					  session_keyring);
++	if (!info)
++		return -ENOMEM;
++
++	key_get(session_keyring);
++	return call_usermodehelper_exec(info, wait);
  }
--EXPORT_SYMBOL(call_usermodehelper_fns);
-+EXPORT_SYMBOL(call_usermodehelper);
  
- static int proc_cap_handler(struct ctl_table *table, int write,
- 			 void __user *buffer, size_t *lenp, loff_t *ppos)
+ /*
 -- 
 1.8.1.5
 
