@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab3CLWg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:36:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60455 "EHLO
+	id S933751Ab3CLWhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:37:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60438 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab3CLWdk (ORCPT
+	with ESMTP id S1756129Ab3CLWdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:40 -0400
+	Tue, 12 Mar 2013 18:33:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 083/100] usbnet: smsc95xx: fix suspend failure
-Date: Tue, 12 Mar 2013 15:32:08 -0700
-Message-Id: <20130312223131.872120058@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 089/100] ARM: mxs_defconfig: Make USB host functional again
+Date: Tue, 12 Mar 2013 15:32:14 -0700
+Message-Id: <20130312223132.478423554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,58 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 7643721471117d5f62ca36f328d3dc8d84af4402 upstream.
+commit f6c49da98dd6eacb85034d21d16e1428e03e190f upstream.
 
-The three below functions:
+commit 09f6ffde2e (USB: EHCI: fix build error by making ChipIdea host a normal
+EHCI driver) introduced CONFIG_USB_EHCI_HCD as a dependency for USB_CHIPIDEA_HOST.
 
-	smsc95xx_enter_suspend0()
-	smsc95xx_enter_suspend1()
-	smsc95xx_enter_suspend2()
+Select CONFIG_USB_EHCI_HCD, so that USB host can be functional again.
 
-return > 0 in case of success, so they will cause smsc95xx_suspend()
-to return > 0 and cause suspend failure.
-
-The bug is introduced in commit 3b9f7d(smsc95xx: fix error handling
-in suspend failure case).
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Cc: Steve Glendinning <steve.glendinning@shawell.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/smsc95xx.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1340,6 +1340,8 @@ static int smsc95xx_enter_suspend0(struc
- 	ret = smsc95xx_read_reg_nopm(dev, PM_CTRL, &val);
- 	if (ret < 0)
- 		netdev_warn(dev->net, "Error reading PM_CTRL\n");
-+	else
-+		ret = 0;
- 
- 	return ret;
- }
-@@ -1392,6 +1394,8 @@ static int smsc95xx_enter_suspend1(struc
- 	ret = smsc95xx_write_reg_nopm(dev, PM_CTRL, val);
- 	if (ret < 0)
- 		netdev_warn(dev->net, "Error writing PM_CTRL\n");
-+	else
-+		ret = 0;
- 
- 	return ret;
- }
-@@ -1413,6 +1417,8 @@ static int smsc95xx_enter_suspend2(struc
- 	ret = smsc95xx_write_reg_nopm(dev, PM_CTRL, val);
- 	if (ret < 0)
- 		netdev_warn(dev->net, "Error writing PM_CTRL\n");
-+	else
-+		ret = 0;
- 
- 	return ret;
- }
+---
+ arch/arm/configs/mxs_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/arm/configs/mxs_defconfig
++++ b/arch/arm/configs/mxs_defconfig
+@@ -118,6 +118,7 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_FONTS=y
+ CONFIG_LOGO=y
+ CONFIG_USB=y
++CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_CHIPIDEA=y
+ CONFIG_USB_CHIPIDEA_HOST=y
+ CONFIG_USB_STORAGE=y
 
 
