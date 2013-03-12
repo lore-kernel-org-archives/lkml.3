@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab3CLSmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:42:08 -0400
+	id S933411Ab3CLSpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:45:00 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:52590 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933216Ab3CLSmF (ORCPT
+	with ESMTP id S933271Ab3CLSmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:42:05 -0400
+	Tue, 12 Mar 2013 14:42:07 -0400
 X-IronPort-AV: E=Sophos;i="4.84,832,1355126400"; 
-   d="scan'208";a="29083601"
+   d="scan'208";a="29083614"
 From: David Brown <davidb@codeaurora.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 01/11] platform-drivers: msm: add single-wire serial bus interface (SSBI) driver
-Date: Tue, 12 Mar 2013 11:41:46 -0700
-Message-Id: <1363113716-25897-2-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH v2 09/11] SSBI: Remove MSM_ prefix from SSBI drivers
+Date: Tue, 12 Mar 2013 11:41:54 -0700
+Message-Id: <1363113716-25897-10-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1363113716-25897-1-git-send-email-davidb@codeaurora.org>
 References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
@@ -27,559 +25,423 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kenneth Heitke <kheitke@codeaurora.org>
+Although the SSBI sub is currently only used on MSM SoCs, it is still
+a bus in its own right.  Remove this msm_ prefix from the driver and
+it's symbols.  Clients can now refer directly to ssbi_write() and
+ssbi_read().
 
-SSBI is the Qualcomm single-wire serial bus interface used to connect
-the MSM devices to the PMIC and other devices.
-
-Since SSBI only supports a single slave, the driver gets the name of the
-slave device passed in from the board file through the master device's
-platform data.
-
-SSBI registers pretty early (postcore), so that the PMIC can come up
-before the board init. This is useful if the board init requires the
-use of gpios that are connected through the PMIC.
-
-Based on a patch by Dima Zavin <dima@android.com> that can be found at:
-http://android.git.kernel.org/?p=kernel/msm.git;a=commitdiff;h=eb060bac4
-
-This patch adds PMIC Arbiter support for the MSM8660. The PMIC Arbiter
-is a hardware wrapper around the SSBI 2.0 controller that is designed to
-overcome concurrency issues and security limitations.  A controller_type
-field is added to the platform data to specify the type of the SSBI
-controller (1.0, 2.0, or PMIC Arbiter).
-
-[davidb@codeaurora.org:
- I've moved this driver into drivers/ssbi/ and added an include for
- linux/module.h so that it will compile]
-
-Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- drivers/Kconfig          |   2 +
- drivers/Makefile         |   1 +
- drivers/ssbi/Kconfig     |  16 ++
- drivers/ssbi/Makefile    |   1 +
- drivers/ssbi/ssbi.c      | 397 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/msm_ssbi.h |  49 ++++++
- 6 files changed, 466 insertions(+)
- create mode 100644 drivers/ssbi/Kconfig
- create mode 100644 drivers/ssbi/Makefile
- create mode 100644 drivers/ssbi/ssbi.c
- create mode 100644 include/linux/msm_ssbi.h
+ drivers/Makefile                     |  2 +-
+ drivers/mfd/Kconfig                  |  2 +-
+ drivers/mfd/pm8921-core.c            | 14 +++---
+ drivers/ssbi/Kconfig                 |  4 +-
+ drivers/ssbi/Makefile                |  2 +-
+ drivers/ssbi/ssbi.c                  | 86 ++++++++++++++++++------------------
+ include/linux/{msm_ssbi.h => ssbi.h} | 18 ++++----
+ 7 files changed, 64 insertions(+), 64 deletions(-)
+ rename include/linux/{msm_ssbi.h => ssbi.h} (67%)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 202fa6d..78a956e 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -52,6 +52,8 @@ source "drivers/i2c/Kconfig"
- 
- source "drivers/spi/Kconfig"
- 
-+source "drivers/ssbi/Kconfig"
-+
- source "drivers/hsi/Kconfig"
- 
- source "drivers/pps/Kconfig"
 diff --git a/drivers/Makefile b/drivers/Makefile
-index dce39a9..778821b 100644
+index 778821b..4865ed2 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -114,6 +114,7 @@ obj-y				+= firmware/
+@@ -114,7 +114,7 @@ obj-y				+= firmware/
  obj-$(CONFIG_CRYPTO)		+= crypto/
  obj-$(CONFIG_SUPERH)		+= sh/
  obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
-+obj-$(CONFIG_MSM_SSBI)		+= ssbi/
+-obj-$(CONFIG_MSM_SSBI)		+= ssbi/
++obj-$(CONFIG_SSBI)		+= ssbi/
  ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
  obj-y				+= clocksource/
  endif
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 671f5b1..5bfa7bb 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -990,7 +990,7 @@ config MFD_PM8XXX
+ 
+ config MFD_PM8921_CORE
+ 	tristate "Qualcomm PM8921 PMIC chip"
+-	depends on MSM_SSBI
++	depends on SSBI
+ 	select MFD_CORE
+ 	select MFD_PM8XXX
+ 	help
+diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
+index d4b297c..ecc137f 100644
+--- a/drivers/mfd/pm8921-core.c
++++ b/drivers/mfd/pm8921-core.c
+@@ -17,7 +17,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
+-#include <linux/msm_ssbi.h>
++#include <linux/ssbi.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/pm8xxx/pm8921.h>
+ #include <linux/mfd/pm8xxx/core.h>
+@@ -35,7 +35,7 @@ static int pm8921_readb(const struct device *dev, u16 addr, u8 *val)
+ 	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+ 	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+ 
+-	return msm_ssbi_read(pmic->dev->parent, addr, val, 1);
++	return ssbi_read(pmic->dev->parent, addr, val, 1);
+ }
+ 
+ static int pm8921_writeb(const struct device *dev, u16 addr, u8 val)
+@@ -43,7 +43,7 @@ static int pm8921_writeb(const struct device *dev, u16 addr, u8 val)
+ 	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+ 	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+ 
+-	return msm_ssbi_write(pmic->dev->parent, addr, &val, 1);
++	return ssbi_write(pmic->dev->parent, addr, &val, 1);
+ }
+ 
+ static int pm8921_read_buf(const struct device *dev, u16 addr, u8 *buf,
+@@ -52,7 +52,7 @@ static int pm8921_read_buf(const struct device *dev, u16 addr, u8 *buf,
+ 	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+ 	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+ 
+-	return msm_ssbi_read(pmic->dev->parent, addr, buf, cnt);
++	return ssbi_read(pmic->dev->parent, addr, buf, cnt);
+ }
+ 
+ static int pm8921_write_buf(const struct device *dev, u16 addr, u8 *buf,
+@@ -61,7 +61,7 @@ static int pm8921_write_buf(const struct device *dev, u16 addr, u8 *buf,
+ 	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
+ 	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
+ 
+-	return msm_ssbi_write(pmic->dev->parent, addr, buf, cnt);
++	return ssbi_write(pmic->dev->parent, addr, buf, cnt);
+ }
+ 
+ static int pm8921_read_irq_stat(const struct device *dev, int irq)
+@@ -124,7 +124,7 @@ static int pm8921_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Read PMIC chip revision */
+-	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
++	rc = ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
+ 	if (rc) {
+ 		pr_err("Failed to read hw rev reg %d:rc=%d\n", REG_HWREV, rc);
+ 		goto err_read_rev;
+@@ -133,7 +133,7 @@ static int pm8921_probe(struct platform_device *pdev)
+ 	rev = val;
+ 
+ 	/* Read PMIC chip revision 2 */
+-	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV_2, &val, sizeof(val));
++	rc = ssbi_read(pdev->dev.parent, REG_HWREV_2, &val, sizeof(val));
+ 	if (rc) {
+ 		pr_err("Failed to read hw rev 2 reg %d:rc=%d\n",
+ 			REG_HWREV_2, rc);
 diff --git a/drivers/ssbi/Kconfig b/drivers/ssbi/Kconfig
-new file mode 100644
-index 0000000..b57c41b
---- /dev/null
+index c7bc534..1ae4040 100644
+--- a/drivers/ssbi/Kconfig
 +++ b/drivers/ssbi/Kconfig
-@@ -0,0 +1,16 @@
-+#
-+# MSM SSBI bus support
-+#
-+
-+menu "Qualcomm MSM SSBI bus support"
-+
-+config MSM_SSBI
-+	bool "Qualcomm Single-wire Serial Bus Interface (SSBI)"
-+	help
-+	  If you say yes to this option, support will be included for the
-+	  built-in SSBI interface on Qualcomm MSM family processors.
-+
-+	  This is required for communicating with Qualcomm PMICs and
-+	  other devices that have the SSBI interface.
-+
-+endmenu
+@@ -1,10 +1,10 @@
+ #
+-# MSM SSBI bus support
++# SSBI bus support
+ #
+ 
+ menu "Qualcomm MSM SSBI bus support"
+ 
+-config MSM_SSBI
++config SSBI
+ 	tristate "Qualcomm Single-wire Serial Bus Interface (SSBI)"
+ 	help
+ 	  If you say yes to this option, support will be included for the
 diff --git a/drivers/ssbi/Makefile b/drivers/ssbi/Makefile
-new file mode 100644
-index 0000000..22e408f
---- /dev/null
+index 22e408f..38fb70c 100644
+--- a/drivers/ssbi/Makefile
 +++ b/drivers/ssbi/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_MSM_SSBI) += ssbi.o
+@@ -1 +1 @@
+-obj-$(CONFIG_MSM_SSBI) += ssbi.o
++obj-$(CONFIG_SSBI) += ssbi.o
 diff --git a/drivers/ssbi/ssbi.c b/drivers/ssbi/ssbi.c
-new file mode 100644
-index 0000000..8b0b10d
---- /dev/null
+index b056a07..f32da02 100644
+--- a/drivers/ssbi/ssbi.c
 +++ b/drivers/ssbi/ssbi.c
-@@ -0,0 +1,397 @@
-+/* Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
-+ * Copyright (c) 2010, Google Inc.
-+ *
-+ * Original authors: Code Aurora Forum
-+ *
-+ * Author: Dima Zavin <dima@android.com>
-+ *  - Largely rewritten from original to not be an i2c driver.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/msm_ssbi.h>
-+#include <linux/module.h>
-+
-+/* SSBI 2.0 controller registers */
-+#define SSBI2_CMD			0x0008
-+#define SSBI2_RD			0x0010
-+#define SSBI2_STATUS			0x0014
-+#define SSBI2_MODE2			0x001C
-+
-+/* SSBI_CMD fields */
-+#define SSBI_CMD_RDWRN			(1 << 24)
-+
-+/* SSBI_STATUS fields */
-+#define SSBI_STATUS_RD_READY		(1 << 2)
-+#define SSBI_STATUS_READY		(1 << 1)
-+#define SSBI_STATUS_MCHN_BUSY		(1 << 0)
-+
-+/* SSBI_MODE2 fields */
-+#define SSBI_MODE2_REG_ADDR_15_8_SHFT	0x04
-+#define SSBI_MODE2_REG_ADDR_15_8_MASK	(0x7f << SSBI_MODE2_REG_ADDR_15_8_SHFT)
-+
-+#define SET_SSBI_MODE2_REG_ADDR_15_8(MD, AD) \
-+	(((MD) & 0x0F) | ((((AD) >> 8) << SSBI_MODE2_REG_ADDR_15_8_SHFT) & \
-+	SSBI_MODE2_REG_ADDR_15_8_MASK))
-+
-+/* SSBI PMIC Arbiter command registers */
-+#define SSBI_PA_CMD			0x0000
-+#define SSBI_PA_RD_STATUS		0x0004
-+
-+/* SSBI_PA_CMD fields */
-+#define SSBI_PA_CMD_RDWRN		(1 << 24)
-+#define SSBI_PA_CMD_ADDR_MASK		0x7fff /* REG_ADDR_7_0, REG_ADDR_8_14*/
-+
-+/* SSBI_PA_RD_STATUS fields */
-+#define SSBI_PA_RD_STATUS_TRANS_DONE	(1 << 27)
-+#define SSBI_PA_RD_STATUS_TRANS_DENIED	(1 << 26)
-+
-+#define SSBI_TIMEOUT_US			100
-+
-+struct msm_ssbi {
-+	struct device		*dev;
-+	struct device		*slave;
-+	void __iomem		*base;
-+	spinlock_t		lock;
-+	enum msm_ssbi_controller_type controller_type;
-+	int (*read)(struct msm_ssbi *, u16 addr, u8 *buf, int len);
-+	int (*write)(struct msm_ssbi *, u16 addr, u8 *buf, int len);
-+};
-+
-+#define to_msm_ssbi(dev)	platform_get_drvdata(to_platform_device(dev))
-+
-+static inline u32 ssbi_readl(struct msm_ssbi *ssbi, u32 reg)
-+{
-+	return readl(ssbi->base + reg);
-+}
-+
-+static inline void ssbi_writel(struct msm_ssbi *ssbi, u32 val, u32 reg)
-+{
-+	writel(val, ssbi->base + reg);
-+}
-+
-+static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
-+{
-+	u32 timeout = SSBI_TIMEOUT_US;
-+	u32 val;
-+
-+	while (timeout--) {
-+		val = ssbi_readl(ssbi, SSBI2_STATUS);
-+		if (((val & set_mask) == set_mask) && ((val & clr_mask) == 0))
-+			return 0;
-+		udelay(1);
-+	}
-+
-+	dev_err(ssbi->dev, "%s: timeout (status %x set_mask %x clr_mask %x)\n",
-+		__func__, ssbi_readl(ssbi, SSBI2_STATUS), set_mask, clr_mask);
-+	return -ETIMEDOUT;
-+}
-+
-+static int
-+msm_ssbi_read_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
-+{
-+	u32 cmd = SSBI_CMD_RDWRN | ((addr & 0xff) << 16);
-+	int ret = 0;
-+
-+	if (ssbi->controller_type == MSM_SBI_CTRL_SSBI2) {
-+		u32 mode2 = ssbi_readl(ssbi, SSBI2_MODE2);
-+		mode2 = SET_SSBI_MODE2_REG_ADDR_15_8(mode2, addr);
-+		ssbi_writel(ssbi, mode2, SSBI2_MODE2);
-+	}
-+
-+	while (len) {
-+		ret = ssbi_wait_mask(ssbi, SSBI_STATUS_READY, 0);
-+		if (ret)
-+			goto err;
-+
-+		ssbi_writel(ssbi, cmd, SSBI2_CMD);
-+		ret = ssbi_wait_mask(ssbi, SSBI_STATUS_RD_READY, 0);
-+		if (ret)
-+			goto err;
-+		*buf++ = ssbi_readl(ssbi, SSBI2_RD) & 0xff;
-+		len--;
-+	}
-+
-+err:
-+	return ret;
-+}
-+
-+static int
-+msm_ssbi_write_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
-+{
-+	int ret = 0;
-+
-+	if (ssbi->controller_type == MSM_SBI_CTRL_SSBI2) {
-+		u32 mode2 = ssbi_readl(ssbi, SSBI2_MODE2);
-+		mode2 = SET_SSBI_MODE2_REG_ADDR_15_8(mode2, addr);
-+		ssbi_writel(ssbi, mode2, SSBI2_MODE2);
-+	}
-+
-+	while (len) {
-+		ret = ssbi_wait_mask(ssbi, SSBI_STATUS_READY, 0);
-+		if (ret)
-+			goto err;
-+
-+		ssbi_writel(ssbi, ((addr & 0xff) << 16) | *buf, SSBI2_CMD);
-+		ret = ssbi_wait_mask(ssbi, 0, SSBI_STATUS_MCHN_BUSY);
-+		if (ret)
-+			goto err;
-+		buf++;
-+		len--;
-+	}
-+
-+err:
-+	return ret;
-+}
-+
-+static inline int
-+msm_ssbi_pa_transfer(struct msm_ssbi *ssbi, u32 cmd, u8 *data)
-+{
-+	u32 timeout = SSBI_TIMEOUT_US;
-+	u32 rd_status = 0;
-+
-+	ssbi_writel(ssbi, cmd, SSBI_PA_CMD);
-+
-+	while (timeout--) {
-+		rd_status = ssbi_readl(ssbi, SSBI_PA_RD_STATUS);
-+
-+		if (rd_status & SSBI_PA_RD_STATUS_TRANS_DENIED) {
-+			dev_err(ssbi->dev, "%s: transaction denied (0x%x)\n",
-+					__func__, rd_status);
-+			return -EPERM;
-+		}
-+
-+		if (rd_status & SSBI_PA_RD_STATUS_TRANS_DONE) {
-+			if (data)
-+				*data = rd_status & 0xff;
-+			return 0;
-+		}
-+		udelay(1);
-+	}
-+
-+	dev_err(ssbi->dev, "%s: timeout, status 0x%x\n", __func__, rd_status);
-+	return -ETIMEDOUT;
-+}
-+
-+static int
-+msm_ssbi_pa_read_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
-+{
-+	u32 cmd;
-+	int ret = 0;
-+
-+	cmd = SSBI_PA_CMD_RDWRN | (addr & SSBI_PA_CMD_ADDR_MASK) << 8;
-+
-+	while (len) {
-+		ret = msm_ssbi_pa_transfer(ssbi, cmd, buf);
-+		if (ret)
-+			goto err;
-+		buf++;
-+		len--;
-+	}
-+
-+err:
-+	return ret;
-+}
-+
-+static int
-+msm_ssbi_pa_write_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
-+{
-+	u32 cmd;
-+	int ret = 0;
-+
-+	while (len) {
-+		cmd = (addr & SSBI_PA_CMD_ADDR_MASK) << 8 | *buf;
-+		ret = msm_ssbi_pa_transfer(ssbi, cmd, NULL);
-+		if (ret)
-+			goto err;
-+		buf++;
-+		len--;
-+	}
-+
-+err:
-+	return ret;
-+}
-+
-+int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
-+{
-+	struct msm_ssbi *ssbi = to_msm_ssbi(dev);
-+	unsigned long flags;
-+	int ret;
-+
-+	if (ssbi->dev != dev)
-+		return -ENXIO;
-+
-+	spin_lock_irqsave(&ssbi->lock, flags);
-+	ret = ssbi->read(ssbi, addr, buf, len);
-+	spin_unlock_irqrestore(&ssbi->lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(msm_ssbi_read);
-+
-+int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
-+{
-+	struct msm_ssbi *ssbi = to_msm_ssbi(dev);
-+	unsigned long flags;
-+	int ret;
-+
-+	if (ssbi->dev != dev)
-+		return -ENXIO;
-+
-+	spin_lock_irqsave(&ssbi->lock, flags);
-+	ret = ssbi->write(ssbi, addr, buf, len);
-+	spin_unlock_irqrestore(&ssbi->lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(msm_ssbi_write);
-+
-+static int msm_ssbi_add_slave(struct msm_ssbi *ssbi,
-+				const struct msm_ssbi_slave_info *slave)
-+{
-+	struct platform_device *slave_pdev;
-+	int ret;
-+
-+	if (ssbi->slave) {
-+		pr_err("slave already attached??\n");
-+		return -EBUSY;
-+	}
-+
-+	slave_pdev = platform_device_alloc(slave->name, -1);
-+	if (!slave_pdev) {
-+		pr_err("cannot allocate pdev for slave '%s'", slave->name);
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	slave_pdev->dev.parent = ssbi->dev;
-+	slave_pdev->dev.platform_data = slave->platform_data;
-+
-+	ret = platform_device_add(slave_pdev);
-+	if (ret) {
-+		pr_err("cannot add slave platform device for '%s'\n",
-+				slave->name);
-+		goto err;
-+	}
-+
-+	ssbi->slave = &slave_pdev->dev;
-+	return 0;
-+
-+err:
-+	if (slave_pdev)
-+		platform_device_put(slave_pdev);
-+	return ret;
-+}
-+
-+static int msm_ssbi_probe(struct platform_device *pdev)
-+{
-+	const struct msm_ssbi_platform_data *pdata = pdev->dev.platform_data;
-+	struct resource *mem_res;
-+	struct msm_ssbi *ssbi;
-+	int ret = 0;
-+
-+	if (!pdata) {
-+		pr_err("missing platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	pr_debug("%s\n", pdata->slave.name);
-+
-+	ssbi = kzalloc(sizeof(struct msm_ssbi), GFP_KERNEL);
-+	if (!ssbi) {
-+		pr_err("can not allocate ssbi_data\n");
-+		return -ENOMEM;
-+	}
-+
-+	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem_res) {
-+		pr_err("missing mem resource\n");
-+		ret = -EINVAL;
-+		goto err_get_mem_res;
-+	}
-+
-+	ssbi->base = ioremap(mem_res->start, resource_size(mem_res));
-+	if (!ssbi->base) {
-+		pr_err("ioremap of 0x%p failed\n", (void *)mem_res->start);
-+		ret = -EINVAL;
-+		goto err_ioremap;
-+	}
-+	ssbi->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, ssbi);
-+
-+	ssbi->controller_type = pdata->controller_type;
-+	if (ssbi->controller_type == MSM_SBI_CTRL_PMIC_ARBITER) {
-+		ssbi->read = msm_ssbi_pa_read_bytes;
-+		ssbi->write = msm_ssbi_pa_write_bytes;
-+	} else {
-+		ssbi->read = msm_ssbi_read_bytes;
-+		ssbi->write = msm_ssbi_write_bytes;
-+	}
-+
-+	spin_lock_init(&ssbi->lock);
-+
-+	ret = msm_ssbi_add_slave(ssbi, &pdata->slave);
-+	if (ret)
-+		goto err_ssbi_add_slave;
-+
-+	return 0;
-+
-+err_ssbi_add_slave:
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(ssbi->base);
-+err_ioremap:
-+err_get_mem_res:
-+	kfree(ssbi);
-+	return ret;
-+}
-+
-+static int msm_ssbi_remove(struct platform_device *pdev)
-+{
-+	struct msm_ssbi *ssbi = platform_get_drvdata(pdev);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(ssbi->base);
-+	kfree(ssbi);
-+	return 0;
-+}
-+
-+static struct platform_driver msm_ssbi_driver = {
-+	.probe		= msm_ssbi_probe,
-+	.remove		= __exit_p(msm_ssbi_remove),
-+	.driver		= {
-+		.name	= "msm_ssbi",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init msm_ssbi_init(void)
-+{
-+	return platform_driver_register(&msm_ssbi_driver);
-+}
-+postcore_initcall(msm_ssbi_init);
-+
-+static void __exit msm_ssbi_exit(void)
-+{
-+	platform_driver_unregister(&msm_ssbi_driver);
-+}
-+module_exit(msm_ssbi_exit)
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_VERSION("1.0");
-+MODULE_ALIAS("platform:msm_ssbi");
-+MODULE_AUTHOR("Dima Zavin <dima@android.com>");
-diff --git a/include/linux/msm_ssbi.h b/include/linux/msm_ssbi.h
-new file mode 100644
-index 0000000..cfa47df
---- /dev/null
-+++ b/include/linux/msm_ssbi.h
-@@ -0,0 +1,49 @@
-+/* Copyright (C) 2010 Google, Inc.
-+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ * Author: Dima Zavin <dima@android.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_MSM_SSBI_H
-+#define _LINUX_MSM_SSBI_H
-+
-+#include <linux/types.h>
-+
-+struct msm_ssbi_slave_info {
-+	const char	*name;
-+	void		*platform_data;
-+};
-+
-+enum msm_ssbi_controller_type {
-+	MSM_SBI_CTRL_SSBI = 0,
-+	MSM_SBI_CTRL_SSBI2,
-+	MSM_SBI_CTRL_PMIC_ARBITER,
-+};
-+
-+struct msm_ssbi_platform_data {
-+	struct msm_ssbi_slave_info	slave;
-+	enum msm_ssbi_controller_type controller_type;
-+};
-+
-+#ifdef CONFIG_MSM_SSBI
-+int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len);
-+int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len);
-+#else
-+static inline int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
-+{
-+	return -ENXIO;
-+}
-+static inline int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
-+{
-+	return -ENXIO;
-+}
-+#endif
-+#endif
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2009-2011, Code Aurora Forum. All rights reserved.
++/* Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
+  * Copyright (c) 2010, Google Inc.
+  *
+  * Original authors: Code Aurora Forum
+@@ -24,7 +24,7 @@
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+-#include <linux/msm_ssbi.h>
++#include <linux/ssbi.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+@@ -65,23 +65,23 @@
+ 
+ #define SSBI_TIMEOUT_US			100
+ 
+-struct msm_ssbi {
++struct ssbi {
+ 	struct device		*slave;
+ 	void __iomem		*base;
+ 	spinlock_t		lock;
+-	enum msm_ssbi_controller_type controller_type;
+-	int (*read)(struct msm_ssbi *, u16 addr, u8 *buf, int len);
+-	int (*write)(struct msm_ssbi *, u16 addr, u8 *buf, int len);
++	enum ssbi_controller_type controller_type;
++	int (*read)(struct ssbi *, u16 addr, u8 *buf, int len);
++	int (*write)(struct ssbi *, u16 addr, u8 *buf, int len);
+ };
+ 
+-#define to_msm_ssbi(dev)	platform_get_drvdata(to_platform_device(dev))
++#define to_ssbi(dev)	platform_get_drvdata(to_platform_device(dev))
+ 
+-static inline u32 ssbi_readl(struct msm_ssbi *ssbi, u32 reg)
++static inline u32 ssbi_readl(struct ssbi *ssbi, u32 reg)
+ {
+ 	return readl(ssbi->base + reg);
+ }
+ 
+-static inline void ssbi_writel(struct msm_ssbi *ssbi, u32 val, u32 reg)
++static inline void ssbi_writel(struct ssbi *ssbi, u32 val, u32 reg)
+ {
+ 	writel(val, ssbi->base + reg);
+ }
+@@ -95,7 +95,7 @@ static inline void ssbi_writel(struct msm_ssbi *ssbi, u32 val, u32 reg)
+  *
+  * As such, this wait merely spins, with a udelay.
+  */
+-static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
++static int ssbi_wait_mask(struct ssbi *ssbi, u32 set_mask, u32 clr_mask)
+ {
+ 	u32 timeout = SSBI_TIMEOUT_US;
+ 	u32 val;
+@@ -111,7 +111,7 @@ static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
+ }
+ 
+ static int
+-msm_ssbi_read_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
++ssbi_read_bytes(struct ssbi *ssbi, u16 addr, u8 *buf, int len)
+ {
+ 	u32 cmd = SSBI_CMD_RDWRN | ((addr & 0xff) << 16);
+ 	int ret = 0;
+@@ -140,7 +140,7 @@ err:
+ }
+ 
+ static int
+-msm_ssbi_write_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
++ssbi_write_bytes(struct ssbi *ssbi, u16 addr, u8 *buf, int len)
+ {
+ 	int ret = 0;
+ 
+@@ -172,7 +172,7 @@ err:
+  * busywait.
+  */
+ static inline int
+-msm_ssbi_pa_transfer(struct msm_ssbi *ssbi, u32 cmd, u8 *data)
++ssbi_pa_transfer(struct ssbi *ssbi, u32 cmd, u8 *data)
+ {
+ 	u32 timeout = SSBI_TIMEOUT_US;
+ 	u32 rd_status = 0;
+@@ -197,7 +197,7 @@ msm_ssbi_pa_transfer(struct msm_ssbi *ssbi, u32 cmd, u8 *data)
+ }
+ 
+ static int
+-msm_ssbi_pa_read_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
++ssbi_pa_read_bytes(struct ssbi *ssbi, u16 addr, u8 *buf, int len)
+ {
+ 	u32 cmd;
+ 	int ret = 0;
+@@ -205,7 +205,7 @@ msm_ssbi_pa_read_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
+ 	cmd = SSBI_PA_CMD_RDWRN | (addr & SSBI_PA_CMD_ADDR_MASK) << 8;
+ 
+ 	while (len) {
+-		ret = msm_ssbi_pa_transfer(ssbi, cmd, buf);
++		ret = ssbi_pa_transfer(ssbi, cmd, buf);
+ 		if (ret)
+ 			goto err;
+ 		buf++;
+@@ -217,14 +217,14 @@ err:
+ }
+ 
+ static int
+-msm_ssbi_pa_write_bytes(struct msm_ssbi *ssbi, u16 addr, u8 *buf, int len)
++ssbi_pa_write_bytes(struct ssbi *ssbi, u16 addr, u8 *buf, int len)
+ {
+ 	u32 cmd;
+ 	int ret = 0;
+ 
+ 	while (len) {
+ 		cmd = (addr & SSBI_PA_CMD_ADDR_MASK) << 8 | *buf;
+-		ret = msm_ssbi_pa_transfer(ssbi, cmd, NULL);
++		ret = ssbi_pa_transfer(ssbi, cmd, NULL);
+ 		if (ret)
+ 			goto err;
+ 		buf++;
+@@ -235,9 +235,9 @@ err:
+ 	return ret;
+ }
+ 
+-int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
++int ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
+ {
+-	struct msm_ssbi *ssbi = to_msm_ssbi(dev);
++	struct ssbi *ssbi = to_ssbi(dev);
+ 	unsigned long flags;
+ 	int ret;
+ 
+@@ -247,11 +247,11 @@ int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(msm_ssbi_read);
++EXPORT_SYMBOL_GPL(ssbi_read);
+ 
+-int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
++int ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
+ {
+-	struct msm_ssbi *ssbi = to_msm_ssbi(dev);
++	struct ssbi *ssbi = to_ssbi(dev);
+ 	unsigned long flags;
+ 	int ret;
+ 
+@@ -261,17 +261,17 @@ int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(msm_ssbi_write);
++EXPORT_SYMBOL_GPL(ssbi_write);
+ 
+-static int msm_ssbi_probe(struct platform_device *pdev)
++static int ssbi_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct resource *mem_res;
+-	struct msm_ssbi *ssbi;
++	struct ssbi *ssbi;
+ 	int ret = 0;
+ 	const char *type;
+ 
+-	ssbi = kzalloc(sizeof(struct msm_ssbi), GFP_KERNEL);
++	ssbi = kzalloc(sizeof(struct ssbi), GFP_KERNEL);
+ 	if (!ssbi) {
+ 		pr_err("can not allocate ssbi_data\n");
+ 		return -ENOMEM;
+@@ -312,11 +312,11 @@ static int msm_ssbi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (ssbi->controller_type == MSM_SBI_CTRL_PMIC_ARBITER) {
+-		ssbi->read = msm_ssbi_pa_read_bytes;
+-		ssbi->write = msm_ssbi_pa_write_bytes;
++		ssbi->read = ssbi_pa_read_bytes;
++		ssbi->write = ssbi_pa_write_bytes;
+ 	} else {
+-		ssbi->read = msm_ssbi_read_bytes;
+-		ssbi->write = msm_ssbi_write_bytes;
++		ssbi->read = ssbi_read_bytes;
++		ssbi->write = ssbi_write_bytes;
+ 	}
+ 
+ 	spin_lock_init(&ssbi->lock);
+@@ -336,9 +336,9 @@ err_get_mem_res:
+ 	return ret;
+ }
+ 
+-static int msm_ssbi_remove(struct platform_device *pdev)
++static int ssbi_remove(struct platform_device *pdev)
+ {
+-	struct msm_ssbi *ssbi = platform_get_drvdata(pdev);
++	struct ssbi *ssbi = platform_get_drvdata(pdev);
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 	iounmap(ssbi->base);
+@@ -351,29 +351,29 @@ static struct of_device_id ssbi_match_table[] = {
+ 	{}
+ };
+ 
+-static struct platform_driver msm_ssbi_driver = {
+-	.probe		= msm_ssbi_probe,
+-	.remove		= msm_ssbi_remove,
++static struct platform_driver ssbi_driver = {
++	.probe		= ssbi_probe,
++	.remove		= ssbi_remove,
+ 	.driver		= {
+-		.name	= "msm_ssbi",
++		.name	= "ssbi",
+ 		.owner	= THIS_MODULE,
+ 		.of_match_table = ssbi_match_table,
+ 	},
+ };
+ 
+-static int __init msm_ssbi_init(void)
++static int __init ssbi_init(void)
+ {
+-	return platform_driver_register(&msm_ssbi_driver);
++	return platform_driver_register(&ssbi_driver);
+ }
+-module_init(msm_ssbi_init);
++module_init(ssbi_init);
+ 
+-static void __exit msm_ssbi_exit(void)
++static void __exit ssbi_exit(void)
+ {
+-	platform_driver_unregister(&msm_ssbi_driver);
++	platform_driver_unregister(&ssbi_driver);
+ }
+-module_exit(msm_ssbi_exit)
++module_exit(ssbi_exit)
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_VERSION("1.0");
+-MODULE_ALIAS("platform:msm_ssbi");
++MODULE_ALIAS("platform:ssbi");
+ MODULE_AUTHOR("Dima Zavin <dima@android.com>");
+diff --git a/include/linux/msm_ssbi.h b/include/linux/ssbi.h
+similarity index 67%
+rename from include/linux/msm_ssbi.h
+rename to include/linux/ssbi.h
+index 0fe245b..44ef5da 100644
+--- a/include/linux/msm_ssbi.h
++++ b/include/linux/ssbi.h
+@@ -12,27 +12,27 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef _LINUX_MSM_SSBI_H
+-#define _LINUX_MSM_SSBI_H
++#ifndef _LINUX_SSBI_H
++#define _LINUX_SSBI_H
+ 
+ #include <linux/types.h>
+ 
+-struct msm_ssbi_slave_info {
++struct ssbi_slave_info {
+ 	const char	*name;
+ 	void		*platform_data;
+ };
+ 
+-enum msm_ssbi_controller_type {
++enum ssbi_controller_type {
+ 	MSM_SBI_CTRL_SSBI = 0,
+ 	MSM_SBI_CTRL_SSBI2,
+ 	MSM_SBI_CTRL_PMIC_ARBITER,
+ };
+ 
+-struct msm_ssbi_platform_data {
+-	struct msm_ssbi_slave_info	slave;
+-	enum msm_ssbi_controller_type controller_type;
++struct ssbi_platform_data {
++	struct ssbi_slave_info	slave;
++	enum ssbi_controller_type controller_type;
+ };
+ 
+-int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len);
+-int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len);
++int ssbi_write(struct device *dev, u16 addr, u8 *buf, int len);
++int ssbi_read(struct device *dev, u16 addr, u8 *buf, int len);
+ #endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
