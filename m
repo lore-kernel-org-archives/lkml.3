@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933751Ab3CLWhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:37:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60438 "EHLO
+	id S933767Ab3CLWhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:37:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756129Ab3CLWdh (ORCPT
+	with ESMTP id S1756120Ab3CLWdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:37 -0400
+	Tue, 12 Mar 2013 18:33:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 089/100] ARM: mxs_defconfig: Make USB host functional again
-Date: Tue, 12 Mar 2013 15:32:14 -0700
-Message-Id: <20130312223132.478423554@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 088/100] gpio: mvebu: Add clk support to prevent lockup
+Date: Tue, 12 Mar 2013 15:32:13 -0700
+Message-Id: <20130312223132.381875242@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,32 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit f6c49da98dd6eacb85034d21d16e1428e03e190f upstream.
+commit de88747f514a4e0cca416a8871de2302f4f77790 upstream.
 
-commit 09f6ffde2e (USB: EHCI: fix build error by making ChipIdea host a normal
-EHCI driver) introduced CONFIG_USB_EHCI_HCD as a dependency for USB_CHIPIDEA_HOST.
+The kirkwood SoC GPIO cores use the runit clock. Add code to
+clk_prepare_enable() runit, otherwise there is a danger of locking up
+the SoC by accessing the GPIO registers when runit clock is not
+ticking.
 
-Select CONFIG_USB_EHCI_HCD, so that USB host can be functional again.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Reported-by: Simon Baatz <gmbnomis@gmail.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Simon Baatz <gmbnomis@gmail.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/mxs_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/boot/dts/kirkwood.dtsi |    2 ++
+ drivers/gpio/gpio-mvebu.c       |    7 +++++++
+ 2 files changed, 9 insertions(+)
 
---- a/arch/arm/configs/mxs_defconfig
-+++ b/arch/arm/configs/mxs_defconfig
-@@ -118,6 +118,7 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_FONTS=y
- CONFIG_LOGO=y
- CONFIG_USB=y
-+CONFIG_USB_EHCI_HCD=y
- CONFIG_USB_CHIPIDEA=y
- CONFIG_USB_CHIPIDEA_HOST=y
- CONFIG_USB_STORAGE=y
+--- a/arch/arm/boot/dts/kirkwood.dtsi
++++ b/arch/arm/boot/dts/kirkwood.dtsi
+@@ -38,6 +38,7 @@
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			interrupts = <35>, <36>, <37>, <38>;
++			clocks = <&gate_clk 7>;
+ 		};
+ 
+ 		gpio1: gpio@10140 {
+@@ -49,6 +50,7 @@
+ 			interrupt-controller;
+ 			#interrupt-cells = <2>;
+ 			interrupts = <39>, <40>, <41>;
++			clocks = <&gate_clk 7>;
+ 		};
+ 
+ 		serial@12000 {
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -41,6 +41,7 @@
+ #include <linux/io.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_device.h>
++#include <linux/clk.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+ /*
+@@ -495,6 +496,7 @@ static int mvebu_gpio_probe(struct platf
+ 	struct resource *res;
+ 	struct irq_chip_generic *gc;
+ 	struct irq_chip_type *ct;
++	struct clk *clk;
+ 	unsigned int ngpios;
+ 	int soc_variant;
+ 	int i, cpu, id;
+@@ -528,6 +530,11 @@ static int mvebu_gpio_probe(struct platf
+ 		return id;
+ 	}
+ 
++	clk = devm_clk_get(&pdev->dev, NULL);
++	/* Not all SoCs require a clock.*/
++	if (!IS_ERR(clk))
++		clk_prepare_enable(clk);
++
+ 	mvchip->soc_variant = soc_variant;
+ 	mvchip->chip.label = dev_name(&pdev->dev);
+ 	mvchip->chip.dev = &pdev->dev;
 
 
