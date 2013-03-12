@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab3CLWdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60111 "EHLO
+	id S933922Ab3CLXDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:03:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3CLWcn (ORCPT
+	with ESMTP id S1755945Ab3CLWdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:43 -0400
+	Tue, 12 Mar 2013 18:33:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 014/100] SCSI: storvsc: Initialize the sglist
-Date: Tue, 12 Mar 2013 15:30:59 -0700
-Message-Id: <20130312223124.502096003@linuxfoundation.org>
+        Sean Connor <sconnor004@allyinics.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 060/100] ALSA: ice1712: Initialize card->private_data properly
+Date: Tue, 12 Mar 2013 15:31:45 -0700
+Message-Id: <20130312223129.448161523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,29 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Sean Connor <sconnor004@allyinics.org>
 
-commit 9d2696e658ef4f209955ddaa987d43f1a1bd81a1 upstream.
+commit 69a4cfdd444d1fe5c24d29b3a063964ac165d2cd upstream.
 
-Properly initialize scatterlist before using it.
+Set card->private_data in snd_ice1712_create for fixing NULL
+dereference in snd_ice1712_remove().
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Sean Connor <sconnor004@allyinics.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/ice1712/ice1712.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -467,6 +467,7 @@ static struct scatterlist *create_bounce
- 	if (!bounce_sgl)
- 		return NULL;
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -2594,6 +2594,8 @@ static int snd_ice1712_create(struct snd
+ 	snd_ice1712_proc_init(ice);
+ 	synchronize_irq(pci->irq);
  
-+	sg_init_table(bounce_sgl, num_pages);
- 	for (i = 0; i < num_pages; i++) {
- 		page_buf = alloc_page(GFP_ATOMIC);
- 		if (!page_buf)
++	card->private_data = ice;
++
+ 	err = pci_request_regions(pci, "ICE1712");
+ 	if (err < 0) {
+ 		kfree(ice);
 
 
