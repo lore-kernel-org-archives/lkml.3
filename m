@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934065Ab3CLXUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:20:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60130 "EHLO
+	id S934047Ab3CLXUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:20:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60134 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795Ab3CLWcr (ORCPT
+	with ESMTP id S1755797Ab3CLWcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:32:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 018/100] btrfs: Init io_lock after cloning btrfs device struct
-Date: Tue, 12 Mar 2013 15:31:03 -0700
-Message-Id: <20130312223124.963385366@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>
+Subject: [ 019/100] Btrfs: copy everything if weve created an inline extent
+Date: Tue, 12 Mar 2013 15:31:04 -0700
+Message-Id: <20130312223125.081194370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,37 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 1cba0cdf5e4dbcd9e5fa5b54d7a028e55e2ca057 upstream.
+commit bdc20e67e82cfc4901d3a5a0d79104b0e2296d83 upstream.
 
-__btrfs_close_devices() clones btrfs device structs with
-memcpy(). Some of the fields in the clone are reinitialized, but it's
-missing to init io_lock. In mainline this goes unnoticed, but on RT it
-leaves the plist pointing to the original about to be freed lock
-struct.
+I noticed while looking into a tree logging bug that we aren't logging inline
+extents properly.  Since this requires copying and it shouldn't happen too often
+just force us to copy everything for the inode into the tree log when we have an
+inline extent.  With this patch we have valid data after a crash when we write
+an inline extent.  Thanks,
 
-Initialize io_lock after cloning, so no references to the original
-struct are left.
-
-Reported-and-tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |    1 +
+ fs/btrfs/inode.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -647,6 +647,7 @@ static int __btrfs_close_devices(struct
- 		new_device->writeable = 0;
- 		new_device->in_fs_metadata = 0;
- 		new_device->can_discard = 0;
-+		spin_lock_init(&new_device->io_lock);
- 		list_replace_rcu(&device->dev_list, &new_device->dev_list);
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -265,6 +265,7 @@ static noinline int cow_file_range_inlin
+ 		return 1;
+ 	}
  
- 		call_rcu(&device->rcu, free_device);
++	set_bit(BTRFS_INODE_NEEDS_FULL_SYNC, &BTRFS_I(inode)->runtime_flags);
+ 	btrfs_delalloc_release_metadata(inode, end + 1 - start);
+ 	btrfs_drop_extent_cache(inode, start, aligned_end - 1, 0);
+ 	return 0;
 
 
