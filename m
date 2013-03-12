@@ -1,209 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab3CLLHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:07:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab3CLLHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:07:53 -0400
-Date: Tue, 12 Mar 2013 12:07:50 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [BUG] potential deadlock led by cpu_hotplug lock (memcg involved)
-Message-ID: <20130312110750.GC30758@dhcp22.suse.cz>
-References: <513ECCFE.3070201@huawei.com>
- <20130312101555.GB30758@dhcp22.suse.cz>
+	id S932770Ab3CLLJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:09:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42909 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab3CLLJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:09:12 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>,
+        <kishon@ti.com>
+Subject: [PATCH v2 12/12] USB: ehci-omap: Fix detection in HSIC mode
+Date: Tue, 12 Mar 2013 13:09:00 +0200
+Message-ID: <1363086540-30567-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1363085090-24676-13-git-send-email-rogerq@ti.com>
+References: <1363085090-24676-13-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312101555.GB30758@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Let's CC Ingo and Peter]
+The HSIC devices need to be kept in reset while the EHCI controller
+is being initialized and only brought out of reset after the
+initialization is complete, else HSIC devices will not be detected.
 
-On Tue 12-03-13 11:15:55, Michal Hocko wrote:
-> On Tue 12-03-13 14:36:46, Li Zefan wrote:
-> > Seems a new bug in 3.9 kernel?
-> > 
-> > 
-> > [  207.271924] ======================================================
-> > [  207.271932] [ INFO: possible circular locking dependency detected ]
-> > [  207.271942] 3.9.0-rc1-0.7-default+ #34 Not tainted
-> > [  207.271948] -------------------------------------------------------
-> 
-> 1) load_module -> subsys_interface_register -> mc_deveice_add (*) -> subsys->p->mutex -> link_path_walk -> lookup_slow -> i_mutex
-> 2) sys_write -> _cpu_down -> cpu_hotplug_begin -> cpu_hotplug.lock -> mce_cpu_callback -> mce_device_remove(**) -> device_unregister -> bus_remove_device -> subsys mutex
-> 3) vfs_readdir -> i_mutex -> filldir64 -> might_fault -> might_lock_read(mmap_sem) -> page_fault -> mmap_sem -> drain_all_stock -> cpu_hotplug.lock
-> 
-> 1) takes cpu_subsys subsys (*) but 2) takes mce_device subsys (**) so
-> the deadlock is not possible AFAICS.
-> 
-> I am not familiar with lockdep to propose anything useful though.
-> 
-> > [  207.271957] bash/10493 is trying to acquire lock:
-> > [  207.271963]  (subsys mutex){+.+.+.}, at: [<ffffffff8134af27>] bus_remove_device+0x37/0x1c0
-> > [  207.271987]
-> > [  207.271987] but task is already holding lock:
-> > [  207.271995]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81046ccf>] cpu_hotplug_begin+0x2f/0x60
-> > [  207.272012]
-> > [  207.272012] which lock already depends on the new lock.
-> > [  207.272012]
-> > [  207.272023]
-> > [  207.272023] the existing dependency chain (in reverse order) is:
-> > [  207.272033]
-> > [  207.272033] -> #4 (cpu_hotplug.lock){+.+.+.}:
-> > [  207.272044]        [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.272056]        [<ffffffff814ad807>] mutex_lock_nested+0x37/0x360
-> > [  207.272069]        [<ffffffff81046ba9>] get_online_cpus+0x29/0x40
-> > [  207.272082]        [<ffffffff81185210>] drain_all_stock+0x30/0x150
-> > [  207.272094]        [<ffffffff811853da>] mem_cgroup_reclaim+0xaa/0xe0
-> > [  207.272104]        [<ffffffff8118775e>] __mem_cgroup_try_charge+0x51e/0xcf0
-> > [  207.272114]        [<ffffffff81188486>] mem_cgroup_charge_common+0x36/0x60
-> > [  207.272125]        [<ffffffff811884da>] mem_cgroup_newpage_charge+0x2a/0x30
-> > [  207.272135]        [<ffffffff81150531>] do_wp_page+0x231/0x830
-> > [  207.272147]        [<ffffffff8115151e>] handle_pte_fault+0x19e/0x8d0
-> > [  207.272157]        [<ffffffff81151da8>] handle_mm_fault+0x158/0x1e0
-> > [  207.272166]        [<ffffffff814b6153>] do_page_fault+0x2a3/0x4e0
-> > [  207.272178]        [<ffffffff814b2578>] page_fault+0x28/0x30
-> > [  207.272189]
-> > [  207.272189] -> #3 (&mm->mmap_sem){++++++}:
-> > [  207.272199]        [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.272208]        [<ffffffff8114c5ad>] might_fault+0x6d/0x90
-> > [  207.272218]        [<ffffffff811a11e3>] filldir64+0xb3/0x120
-> > [  207.272229]        [<ffffffffa013fc19>] call_filldir+0x89/0x130 [ext3]
-> > [  207.272248]        [<ffffffffa0140377>] ext3_readdir+0x6b7/0x7e0 [ext3]
-> > [  207.272263]        [<ffffffff811a1519>] vfs_readdir+0xa9/0xc0
-> > [  207.272273]        [<ffffffff811a15cb>] sys_getdents64+0x9b/0x110
-> > [  207.272284]        [<ffffffff814bb599>] system_call_fastpath+0x16/0x1b
-> > [  207.272296]
-> > [  207.272296] -> #2 (&type->i_mutex_dir_key#3){+.+.+.}:
-> > [  207.272309]        [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.272319]        [<ffffffff814ad807>] mutex_lock_nested+0x37/0x360
-> > [  207.272329]        [<ffffffff8119c254>] link_path_walk+0x6f4/0x9a0
-> > [  207.272339]        [<ffffffff8119e7fa>] path_openat+0xba/0x470
-> > [  207.272349]        [<ffffffff8119ecf8>] do_filp_open+0x48/0xa0
-> > [  207.272358]        [<ffffffff8118d81c>] file_open_name+0xdc/0x110
-> > [  207.272369]        [<ffffffff8118d885>] filp_open+0x35/0x40
-> > [  207.272378]        [<ffffffff8135c76e>] _request_firmware+0x52e/0xb20
-> > [  207.272389]        [<ffffffff8135cdd6>] request_firmware+0x16/0x20
-> > [  207.272399]        [<ffffffffa03bdb91>] request_microcode_fw+0x61/0xd0 [microcode]
-> > [  207.272416]        [<ffffffffa03bd554>] microcode_init_cpu+0x104/0x150 [microcode]
-> > [  207.272431]        [<ffffffffa03bd61c>] mc_device_add+0x7c/0xb0 [microcode]
-> > [  207.272444]        [<ffffffff8134a419>] subsys_interface_register+0xc9/0x100
-> > [  207.272457]        [<ffffffffa04fc0f4>] 0xffffffffa04fc0f4
-> > [  207.272472]        [<ffffffff81000202>] do_one_initcall+0x42/0x180
-> > [  207.272485]        [<ffffffff810bbeff>] load_module+0x19df/0x1b70
-> > [  207.272499]        [<ffffffff810bc376>] sys_init_module+0xe6/0x130
-> > [  207.272511]        [<ffffffff814bb599>] system_call_fastpath+0x16/0x1b
-> > [  207.272523]
-> > [  207.272523] -> #1 (umhelper_sem){++++.+}:
-> > [  207.272537]        [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.272548]        [<ffffffff814ae9c4>] down_read+0x34/0x50
-> > [  207.272559]        [<ffffffff81062bff>] usermodehelper_read_trylock+0x4f/0x100
-> > [  207.272575]        [<ffffffff8135c7dd>] _request_firmware+0x59d/0xb20
-> > [  207.272587]        [<ffffffff8135cdd6>] request_firmware+0x16/0x20
-> > [  207.272599]        [<ffffffffa03bdb91>] request_microcode_fw+0x61/0xd0 [microcode]
-> > [  207.272613]        [<ffffffffa03bd554>] microcode_init_cpu+0x104/0x150 [microcode]
-> > [  207.272627]        [<ffffffffa03bd61c>] mc_device_add+0x7c/0xb0 [microcode]
-> > [  207.272641]        [<ffffffff8134a419>] subsys_interface_register+0xc9/0x100
-> > [  207.272654]        [<ffffffffa04fc0f4>] 0xffffffffa04fc0f4
-> > [  207.272666]        [<ffffffff81000202>] do_one_initcall+0x42/0x180
-> > [  207.272678]        [<ffffffff810bbeff>] load_module+0x19df/0x1b70
-> > [  207.272690]        [<ffffffff810bc376>] sys_init_module+0xe6/0x130
-> > [  207.272702]        [<ffffffff814bb599>] system_call_fastpath+0x16/0x1b
-> > [  207.272715]
-> > [  207.272715] -> #0 (subsys mutex){+.+.+.}:
-> > [  207.272729]        [<ffffffff810ae002>] __lock_acquire+0x13b2/0x15f0
-> > [  207.272740]        [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.272751]        [<ffffffff814ad807>] mutex_lock_nested+0x37/0x360
-> > [  207.272763]        [<ffffffff8134af27>] bus_remove_device+0x37/0x1c0
-> > [  207.272775]        [<ffffffff81349114>] device_del+0x134/0x1f0
-> > [  207.272786]        [<ffffffff813491f2>] device_unregister+0x22/0x60
-> > [  207.272798]        [<ffffffff814a24ea>] mce_cpu_callback+0x15e/0x1ad
-> > [  207.272812]        [<ffffffff814b6402>] notifier_call_chain+0x72/0x130
-> > [  207.272824]        [<ffffffff81073d6e>] __raw_notifier_call_chain+0xe/0x10
-> > [  207.272839]        [<ffffffff81498f76>] _cpu_down+0x1d6/0x350
-> > [  207.272851]        [<ffffffff81499130>] cpu_down+0x40/0x60
-> > [  207.272862]        [<ffffffff8149cc55>] store_online+0x75/0xe0
-> > [  207.272874]        [<ffffffff813474a0>] dev_attr_store+0x20/0x30
-> > [  207.272886]        [<ffffffff812090d9>] sysfs_write_file+0xd9/0x150
-> > [  207.272900]        [<ffffffff8118e10b>] vfs_write+0xcb/0x130
-> > [  207.272911]        [<ffffffff8118e924>] sys_write+0x64/0xa0
-> > [  207.272923]        [<ffffffff814bb599>] system_call_fastpath+0x16/0x1b
-> > [  207.272936]
-> > [  207.272936] other info that might help us debug this:
-> > [  207.272936]
-> > [  207.272952] Chain exists of:
-> > [  207.272952]   subsys mutex --> &mm->mmap_sem --> cpu_hotplug.lock
-> > [  207.272952]
-> > [  207.272973]  Possible unsafe locking scenario:
-> > [  207.272973]
-> > [  207.272984]        CPU0                    CPU1
-> > [  207.272992]        ----                    ----
-> > [  207.273000]   lock(cpu_hotplug.lock);
-> > [  207.273009]                                lock(&mm->mmap_sem);
-> > [  207.273020]                                lock(cpu_hotplug.lock);
-> > [  207.273031]   lock(subsys mutex);
-> > [  207.273040]
-> > [  207.273040]  *** DEADLOCK ***
-> > [  207.273040]
-> > [  207.273055] 5 locks held by bash/10493:
-> > [  207.273062]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff81209049>] sysfs_write_file+0x49/0x150
-> > [  207.273080]  #1:  (s_active#150){.+.+.+}, at: [<ffffffff812090c2>] sysfs_write_file+0xc2/0x150
-> > [  207.273099]  #2:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81027557>] cpu_hotplug_driver_lock+0x17/0x20
-> > [  207.273121]  #3:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8149911c>] cpu_down+0x2c/0x60
-> > [  207.273140]  #4:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81046ccf>] cpu_hotplug_begin+0x2f/0x60
-> > [  207.273158]
-> > [  207.273158] stack backtrace:
-> > [  207.273170] Pid: 10493, comm: bash Not tainted 3.9.0-rc1-0.7-default+ #34
-> > [  207.273180] Call Trace:
-> > [  207.273192]  [<ffffffff810ab373>] print_circular_bug+0x223/0x310
-> > [  207.273204]  [<ffffffff810ae002>] __lock_acquire+0x13b2/0x15f0
-> > [  207.273216]  [<ffffffff812086b0>] ? sysfs_hash_and_remove+0x60/0xc0
-> > [  207.273227]  [<ffffffff810ae329>] lock_acquire+0xe9/0x120
-> > [  207.273239]  [<ffffffff8134af27>] ? bus_remove_device+0x37/0x1c0
-> > [  207.273251]  [<ffffffff814ad807>] mutex_lock_nested+0x37/0x360
-> > [  207.273263]  [<ffffffff8134af27>] ? bus_remove_device+0x37/0x1c0
-> > [  207.273274]  [<ffffffff812086b0>] ? sysfs_hash_and_remove+0x60/0xc0
-> > [  207.273286]  [<ffffffff8134af27>] bus_remove_device+0x37/0x1c0
-> > [  207.273298]  [<ffffffff81349114>] device_del+0x134/0x1f0
-> > [  207.273309]  [<ffffffff813491f2>] device_unregister+0x22/0x60
-> > [  207.273321]  [<ffffffff814a24ea>] mce_cpu_callback+0x15e/0x1ad
-> > [  207.273332]  [<ffffffff814b6402>] notifier_call_chain+0x72/0x130
-> > [  207.273344]  [<ffffffff81073d6e>] __raw_notifier_call_chain+0xe/0x10
-> > [  207.273356]  [<ffffffff81498f76>] _cpu_down+0x1d6/0x350
-> > [  207.273368]  [<ffffffff81027557>] ? cpu_hotplug_driver_lock+0x17/0x20
-> > [  207.273380]  [<ffffffff81499130>] cpu_down+0x40/0x60
-> > [  207.273391]  [<ffffffff8149cc55>] store_online+0x75/0xe0
-> > [  207.273402]  [<ffffffff813474a0>] dev_attr_store+0x20/0x30
-> > [  207.273413]  [<ffffffff812090d9>] sysfs_write_file+0xd9/0x150
-> > [  207.273425]  [<ffffffff8118e10b>] vfs_write+0xcb/0x130
-> > [  207.273436]  [<ffffffff8118e924>] sys_write+0x64/0xa0
-> > [  207.273447]  [<ffffffff814bb599>] system_call_fastpath+0x16/0x1b
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Also remove outdated TODO list from header.
 
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+CC: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/host/ehci-omap.c |   38 +++++++++++++++-----------------------
+ 1 files changed, 15 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 1ba1df8..dc2de47 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -29,12 +29,6 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  *
+- * TODO (last updated Feb 27, 2010):
+- *	- add kernel-doc
+- *	- enable AUTOIDLE
+- *	- add suspend/resume
+- *	- add HSIC and TLL support
+- *	- convert to use hwmod and runtime PM
+  */
+ 
+ #include <linux/kernel.h>
+@@ -90,26 +84,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
+ static int omap_ehci_init(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+-	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
+-	int rc, i;
+-
+-	/* Hold PHYs in reset while initializing EHCI controller */
+-	for (i = 0; i < omap->nports; i++) {
+-		if (omap->phy[i])
+-			usb_phy_shutdown(omap->phy[i]);
+-	}
++	int rc;
+ 
+ 	/* we know this is the memory we want, no need to ioremap again */
+ 	ehci->caps = hcd->regs;
+ 
+ 	rc = ehci_setup(hcd);
+ 
+-	/* Bring PHYs out of reset */
+-	for (i = 0; i < omap->nports; i++) {
+-		if (omap->phy[i])
+-			usb_phy_init(omap->phy[i]);
+-	}
+-
+ 	return rc;
+ }
+ 
+@@ -219,9 +200,6 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		omap->phy[i] = phy;
+-		usb_phy_init(omap->phy[i]);
+-		/* bring PHY out of suspend */
+-		usb_phy_set_suspend(omap->phy[i], 0);
+ 	}
+ 
+ 	pm_runtime_enable(dev);
+@@ -245,6 +223,20 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		goto err_pm_runtime;
+ 	}
+ 
++	/*
++	 * Bring PHYs out of reset.
++	 * Even though HSIC mode is a PHY-less mode, the reset
++	 * line exists between the chips and can be modelled
++	 * as a PHY device for reset control.
++	 */
++	for (i = 0; i < omap->nports; i++) {
++		if (!omap->phy[i])
++			continue;
++
++		usb_phy_init(omap->phy[i]);
++		/* bring PHY out of suspend */
++		usb_phy_set_suspend(omap->phy[i], 0);
++	}
+ 
+ 	return 0;
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.7.4.1
+
