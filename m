@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964796Ab3CLWo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60613 "EHLO
+	id S933887Ab3CLWwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:52:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858Ab3CLWoU (ORCPT
+	with ESMTP id S964789Ab3CLWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:20 -0400
+	Tue, 12 Mar 2013 18:44:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xiaobing tu <xiaobing.tu@intel.com>,
-        guifang tang <guifang.tang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Colin Cross <ccross@google.com>
-Subject: [ 34/40] Fix memory leak in cpufreq stats.
-Date: Tue, 12 Mar 2013 15:43:55 -0700
-Message-Id: <20130312223215.115972403@linuxfoundation.org>
+        Sean Connor <sconnor004@allyinics.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 24/40] ALSA: ice1712: Initialize card->private_data properly
+Date: Tue, 12 Mar 2013 15:43:45 -0700
+Message-Id: <20130312223214.072219015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -29,33 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+From: Sean Connor <sconnor004@allyinics.org>
 
-commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
+commit 69a4cfdd444d1fe5c24d29b3a063964ac165d2cd upstream.
 
-When system enters sleep, non-boot CPUs will be disabled.
-Cpufreq stats sysfs is created when the CPU is up, but it is not
-freed when the CPU is going down. This will cause memory leak.
+Set card->private_data in snd_ice1712_create for fixing NULL
+dereference in snd_ice1712_remove().
 
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-Signed-off-by: guifang tang <guifang.tang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Colin Cross <ccross@google.com>
+Signed-off-by: Sean Connor <sconnor004@allyinics.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_stats.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/ice1712/ice1712.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -2595,6 +2595,8 @@ static int __devinit snd_ice1712_create(
+ 	snd_ice1712_proc_init(ice);
+ 	synchronize_irq(pci->irq);
+ 
++	card->private_data = ice;
++
+ 	err = pci_request_regions(pci, "ICE1712");
+ 	if (err < 0) {
+ 		kfree(ice);
 
 
