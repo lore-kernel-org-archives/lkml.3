@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3CLGNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:13:08 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42769 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3CLGNH (ORCPT
+	id S1754905Ab3CLGQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:16:29 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:48861 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3CLGQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 02:13:07 -0400
-Date: Mon, 11 Mar 2013 23:13:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        leiwen@marvell.com, wwang27@marvell.com
-Subject: Re: workqueue panic in 3.4 kernel
-Message-ID: <20130312061303.GB20037@mtj.dyndns.org>
-References: <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
- <20130307154907.GB29601@htj.dyndns.org>
- <alpine.LFD.2.02.1303071705310.22263@ionos>
- <CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
- <20130312051215.GU14556@mtj.dyndns.org>
- <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
- <20130312052426.GV14556@mtj.dyndns.org>
- <CALZhoSSFnfU1oVtUOXF_gA3QjToqT-wtdckbMC43pDXwXZwupg@mail.gmail.com>
- <20130312054028.GA20037@mtj.dyndns.org>
- <CALZhoSQNeaErA5TrovPRTtAwGqsoFwMYRx=rCwSTzUoytw533A@mail.gmail.com>
+	Tue, 12 Mar 2013 02:16:27 -0400
+Date: Tue, 12 Mar 2013 07:16:24 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130312061624.GA436@x4>
+References: <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
+ <20130311213837.GA438@x4>
+ <20130311231227.GA319@x4>
+ <20130312030057.GA6142@gmail.com>
+ <20130312033054.GB18595@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALZhoSQNeaErA5TrovPRTtAwGqsoFwMYRx=rCwSTzUoytw533A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130312033054.GB18595@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 02:01:16PM +0800, Lei Wen wrote:
-> I see...
-> How about only check those workqueue structure not on stack?
-> For current onstack usage is rare, and should be easier to check with.
+On 2013.03.11 at 23:30 -0400, Theodore Ts'o wrote:
+> On Tue, Mar 12, 2013 at 11:00:58AM +0800, Zheng Liu wrote:
+> > 
+> > Thanks for reporting this problem.  My deepest apologies.
+> > 
+> > As Ted suggested, could you please try to use ext4 git tree?  I want to
+> > make sure whether this bug has been fixed by my lastest patch series or
+> > not.
+> 
+> It's definitely worth a try to compile the master branch of the ext4
+> tree and see if it reproduces or not.
 
-No, kzalloc is not required. The memory area can come from any source.
-If you're interested in improving the debug situation, please stop
-trying to do something impossible (you can't track lifetime of random
-memory area without extra bookkeeping) try to find out why debugobj
-didn't detect it (did you even enable it? either via
-CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT or "debug_objects" boot param).
+I cannot reproduce the issue on top of "ext4.git dev", so fortunately
+the problem seems to be already fixed there.
+Thanks.
+
+Do you guys have a hunch which commit is the actual fix? 
+(Maybe I will "bisect" it later today.)
 
 -- 
-tejun
+Markus
