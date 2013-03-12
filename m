@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3CLWxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:53:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60645 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964782Ab3CLWo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S964779Ab3CLWo0 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Mar 2013 18:44:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60611 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933857Ab3CLWoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 18:44:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 32/40] vfs: fix pipe counter breakage
-Date: Tue, 12 Mar 2013 15:43:53 -0700
-Message-Id: <20130312223214.897049538@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/40] ath9k: fix RSSI dummy marker value
+Date: Tue, 12 Mar 2013 15:43:35 -0700
+Message-Id: <20130312223213.016372414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,42 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
+commit a3d63cadbad97671d740a9698acc2c95d1ca6e79 upstream.
 
-If you open a pipe for neither read nor write, the pipe code will not
-add any usage counters to the pipe, causing the 'struct pipe_inode_info"
-to be potentially released early.
+RSSI is being stored internally as s8 in several places. The indication
+of an unset RSSI value, ATH_RSSI_DUMMY_MARKER, was supposed to have been
+set to 127, but ended up being set to 0x127 because of a code cleanup
+mistake. This could lead to invalid signal strength values in a few
+places.
 
-That doesn't normally matter, since you cannot actually use the pipe,
-but the pipe release code - particularly fasync handling - still expects
-the actual pipe infrastructure to all be there.  And rather than adding
-NULL pointer checks, let's just disallow this case, the same way we
-already do for the named pipe ("fifo") case.
-
-This is ancient going back to pre-2.4 days, and until trinity, nobody
-naver noticed.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pipe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/ath/ath9k/common.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -860,6 +860,9 @@ pipe_rdwr_open(struct inode *inode, stru
- {
- 	int ret = -ENOENT;
+--- a/drivers/net/wireless/ath/ath9k/common.h
++++ b/drivers/net/wireless/ath/ath9k/common.h
+@@ -35,7 +35,7 @@
+ #define WME_AC_BK   3
+ #define WME_NUM_AC  4
  
-+	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
-+		return -EINVAL;
-+
- 	mutex_lock(&inode->i_mutex);
- 
- 	if (inode->i_pipe) {
+-#define ATH_RSSI_DUMMY_MARKER   0x127
++#define ATH_RSSI_DUMMY_MARKER   127
+ #define ATH_RSSI_LPF_LEN 		10
+ #define RSSI_LPF_THRESHOLD		-20
+ #define ATH_RSSI_EP_MULTIPLIER     (1<<7)
 
 
