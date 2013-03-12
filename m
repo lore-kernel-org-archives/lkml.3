@@ -1,68 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab3CLMKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:10:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61882 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3CLMKx (ORCPT
+	id S932589Ab3CLMLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:11:40 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:35008 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab3CLMLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:10:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [RFC 17/17] unicore32: default GENERIC_GPIO to false
-Date: Tue, 12 Mar 2013 12:10:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ralf Baechle <ralf@linux-mips.org>, Chris Zankel <chris@zankel.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Kumar Gala <galak@kernel.crashing.org>, acourbot@nvidia.com,
-        Jonas Bonn <jonas@southpole.se>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Josh Boyer <jwboyer@gmail.com>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mundt <lethal@linux-sh.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mackerras <paulus@samba.org>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com> <201303121118.55770.arnd@arndb.de> <CAAVeFuLJ0VvdOkqyNaVCbFHE-x==OYFC_=HEF2YLqaK6mM+rBw@mail.gmail.com>
-In-Reply-To: <CAAVeFuLJ0VvdOkqyNaVCbFHE-x==OYFC_=HEF2YLqaK6mM+rBw@mail.gmail.com>
+	Tue, 12 Mar 2013 08:11:38 -0400
+Message-ID: <513F1B76.2060603@gmail.com>
+Date: Tue, 12 Mar 2013 08:11:34 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
+        Xufeng Zhang <xufeng.zhang@windriver.com>, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
+ so as to find the matched transport
+References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com> <20130308142720.GA9873@hmsreliant.think-freely.org> <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com> <20130311133121.GD12682@hmsreliant.think-freely.org>
+In-Reply-To: <20130311133121.GD12682@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303121210.29613.arnd@arndb.de>
-X-Provags-ID: V02:K0:z12z8rrKtEV3eoIQyU5Tj7DK6uJjeJ9X0QKjUAw3hBs
- ycnozjoIJ1h7SWE97QVe3gybENfn7OILPedzCYD5l999GeJQMC
- NuCK08Z7rNjqMuEly81SDrLr+OfxONUqHeEeE/yjNOGZpoI1G9
- evjggSl8DIVXUHnc1rEouM4AjPxY5rxUE79FjzU/B9Tq0mKGQL
- SzhrEo2cqPwF41Geb85qH/57j3FP7SxUQAMGMt/bdanvLfyiL9
- 0HPJuv7GP1uRpe6Q1RX29Vc63j+NnKbNSUgGnbC8kQOdB721Sr
- SRC3Wy4Pjt0VmPwea1VO5vv7XjsIgNbq4N9Q6o0ILk31hn978S
- ZHJ9Y4U4Qow8m72WXrss=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 March 2013, Alexandre Courbot wrote:
-> Thanks, I will fix this in the next version.
-> 
-> Btw, if this (or rather the next iteration) gets merged, may I suggest to
-> do it through the GPIO tree instead of having each architecture picking the
-> patches of relevance. A considerable number of other patches that depend on
-> this will follow and this will ensure they are picked in the right order.
+On 03/11/2013 09:31 AM, Neil Horman wrote:
+> On Mon, Mar 11, 2013 at 10:14:50AM +0800, Xufeng Zhang wrote:
+>> On 3/8/13, Neil Horman <nhorman@tuxdriver.com> wrote:
+>>> On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
+>>>> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
+>>>> was sent on, if not found in the active_path transport, then go search
+>>>> all the other transports in the peer's transport_addr_list, however, we
+>>>> should continue to the next entry rather than break the loop when meet
+>>>> the active_path transport.
+>>>>
+>>>> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+>>>> ---
+>>>>   net/sctp/associola.c |    2 +-
+>>>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+>>>> index 43cd0dd..d2709e2 100644
+>>>> --- a/net/sctp/associola.c
+>>>> +++ b/net/sctp/associola.c
+>>>> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
+>>>> sctp_association *asoc,
+>>>>   			transports) {
+>>>>
+>>>>   		if (transport == active)
+>>>> -			break;
+>>>> +			continue;
+>>>>   		list_for_each_entry(chunk, &transport->transmitted,
+>>>>   				transmitted_list) {
+>>>>   			if (key == chunk->subh.data_hdr->tsn) {
+>>>> --
+>>>> 1.7.0.2
+>>>>
+>>>>
+>>>
+>>> This works, but what might be better would be if we did a move to front
+>>> heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move
+>>> the
+>>> requisite transport to the front of the transport_addr_list.  If we did
+>>> that,
+>>> then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
+>>> implicitly check the active path first without having to check it seprately
+>>> and
+>>> skip it in the second for loop.
+>>
+>> Thanks for your review, Neil!
+>>
+>> I know what you mean, yes, it's most probably that the searched TSN was
+>> transmitted in the currently active_path, but what should we do if not.
+>>
+>> Check the comment in sctp_assoc_lookup_tsn() function:
+>> /* Let's be hopeful and check the active_path first. */
+>> /* If not found, go search all the other transports. */
+>>
+>> It has checked the active_path first and then traverse all the other
+>> transports in
+>> the transport_addr_list except the active_path.
+>>
+>> So what I want to fix here is the inconsistency between the function
+>> should do and
+>> the code actually does.
+>>
+> I understand what you're doing, and I agree that the fix is functional (Hence
+> my "This works" statement in my last note).  What I'm suggesting is that, since
+> you're messing about in that code anyway that you clean it up while your at it,
+> so that we don't need to have the if (transport == active) check at all.  We
+> trade in some extra work in a non-critical path (sctp_assoc_set_primary), for
+> the removal of an extra for loop operation and a conditional check in a much
+> hotter path.  Something like this (completely untested), is what I was thinking
+>
+>
+> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+> index 43cd0dd..8ae873c 100644
+> --- a/net/sctp/associola.c
+> +++ b/net/sctp/associola.c
+> @@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association *asoc,
+>
+>   	asoc->peer.primary_path = transport;
+>
+> +	list_del_rcu(&transport->transports);
+> +	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
+> +
+>   	/* Set a default msg_name for events. */
+>   	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
+>   	       sizeof(union sctp_addr));
+> @@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct sctp_association *asoc)
+>   struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+>   					     __u32 tsn)
+>   {
+> -	struct sctp_transport *active;
+>   	struct sctp_transport *match;
+>   	struct sctp_transport *transport;
+>   	struct sctp_chunk *chunk;
+> @@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+>   	 * The general strategy is to search each transport's transmitted
+>   	 * list.   Return which transport this TSN lives on.
+>   	 *
+> -	 * Let's be hopeful and check the active_path first.
+> -	 * Another optimization would be to know if there is only one
+> -	 * outbound path and not have to look for the TSN at all.
+> +	 * Note, that sctp_assoc_set_primary does a move to front operation
+> +	 * on the active_path transport, so this code implicitly checks
+> +	 * the active_path first, as we most commonly expect to find our TSN
+> +	 * there.
+>   	 *
+>   	 */
 
-Sounds reasonable, but I would also suggest you prepare a branch that can
-get merged into the GPIO, ARM, PowerPC and MIPS trees to avoid merge
-conflicts in that case, since these all will have a number of changes
-conflicting with yours.
+Neil, active_patch != primary_path all the time.  In fact, when you have 
+path primary path failure, active path will change while primary
+may only change when the user says so.
 
-In the end, I would not care which tree it gets merged through, as long
-as all have the same version of your patches.
+So, you may still get into a situation where primary and active paths 
+are different.
 
-	Arnd
+The optimization here may not work at all under those circumstances.
+
+-vlad
+
+>
+> -	active = asoc->peer.active_path;
+> -
+> -	list_for_each_entry(chunk, &active->transmitted,
+> -			transmitted_list) {
+> -
+> -		if (key == chunk->subh.data_hdr->tsn) {
+> -			match = active;
+> -			goto out;
+> -		}
+> -	}
+> -
+> -	/* If not found, go search all the other transports. */
+>   	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
+>   			transports) {
+>
+> -		if (transport == active)
+> -			break;
+>   		list_for_each_entry(chunk, &transport->transmitted,
+>   				transmitted_list) {
+>   			if (key == chunk->subh.data_hdr->tsn) {
+>
+
