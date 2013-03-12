@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3CLP0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:26:36 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45589
+	id S1755577Ab3CLP2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 11:28:31 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45601
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755475Ab3CLP0f (ORCPT
+	by vger.kernel.org with ESMTP id S1755554Ab3CLP2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:26:35 -0400
-Message-ID: <1363101972.24558.3.camel@laptop>
-Subject: Re: [PATCHv3] perf: Fix vmalloc ring buffer free function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 12 Mar 2013 16:26:12 +0100
-In-Reply-To: <20130312135219.GA32001@krava.brq.redhat.com>
-References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
-	 <1362994843.10972.40.camel@laptop>
-	 <20130311112105.GA9737@krava.brq.redhat.com>
-	 <1363019193.14933.14.camel@laptop>
-	 <20130311164309.GG13679@krava.brq.redhat.com>
-	 <1363023885.14933.16.camel@laptop>
-	 <20130311180229.GI13679@krava.brq.redhat.com>
-	 <20130312100502.GC1348@krava.brq.redhat.com>
-	 <1363084030.14933.23.camel@laptop>
-	 <20130312135219.GA32001@krava.brq.redhat.com>
+	Tue, 12 Mar 2013 11:28:30 -0400
+Message-ID: <1363102105.24558.4.camel@laptop>
+Subject: Re: [PATCH] device: separate all subsys mutexes (was: Re: [BUG]
+ potential deadlock led by cpu_hotplug lock (memcg involved))
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
+        cgroups <cgroups@vger.kernel.org>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 12 Mar 2013 16:28:25 +0100
+In-Reply-To: <20130312130504.GD30758@dhcp22.suse.cz>
+References: <513ECCFE.3070201@huawei.com>
+	 <20130312101555.GB30758@dhcp22.suse.cz>
+	 <20130312110750.GC30758@dhcp22.suse.cz>
+	 <20130312130504.GD30758@dhcp22.suse.cz>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
@@ -35,21 +34,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-12 at 14:52 +0100, Jiri Olsa wrote:
-> > @@ -373,7 +373,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
-> >       rb->user_page = all_buf;
-> >       rb->data_pages[0] = all_buf + PAGE_SIZE;
-> >       rb->page_order = ilog2(nr_pages);
-> > -     rb->nr_pages = 1;
-> > +     rb->nr_pages = nr_pages;
-> >  
-> 
-> hum, and this ^^^ breaks perf_data_size(rb) ;)
-> 
-> static inline unsigned long perf_data_size(struct ring_buffer *rb)
-> {
->         return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
-> }
+On Tue, 2013-03-12 at 14:05 +0100, Michal Hocko wrote:
+> @@ -111,17 +111,17 @@ struct bus_type {
+>         struct iommu_ops *iommu_ops;
+>  
+>         struct subsys_private *p;
+> +       struct lock_class_key __key;
+>  };
 
-How so? 0 << n keeps being 0, right?
+Is struct bus_type constrained to static storage or can people go an
+allocate this stuff dynamically? If so, this patch is broken.
 
