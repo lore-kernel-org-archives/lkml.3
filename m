@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3CLN0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:26:31 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:64771 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab3CLN03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:26:29 -0400
-Date: Tue, 12 Mar 2013 06:27:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] platform-drivers: msm: add single-wire serial bus
- interface (SSBI) driver
-Message-ID: <20130312132719.GA3421@kroah.com>
-References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
- <1362616187-21089-2-git-send-email-davidb@codeaurora.org>
- <20130307013008.GA2910@kroah.com>
- <8yamwu9nmar.fsf@huya.qualcomm.com>
+	id S1754780Ab3CLN2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:28:20 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52839 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab3CLN2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 09:28:18 -0400
+Date: Tue, 12 Mar 2013 09:28:11 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130312132811.GI18595@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+References: <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
+ <20130311213837.GA438@x4>
+ <20130311231227.GA319@x4>
+ <20130312030057.GA6142@gmail.com>
+ <20130312033054.GB18595@thunk.org>
+ <20130312061624.GA436@x4>
+ <20130312064449.GA8806@gmail.com>
+ <20130312064810.GA426@x4>
+ <20130312071606.GA8900@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8yamwu9nmar.fsf@huya.qualcomm.com>
+In-Reply-To: <20130312071606.GA8900@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 11:51:08PM -0700, David Brown wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On Tue, Mar 12, 2013 at 03:16:06PM +0800, Zheng Liu wrote:
 > 
-> >> +static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
-> >> +{
-> >> +	u32 timeout = SSBI_TIMEOUT_US;
-> >> +	u32 val;
-> >> +
-> >> +	while (timeout--) {
-> >> +		val = ssbi_readl(ssbi, SSBI2_STATUS);
-> >> +		if (((val & set_mask) == set_mask) && ((val & clr_mask) == 0))
-> >> +			return 0;
-> >> +		udelay(1);
-> >
-> > Busy loop?  Really?
-> 
-> Finally was able to dig up some of the reason for this.  The
-> transactions typically take about 5us.  In the case of contention with
-> another CPU, it could take as much as 20us.
-> 
-> Would it be sufficient to just explain this in a comment?
+> Ted, I am wandering if we need to Cc this patch to stable kernel.  We
+> don't receive any report to complaint it, though, but it is worth
+> backporting it I think.
 
-That would be good to do, especially if it turns out to be a longer
-delay and people start to wonder why their system load is increasing for
-no noticeable reason.
+I'll check, bu I suspect it will require an explicit backport; it's
+not going to apply cleanly automatically, will it?  
 
-thanks,
+(i.e., if we include cc: stable@vger.kernel.org, are there some
+prerequisite patches that will also have to be backported, and/or we
+will need manually fix up patch conflicts, right?)
 
-greg k-h
+						- Ted
