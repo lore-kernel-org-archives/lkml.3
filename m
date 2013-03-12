@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964865Ab3CLWoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60698 "EHLO
+	id S964952Ab3CLWsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:48:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60723 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964849Ab3CLWog (ORCPT
+	with ESMTP id S933871Ab3CLWol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:36 -0400
+	Tue, 12 Mar 2013 18:44:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 04/21] target/pscsi: Fix page increment
-Date: Tue, 12 Mar 2013 15:44:06 -0700
-Message-Id: <20130312223245.664885170@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 11/21] hwmon: (sht15) Check return value of regulator_enable()
+Date: Tue, 12 Mar 2013 15:44:13 -0700
+Message-Id: <20130312223246.431610777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -26,31 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asias He <asias@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 472b72f2db7831d7dbe22ffdff4adee3bd49b05d upstream.
+commit 3e78080f81481aa8340374d5a37ae033c1cf4272 upstream.
 
-The page++ is wrong. It makes bio_add_pc_page() pointing to a wrong page
-address if the 'while (len > 0 && data_len > 0) { ... }' loop is
-executed more than one once.
+Not having power is a pretty serious error so check that we are able to
+enable the supply and error out if we can't.
 
-Signed-off-by: Asias He <asias@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
 ---
- drivers/target/target_core_pscsi.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/hwmon/sht15.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -1210,7 +1210,6 @@ static int __pscsi_map_task_SG(
- 				bio = NULL;
- 			}
+--- a/drivers/hwmon/sht15.c
++++ b/drivers/hwmon/sht15.c
+@@ -926,7 +926,13 @@ static int __devinit sht15_probe(struct
+ 		if (voltage)
+ 			data->supply_uV = voltage;
  
--			page++;
- 			len -= bytes;
- 			data_len -= bytes;
- 			off = 0;
+-		regulator_enable(data->reg);
++		ret = regulator_enable(data->reg);
++		if (ret != 0) {
++			dev_err(&pdev->dev,
++				"failed to enable regulator: %d\n", ret);
++			return ret;
++		}
++
+ 		/*
+ 		 * Setup a notifier block to update this if another device
+ 		 * causes the voltage to change
 
 
