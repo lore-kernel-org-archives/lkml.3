@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3CLJ1x (ORCPT <rfc822;w@1wt.eu>);
+	id S1755261Ab3CLJ2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 05:28:14 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39322 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754780Ab3CLJ1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 05:27:53 -0400
-Received: from ozlabs.org ([203.10.76.45]:60151 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027Ab3CLJ1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 05:27:52 -0400
-Date: Tue, 12 Mar 2013 20:27:40 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, benh@kernel.crashing.org
-Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
- format
-Message-ID: <20130312092740.GC30591@iris.ozlabs.ibm.com>
-References: <20130123062201.GA13720@us.ibm.com>
- <20130123062613.GF13720@us.ibm.com>
- <20130226052646.GB21553@concordia>
- <20130226200343.GA21543@us.ibm.com>
- <20130227011725.GA5819@concordia>
- <20130306054826.GA14627@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306054826.GA14627@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <1363080469.2401.26.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 12/18] driver: scsi: remove cast for kmalloc/kzalloc
+ return value
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Mar 2013 09:27:49 +0000
+In-Reply-To: <513EBC2F.6030601@cn.fujitsu.com>
+References: <513EB23D.7020303@cn.fujitsu.com>
+	 <513EBC2F.6030601@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 09:48:26PM -0800, Sukadev Bhattiprolu wrote:
-> Michael Ellerman [michael@ellerman.id.au] wrote:
-> | I suspect Arnaldo was either waiting for an ACK from Ben, or was
-> | expecting Ben to take it?
-> 
-> Arnaldo, here is an updated patch. If it is acked by Paul Mackerras,
-> Michael Ellerman or Ben, will you add it to your tree so the whole
-> patchset comes from one place ?
-> 
-> Sukadev
-> 
-> ---
-> >From 50c7a46f14083c0ed10d66b7aed66ba76e798550 Mon Sep 17 00:00:00 2001
-> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> Date: Tue, 5 Mar 2013 21:20:56 -0800
-> Subject: [PATCH] [PATCH 5/6][v4]: perf Create a sysfs format entry for Power7 events
-> 
-> Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-> which describes the format of the POWER7 PMU events.
-> 
-> This code is based on corresponding code in x86.
-> 
-> Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
-> 		for other POWER cpus. So move the code to POWER7-specific,
-> 		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
-> 
-> Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
-> 
-> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+On Tue, 2013-03-12 at 13:25 +0800, Zhang Yanfei wrote:
+> remove cast for kmalloc/kzalloc return value.
 
-Acked-by: Paul Mackerras <paulus@samba.org>
+I've got to ask why?  Just because void * can be assigned to any pointer
+doesn't mean we should religiously eliminate all casts of void *.  If
+the driver writer believes there's value making sure of the pointer
+type, I'm happy to keep the cast.
+
+James
+
+
