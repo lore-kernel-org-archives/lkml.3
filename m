@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab3CLLZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:25:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38836 "EHLO arroyo.ext.ti.com"
+	id S932865Ab3CLLZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:25:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53377 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab3CLLZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755280Ab3CLLZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 07:25:50 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>
@@ -12,9 +12,9 @@ CC: <tony@atomide.com>, <mark.rutland@arm.com>, <mkl@pengutronix.de>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <rogerq@ti.com>
-Subject: [PATCH 4/8] usb: phy: nop: Handle power supply regulator for the PHY
-Date: Tue, 12 Mar 2013 13:24:22 +0200
-Message-ID: <1363087466-32444-5-git-send-email-rogerq@ti.com>
+Subject: [PATCH 8/8] USB: phy: nop: Defer probe if device needs VCC/RESET
+Date: Tue, 12 Mar 2013 13:24:26 +0200
+Message-ID: <1363087466-32444-9-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363087466-32444-1-git-send-email-rogerq@ti.com>
 References: <1363087466-32444-1-git-send-email-rogerq@ti.com>
@@ -24,71 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use "vcc" as the supply name for the PHY's power supply.
-The power supply will be enabled during .init() and disabled
-during .shutdown()
+Add 2 flags, needs_vcc and needs_reset to platform data.
+If the flag is set and the regulator couldn't be found
+then we bail out with -EPROBE_DEFER.
+
+For device tree boot we depend on presensce of vcc-supply/
+reset-supply properties to decide if we should bail out
+with -EPROBE_DEFER or just continue in case the regulator
+can't be found.
+
+This is required for proper functionality in cases where the
+regulator is needed but is probed later than the PHY device.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/usb/otg/nop-usb-xceiv.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
-index 17c174f..fbdcfef 100644
+index b26b1c2..2b10cc9 100644
 --- a/drivers/usb/otg/nop-usb-xceiv.c
 +++ b/drivers/usb/otg/nop-usb-xceiv.c
-@@ -33,11 +33,13 @@
- #include <linux/usb/nop-usb-xceiv.h>
- #include <linux/slab.h>
- #include <linux/clk.h>
-+#include <linux/regulator/consumer.h>
+@@ -147,6 +147,8 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
+ 	int err;
+ 	u32 clk_rate = 0;
++	bool needs_vcc = false;
++	bool needs_reset = false;
  
- struct nop_usb_xceiv {
- 	struct usb_phy		phy;
- 	struct device		*dev;
- 	struct clk		*clk;
-+	struct regulator	*vcc;
- };
+ 	nop = devm_kzalloc(&pdev->dev, sizeof(*nop), GFP_KERNEL);
+ 	if (!nop)
+@@ -163,9 +165,14 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
+ 			clk_rate = 0;
  
- static struct platform_device *pd;
-@@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
- {
- 	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
- 
-+	if (!IS_ERR(nop->vcc)) {
-+		if (regulator_enable(nop->vcc))
-+			dev_err(phy->dev, "Failed to enable power\n");
-+	}
++		needs_vcc = of_property_read_bool(node, "vcc-supply");
++		needs_reset = of_property_read_bool(node, "reset-supply");
 +
- 	if (!IS_ERR(nop->clk))
- 		clk_enable(nop->clk);
- 
-@@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
- 
- 	if (!IS_ERR(nop->clk))
- 		clk_disable(nop->clk);
-+
-+	if (!IS_ERR(nop->vcc)) {
-+		if (regulator_disable(nop->vcc))
-+			dev_err(phy->dev, "Failed to disable power\n");
-+	}
- }
- 
- static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
-@@ -154,6 +166,12 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
- 		}
+ 	} else if (pdata) {
+ 		type = pdata->type;
+ 		clk_rate = pdata->clk_rate;
++		needs_vcc = pdata->needs_vcc;
++		needs_reset = pdata->needs_reset;
  	}
  
-+	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
-+	if (IS_ERR(nop->vcc)) {
-+		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
-+					PTR_ERR(nop->vcc));
-+	}
-+
+ 	nop->clk = devm_clk_get(&pdev->dev, "main_clk");
+@@ -194,12 +201,16 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	if (IS_ERR(nop->vcc)) {
+ 		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
+ 					PTR_ERR(nop->vcc));
++		if (needs_vcc)
++			return -EPROBE_DEFER;
+ 	}
+ 
+ 	nop->reset = devm_regulator_get(&pdev->dev, "reset");
+ 	if (IS_ERR(nop->reset)) {
+ 		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
+ 					PTR_ERR(nop->reset));
++		if (needs_reset)
++			return -EPROBE_DEFER;
+ 	}
+ 
  	nop->dev		= &pdev->dev;
- 	nop->phy.dev		= nop->dev;
- 	nop->phy.label		= "nop-xceiv";
 -- 
 1.7.4.1
 
