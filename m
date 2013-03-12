@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab3CLVtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 17:49:14 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:64555 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932732Ab3CLVtN (ORCPT
+	id S933666Ab3CLVuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 17:50:06 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:33629 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932732Ab3CLVuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 17:49:13 -0400
-Message-ID: <1363124951.3137.156.camel@x61.thuisdomein>
-Subject: [PATCH] powerpc/qe: remove useless Kconfig default
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Mar 2013 22:49:11 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Mar 2013 21:49:12.0100 (UTC) FILETIME=[6EC9BE40:01CE1F6B]
-X-RcptDomain: vger.kernel.org
+	Tue, 12 Mar 2013 17:50:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+Date: Tue, 12 Mar 2013 14:50:02 -0700
+X-Google-Sender-Auth: uiMS9OWRxljwGdotWLBXfLb_EKc
+Message-ID: <CA+55aFzRzwJs1qwjhBstAQzXC0rqn5COM6-7cgD3UsygSvTQ-Q@mail.gmail.com>
+Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, David Howells <dhowells@redhat.com>,
+        Sedat Dilek <sedat.dilek@googlemail.com>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig entry for QE_USB contains
-	default y if USB_GADGET_FSL_QE
+On Tue, Mar 12, 2013 at 8:41 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Al and Linus,
+>
+> Please consider overlayfs for inclusion into 3.10.
 
-But USB_GADGET_FSL_QE got removed in commit
-193ab2a6070039e7ee2b9b9bebea754a7c52fd1b ("usb: gadget: allow multiple
-gadgets to be built"). This default will therefor never be set and can
-be removed.
+Yes, I think we should just do it. It's in use, it's pretty small, and
+the other alternatives are worse. Let's just plan on getting this
+thing done with.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Tested with "make ARCH=powerpc menuconfig" and "make ARCH=powerpc
-oldconfig" (before and after the patch). Enough to see this patch didn't
-obviously break stuff.
+Al, I realize you may not love this, but can you please give this a
+look? People clearly want to use it. In particular the new interfaces,
+like the inode ops open function with dentry passed in or whatever?
+The changes outside of overlayfs looked fine to me.
 
-1) I don't really understand commit
-193ab2a6070039e7ee2b9b9bebea754a7c52fd1b. Was its point that we replace
-USB_GADGET_FSL_QE with USB_FSL_QE? I couldn't tell and chose not to
-actually change any behavior.
+Miklos, I hate how you have patches like 09/13 that fix bugs
+introduced in earlier versions. Any particular reasons for that kind
+of thing?
 
- arch/powerpc/sysdev/qe_lib/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/powerpc/sysdev/qe_lib/Kconfig b/arch/powerpc/sysdev/qe_lib/Kconfig
-index 41ac3df..33caf44 100644
---- a/arch/powerpc/sysdev/qe_lib/Kconfig
-+++ b/arch/powerpc/sysdev/qe_lib/Kconfig
-@@ -22,6 +22,5 @@ config UCC
- 
- config QE_USB
- 	bool
--	default y if USB_GADGET_FSL_QE
- 	help
- 	  QE USB Controller support
--- 
-1.7.11.7
-
+                Linus
