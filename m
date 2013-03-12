@@ -1,80 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab3CLTlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:41:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56430 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932361Ab3CLTjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:39:43 -0400
-Date: Tue, 12 Mar 2013 19:39:41 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH linux-next v2] ASoC: adau1373: adau1373_hw_params:
- Silence overflow warning
-Message-ID: <20130312193940.GF19942@opensource.wolfsonmicro.com>
-References: <513E2895.6040904@metafoo.de>
- <1363029503-23880-1-git-send-email-tim.gardner@canonical.com>
- <20130312184741.GP19942@opensource.wolfsonmicro.com>
- <513F7F46.3050200@canonical.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mjcb6KWfk+dITC8b"
-Content-Disposition: inline
-In-Reply-To: <513F7F46.3050200@canonical.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755736Ab3CLTjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:39:42 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42457 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755611Ab3CLTi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:38:26 -0400
+Message-Id: <20130312193825.402402068@gulag1.americas.sgi.com>
+References: <20130312193823.212544181@gulag1.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Tue, 12 Mar 2013 14:38:37 -0500
+From: Mike Travis <travis@sgi.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Gordeev <agordeev@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Steffen Persvold <sp@numascale.com>
+Subject: [PATCH 14/14] x86/UV: Add call to KGDB/KDB from NMI handler
+Content-Disposition: inline; filename=uv-add-nmi-call-kdb.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch restores the ability to enter KDB (and KGDB) from the UV
+NMI handler.  It utilizes the newly added kgdb_nmicallin function
+to gain entry to KGDB/KDB by the master.  The slaves still enter via
+the standard kgdb_nmicallback function.
 
---Mjcb6KWfk+dITC8b
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The handler also uses the new 'send_ready' pointer to tell KGDB/KDB
+to signal the slaves when to proceed into the KGDB slave loop.
 
-On Tue, Mar 12, 2013 at 01:17:26PM -0600, Tim Gardner wrote:
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Steffen Persvold <sp@numascale.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Mike Travis <travis@sgi.com>
+---
+ arch/x86/platform/uv/uv_nmi.c |   73 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 71 insertions(+), 2 deletions(-)
 
-> > threads (I nearly deleted this unread) and avoid including
+--- linux.orig/arch/x86/platform/uv/uv_nmi.c
++++ linux/arch/x86/platform/uv/uv_nmi.c
+@@ -21,6 +21,8 @@
+ 
+ #include <linux/cpu.h>
+ #include <linux/delay.h>
++#include <linux/kgdb.h>
++#include <linux/kdb.h>
+ #include <linux/module.h>
+ #include <linux/nmi.h>
+ #include <linux/sched.h>
+@@ -33,6 +35,7 @@
+ #include <asm/apic.h>
+ #include <asm/current.h>
+ #include <asm/kdebug.h>
++#include <asm/traps.h>
+ #include <asm/uv/uv.h>
+ #include <asm/uv/uv_hub.h>
+ #include <asm/uv/uv_mmrs.h>
+@@ -511,6 +514,68 @@ static void uv_nmi_touch_watchdogs(void)
+ 	touch_nmi_watchdog();
+ }
+ 
++#ifdef CONFIG_KGDB_KDB
++
++/* Disable to force process dump instead of entering KDB or KGDB */
++static int uv_nmi_kdb_on = 1;
++module_param_named(kdb_on, uv_nmi_kdb_on, int, 0644);
++
++/* Call KDB from NMI handler */
++static void uv_call_kdb(int cpu, struct pt_regs *regs,
++			int master, unsigned long *flags)
++{
++	int ret;
++
++	if (master) {
++		/* call KGDB NMI handler as MASTER */
++		local_irq_restore(*flags);
++		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
++					&uv_nmi_slave_continue);
++		local_irq_save(*flags);
++
++		/*
++		 * if KGDB/KDB did not handle the NMI, then signal slaves
++		 *   to do process dump instead.
++		 */
++		if (ret) {
++			uv_nmi_dump_state(cpu, regs, 1);
++			return;
++		}
++	} else {
++		int sig;
++
++		/* wait for KGDB to say it's ready for slaves to enter */
++		do {
++			cpu_relax();
++			sig = atomic_read(&uv_nmi_slave_continue);
++		} while (!sig);
++
++		/*
++		 * if KGDB/KDB did not handle the NMI for the master, then
++		 *   the master signals the slaves to do process dump instead.
++		 */
++		if (sig == 2) {
++			uv_nmi_dump_state(cpu, regs, 0);
++			return;
++		}
++
++		/* call KGDB as slave */
++		local_irq_restore(*flags);
++		ret = kgdb_nmicallback(cpu, regs);
++		local_irq_save(*flags);
++	}
++	uv_nmi_sync_exit(master);
++}
++
++#else /* !CONFIG_KGDB_KDB */
++static inline void uv_call_kdb(int cpu, struct pt_regs *regs,
++				int master, unsigned long *flags)
++{
++	pr_err("UV: NMI error: KDB is not enabled in this kernel\n");
++	uv_nmi_dump_state(cpu, regs, master);
++}
++#endif /* !CONFIG_KGDB_KDB */
++
+ /*
+  * UV NMI handler
+  */
+@@ -537,8 +602,12 @@ int uv_handle_nmi(unsigned int reason, s
+ 	if (master && uv_nmi_kdump_requested)
+ 		uv_nmi_kdump(regs);
+ 
+-	/* Dump state of each cpu */
+-	uv_nmi_dump_state(cpu, regs, master);
++	/* Call KDB if enabled */
++	if (uv_nmi_kdb_on)
++		uv_call_kdb(cpu, regs, master, &flags);
++
++	else	/* Otherwise dump state of each cpu */
++		uv_nmi_dump_state(cpu, regs, master);
+ 
+ 	/* Clear per_cpu "in nmi" flag */
+ 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
 
-> > enormous CC lists like this in the body of the mail.
-
-> I'm just going by the default output of scripts/get_maintainer.pl. Are
-> there better options to filter the roles ? In this case I received a
-> review from a supporter (Lars), and the patch is being committed by
-> yet another supporter (yourself). Would you have noticed this patch
-> had I restricted the Cc list to just maintainers and lists ?
-
-I specifically mean don't include the lists in the body of the mail - it
-means they either litter the git log or need to be manually deleted.  If
-you're just using unfiltered get_maintainer output then I'd suggest that
-you generate the CCs in your scripts when sending rather than putting
-them in the changelog.
-
---Mjcb6KWfk+dITC8b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRP4R2AAoJELSic+t+oim9P3AQAIPWUyxRmtIcvzCU0Yed7hil
-nAB3vybN+CHd3/rF+wjKTfXuoZFgDyixcHjgjhV8u1APMl1PNdyixznsT5k2gBxy
-VJEvO3y97vFBvbgF5DTYdKkDzxjx79TqFgqlqwkPPhD98Z0btN+1RbV5c75/yJen
-r45kuZbEbtYgi4L3ghOH3x8vg1mKZaZhRDZYBNx+mvC7f+pfzjABn9MA/xz/CTWo
-R433fKvi08fD1WuxWDEkvHP0lIFUZt8w930bjzzxFsHwUFYyyXZjBcU5FFuTR2O0
-KzWZU0C0SAWZqyxfdmdrhUtZJPwfj70p4lVi9fsFOJaPdyGd+d0ReCbuu5dPfRfz
-EH/OEY0CRGyBw3A3R8c9Zp2XzZ+Sh1w3zC/USeJcce0V4TXXdz/xvlRx3Vx5ByOF
-mWmDhuq1qWPJ/xzJnO9Ig47nMVfjKD7v0Zvotawczge6YjFdOSdxpmBNczCIbAbr
-Aik4ZYWGOuNVYyOWzN8Agm29IDpbKDNBr7yrDBsS4LAL5+gE12CJtKih49YAKFAL
-Io4H4tUrwqkUJKA1NUiXamUl6cfLtGpKK7K5MoenuOCZpOjccfaq3pDMJTWr/rhc
-d1L8mlt61zze7us5mSWuuCDT6QkfI68MQxEq1LtfBiIr9Bj5eX7+qKh5bttWCD6+
-rFwkAie9O4uFGFIEZczh
-=FY2y
------END PGP SIGNATURE-----
-
---Mjcb6KWfk+dITC8b--
+-- 
