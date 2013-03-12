@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964922Ab3CLWoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60734 "EHLO
+	id S964908Ab3CLWov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964882Ab3CLWoo (ORCPT
+	with ESMTP id S964868Ab3CLWol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:44 -0400
+	Tue, 12 Mar 2013 18:44:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 15/21] e1000e: fix pci-device enable-counter balance
-Date: Tue, 12 Mar 2013 15:44:17 -0700
-Message-Id: <20130312223246.893774808@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [ 10/21] md: raid0: fix error return from create_stripe_zones.
+Date: Tue, 12 Mar 2013 15:44:12 -0700
+Message-Id: <20130312223246.316588797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -30,39 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
+commit 58ebb34c49fcfcaa029e4b1c1453d92583900f9a upstream.
 
-This patch removes redundant and unbalanced pci_disable_device() from
-__e1000_shutdown(). pci_clear_master() is enough, device can go into
-suspended state with elevated enable_cnt.
+Create_stripe_zones returns an error slightly differently to
+raid0_run and to raid0_takeover_*.
 
-Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+The error returned used by the second was wrong and an error would
+result in mddev->private being set to NULL and sooner or later a
+crash.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Borislav Petkov <bp@suse.de>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+So never return NULL, return ERR_PTR(err), not NULL from
+create_stripe_zones.
+
+This bug has been present since 2.6.35 so the fix is suitable
+for any kernel since then.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/e1000e/netdev.c |    2 +-
+ drivers/md/raid0.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -5330,7 +5330,7 @@ static int __e1000_shutdown(struct pci_d
- 	 */
- 	e1000e_release_hw_control(adapter);
- 
--	pci_disable_device(pdev);
-+	pci_clear_master(pdev);
- 
- 	return 0;
+--- a/drivers/md/raid0.c
++++ b/drivers/md/raid0.c
+@@ -283,7 +283,7 @@ abort:
+ 	kfree(conf->strip_zone);
+ 	kfree(conf->devlist);
+ 	kfree(conf);
+-	*private_conf = NULL;
++	*private_conf = ERR_PTR(err);
+ 	return err;
  }
+ 
 
 
