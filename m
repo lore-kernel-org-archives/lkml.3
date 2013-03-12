@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938Ab3CLWqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:46:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60764 "EHLO
+	id S964900Ab3CLWos (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60713 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933817Ab3CLWot (ORCPT
+	with ESMTP id S964849Ab3CLWoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:49 -0400
+	Tue, 12 Mar 2013 18:44:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 14/21] ALSA: vmaster: Fix slave change notification
-Date: Tue, 12 Mar 2013 15:44:16 -0700
-Message-Id: <20130312223246.772260214@linuxfoundation.org>
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 08/21] hw_random: make buffer usable in scatterlist.
+Date: Tue, 12 Mar 2013 15:44:10 -0700
+Message-Id: <20130312223246.091547334@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -26,40 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 2069d483b39a603a5f3428a19d3b4ac89aa97f48 upstream.
+commit f7f154f1246ccc5a0a7e9ce50932627d60a0c878 upstream.
 
-When a value of a vmaster slave control is changed, the ctl change
-notification is sometimes ignored.  This happens when the master
-control overrides, e.g. when the corresponding master control is
-muted.  The reason is that slave_put() returns the value of the actual
-slave put callback, and it doesn't reflect the virtual slave value
-change.
+virtio_rng feeds the randomness buffer handed by the core directly
+into the scatterlist, since commit bb347d98079a547e80bd4722dee1de61e4dca0e8.
 
-This patch fixes the function just to return 1 whenever a slave value
-is changed.
+However, if CONFIG_HW_RANDOM=m, the static buffer isn't a linear address
+(at least on most archs).  We could fix this in virtio_rng, but it's actually
+far easier to just do it in the core as virtio_rng would have to allocate
+a buffer every time (it doesn't know how much the core will want to read).
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Aurelien Jarno <aurelien@aurel32.net>
+Tested-by: Aurelien Jarno <aurelien@aurel32.net>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/vmaster.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/char/hw_random/core.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/sound/core/vmaster.c
-+++ b/sound/core/vmaster.c
-@@ -207,7 +207,10 @@ static int slave_put(struct snd_kcontrol
- 	}
- 	if (!changed)
- 		return 0;
--	return slave_put_val(slave, ucontrol);
-+	err = slave_put_val(slave, ucontrol);
-+	if (err < 0)
-+		return err;
-+	return 1;
- }
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -40,6 +40,7 @@
+ #include <linux/init.h>
+ #include <linux/miscdevice.h>
+ #include <linux/delay.h>
++#include <linux/slab.h>
+ #include <asm/uaccess.h>
  
- static int slave_tlv_cmd(struct snd_kcontrol *kcontrol,
+ 
+@@ -52,8 +53,12 @@ static struct hwrng *current_rng;
+ static LIST_HEAD(rng_list);
+ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+-static u8 rng_buffer[SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES]
+-	__cacheline_aligned;
++static u8 *rng_buffer;
++
++static size_t rng_buffer_size(void)
++{
++	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
++}
+ 
+ static inline int hwrng_init(struct hwrng *rng)
+ {
+@@ -116,7 +121,7 @@ static ssize_t rng_dev_read(struct file
+ 
+ 		if (!data_avail) {
+ 			bytes_read = rng_get_data(current_rng, rng_buffer,
+-				sizeof(rng_buffer),
++				rng_buffer_size(),
+ 				!(filp->f_flags & O_NONBLOCK));
+ 			if (bytes_read < 0) {
+ 				err = bytes_read;
+@@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
+ 
+ 	mutex_lock(&rng_mutex);
+ 
++	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
++	err = -ENOMEM;
++	if (!rng_buffer) {
++		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
++		if (!rng_buffer)
++			goto out_unlock;
++	}
++
+ 	/* Must not register two RNGs with the same name. */
+ 	err = -EEXIST;
+ 	list_for_each_entry(tmp, &rng_list, list) {
 
 
