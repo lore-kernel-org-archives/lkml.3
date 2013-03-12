@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab3CLUUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:20:36 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55963 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933483Ab3CLUUe (ORCPT
+	id S933503Ab3CLUXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:23:09 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:65379 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640Ab3CLUXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:20:34 -0400
-Date: Tue, 12 Mar 2013 13:20:28 -0700
+	Tue, 12 Mar 2013 16:23:07 -0400
+Date: Tue, 12 Mar 2013 13:23:03 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Mack <zonque@gmail.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+To: Mike Travis <travis@sgi.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] ARM: w1-gpio: fix erroneous gpio requests
-Message-ID: <20130312202028.GA6060@kroah.com>
-References: <1363116094-8630-1-git-send-email-jhovold@gmail.com>
+        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Cong Wang <amwang@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 05/14] KDB: add more exports for supporting KDB modules
+Message-ID: <20130312202303.GB6060@kroah.com>
+References: <20130312193823.212544181@gulag1.americas.sgi.com>
+ <20130312193824.025713118@gulag1.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363116094-8630-1-git-send-email-jhovold@gmail.com>
+In-Reply-To: <20130312193824.025713118@gulag1.americas.sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 08:21:34PM +0100, Johan Hovold wrote:
-> Fix regression introduced by commit d2323cf773 ("onewire: w1-gpio: add
-> ext_pullup_enable pin in platform data") which added a gpio entry to the
-> platform data, but did not add the required initialisers to the board
-> files using it. Consequently, the driver would request gpio 0 at probe,
-> which could break other uses of the corresponding pin.
-> 
-> On AT91 requesting gpio 0 changes the pin muxing for PIOA0, which, for
-> instance, breaks SPI0 on at91sam9g20.
-> 
-> Cc: stable <stable@vger.kernel.org>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
-> 
-> Not sure whose tree this should go in through, so adding relevant maintainers
-> and authors as CC.
+On Tue, Mar 12, 2013 at 02:38:28PM -0500, Mike Travis wrote:
+> This patch adds some important KDB functions to be externally
+> usable by loadable KDB modules.
 
-As I took the offending patch, I might as well take this fix for it as
-well.
+What modules would that be?  Are they in this patch series?
 
-Unless anyone else objects?
+> Note that often drivers bring in KDB modules for debugging, and in the
+> past KDB has not been limited to use by GPL only modules.
 
-thanks,
+It always has been, when was the in-kernel code any other way?
+
+> This patch restores KDB usefullness to non-GPL modules.
+
+As Eric says, you can't just do this, sorry.
 
 greg k-h
