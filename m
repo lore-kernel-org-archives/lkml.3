@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933825Ab3CLWmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:42:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60357 "EHLO
+	id S933840Ab3CLWms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:42:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab3CLWd0 (ORCPT
+	with ESMTP id S1756026Ab3CLWdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:26 -0400
+	Tue, 12 Mar 2013 18:33:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Yasi <joe.yasi@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 071/100] efivars: efivarfs_valid_name() should handle pstore syntax
-Date: Tue, 12 Mar 2013 15:31:56 -0700
-Message-Id: <20130312223130.570872749@linuxfoundation.org>
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 070/100] tg3: Update link_up flag for phylib devices
+Date: Tue, 12 Mar 2013 15:31:55 -0700
+Message-Id: <20130312223130.461258464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -29,61 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 123abd76edf56c02a76b46d3d673897177ef067b upstream.
+commit 84421b99cedc3443e76d2a594f3c815d5cb9a8e1 upstream.
 
-Stricter validation was introduced with commit da27a24383b2b
-("efivarfs: guid part of filenames are case-insensitive") and commit
-47f531e8ba3b ("efivarfs: Validate filenames much more aggressively"),
-which is necessary for the guid portion of efivarfs filenames, but we
-don't need to be so strict with the first part, the variable name. The
-UEFI specification doesn't impose any constraints on variable names
-other than they be a NULL-terminated string.
+Commit f4a46d1f46a8fece34edd2023e054072b02e110d introduced a bug where
+the ifconfig stats would remain 0 for phylib devices. This is due to
+tp->link_up flag never becoming true causing tg3_periodic_fetch_stats()
+to return.
 
-The above commits caused a regression that resulted in users seeing
-the following message,
+The link_up flag was being updated in tg3_test_and_report_link_chg()
+after setting up the phy. This function however, is not called for
+phylib devices since the driver does not do the phy setup.
 
-  $ sudo mount -v /sys/firmware/efi/efivars mount: Cannot allocate memory
+This patch moves the link_up flag update into the common
+tg3_link_report() function that gets called for phylib devices as well
+for non phylib devices when the link state changes.
 
-whenever pstore EFI variables were present in the variable store,
-since their variable names failed to pass the following check,
+To avoid updating link_up twice, we replace tg3_carrier_...() calls that
+are followed by tg3_link_report(), with netif_carrier_...(). We can then
+remove the unused tg3_carrier_on() function.
 
-    /* GUID should be right after the first '-' */
-    if (s - 1 != strchr(str, '-'))
-
-as a typical pstore filename is of the form, dump-type0-10-1-<guid>.
-The fix is trivial since the guid portion of the filename is GUID_LEN
-bytes, we can use (len - GUID_LEN) to ensure the '-' character is
-where we expect it to be.
-
-(The bogus ENOMEM error value will be fixed in a separate patch.)
-
-Reported-by: Joseph Yasi <joe.yasi@gmail.com>
-Tested-by: Joseph Yasi <joe.yasi@gmail.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Jeremy Kerr <jk@ozlabs.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -921,8 +921,8 @@ static bool efivarfs_valid_name(const ch
- 	if (len < GUID_LEN + 2)
- 		return false;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -1843,6 +1843,8 @@ static void tg3_link_report(struct tg3 *
  
--	/* GUID should be right after the first '-' */
--	if (s - 1 != strchr(str, '-'))
-+	/* GUID must be preceded by a '-' */
-+	if (*(s - 1) != '-')
- 		return false;
+ 		tg3_ump_link_report(tp);
+ 	}
++
++	tp->link_up = netif_carrier_ok(tp->dev);
+ }
  
- 	/*
+ static u16 tg3_advert_flowctrl_1000X(u8 flow_ctrl)
+@@ -2496,12 +2498,6 @@ static int tg3_phy_reset_5703_4_5(struct
+ 	return err;
+ }
+ 
+-static void tg3_carrier_on(struct tg3 *tp)
+-{
+-	netif_carrier_on(tp->dev);
+-	tp->link_up = true;
+-}
+-
+ static void tg3_carrier_off(struct tg3 *tp)
+ {
+ 	netif_carrier_off(tp->dev);
+@@ -2527,7 +2523,7 @@ static int tg3_phy_reset(struct tg3 *tp)
+ 		return -EBUSY;
+ 
+ 	if (netif_running(tp->dev) && tp->link_up) {
+-		tg3_carrier_off(tp);
++		netif_carrier_off(tp->dev);
+ 		tg3_link_report(tp);
+ 	}
+ 
+@@ -4225,9 +4221,9 @@ static bool tg3_test_and_report_link_chg
+ {
+ 	if (curr_link_up != tp->link_up) {
+ 		if (curr_link_up) {
+-			tg3_carrier_on(tp);
++			netif_carrier_on(tp->dev);
+ 		} else {
+-			tg3_carrier_off(tp);
++			netif_carrier_off(tp->dev);
+ 			if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
+ 				tp->phy_flags &= ~TG3_PHYFLG_PARALLEL_DETECT;
+ 		}
 
 
