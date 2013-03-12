@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017Ab3CLXTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:19:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60147 "EHLO
+	id S933978Ab3CLXUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:20:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab3CLWcu (ORCPT
+	with ESMTP id S1755811Ab3CLWct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:50 -0400
+	Tue, 12 Mar 2013 18:32:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 023/100] dm: do not replace bioset for request based dm
-Date: Tue, 12 Mar 2013 15:31:08 -0700
-Message-Id: <20130312223125.523289054@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 013/100] SCSI: dc395x: uninitialized variable in device_alloc()
+Date: Tue, 12 Mar 2013 15:30:58 -0700
+Message-Id: <20130312223124.391702882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -29,108 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 16245bdc9d3e22d1460341a655c8b5288953bc14 upstream.
+commit 208afec4f3be8c51ad6eebe6611dd6d2ad2fa298 upstream.
 
-This patch fixes a regression introduced in v3.8, which causes oops
-like this when dm-multipath is used:
+This bug was introduced back in bitkeeper days in 2003.  We use
+"dcb->dev_mode" before it has been initialized.
 
-general protection fault: 0000 [#1] SMP
-RIP: 0010:[<ffffffff810fe754>]  [<ffffffff810fe754>] mempool_free+0x24/0xb0
-Call Trace:
-  <IRQ>
-  [<ffffffff81187417>] bio_put+0x97/0xc0
-  [<ffffffffa02247a5>] end_clone_bio+0x35/0x90 [dm_mod]
-  [<ffffffff81185efd>] bio_endio+0x1d/0x30
-  [<ffffffff811f03a3>] req_bio_endio.isra.51+0xa3/0xe0
-  [<ffffffff811f2f68>] blk_update_request+0x118/0x520
-  [<ffffffff811f3397>] blk_update_bidi_request+0x27/0xa0
-  [<ffffffff811f343c>] blk_end_bidi_request+0x2c/0x80
-  [<ffffffff811f34d0>] blk_end_request+0x10/0x20
-  [<ffffffffa000b32b>] scsi_io_completion+0xfb/0x6c0 [scsi_mod]
-  [<ffffffffa000107d>] scsi_finish_command+0xbd/0x120 [scsi_mod]
-  [<ffffffffa000b12f>] scsi_softirq_done+0x13f/0x160 [scsi_mod]
-  [<ffffffff811f9fd0>] blk_done_softirq+0x80/0xa0
-  [<ffffffff81044551>] __do_softirq+0xf1/0x250
-  [<ffffffff8142ee8c>] call_softirq+0x1c/0x30
-  [<ffffffff8100420d>] do_softirq+0x8d/0xc0
-  [<ffffffff81044885>] irq_exit+0xd5/0xe0
-  [<ffffffff8142f3e3>] do_IRQ+0x63/0xe0
-  [<ffffffff814257af>] common_interrupt+0x6f/0x6f
-  <EOI>
-  [<ffffffffa021737c>] srp_queuecommand+0x8c/0xcb0 [ib_srp]
-  [<ffffffffa0002f18>] scsi_dispatch_cmd+0x148/0x310 [scsi_mod]
-  [<ffffffffa000a38e>] scsi_request_fn+0x31e/0x520 [scsi_mod]
-  [<ffffffff811f1e57>] __blk_run_queue+0x37/0x50
-  [<ffffffff811f1f69>] blk_delay_work+0x29/0x40
-  [<ffffffff81059003>] process_one_work+0x1c3/0x5c0
-  [<ffffffff8105b22e>] worker_thread+0x15e/0x440
-  [<ffffffff8106164b>] kthread+0xdb/0xe0
-  [<ffffffff8142db9c>] ret_from_fork+0x7c/0xb0
-
-The regression was introduced by the change
-c0820cf5 "dm: introduce per_bio_data", where dm started to replace
-bioset during table replacement.
-For bio-based dm, it is good because clone bios do not exist during the
-table replacement.
-For request-based dm, however, (not-yet-mapped) clone bios may stay in
-request queue and survive during the table replacement.
-So freeing the old bioset could cause the oops in bio_put().
-
-Since the size of front_pad may change only with bio-based dm,
-it is not necessary to replace bioset for request-based dm.
-
-Reported-by: Bart Van Assche <bvanassche@acm.org>
-Tested-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |   30 +++++++++++++++++++++---------
- 1 file changed, 21 insertions(+), 9 deletions(-)
+ drivers/scsi/dc395x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1973,15 +1973,27 @@ static void __bind_mempools(struct mappe
- {
- 	struct dm_md_mempools *p = dm_table_get_md_mempools(t);
- 
--	if (md->io_pool && (md->tio_pool || dm_table_get_type(t) == DM_TYPE_BIO_BASED) && md->bs) {
--		/*
--		 * The md already has necessary mempools. Reload just the
--		 * bioset because front_pad may have changed because
--		 * a different table was loaded.
--		 */
--		bioset_free(md->bs);
--		md->bs = p->bs;
--		p->bs = NULL;
-+	if (md->io_pool && md->bs) {
-+		/* The md already has necessary mempools. */
-+		if (dm_table_get_type(t) == DM_TYPE_BIO_BASED) {
-+			/*
-+			 * Reload bioset because front_pad may have changed
-+			 * because a different table was loaded.
-+			 */
-+			bioset_free(md->bs);
-+			md->bs = p->bs;
-+			p->bs = NULL;
-+		} else if (dm_table_get_type(t) == DM_TYPE_REQUEST_BASED) {
-+			BUG_ON(!md->tio_pool);
-+			/*
-+			 * There's no need to reload with request-based dm
-+			 * because the size of front_pad doesn't change.
-+			 * Note for future: If you are to reload bioset,
-+			 * prep-ed requests in the queue may refer
-+			 * to bio from the old bioset, so you must walk
-+			 * through the queue to unprep.
-+			 */
-+		}
- 		goto out;
- 	}
- 
+--- a/drivers/scsi/dc395x.c
++++ b/drivers/scsi/dc395x.c
+@@ -3747,13 +3747,13 @@ static struct DeviceCtlBlk *device_alloc
+ 	dcb->max_command = 1;
+ 	dcb->target_id = target;
+ 	dcb->target_lun = lun;
++	dcb->dev_mode = eeprom->target[target].cfg0;
+ #ifndef DC395x_NO_DISCONNECT
+ 	dcb->identify_msg =
+ 	    IDENTIFY(dcb->dev_mode & NTC_DO_DISCONNECT, lun);
+ #else
+ 	dcb->identify_msg = IDENTIFY(0, lun);
+ #endif
+-	dcb->dev_mode = eeprom->target[target].cfg0;
+ 	dcb->inquiry7 = 0;
+ 	dcb->sync_mode = 0;
+ 	dcb->min_nego_period = clock_period[period_index];
 
 
