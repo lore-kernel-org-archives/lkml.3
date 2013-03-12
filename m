@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab3CLLho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:37:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52827 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932966Ab3CLLhl (ORCPT
+	id S932978Ab3CLLiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:38:16 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:52211 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932940Ab3CLLiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:37:41 -0400
+	Tue, 12 Mar 2013 07:38:14 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:b54d:b01c:d9fb:846b]
-In-Reply-To: <20130312111246.GD12700@titan.lakedaemon.net>
-References: <20130312144714.39749c5b0bd1aea14c4d2ff8@canb.auug.org.au>
-	<20130312062509.GQ21478@lunn.ch>
-	<20130312111246.GD12700@titan.lakedaemon.net>
-Date: Tue, 12 Mar 2013 04:37:39 -0700
-Message-ID: <CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
-From: Olof Johansson <olof@lixom.net>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <513A0109.9060801@linaro.org>
+References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
+	<513A0109.9060801@linaro.org>
+Date: Tue, 12 Mar 2013 12:38:13 +0100
+Message-ID: <CACRpkdarxZN8wqFWsHi+N1VSRo_miyqFtA_FedA=0LceKrTAFA@mail.gmail.com>
+Subject: Re: [PATCH 3/4][V2] ARM: nomadik: add dynamic irq flag to the timer
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: john.stultz@linaro.org, tglx@linutronix.de, linus.walleij@stericsson.com,
+        viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        rickard.andersson@stericsson.com, vincent.guittot@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 4:12 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Tue, Mar 12, 2013 at 07:25:09AM +0100, Andrew Lunn wrote:
->> On Tue, Mar 12, 2013 at 02:47:14PM +1100, Stephen Rothwell wrote:
->> > Hi Andrew,
->> >
->> > Today's linux-next merge of the akpm tree got a conflict in
->> > drivers/rtc/rtc-mv.c between commit 89c58c198b25 ("rtc: rtc-mv: Add
->> > support for clk to avoid lockups") from the arm-soc tree and commit "rtc:
->> > rtc-mv: use devm_rtc_device_register()" from the akpm tree.
->> >
->> > I fixed it up (I think - see below) and can carry the fix as necessary
->> > (no action is required).
+On Fri, Mar 8, 2013 at 4:17 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+>> Add the dynamic irq affinity feature to the timer clock device.
 >>
->> Hi Stephan
->>
->> Looks O.K. to me.
->>
->> Acked-by: Andrew Lunn <andrew@lunn.ch>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> Acked-by: Rickard Andersson <rickard.andersson@stericsson.com>
+>> ---
 >
-> Same here,
+> Hi Linus,
 >
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
+> AFAIU, you are ok with this patch, Rickard acked it and Vincent reviewed it.
+>
+> Thomas agreed to merge it into its tree as I requested because we will
+> need to wait for your tree to gain visibility to this new flag before
+> submitting this patch, which can take awhile.
+>
+> Could you please ack it if it is ok for you ?
 
-We should make sure that future RTC changes get queued through AKPM
-and not through us to avoid these kind of conflicts. Same as other
-driver subsystems..
+Oh of course!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-
--Olof
+Yours,
+Linus Walleij
