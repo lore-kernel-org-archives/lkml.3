@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab3CLWfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:35:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60474 "EHLO
+	id S933382Ab3CLWdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab3CLWdn (ORCPT
+	with ESMTP id S1756137Ab3CLWdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:43 -0400
+	Tue, 12 Mar 2013 18:33:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 098/100] USB: Fix connected device switch to Inactive state.
-Date: Tue, 12 Mar 2013 15:32:23 -0700
-Message-Id: <20130312223133.388509842@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Geoff Levand <geoff@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 091/100] powerpc: Apply early paca fixups to boot_paca and the boot cpus paca
+Date: Tue, 12 Mar 2013 15:32:16 -0700
+Message-Id: <20130312223132.683274577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,88 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-[This is upstream commit d3b9d7a9051d7024a93c76a84b2f84b3b66ad6d5.
-It needs to be backported to kernels as old as 3.2, because it fixes the
-buggy commit 65bdac5effd15d6af619b3b7218627ef4d84ed6a "USB: Handle warm
-reset failure on empty port."]
+commit 25e138149c19fa0680147b825be475f5fd57f155 upstream.
 
-A USB 3.0 device can transition to the Inactive state if a U1 or U2 exit
-transition fails.  The current code in hub_events simply issues a warm
-reset, but does not call any pre-reset or post-reset driver methods (or
-unbind/rebind drivers without them).  Therefore the drivers won't know
-their device has just been reset.
+In commit 466921c we added a hack to set the paca data_offset to zero so
+that per-cpu accesses would work on the boot cpu prior to per-cpu areas
+being setup. This fixed a problem with lockdep touching per-cpu areas
+very early in boot.
 
-hub_events should instead call usb_reset_device.  This means
-hub_port_reset now needs to figure out whether it should issue a warm
-reset or a hot reset.
+However if we combine CONFIG_LOCK_STAT=y with any of the PPC_EARLY_DEBUG
+options, we can hit the same problem in udbg_early_init(). To avoid that
+we need to set the data_offset of the boot_paca also. So factor out the
+fixup logic and call it for both the boot_paca, and "the paca of the
+boot cpu".
 
-Remove the FIXME note about needing disconnect() for a NOTATTACHED
-device.  This patch fixes that.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Tested-by: Geoff Levand <geoff@infradead.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   30 +++++++++++++++++++++++++-----
- 1 file changed, 25 insertions(+), 5 deletions(-)
+ arch/powerpc/kernel/setup_64.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2605,7 +2605,6 @@ static void hub_port_finish_reset(struct
- 	case -ENODEV:
- 		clear_port_feature(hub->hdev,
- 				port1, USB_PORT_FEAT_C_RESET);
--		/* FIXME need disconnect() for NOTATTACHED device */
- 		if (hub_is_superspeed(hub->hdev)) {
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_BH_PORT_RESET);
-@@ -2639,6 +2638,18 @@ static int hub_port_reset(struct usb_hub
- 		 * Some companion controllers don't like it when they mix.
- 		 */
- 		down_read(&ehci_cf_port_reset_rwsem);
-+	} else if (!warm) {
-+		/*
-+		 * If the caller hasn't explicitly requested a warm reset,
-+		 * double check and see if one is needed.
-+		 */
-+		status = hub_port_status(hub, port1,
-+					&portstatus, &portchange);
-+		if (status < 0)
-+			goto done;
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -156,6 +156,15 @@ early_param("smt-enabled", early_smt_ena
+ #define check_smt_enabled()
+ #endif /* CONFIG_SMP */
+ 
++/** Fix up paca fields required for the boot cpu */
++static void fixup_boot_paca(void)
++{
++	/* The boot cpu is started */
++	get_paca()->cpu_start = 1;
++	/* Allow percpu accesses to work until we setup percpu data */
++	get_paca()->data_offset = 0;
++}
 +
-+		if (hub_port_warm_reset_required(hub, portstatus))
-+			warm = true;
- 	}
+ /*
+  * Early initialization entry point. This is called by head.S
+  * with MMU translation disabled. We rely on the "feature" of
+@@ -185,6 +194,7 @@ void __init early_setup(unsigned long dt
+ 	/* Assume we're on cpu 0 for now. Don't write to the paca yet! */
+ 	initialise_paca(&boot_paca, 0);
+ 	setup_paca(&boot_paca);
++	fixup_boot_paca();
  
- 	/* Reset the port */
-@@ -4730,12 +4741,21 @@ static void hub_events(void)
- 			 */
- 			if (hub_port_warm_reset_required(hub, portstatus)) {
- 				int status;
-+				struct usb_device *udev =
-+					hub->ports[i - 1]->child;
+ 	/* Initialize lockdep early or else spinlocks will blow */
+ 	lockdep_init();
+@@ -205,11 +215,7 @@ void __init early_setup(unsigned long dt
  
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				status = hub_port_reset(hub, i, NULL,
--						HUB_BH_RESET_TIME, true);
--				if (status < 0)
--					hub_port_disable(hub, i, 1);
-+				if (!udev) {
-+					status = hub_port_reset(hub, i,
-+							NULL, HUB_BH_RESET_TIME,
-+							true);
-+					if (status < 0)
-+						hub_port_disable(hub, i, 1);
-+				} else {
-+					usb_lock_device(udev);
-+					status = usb_reset_device(udev);
-+					usb_unlock_device(udev);
-+				}
- 				connect_change = 0;
- 			}
+ 	/* Now we know the logical id of our boot cpu, setup the paca. */
+ 	setup_paca(&paca[boot_cpuid]);
+-
+-	/* Fix up paca fields required for the boot cpu */
+-	get_paca()->cpu_start = 1;
+-	/* Allow percpu accesses to "work" until we setup percpu data */
+-	get_paca()->data_offset = 0;
++	fixup_boot_paca();
  
+ 	/* Probe the machine type */
+ 	probe_machine();
 
 
