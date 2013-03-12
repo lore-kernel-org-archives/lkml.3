@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab3CLSKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:10:52 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:42367 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab3CLSKu (ORCPT
+	id S933252Ab3CLSLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:11:44 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:36854 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3CLSLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:10:50 -0400
-Date: Tue, 12 Mar 2013 11:10:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        zab@redhat.com
-Subject: Re: [PATCHSET wq/for-3.10-tmp] workqueue: implement workqueue with
- custom worker attributes
-Message-ID: <20130312181045.GB25266@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <513C61B9.5030004@cn.fujitsu.com>
- <20130310120113.GC24522@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130310120113.GC24522@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Mar 2013 14:11:43 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: netfilter-devel@vger.kernel.org
+Cc: bart.de.schuymer@pandora.be, pablo@netfilter.org, kaber@trash.net,
+        stephen@networkplumber.org, davem@davemloft.net,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] bridge: netfilter: use PTR_RET instead of IS_ERR + PTR_ERR
+Date: Tue, 12 Mar 2013 20:11:33 +0200
+Message-Id: <1363111893-25146-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
+readability.
 
-On Sun, Mar 10, 2013 at 05:01:13AM -0700, Tejun Heo wrote:
-> > >  0023-workqueue-implement-get-put_pwq.patch
-> > 
-> > I guess this patch and patch25 may have very deep issue VS RCU.
-> 
-> Hmmm... scary.  I suppose you're gonna elaborate on the review of the
-> actual patch?
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ net/bridge/netfilter/ebtable_broute.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-What happened with this?  Was it false alarm?
-
+diff --git a/net/bridge/netfilter/ebtable_broute.c b/net/bridge/netfilter/ebtable_broute.c
+index 40d8258..70f656c 100644
+--- a/net/bridge/netfilter/ebtable_broute.c
++++ b/net/bridge/netfilter/ebtable_broute.c
+@@ -64,9 +64,7 @@ static int ebt_broute(struct sk_buff *skb)
+ static int __net_init broute_net_init(struct net *net)
+ {
+ 	net->xt.broute_table = ebt_register_table(net, &broute_table);
+-	if (IS_ERR(net->xt.broute_table))
+-		return PTR_ERR(net->xt.broute_table);
+-	return 0;
++	return PTR_RET(net->xt.broute_table);
+ }
+ 
+ static void __net_exit broute_net_exit(struct net *net)
 -- 
-tejun
+1.7.9.5
+
