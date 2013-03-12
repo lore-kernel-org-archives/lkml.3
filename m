@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab3CLMBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:01:49 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11495 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab3CLMBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:01:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 05:01:38 -0700
-From: Danny Huang <dahuang@nvidia.com>
-To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <hdoyu@nvidia.com>,
-        <olof@lixom.net>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <josephl@nvidia.com>, <pdeschrijver@nvidia.com>, <pgaikwad@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Danny Huang <dahuang@nvidia.com>
-Subject: [PATCH v2] ARM: tegra: expose chip ID and revision
-Date: Tue, 12 Mar 2013 20:01:07 +0800
-Message-ID: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	id S932927Ab3CLMCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:02:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39145 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754991Ab3CLMCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 08:02:05 -0400
+Date: Tue, 12 Mar 2013 13:02:00 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
+        linux-kernel@vger.kernel.org, jmoyer@redhat.com
+Subject: Re: [PATCH 2/4] writeback: remove unused bdi_pending_list
+Message-ID: <20130312120200.GD13152@quack.suse.cz>
+References: <1362692649-25570-1-git-send-email-tj@kernel.org>
+ <1362692649-25570-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362692649-25570-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose Tegra chip ID and revision in /sys/devices/soc for user mode
-usage
+On Thu 07-03-13 13:44:07, Tejun Heo wrote:
+> There's no user left.  Remove it.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+  Looks good. You can add
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Signed-off-by: Danny Huang <dahuang@nvidia.com>
----
- arch/arm/mach-tegra/Kconfig  |  3 +++
- arch/arm/mach-tegra/common.c | 23 +++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+								Honza
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index d1c4893..b7abcfa 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -17,6 +17,7 @@ config ARCH_TEGRA_2x_SOC
- 	select PINCTRL_TEGRA20
- 	select PL310_ERRATA_727915 if CACHE_L2X0
- 	select PL310_ERRATA_769419 if CACHE_L2X0
-+	select SOC_BUS
- 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
- 	select USB_ULPI if USB
- 	select USB_ULPI_VIEWPORT if USB_SUPPORT
-@@ -36,6 +37,7 @@ config ARCH_TEGRA_3x_SOC
- 	select PINCTRL
- 	select PINCTRL_TEGRA30
- 	select PL310_ERRATA_769419 if CACHE_L2X0
-+	select SOC_BUS
- 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
- 	select USB_ULPI if USB
- 	select USB_ULPI_VIEWPORT if USB_SUPPORT
-@@ -51,6 +53,7 @@ config ARCH_TEGRA_114_SOC
- 	select CPU_V7
- 	select PINCTRL
- 	select PINCTRL_TEGRA114
-+	select SOC_BUS
- 	help
- 	  Support for NVIDIA Tegra T114 processor family, based on the
- 	  ARM CortexA15MP CPU
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index f0315c9..9547c59 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -23,6 +23,8 @@
- #include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/irqchip.h>
-+#include <linux/slab.h>
-+#include <linux/sys_soc.h>
- #include <linux/clk/tegra.h>
- 
- #include <asm/hardware/cache-l2x0.h>
-@@ -94,6 +96,26 @@ static void __init tegra_init_cache(void)
- 
- }
- 
-+void __init tegra_soc_device_init(void)
-+{
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		return;
-+
-+	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
-+	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
-+	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
-+
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR_OR_NULL(soc_dev))
-+		kfree(soc_dev_attr);
-+
-+	return;
-+}
-+
- void __init tegra_init_early(void)
- {
- 	tegra_cpu_reset_handler_init();
-@@ -108,4 +130,5 @@ void __init tegra_init_early(void)
- void __init tegra_init_late(void)
- {
- 	tegra_powergate_debugfs_init();
-+	tegra_soc_device_init();
- }
+> ---
+>  include/linux/backing-dev.h | 1 -
+>  mm/backing-dev.c            | 4 +---
+>  2 files changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index 3504599..a5ef27f 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -130,7 +130,6 @@ void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2);
+>  
+>  extern spinlock_t bdi_lock;
+>  extern struct list_head bdi_list;
+> -extern struct list_head bdi_pending_list;
+>  
+>  static inline int wb_has_dirty_io(struct bdi_writeback *wb)
+>  {
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 41733c5..657569b 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -31,13 +31,11 @@ EXPORT_SYMBOL_GPL(noop_backing_dev_info);
+>  static struct class *bdi_class;
+>  
+>  /*
+> - * bdi_lock protects updates to bdi_list and bdi_pending_list, as well as
+> - * reader side protection for bdi_pending_list. bdi_list has RCU reader side
+> + * bdi_lock protects updates to bdi_list. bdi_list has RCU reader side
+>   * locking.
+>   */
+>  DEFINE_SPINLOCK(bdi_lock);
+>  LIST_HEAD(bdi_list);
+> -LIST_HEAD(bdi_pending_list);
+>  
+>  void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2)
+>  {
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
-1.8.1.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
