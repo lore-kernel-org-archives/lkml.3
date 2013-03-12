@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab3CLLZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:25:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53366 "EHLO bear.ext.ti.com"
+	id S932829Ab3CLL2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:28:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27980 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076Ab3CLLZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:25:17 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <mark.rutland@arm.com>, <mkl@pengutronix.de>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <rogerq@ti.com>
-Subject: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
-Date: Tue, 12 Mar 2013 13:24:19 +0200
-Message-ID: <1363087466-32444-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363087466-32444-1-git-send-email-rogerq@ti.com>
-References: <1363087466-32444-1-git-send-email-rogerq@ti.com>
+	id S932255Ab3CLL2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:28:45 -0400
+Date: Tue, 12 Mar 2013 13:28:42 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130312112842.GY11223@redhat.com>
+References: <20130311174155.GU31619@redhat.com>
+ <513E1CFC.6010201@siemens.com>
+ <20130311181306.GW31619@redhat.com>
+ <513E2220.2090501@siemens.com>
+ <20130311183915.GA14689@redhat.com>
+ <513E26A7.4020405@siemens.com>
+ <20130311185132.GB14689@redhat.com>
+ <513E2A0A.3080008@siemens.com>
+ <20130311193003.GC14689@redhat.com>
+ <513EF48F.20004@siemens.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513EF48F.20004@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clk_rate parameter to platform data. If supplied, the
-NOP phy driver will program the clock to that rate during probe.
+On Tue, Mar 12, 2013 at 10:25:35AM +0100, Jan Kiszka wrote:
+> On 2013-03-11 20:30, Gleb Natapov wrote:
+> > On Mon, Mar 11, 2013 at 08:01:30PM +0100, Jan Kiszka wrote:
+> >> On 2013-03-11 19:51, Gleb Natapov wrote:
+> >>>>> On Intel:
+> >>>>> CPU 1                          CPU 2 in a guest mode
+> >>>>> send INIT
+> >>>>> send SIPI
+> >>>>>                                 INIT vmexit
+> >>>>>                                 vmxoff
+> >>>>>                                 reset and start from SIPI vector
+> >>>>
+> >>>> Is SIPI sticky as well, even if the CPU is not in the wait-for-SIPI
+> >>>> state (but runnable and in vmxon) while receiving it?
+> >>>>
+> >>> That what they seams to be saying:
+> >>>  However, an INIT and SIPI interrupts sent to a CPU during time when
+> >>>  it is in a VMX mode are remembered and delivered, perhaps hours later,
+> >>>  when the CPU exits the VMX mode
+> >>>
+> >>> Otherwise their exploit will not work.
+> >>
+> >> Very weird, specifically as SIPI is not just a binary event but carries
+> >> payload. Will another SIPI event overwrite the previously "saved"
+> >> vector? We are deep into an underspecified area...
+> > My guess is that VMX INIT blocking is done by the same mechanism as
+> > INIT blocking during SMM. Obviously after exit from SMM pending
+> > INIT/SIPI have to be processed.
+> 
+> I think this should be further examined via a test case that can run on
+> real HW. Is kvm-unit-test ready for this? Then we "just" need to
+> implement what you were already asking for: minimalistic nVMX tests...
+> 
+I do not think kvm-unit-test will run on bare metal. I once implemented
+framework for interrupt injection testing that ran on bare metal too. It
+was very handy to compare KVM behaviour with real HW, but it was since
+folded into kvm-unit-test.
 
-Also add 2 flags, needs_vcc and needs_reset.
-If the flag is set and the regulator couldn't be found
-then the driver will bail out with -EPROBE_DEFER.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- include/linux/usb/nop-usb-xceiv.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/usb/nop-usb-xceiv.h b/include/linux/usb/nop-usb-xceiv.h
-index 28884c7..148d351 100644
---- a/include/linux/usb/nop-usb-xceiv.h
-+++ b/include/linux/usb/nop-usb-xceiv.h
-@@ -5,6 +5,11 @@
- 
- struct nop_usb_xceiv_platform_data {
- 	enum usb_phy_type type;
-+	unsigned long clk_rate;
-+
-+	/* if set fails with -EPROBE_DEFER if can't get regulator */
-+	unsigned int needs_vcc:1;
-+	unsigned int needs_reset:1;
- };
- 
- #if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
--- 
-1.7.4.1
-
+--
+			Gleb.
