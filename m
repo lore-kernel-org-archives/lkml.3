@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3CLD0A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 23:26:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50500 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab3CLDZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 23:25:59 -0400
-Date: Tue, 12 Mar 2013 14:25:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: linux-next: manual merge of the signal tree with Linus' tree
-Message-Id: <20130312142557.98fea7e3a6c51922e52f4d3c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_14_25_57_+1100_d7owp_VuiL8ZsqYg"
+	id S1754979Ab3CLDbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 23:31:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52717 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754718Ab3CLDbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 23:31:01 -0400
+Date: Mon, 11 Mar 2013 23:30:54 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130312033054.GB18595@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
+ <20130311213837.GA438@x4>
+ <20130311231227.GA319@x4>
+ <20130312030057.GA6142@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312030057.GA6142@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_14_25_57_+1100_d7owp_VuiL8ZsqYg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 12, 2013 at 11:00:58AM +0800, Zheng Liu wrote:
+> 
+> Thanks for reporting this problem.  My deepest apologies.
+> 
+> As Ted suggested, could you please try to use ext4 git tree?  I want to
+> make sure whether this bug has been fixed by my lastest patch series or
+> not.
 
-Hi Al,
+It's definitely worth a try to compile the master branch of the ext4
+tree and see if it reproduces or not.
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/tile/kernel/compat.c between commit 87c319a2c3c2 ("tile: properly
-use COMPAT_SYSCALL_DEFINEx") from Linus' tree and commit d5dc77bfeeab
-("consolidate compat lookup_dcookie()") from the signal tree.
+However, I suspect the problem will still be there.  Based on the
+commit which Markus has identified, I'm guessing it's a race between
+the extents_status shrinker and writing into uninitialized region of
+the file (since apprently compiling rtorrent with
+--with-posix-fallocate is required).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Markus, how much memory do you have in your system?  That may be the
+other reason why I haven't been able to reproduce it to date; I had a
+lot of free memory when I tried to reproduce the problem, so the slab
+shrinker didn't engage.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
 
-diff --cc arch/tile/kernel/compat.c
-index 6ea4cdb,c262a02..0000000
---- a/arch/tile/kernel/compat.c
-+++ b/arch/tile/kernel/compat.c
-@@@ -56,15 -54,9 +56,9 @@@ COMPAT_SYSCALL_DEFINE6(pwrite64, unsign
-  	return sys_pwrite64(fd, ubuf, count, ((loff_t)high << 32) | low);
-  }
- =20
-- COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, low, u32, high,
--                        char __user *, buf, size_t, len)
-- {
-- 	return sys_lookup_dcookie(((loff_t)high << 32) | low, buf, len);
-- }
--=20
- -long compat_sys_sync_file_range2(int fd, unsigned int flags,
- -				 u32 offset_lo, u32 offset_hi,
- -				 u32 nbytes_lo, u32 nbytes_hi)
- +COMPAT_SYSCALL_DEFINE6(sync_file_range2, int, fd, unsigned int, flags,
- +                       u32, offset_lo, u32, offset_hi,
- +                       u32, nbytes_lo, u32, nbytes_hi)
-  {
-  	return sys_sync_file_range(fd, ((loff_t)offset_hi << 32) | offset_lo,
-  				   ((loff_t)nbytes_hi << 32) | nbytes_lo,
-
---Signature=_Tue__12_Mar_2013_14_25_57_+1100_d7owp_VuiL8ZsqYg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPqBFAAoJEECxmPOUX5FE20wP+wYbSseh4ePg6f0RIJsuoCkT
-xQNtl/rgV28nZyDuOsG4tGkOqDYuJAINydxBvffs2A2jYrPh5I2v5MplEzqWjbau
-g1b4xqgIU5mGBZY56Jjw0R2USd9g6rPikM3OnJl+LlkuYwPdKZ+7k9oyM6Isob2J
-2JUNu9Yz3vVrn0K/Eeq+bFwoNS54py4R5Yfyx5QSioOZo2+XEm0gMfNKUcK8YiIm
-kbZZwIAKoBNIZFnx6vaFVt4GdLc2F7xgJUAXTKNcpVGFei4FknJvrVlHArP1rWRB
-rWUQ/LEUZTPCLNaJpk6W9eU4koXXsbrq0cyIzYjJTscsMCGkQENqmoOTtKniSC+/
-Ekq9NzEglyBXlWiNrvm1YAEIluRw4+ONGMkLgIAz09Ff81ae1JPurglWKyrGCjmr
-pLtEa2nUM98xjT1lvTGzoxnZKaKqi1Ew7VW+dBWEilF8QO2j3kg+oVweSMtuHNzj
-576UIAZ4oXk362wVPr+TnnK4s72xzqG6MzWEzAjBeaoYZQnzvZ3sRyTVS85dwgGE
-dnQvG13OuAgJgvpAlzDHjixjBdQqqdgPpLwkou2Q+zdAzEnYOFEYvKYqIxwXUgRx
-xcsbhXiH6NVuyBS6HaGiYMXW3fRsKZl8ooqRXqB4CCdPtPifRuXXtJqcFpSm3KMj
-wunawU7GXqn49brfz455
-=uzkn
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_14_25_57_+1100_d7owp_VuiL8ZsqYg--
+						- Ted
