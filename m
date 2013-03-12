@@ -1,91 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab3CLB1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 21:27:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3381 "EHLO mx1.redhat.com"
+	id S1755040Ab3CLBgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 21:36:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48090 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754205Ab3CLB1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 21:27:07 -0400
-Date: Mon, 11 Mar 2013 21:27:02 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pipe_release oops.
-Message-ID: <20130312012702.GA7424@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
- <20130307213819.GB19543@redhat.com>
- <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
- <20130307220333.GA31039@redhat.com>
- <20130307223610.GA2494@redhat.com>
- <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
- <20130308145306.GA24085@redhat.com>
- <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754767Ab3CLBgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 21:36:47 -0400
+Date: Tue, 12 Mar 2013 12:36:30 +1100
+From: NeilBrown <neilb@suse.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Kees Cook <keescook@chromium.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
+Message-ID: <20130312123630.36df75da@notabene.brown>
+In-Reply-To: <1362997664.3137.52.camel@x61.thuisdomein>
+References: <20130223074001.GA5199@www.outflux.net>
+	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
+	<20130228091110.7da87b53@notabene.brown>
+	<1362997664.3137.52.camel@x61.thuisdomein>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/xj5Yz6NJqb9.XvN6tYAc.uw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 10:30:01AM -0800, Linus Torvalds wrote:
- > On Fri, Mar 8, 2013 at 6:53 AM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > Yeah, that does the trick.
- > > I changed your other diff a little to use a goto, which reduces a level of indentation..
- > 
- > Hmm. So I've been trying to figure this out, and I really don't see
- > it. Every single pipe open routine *should* make sure that the inode
- > has an inode->i_pipe field. So if the open() has succeeded and you
- > have a valid file descriptor, the inode->i_pipe thing should be there.
- > 
- > I must be missing something, and I wonder if the thing I'm missing is
- > that with OPEN_PATH we may now have open calls that don't actually
- > have FMODE_READ or FMODE_WRITE set at all.
- > 
- > So suddenly we end up with these pipe openers that don't update the
- > counts, and I could imagine that really confusing us...
- > 
- > So I'm wondering if you could apply this patch, and see if that
- > triggers. In fact, please un-apply the other changes to fs/pipe.c too,
- > to see if it also obviates the need for checking i_pipe for NULL. You
- > should get the new warning (once), but you should not get any oopses..
- > 
- > Anyway, this would explain why the actual read/write paths don't need
- > to check for i_pipe - if FMODE_READ/WRITE aren't set, we'll never get
- > that far. But the release() and the fasync functions do get called
- > even for non-readable and non-writable files...
- 
+--Sig_/xj5Yz6NJqb9.XvN6tYAc.uw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-finally managed to trigger this now that all the other stuff got fixed.
+On Mon, 11 Mar 2013 11:27:44 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
 
-WARNING: at fs/pipe.c:867 pipe_rdwr_open+0xb8/0xd0()
-Hardware name: GA-MA78GM-S2H
-Pid: 23339, comm: trinity-child0 Not tainted 3.9.0-rc2+ #91
-Call Trace:
- [<ffffffff81045115>] warn_slowpath_common+0x75/0xa0
- [<ffffffff8104515a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff811c4208>] pipe_rdwr_open+0xb8/0xd0
- [<ffffffff811b9c5b>] do_dentry_open+0x25b/0x300
- [<ffffffff811c4150>] ? pipe_unlock+0x30/0x30
- [<ffffffff811b9d49>] finish_open+0x49/0x60
- [<ffffffff811cb119>] do_last+0x6d9/0xf10
- [<ffffffff8107a722>] ? lg_local_unlock+0x42/0x70
- [<ffffffff811de629>] ? mntput_no_expire+0x49/0x130
- [<ffffffff811de736>] ? mntput+0x26/0x40
- [<ffffffff811c5ca2>] ? path_put+0x22/0x30
- [<ffffffff811cbc93>] path_openat+0x343/0x500
- [<ffffffff811cc101>] do_filp_open+0x41/0xa0
- [<ffffffff811bb0a4>] do_sys_open+0xf4/0x1e0
- [<ffffffff811bb1d4>] sys_openat+0x14/0x20
- [<ffffffff816d08c2>] system_call_fastpath+0x16/0x1b
----[ end trace 8290ea887bf97579 ]---
+> > Following will be in -next shortly.
+> >=20
+> > NeilBrown
+> >=20
+> >=20
+> > From 51acbcec6c42b24482bac18e42befc822524535d Mon Sep 17 00:00:00 2001
+> > From: NeilBrown <neilb@suse.de>
+> > Date: Thu, 28 Feb 2013 09:08:34 +1100
+> > Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456
+> >=20
+> > This doesn't seem to actually help and we have an alternate
+> > multi-threading approach waiting in the wings, so just get
+> > rid of this config option and associated code.
+> >=20
+> > As a bonus, we remove one use of CONFIG_EXPERIMENTAL
+> >=20
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Kees Cook <keescook@chromium.org>
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+>=20
+> That commit entered mainline in v3.9-rc2 (still as commit
+> 51acbcec6c42b24482bac18e42befc822524535d). It missed one instance of
+> CONFIG_MULTICORE_RAID456, so this additional patch is needed (which also
+> cleans that macro from two defconfig files). Compile tested, by the way.
+>=20
+>=20
+> Paul Bolle
 
-	Dave
+Thanks Paul.
 
+I'll send this off to Linus some time in the next week or so.
+
+
+Thanks,
+NeilBrown
+
+
+>=20
+> >From ab10e19eeca5ae271ae965418ff736db0230aab6 Mon Sep 17 00:00:00 2001
+> From: Paul Bolle <pebolle@tiscali.nl>
+> Date: Mon, 11 Mar 2013 11:16:25 +0100
+> Subject: [PATCH] md: remove CONFIG_MULTICORE_RAID456 entirely
+>=20
+> Once instance of this Kconfig macro remained after commit
+> 51acbcec6c42b24482bac18e42befc822524535d ("md: remove
+> CONFIG_MULTICORE_RAID456"). Remove that one too. And, while we're at it,
+> also remove it from the defconfig files that carry it.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+>  arch/tile/configs/tilegx_defconfig  | 1 -
+>  arch/tile/configs/tilepro_defconfig | 1 -
+>  drivers/md/raid5.h                  | 4 ----
+>  3 files changed, 6 deletions(-)
+>=20
+> diff --git a/arch/tile/configs/tilegx_defconfig b/arch/tile/configs/tileg=
+x_defconfig
+> index 8c5eff6..4768481 100644
+> --- a/arch/tile/configs/tilegx_defconfig
+> +++ b/arch/tile/configs/tilegx_defconfig
+> @@ -330,7 +330,6 @@ CONFIG_MD_RAID0=3Dm
+>  CONFIG_MD_RAID1=3Dm
+>  CONFIG_MD_RAID10=3Dm
+>  CONFIG_MD_RAID456=3Dm
+> -CONFIG_MULTICORE_RAID456=3Dy
+>  CONFIG_MD_FAULTY=3Dm
+>  CONFIG_BLK_DEV_DM=3Dm
+>  CONFIG_DM_DEBUG=3Dy
+> diff --git a/arch/tile/configs/tilepro_defconfig b/arch/tile/configs/tile=
+pro_defconfig
+> index e7a3dfc..dd2b8f0 100644
+> --- a/arch/tile/configs/tilepro_defconfig
+> +++ b/arch/tile/configs/tilepro_defconfig
+> @@ -324,7 +324,6 @@ CONFIG_MD_RAID0=3Dm
+>  CONFIG_MD_RAID1=3Dm
+>  CONFIG_MD_RAID10=3Dm
+>  CONFIG_MD_RAID456=3Dm
+> -CONFIG_MULTICORE_RAID456=3Dy
+>  CONFIG_MD_FAULTY=3Dm
+>  CONFIG_BLK_DEV_DM=3Dm
+>  CONFIG_DM_DEBUG=3Dy
+> diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
+> index 18b2c4a..31e2ec1 100644
+> --- a/drivers/md/raid5.h
+> +++ b/drivers/md/raid5.h
+> @@ -221,10 +221,6 @@ struct stripe_head {
+>  	struct stripe_operations {
+>  		int 		     target, target2;
+>  		enum sum_check_flags zero_sum_result;
+> -		#ifdef CONFIG_MULTICORE_RAID456
+> -		unsigned long	     request;
+> -		wait_queue_head_t    wait_for_ops;
+> -		#endif
+>  	} ops;
+>  	struct r5dev {
+>  		/* rreq and rvec are used for the replacement device when
+
+
+--Sig_/xj5Yz6NJqb9.XvN6tYAc.uw
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUT6Gnjnsnt1WYoG5AQIcVQ//eM7QYT4BJ2p3U1YXkRvxJBlSqt321NLJ
+HOhHlpZNwIYG5bUlD7GkYiLbotYKMF2QUv8l3ERzXGoumJr11shGkDIV/1NgmmUd
+QHHWxIVw0pJ6hN7bRsMoUokLREhdAiw5t0HlX1NRLkN1mVfQ1HcDI8+zNgochE05
+Pwg0YyeFEF+2GgZudg2YPn/MSwMRyDKV9O3+tJdaky13JHToNO2XSt6QL+S7deGd
+NOOIPt5oPnAKCEmflVMkDryHMe5+TUOQ6589Bue3hnhvwC2DplxeOktmD4+QxR8c
++tV4BQL2QZWbLYuKVNxZ9qkJhp7F1BESXUZqCYPHS6PsP68vKml75vTJeoTQunwW
+f/hxRaLnXadIGJ18hBjmUAwQsz0b0R2CCKUkVEfvcCEwmVyLFJaZV4cfmXimSObX
+ZCaBA0T2NxTUs9LTdgv0zw1UOwXWcf1al8bqZ65Ap113iMJcY8TFOz0vGlVeqQ9j
+9pXy511XELWbfS/8xHS7PrB5xtJOoTmyy3p79l58oIo+4MPYUE7DugKtPXTREGHa
+GFyM5qoK0CI6cYYJhucwYm9KZbbxDpkNfBr/daJi/Ux4/ZaSMBzZHSu74BzlIQKs
+rQz/sBRrVAB3hvR9WSW+7GZP2p/Owk/mJ4FD9hQAOZM1aoy3bQMOoOFJ4c8dw2/B
+AIxI2J5KItM=
+=0XQW
+-----END PGP SIGNATURE-----
+
+--Sig_/xj5Yz6NJqb9.XvN6tYAc.uw--
