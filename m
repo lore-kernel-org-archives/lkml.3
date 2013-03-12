@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3CLM4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:56:07 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:42228 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab3CLM4F (ORCPT
+	id S1755406Ab3CLM70 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:59:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50207 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab3CLM7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:56:05 -0400
-Date: Tue, 12 Mar 2013 13:55:25 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 15/17] avr32: default GENERIC_GPIO to false
-Message-ID: <20130312125524.GA13877@samfundet.no>
-Mail-Followup-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-	Alexandre Courbot <acourbot@nvidia.com>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Russell King <linux@arm.linux.org.uk>,
-	Haavard Skinnemoen <hskinnemoen@gmail.com>,
-	Mike Frysinger <vapier@gentoo.org>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-	Josh Boyer <jwboyer@gmail.com>,
-	Matt Porter <mporter@kernel.crashing.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Paul Mackerras <paulus@samba.org>,
-	Kumar Gala <galak@kernel.crashing.org>,
-	Vitaly Bordug <vitb@kernel.crashing.org>,
-	Marcelo Tosatti <marcelo@kvack.org>,
-	Paul Mundt <lethal@linux-sh.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-	Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-	Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
- <1363083150-30964-16-git-send-email-acourbot@nvidia.com>
+	Tue, 12 Mar 2013 08:59:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Danny Huang <dahuang@nvidia.com>
+Subject: Re: [PATCH v2] ARM: tegra: expose chip ID and revision
+Date: Tue, 12 Mar 2013 12:59:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux@arm.linux.org.uk, swarren@wwwdotorg.org, hdoyu@nvidia.com,
+        olof@lixom.net, gregkh@linuxfoundation.org, josephl@nvidia.com,
+        pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
+In-Reply-To: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363083150-30964-16-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303121259.18710.arnd@arndb.de>
+X-Provags-ID: V02:K0:6V/yVOga4qeQQhk1GTyDG6g0owtD7NyTmJKGC8UNCTD
+ BtZXaTnzPko7AcUBP7Fb6Q2zzLNfS3YlDLwOi4SqJGH49XqTCt
+ Ya34xyP521oQPkYRGv4BtXucV0jBISUjeU0472LKBq7uPyp9i4
+ 5x/lGW0d9h0jWzEihLaOt4VwiKokY2JvhX+gepMR9UU0vGKILv
+ eSps0HmIxBd4g/lzR0J3aByegG3nCe8+JGkV0B4C4uY1mLrlqn
+ 4S8gCbVJXAijNBBHjC5mPBOZpKTxa1+zGifB062PaXe6V/inTl
+ 58XSFk7VYy7Ql05rFlZ7lPeXnZVtHmluC18zn2l3s+DIJe78AN
+ F/mMsBH09Bau270AgsdU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Tue 12 Mar 2013 19:12:28 +0900 or thereabout, Alexandre Courbot wrote:
-
-$(Subject) is wrong, you state avr32, but it is for blackfin.
-
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  arch/blackfin/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Tuesday 12 March 2013, Danny Huang wrote:
 > 
-> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-> index 600494c..b947e26 100644
-> --- a/arch/blackfin/Kconfig
-> +++ b/arch/blackfin/Kconfig
-> @@ -56,7 +56,7 @@ config ZONE_DMA
->  	def_bool y
->  
->  config GENERIC_GPIO
-> -	def_bool y
-> +	def_bool n
->  
->  config FORCE_MAX_ZONEORDER
->  	int
--- 
-mvh
-Hans-Christian Egtvedt
+> +void __init tegra_soc_device_init(void)
+> +{
+> +       struct soc_device *soc_dev;
+> +       struct soc_device_attribute *soc_dev_attr;
+> +
+> +       soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
+> +       if (!soc_dev_attr)
+> +               return;
+> +
+> +       soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
+> +       soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
+> +       soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
+> +
+> +       soc_dev = soc_device_register(soc_dev_attr);
+> +       if (IS_ERR_OR_NULL(soc_dev))
+> +               kfree(soc_dev_attr);
+> +
+> +       return;
+
+You are dropping the soc_dev on the floor here by just returning.
+
+The idea of the soc node is to have all on-soc components be children
+of that node, so you should instead pass it into of_platform_populate
+as the parent device.
+
+	Arnd
