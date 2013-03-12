@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab3CLXJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:09:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60237 "EHLO
+	id S933903Ab3CLXKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:10:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab3CLWdG (ORCPT
+	with ESMTP id S1755862Ab3CLWdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:06 -0400
+	Tue, 12 Mar 2013 18:33:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [ 040/100] md: fix two bugs when attempting to resize RAID0 array.
-Date: Tue, 12 Mar 2013 15:31:25 -0700
-Message-Id: <20130312223127.308152681@linuxfoundation.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 038/100] nohz: Make tick_nohz_irq_exit() irq safe
+Date: Tue, 12 Mar 2013 15:31:23 -0700
+Message-Id: <20130312223127.097863883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,65 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit a64685399181780998281fe07309a94b25dd24c3 upstream.
+commit e5ab012c3271990e8457055c25cafddc1ae8aa6b upstream.
 
-You cannot resize a RAID0 array (in terms of making the devices
-bigger), but the code doesn't entirely stop you.
-So:
+As it stands, irq_exit() may or may not be called with
+irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
+that the arch can define.
 
- disable setting of the available size on each device for
- RAID0 and Linear devices.  This must not change as doing so
- can change the effective layout of data.
+It makes tick_nohz_irq_exit() unsafe. For example two
+interrupts can race in tick_nohz_stop_sched_tick(): the inner
+most one computes the expiring time on top of the timer list,
+then it's interrupted right before reprogramming the
+clock. The new interrupt enqueues a new timer list timer,
+it reprogram the clock to take it into account and it exits.
+The CPUs resumes the inner most interrupt and performs the clock
+reprogramming without considering the new timer list timer.
 
- Make sure that the size that raid0_size() reports is accurate,
- but rounding devices sizes to chunk sizes.  As the device sizes
- cannot change now, this isn't so important, but it is best to be
- safe.
+This regression has been introduced by:
+     280f06774afedf849f0b34248ed6aff57d0f6908
+     ("nohz: Separate out irq exit and idle loop dyntick logic")
 
-Without this change:
-  mdadm --grow /dev/md0 -z max
-  mdadm --grow /dev/md0 -Z max
-  then read to the end of the array
+Let's fix it right now with the appropriate protections.
 
-can cause a BUG in a RAID0 array.
+A saner long term solution will be to remove
+__ARCH_IRQ_EXIT_IRQS_DISABLED and mandate that irq_exit() is called
+with interrupts disabled.
 
-These bugs have been present ever since it became possible
-to resize any device, which is a long time.  So the fix is
-suitable for any -stable kerenl.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1361373336-11337-1-git-send-email-fweisbec@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c    |    3 +++
- drivers/md/raid0.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ kernel/time/tick-sched.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -2998,6 +2998,9 @@ rdev_size_store(struct md_rdev *rdev, co
- 		} else if (!sectors)
- 			sectors = (i_size_read(rdev->bdev->bd_inode) >> 9) -
- 				rdev->data_offset;
-+		if (!my_mddev->pers->resize)
-+			/* Cannot change size for RAID0 or Linear etc */
-+			return -EINVAL;
- 	}
- 	if (sectors < my_mddev->dev_sectors)
- 		return -EINVAL; /* component must fit device */
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -411,7 +411,8 @@ static sector_t raid0_size(struct mddev
- 		  "%s does not support generic reshape\n", __func__);
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -564,14 +564,19 @@ void tick_nohz_idle_enter(void)
+  */
+ void tick_nohz_irq_exit(void)
+ {
++	unsigned long flags;
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
  
- 	rdev_for_each(rdev, mddev)
--		array_sectors += rdev->sectors;
-+		array_sectors += (rdev->sectors &
-+				  ~(sector_t)(mddev->chunk_sectors-1));
+ 	if (!ts->inidle)
+ 		return;
  
- 	return array_sectors;
+-	/* Cancel the timer because CPU already waken up from the C-states*/
++	local_irq_save(flags);
++
++	/* Cancel the timer because CPU already waken up from the C-states */
+ 	menu_hrtimer_cancel();
+ 	__tick_nohz_idle_enter(ts);
++
++	local_irq_restore(flags);
  }
+ 
+ /**
 
 
