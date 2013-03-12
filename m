@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab3CLLoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:44:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44482 "EHLO
+	id S932817Ab3CLLrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:47:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44488 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab3CLLoH (ORCPT
+	with ESMTP id S932548Ab3CLLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:44:07 -0400
+	Tue, 12 Mar 2013 07:44:11 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 14/24] ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
-Date: Tue, 12 Mar 2013 13:43:16 +0200
-Message-ID: <1363088606-2692-15-git-send-email-rogerq@ti.com>
+Subject: [PATCH 16/24] ARM: OMAP3: omap3touchbook: Adapt to ehci-omap changes
+Date: Tue, 12 Mar 2013 13:43:18 +0200
+Message-ID: <1363088606-2692-17-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
 References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
@@ -24,35 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform device for 'nop-usb-xceiv'. This will be used as a
-PHY for HS USB Port 2, so provide binding information for it.
+Add 2 platform devices for 'nop-usb-xceiv'. These will be used as a
+PHY for HS USB Ports 1 and 2, so provide binding information for them.
 
-Model RESET for HS USB Port 2 as GPIO fixed regulator and link
-it to the 'nop-usb-xceiv' PHY.
+Model RESET for HS USB Port 2 as GPIO fixed regulator and link it
+to the respective 'nop-usb-xceiv' PHY.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/board-omap3pandora.c |   52 +++++++++++++++++++++++++----
- 1 files changed, 44 insertions(+), 8 deletions(-)
+ arch/arm/mach-omap2/board-omap3touchbook.c |   62 ++++++++++++++++++++++++---
+ 1 files changed, 55 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-index 2bba362..85e5685 100644
---- a/arch/arm/mach-omap2/board-omap3pandora.c
-+++ b/arch/arm/mach-omap2/board-omap3pandora.c
-@@ -23,6 +23,8 @@
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index bcd44fb..6bdde83 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -36,6 +36,8 @@
+ #include <linux/spi/ads7846.h>
  
- #include <linux/spi/spi.h>
  #include <linux/regulator/machine.h>
 +#include <linux/regulator/fixed.h>
 +#include <linux/usb/phy.h>
  #include <linux/i2c/twl.h>
- #include <linux/wl12xx.h>
- #include <linux/mtd/partitions.h>
-@@ -561,23 +563,55 @@ fail:
- 	printk(KERN_ERR "wl1251 board initialisation failed\n");
- }
  
+ #include <asm/mach-types.h>
+@@ -305,21 +307,61 @@ static struct omap_board_mux board_mux[] __initdata = {
+ };
+ #endif
+ 
++/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
++static struct platform_device hsusb1_phy_device = {
++	.name = "nop_usb_xceiv",
++	.id = 1,
++};
++
 +/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
 +static struct platform_device hsusb2_phy_device = {
 +	.name = "nop_usb_xceiv",
@@ -76,7 +82,7 @@ index 2bba362..85e5685 100644
 +static struct fixed_voltage_config hsusb2_reset_config = {
 +	.supply_name = "hsusb2_reset",
 +	.microvolts = 3300000,
-+	.gpio = 16,
++	.gpio = 147,
 +	.startup_delay = 70000, /* 70msec */
 +	.enable_high = 1,
 +	.enabled_at_boot = 0,   /* keep in RESET */
@@ -91,37 +97,40 @@ index 2bba362..85e5685 100644
 +	},
 +};
 +
- static struct platform_device *omap3pandora_devices[] __initdata = {
- 	&pandora_leds_gpio,
- 	&pandora_keys_gpio,
- 	&pandora_vwlan_device,
- 	&pandora_backlight,
+ static struct platform_device *omap3_touchbook_devices[] __initdata = {
+ 	&leds_gpio,
+ 	&keys_gpio,
++	&hsusb1_phy_device,
 +	&hsusb2_phy_device,
 +	&hsusb2_reset_device,
  };
  
  static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
 -
--	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
  	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
 -	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
 -
 -	.phy_reset  = true,
 -	.reset_gpio_port[0]  = -EINVAL,
--	.reset_gpio_port[1]  = 16,
+-	.reset_gpio_port[1]  = 147,
 -	.reset_gpio_port[2]  = -EINVAL
  };
  
- #ifdef CONFIG_OMAP_MUX
-@@ -601,6 +635,8 @@ static void __init omap3pandora_init(void)
- 	spi_register_board_info(omap3pandora_spi_board_info,
- 			ARRAY_SIZE(omap3pandora_spi_board_info));
- 	omap_ads7846_init(1, OMAP3_PANDORA_TS_GPIO, 0, NULL);
-+	/* PHY on HSUSB Port 2 i.e. index 1 */
-+	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
- 	usbhs_init(&usbhs_bdata);
+ static void omap3_touchbook_poweroff(void)
+@@ -368,6 +410,12 @@ static void __init omap3_touchbook_init(void)
+ 	omap_ads7846_init(4, OMAP3_TS_GPIO, 310, &ads7846_pdata);
  	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
  	usb_musb_init(NULL);
++
++	/* PHY on HSUSB Port 1 i.e. index 0 */
++	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
++	/* PHY on HSUSB Port 2 i.e. index 1 */
++	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
++
+ 	usbhs_init(&usbhs_bdata);
+ 	board_nand_init(omap3touchbook_nand_partitions,
+ 			ARRAY_SIZE(omap3touchbook_nand_partitions), NAND_CS,
 -- 
 1.7.4.1
 
