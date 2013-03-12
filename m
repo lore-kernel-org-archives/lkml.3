@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3CLKPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:15:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14014 "EHLO
+	id S932715Ab3CLKPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:15:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14022 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485Ab3CLKPH (ORCPT
+	with ESMTP id S932485Ab3CLKPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:15:07 -0400
+	Tue, 12 Mar 2013 06:15:14 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 03:14:35 -0700
+	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 03:14:42 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -29,9 +29,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Max Filippov <jcmvbkbc@gmail.com>
 CC: Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 14/17] m68k: coldfire: use gpiolib
-Date: Tue, 12 Mar 2013 19:12:27 +0900
-Message-ID: <1363083150-30964-15-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 15/17] avr32: default GENERIC_GPIO to false
+Date: Tue, 12 Mar 2013 19:12:28 +0900
+Message-ID: <1363083150-30964-16-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
 References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
@@ -42,28 +42,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force use of gpiolib for Coldfire, as a step towards the deprecation of
-GENERIC_GPIO.
-
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/m68k/Kconfig.cpu | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/blackfin/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/m68k/Kconfig.cpu b/arch/m68k/Kconfig.cpu
-index b1cfff8..d266787 100644
---- a/arch/m68k/Kconfig.cpu
-+++ b/arch/m68k/Kconfig.cpu
-@@ -22,8 +22,7 @@ config M68KCLASSIC
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index 600494c..b947e26 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -56,7 +56,7 @@ config ZONE_DMA
+ 	def_bool y
  
- config COLDFIRE
- 	bool "Coldfire CPU family support"
--	select GENERIC_GPIO
--	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select ARCH_REQUIRE_GPIOLIB
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select CPU_HAS_NO_BITFIELDS
- 	select CPU_HAS_NO_MULDIV64
+ config GENERIC_GPIO
+-	def_bool y
++	def_bool n
+ 
+ config FORCE_MAX_ZONEORDER
+ 	int
 -- 
 1.8.1.5
 
