@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab3CLUfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:35:22 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49505 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932514Ab3CLUfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:35:21 -0400
-Message-ID: <1363120519.3137.148.camel@x61.thuisdomein>
-Subject: [PATCH] sparc: delete "if !ULTRA_HAS_POPULATION_COUNT"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Mar 2013 21:35:19 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Mar 2013 20:35:19.0851 (UTC) FILETIME=[1CF637B0:01CE1F61]
-X-RcptDomain: vger.kernel.org
+	id S933538Ab3CLUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:37:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932514Ab3CLUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 16:37:26 -0400
+Date: Tue, 12 Mar 2013 21:35:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Feng Hong <hongfeng@marvell.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: Regression with orderly_poweroff()
+Message-ID: <20130312203514.GA23488@redhat.com>
+References: <1363058712.4534.12.camel@pasglop> <CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com> <CAKi4VALkUhOtP_8BOi3Mi8fTz8TUPwmwQq7WW27BEDue2wFNRw@mail.gmail.com> <20130312182210.GA15862@redhat.com> <CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com> <20130312191118.GA17439@redhat.com> <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2d78d4beb64eb07d50665432867971c481192ebf ("[PATCH] bitops:
-sparc64: use generic bitops") made the default of GENERIC_HWEIGHT depend
-on !ULTRA_HAS_POPULATION_COUNT. But since there's no Kconfig symbol with
-that name, this always evaluates to true. Delete this dependency.
+On 03/12, Linus Torvalds wrote:
+>
+> So yeah, I guess
+> everything could just go into a workqueue.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Tested with "make ARCH=sparc menuconfig" (before and after this
-patch).
+OK, I'll try to make the patch tomorrow. Should be trivial but it is
+not clear how we should pass "bool force" without allocating the
+work_struct which would be nice to avoid.
 
-1) There apparently is an (obscure) preprocessor macro
-ULTRA_HAS_POPULATION_COUNT. But the check for it got removed in commit
-ef7c4d4675d2a9206f913f26ca1a5cd41bff9d41 ("sparc: Use popc if possible
-for hweight routines."). 
+And I am a bit worried about UMH_WAIT_EXEC from system_wq. Should be
+fine afaics...
 
- arch/sparc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And. It seems there is another problem. argv_split(poweroff_cmd) can
+obviously race with proc_dostring() ? If nothing else, argv_split()
+doesn't check 'argc' when it does "*argvp++ = t". And this is not
+__orderly_poweroff-specific. This looks simple... and probably we can
+even simplify argv_split/argv_free. We can simply kstrndup() the
+original string once and do s/space/0/.
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 289127d..7fcd4b4 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -197,7 +197,7 @@ config RWSEM_XCHGADD_ALGORITHM
- 
- config GENERIC_HWEIGHT
- 	bool
--	default y if !ULTRA_HAS_POPULATION_COUNT
-+	default y
- 
- config GENERIC_CALIBRATE_DELAY
- 	bool
--- 
-1.7.11.7
+Oleg.
 
