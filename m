@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab3CLWo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60750 "EHLO
+	id S964927Ab3CLWo5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964892Ab3CLWoq (ORCPT
+	with ESMTP id S964887Ab3CLWoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:44:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 19/21] ftrace: Update the kconfig for DYNAMIC_FTRACE
-Date: Tue, 12 Mar 2013 15:44:21 -0700
-Message-Id: <20130312223247.344763103@linuxfoundation.org>
+        xiaobing tu <xiaobing.tu@intel.com>,
+        guifang tang <guifang.tang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Colin Cross <ccross@google.com>
+Subject: [ 18/21] Fix memory leak in cpufreq stats.
+Date: Tue, 12 Mar 2013 15:44:20 -0700
+Message-Id: <20130312223247.204701025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -27,75 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
 
-commit db05021d49a994ee40a9735d9c3cb0060c9babb8 upstream.
+commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
 
-The prompt to enable DYNAMIC_FTRACE (the ability to nop and
-enable function tracing at run time) had a confusing statement:
+When system enters sleep, non-boot CPUs will be disabled.
+Cpufreq stats sysfs is created when the CPU is up, but it is not
+freed when the CPU is going down. This will cause memory leak.
 
- "enable/disable ftrace tracepoints dynamically"
-
-This was written before tracepoints were added to the kernel,
-but now that tracepoints have been added, this is very confusing
-and has confused people enough to give wrong information during
-presentations.
-
-Not only that, I looked at the help text, and it still references
-that dreaded daemon that use to wake up once a second to update
-the nop locations and brick NICs, that hasn't been around for over
-five years.
-
-Time to bring the text up to the current decade.
-
-Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+Signed-off-by: guifang tang <guifang.tang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Colin Cross <ccross@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/Kconfig |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/cpufreq/cpufreq_stats.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -386,24 +386,28 @@ config KPROBE_EVENT
- 	  If you want to use perf tools, this option is strongly recommended.
- 
- config DYNAMIC_FTRACE
--	bool "enable/disable ftrace tracepoints dynamically"
-+	bool "enable/disable function tracing dynamically"
- 	depends on FUNCTION_TRACER
- 	depends on HAVE_DYNAMIC_FTRACE
- 	default y
- 	help
--          This option will modify all the calls to ftrace dynamically
--	  (will patch them out of the binary image and replace them
--	  with a No-Op instruction) as they are called. A table is
--	  created to dynamically enable them again.
-+	  This option will modify all the calls to function tracing
-+	  dynamically (will patch them out of the binary image and
-+	  replace them with a No-Op instruction) on boot up. During
-+	  compile time, a table is made of all the locations that ftrace
-+	  can function trace, and this table is linked into the kernel
-+	  image. When this is enabled, functions can be individually
-+	  enabled, and the functions not enabled will not affect
-+	  performance of the system.
-+
-+	  See the files in /sys/kernel/debug/tracing:
-+	    available_filter_functions
-+	    set_ftrace_filter
-+	    set_ftrace_notrace
- 
- 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
- 	  otherwise has native performance as long as no tracing is active.
- 
--	  The changes to the code are done by a kernel thread that
--	  wakes up once a second and checks to see if any ftrace calls
--	  were made. If so, it runs stop_machine (stops all CPUS)
--	  and modifies the code to jump over the call to ftrace.
--
- config FUNCTION_PROFILER
- 	bool "Kernel function profiler"
- 	depends on FUNCTION_TRACER
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -329,6 +329,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
++	case CPU_DOWN_PREPARE_FROZEN:
+ 		cpufreq_stats_free_sysfs(cpu);
+ 		break;
+ 	case CPU_DEAD:
 
 
