@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab3CLQHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:07:20 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:41133 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932802Ab3CLQHQ (ORCPT
+	id S933041Ab3CLQHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:07:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37830 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932910Ab3CLQHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:07:16 -0400
-Date: Tue, 12 Mar 2013 12:08:07 -0400
-From: Matt Porter <mporter@ti.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 3/9] ARM: edma: add AM33XX support to the private EDMA
- API
-Message-ID: <20130312160807.GW6209@beef>
-References: <1362586540-10393-1-git-send-email-mporter@ti.com>
- <1362586540-10393-4-git-send-email-mporter@ti.com>
- <CAHp75Ve40sM-d9Gr3k6mgOOTkM_G+cYSPcftqqsuAi-MzEb9dg@mail.gmail.com>
+	Tue, 12 Mar 2013 12:07:01 -0400
+Date: Tue, 12 Mar 2013 12:07:00 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <b-cousson@ti.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <kishon@ti.com>
+Subject: Re: [PATCH v2 12/12] USB: ehci-omap: Fix detection in HSIC mode
+In-Reply-To: <1363086540-30567-1-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1303121201050.2153-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75Ve40sM-d9Gr3k6mgOOTkM_G+cYSPcftqqsuAi-MzEb9dg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 08:42:18AM +0200, Andy Shevchenko wrote:
-> On Wed, Mar 6, 2013 at 6:15 PM, Matt Porter <mporter@ti.com> wrote:
-> > Adds support for parsing the TI EDMA DT data into the
-> > required EDMA private API platform data. Enables runtime
-> > PM support to initialize the EDMA hwmod. Adds AM33XX EDMA
-> > crossbar event mux support. Enables build on OMAP.
-> 
-> > --- a/arch/arm/common/edma.c
-> > +++ b/arch/arm/common/edma.c
-> 
-> > +static int edma_xbar_event_map(struct device *dev,
-> > +                              struct device_node *node,
-> > +                              struct edma_soc_info *pdata, int len)
-> > +{
-> > +       int ret = 0;
-> > +       int i;
-> > +       struct resource res;
-> > +       void *xbar;
-> > +       const s16 (*xbar_chans)[2];
-> > +       u32 shift, offset, mux;
-> > +
-> > +       xbar_chans = devm_kzalloc(dev,
-> > +                                 len/sizeof(s16) + 2*sizeof(s16),
-> > +                                 GFP_KERNEL);
-> > +       if (!xbar_chans)
-> > +               return -ENOMEM;
-> > +
-> > +       ret = of_address_to_resource(node, 1, &res);
-> > +       if (ret)
-> > +               return -EIO;
-> > +
-> > +       xbar = devm_ioremap(dev, res.start, resource_size(&res));
-> > +       if (!xbar)
-> > +               return -ENOMEM;
-> > +
-> > +       ret = edma_of_read_u32_to_s16_array(node,
-> > +                                           "ti,edma-xbar-event-map",
-> > +                                           (s16 *)xbar_chans,
-> > +                                           len/sizeof(u32));
-> > +       if (ret)
-> > +               return -EIO;
-> > +
-> > +       for (i = 0; xbar_chans[i][0] != -1; i++) {
-> > +               shift = (xbar_chans[i][1] % 4) * 8;
-> 
-> Looks like shift = (xbar_chans[i][1] & 0x03) << 3;
+On Tue, 12 Mar 2013, Roger Quadros wrote:
 
-Yes, will update.
+> The HSIC devices need to be kept in reset while the EHCI controller
+> is being initialized and only brought out of reset after the
+> initialization is complete, else HSIC devices will not be detected.
 
-> > +               offset = xbar_chans[i][1] >> 2;
-> > +               offset <<= 2;
-> 
-> Is it offset = xbar_chans[i][1] & 0xfffc; ?
+This is not a great description of what the patch does.  You should say
+that it moves PHY initialization until after EHCI initialization is
+complete, instead of initializing the PHYs first, shutting them down
+again, and then initializing them a second time.
 
-Yes, will update
+> Also remove outdated TODO list from header.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  drivers/usb/host/ehci-omap.c |   38 +++++++++++++++-----------------------
+>  1 files changed, 15 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 1ba1df8..dc2de47 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -29,12 +29,6 @@
+>   * along with this program; if not, write to the Free Software
+>   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+>   *
+> - * TODO (last updated Feb 27, 2010):
+> - *	- add kernel-doc
+> - *	- enable AUTOIDLE
+> - *	- add suspend/resume
+> - *	- add HSIC and TLL support
+> - *	- convert to use hwmod and runtime PM
+>   */
+>  
+>  #include <linux/kernel.h>
+> @@ -90,26 +84,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
+>  static int omap_ehci_init(struct usb_hcd *hcd)
+>  {
+>  	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+> -	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
+> -	int rc, i;
+> -
+> -	/* Hold PHYs in reset while initializing EHCI controller */
+> -	for (i = 0; i < omap->nports; i++) {
+> -		if (omap->phy[i])
+> -			usb_phy_shutdown(omap->phy[i]);
+> -	}
+> +	int rc;
+>  
+>  	/* we know this is the memory we want, no need to ioremap again */
+>  	ehci->caps = hcd->regs;
+>  
+>  	rc = ehci_setup(hcd);
+>  
+> -	/* Bring PHYs out of reset */
+> -	for (i = 0; i < omap->nports; i++) {
+> -		if (omap->phy[i])
+> -			usb_phy_init(omap->phy[i]);
+> -	}
+> -
+>  	return rc;
+>  }
 
-> > +               mux = readl((void *)((u32)xbar + offset));
-> > +               mux &= ~(0xff << shift);
-> > +               mux |= xbar_chans[i][0] << shift;
-> > +               writel(mux, (void *)((u32)xbar + offset));
-> > +       }
-> 
-> 
-> -- 
-> With Best Regards,
-> Andy Shevchenko
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+Now that there's almost nothing left of this function, you can get rid
+of it completely.  Move the assignment to ehci->caps into
+ehci_hcd_omap_probe() and remove the init entry in the overrides
+structure.
+
+Alan Stern
+
