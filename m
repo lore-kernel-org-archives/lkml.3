@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933803Ab3CLWmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:42:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60371 "EHLO
+	id S1756030Ab3CLWdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab3CLWd1 (ORCPT
+	with ESMTP id S933382Ab3CLWcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:27 -0400
+	Tue, 12 Mar 2013 18:32:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 073/100] userns: Stop oopsing in key_change_session_keyring
-Date: Tue, 12 Mar 2013 15:31:58 -0700
-Message-Id: <20130312223130.790544814@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 027/100] SUNRPC: Dont start the retransmission timer when out of socket space
+Date: Tue, 12 Mar 2013 15:31:12 -0700
+Message-Id: <20130312223125.957628840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,84 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit ba0e3427b03c3d1550239779eca5c1c5a53a2152 upstream.
+commit a9a6b52ee1baa865283a91eb8d443ee91adfca56 upstream.
 
-Dave Jones <davej@redhat.com> writes:
-> Just hit this on Linus' current tree.
->
-> [   89.621770] BUG: unable to handle kernel NULL pointer dereference at 00000000000000c8
-> [   89.623111] IP: [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-> [   89.624062] PGD 122bfd067 PUD 122bfe067 PMD 0
-> [   89.624901] Oops: 0000 [#1] PREEMPT SMP
-> [   89.625678] Modules linked in: caif_socket caif netrom bridge hidp 8021q garp stp mrp rose llc2 af_rxrpc phonet af_key binfmt_misc bnep l2tp_ppp can_bcm l2tp_core pppoe pppox can_raw scsi_transport_iscsi ppp_generic slhc nfnetlink can ipt_ULOG ax25 decnet irda nfc rds x25 crc_ccitt appletalk atm ipx p8023 psnap p8022 llc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm vhost_net snd_page_alloc snd_timer tun macvtap usb_debug snd rfkill microcode macvlan edac_core pcspkr serio_raw kvm_amd soundcore kvm r8169 mii
-> [   89.637846] CPU 2
-> [   89.638175] Pid: 782, comm: trinity-main Not tainted 3.8.0+ #63 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
-> [   89.639850] RIP: 0010:[<ffffffff810784b0>]  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-> [   89.641161] RSP: 0018:ffff880115657eb8  EFLAGS: 00010207
-> [   89.641984] RAX: 00000000000003e8 RBX: ffff88012688b000 RCX: 0000000000000000
-> [   89.643069] RDX: 0000000000000000 RSI: ffffffff81c32960 RDI: ffff880105839600
-> [   89.644167] RBP: ffff880115657ed8 R08: 0000000000000000 R09: 0000000000000000
-> [   89.645254] R10: 0000000000000001 R11: 0000000000000246 R12: ffff880105839600
-> [   89.646340] R13: ffff88011beea490 R14: ffff88011beea490 R15: 0000000000000000
-> [   89.647431] FS:  00007f3ac063b740(0000) GS:ffff88012b200000(0000) knlGS:0000000000000000
-> [   89.648660] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   89.649548] CR2: 00000000000000c8 CR3: 0000000122bfc000 CR4: 00000000000007e0
-> [   89.650635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   89.651723] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   89.652812] Process trinity-main (pid: 782, threadinfo ffff880115656000, task ffff88011beea490)
-> [   89.654128] Stack:
-> [   89.654433]  0000000000000000 ffff8801058396a0 ffff880105839600 ffff88011beeaa78
-> [   89.655769]  ffff880115657ef8 ffffffff812c7d9b ffffffff82079be0 0000000000000000
-> [   89.657073]  ffff880115657f28 ffffffff8106c665 0000000000000002 ffff880115657f58
-> [   89.658399] Call Trace:
-> [   89.658822]  [<ffffffff812c7d9b>] key_change_session_keyring+0xfb/0x140
-> [   89.659845]  [<ffffffff8106c665>] task_work_run+0xa5/0xd0
-> [   89.660698]  [<ffffffff81002911>] do_notify_resume+0x71/0xb0
-> [   89.661581]  [<ffffffff816c9a4a>] int_signal+0x12/0x17
-> [   89.662385] Code: 24 90 00 00 00 48 8b b3 90 00 00 00 49 8b 4c 24 40 48 39 f2 75 08 e9 83 00 00 00 48 89 ca 48 81 fa 60 29 c3 81 0f 84 41 fe ff ff <48> 8b 8a c8 00 00 00 48 39 ce 75 e4 3b 82 d0 00 00 00 0f 84 4b
-> [   89.667778] RIP  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-> [   89.668733]  RSP <ffff880115657eb8>
-> [   89.669301] CR2: 00000000000000c8
->
-> My fastest trinity induced oops yet!
->
->
-> Appears to be..
->
->                 if ((set_ns == subset_ns->parent)  &&
->      850:       48 8b 8a c8 00 00 00    mov    0xc8(%rdx),%rcx
->
-> from the inlined cred_cap_issubset
+If the socket is full, we're better off just waiting until it empties,
+or until the connection is broken. The reason why we generally don't
+want to time out is that the call to xprt->ops->release_xprt() will
+trigger a connection reset, which isn't helpful...
 
-By historical accident we have been reading trying to set new->user_ns
-from new->user_ns.  Which is totally silly as new->user_ns is NULL (as
-is every other field in new except session_keyring at that point).
+Let's make an exception for soft RPC calls, since they have to provide
+timeout guarantees.
 
-The intent is clearly to copy all of the fields from old to new so copy
-old->user_ns into  into new->user_ns.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Dave Jones <davej@redhat.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/keys/process_keys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/xprt.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -839,7 +839,7 @@ void key_change_session_keyring(struct c
- 	new-> sgid	= old-> sgid;
- 	new->fsgid	= old->fsgid;
- 	new->user	= get_uid(old->user);
--	new->user_ns	= get_user_ns(new->user_ns);
-+	new->user_ns	= get_user_ns(old->user_ns);
- 	new->group_info	= get_group_info(old->group_info);
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -485,13 +485,17 @@ EXPORT_SYMBOL_GPL(xprt_wake_pending_task
+  * xprt_wait_for_buffer_space - wait for transport output buffer to clear
+  * @task: task to be put to sleep
+  * @action: function pointer to be executed after wait
++ *
++ * Note that we only set the timer for the case of RPC_IS_SOFT(), since
++ * we don't in general want to force a socket disconnection due to
++ * an incomplete RPC call transmission.
+  */
+ void xprt_wait_for_buffer_space(struct rpc_task *task, rpc_action action)
+ {
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
  
- 	new->securebits	= old->securebits;
+-	task->tk_timeout = req->rq_timeout;
++	task->tk_timeout = RPC_IS_SOFT(task) ? req->rq_timeout : 0;
+ 	rpc_sleep_on(&xprt->pending, task, action);
+ }
+ EXPORT_SYMBOL_GPL(xprt_wait_for_buffer_space);
 
 
