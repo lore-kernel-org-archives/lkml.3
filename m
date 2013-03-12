@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3CLWoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60332 "EHLO
+	id S1756080Ab3CLWoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987Ab3CLWdW (ORCPT
+	with ESMTP id S1755917Ab3CLWoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:22 -0400
+	Tue, 12 Mar 2013 18:44:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hillf Danton <dhillf@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 066/100] mm/mempolicy.c: fix wrong sp_node insertion
-Date: Tue, 12 Mar 2013 15:31:51 -0700
-Message-Id: <20130312223130.053436431@linuxfoundation.org>
+        =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/40] ARM: VFP: fix emulation of second VFP instruction
+Date: Tue, 12 Mar 2013 15:43:22 -0700
+Message-Id: <20130312223211.644584319@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
+In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
+References: <20130312223211.492954675@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hillf Danton <dhillf@gmail.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 5ca3957510b9fc2a14d3647db518014842f9a2b4 upstream.
+commit 5e4ba617c1b584b2e376f31a63bd4e734109318a upstream.
 
-n->end is accessed in sp_insert(). Thus it should be update
-before calling sp_insert(). This mistake may make kernel panic.
+Martin Storsjö reports that the sequence:
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Dave Jones <davej@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+        ee312ac1        vsub.f32        s4, s3, s2
+        ee702ac0        vsub.f32        s5, s1, s0
+        e59f0028        ldr             r0, [pc, #40]
+        ee111a90        vmov            r1, s3
+
+on Raspberry Pi (implementor 41 architecture 1 part 20 variant b rev 5)
+where s3 is a denormal and s2 is zero results in incorrect behaviour -
+the instruction "vsub.f32 s5, s1, s0" is not executed:
+
+        VFP: bounce: trigger ee111a90 fpexc d0000780
+        VFP: emulate: INST=0xee312ac1 SCR=0x00000000
+        ...
+
+As we can see, the instruction triggering the exception is the "vmov"
+instruction, and we emulate the "vsub.f32 s4, s3, s2" but fail to
+properly take account of the FPEXC_FP2V flag in FPEXC.  This is because
+the test for the second instruction register being valid is bogus, and
+will always skip emulation of the second instruction.
+
+Reported-by: Martin Storsjö <martin@martin.st>
+Tested-by: Martin Storsjö <martin@martin.st>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |    2 +-
+ arch/arm/vfp/vfpmodule.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2386,8 +2386,8 @@ restart:
- 				*mpol_new = *n->policy;
- 				atomic_set(&mpol_new->refcnt, 1);
- 				sp_node_init(n_new, n->end, end, mpol_new);
--				sp_insert(sp, n_new);
- 				n->end = start;
-+				sp_insert(sp, n_new);
- 				n_new = NULL;
- 				mpol_new = NULL;
- 				break;
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -413,7 +413,7 @@ void VFP_bounce(u32 trigger, u32 fpexc,
+ 	 * If there isn't a second FP instruction, exit now. Note that
+ 	 * the FPEXC.FP2V bit is valid only if FPEXC.EX is 1.
+ 	 */
+-	if (fpexc ^ (FPEXC_EX | FPEXC_FP2V))
++	if ((fpexc & (FPEXC_EX | FPEXC_FP2V)) != (FPEXC_EX | FPEXC_FP2V))
+ 		goto exit;
+ 
+ 	/*
 
 
