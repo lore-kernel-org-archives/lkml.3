@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab3CLKpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:45:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41839 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab3CLKp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:45:28 -0400
+	id S932744Ab3CLKpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:45:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50416 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932700Ab3CLKpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:45:33 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
         <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 09/12] USB: ohci-omap3: Add device tree support and binding information
-Date: Tue, 12 Mar 2013 12:44:47 +0200
-Message-ID: <1363085090-24676-10-git-send-email-rogerq@ti.com>
+Subject: [PATCH 12/12] USB: ehci-omap: Fix detection in HSIC mode
+Date: Tue, 12 Mar 2013 12:44:50 +0200
+Message-ID: <1363085090-24676-13-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363085090-24676-1-git-send-email-rogerq@ti.com>
 References: <1363085090-24676-1-git-send-email-rogerq@ti.com>
@@ -25,95 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows the OHCI controller found in OMAP3 and later chips to
-be specified via device tree.
+The HSIC devices need to be kept in reset while the EHCI controller
+is being initialized and only brought out of reset after the
+initialization is complete, else HSIC devices will not be detected.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Alan Stern <stern@rowland.harvard.edu>
 ---
- .../devicetree/bindings/usb/ohci-omap3.txt         |   15 +++++++++++++++
- drivers/usb/host/ohci-omap3.c                      |   19 +++++++++++++++++++
- 2 files changed, 34 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/ohci-omap3.txt
+ drivers/usb/host/ehci-omap.c |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/ohci-omap3.txt b/Documentation/devicetree/bindings/usb/ohci-omap3.txt
-new file mode 100644
-index 0000000..14ab428
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/ohci-omap3.txt
-@@ -0,0 +1,15 @@
-+OMAP HS USB OHCI controller (OMAP3 and later)
-+
-+Required properties:
-+
-+- compatible: should be "ti,ohci-omap3"
-+- reg: should contain one register range i.e. start and length
-+- interrupts: description of the interrupt line
-+
-+Example for OMAP4:
-+
-+usbhsohci: ohci@4a064800 {
-+	compatible = "ti,ohci-omap3", "usb-ohci";
-+	reg = <0x4a064800 0x400>;
-+	interrupts = <0 76 0x4>;
-+};
-diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
-index 5ed28c5..ddfc314 100644
---- a/drivers/usb/host/ohci-omap3.c
-+++ b/drivers/usb/host/ohci-omap3.c
-@@ -31,6 +31,8 @@
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 1ba1df8..52a2d46 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -50,6 +50,7 @@
+ #include <linux/usb/hcd.h>
+ #include <linux/of.h>
+ #include <linux/dma-mapping.h>
++#include <linux/delay.h>
  
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of.h>
-+#include <linux/dma-mapping.h>
+ #include "ehci.h"
  
- /*-------------------------------------------------------------------------*/
+@@ -90,26 +91,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
+ static int omap_ehci_init(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+-	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
+-	int rc, i;
+-
+-	/* Hold PHYs in reset while initializing EHCI controller */
+-	for (i = 0; i < omap->nports; i++) {
+-		if (omap->phy[i])
+-			usb_phy_shutdown(omap->phy[i]);
+-	}
++	int rc;
  
-@@ -112,6 +114,8 @@ static const struct hc_driver ohci_omap3_hc_driver = {
+ 	/* we know this is the memory we want, no need to ioremap again */
+ 	ehci->caps = hcd->regs;
  
- /*-------------------------------------------------------------------------*/
+ 	rc = ehci_setup(hcd);
  
-+static u64 omap_ohci_dma_mask = DMA_BIT_MASK(32);
-+
- /*
-  * configure so an HC device and id are always provided
-  * always called with process context; sleeping is OK
-@@ -159,6 +163,13 @@ static int ohci_hcd_omap3_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	/*
-+	 * Right now device-tree probed devices don't get dma_mask set.
-+	 * Since shared usb code relies on it, set it here for now.
-+	 * Once we have dma capability bindings this can go away.
-+	 */
-+	if (!pdev->dev.dma_mask)
-+		pdev->dev.dma_mask = &omap_ohci_dma_mask;
- 
- 	hcd = usb_create_hcd(&ohci_omap3_hc_driver, dev,
- 			dev_name(dev));
-@@ -228,12 +239,20 @@ static void ohci_hcd_omap3_shutdown(struct platform_device *pdev)
- 		hcd->driver->shutdown(hcd);
+-	/* Bring PHYs out of reset */
+-	for (i = 0; i < omap->nports; i++) {
+-		if (omap->phy[i])
+-			usb_phy_init(omap->phy[i]);
+-	}
+-
+ 	return rc;
  }
  
-+static const struct of_device_id omap_ohci_dt_ids[] = {
-+	{ .compatible = "ti,ohci-omap3" },
-+	{ }
-+};
+@@ -219,9 +207,6 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		omap->phy[i] = phy;
+-		usb_phy_init(omap->phy[i]);
+-		/* bring PHY out of suspend */
+-		usb_phy_set_suspend(omap->phy[i], 0);
+ 	}
+ 
+ 	pm_runtime_enable(dev);
+@@ -245,6 +230,15 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		goto err_pm_runtime;
+ 	}
+ 
++	/* Bring PHYs out of reset */
++	for (i = 0; i < omap->nports; i++) {
++		if (!omap->phy[i])
++			continue;
 +
-+MODULE_DEVICE_TABLE(of, omap_ohci_dt_ids);
-+
- static struct platform_driver ohci_hcd_omap3_driver = {
- 	.probe		= ohci_hcd_omap3_probe,
- 	.remove		= ohci_hcd_omap3_remove,
- 	.shutdown	= ohci_hcd_omap3_shutdown,
- 	.driver		= {
- 		.name	= "ohci-omap3",
-+		.of_match_table = of_match_ptr(omap_ohci_dt_ids),
- 	},
- };
++		usb_phy_init(omap->phy[i]);
++		/* bring PHY out of suspend */
++		usb_phy_set_suspend(omap->phy[i], 0);
++	}
+ 
+ 	return 0;
  
 -- 
 1.7.4.1
