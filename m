@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab3CLXKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:10:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751Ab3CLWdG (ORCPT
+	id S933953Ab3CLXLC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:11:02 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57911 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933578Ab3CLXK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:06 -0400
+	Tue, 12 Mar 2013 19:10:58 -0400
+Date: Tue, 12 Mar 2013 16:10:54 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>, NeilBrown <neilb@suse.de>,
-        Paul Menzel <paulepanter@users.sourceforge.net>
-Subject: [ 039/100] md: protect against crash upon fsync on ro array
-Date: Tue, 12 Mar 2013 15:31:24 -0700
-Message-Id: <20130312223127.191142956@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+To: Sergey Yanovich <ynvich@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] allow alternative name for PXA serial console
+Message-ID: <20130312231054.GA6379@kroah.com>
+References: <1363129342-24310-1-git-send-email-ynvich@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363129342-24310-1-git-send-email-ynvich@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Mar 13, 2013 at 03:02:22AM +0400, Sergey Yanovich wrote:
+> ICP DAS LP-8x4x is an industrial data acquision device. It is based
+> on PXA270 CPU. The board containsi a lot of (up to 36) standard UARTi
+> 8250i serial ports. System console on the board is provided with
+> an on-chip PXA serial port. Both modules use /dev/ttyS0 by default.
+> 
+> To solve the collision, PXA ports could be configured with different
+> name and device numbers.
+> 
+> Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
+> ---
+>  drivers/tty/serial/Kconfig |   14 ++++++++++++++
+>  drivers/tty/serial/pxa.c   |   22 ++++++++++++++++++----
+>  2 files changed, 32 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 59c23d0..09cf980 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -406,6 +406,20 @@ config SERIAL_PXA_CONSOLE
+>  	  your boot loader (lilo or loadlin) about how to pass options to the
+>  	  kernel at boot time.)
+>  
+> +config SERIAL_PXA_TTYSA_NAME
+> +	bool "as /dev/ttySA[0-3]"
 
-------------------
+Does that config text really make sense?  What does it look like when
+you run "make oldconfig"?
 
-From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+> +	depends on SERIAL_PXA
+> +	default N
+> +	help
+> +	  If you have enabled the serial port on the Intel XScale PXA
+> +	  CPU you can make it appear as /dev/ttySA[0-3] in the system.
+> +
+> +	  If you say N here (default), the ports will use UART /dev/ttyS[0-3]
+> +	  names and corresponding major and minor devices numbers.
+> +
+> +	  If you say Y here, the ports will have SA-1100 style names and
+> +	  numbers. It is reqired at least for one PXA based device.
 
-commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
+Ugh, why does it matter what it is named?
 
-If an fsync occurs on a read-only array, we need to send a
-completion for the IO and may not increment the active IO count.
-Otherwise, we hit a bug trace and can't stop the MD array anymore.
+Use udev, or a tool like it, to rename serial ports if you really need
+it, don't do this in the kernel please.
 
-By advice of Christoph Hellwig we return success upon a flush
-request but we return -EROFS for other writes.
-We detect flush requests by checking if the bio has zero sectors.
+thanks,
 
-This patch is suitable to any -stable kernel to which it applies.
-
-Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: NeilBrown <neilb@suse.de>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/md.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -307,6 +307,10 @@ static void md_make_request(struct reque
- 		bio_io_error(bio);
- 		return;
- 	}
-+	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
-+		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
-+		return;
-+	}
- 	smp_rmb(); /* Ensure implications of  'active' are visible */
- 	rcu_read_lock();
- 	if (mddev->suspended) {
-
-
+greg k-h
