@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942Ab3CLXBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:01:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60322 "EHLO
+	id S933950Ab3CLXBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:01:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60875 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781Ab3CLWdU (ORCPT
+	with ESMTP id S933741Ab3CLXBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 075/100] HID: logitech-dj: do not directly call hid_output_raw_report() during probe
-Date: Tue, 12 Mar 2013 15:32:00 -0700
-Message-Id: <20130312223131.015886122@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 12 Mar 2013 19:01:37 -0400
+Date: Tue, 12 Mar 2013 16:01:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Shewmaker <agshew@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: Re: [PATCH v5 1/2] mm: limit growth of 3% hardcoded other user
+ reserve
+Message-Id: <20130312160136.b0f09ca7b1b4f2efe01f6617@linux-foundation.org>
+In-Reply-To: <20130306235201.GA1421@localhost.localdomain>
+References: <20130306235201.GA1421@localhost.localdomain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 6 Mar 2013 18:52:01 -0500 Andrew Shewmaker <agshew@gmail.com> wrote:
 
-------------------
+> Add user_reserve_pages knob.
+> 
+> Limit the growth of the memory reserved for other user
+> processes to min(3% current process, user_reserve_pages).
+> 
+> user_reserve_pages defaults to min(3% free pages, 128MB)
+> I arrived at 128MB by taking that max VSZ of sshd, login, 
+> bash, and top ... then adding the RSS of each.
+> 
+> This only affects OVERCOMMIT_NEVER mode.
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Can we have a more complete changelog, please?  One which describes, at
+great length, *why* we're doing this.  Describe the problems you
+observed, the possible means of addressing them, why this means is
+considered best, etc.
 
-commit dcd9006b1b053c7b1cebe81333261d4fd492ffeb upstream.
+Also, there has been considerable discussion over this patchset and it
+is good to update the changelogs to reflect that discussion.  Partly
+because other people will be asking the same questions when they see
+the patches and partly so that reviewers can understand how earlier
+objections/suggestions were addressed.  Assume that your audience
+has not read this email thread!
 
-hid_output_raw_report() makes a direct call to usb_control_msg(). However,
-some USB3 boards have shown that the usb device is not ready during the
-.probe(). This blocks the entire usb device, and the paired mice, keyboards
-are not functional. The dmesg output is the following:
+>From a quick read of the code, it appears that the root-cant-log-in
+problem was addressed by simply leaving it up to the administrator,
+yes?  If the administrator sets user_reserve_pages or
+admin_reserve_pages to zero then they risk hitting the root-cant-log-in
+problem, yes?  If so then I guess this is an OK approach, but we should
+clearly describe the risks in the documentation.
 
-[   11.912287] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:14.0-2/input2
-[   11.912537] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_probe:logi_dj_recv_query_paired_devices error:-32
-[   11.912636] logitech-djreceiver: probe of 0003:046D:C52B.0003 failed with error -32
-
-Relying on the scheduled call to usbhid_submit_report() fixes the problem.
-
-related bugs:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
-https://bugzilla.redhat.com/show_bug.cgi?id=840391
-https://bugzilla.kernel.org/show_bug.cgi?id=49781
-
-Reported-and-tested-by: Bob Bowles <bobjohnbowles@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/hid/hid-logitech-dj.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
-
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -459,19 +459,25 @@ static int logi_dj_recv_send_report(stru
- 				    struct dj_report *dj_report)
- {
- 	struct hid_device *hdev = djrcv_dev->hdev;
--	int sent_bytes;
-+	struct hid_report *report;
-+	struct hid_report_enum *output_report_enum;
-+	u8 *data = (u8 *)(&dj_report->device_index);
-+	int i;
- 
--	if (!hdev->hid_output_raw_report) {
--		dev_err(&hdev->dev, "%s:"
--			"hid_output_raw_report is null\n", __func__);
-+	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
-+	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-+
-+	if (!report) {
-+		dev_err(&hdev->dev, "%s: unable to find dj report\n", __func__);
- 		return -ENODEV;
- 	}
- 
--	sent_bytes = hdev->hid_output_raw_report(hdev, (u8 *) dj_report,
--						 sizeof(struct dj_report),
--						 HID_OUTPUT_REPORT);
-+	for (i = 0; i < report->field[0]->report_count; i++)
-+		report->field[0]->value[i] = data[i];
-+
-+	usbhid_submit_report(hdev, report, USB_DIR_OUT);
- 
--	return (sent_bytes < 0) ? sent_bytes : 0;
-+	return 0;
- }
- 
- static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
-
+Finally, I am allergic to exported interfaces which deal in "pages". 
+Because PAGE_SIZE can vary by a factor of 16 depending upon config (ie:
+architecture).  The risk is that a setup script which works nicely on
+4k x86_64 will waste memory when executed on a 64k PAGE_SIZE powerpc
+box.  A smart programmer will recognize this and will adapt the setting
+using getpagesize(2), but if we define these things in "bytes" rather
+than "pages" then dumb programmers can use it too.
 
