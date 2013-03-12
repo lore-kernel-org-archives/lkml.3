@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3CLXHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:07:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60267 "EHLO
+	id S1755905Ab3CLWdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab3CLWdM (ORCPT
+	with ESMTP id S1755773Ab3CLWcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:12 -0400
+	Tue, 12 Mar 2013 18:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 063/100] proc: Use nd_jump_link in proc_ns_follow_link
-Date: Tue, 12 Mar 2013 15:31:48 -0700
-Message-Id: <20130312223129.751659372@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 008/100] xen/pci: We dont do multiple MSIs.
+Date: Tue, 12 Mar 2013 15:30:53 -0700
+Message-Id: <20130312223123.812007813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,58 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit db04dc679bcc780ad6907943afe24a30de974a1b upstream.
+commit 884ac2978a295b7df3c4a686d3bff6932bbbb460 upstream.
 
-Update proc_ns_follow_link to use nd_jump_link instead of just
-manually updating nd.path.dentry.
+There is no hypercall to setup multiple MSI per PCI device.
+As such with these two new commits:
+-  08261d87f7d1b6253ab3223756625a5c74532293
+   PCI/MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+- 5ca72c4f7c412c2002363218901eba5516c476b1
+   AHCI: Support multiple MSIs
 
-This fixes the BUG_ON(nd->inode != parent->d_inode) reported by Dave
-Jones and reproduced trivially with mkdir /proc/self/ns/uts/a.
+we would call the PHYSDEVOP_map_pirq 'nvec' times with the same
+contents of the PCI device. Sander discovered that we would get
+the same PIRQ value 'nvec' times and return said values to the
+caller. That of course meant that the device was configured only
+with one MSI and AHCI would fail with:
 
-Sigh it looks like the VFS change to require use of nd_jump_link
-happend while proc_ns_follow_link was baking and since the common case
-of proc_ns_follow_link continued to work without problems the need for
-making this change was overlooked.
+ahci 0000:00:11.0: version 3.0
+xen: registering gsi 19 triggering 0 polarity 1
+xen: --> pirq=19 -> irq=19 (gsi=19)
+(XEN) [2013-02-27 19:43:07] IOAPIC[0]: Set PCI routing entry (6-19 -> 0x99 -> IRQ 19 Mode:1 Active:1)
+ahci 0000:00:11.0: AHCI 0001.0200 32 slots 4 ports 6 Gbps 0xf impl SATA mode
+ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part
+ahci: probe of 0000:00:11.0 failed with error -22
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+That is b/c in ahci_host_activate the second call to
+devm_request_threaded_irq  would return -EINVAL as we passed in
+(on the second run) an IRQ that was never initialized.
+
+Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/namespaces.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/pci/xen.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -118,7 +118,7 @@ static void *proc_ns_follow_link(struct
- 	struct super_block *sb = inode->i_sb;
- 	struct proc_inode *ei = PROC_I(inode);
- 	struct task_struct *task;
--	struct dentry *ns_dentry;
-+	struct path ns_path;
- 	void *error = ERR_PTR(-EACCES);
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -162,6 +162,9 @@ static int xen_setup_msi_irqs(struct pci
+ 	struct msi_desc *msidesc;
+ 	int *v;
  
- 	task = get_proc_task(inode);
-@@ -128,14 +128,14 @@ static void *proc_ns_follow_link(struct
- 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
- 		goto out_put_task;
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	v = kzalloc(sizeof(int) * max(1, nvec), GFP_KERNEL);
+ 	if (!v)
+ 		return -ENOMEM;
+@@ -220,6 +223,9 @@ static int xen_hvm_setup_msi_irqs(struct
+ 	struct msi_desc *msidesc;
+ 	struct msi_msg msg;
  
--	ns_dentry = proc_ns_get_dentry(sb, task, ei->ns_ops);
--	if (IS_ERR(ns_dentry)) {
--		error = ERR_CAST(ns_dentry);
-+	ns_path.dentry = proc_ns_get_dentry(sb, task, ei->ns_ops);
-+	if (IS_ERR(ns_path.dentry)) {
-+		error = ERR_CAST(ns_path.dentry);
- 		goto out_put_task;
- 	}
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		__read_msi_msg(msidesc, &msg);
+ 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
+@@ -263,6 +269,9 @@ static int xen_initdom_setup_msi_irqs(st
+ 	int ret = 0;
+ 	struct msi_desc *msidesc;
  
--	dput(nd->path.dentry);
--	nd->path.dentry = ns_dentry;
-+	ns_path.mnt = mntget(nd->path.mnt);
-+	nd_jump_link(nd, &ns_path);
- 	error = NULL;
- 
- out_put_task:
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		struct physdev_map_pirq map_irq;
+ 		domid_t domid;
 
 
