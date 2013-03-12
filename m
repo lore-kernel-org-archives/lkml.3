@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3CLNks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:40:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33305 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3CLNkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:40:47 -0400
-Date: Tue, 12 Mar 2013 13:40:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [RFC 1/1] clk: Add notifier support in
-	clk_prepare_enable/clk_disable_unprepare
-Message-ID: <20130312134032.GU4977@n2100.arm.linux.org.uk>
-References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932081Ab3CLNnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753694Ab3CLNnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 09:43:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
+References: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org> <20130306222412.1255.81929.stgit@warthog.procyon.org.uk> <alpine.LRH.2.02.1303071558030.25164@tundra.namei.org> <20130311210211.GA13575@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: dhowells@redhat.com, Greg KH <gregkh@linuxfoundation.org>,
+        James Morris <jmorris@namei.org>, torvalds@linux-foundation.org,
+        keyrings@linux-nfs.org, pmatouse@redhat.com, security@kernel.org,
+        linux-kernel@vger.kernel.org, mguzik@redhat.com, ben@decadent.org.uk
+Subject: Re: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
+Date: Tue, 12 Mar 2013 13:42:56 +0000
+Message-ID: <10968.1363095776@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
-> Add the below four notifier events so drivers which are interested in
-> knowing the clock status can act accordingly. This is extremely useful
-> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
-> 
-> PRE_CLK_ENABLE
-> POST_CLK_ENABLE
-> PRE_CLK_DISABLE
-> POST_CLK_DISABLE
-> 
-> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
+> James has acked it.  I have it queued for processing so it isn't lost. 
+> It has no cc:stable's in it, but David always forgets that ;)
 
-The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
-*EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
-clk_unprepare().  Those two functions are *merely* helpers for drivers
-who don't wish to make the individual calls.
+Hmmm...  I did try and resend it there on the 7th.  My mail client records
+that it did so, but I don't see it in the list archive and I didn't get any
+bounce notifications:-/
 
-Drivers are still completely free to call the individual functions, at
-which point your proposal breaks horribly - and they _do_ call the
-individual functions.
+David
