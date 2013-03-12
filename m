@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964813Ab3CLWoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60617 "EHLO
+	id S964872Ab3CLWvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:51:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60669 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933860Ab3CLWoV (ORCPT
+	with ESMTP id S964804Ab3CLWo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:21 -0400
+	Tue, 12 Mar 2013 18:44:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 25/40] ALSA: vmaster: Fix slave change notification
-Date: Tue, 12 Mar 2013 15:43:46 -0700
-Message-Id: <20130312223214.181211953@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 38/40] USB: Prepare for refactoring by adding extra udev checks.
+Date: Tue, 12 Mar 2013 15:43:59 -0700
+Message-Id: <20130312223215.563430792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -26,40 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 2069d483b39a603a5f3428a19d3b4ac89aa97f48 upstream.
+[This is upstream commit 2d4fa940f99663c82ba55b2244638833b388e4e2.
+It needs to be backported to kernels as old as 3.2, because it fixes the
+buggy commit 9dbcaec830cd97f44a0b91b315844e0d7144746b "USB: Handle warm
+reset failure on empty port."]
 
-When a value of a vmaster slave control is changed, the ctl change
-notification is sometimes ignored.  This happens when the master
-control overrides, e.g. when the corresponding master control is
-muted.  The reason is that slave_put() returns the value of the actual
-slave put callback, and it doesn't reflect the virtual slave value
-change.
+The next patch will refactor the hub port code to rip out the recursive
+call to hub_port_reset on a failed hot reset.  In preparation for that,
+make sure all code paths can deal with being called with a NULL udev.
+The usb_device will not be valid if warm reset was issued because a port
+transitioned to the Inactive or Compliance Mode on a device connect.
 
-This patch fixes the function just to return 1 whenever a slave value
-is changed.
+This patch should have no effect on current behavior.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/vmaster.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/sound/core/vmaster.c
-+++ b/sound/core/vmaster.c
-@@ -213,7 +213,10 @@ static int slave_put(struct snd_kcontrol
- 	}
- 	if (!changed)
- 		return 0;
--	return slave_put_val(slave, ucontrol);
-+	err = slave_put_val(slave, ucontrol);
-+	if (err < 0)
-+		return err;
-+	return 1;
- }
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2253,6 +2253,9 @@ static int hub_port_wait_reset(struct us
+ 				return -ENOTCONN;
  
- static int slave_tlv_cmd(struct snd_kcontrol *kcontrol,
+ 			if ((portstatus & USB_PORT_STAT_ENABLE)) {
++				if (!udev)
++					return 0;
++
+ 				if (hub_is_wusb(hub))
+ 					udev->speed = USB_SPEED_WIRELESS;
+ 				else if (hub_is_superspeed(hub->hdev))
+@@ -2296,13 +2299,15 @@ static void hub_port_finish_reset(struct
+ 			struct usb_hcd *hcd;
+ 			/* TRSTRCY = 10 ms; plus some extra */
+ 			msleep(10 + 40);
+-			update_devnum(udev, 0);
+-			hcd = bus_to_hcd(udev->bus);
+-			/* The xHC may think the device is already reset,
+-			 * so ignore the status.
+-			 */
+-			if (hcd->driver->reset_device)
+-				hcd->driver->reset_device(hcd, udev);
++			if (udev) {
++				update_devnum(udev, 0);
++				hcd = bus_to_hcd(udev->bus);
++				/* The xHC may think the device is already
++				 * reset, so ignore the status.
++				 */
++				if (hcd->driver->reset_device)
++					hcd->driver->reset_device(hcd, udev);
++			}
+ 		}
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
+@@ -2316,7 +2321,7 @@ static void hub_port_finish_reset(struct
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
+ 		}
+-		if (!warm)
++		if (!warm && udev)
+ 			usb_set_device_state(udev, *status
+ 					? USB_STATE_NOTATTACHED
+ 					: USB_STATE_DEFAULT);
 
 
