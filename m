@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab3CLWd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60210 "EHLO
+	id S933694Ab3CLWlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:41:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab3CLWdC (ORCPT
+	with ESMTP id S1756062Ab3CLWd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:02 -0400
+	Tue, 12 Mar 2013 18:33:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 049/100] ARM: 7658/1: mm: fix race updating mm->context.id on ASID rollover
-Date: Tue, 12 Mar 2013 15:31:34 -0700
-Message-Id: <20130312223128.263018588@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 064/100] tile: work around bug in the generic sys_llseek
+Date: Tue, 12 Mar 2013 15:31:49 -0700
+Message-Id: <20130312223129.862950606@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,51 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 37f47e3d62533c931b04cb409f2eb299e6342331 upstream.
+commit 5a114b98661e3aaa0ac085eb931584dce3b0ef9b upstream.
 
-If a thread triggers an ASID rollover, other threads of the same process
-must be made to wait until the mm->context.id for the shared mm_struct
-has been updated to new generation and associated book-keeping (e.g.
-TLB invalidation) has ben performed.
+sys_llseek should specify the high and low 32-bit seek values as "unsigned
+int" but instead it specifies "unsigned long".  Since compat syscall
+arguments are always sign-extended on tile, this means that a seek value
+of 0xffffffff will be incorrectly interpreted as a value of -1ULL.
 
-However, there is a *tiny* window where both mm->context.id and the
-relevant active_asids entry are updated to the new generation, but the
-TLB flush has not been performed, which could allow another thread to
-return to userspace with a dirty TLB, potentially leading to data
-corruption. In reality this will never occur because one CPU would need
-to perform a context-switch in the time it takes another to do a couple
-of atomic test/set operations but we should plug the race anyway.
+To avoid the risk of breaking binary compatibility on architectures
+that already use sys_llseek this way, we follow the same path as MIPS
+and provide a wrapper override.
 
-This patch moves the active_asids update until after the potential TLB
-flush on context-switch.
-
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/context.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/tile/include/asm/compat.h |    3 +++
+ arch/tile/kernel/compat.c      |   13 +++++++++++++
+ 2 files changed, 16 insertions(+)
 
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -204,11 +204,11 @@ void check_and_switch_context(struct mm_
- 	if ((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
- 		new_context(mm, cpu);
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -296,6 +296,9 @@ long compat_sys_sync_file_range2(int fd,
+ long compat_sys_fallocate(int fd, int mode,
+ 			  u32 offset_lo, u32 offset_hi,
+ 			  u32 len_lo, u32 len_hi);
++long compat_sys_llseek(unsigned int fd, unsigned int offset_high,
++		       unsigned int offset_low, loff_t __user * result,
++		       unsigned int origin);
  
--	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
--	cpumask_set_cpu(cpu, mm_cpumask(mm));
--
- 	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
- 		local_flush_tlb_all();
+ /* Assembly trampoline to avoid clobbering r0. */
+ long _compat_sys_rt_sigreturn(void);
+--- a/arch/tile/kernel/compat.c
++++ b/arch/tile/kernel/compat.c
+@@ -76,6 +76,18 @@ long compat_sys_fallocate(int fd, int mo
+ 			     ((loff_t)len_hi << 32) | len_lo);
+ }
+ 
++/*
++ * Avoid bug in generic sys_llseek() that specifies offset_high and
++ * offset_low as "unsigned long", thus making it possible to pass
++ * a sign-extended high 32 bits in offset_low.
++ */
++long compat_sys_llseek(unsigned int fd, unsigned int offset_high,
++		       unsigned int offset_low, loff_t __user * result,
++		       unsigned int origin)
++{
++	return sys_llseek(fd, offset_high, offset_low, result, origin);
++}
 +
-+	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
-+	cpumask_set_cpu(cpu, mm_cpumask(mm));
- 	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
+ /* Provide the compat syscall number to call mapping. */
+ #undef __SYSCALL
+ #define __SYSCALL(nr, call) [nr] = (call),
+@@ -83,6 +95,7 @@ long compat_sys_fallocate(int fd, int mo
+ /* See comments in sys.c */
+ #define compat_sys_fadvise64_64 sys32_fadvise64_64
+ #define compat_sys_readahead sys32_readahead
++#define sys_llseek compat_sys_llseek
  
- switch_mm_fastpath:
+ /* Call the assembly trampolines where necessary. */
+ #define compat_sys_rt_sigreturn _compat_sys_rt_sigreturn
 
 
