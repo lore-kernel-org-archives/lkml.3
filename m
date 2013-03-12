@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab3CLLoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:44:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39581 "EHLO arroyo.ext.ti.com"
+	id S932656Ab3CLLsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:48:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39586 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944Ab3CLLn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:43:58 -0400
+	id S1755327Ab3CLLoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:44:03 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 09/24] ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
-Date: Tue, 12 Mar 2013 13:43:11 +0200
-Message-ID: <1363088606-2692-10-git-send-email-rogerq@ti.com>
+Subject: [PATCH 12/24] ARM: OMAP3: igep0020: Adapt to ehci-omap changes
+Date: Tue, 12 Mar 2013 13:43:14 +0200
+Message-ID: <1363088606-2692-13-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
 References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
@@ -33,24 +33,24 @@ link them to the 2 PHYs we just created.
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-omap2/board-cm-t35.c |   95 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 90 insertions(+), 5 deletions(-)
+ arch/arm/mach-omap2/board-igep0020.c |  112 +++++++++++++++++++++++++++++----
+ 1 files changed, 98 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
-index af2bb21..155ab13 100644
---- a/arch/arm/mach-omap2/board-cm-t35.c
-+++ b/arch/arm/mach-omap2/board-cm-t35.c
-@@ -29,6 +29,7 @@
- #include <linux/i2c/twl.h>
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/machine.h>
-+#include <linux/usb/phy.h>
- #include <linux/mmc/host.h>
- #include <linux/usb/phy.h>
+diff --git a/arch/arm/mach-omap2/board-igep0020.c b/arch/arm/mach-omap2/board-igep0020.c
+index bf92678..c4730c6 100644
+--- a/arch/arm/mach-omap2/board-igep0020.c
++++ b/arch/arm/mach-omap2/board-igep0020.c
+@@ -22,6 +22,7 @@
  
-@@ -419,15 +420,92 @@ static struct omap2_hsmmc_info mmc[] = {
- 	{}	/* Terminator */
- };
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/fixed.h>
++#include <linux/usb/phy.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/mmc/host.h>
+ 
+@@ -527,26 +528,98 @@ static void __init igep_i2c_init(void)
+ 	omap3_pmic_init("twl4030", &igep_twldata);
+ }
  
 +/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
 +static struct platform_device hsusb1_phy_device = {
@@ -75,7 +75,7 @@ index af2bb21..155ab13 100644
 +static struct fixed_voltage_config hsusb1_reset_config = {
 +	.supply_name = "hsusb1_reset",
 +	.microvolts = 3300000,
-+	.gpio = OMAP_MAX_GPIO_LINES + 6,
++	.gpio = IGEP2_GPIO_USBH_NRESET,
 +	.startup_delay = 70000, /* 70msec */
 +	.enable_high = 1,
 +	.enabled_at_boot = 0,   /* keep in RESET */
@@ -113,7 +113,7 @@ index af2bb21..155ab13 100644
 +static struct fixed_voltage_config hsusb2_reset_config = {
 +	.supply_name = "hsusb2_reset",
 +	.microvolts = 3300000,
-+	.gpio = OMAP_MAX_GPIO_LINES + 7,
++	.gpio = IGEP3_GPIO_USBH_NRESET,
 +	.startup_delay = 70000, /* 70msec */
 +	.enable_high = 1,
 +	.enabled_at_boot = 0,   /* keep in RESET */
@@ -128,38 +128,59 @@ index af2bb21..155ab13 100644
 +	},
 +};
 +
- static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
- 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
- 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
--	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
-+};
- 
--	.phy_reset  = true,
--	.reset_gpio_port[0]  = OMAP_MAX_GPIO_LINES + 6,
--	.reset_gpio_port[1]  = OMAP_MAX_GPIO_LINES + 7,
--	.reset_gpio_port[2]  = -EINVAL
-+static struct platform_device *usbhs_devices[] = {
++static struct platform_device *igep2_devices[] __initdata = {
 +	&hsusb1_phy_device,
 +	&hsusb1_reset_device,
++};
++
++static struct platform_device *igep3_devices[] __initdata = {
 +	&hsusb2_phy_device,
 +	&hsusb2_reset_device,
++};
++
+ static struct usbhs_omap_platform_data igep2_usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+-	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+-
+-	.phy_reset = true,
+-	.reset_gpio_port[0] = IGEP2_GPIO_USBH_NRESET,
+-	.reset_gpio_port[1] = -EINVAL,
+-	.reset_gpio_port[2] = -EINVAL,
  };
  
- static void  __init cm_t35_init_usbh(void)
-@@ -444,6 +522,13 @@ static void  __init cm_t35_init_usbh(void)
- 		msleep(1);
+ static struct usbhs_omap_platform_data igep3_usbhs_bdata __initdata = {
+-	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+-
+-	.phy_reset = true,
+-	.reset_gpio_port[0] = -EINVAL,
+-	.reset_gpio_port[1] = IGEP3_GPIO_USBH_NRESET,
+-	.reset_gpio_port[2] = -EINVAL,
+ };
+ 
+ #ifdef CONFIG_OMAP_MUX
+@@ -642,8 +715,19 @@ static void __init igep_init(void)
+ 	if (machine_is_igep0020()) {
+ 		omap_display_init(&igep2_dss_data);
+ 		igep2_init_smsc911x();
++
++		platform_add_devices(igep2_devices, ARRAY_SIZE(igep2_devices));
++
++		/* PHY on HSUSB Port 1 i.e. index 0 */
++		usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
++
+ 		usbhs_init(&igep2_usbhs_bdata);
+ 	} else {
++		platform_add_devices(igep3_devices, ARRAY_SIZE(igep3_devices));
++
++		/* PHY on HSUSB Port 2 i.e. index 1 */
++		usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
++
+ 		usbhs_init(&igep3_usbhs_bdata);
  	}
- 
-+	platform_add_devices(usbhs_devices, ARRAY_SIZE(usbhs_devices));
-+
-+	/* PHY on HSUSB Port 1 i.e. index 0 */
-+	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
-+	/* PHY on HSUSB Port 2 i.e. index 1 */
-+	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
-+
- 	usbhs_init(&usbhs_bdata);
  }
- 
 -- 
 1.7.4.1
 
