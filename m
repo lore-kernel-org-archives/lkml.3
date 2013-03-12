@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab3CLUXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:23:09 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:65379 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab3CLUXH (ORCPT
+	id S933510Ab3CLU05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:26:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36586 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933028Ab3CLU04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:23:07 -0400
-Date: Tue, 12 Mar 2013 13:23:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Cong Wang <amwang@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH 05/14] KDB: add more exports for supporting KDB modules
-Message-ID: <20130312202303.GB6060@kroah.com>
-References: <20130312193823.212544181@gulag1.americas.sgi.com>
- <20130312193824.025713118@gulag1.americas.sgi.com>
+	Tue, 12 Mar 2013 16:26:56 -0400
+X-IronPort-AV: E=Sophos;i="4.84,833,1355126400"; 
+   d="scan'208";a="28881864"
+Message-ID: <513F8F80.1070409@codeaurora.org>
+Date: Tue, 12 Mar 2013 13:26:40 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312193824.025713118@gulag1.americas.sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Brown <davidb@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 07/11] ssbi: Use regular init level
+References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org> <1363113716-25897-1-git-send-email-davidb@codeaurora.org> <1363113716-25897-8-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1363113716-25897-8-git-send-email-davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 02:38:28PM -0500, Mike Travis wrote:
-> This patch adds some important KDB functions to be externally
-> usable by loadable KDB modules.
+On 03/12/13 11:41, David Brown wrote:
+> With device tree, and deferred probe, it is no longer necessary to
+> make sure that the ssbi bus driver is initialized very early.  Restore
+> to a regular module_init().
+>
+> Signed-off-by: David Brown <davidb@codeaurora.org>
+> ---
+>  drivers/ssbi/ssbi.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/ssbi/ssbi.c b/drivers/ssbi/ssbi.c
+> index 7ae8925..6878e55 100644
+> --- a/drivers/ssbi/ssbi.c
+> +++ b/drivers/ssbi/ssbi.c
+> @@ -379,7 +379,7 @@ static int __init msm_ssbi_init(void)
+>  {
+>  	return platform_driver_register(&msm_ssbi_driver);
+>  }
+> -postcore_initcall(msm_ssbi_init);
+> +module_init(msm_ssbi_init);
+>  
+>  static void __exit msm_ssbi_exit(void)
+>  {
 
-What modules would that be?  Are they in this patch series?
+With this change we can use module_platform_driver() too.
 
-> Note that often drivers bring in KDB modules for debugging, and in the
-> past KDB has not been limited to use by GPL only modules.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-It always has been, when was the in-kernel code any other way?
-
-> This patch restores KDB usefullness to non-GPL modules.
-
-As Eric says, you can't just do this, sorry.
-
-greg k-h
