@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab3CLJZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 05:25:41 -0400
-Received: from david.siemens.de ([192.35.17.14]:29953 "EHLO david.siemens.de"
+	id S1755227Ab3CLJ1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 05:27:53 -0400
+Received: from ozlabs.org ([203.10.76.45]:60151 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab3CLJZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 05:25:40 -0400
-Message-ID: <513EF48F.20004@siemens.com>
-Date: Tue, 12 Mar 2013 10:25:35 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754027Ab3CLJ1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 05:27:52 -0400
+Date: Tue, 12 Mar 2013 20:27:40 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        linuxppc-dev@ozlabs.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, benh@kernel.crashing.org
+Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
+ format
+Message-ID: <20130312092740.GC30591@iris.ozlabs.ibm.com>
+References: <20130123062201.GA13720@us.ibm.com>
+ <20130123062613.GF13720@us.ibm.com>
+ <20130226052646.GB21553@concordia>
+ <20130226200343.GA21543@us.ibm.com>
+ <20130227011725.GA5819@concordia>
+ <20130306054826.GA14627@us.ibm.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <20130311172342.GS31619@redhat.com> <513E158B.80506@siemens.com> <20130311174155.GU31619@redhat.com> <513E1CFC.6010201@siemens.com> <20130311181306.GW31619@redhat.com> <513E2220.2090501@siemens.com> <20130311183915.GA14689@redhat.com> <513E26A7.4020405@siemens.com> <20130311185132.GB14689@redhat.com> <513E2A0A.3080008@siemens.com> <20130311193003.GC14689@redhat.com>
-In-Reply-To: <20130311193003.GC14689@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130306054826.GA14627@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-11 20:30, Gleb Natapov wrote:
-> On Mon, Mar 11, 2013 at 08:01:30PM +0100, Jan Kiszka wrote:
->> On 2013-03-11 19:51, Gleb Natapov wrote:
->>>>> On Intel:
->>>>> CPU 1                          CPU 2 in a guest mode
->>>>> send INIT
->>>>> send SIPI
->>>>>                                 INIT vmexit
->>>>>                                 vmxoff
->>>>>                                 reset and start from SIPI vector
->>>>
->>>> Is SIPI sticky as well, even if the CPU is not in the wait-for-SIPI
->>>> state (but runnable and in vmxon) while receiving it?
->>>>
->>> That what they seams to be saying:
->>>  However, an INIT and SIPI interrupts sent to a CPU during time when
->>>  it is in a VMX mode are remembered and delivered, perhaps hours later,
->>>  when the CPU exits the VMX mode
->>>
->>> Otherwise their exploit will not work.
->>
->> Very weird, specifically as SIPI is not just a binary event but carries
->> payload. Will another SIPI event overwrite the previously "saved"
->> vector? We are deep into an underspecified area...
-> My guess is that VMX INIT blocking is done by the same mechanism as
-> INIT blocking during SMM. Obviously after exit from SMM pending
-> INIT/SIPI have to be processed.
+On Tue, Mar 05, 2013 at 09:48:26PM -0800, Sukadev Bhattiprolu wrote:
+> Michael Ellerman [michael@ellerman.id.au] wrote:
+> | I suspect Arnaldo was either waiting for an ACK from Ben, or was
+> | expecting Ben to take it?
+> 
+> Arnaldo, here is an updated patch. If it is acked by Paul Mackerras,
+> Michael Ellerman or Ben, will you add it to your tree so the whole
+> patchset comes from one place ?
+> 
+> Sukadev
+> 
+> ---
+> >From 50c7a46f14083c0ed10d66b7aed66ba76e798550 Mon Sep 17 00:00:00 2001
+> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> Date: Tue, 5 Mar 2013 21:20:56 -0800
+> Subject: [PATCH] [PATCH 5/6][v4]: perf Create a sysfs format entry for Power7 events
+> 
+> Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
+> which describes the format of the POWER7 PMU events.
+> 
+> This code is based on corresponding code in x86.
+> 
+> Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
+> 		for other POWER cpus. So move the code to POWER7-specific,
+> 		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
+> 
+> Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
+> 
+> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-I think this should be further examined via a test case that can run on
-real HW. Is kvm-unit-test ready for this? Then we "just" need to
-implement what you were already asking for: minimalistic nVMX tests...
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Acked-by: Paul Mackerras <paulus@samba.org>
