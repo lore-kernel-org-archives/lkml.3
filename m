@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933861Ab3CLW5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:57:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60579 "EHLO
+	id S1756202Ab3CLW5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:57:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab3CLWoO (ORCPT
+	with ESMTP id S1756085Ab3CLWoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:14 -0400
+	Tue, 12 Mar 2013 18:44:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>, NeilBrown <neilb@suse.de>,
-        Paul Menzel <paulepanter@users.sourceforge.net>
-Subject: [ 16/40] md: protect against crash upon fsync on ro array
-Date: Tue, 12 Mar 2013 15:43:37 -0700
-Message-Id: <20130312223213.241448300@linuxfoundation.org>
+        Avinash Patil <patila@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Yogesh Ashok Powar <yogeshp@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/40] mwifiex: correct sleep delay counter
+Date: Tue, 12 Mar 2013 15:43:34 -0700
+Message-Id: <20130312223212.904106765@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -29,45 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+From: Avinash Patil <patila@marvell.com>
 
-commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
+commit 3e7a4ff7c5b6423ddb644df9c41b8b6d2fb79d30 upstream.
 
-If an fsync occurs on a read-only array, we need to send a
-completion for the IO and may not increment the active IO count.
-Otherwise, we hit a bug trace and can't stop the MD array anymore.
+Maximum delay for waking up card is 50 ms. Because of typo in
+counter, this delay goes to 500ms. This patch fixes the bug.
 
-By advice of Christoph Hellwig we return success upon a flush
-request but we return -EROFS for other writes.
-We detect flush requests by checking if the bio has zero sectors.
-
-This patch is suitable to any -stable kernel to which it applies.
-
-Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: NeilBrown <neilb@suse.de>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/mwifiex/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -344,6 +344,10 @@ static void md_make_request(struct reque
- 		bio_io_error(bio);
- 		return;
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -288,7 +288,7 @@ static int mwifiex_pm_wakeup_card(struct
+ 		i++;
+ 		usleep_range(10, 20);
+ 		/* 50ms max wait */
+-		if (i == 50000)
++		if (i == 5000)
+ 			break;
  	}
-+	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
-+		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
-+		return;
-+	}
- 	smp_rmb(); /* Ensure implications of  'active' are visible */
- 	rcu_read_lock();
- 	if (mddev->suspended) {
+ 
 
 
