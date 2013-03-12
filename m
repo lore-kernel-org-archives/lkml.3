@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab3CLQju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:39:50 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:59137 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab3CLQjs (ORCPT
+	id S933180Ab3CLQkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:40:12 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23764 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933122Ab3CLQkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:39:48 -0400
-X-Greylist: delayed 72868 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 12:39:48 EDT
-X-Originating-IP: 50.43.39.152
-Date: Tue, 12 Mar 2013 09:39:42 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Konrad Vrba <konrad.vrba@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: very strange dependencies on CONFIG_EXPERT=n in kernel 3.8
-Message-ID: <20130312163941.GA3991@leaf>
-References: <CAF2Nc0zT5t_YeqzJWprUH7ma3_3LCWVXgbxLBODU7drgauDt=Q@mail.gmail.com>
- <20130311184916.GA6185@jtriplet-mobl1>
- <CAF2Nc0zSaXMkm-gkO9NqcAOubqSrZcBGeBeENo-jVZ+mo00ocQ@mail.gmail.com>
+	Tue, 12 Mar 2013 12:40:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+EzC+CFgRgMOwAIZ+GT3we
+Date: Tue, 12 Mar 2013 09:40:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, b-cousson@ti.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Message-ID: <20130312164007.GZ26093@atomide.com>
+References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAF2Nc0zSaXMkm-gkO9NqcAOubqSrZcBGeBeENo-jVZ+mo00ocQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Please don't top-post.]
+* Roger Quadros <rogerq@ti.com> [130312 04:47]:
+> Hi Tony,
+> 
+> These patches provide the SoC side code required to support
+> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+... 
 
-On Tue, Mar 12, 2013 at 03:52:24PM +0100, Konrad Vrba wrote:
-> On 3/11/13, Josh Triplett <josh@joshtriplett.org> wrote:
-> > On Sun, Mar 10, 2013 at 04:14:27PM +0100, Konrad Vrba wrote:
-> >> I have noticed that CONFIG_EXPERT=n makes the following options in the
-> >> kernel required (unremovable):
-> >>
-> >> CONFIG_FW_LOADER=y
-> >> CONFIG_EXTRA_FIRMWARE=""
-> >> CONFIG_MOUSE_PS2_ALPS=y
-> >> CONFIG_MOUSE_PS2_LOGIPS2PP=y
-> >> CONFIG_MOUSE_PS2_SYNAPTICS=y
-> >> CONFIG_MOUSE_PS2_LIFEBOOK=y
-> >> CONFIG_MOUSE_PS2_TRACKPOINT=y
-> >> CONFIG_VGA_ARB=y
-> >> CONFIG_VGA_ARB_MAX_GPUS=16
-> >> CONFIG_I8253_LOCK=y
-> >> CONFIG_DEBUG_MEMORY_INIT=y
-> >> CONFIG_PCSPKR_PLATFORM=y
-> >>
-> >> If I select CONFIG_EXPERT=y then I can remove those, but that creates
-> >> a new problem by making CONFIG_DEBUG_KERNEL=y unremovable.
-> >>
-> >> To make a specific example, this makes it impossible to compile a kernel
-> >> with
-> >> CONFIG_FW_LOADER=n
-> >> CONFIG_DEBUG_KERNEL=n
-> >> at the same time
-> >
-> > CONFIG_DEBUG_KERNEL, like CONFIG_EXPERT, should not directly affect the
-> > code included in the kernel; it should just avoid asking about a pile of
-> > other debugging options.  In practice, a small amount of
-> > architecture-specific code (for powerpc, parisc, and blackfin) did use
-> > it as a generic debug option, but that needs fixing.  So, for now, turn
-> > on CONFIG_EXPERT and live with having CONFIG_DEBUG_KERNEL turned on.
-> >
-> > That aside, several of the above options should not depend on EXPERT;
-> > why would PCSPKR_PLATFORM or DEBUG_MEMORY_INIT need to depend on EXPERT?
-> >
-> > - Josh Triplett
-> >
-> Thanks Josh,
-> unfortunately, I cannot live with CONFIG_DEBUG_KERNEL. I need a
-> minimalistic kernel, and every unnecessary KB is expensive. Besides, I
-> have ideological objections to having unneeded features compiled in my
-> kernel.
+>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
+>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
+>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
+>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
+>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
+>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
+>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
+>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
+>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
+>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
+>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
+>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
+>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
+>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
+>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
+>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
+>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
 
-What architecture will your kernel target?  If not powerpc, parisc, or
-blackfin, CONFIG_DEBUG_KERNEL will not add a single byte to your kernel,
-as long as you turn off all the other debugging options under it.
+Can't you have some mach-omap2/ehci-common.c that takes care
+of the initializiation to avoid this much addition to the
+board-*.c files? You may be able to have just a common function
+to do it and pass few parameters?
 
-> Is there any way of editing it directly in the .config file manually?
+Regards,
 
-No, you can't make the .config file violate the dependencies specified
-in Kconfig.  However, you *could* write and submit a patch fixing the
-underlying bug: add one or more new Kconfig symbols under
-CONFIG_DEBUG_KERNEL, and change all the instances of CONFIG_DEBUG_KERNEL
-in a .c, .h, or .S file to one of those.
-
-> Nobody asked for my opinion, but I feel I have to say something:
-> The linux kernel project is already a complicated endeavor as it is.
-> Why does somebody complicate it needlessly, by creating these
-> artificial problems.
-
-CONFIG_EXPERT and CONFIG_DEBUG_KERNEL actually exist for the opposite
-reason: to simplify kernel configuration for most people.  With
-CONFIG_EXPERT=n, you don't get asked about a pile of kernel options that
-almost everyone will want and that can unexpectedly break your kernel
-when turned off.  Likewise, CONFIG_DEBUG_KERNEL=n lets you avoid
-configuring a pile of individual debugging options.  (That matters more
-if you use "make config" and have to answer questions one by one in
-series, rather than "make menuconfig" where you can just ignore whole
-sections of configuration that you don't care about.)
-
-CONFIG_EXPERT=y means "I know what I'm doing and want to configure out
-features that almost every kernel needs", and you usually only turn it
-on when trying to make the smallest possible kernel.  In turn,
-CONFIG_EXPERT enables CONFIG_DEBUG_KERNEL so that you can see and turn
-*off* some of the debugging options that default to y, to make an even
-smaller kernel.  So, in practice, if you want to make the smallest
-possible kernel, you want CONFIG_EXPERT=y and CONFIG_DEBUG_KERNEL=y.
-That CONFIG_DEBUG_KERNEL controls a bit of miscellaneous debugging on a
-few architectures represents a bug, nothing more.
-
-- Josh Triplett
+Tony
