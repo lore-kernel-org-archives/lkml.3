@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab3CLM70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:59:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50207 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab3CLM7Y (ORCPT
+	id S932310Ab3CLNBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:01:18 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:48006 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab3CLNBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:59:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Danny Huang <dahuang@nvidia.com>
-Subject: Re: [PATCH v2] ARM: tegra: expose chip ID and revision
-Date: Tue, 12 Mar 2013 12:59:18 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux@arm.linux.org.uk, swarren@wwwdotorg.org, hdoyu@nvidia.com,
-        olof@lixom.net, gregkh@linuxfoundation.org, josephl@nvidia.com,
-        pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+	Tue, 12 Mar 2013 09:01:16 -0400
+From: Zhi-zhou Zhang <zhizhou.zh@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-References: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
-In-Reply-To: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303121259.18710.arnd@arndb.de>
-X-Provags-ID: V02:K0:6V/yVOga4qeQQhk1GTyDG6g0owtD7NyTmJKGC8UNCTD
- BtZXaTnzPko7AcUBP7Fb6Q2zzLNfS3YlDLwOi4SqJGH49XqTCt
- Ya34xyP521oQPkYRGv4BtXucV0jBISUjeU0472LKBq7uPyp9i4
- 5x/lGW0d9h0jWzEihLaOt4VwiKokY2JvhX+gepMR9UU0vGKILv
- eSps0HmIxBd4g/lzR0J3aByegG3nCe8+JGkV0B4C4uY1mLrlqn
- 4S8gCbVJXAijNBBHjC5mPBOZpKTxa1+zGifB062PaXe6V/inTl
- 58XSFk7VYy7Ql05rFlZ7lPeXnZVtHmluC18zn2l3s+DIJe78AN
- F/mMsBH09Bau270AgsdU=
+Cc: Zhi-zhou Zhang <zhizhou.zh@gmail.com>
+Subject: [PATCH] mips: lib/bitops.c: fix wrong return type
+Date: Tue, 12 Mar 2013 21:00:53 +0800
+Message-Id: <1363093253-17595-1-git-send-email-zhizhou.zh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 March 2013, Danny Huang wrote:
-> 
-> +void __init tegra_soc_device_init(void)
-> +{
-> +       struct soc_device *soc_dev;
-> +       struct soc_device_attribute *soc_dev_attr;
-> +
-> +       soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-> +       if (!soc_dev_attr)
-> +               return;
-> +
-> +       soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
-> +       soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
-> +       soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
-> +
-> +       soc_dev = soc_device_register(soc_dev_attr);
-> +       if (IS_ERR_OR_NULL(soc_dev))
-> +               kfree(soc_dev_attr);
-> +
-> +       return;
+Here should return 64-bit types rather than 32-bit types. Or we
+may get wrong return value if high 32-bit isn't equal to zero.
 
-You are dropping the soc_dev on the floor here by just returning.
+Signed-off-by: Zhi-zhou Zhang <zhizhou.zh@gmail.com>
+---
+ arch/mips/include/asm/bitops.h |    8 ++++----
+ arch/mips/lib/bitops.c         |   10 ++++++----
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
-The idea of the soc node is to have all on-soc components be children
-of that node, so you should instead pass it into of_platform_populate
-as the parent device.
+diff --git a/arch/mips/include/asm/bitops.h b/arch/mips/include/asm/bitops.h
+index 71305a8..7502601 100644
+--- a/arch/mips/include/asm/bitops.h
++++ b/arch/mips/include/asm/bitops.h
+@@ -51,13 +51,13 @@
+ void __mips_set_bit(unsigned long nr, volatile unsigned long *addr);
+ void __mips_clear_bit(unsigned long nr, volatile unsigned long *addr);
+ void __mips_change_bit(unsigned long nr, volatile unsigned long *addr);
+-int __mips_test_and_set_bit(unsigned long nr,
++unsigned long __mips_test_and_set_bit(unsigned long nr,
+ 			    volatile unsigned long *addr);
+-int __mips_test_and_set_bit_lock(unsigned long nr,
++unsigned long __mips_test_and_set_bit_lock(unsigned long nr,
+ 				 volatile unsigned long *addr);
+-int __mips_test_and_clear_bit(unsigned long nr,
++unsigned long __mips_test_and_clear_bit(unsigned long nr,
+ 			      volatile unsigned long *addr);
+-int __mips_test_and_change_bit(unsigned long nr,
++unsigned long __mips_test_and_change_bit(unsigned long nr,
+ 			       volatile unsigned long *addr);
+ 
+ 
+diff --git a/arch/mips/lib/bitops.c b/arch/mips/lib/bitops.c
+index 81f1dcf..f8d14fc 100644
+--- a/arch/mips/lib/bitops.c
++++ b/arch/mips/lib/bitops.c
+@@ -83,7 +83,7 @@ EXPORT_SYMBOL(__mips_change_bit);
+  * @nr: Bit to set
+  * @addr: Address to count from
+  */
+-int __mips_test_and_set_bit(unsigned long nr,
++unsigned long __mips_test_and_set_bit(unsigned long nr,
+ 			    volatile unsigned long *addr)
+ {
+ 	volatile unsigned long *a = addr;
+@@ -109,7 +109,7 @@ EXPORT_SYMBOL(__mips_test_and_set_bit);
+  * @nr: Bit to set
+  * @addr: Address to count from
+  */
+-int __mips_test_and_set_bit_lock(unsigned long nr,
++unsigned long __mips_test_and_set_bit_lock(unsigned long nr,
+ 				 volatile unsigned long *addr)
+ {
+ 	volatile unsigned long *a = addr;
+@@ -135,7 +135,8 @@ EXPORT_SYMBOL(__mips_test_and_set_bit_lock);
+  * @nr: Bit to clear
+  * @addr: Address to count from
+  */
+-int __mips_test_and_clear_bit(unsigned long nr, volatile unsigned long *addr)
++unsigned long __mips_test_and_clear_bit(unsigned long nr,
++				volatile unsigned long *addr)
+ {
+ 	volatile unsigned long *a = addr;
+ 	unsigned bit = nr & SZLONG_MASK;
+@@ -160,7 +161,8 @@ EXPORT_SYMBOL(__mips_test_and_clear_bit);
+  * @nr: Bit to change
+  * @addr: Address to count from
+  */
+-int __mips_test_and_change_bit(unsigned long nr, volatile unsigned long *addr)
++unsigned long __mips_test_and_change_bit(unsigned long nr,
++				volatile unsigned long *addr)
+ {
+ 	volatile unsigned long *a = addr;
+ 	unsigned bit = nr & SZLONG_MASK;
+-- 
+1.7.9.5
 
-	Arnd
