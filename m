@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab3CLLvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:51:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44452 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab3CLLno (ORCPT
+	id S933009Ab3CLLxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:53:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59261 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932912Ab3CLLxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:43:44 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 02/24] ARM: OMAP2+: omap4panda: Provide USB Host's PHY platform data
-Date: Tue, 12 Mar 2013 13:43:04 +0200
-Message-ID: <1363088606-2692-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363088606-2692-1-git-send-email-rogerq@ti.com>
-References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
+	Tue, 12 Mar 2013 07:53:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+8vzYb9vkwBxhgxMsaTGt0XuG67HDz7wk=
+Date: Tue, 12 Mar 2013 07:53:39 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Olof Johansson <olof@lixom.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
+Message-ID: <20130312115339.GF12700@titan.lakedaemon.net>
+References: <20130312144714.39749c5b0bd1aea14c4d2ff8@canb.auug.org.au>
+ <20130312062509.GQ21478@lunn.ch>
+ <20130312111246.GD12700@titan.lakedaemon.net>
+ <CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform device and data for 'nop-usb-xceiv'. This will be used
-as PHY for HS USB port 1, so provide binding information for it.
+On Tue, Mar 12, 2013 at 04:37:39AM -0700, Olof Johansson wrote:
+> On Tue, Mar 12, 2013 at 4:12 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Tue, Mar 12, 2013 at 07:25:09AM +0100, Andrew Lunn wrote:
+> >> On Tue, Mar 12, 2013 at 02:47:14PM +1100, Stephen Rothwell wrote:
+> >> > Hi Andrew,
+> >> >
+> >> > Today's linux-next merge of the akpm tree got a conflict in
+> >> > drivers/rtc/rtc-mv.c between commit 89c58c198b25 ("rtc: rtc-mv: Add
+> >> > support for clk to avoid lockups") from the arm-soc tree and commit "rtc:
+> >> > rtc-mv: use devm_rtc_device_register()" from the akpm tree.
+> >> >
+> >> > I fixed it up (I think - see below) and can carry the fix as necessary
+> >> > (no action is required).
+> >>
+> >> Hi Stephan
+> >>
+> >> Looks O.K. to me.
+> >>
+> >> Acked-by: Andrew Lunn <andrew@lunn.ch>
+> >
+> > Same here,
+> >
+> > Acked-by: Jason Cooper <jason@lakedaemon.net>
+> 
+> We should make sure that future RTC changes get queued through AKPM
+> and not through us to avoid these kind of conflicts. Same as other
+> driver subsystems..
 
-Get rid of managing the PHY clock as it will be done by the PHY driver.
-For that to work we create a clock alias that links the PHY clock name
-to the PHY device name.
+I agree, however, this patch is part of a four patch series fixing a
+single problem reported by Simon Baatz:
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- arch/arm/mach-omap2/board-omap4panda.c |   34 ++++++++++++++++++++++---------
- 1 files changed, 24 insertions(+), 10 deletions(-)
+  89c58c1 rtc: rtc-mv: Add support for clk to avoid lockups
+  de88747 gpio: mvebu: Add clk support to prevent lockup
+  7bf5b40 ARM: kirkwood: fix to retain gbe MAC addresses for DT kernels
+  93fff4c ARM: kirkwood: of_serial: fix clock gating by removing clock-frequency
 
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index b02c2f0..feffde6 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -31,6 +31,7 @@
- #include <linux/ti_wilink_st.h>
- #include <linux/usb/musb.h>
- #include <linux/usb/phy.h>
-+#include <linux/usb/nop-usb-xceiv.h>
- #include <linux/wl12xx.h>
- #include <linux/irqchip/arm-gic.h>
- #include <linux/platform_data/omap-abe-twl6040.h>
-@@ -132,12 +133,27 @@ static struct platform_device btwilink_device = {
- 	.id	= -1,
- };
- 
-+/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
-+static struct nop_usb_xceiv_platform_data hsusb1_phy_data = {
-+	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
-+	.clk_rate = 19200000,
-+};
-+
-+static struct platform_device hsusb1_phy_device = {
-+	.name	= "nop_usb_xceiv",
-+	.id	= 1,
-+	.dev	= {
-+		.platform_data = &hsusb1_phy_data,
-+	},
-+};
-+
- static struct platform_device *panda_devices[] __initdata = {
- 	&leds_gpio,
- 	&wl1271_device,
- 	&panda_abe_audio,
- 	&panda_hdmi_audio_codec,
- 	&btwilink_device,
-+	&hsusb1_phy_device,
- };
- 
- static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
-@@ -158,16 +174,6 @@ static struct gpio panda_ehci_gpios[] __initdata = {
- static void __init omap4_ehci_init(void)
- {
- 	int ret;
--	struct clk *phy_ref_clk;
--
--	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
--	phy_ref_clk = clk_get(NULL, "auxclk3_ck");
--	if (IS_ERR(phy_ref_clk)) {
--		pr_err("Cannot request auxclk3\n");
--		return;
--	}
--	clk_set_rate(phy_ref_clk, 19200000);
--	clk_prepare_enable(phy_ref_clk);
- 
- 	/* disable the power to the usb hub prior to init and reset phy+hub */
- 	ret = gpio_request_array(panda_ehci_gpios,
-@@ -181,6 +187,14 @@ static void __init omap4_ehci_init(void)
- 	gpio_export(GPIO_HUB_NRESET, 0);
- 	gpio_set_value(GPIO_HUB_NRESET, 1);
- 
-+	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
-+	ret = clk_add_alias("main_clk", "nop_usb_xceiv.1", "auxclk3_ck", NULL);
-+	if (ret)
-+		pr_err("Failed to add main_clk alias to auxclk3_ck\n");
-+
-+	/* PHY on HS USB Port 1 i.e. index 0 */
-+	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
-+
- 	usbhs_init(&usbhs_bdata);
- 
- 	/* enable power to hub */
--- 
-1.7.4.1
+Basically, if the user builds a kernel with most everything as modules
+(eg copying the debian config), it will fail to boot.  All four fixes
+are needed together to solve the problem.
 
+I chose to keep them together to maintain bisectability.  Either you
+have all of the fix (you landed on this branch), or you don't.  Was this
+the correct decision in this case, or did I miss something?
+
+Also, this series is CC'd to stable for inclusion in v3.8
+
+thx,
+
+Jason.
