@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab3CLDkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 23:40:22 -0400
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:60711 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754427Ab3CLDkV (ORCPT
+	id S932074Ab3CLDkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 23:40:49 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34092 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3CLDks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 23:40:21 -0400
-Message-ID: <513EA3A4.4070100@opengridcomputing.com>
-Date: Mon, 11 Mar 2013 22:40:20 -0500
-From: Tom Tucker <tom@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	Mon, 11 Mar 2013 23:40:48 -0400
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH linux-next v3] SUNRPC: rpcrdma_register_default_external:
- Dynamically allocate ib_phys_buf
-References: <4FA345DA4F4AE44899BD2B03EEEC2FA9286BA156@sacexcmbx05-prd.hq.netapp.com> <1363036508-24935-1-git-send-email-tim.gardner@canonical.com> <20130311212535.GG642@fieldses.org> <513E6271.3060107@opengridcomputing.com> <513E989E.8060206@canonical.com>
-In-Reply-To: <513E989E.8060206@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 11 Mar 2013 20:40:26 -0700
+X-Google-Sender-Auth: iH26qE35ezIWZKZYtDe8r5GWGz4
+Message-ID: <CAB=NE6Vj1P0fDDvuVqsDcvOhHYJf4=WvGnzM1963RrLvtd6XHg@mail.gmail.com>
+Subject: compat-drivers based on v3.9-rc2
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've kicked out compat-drivers releases based on v3.9-rc2 [0], be sure
+to use the temporary release page [1] while we get one in place on
+kernel.org. We are on rc2 now... please test and report any issues!
+Please submit your patches for anything you think is critical but not
+'stable' material for inclusion of those patches into their respective
+directory, if unclear please read the additional-patches documentation
+[2]. This should allow us developers to focus on convincing PHBs to
+always work upstream without having them to persuade their own
+'private' releases to customers / your mom that typically do carry
+these patches but they never get merged back upstream.
 
-Ah....Ok
+[0] https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.9-rc2/
+[1] http://drvbp1.linux-foundation.org/~mcgrof/rel-html/compat-drivers/
+[2] https://backports.wiki.kernel.org/index.php/Documentation/compat-drivers/additional-patches
 
-On 3/11/13 9:53 PM, Tim Gardner wrote:
-> On 03/11/2013 05:02 PM, Tom Tucker wrote:
->> On 3/11/13 4:25 PM, J. Bruce Fields wrote:
->
-> <snip>
->
->>> Looks good to me; wish we could get it tested....
->>
->> I will test it. Tim could you please send me a final version that you'd
->> like tested as a single message?
->>
->
-> I'm a little confused about what you are asking. I think v3 of the patch 
-> is the final version (unless you find bugs with it).
->
->> Would someone (like Tim maybe ... hint hint) look at tearing out all
->> those dead registration strategies? I don't think we need or will ever
->> use bounce-buffers, memory windows, or mlnx fmr.  The only two that are
->> used and tested are all-phys and FRMR (the default).
->>
->
-> Dunno if I'll get time for that. I had a one day window where I could 
-> hack out some simple patches. Now I'm back to the usual grindstone.
->
-> rtg
-
+  Luis
