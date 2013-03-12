@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab3CLSMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:12:21 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:49020 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3CLSMT (ORCPT
+	id S933266Ab3CLSMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:12:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55081 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932465Ab3CLSMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:12:19 -0400
+	Tue, 12 Mar 2013 14:12:50 -0400
+Date: Tue, 12 Mar 2013 18:12:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regmap: Expose total memory consumption in the rbtree
+ debugfs entry
+Message-ID: <20130312181246.GA19942@opensource.wolfsonmicro.com>
+References: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F79273681@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F79273681@DQHE02.ent.ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 12 Mar 2013 11:11:57 -0700
-Message-ID: <CAK5ve-KwNd9g1n_8ODx5cc0S65CKQAJ-oEmEPNvujy=au9DYYA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] leds: lm355x, lm3642: support Camera LED triggers for flash/torch
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeong, Daniel" <Daniel.Jeong@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 12:36 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> LM355x and LM3642 support flash and torch functionality.
->
->  (Camera driver)          (LED trigger for camera)       (LED driver)
->  Turn on the flash  ...>  ledtrig_flash_ctrl(true) ...>  LM355x or LM3642
->                                                          brightness ctrl
->                                                        <actual driving here>
->
-> Flash/torch LEDs are controlled by other driver using LED camera trigger
-> APIs, ledtrig_flash_ctrl()/ledtrig_torch_ctrl().
-> Then, actual device control is activated by each LED driver such like
-> LM355x or LM3642.
->
 
-Looks good to me, I will merge this after you update PATCH 2/3.
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
--Bryan
+On Tue, Mar 12, 2013 at 05:26:49PM +0000, Dimitris Papastamos wrote:
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lm355x.c |    2 ++
->  drivers/leds/leds-lm3642.c |    2 ++
->  2 files changed, 4 insertions(+)
->
-> diff --git a/drivers/leds/leds-lm355x.c b/drivers/leds/leds-lm355x.c
-> index 4117235..d81a8e7 100644
-> --- a/drivers/leds/leds-lm355x.c
-> +++ b/drivers/leds/leds-lm355x.c
-> @@ -477,6 +477,7 @@ static int lm355x_probe(struct i2c_client *client,
->         chip->cdev_flash.name = "flash";
->         chip->cdev_flash.max_brightness = 16;
->         chip->cdev_flash.brightness_set = lm355x_strobe_brightness_set;
-> +       chip->cdev_flash.default_trigger = "flash";
->         err = led_classdev_register((struct device *)
->                                     &client->dev, &chip->cdev_flash);
->         if (err < 0)
-> @@ -486,6 +487,7 @@ static int lm355x_probe(struct i2c_client *client,
->         chip->cdev_torch.name = "torch";
->         chip->cdev_torch.max_brightness = 8;
->         chip->cdev_torch.brightness_set = lm355x_torch_brightness_set;
-> +       chip->cdev_torch.default_trigger = "torch";
->         err = led_classdev_register((struct device *)
->                                     &client->dev, &chip->cdev_torch);
->         if (err < 0)
-> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
-> index 9f428d9..f361bbe 100644
-> --- a/drivers/leds/leds-lm3642.c
-> +++ b/drivers/leds/leds-lm3642.c
-> @@ -363,6 +363,7 @@ static int lm3642_probe(struct i2c_client *client,
->         chip->cdev_flash.name = "flash";
->         chip->cdev_flash.max_brightness = 16;
->         chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
-> +       chip->cdev_flash.default_trigger = "flash";
->         err = led_classdev_register((struct device *)
->                                     &client->dev, &chip->cdev_flash);
->         if (err < 0) {
-> @@ -380,6 +381,7 @@ static int lm3642_probe(struct i2c_client *client,
->         chip->cdev_torch.name = "torch";
->         chip->cdev_torch.max_brightness = 8;
->         chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
-> +       chip->cdev_torch.default_trigger = "torch";
->         err = led_classdev_register((struct device *)
->                                     &client->dev, &chip->cdev_torch);
->         if (err < 0) {
-> --
-> 1.7.9.5
->
->
-> Best Regards,
-> Milo
->
->
+> +	mem_size = sizeof(*rbtree_ctx);
+> +
+>  	for (node = rb_first(&rbtree_ctx->root); node != NULL;
+>  	     node = rb_next(node)) {
+>  		n = container_of(node, struct regcache_rbtree_node, node);
+> +		mem_size += sizeof(*n);
+> +		mem_size += (n->blklen * map->cache_word_size);
+
+This appears to ignore the size of the node structure and only have the
+root context and the data.
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRP2/+AAoJELSic+t+oim9GA4P/0XVDL43nZ3IhDE6npx0++iG
+gkSoLS7gy+FoxwBl0rSg0JCWNq5ItH6j8qXMxG5XVaDol8wQeNchShPgxWVoIZGC
+lxjzUGOlFikDasWD8O3iJbZVf1pyk8jIJy+BqhgmLa4PG5oljmC7Q8L4lKHY8rOa
+/1IXBXjeK7Fd8jKNVmWFk36GQt21TnUswjm7Ta0RMD+3xO67EXn+QNVAKhPXSb/7
+lu5pf7Ie7reKgRkHnW2iQwNUhHCwfwVdEZ2GHRIyHPmcYwGzawU4cJCZp9dylT4n
+PEHdOaLYchv98ICMXXlTo+yiCzaMcvg6XE7Tse+YamXXDRF67qfd/DeXQtCTTHQe
+sEMa7PbNQaHZonMFXGQ6cBEuzV6YaYYSJzYlPRi/HLkSsR39noQULHhci8OQI5Xy
+k7EE5s24JpMluxd8dolVQRJ9RfF/7LOp1coGb6zCRlmSfjlOvw9LEVcAE5Su7I25
+0mJIVgRl61ZNUSnzSmyTyRH33ZZK9VpKNpO27llpsgohQXlC10OyOhBZMC0O0P4Z
+yn32ZYFFeV+SpN7EmVOkJIAC3T3tO2ZOEVRnm0JoFSm/mAdbbBvvovLw7E6nDMA+
+LpZSgTeLu0fzo28VSmQM2TVt82RL7Rv1u0uVjkgSJq7WlS2uDOw9rLOw0J9aeD37
+4Y98Kb8Wc7PK6Cx2pVkD
+=43qf
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
