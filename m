@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964883Ab3CLWoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60717 "EHLO
+	id S964962Ab3CLWrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:47:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3CLWok (ORCPT
+	with ESMTP id S964885Ab3CLWoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:40 -0400
+	Tue, 12 Mar 2013 18:44:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 09/21] ath9k: fix RSSI dummy marker value
-Date: Tue, 12 Mar 2013 15:44:11 -0700
-Message-Id: <20130312223246.207395203@linuxfoundation.org>
+        David Howells <dhowells@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 16/21] keys: fix race with concurrent install_user_keyrings()
+Date: Tue, 12 Mar 2013 15:44:18 -0700
+Message-Id: <20130312223246.995719035@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -27,34 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: David Howells <dhowells@redhat.com>
 
-commit a3d63cadbad97671d740a9698acc2c95d1ca6e79 upstream.
+commit 0da9dfdd2cd9889201bc6f6f43580c99165cd087 upstream.
 
-RSSI is being stored internally as s8 in several places. The indication
-of an unset RSSI value, ATH_RSSI_DUMMY_MARKER, was supposed to have been
-set to 127, but ended up being set to 0x127 because of a code cleanup
-mistake. This could lead to invalid signal strength values in a few
-places.
+This fixes CVE-2013-1792.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+There is a race in install_user_keyrings() that can cause a NULL pointer
+dereference when called concurrently for the same user if the uid and
+uid-session keyrings are not yet created.  It might be possible for an
+unprivileged user to trigger this by calling keyctl() from userspace in
+parallel immediately after logging in.
+
+Assume that we have two threads both executing lookup_user_key(), both
+looking for KEY_SPEC_USER_SESSION_KEYRING.
+
+	THREAD A			THREAD B
+	===============================	===============================
+					==>call install_user_keyrings();
+	if (!cred->user->session_keyring)
+	==>call install_user_keyrings()
+					...
+					user->uid_keyring = uid_keyring;
+	if (user->uid_keyring)
+		return 0;
+	<==
+	key = cred->user->session_keyring [== NULL]
+					user->session_keyring = session_keyring;
+	atomic_inc(&key->usage); [oops]
+
+At the point thread A dereferences cred->user->session_keyring, thread B
+hasn't updated user->session_keyring yet, but thread A assumes it is
+populated because install_user_keyrings() returned ok.
+
+The race window is really small but can be exploited if, for example,
+thread B is interrupted or preempted after initializing uid_keyring, but
+before doing setting session_keyring.
+
+This couldn't be reproduced on a stock kernel.  However, after placing
+systemtap probe on 'user->session_keyring = session_keyring;' that
+introduced some delay, the kernel could be crashed reliably.
+
+Fix this by checking both pointers before deciding whether to return.
+Alternatively, the test could be done away with entirely as it is checked
+inside the mutex - but since the mutex is global, that may not be the best
+way.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/common.h |    2 +-
+ security/keys/process_keys.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/common.h
-+++ b/drivers/net/wireless/ath/ath9k/common.h
-@@ -35,7 +35,7 @@
- #define WME_AC_BK   3
- #define WME_NUM_AC  4
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -54,7 +54,7 @@ int install_user_keyrings(void)
  
--#define ATH_RSSI_DUMMY_MARKER   0x127
-+#define ATH_RSSI_DUMMY_MARKER   127
- #define ATH_RSSI_LPF_LEN 		10
- #define RSSI_LPF_THRESHOLD		-20
- #define ATH_RSSI_EP_MULTIPLIER     (1<<7)
+ 	kenter("%p{%u}", user, user->uid);
+ 
+-	if (user->uid_keyring) {
++	if (user->uid_keyring && user->session_keyring) {
+ 		kleave(" = 0 [exist]");
+ 		return 0;
+ 	}
 
 
