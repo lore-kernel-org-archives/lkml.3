@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab3CLPmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:42:32 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:44531 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932865Ab3CLPm0 (ORCPT
+	id S933074Ab3CLPmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 11:42:46 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:32907 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933052Ab3CLPmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:42:26 -0400
+	Tue, 12 Mar 2013 11:42:42 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
         ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
         hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 03/13] vfs-introduce-clone_private_mount
-Date: Tue, 12 Mar 2013 16:41:38 +0100
-Message-Id: <1363102908-28956-4-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 11/13] vfs-export-inode_permission-to-modules
+Date: Tue, 12 Mar 2013 16:41:46 +0100
+Message-Id: <1363102908-28956-12-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
 References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
@@ -26,58 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Overlayfs needs a private clone of the mount, so create a function for
-this and export to modules.
+We need to be able to check inode permissions (but not filesystem implied
+permissions) for stackable filesystems.  Expose this interface for overlayfs.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namespace.c        |   18 ++++++++++++++++++
- include/linux/mount.h |    3 +++
- 2 files changed, 21 insertions(+)
+ fs/internal.h      |    5 -----
+ fs/namei.c         |    1 +
+ include/linux/fs.h |    1 +
+ 3 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 50ca17d..9791b4e 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1399,6 +1399,24 @@ void drop_collected_mounts(struct vfsmount *mnt)
- 	release_mounts(&umount_list);
+diff --git a/fs/internal.h b/fs/internal.h
+index 507141f..89481ac 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -42,11 +42,6 @@ static inline int __sync_blockdev(struct block_device *bdev, int wait)
+ extern void __init chrdev_init(void);
+ 
+ /*
+- * namei.c
+- */
+-extern int __inode_permission(struct inode *, int);
+-
+-/*
+  * namespace.c
+  */
+ extern int copy_mount_options(const void __user *, unsigned long *);
+diff --git a/fs/namei.c b/fs/namei.c
+index c1c0c15..e1cffbd 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -402,6 +402,7 @@ int __inode_permission(struct inode *inode, int mask)
+ 
+ 	return security_inode_permission(inode, mask);
  }
++EXPORT_SYMBOL(__inode_permission);
  
-+struct vfsmount *clone_private_mount(struct path *path)
-+{
-+	struct mount *old_mnt = real_mount(path->mnt);
-+	struct mount *new_mnt;
-+
-+	if (IS_MNT_UNBINDABLE(old_mnt))
-+		return ERR_PTR(-EINVAL);
-+
-+	down_read(&namespace_sem);
-+	new_mnt = clone_mnt(old_mnt, path->dentry, CL_PRIVATE);
-+	up_read(&namespace_sem);
-+	if (!new_mnt)
-+		return ERR_PTR(-ENOMEM);
-+
-+	return &new_mnt->mnt;
-+}
-+EXPORT_SYMBOL_GPL(clone_private_mount);
-+
- int iterate_mounts(int (*f)(struct vfsmount *, void *), void *arg,
- 		   struct vfsmount *root)
- {
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index d7029f4..344a262 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -66,6 +66,9 @@ extern void mnt_pin(struct vfsmount *mnt);
- extern void mnt_unpin(struct vfsmount *mnt);
- extern int __mnt_is_readonly(struct vfsmount *mnt);
+ /**
+  * sb_permission - Check superblock-level permissions
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e4e5fbd..3353de6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2224,6 +2224,7 @@ extern sector_t bmap(struct inode *, sector_t);
+ #endif
+ extern int notify_change(struct dentry *, struct iattr *);
+ extern int inode_permission(struct inode *, int);
++extern int __inode_permission(struct inode *, int);
+ extern int generic_permission(struct inode *, int);
  
-+struct path;
-+extern struct vfsmount *clone_private_mount(struct path *path);
-+
- struct file_system_type;
- extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
- 				      int flags, const char *name,
+ static inline bool execute_ok(struct inode *inode)
 -- 
 1.7.10.4
 
