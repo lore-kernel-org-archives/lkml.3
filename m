@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933950Ab3CLXBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:01:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60875 "EHLO
+	id S933683Ab3CLWdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933741Ab3CLXBh (ORCPT
+	with ESMTP id S1755781Ab3CLWcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 19:01:37 -0400
-Date: Tue, 12 Mar 2013 16:01:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrew Shewmaker <agshew@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: Re: [PATCH v5 1/2] mm: limit growth of 3% hardcoded other user
- reserve
-Message-Id: <20130312160136.b0f09ca7b1b4f2efe01f6617@linux-foundation.org>
-In-Reply-To: <20130306235201.GA1421@localhost.localdomain>
-References: <20130306235201.GA1421@localhost.localdomain>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Mar 2013 18:32:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takahisa Tanaka <mc74hc00@gmail.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 010/100] watchdog: sp5100_tco: Fix wrong indirect I/O access for getting value of reserved bits
+Date: Tue, 12 Mar 2013 15:30:55 -0700
+Message-Id: <20130312223124.039360804@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
+References: <20130312223122.884099393@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013 18:52:01 -0500 Andrew Shewmaker <agshew@gmail.com> wrote:
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-> Add user_reserve_pages knob.
-> 
-> Limit the growth of the memory reserved for other user
-> processes to min(3% current process, user_reserve_pages).
-> 
-> user_reserve_pages defaults to min(3% free pages, 128MB)
-> I arrived at 128MB by taking that max VSZ of sshd, login, 
-> bash, and top ... then adding the RSS of each.
-> 
-> This only affects OVERCOMMIT_NEVER mode.
+------------------
 
-Can we have a more complete changelog, please?  One which describes, at
-great length, *why* we're doing this.  Describe the problems you
-observed, the possible means of addressing them, why this means is
-considered best, etc.
+From: Takahisa Tanaka <mc74hc00@gmail.com>
 
-Also, there has been considerable discussion over this patchset and it
-is good to update the changelogs to reflect that discussion.  Partly
-because other people will be asking the same questions when they see
-the patches and partly so that reviewers can understand how earlier
-objections/suggestions were addressed.  Assume that your audience
-has not read this email thread!
+commit 10ab329b5db7e592a3a60b4594e4e5f40b60c45c upstream.
 
->From a quick read of the code, it appears that the root-cant-log-in
-problem was addressed by simply leaving it up to the administrator,
-yes?  If the administrator sets user_reserve_pages or
-admin_reserve_pages to zero then they risk hitting the root-cant-log-in
-problem, yes?  If so then I guess this is an OK approach, but we should
-clearly describe the risks in the documentation.
+In case of SB800 or later chipset and re-programming MMIO address(*),
+sp5100_tco module may read incorrect value of reserved bit, because the module
+reads a value from an incorrect I/O address. However, this bug doesn't cause
+a problem, because when re-programming MMIO address, by chance the module
+writes zero (this is BIOS's default value) to the low three bits of register.
+* In most cases, PC with SB8x0 or later chipset doesn't need to re-programming
+  MMIO address, because such PC can enable AcpiMmio and can use 0xfed80b00 for
+  watchdog register base address.
 
-Finally, I am allergic to exported interfaces which deal in "pages". 
-Because PAGE_SIZE can vary by a factor of 16 depending upon config (ie:
-architecture).  The risk is that a setup script which works nicely on
-4k x86_64 will waste memory when executed on a 64k PAGE_SIZE powerpc
-box.  A smart programmer will recognize this and will adapt the setting
-using getpagesize(2), but if we define these things in "bytes" rather
-than "pages" then dumb programmers can use it too.
+This patch fixes this bug.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
+Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/watchdog/sp5100_tco.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/watchdog/sp5100_tco.c
++++ b/drivers/watchdog/sp5100_tco.c
+@@ -500,14 +500,15 @@ static unsigned char sp5100_tco_setupdev
+ 	/* Restore to the low three bits, if chipset is SB8x0(or later) */
+ 	if (sp5100_tco_pci->revision >= 0x40) {
+ 		u8 reserved_bit;
+-		reserved_bit = inb(base_addr) & 0x7;
++		outb(base_addr+0, index_reg);
++		reserved_bit = inb(data_reg) & 0x7;
+ 		val |= (u32)reserved_bit;
+ 	}
+ 
+ 	/* Re-programming the watchdog timer base address */
+ 	outb(base_addr+0, index_reg);
+ 	/* Low three bits of BASE are reserved */
+-	outb((val >>  0) & 0xf8, data_reg);
++	outb((val >>  0) & 0xff, data_reg);
+ 	outb(base_addr+1, index_reg);
+ 	outb((val >>  8) & 0xff, data_reg);
+ 	outb(base_addr+2, index_reg);
+
 
