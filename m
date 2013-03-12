@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3CLWgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:36:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60462 "EHLO
+	id S1756131Ab3CLWdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab3CLWdl (ORCPT
+	with ESMTP id S1756035Ab3CLWd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:41 -0400
+	Tue, 12 Mar 2013 18:33:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 095/100] USB: Dont use EHCI port sempahore for USB 3.0 hubs.
-Date: Tue, 12 Mar 2013 15:32:20 -0700
-Message-Id: <20130312223133.079443132@linuxfoundation.org>
+        Joseph Yasi <joe.yasi@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 072/100] efivarfs: return accurate error code in efivarfs_fill_super()
+Date: Tue, 12 Mar 2013 15:31:57 -0700
+Message-Id: <20130312223130.679686857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,63 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-[This is upstream commit 0fe51aa5eee51db7c7ecd201d42a977ad79c58b6.
-It needs to be backported to kernels as old as 3.2, because it fixes the
-buggy commit 65bdac5effd15d6af619b3b7218627ef4d84ed6a "USB: Handle warm
-reset failure on empty port."]
+commit feff5dc4f98330d8152b521acc2e18c16712e6c8 upstream.
 
-The EHCI host controller needs to prevent EHCI initialization when the
-UHCI or OHCI companion controller is in the middle of a port reset.  It
-uses ehci_cf_port_reset_rwsem to do this.  USB 3.0 hubs can't be under
-an EHCI host controller, so it makes no sense to down the semaphore for
-USB 3.0 hubs.  It also makes the warm port reset code more complex.
+Joseph was hitting a failure case when mounting efivarfs which
+resulted in an incorrect error message,
 
-Don't down ehci_cf_port_reset_rwsem for USB 3.0 hubs.
+  $ sudo mount -v /sys/firmware/efi/efivars mount: Cannot allocate memory
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+triggered when efivarfs_valid_name() returned -EINVAL.
+
+Make sure we pass accurate return values up the stack if
+efivarfs_fill_super() fails to build inodes for EFI variables.
+
+Reported-by: Joseph Yasi <joe.yasi@gmail.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeremy Kerr <jk@ozlabs.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/firmware/efivars.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2661,17 +2661,16 @@ static int hub_port_reset(struct usb_hub
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1110,15 +1110,22 @@ static struct dentry_operations efivarfs
+ 
+ static struct dentry *efivarfs_alloc_dentry(struct dentry *parent, char *name)
  {
- 	int i, status;
++	struct dentry *d;
+ 	struct qstr q;
++	int err;
  
--	if (!warm) {
--		/* Block EHCI CF initialization during the port reset.
--		 * Some companion controllers don't like it when they mix.
--		 */
--		down_read(&ehci_cf_port_reset_rwsem);
--	} else {
--		if (!hub_is_superspeed(hub->hdev)) {
-+	if (!hub_is_superspeed(hub->hdev)) {
-+		if (warm) {
- 			dev_err(hub->intfdev, "only USB3 hub support "
- 						"warm reset\n");
- 			return -EINVAL;
- 		}
-+		/* Block EHCI CF initialization during the port reset.
-+		 * Some companion controllers don't like it when they mix.
-+		 */
-+		down_read(&ehci_cf_port_reset_rwsem);
- 	}
+ 	q.name = name;
+ 	q.len = strlen(name);
  
- 	/* Reset the port */
-@@ -2709,7 +2708,7 @@ static int hub_port_reset(struct usb_hub
- 		port1);
+-	if (efivarfs_d_hash(NULL, NULL, &q))
+-		return NULL;
++	err = efivarfs_d_hash(NULL, NULL, &q);
++	if (err)
++		return ERR_PTR(err);
++
++	d = d_alloc(parent, &q);
++	if (d)
++		return d;
  
- done:
--	if (!warm)
-+	if (!hub_is_superspeed(hub->hdev))
- 		up_read(&ehci_cf_port_reset_rwsem);
+-	return d_alloc(parent, &q);
++	return ERR_PTR(-ENOMEM);
+ }
  
- 	return status;
+ static int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
+@@ -1128,6 +1135,7 @@ static int efivarfs_fill_super(struct su
+ 	struct efivar_entry *entry, *n;
+ 	struct efivars *efivars = &__efivars;
+ 	char *name;
++	int err = -ENOMEM;
+ 
+ 	efivarfs_sb = sb;
+ 
+@@ -1178,8 +1186,10 @@ static int efivarfs_fill_super(struct su
+ 			goto fail_name;
+ 
+ 		dentry = efivarfs_alloc_dentry(root, name);
+-		if (!dentry)
++		if (IS_ERR(dentry)) {
++			err = PTR_ERR(dentry);
+ 			goto fail_inode;
++		}
+ 
+ 		/* copied by the above to local storage in the dentry. */
+ 		kfree(name);
+@@ -1206,7 +1216,7 @@ fail_inode:
+ fail_name:
+ 	kfree(name);
+ fail:
+-	return -ENOMEM;
++	return err;
+ }
+ 
+ static struct dentry *efivarfs_mount(struct file_system_type *fs_type,
 
 
