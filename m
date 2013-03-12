@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab3CLRZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 13:25:12 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43025 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab3CLRZK (ORCPT
+	id S933028Ab3CLR0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 13:26:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33270 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754960Ab3CLR0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 13:25:10 -0400
-Date: Tue, 12 Mar 2013 10:25:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH v1] ARM: keep __my_cpu_offset consistent with generic one
-Message-ID: <20130312172505.GA25266@htj.dyndns.org>
-References: <1362663356-21151-1-git-send-email-tom.leiming@gmail.com>
- <CACVXFVOhr222CVrzkVP_oLgVkdReD9BXXSBg7fmp6Wvx9_peCw@mail.gmail.com>
- <20130312105638.GQ4977@n2100.arm.linux.org.uk>
- <CACVXFVOEvvFT805TJHoppqGRLTRuP18=Wg72LSXryffZD_WH1A@mail.gmail.com>
- <20130312113048.GS4977@n2100.arm.linux.org.uk>
- <CACVXFVP4NeZBg5yZW8q+vhgs0m3knkkdvyjv_hc9BLrFPqEBJA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVP4NeZBg5yZW8q+vhgs0m3knkkdvyjv_hc9BLrFPqEBJA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Mar 2013 13:26:51 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] regmap: Expose total memory consumption in the rbtree debugfs entry
+Date: Tue, 12 Mar 2013 17:26:49 +0000
+Message-Id: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Provide a feel of how much overhead the rbtree cache adds to
+the game.
 
-On Tue, Mar 12, 2013 at 07:44:55PM +0800, Ming Lei wrote:
-> On Tue, Mar 12, 2013 at 7:30 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> >>
-> >> Ingo and Peter, what is your opinion on the problem?
-> >
-> > Having discussed this with Ben Herrenschmidt, it seems that we do need
-> > to have a more complex patch to sort this out - we need to setup our
-> > private pointer inside setup_per_cpu_areas().
-> 
-> Suppose so, seems the patch is still needed to make CPU0 see
-> static variables in '.data..percpu' section correctly.
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ Print the size in bytes instead of kB.
 
-If my memory serves me right, x86 also has places where CPU0 accesses
-its per-cpu data in .data.percpu.  While those existed (not sure
-they're still there but probably they're) mostly due to historical
-reasons rather than by design, as long as the data is in consistent
-state by and during percpu setup, nothing will break.
+ drivers/base/regmap/regcache-rbtree.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 461cff8..11011ec 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -138,15 +138,20 @@ static int rbtree_show(struct seq_file *s, void *ignored)
+ 	struct regcache_rbtree_node *n;
+ 	struct rb_node *node;
+ 	unsigned int base, top;
++	size_t mem_size;
+ 	int nodes = 0;
+ 	int registers = 0;
+ 	int this_registers, average;
+ 
+ 	map->lock(map);
+ 
++	mem_size = sizeof(*rbtree_ctx);
++
+ 	for (node = rb_first(&rbtree_ctx->root); node != NULL;
+ 	     node = rb_next(node)) {
+ 		n = container_of(node, struct regcache_rbtree_node, node);
++		mem_size += sizeof(*n);
++		mem_size += (n->blklen * map->cache_word_size);
+ 
+ 		regcache_rbtree_get_base_top_reg(map, n, &base, &top);
+ 		this_registers = ((top - base) / map->reg_stride) + 1;
+@@ -161,8 +166,8 @@ static int rbtree_show(struct seq_file *s, void *ignored)
+ 	else
+ 		average = 0;
+ 
+-	seq_printf(s, "%d nodes, %d registers, average %d registers\n",
+-		   nodes, registers, average);
++	seq_printf(s, "%d nodes, %d registers, average %d registers, memory overhead %zuB\n",
++		   nodes, registers, average, mem_size);
+ 
+ 	map->unlock(map);
+ 
 -- 
-tejun
+1.8.1.5
+
