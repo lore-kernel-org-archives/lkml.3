@@ -1,219 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726Ab3CLKsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:48:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51523 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab3CLKpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:45:06 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
-        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
-Subject: [PATCH 01/12] USB: EHCI: split ehci-omap out to a separate driver
-Date: Tue, 12 Mar 2013 12:44:39 +0200
-Message-ID: <1363085090-24676-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363085090-24676-1-git-send-email-rogerq@ti.com>
-References: <1363085090-24676-1-git-send-email-rogerq@ti.com>
+	id S932646Ab3CLKtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:49:43 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:61555 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479Ab3CLKtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:49:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1363082299-10561-2-git-send-email-amit.daniel@samsung.com>
+References: <1363082299-10561-1-git-send-email-amit.daniel@samsung.com>
+	<1363082299-10561-2-git-send-email-amit.daniel@samsung.com>
+Date: Tue, 12 Mar 2013 18:49:38 +0800
+X-Google-Sender-Auth: lWFEnvhkfxf0rT2_vVZOKcfmDdo
+Message-ID: <CAOh2x=narPBYBNMMs5Qw_rGSgVsSNumb_jw_88C1PNGEc6sSEw@mail.gmail.com>
+Subject: Re: [PATCH V4 1/4] cpufreq: exynos: Adding cpufreq driver for exynos5440
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+This is what Russell told me a long time back:
+"Don't use Adding, Fixing, etc words as this work is not something, which is
+already done."
 
-This patch (as1645) converts ehci-omap over to the new "ehci-hcd is a
-library" approach, so that it can coexist peacefully with other EHCI
-platform drivers and can make use of the private area allocated at
-the end of struct ehci_hcd.
+So your subject should have been: "cpufreq: exynos: Add cpufreq driver
+for exynos5440"
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/Kconfig     |    2 +-
- drivers/usb/host/Makefile    |    1 +
- drivers/usb/host/ehci-hcd.c  |    6 +---
- drivers/usb/host/ehci-omap.c |   76 +++++++++++++++++++-----------------------
- 4 files changed, 37 insertions(+), 48 deletions(-)
+Fix it if you need another version, which i believe you do :)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index c59a112..62f4e9a 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -155,7 +155,7 @@ config USB_EHCI_MXC
- 	  Variation of ARC USB block used in some Freescale chips.
- 
- config USB_EHCI_HCD_OMAP
--	bool "EHCI support for OMAP3 and later chips"
-+	tristate "EHCI support for OMAP3 and later chips"
- 	depends on USB_EHCI_HCD && ARCH_OMAP
- 	default y
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 001fbff..56de410 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -27,6 +27,7 @@ obj-$(CONFIG_USB_EHCI_HCD)	+= ehci-hcd.o
- obj-$(CONFIG_USB_EHCI_PCI)	+= ehci-pci.o
- obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
- obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
-+obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
- 
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index b416a3f..303b022 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1252,11 +1252,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_hcd_sh_driver
- #endif
- 
--#ifdef CONFIG_USB_EHCI_HCD_OMAP
--#include "ehci-omap.c"
--#define        PLATFORM_DRIVER         ehci_hcd_omap_driver
--#endif
--
- #ifdef CONFIG_PPC_PS3
- #include "ehci-ps3.c"
- #define	PS3_SYSTEM_BUS_DRIVER	ps3_ehci_driver
-@@ -1346,6 +1341,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_PLATFORM) && \
- 	!IS_ENABLED(CONFIG_USB_CHIPIDEA_HOST) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
- 	!defined(PLATFORM_DRIVER) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index 0555ee4..fa66757 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -36,6 +36,9 @@
-  *	- convert to use hwmod and runtime PM
-  */
- 
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/usb/ulpi.h>
-@@ -43,6 +46,10 @@
- #include <linux/pm_runtime.h>
- #include <linux/gpio.h>
- #include <linux/clk.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ehci.h"
- 
- #include <linux/platform_data/usb-omap.h>
- 
-@@ -57,9 +64,11 @@
- #define	EHCI_INSNREG05_ULPI_EXTREGADD_SHIFT		8
- #define	EHCI_INSNREG05_ULPI_WRDATA_SHIFT		0
- 
--/*-------------------------------------------------------------------------*/
-+#define DRIVER_DESC "OMAP-EHCI Host Controller driver"
- 
--static const struct hc_driver ehci_omap_hc_driver;
-+static const char hcd_name[] = "ehci-omap";
-+
-+/*-------------------------------------------------------------------------*/
- 
- 
- static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
-@@ -166,6 +175,12 @@ static void disable_put_regulator(
- /* configure so an HC device and id are always provided */
- /* always called with process context; sleeping is OK */
- 
-+static struct hc_driver __read_mostly ehci_omap_hc_driver;
-+
-+static const struct ehci_driver_overrides ehci_omap_overrides __initdata = {
-+	.reset =		omap_ehci_init,
-+};
-+
- /**
-  * ehci_hcd_omap_probe - initialize TI-based HCDs
-  *
-@@ -315,56 +330,33 @@ static struct platform_driver ehci_hcd_omap_driver = {
- 	/*.suspend		= ehci_hcd_omap_suspend, */
- 	/*.resume		= ehci_hcd_omap_resume, */
- 	.driver = {
--		.name		= "ehci-omap",
-+		.name		= hcd_name,
- 	}
- };
- 
- /*-------------------------------------------------------------------------*/
- 
--static const struct hc_driver ehci_omap_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "OMAP-EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset			= omap_ehci_init,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
-+static int __init ehci_omap_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
- 
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number	= ehci_get_frame,
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
- 
--	/*
--	 * root hub support
--	 */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
-+	ehci_init_driver(&ehci_omap_hc_driver, &ehci_omap_overrides);
-+	return platform_driver_register(&ehci_hcd_omap_driver);
-+}
-+module_init(ehci_omap_init);
- 
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
-+static void __exit ehci_omap_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_omap_driver);
-+}
-+module_exit(ehci_omap_cleanup);
- 
- MODULE_ALIAS("platform:ehci-omap");
- MODULE_AUTHOR("Texas Instruments, Inc.");
- MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
- 
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE("GPL");
--- 
-1.7.4.1
+On Tue, Mar 12, 2013 at 5:58 PM, Amit Daniel Kachhap
+<amit.daniel@samsung.com> wrote:
+> This patch adds dvfs support for exynos5440 SOC. This soc has 4 cores and
+> they scale at same frequency. The nature of exynos5440 clock controller is
+> different from previous exynos controllers so not using the common exynos
+> cpufreq framework. The major difference being interrupt notfication for
 
+s/notfication/notification
+
+> frequency change. Also, OPP library is used for device tree parsing to get
+> different parameters like frequency, voltage etc. Since the opp library sorts
+> the frequency table in ascending order so they are again re-arranged in
+> descending order. This will have one-to-one mapping with the clock controller
+> state management logic.
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  .../bindings/cpufreq/cpufreq-exynos5440.txt        |   29 ++
+>  drivers/cpufreq/Kconfig.arm                        |    9 +
+>  drivers/cpufreq/Makefile                           |    1 +
+>  drivers/cpufreq/exynos5440-cpufreq.c               |  466 ++++++++++++++++++++
+>  4 files changed, 505 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt
+>  create mode 100644 drivers/cpufreq/exynos5440-cpufreq.c
+>
+> diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt
+> new file mode 100644
+> index 0000000..a0dbe0b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt
+> @@ -0,0 +1,29 @@
+> +
+> +Exynos5440 cpufreq driver
+> +-------------------
+> +
+> +Exynos5440 SoC cpufreq driver for CPU frequency scaling.
+> +
+> +Required properties:
+> +- interrupts: Interrupt to know the completion of cpu frequency change.
+> +- operating-points: Table of frequencies and voltage CPU could be transitioned into,
+> +       in the decreasing order. Frequency should be in KHZ units and voltage
+
+s/KHZ/KHz
+
+> +       should be in microvolts.
+
+probably s/microvolts/micro-volts ??
+
+> +
+> +Optional properties:
+> +- clock-latency: Clock monitor latency in microsecond.
+> +
+> +All the required listed above must be defined under node cpufreq.
+> +
+> +Example:
+> +--------
+> +       cpufreq@160000 {
+> +               compatible = "samsung,exynos5440-cpufreq";
+> +               reg = <0x160000 0x1000>;
+> +               interrupts = <0 57 0>;
+> +               operating-points = <
+> +                               1000000 975000
+> +                               800000  925000>;
+> +               clock-latency = <100000>;
+> +       };
+> +
+
+> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+> +static void exynos_enable_dvfs(void)
+> +{
+
+> +       /* Set initial performance index */
+> +       for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
+> +               if (freq_table[i].frequency == dvfs_info->cur_frequency)
+> +                       break;
+> +
+> +       if (freq_table[i].frequency == CPUFREQ_TABLE_END) {
+> +               dev_crit(dvfs_info->dev, "Boot up frequency not supported\n");
+> +               /* Assign the highest frequency */
+> +               i = 0;
+> +               dvfs_info->cur_frequency = freq_table[i].frequency;
+
+What about:
+
+dvfs_info->cur_frequency = freq_table[0].frequency;
+
+as i don't see i being used again?
+
+> +       }
+
+> +}
+
+> +static int exynos_target(struct cpufreq_policy *policy,
+> +                         unsigned int target_freq,
+> +                         unsigned int relation)
+> +{
+
+> +       if (cpufreq_frequency_table_target(policy, freq_table,
+> +                                          target_freq, relation, &index)) {
+> +               ret = -EINVAL;
+
+Use the error value returned by called functions, probably i gave this
+comment last time too?
+
+> +               goto out;
+> +       }
+
+> +}
+
+> +static void exynos_sort_descend_freq_table(void)
+> +{
+> +       struct cpufreq_frequency_table *freq_tbl = dvfs_info->freq_table;
+> +       int i = 0, index;
+> +       unsigned int tmp_freq;
+> +
+> +       /*
+> +        * Freq table is already in ascending order as it is created from
+> +        * OPP library, so just swap the elements to make it descending.
+
+why??
+
+> +        */
+> +       for (i = 0; i < dvfs_info->freq_count / 2; i++) {
+> +               index = dvfs_info->freq_count - i - 1;
+> +               tmp_freq = freq_tbl[i].frequency;
+> +               freq_tbl[i].frequency = freq_tbl[index].frequency;
+> +               freq_tbl[index].frequency = tmp_freq;
+> +       }
+> +}
+> +
+
+> +static int exynos_cpufreq_probe(struct platform_device *pdev)
+> +{
+> +       int ret = -EINVAL;
+> +       struct device_node *np;
+> +       struct resource res;
+> +
+> +       np =  of_find_compatible_node(NULL, NULL, "samsung,exynos5440-cpufreq");
+> +       if (!np)
+> +               return -ENODEV;
+> +
+> +       dvfs_info = devm_kzalloc(&pdev->dev, sizeof(*dvfs_info), GFP_KERNEL);
+> +       if (!dvfs_info) {
+> +               ret = -ENOMEM;
+> +               goto err_put_node;
+> +       }
+> +
+> +       dvfs_info->dev = &pdev->dev;
+> +       dvfs_info->dev->of_node = np;
+> +
+> +       ret = of_address_to_resource(np, 0, &res);
+> +       if (ret)
+> +               goto err_put_node;
+> +
+> +       dvfs_info->base = devm_ioremap_resource(dvfs_info->dev, &res);
+> +       if (IS_ERR(dvfs_info->base)) {
+> +               ret = PTR_ERR(dvfs_info->base);
+> +               goto err_put_node;
+> +       }
+> +
+> +       dvfs_info->irq = irq_of_parse_and_map(np, 0);
+> +       if (dvfs_info->irq == 0) {
+
+maybe, if (!dvfs_info->irq) {
+
+
+> +               dev_err(dvfs_info->dev, "No cpufreq irq found\n");
+> +               ret = -ENODEV;
+> +               goto err_put_node;
+> +       }
+> +
+> +       ret = of_init_opp_table(dvfs_info->dev);
+> +       if (ret) {
+> +               dev_err(dvfs_info->dev, "failed to init OPP table: %d\n", ret);
+> +               goto err_put_node;
+> +       }
+> +
+> +       ret = opp_init_cpufreq_table(dvfs_info->dev, &dvfs_info->freq_table);
+> +       if (ret) {
+> +               dev_err(dvfs_info->dev,
+> +                       "failed to init cpufreq table: %d\n", ret);
+> +               goto err_put_node;
+> +       }
+> +       dvfs_info->freq_count = opp_get_opp_count(dvfs_info->dev);
+> +       exynos_sort_descend_freq_table();
+> +
+> +       if (of_property_read_u32(np, "clock-latency", &dvfs_info->latency))
+> +               dvfs_info->latency = DEF_TRANS_LATENCY;
+> +
+> +       dvfs_info->cpu_clk = devm_clk_get(dvfs_info->dev, "armclk");
+> +       if (IS_ERR(dvfs_info->cpu_clk)) {
+> +               dev_err(dvfs_info->dev, "Failed to get cpu clock\n");
+> +               ret = PTR_ERR(dvfs_info->cpu_clk);
+> +               goto err_free_table;
+> +       }
+> +
+> +       dvfs_info->cur_frequency = clk_get_rate(dvfs_info->cpu_clk);
+> +       if (!dvfs_info->cur_frequency) {
+> +               dev_err(dvfs_info->dev, "Failed to get clock rate\n");
+> +               ret = -EINVAL;
+> +               goto err_free_table;
+> +       }
+> +       dvfs_info->cur_frequency /= 1000;
+> +
+> +       INIT_WORK(&dvfs_info->irq_work, exynos_cpufreq_work);
+> +       ret = devm_request_irq(dvfs_info->dev, dvfs_info->irq,
+> +                               exynos_cpufreq_irq, IRQF_TRIGGER_NONE,
+> +                               CPUFREQ_NAME, dvfs_info);
+> +       if (ret) {
+> +               dev_err(dvfs_info->dev, "Failed to register IRQ\n");
+> +               goto err_free_table;
+> +       }
+> +
+> +       ret = init_div_table();
+> +       if (ret) {
+> +               dev_err(dvfs_info->dev, "Failed to initialise div table\n");
+> +               goto err_free_table;
+> +       }
+> +
+> +       exynos_enable_dvfs();
+> +       ret = cpufreq_register_driver(&exynos_driver);
+> +       if (ret) {
+> +               dev_err(dvfs_info->dev,
+> +                       "%s: failed to register cpufreq driver\n", __func__);
+> +               goto err_free_table;
+> +       }
+> +
+> +       of_node_put(np);
+> +       dvfs_info->dvfs_enabled = true;
+> +       return 0;
+> +
+> +err_free_table:
+> +       opp_free_cpufreq_table(dvfs_info->dev, &dvfs_info->freq_table);
+> +err_put_node:
+> +       of_node_put(np);
+> +       dev_err(dvfs_info->dev, "%s: failed initialization\n", __func__);
+> +       return ret;
+> +}
