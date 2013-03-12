@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767Ab3CLWhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:37:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60434 "EHLO
+	id S933782Ab3CLWh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:37:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756120Ab3CLWdg (ORCPT
+	with ESMTP id S1755937Ab3CLWdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Simon Baatz <gmbnomis@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Linus Walleij <linus.walleij@linaro.org>,
         Jason Cooper <jason@lakedaemon.net>
-Subject: [ 088/100] gpio: mvebu: Add clk support to prevent lockup
-Date: Tue, 12 Mar 2013 15:32:13 -0700
-Message-Id: <20130312223132.381875242@linuxfoundation.org>
+Subject: [ 087/100] rtc: rtc-mv: Add support for clk to avoid lockups
+Date: Tue, 12 Mar 2013 15:32:12 -0700
+Message-Id: <20130312223132.288737142@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -30,72 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrew Lunn <andrew@lunn.ch>
 
-commit de88747f514a4e0cca416a8871de2302f4f77790 upstream.
+commit 89c58c198b252f2bc20657fdd72a2aea788c435c upstream.
 
-The kirkwood SoC GPIO cores use the runit clock. Add code to
-clk_prepare_enable() runit, otherwise there is a danger of locking up
-the SoC by accessing the GPIO registers when runit clock is not
-ticking.
+The Marvell RTC on Kirkwood makes use of the runit clock. Ensure the
+driver clk_prepare_enable() this clock, otherwise there is a danger
+the SoC will lockup when accessing RTC registers with the clock
+disabled.
 
 Reported-by: Simon Baatz <gmbnomis@gmail.com>
 Signed-off-by: Andrew Lunn <andrew@lunn.ch>
 Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/kirkwood.dtsi |    2 ++
- drivers/gpio/gpio-mvebu.c       |    7 +++++++
- 2 files changed, 9 insertions(+)
+ arch/arm/boot/dts/kirkwood.dtsi |    1 +
+ drivers/rtc/rtc-mv.c            |   28 ++++++++++++++++++++++++----
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
 --- a/arch/arm/boot/dts/kirkwood.dtsi
 +++ b/arch/arm/boot/dts/kirkwood.dtsi
-@@ -38,6 +38,7 @@
- 			interrupt-controller;
- 			#interrupt-cells = <2>;
- 			interrupts = <35>, <36>, <37>, <38>;
+@@ -75,6 +75,7 @@
+ 			compatible = "marvell,kirkwood-rtc", "marvell,orion-rtc";
+ 			reg = <0x10300 0x20>;
+ 			interrupts = <53>;
 +			clocks = <&gate_clk 7>;
  		};
  
- 		gpio1: gpio@10140 {
-@@ -49,6 +50,7 @@
- 			interrupt-controller;
- 			#interrupt-cells = <2>;
- 			interrupts = <39>, <40>, <41>;
-+			clocks = <&gate_clk 7>;
- 		};
- 
- 		serial@12000 {
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -41,6 +41,7 @@
- #include <linux/io.h>
- #include <linux/of_irq.h>
- #include <linux/of_device.h>
+ 		spi@10600 {
+--- a/drivers/rtc/rtc-mv.c
++++ b/drivers/rtc/rtc-mv.c
+@@ -14,6 +14,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/delay.h>
 +#include <linux/clk.h>
- #include <linux/pinctrl/consumer.h>
+ #include <linux/gfp.h>
+ #include <linux/module.h>
  
- /*
-@@ -495,6 +496,7 @@ static int mvebu_gpio_probe(struct platf
- 	struct resource *res;
- 	struct irq_chip_generic *gc;
- 	struct irq_chip_type *ct;
-+	struct clk *clk;
- 	unsigned int ngpios;
- 	int soc_variant;
- 	int i, cpu, id;
-@@ -528,6 +530,11 @@ static int mvebu_gpio_probe(struct platf
- 		return id;
+@@ -41,6 +42,7 @@ struct rtc_plat_data {
+ 	struct rtc_device *rtc;
+ 	void __iomem *ioaddr;
+ 	int		irq;
++	struct clk	*clk;
+ };
+ 
+ static int mv_rtc_set_time(struct device *dev, struct rtc_time *tm)
+@@ -221,6 +223,7 @@ static int mv_rtc_probe(struct platform_
+ 	struct rtc_plat_data *pdata;
+ 	resource_size_t size;
+ 	u32 rtc_time;
++	int ret = 0;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res)
+@@ -239,11 +242,17 @@ static int mv_rtc_probe(struct platform_
+ 	if (!pdata->ioaddr)
+ 		return -ENOMEM;
+ 
++	pdata->clk = devm_clk_get(&pdev->dev, NULL);
++	/* Not all SoCs require a clock.*/
++	if (!IS_ERR(pdata->clk))
++		clk_prepare_enable(pdata->clk);
++
+ 	/* make sure the 24 hours mode is enabled */
+ 	rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
+ 	if (rtc_time & RTC_HOURS_12H_MODE) {
+ 		dev_err(&pdev->dev, "24 Hours mode not supported.\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out;
  	}
  
-+	clk = devm_clk_get(&pdev->dev, NULL);
-+	/* Not all SoCs require a clock.*/
-+	if (!IS_ERR(clk))
-+		clk_prepare_enable(clk);
+ 	/* make sure it is actually functional */
+@@ -252,7 +261,8 @@ static int mv_rtc_probe(struct platform_
+ 		rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
+ 		if (rtc_time == 0x01000000) {
+ 			dev_err(&pdev->dev, "internal RTC not ticking\n");
+-			return -ENODEV;
++			ret = -ENODEV;
++			goto out;
+ 		}
+ 	}
+ 
+@@ -268,8 +278,10 @@ static int mv_rtc_probe(struct platform_
+ 	} else
+ 		pdata->rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 						 &mv_rtc_ops, THIS_MODULE);
+-	if (IS_ERR(pdata->rtc))
+-		return PTR_ERR(pdata->rtc);
++	if (IS_ERR(pdata->rtc)) {
++		ret = PTR_ERR(pdata->rtc);
++		goto out;
++	}
+ 
+ 	if (pdata->irq >= 0) {
+ 		writel(0, pdata->ioaddr + RTC_ALARM_INTERRUPT_MASK_REG_OFFS);
+@@ -282,6 +294,11 @@ static int mv_rtc_probe(struct platform_
+ 	}
+ 
+ 	return 0;
++out:
++	if (!IS_ERR(pdata->clk))
++		clk_disable_unprepare(pdata->clk);
 +
- 	mvchip->soc_variant = soc_variant;
- 	mvchip->chip.label = dev_name(&pdev->dev);
- 	mvchip->chip.dev = &pdev->dev;
++	return ret;
+ }
+ 
+ static int __exit mv_rtc_remove(struct platform_device *pdev)
+@@ -292,6 +309,9 @@ static int __exit mv_rtc_remove(struct p
+ 		device_init_wakeup(&pdev->dev, 0);
+ 
+ 	rtc_device_unregister(pdata->rtc);
++	if (!IS_ERR(pdata->clk))
++		clk_disable_unprepare(pdata->clk);
++
+ 	return 0;
+ }
+ 
 
 
