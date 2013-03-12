@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab3CLQHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:07:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37830 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932910Ab3CLQHB (ORCPT
+	id S933034Ab3CLQI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:08:57 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:62817 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab3CLQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:07:01 -0400
-Date: Tue, 12 Mar 2013 12:07:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <b-cousson@ti.com>,
-        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 12/12] USB: ehci-omap: Fix detection in HSIC mode
-In-Reply-To: <1363086540-30567-1-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1303121201050.2153-100000@iolanthe.rowland.org>
+	Tue, 12 Mar 2013 12:08:54 -0400
+Date: Tue, 12 Mar 2013 12:09:45 -0400
+From: Matt Porter <mporter@ti.com>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 5/9] dmaengine: edma: Add TI EDMA device tree binding
+Message-ID: <20130312160945.GX6209@beef>
+References: <1362586540-10393-1-git-send-email-mporter@ti.com>
+ <1362586540-10393-6-git-send-email-mporter@ti.com>
+ <90c29a73df9e495f907517c49dd45b88@DFLE72.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <90c29a73df9e495f907517c49dd45b88@DFLE72.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Mar 2013, Roger Quadros wrote:
-
-> The HSIC devices need to be kept in reset while the EHCI controller
-> is being initialized and only brought out of reset after the
-> initialization is complete, else HSIC devices will not be detected.
-
-This is not a great description of what the patch does.  You should say
-that it moves PHY initialization until after EHCI initialization is
-complete, instead of initializing the PHYs first, shutting them down
-again, and then initializing them a second time.
-
-> Also remove outdated TODO list from header.
+On Wed, Mar 06, 2013 at 08:24:06PM +0000, Peter Korsgaard wrote:
+> >>>>> "Matt" == Matt Porter <mporter@ti.com> writes:
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> CC: Alan Stern <stern@rowland.harvard.edu>
-> ---
->  drivers/usb/host/ehci-omap.c |   38 +++++++++++++++-----------------------
->  1 files changed, 15 insertions(+), 23 deletions(-)
+>  Matt> The binding definition is based on the generic DMA controller
+>  Matt> binding.
 > 
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 1ba1df8..dc2de47 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -29,12 +29,6 @@
->   * along with this program; if not, write to the Free Software
->   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
->   *
-> - * TODO (last updated Feb 27, 2010):
-> - *	- add kernel-doc
-> - *	- enable AUTOIDLE
-> - *	- add suspend/resume
-> - *	- add HSIC and TLL support
-> - *	- convert to use hwmod and runtime PM
->   */
->  
->  #include <linux/kernel.h>
-> @@ -90,26 +84,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
->  static int omap_ehci_init(struct usb_hcd *hcd)
->  {
->  	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
-> -	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
-> -	int rc, i;
-> -
-> -	/* Hold PHYs in reset while initializing EHCI controller */
-> -	for (i = 0; i < omap->nports; i++) {
-> -		if (omap->phy[i])
-> -			usb_phy_shutdown(omap->phy[i]);
-> -	}
-> +	int rc;
->  
->  	/* we know this is the memory we want, no need to ioremap again */
->  	ehci->caps = hcd->regs;
->  
->  	rc = ehci_setup(hcd);
->  
-> -	/* Bring PHYs out of reset */
-> -	for (i = 0; i < omap->nports; i++) {
-> -		if (omap->phy[i])
-> -			usb_phy_init(omap->phy[i]);
-> -	}
-> -
->  	return rc;
->  }
+>  Matt> Signed-off-by: Matt Porter <mporter@ti.com>
+>  Matt> ---
+>  Matt>  Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+>  Matt>  1 file changed, 49 insertions(+)
+>  Matt>  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+> 
+>  Matt> diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+>  Matt> new file mode 100644
+>  Matt> index 0000000..075a60e3
+>  Matt> --- /dev/null
+>  Matt> +++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+>  Matt> @@ -0,0 +1,49 @@
+>  Matt> +TI EDMA
+>  Matt> +
+>  Matt> +Required properties:
+>  Matt> +- compatible : "ti,edma3"
+>  Matt> +- ti,hwmods: Name of the hwmods associated to the EDMA
+>  Matt> +- ti,edma-regions: Number of regions
+>  Matt> +- ti,edma-slots: Number of slots
+>  Matt> +- ti,edma-queue-tc-map: List of transfer control to queue mappings
+>  Matt> +- ti,edma-queue-priority-map: List of queue priority mappings
+>  Matt> +- ti,edma-default-queue: Default queue value
+>  Matt> +
+>  Matt> +Optional properties:
+>  Matt> +- ti,edma-reserved-channels: List of reserved channel regions
+>  Matt> +- ti,edma-reserved-slots: List of reserved slot regions
+>  Matt> +- ti,edma-xbar-event-map: Crossbar event to channel map
+>  Matt> +
+>  Matt> +Example:
+>  Matt> +
+>  Matt> +edma: edma@49000000 {
+>  Matt> +	reg = <0x49000000 0x10000>;
+>  Matt> +	interrupt-parent = <&intc>;
+>  Matt> +	interrupts = <12 13 14>;
+> 
+> Probably interrupt-parent should be removed from the example as well to
+> match am33xx.dtsi
 
-Now that there's almost nothing left of this function, you can get rid
-of it completely.  Move the assignment to ehci->caps into
-ehci_hcd_omap_probe() and remove the init entry in the overrides
-structure.
+On second thought, I'm not sure we're going to get any direction on this
+one so let's just do what feels right and make it reflect common usage
+like you suggested.
 
-Alan Stern
-
+Thanks,
+Matt
