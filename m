@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964911Ab3CLWrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:47:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60742 "EHLO
+	id S964944Ab3CLWrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:47:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3CLWop (ORCPT
+	with ESMTP id S964877Ab3CLWon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:45 -0400
+	Tue, 12 Mar 2013 18:44:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/21] vfs: fix pipe counter breakage
-Date: Tue, 12 Mar 2013 15:44:19 -0700
-Message-Id: <20130312223247.097458622@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 03/21] SCSI: dc395x: uninitialized variable in device_alloc()
+Date: Tue, 12 Mar 2013 15:44:05 -0700
+Message-Id: <20130312223245.554878147@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -27,42 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
+commit 208afec4f3be8c51ad6eebe6611dd6d2ad2fa298 upstream.
 
-If you open a pipe for neither read nor write, the pipe code will not
-add any usage counters to the pipe, causing the 'struct pipe_inode_info"
-to be potentially released early.
+This bug was introduced back in bitkeeper days in 2003.  We use
+"dcb->dev_mode" before it has been initialized.
 
-That doesn't normally matter, since you cannot actually use the pipe,
-but the pipe release code - particularly fasync handling - still expects
-the actual pipe infrastructure to all be there.  And rather than adding
-NULL pointer checks, let's just disallow this case, the same way we
-already do for the named pipe ("fifo") case.
-
-This is ancient going back to pre-2.4 days, and until trinity, nobody
-naver noticed.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pipe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/dc395x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -859,6 +859,9 @@ pipe_rdwr_open(struct inode *inode, stru
- {
- 	int ret = -ENOENT;
- 
-+	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
-+		return -EINVAL;
-+
- 	mutex_lock(&inode->i_mutex);
- 
- 	if (inode->i_pipe) {
+--- a/drivers/scsi/dc395x.c
++++ b/drivers/scsi/dc395x.c
+@@ -3747,13 +3747,13 @@ static struct DeviceCtlBlk *device_alloc
+ 	dcb->max_command = 1;
+ 	dcb->target_id = target;
+ 	dcb->target_lun = lun;
++	dcb->dev_mode = eeprom->target[target].cfg0;
+ #ifndef DC395x_NO_DISCONNECT
+ 	dcb->identify_msg =
+ 	    IDENTIFY(dcb->dev_mode & NTC_DO_DISCONNECT, lun);
+ #else
+ 	dcb->identify_msg = IDENTIFY(0, lun);
+ #endif
+-	dcb->dev_mode = eeprom->target[target].cfg0;
+ 	dcb->inquiry7 = 0;
+ 	dcb->sync_mode = 0;
+ 	dcb->min_nego_period = clock_period[period_index];
 
 
