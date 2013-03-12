@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3CLKn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:43:57 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:42786 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3CLKn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:43:56 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH] mmc: dw_mmc: setpower on MMC_POWER_{UP,OFF}
-Date: Tue, 12 Mar 2013 10:43:32 +0000
-Message-ID: <1363085012-9220-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S932569Ab3CLKoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:44:00 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16237 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314Ab3CLKn6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:43:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 03:43:51 -0700
+Message-ID: <513F06DF.3040105@nvidia.com>
+Date: Tue, 12 Mar 2013 19:43:43 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_12_10_43_47
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 09/17] sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com> <1363083150-30964-10-git-send-email-acourbot@nvidia.com> <20130312103515.GD3553@linux-sh.org>
+In-Reply-To: <20130312103515.GD3553@linux-sh.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call the setpower platform callback in response to set_ios with
-ios->power_mode == MMC_POWER_UP or MMC_POWER_OFF, instead of from the
-card detect work function.
+On 03/12/2013 07:35 PM, Paul Mundt wrote:
+> On Tue, Mar 12, 2013 at 07:12:22PM +0900, Alexandre Courbot wrote:
+>> SH GPIO drivers all use gpiolib and CONFIG_GENERIC_GPIO is only selected
+>> through CONFIG_GPIOLIB, yet some compilation units depended on
+>> CONFIG_GENERIC_GPIO. Make them depend on CONFIG_GPIOLIB instead since it
+>> is more accurate and prepares us for the future removal of
+>> CONFIG_GENERIC_GPIO.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> Note that the bulk of the GENERIC_GPIO use for SH has shifted to
+> drivers/pinctrl/sh-pfc/. If GPIOLIB is forced then a good chunk of the
+> Kconfig/Makefile bits there ought to be refactored too.
 
-This appears to fix a problem I have where a card stuck in a funny state
-doesn't get properly cleared by the power being turned off, presumably
-due to lack of power sequencing. This resulted in the following log
-messages after boot:
+Yes, that is the case for many other drivers actually. This series just 
+makes sure that GENERIC_GPIO is set through GPIOLIB *only*, thus making 
+both options equivalent. If nobody shoots me for this, I will refactor 
+individual drivers and ultimately remove GENERIC_GPIO completely.
 
-mmc0: error -110 whilst initialising SD card
-mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
-mmc0: error -110 whilst initialising SD card
-mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 200000Hz, actual 199680HZ div = 250)
-mmc0: error -110 whilst initialising SD card
-mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 195765Hz, actual 195764HZ div = 255)
-mmc0: error -110 whilst initialising SD card
-mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 400000Hz, actual 399360HZ div = 125)
-mmc0: error -110 whilst initialising SD card
-mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/host/dw_mmc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 60063cc..1a42c7c 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -818,6 +818,14 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	switch (ios->power_mode) {
- 	case MMC_POWER_UP:
- 		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
-+		/* Power up slot */
-+		if (slot->host->pdata->setpower)
-+			slot->host->pdata->setpower(slot->id, mmc->ocr_avail);
-+		break;
-+	case MMC_POWER_OFF:
-+		/* Power down slot */
-+		if (slot->host->pdata->setpower)
-+			slot->host->pdata->setpower(slot->id, 0);
- 		break;
- 	default:
- 		break;
-@@ -1674,10 +1682,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
- 			dev_dbg(&slot->mmc->class_dev, "card %s\n",
- 				present ? "inserted" : "removed");
- 
--			/* Power up slot (before spin_lock, may sleep) */
--			if (present != 0 && host->pdata->setpower)
--				host->pdata->setpower(slot->id, mmc->ocr_avail);
--
- 			spin_lock_bh(&host->lock);
- 
- 			/* Card change detected */
-@@ -1760,10 +1764,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
- 
- 			spin_unlock_bh(&host->lock);
- 
--			/* Power down slot (after spin_unlock, may sleep) */
--			if (present == 0 && host->pdata->setpower)
--				host->pdata->setpower(slot->id, 0);
--
- 			present = dw_mci_get_cd(mmc);
- 		}
- 
--- 
-1.8.1.2
-
+Alex.
 
