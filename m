@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3CLAdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:33:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52276 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab3CLAdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:33:35 -0400
-Date: Tue, 12 Mar 2013 11:33:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130312113320.b1f41dcb59baa74a51b064cc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_11_33_20_+1100_9XMUROop0z_8UXdM"
+	id S1754855Ab3CLAoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:44:46 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:59283 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754446Ab3CLAop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:44:45 -0400
+Date: Tue, 12 Mar 2013 00:44:45 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: epoll: possible bug from wakeup_source activation
+Message-ID: <20130312004445.GA5151@dcvr.yhbt.net>
+References: <20130307112639.GA25130@dcvr.yhbt.net>
+ <20130308013027.GA31830@dcvr.yhbt.net>
+ <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
+ <20130308204944.GA27379@dcvr.yhbt.net>
+ <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
+ <20130309071037.GA13360@dcvr.yhbt.net>
+ <CAMP5Xgdy9hJE1JCHYN2iK9W3UQvmgBGHH_9Jy2-mQyNxkHGwTQ@mail.gmail.com>
+ <20130312001722.GB973@dcvr.yhbt.net>
+ <CAMP5Xgcr97gcD6noP=vkTN7jLrhNGZ2VLVMkOKx+puoP8AiJDA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5Xgcr97gcD6noP=vkTN7jLrhNGZ2VLVMkOKx+puoP8AiJDA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_11_33_20_+1100_9XMUROop0z_8UXdM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Arve Hjønnevåg <arve@android.com> wrote:
+> On Mon, Mar 11, 2013 at 5:17 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> > Arve Hjønnevåg <arve@android.com> wrote:
+> >> On Fri, Mar 8, 2013 at 11:10 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> >> > Arve Hjønnevåg <arve@android.com> wrote:
+> >> >> On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> >> >> > What happens if ep_modify calls ep_destroy_wakeup_source
+> >> >> > while __pm_stay_awake is running on the same epi->ws?
+> >> >>
+> >> >> Yes, that looks like a problem. I think calling
+> >> >> ep_destroy_wakeup_source with ep->lock held should fix that. It is not
+> >> >> clear how useful changing EPOLLWAKEUP in ep_modify is, so
+> >> >> alternatively we could remove that feature and instead only allow it
+> >> >> to be set in ep_insert.
+> >> >
+> >> > ep->lock would work, but ep->lock is already a source of heavy
+> >> > contention in my multithreaded+epoll webservers.
+> >>
+> >> This should not have any significant impact on that since you would be
+> >> adding a lock to a code path that is, as far as I know, unused.
+> >>
+> >> > Perhaps RCU can be used?  I've no experience with RCU, but I've been
+> >> > meaning to get acquainted with RCU.
+> >>
+> >> That adds code to the common path however. The wakeup_source is not
+> >> touch without holding one of the locks so holding both locks before
+> >> deleting it seems like a simpler solution.
+> >
+> > True.  However, I've been looking into eliminating ep->lock in more
+> > places (maybe entirely)[1].
+> >
+> > I don't think the current overhead of RCU in epoll is significant,
+> > either.
+> >
+> >
+> > [1] I'll be testing Mathieu's wait-free concurrent queue soon:
+> >     http://mid.gmane.org/20130311213602.GB9829@Krystal
+> 
+> OK, but is there any way you could use the same locking scheme for the
+> wakeup_source and the queue?
 
-Hi all,
-
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/intel/e1000e/netdev.c between commits 4e0855dff094
-("e1000e: fix pci-device enable-counter balance") and 66148babe728
-("e1000e: fix runtime power management transitions") from Linus' tree and
-commit f0ff439872e1 ("e1000e: cleanup CODE_INDENT checkpatch errors")
-from the net-next tree.
-
-The former removed the line fixed by the latter, so I did that and can
-carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__12_Mar_2013_11_33_20_+1100_9XMUROop0z_8UXdM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPnfQAAoJEECxmPOUX5FEQIUP/At6swZienJ8i92Y53y8t1t8
-tk/KsdXyZnopaH4NvUdyan4Q0BV39A9h3Mf8QBgA7m+spqSrwtrNivA9N3/CACnL
-3XC71EywF1n4NtUPgEqxJNYBrYr9NN1DXwagDzsivP6HE4p2C001rB47lkqIV1QQ
-y6NMBtZtwWDqlac8+m8phwKUDTW3D+c2OH2WCWaKUwc0NaDhm9NUD3F+7rr0j0pB
-TWu8FJ1sbVibxQ3KMaF+qBKQ6ZVS9NJKUAz/6e3VlUnJMQ7d/mBdq8lFTvHqFWuG
-wQ7BPGmeZkjMpSg3M4KbcxajFHvl5lLpxndhaYMKh76/Caz0Jy6NCLuyQoXql300
-M4wfHxj3cw8MJZxu74xK3wj8sgc40xYiGYO3+n9f2eXltAi0tsH7lJzWlAHO9ZrE
-C4DmzviahEgzwgq6/Wk/onnhMk0zHWa7EHwRnxKkS9BZjRy5vgCkcT3YuuZrxPoc
-Jar3CBmnKzLu+uQXhW4UNf9HQHHbY81BL2bnFanbnOrD5RQWEJPEwoDmUKSKOent
-NdNN4TZg5y0vCHqC7pnxQGVTwONOJqaa6CTMzbBAQQgas3WiUAjD2XlfRxty0dsS
-pW9ncF/Qy0eHN/DmWetjKMOOnPjprl7eDizUIVHj0LhI3iS3zuj3urFlj/rlClXW
-Z1xvSyASMA00L/U6Xvfx
-=Thrz
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_11_33_20_+1100_9XMUROop0z_8UXdM--
+Probably, yes.  I think I can just use ep->mtx and ignore the mutex
+included with wfcq_head, need to protect the rbtree while dequeueing.
