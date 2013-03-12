@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab3CLSkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:40:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49699 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755274Ab3CLSkg (ORCPT
+	id S933373Ab3CLSmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:42:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:52596 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933260Ab3CLSmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:40:36 -0400
-Date: Tue, 12 Mar 2013 18:40:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Afzal Mohammed <afzal.mohd.ma@gmail.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: Question about fixed-clock
-Message-ID: <20130312184033.GK19942@opensource.wolfsonmicro.com>
-References: <20130307184240.GA3327@afzal-ThinkPad-R50e>
- <5139155F.5050407@gmail.com>
- <20130308021527.GA28481@opensource.wolfsonmicro.com>
- <5139E7F3.5010906@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9RxwyT9MtfFuvYYZ"
-Content-Disposition: inline
-In-Reply-To: <5139E7F3.5010906@gmail.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Mar 2013 14:42:06 -0400
+X-IronPort-AV: E=Sophos;i="4.84,832,1355126400"; 
+   d="scan'208";a="29083606"
+From: David Brown <davidb@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 04/11] ssbi: Allow compilation as a module
+Date: Tue, 12 Mar 2013 11:41:49 -0700
+Message-Id: <1363113716-25897-5-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1363113716-25897-1-git-send-email-davidb@codeaurora.org>
+References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
+ <1363113716-25897-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ssbi driver's read/write entry points are protected with wrappers
+in the case when the driver isn't enabled.  These wrappers don't make
+any sense, since a client of the SSBI bus won't work without it.  Make
+these just regular functions, so that the SSBI driver can be built as
+a module.
 
---9RxwyT9MtfFuvYYZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ drivers/ssbi/Kconfig     |  2 +-
+ include/linux/msm_ssbi.h | 11 -----------
+ 2 files changed, 1 insertion(+), 12 deletions(-)
 
-On Fri, Mar 08, 2013 at 02:30:27PM +0100, Daniel Mack wrote:
-> On 08.03.2013 03:15, Mark Brown wrote:
+diff --git a/drivers/ssbi/Kconfig b/drivers/ssbi/Kconfig
+index b57c41b..c7bc534 100644
+--- a/drivers/ssbi/Kconfig
++++ b/drivers/ssbi/Kconfig
+@@ -5,7 +5,7 @@
+ menu "Qualcomm MSM SSBI bus support"
+ 
+ config MSM_SSBI
+-	bool "Qualcomm Single-wire Serial Bus Interface (SSBI)"
++	tristate "Qualcomm Single-wire Serial Bus Interface (SSBI)"
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  built-in SSBI interface on Qualcomm MSM family processors.
+diff --git a/include/linux/msm_ssbi.h b/include/linux/msm_ssbi.h
+index cfa47df..0fe245b 100644
+--- a/include/linux/msm_ssbi.h
++++ b/include/linux/msm_ssbi.h
+@@ -33,17 +33,6 @@ struct msm_ssbi_platform_data {
+ 	enum msm_ssbi_controller_type controller_type;
+ };
+ 
+-#ifdef CONFIG_MSM_SSBI
+ int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len);
+ int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len);
+-#else
+-static inline int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
+-{
+-	return -ENXIO;
+-}
+-static inline int msm_ssbi_read(struct device *dev, u16 addr, u8 *buf, int len)
+-{
+-	return -ENXIO;
+-}
+-#endif
+ #endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-> > Wouldn't this just be set up by the DT in the same way that other
-> > off-SoC hardware is?
-
-> Well,  I thought so too. To repeat, in my DT, I have:
-
-OK, I got CCed in part way through the thread.
-
-> I would have expected that "fixed-clock" is matched by a driver lurking
-> around for DT boards, just like what the "fixed-regulator" driver does
-> for instance. But the clock device isn't initialized unless board code
-> explicitly calls of_clk_init() with a table mentioning "fixed-clock", as
-> in my patch.
-
-> I don't know the clock framework well enough, but it seems that either
-> all DT boards are supposed to do the same in their generic bits (which
-> sounds like a lot of code duplication), or the fixed-clock driver should
-> behave like any other driver wrt its probing from DT. I'm open to
-> suggestions :)
-
-Your expectation sounds like what I'd expect too...
-
---9RxwyT9MtfFuvYYZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRP3aYAAoJELSic+t+oim9xwAQAIDeuL+USfv5RSHZJ4Od7DbA
-7OjClHeRSIl+vM2IW6dynd6JsyYURRMTrTPzBKBwh0vieP1ixE+wUH0MWiJvCtph
-uqJMtiDjrkOgzeSTfIaQVDabXE7dvQZtt3yUig/DpzUa8+gW4+RD+5iuAr9AQMVA
-VrAX7N1Ii8HDz5h8RB5QF09xNNArjW9/KJEc9+4Plm5LSCFN4xbPpHJ0I5dEjDal
-XmwXkV1RGxvl8L0LeKjeNNDg+CeUeA/dHO2hRpQkwggBrRNsmbcbbeAwJe4f1997
-k6vvwhcNT1SQj52kOyojy4cZ1KPG1W/O00QRKxi/rEVmX+zGbUUdgs+FRXmj00TV
-LQ/ubl1tNJIECFY6x4sw8G/2nrtHp1E5qGG/Kegb1hOstSALf4jyl3xcRFv7a7b3
-46vrh9QlWgOTo4nIF44IGS4pSKwfEqDofULNA0vXBzyW2xe66ntqex+XJ9qeV0+y
-3JzEeDCbjLeJp2LknixG7dJ1VHPRjZZj9TPGpTXZFMiaBleG4XADPVcg5Dey+pCW
-OVwJ4OyxHaAha6LWn2vlT3kOnD5pVzkR8zBTgXxtJlHoN+VGLqvCqMjSKBnK70GO
-6pde4qvApgmwMqFxHp7F2IPZtCDxWuNVW9eAKu92A3rliNbJlw0xGR0OiUF4s5NC
-/9nx/ftDKv3VNkOG5m5V
-=wEMw
------END PGP SIGNATURE-----
-
---9RxwyT9MtfFuvYYZ--
