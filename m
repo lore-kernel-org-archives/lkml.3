@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070Ab3CLQJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:09:27 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:35333 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab3CLQJ0 (ORCPT
+	id S933096Ab3CLQJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:09:55 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45825
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932216Ab3CLQJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:09:26 -0400
-Date: Tue, 12 Mar 2013 17:09:12 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jonas Gorski <jogo@openwrt.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Chris Dearman <chris.dearman@imgtec.com>
-Subject: Re: [PATCH v2] MIPS: Get rid of CONFIG_CPU_HAS_LLSC again
-Message-ID: <20130312160911.GA17165@linux-mips.org>
-References: <1362477800.16460.69.camel@x61.thuisdomein>
- <CAOiHx=nzNVatEp0nyfZKU2p35+1kjrw6VsvZTP+QPJykWF3JAg@mail.gmail.com>
- <1362486020.16460.73.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362486020.16460.73.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Mar 2013 12:09:53 -0400
+Message-ID: <1363104578.24558.9.camel@laptop>
+Subject: Re: [PATCH] device: separate all subsys mutexes (was: Re: [BUG]
+ potential deadlock led by cpu_hotplug lock (memcg involved))
+From: Peter Zijlstra <peterz@infradead.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 12 Mar 2013 17:09:38 +0100
+In-Reply-To: <20130312154341.GB18852@kroah.com>
+References: <513ECCFE.3070201@huawei.com>
+	 <20130312101555.GB30758@dhcp22.suse.cz>
+	 <20130312110750.GC30758@dhcp22.suse.cz>
+	 <20130312130504.GD30758@dhcp22.suse.cz> <1363102105.24558.4.camel@laptop>
+	 <20130312154341.GB18852@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 01:20:20PM +0100, Paul Bolle wrote:
-
-> Commit f7ade3c168e4f437c11f57be012992bbb0e3075c ("MIPS: Get rid of
-> CONFIG_CPU_HAS_LLSC") did what it promised to do. But since then that
-> macro and its Kconfig symbol popped up again. Get rid of those again.
+On Tue, 2013-03-12 at 08:43 -0700, Greg Kroah-Hartman wrote:
+> On Tue, Mar 12, 2013 at 04:28:25PM +0100, Peter Zijlstra wrote:
+> > On Tue, 2013-03-12 at 14:05 +0100, Michal Hocko wrote:
+> > > @@ -111,17 +111,17 @@ struct bus_type {
+> > >         struct iommu_ops *iommu_ops;
+> > >  
+> > >         struct subsys_private *p;
+> > > +       struct lock_class_key __key;
+> > >  };
+> > 
+> > Is struct bus_type constrained to static storage or can people go an
+> > allocate this stuff dynamically? If so, this patch is broken.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) This version fixes an embarrassing dangling "#endif" spotted by
-> Jonas. Thanks for that! Still untested.
+> I don't think anyone is creating this dynamically, it should be static.
+> Why does this matter, does the lockdep code care about where the
+> variable is declared (heap vs. static)?
 
-Thanks, I've applied your v2 patch.
+Yeah, lockdep needs keys to be in static storage since its data
+structures are append-only. Dynamic stuff would require being able to
+remove everything related to a key so that we can re-purpose it for the
+next allocation etc.
 
-It's good that your cleanup doesn't change the behaviour of the existing
-code - however the current behaviour doesn't seem to be the intended
-behaviour so I'm going to commit a separate patch to define cpu_has_llsc
-to 1.
+Lockdep will in fact warn (and disable itself) if you try and feed it
+dynamic addresses, so using it like this will effectively check your
+bus_type static storage 'requirement'.
 
-  Ralf
