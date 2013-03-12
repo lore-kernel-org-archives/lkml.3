@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab3CLWJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:09:39 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:61199 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab3CLWJh (ORCPT
+	id S1755705Ab3CLWKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:10:02 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7713 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3CLWKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:09:37 -0400
-Message-ID: <1363126175.3137.160.camel@x61.thuisdomein>
-Subject: [PATCH] ASoC: samsung: remove last traces of neo1973-gta01
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
+	Tue, 12 Mar 2013 18:10:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 15:09:59 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Mar 2013 23:09:35 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Mar 2013 22:09:36.0046 (UTC) FILETIME=[485114E0:01CE1F6E]
-X-RcptDomain: vger.kernel.org
+        Anton Vorontsov <cbou@mail.ru>, Samuel Ortiz <sameo@linux.intel.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [Patch v3 0/4] Add support for tps65090-charger
+Date: Tue, 12 Mar 2013 18:08:05 -0400
+Message-ID: <1363126089-9071-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The (rudimentary) support for the Openmoko Neo1973 GTA01 got removed in
-commit 1ae5cbc52e7c6619a3f44b87809fd25370df31bb ("ASoC: neo1973_wm8753:
-remove references to the neo1973-gta01 machine"). Remove its last traces
-in the Kconfig file too.
+This patchset adds support for the TPS65090-charger. This charger is
+registered as a subdevice of the TPS65090 PMIC.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+This series includes a fix for the tps65090 header file where all
+the interrupts were shifted by 1.
 
- sound/soc/samsung/Kconfig | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+v3:
+ - fixed up the tps65090-charger driver to fix build errors/warnings
 
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index 90e7e66..475fb0d 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -35,11 +35,10 @@ config SND_SAMSUNG_I2S
- 	tristate
- 
- config SND_SOC_SAMSUNG_NEO1973_WM8753
--	tristate "Audio support for Openmoko Neo1973 Smartphones (GTA01/GTA02)"
--	depends on SND_SOC_SAMSUNG && (MACH_NEO1973_GTA01 || MACH_NEO1973_GTA02)
-+	tristate "Audio support for Openmoko Neo1973 Smartphones (GTA02)"
-+	depends on SND_SOC_SAMSUNG && MACH_NEO1973_GTA02
- 	select SND_S3C24XX_I2S
- 	select SND_SOC_WM8753
--	select SND_SOC_LM4857 if MACH_NEO1973_GTA01
- 	select SND_SOC_DFBMCS320
- 	help
- 	  Say Y here to enable audio support for the Openmoko Neo1973
+v2:
+ - cleaned up tps65090 driver per comments (mostly var naming)
+ - flushed out commit description for driver
+ - reordered probe so irq is registered after power_supply and cleaned up 1st
+
+
+Rhyland Klein (4):
+  mfd: tps65090: Fix enum in header file
+  mfd: tps65090: Add resources for charger
+  power_supply: tps65090-charger: Add binding doc
+  power: tps65090: Add support for tps65090-charger
+
+ .../devicetree/bindings/power_supply/tps65090.txt  |   23 ++
+ drivers/mfd/tps65090.c                             |   10 +
+ drivers/power/Kconfig                              |    7 +
+ drivers/power/Makefile                             |    1 +
+ drivers/power/tps65090-charger.c                   |  315 ++++++++++++++++++++
+ include/linux/mfd/tps65090.h                       |    6 +
+ 6 files changed, 362 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/tps65090.txt
+ create mode 100644 drivers/power/tps65090-charger.c
+
 -- 
-1.7.11.7
+1.7.9.5
 
