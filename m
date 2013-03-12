@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933973Ab3CLXPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:15:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60187 "EHLO
+	id S1755839Ab3CLWc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:32:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933501Ab3CLWc7 (ORCPT
+	with ESMTP id S1755705Ab3CLWcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:59 -0400
+	Tue, 12 Mar 2013 18:32:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 024/100] dm: fix limits initialization when there are no data devices
-Date: Tue, 12 Mar 2013 15:31:09 -0700
-Message-Id: <20130312223125.629783989@linuxfoundation.org>
+        Mattia Dongili <malattia@linux.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [ 012/100] sony-laptop: fully enable SNY controlled modems
+Date: Tue, 12 Mar 2013 15:30:57 -0700
+Message-Id: <20130312223124.275058554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,57 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Mattia Dongili <malattia@linux.it>
 
-commit 87eb5b21d92a92ac2da3163039d62df88c2b8422 upstream.
+commit 3ec1c3983d73b1e3d4cfd72afab94c34eceafe8a upstream.
 
-dm_calculate_queue_limits will first reset the provided limits to
-defaults using blk_set_stacking_limits; whereby defeating the purpose of
-retaining the original live table's limits -- as was intended via commit
-3ae706561637331aa578e52bb89ecbba5edcb7a9 ("dm: retain table limits when
-swapping to new table with no devices").
+The call to handlers 0x124 and 0x135 (rfkill control) seems to take a
+bitmask to control various states of the device. For our rfkill we need
+a fully on/off. SVZ1311Z9R/X's LTE modem needs more bits up.
 
-Fix this improper limits initialization (in the no data devices case) by
-avoiding the call to dm_calculate_queue_limits.
-
-[patch header revised by Mike Snitzer]
-
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47751
+Signed-off-by: Mattia Dongili <malattia@linux.it>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/platform/x86/sony-laptop.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2433,7 +2433,7 @@ static void dm_queue_flush(struct mapped
-  */
- struct dm_table *dm_swap_table(struct mapped_device *md, struct dm_table *table)
- {
--	struct dm_table *live_map, *map = ERR_PTR(-EINVAL);
-+	struct dm_table *live_map = NULL, *map = ERR_PTR(-EINVAL);
- 	struct queue_limits limits;
- 	int r;
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -1534,7 +1534,7 @@ static int sony_nc_rfkill_set(void *data
+ 	int argument = sony_rfkill_address[(long) data] + 0x100;
  
-@@ -2456,10 +2456,12 @@ struct dm_table *dm_swap_table(struct ma
- 		dm_table_put(live_map);
- 	}
+ 	if (!blocked)
+-		argument |= 0x030000;
++		argument |= 0x070000;
  
--	r = dm_calculate_queue_limits(table, &limits);
--	if (r) {
--		map = ERR_PTR(r);
--		goto out;
-+	if (!live_map) {
-+		r = dm_calculate_queue_limits(table, &limits);
-+		if (r) {
-+			map = ERR_PTR(r);
-+			goto out;
-+		}
- 	}
- 
- 	map = __bind(md, table, &limits);
+ 	return sony_call_snc_handle(sony_rfkill_handle, argument, &result);
+ }
 
 
