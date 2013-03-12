@@ -1,93 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab3CLMdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:33:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41527 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab3CLMdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:33:23 -0400
-Date: Tue, 12 Mar 2013 23:33:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-next@vger.kernel.org
-Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
-Message-Id: <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au>
-In-Reply-To: <87ppz5usts.fsf@rustcorp.com.au>
-References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com>
-	<87sj46wyf2.fsf@rustcorp.com.au>
-	<5139AC39.90805@imgtec.com>
-	<874ngiwije.fsf@rustcorp.com.au>
-	<20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au>
-	<87ppz5usts.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1755242Ab3CLMfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:35:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946Ab3CLMfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 08:35:23 -0400
+Date: Tue, 12 Mar 2013 08:35:17 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v3 6/7] NFSv4: Add O_DENY* open flags support
+Message-ID: <20130312083517.770a17f6@tlielax.poochiereds.net>
+In-Reply-To: <20130311145434.707f5ed1@corrin.poochiereds.net>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+	<1362065133-9490-7-git-send-email-piastry@etersoft.ru>
+	<20130311145434.707f5ed1@corrin.poochiereds.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_23_33_00_+1100_DFkOzlM2uo73ZOmL"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_23_33_00_+1100_DFkOzlM2uo73ZOmL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 11 Mar 2013 14:54:34 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
 
-Hi Rusty,
+> On Thu, 28 Feb 2013 19:25:32 +0400
+> Pavel Shilovsky <piastry@etersoft.ru> wrote:
+> 
+> > by passing these flags to NFSv4 open request.
+> > 
+> > Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> > ---
+> >  fs/nfs/nfs4xdr.c | 24 ++++++++++++++++++++----
+> >  1 file changed, 20 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+> > index 26b1439..58ddc74 100644
+> > --- a/fs/nfs/nfs4xdr.c
+> > +++ b/fs/nfs/nfs4xdr.c
+> > @@ -1325,7 +1325,8 @@ static void encode_lookup(struct xdr_stream *xdr, const struct qstr *name, struc
+> >  	encode_string(xdr, name->len, name->name);
+> >  }
+> >  
+> > -static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
+> > +static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode,
+> > +				int open_flags)
+> >  {
+> >  	__be32 *p;
+> >  
+> > @@ -1343,7 +1344,22 @@ static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
+> >  	default:
+> >  		*p++ = cpu_to_be32(0);
+> >  	}
+> > -	*p = cpu_to_be32(0);		/* for linux, share_deny = 0 always */
+> > +	if (open_flags & O_DENYMAND) {
+> 
+> 
+> As Bruce mentioned, I think a mount option to enable this on a per-fs
+> basis would be a better approach than this new O_DENYMAND flag. 
+> 
+> 
+> > +		switch (open_flags & (O_DENYREAD|O_DENYWRITE)) {
+> > +		case O_DENYREAD:
+> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_READ);
+> > +			break;
+> > +		case O_DENYWRITE:
+> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_WRITE);
+> > +			break;
+> > +		case O_DENYREAD|O_DENYWRITE:
+> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_BOTH);
+> > +			break;
+> > +		default:
+> > +			*p = cpu_to_be32(0);
+> > +		}
+> > +	} else
+> > +		*p = cpu_to_be32(0);
+> >  }
+> >  
+> >  static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_openargs *arg)
+> > @@ -1354,7 +1370,7 @@ static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_opena
+> >   * owner 4 = 32
+> >   */
+> >  	encode_nfs4_seqid(xdr, arg->seqid);
+> > -	encode_share_access(xdr, arg->fmode);
+> > +	encode_share_access(xdr, arg->fmode, arg->open_flags);
+> >  	p = reserve_space(xdr, 36);
+> >  	p = xdr_encode_hyper(p, arg->clientid);
+> >  	*p++ = cpu_to_be32(24);
+> > @@ -1491,7 +1507,7 @@ static void encode_open_downgrade(struct xdr_stream *xdr, const struct nfs_close
+> >  	encode_op_hdr(xdr, OP_OPEN_DOWNGRADE, decode_open_downgrade_maxsz, hdr);
+> >  	encode_nfs4_stateid(xdr, arg->stateid);
+> >  	encode_nfs4_seqid(xdr, arg->seqid);
+> > -	encode_share_access(xdr, arg->fmode);
+> > +	encode_share_access(xdr, arg->fmode, 0);
+> >  }
+> >  
+> >  static void
+> 
+> 
+> Other than that, this seems reasonable.
+> 
+> Acked-by: Jeff Layton <jlayton@redhat.com>
 
-Looks partly better.   You seem to be using
-CONFIG_SYMBOL_PREFIX_UNDERSCORE but selecting
-CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX.  One trivial comment below.
+Oh duh...
 
-Maybe this was an unfinished version of the patch?
+Please ignore my comment on patch #7 to add a patch for the NFS client.
+This one does that. That said, there may be a potential problem here
+that you need to consider.
 
-On Tue, 12 Mar 2013 15:18:15 +1030 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-> index 600494c..314ee6a 100644
-> --- a/arch/blackfin/Kconfig
-> +++ b/arch/blackfin/Kconfig
-> @@ -45,6 +42,7 @@ config BLACKFIN
->  	select HAVE_MOD_ARCH_SPECIFIC
->  	select MODULES_USE_ELF_RELA
-> =20
-> +
->  config GENERIC_CSUM
->  	def_bool y
+In the case of a local filesystem you'll want to set deny locks using
+deny_lock_file(). For a network filesystem like CIFS or NFS though,
+the server will handle that atomically during the open. You need to
+ensure that you don't go trying to set LOCK_MAND locks on the file once
+that's done.
 
-Extra blank line added.
+Perhaps you can use a fstype flag to indicate that the filesystem
+handles this during the open and doesn't need to try and set a flock
+lock?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__12_Mar_2013_23_33_00_+1100_DFkOzlM2uo73ZOmL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPyB8AAoJEECxmPOUX5FEWmQP/j4PPUCPgSE0nl/oO0CFQUKV
-lzF0X2NJFVeOMbzIzBRbItbRm8LivU/Sw+W6u3i4rFZhANIzy9SN0F47au8IdR/+
-c3/qE6G6KUzBRL0PdM3020AtVKL34afqErHRApYjPjCTKJjnDcTFlkKlDej5Y1h8
-Rk/hCI4/rs+Flu2O+VnSIXVPxlJ/zmkrnNG/Z9KnJSqb4IsaF3BKbFE+cEknvx1t
-7L4VbhcXFRdYQPRPIySnKL7TYpj/HejYQLFM2C0F6NvnsDBvIv3Yh62f3+nKmvyq
-sPiShjxdypkZMMelnD1ntfcOWQvBwkWnvUttRPEw/CoeToWH8d4h4s5llrFgMyaP
-xKOPFTpL2JxXdvMc29L9I1A2I8ZqyJvyhl0uAcpoHeh2sKWruIpMeoPf3lxe6llp
-QmxhmEtCb3XhWKWJ2JNq5p7XXWLyu6pnPmACvDUqnEVwCm24oLbuvx0R++whJqB0
-Ip6yQOD8az3hBKUKZeH9tZCli4XdgHJpw2IxfdLpVVAutKE6rB4wHtxpLGYUYoTc
-qdpkVbV5RDegpZ2C2BPjYeQFzrO7z4pjWkswYpYiG24ATdEPokK9qlCTnuDCY970
-PZjbVQ9aS9ZeC3RNWxf/8gk3cken4Ug0llXS8zbVpkqB9Y70YVNaEWRh54HGOhXP
-+IlRL2ZDSSNyJ4jHMeCU
-=mSBB
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_23_33_00_+1100_DFkOzlM2uo73ZOmL--
+-- 
+Jeff Layton <jlayton@redhat.com>
