@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708Ab3CLWdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60450 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab3CLWdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 092/100] ftrace: Update the kconfig for DYNAMIC_FTRACE
-Date: Tue, 12 Mar 2013 15:32:17 -0700
-Message-Id: <20130312223132.776084476@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933723Ab3CLWdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933397Ab3CLWdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 18:33:51 -0400
+Date: Tue, 12 Mar 2013 18:33:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: ipc/testmsg GPF.
+Message-ID: <20130312223345.GA22747@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20130307213819.GB19543@redhat.com>
+ <1362788821.7755.12.camel@thor.lan>
+ <20130311182621.GA24965@redhat.com>
+ <1363028602.3234.38.camel@thor.lan>
+ <20130312150236.27ba998a00d31470a2d8aca0@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312150236.27ba998a00d31470a2d8aca0@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 12, 2013 at 03:02:36PM -0700, Andrew Morton wrote:
+ > On Mon, 11 Mar 2013 15:03:22 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
+ > 
+ > > On Mon, 2013-03-11 at 14:26 -0400, Dave Jones wrote:
+ > > >  > >         {
+ > > > 
+ > > > I just hit this again on rc2 which looks like it has the fixes that
+ > > > Peter mentions above.  This time rdi was 6b6b6b6b6b6b6b7b
+ > > > 
+ > > > 	Dave
+ > > 
+ > > Sorry, Dave. The fix must be in the other 8 patches that Andrew didn't
+ > > want to apply. I run trinity 10 or more times a day and can't get this
+ > > to trigger with the whole series.
+ > 
+ > Are you able to reproduce the bug with current mainline?
 
-------------------
+Yep.
+I'll give this patchset a try tomorrow.
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-commit db05021d49a994ee40a9735d9c3cb0060c9babb8 upstream.
-
-The prompt to enable DYNAMIC_FTRACE (the ability to nop and
-enable function tracing at run time) had a confusing statement:
-
- "enable/disable ftrace tracepoints dynamically"
-
-This was written before tracepoints were added to the kernel,
-but now that tracepoints have been added, this is very confusing
-and has confused people enough to give wrong information during
-presentations.
-
-Not only that, I looked at the help text, and it still references
-that dreaded daemon that use to wake up once a second to update
-the nop locations and brick NICs, that hasn't been around for over
-five years.
-
-Time to bring the text up to the current decade.
-
-Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/Kconfig |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
-
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -416,24 +416,28 @@ config PROBE_EVENTS
- 	def_bool n
- 
- config DYNAMIC_FTRACE
--	bool "enable/disable ftrace tracepoints dynamically"
-+	bool "enable/disable function tracing dynamically"
- 	depends on FUNCTION_TRACER
- 	depends on HAVE_DYNAMIC_FTRACE
- 	default y
- 	help
--          This option will modify all the calls to ftrace dynamically
--	  (will patch them out of the binary image and replace them
--	  with a No-Op instruction) as they are called. A table is
--	  created to dynamically enable them again.
-+	  This option will modify all the calls to function tracing
-+	  dynamically (will patch them out of the binary image and
-+	  replace them with a No-Op instruction) on boot up. During
-+	  compile time, a table is made of all the locations that ftrace
-+	  can function trace, and this table is linked into the kernel
-+	  image. When this is enabled, functions can be individually
-+	  enabled, and the functions not enabled will not affect
-+	  performance of the system.
-+
-+	  See the files in /sys/kernel/debug/tracing:
-+	    available_filter_functions
-+	    set_ftrace_filter
-+	    set_ftrace_notrace
- 
- 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
- 	  otherwise has native performance as long as no tracing is active.
- 
--	  The changes to the code are done by a kernel thread that
--	  wakes up once a second and checks to see if any ftrace calls
--	  were made. If so, it runs stop_machine (stops all CPUS)
--	  and modifies the code to jump over the call to ftrace.
--
- config FUNCTION_PROFILER
- 	bool "Kernel function profiler"
- 	depends on FUNCTION_TRACER
-
+	Dave
 
