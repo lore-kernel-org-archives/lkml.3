@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933833Ab3CLWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:40:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60387 "EHLO
+	id S933775Ab3CLWkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:40:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab3CLWdb (ORCPT
+	with ESMTP id S1755329Ab3CLWdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei WANG <wei_wang@realsil.com.cn>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tim Gardner <rtg.canonical@gmail.com>
-Subject: [ 080/100] mfd: rtsx: Fix issue that booting OS with SD card inserted
-Date: Tue, 12 Mar 2013 15:32:05 -0700
-Message-Id: <20130312223131.552172761@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 081/100] crypto: user - fix info leaks in report API
+Date: Tue, 12 Mar 2013 15:32:06 -0700
+Message-Id: <20130312223131.667458236@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,182 +28,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit c3481955f6c78c8dd99921759306d7469c999ec2 upstream.
+commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
 
-Realtek card reader supports both SD and MS card. According to the
-settings of rtsx MFD driver, SD host will be probed before MS host.
-If we boot/reboot Linux with SD card inserted, the resetting flow of SD
-card will succeed, and the following resetting flow of MS is sure to fail.
-Then MS upper-level driver will ask rtsx driver to turn power off. This
-request leads to the result that the following SD commands fail and SD card
-can't be accessed again.
+Three errors resulting in kernel memory disclosure:
 
-In this commit, Realtek's SD and MS host driver will check whether the card
-that upper driver requesting is the one existing in the slot. If not, Realtek's
-host driver will refuse the operation to make sure the exlusive accessing
-at the same time.
+1/ The structures used for the netlink based crypto algorithm report API
+are located on the stack. As snprintf() does not fill the remainder of
+the buffer with null bytes, those stack bytes will be disclosed to users
+of the API. Switch to strncpy() to fix this.
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Tim Gardner <rtg.canonical@gmail.com>
+2/ crypto_report_one() does not initialize all field of struct
+crypto_user_alg. Fix this to fix the heap info leak.
+
+3/ For the module name we should copy only as many bytes as
+module_name() returns -- not as much as the destination buffer could
+hold. But the current code does not and therefore copies random data
+from behind the end of the module name, as the module name is always
+shorter than CRYPTO_MAX_ALG_NAME.
+
+Also switch to use strncpy() to copy the algorithm's name and
+driver_name. They are strings, after all.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/memstick/host/rtsx_pci_ms.c |    7 +++++++
- drivers/mfd/rtsx_pcr.c              |   30 ++++++++++++++++++++++++++++++
- drivers/mmc/host/rtsx_pci_sdmmc.c   |   18 ++++++++++++++++++
- include/linux/mfd/rtsx_pci.h        |    2 ++
- 4 files changed, 57 insertions(+)
+ crypto/ablkcipher.c  |   12 ++++++------
+ crypto/aead.c        |    9 ++++-----
+ crypto/ahash.c       |    2 +-
+ crypto/blkcipher.c   |    6 +++---
+ crypto/crypto_user.c |   20 ++++++++++----------
+ crypto/pcompress.c   |    3 +--
+ crypto/rng.c         |    2 +-
+ crypto/shash.c       |    3 ++-
+ 8 files changed, 28 insertions(+), 29 deletions(-)
 
---- a/drivers/memstick/host/rtsx_pci_ms.c
-+++ b/drivers/memstick/host/rtsx_pci_ms.c
-@@ -426,6 +426,9 @@ static void rtsx_pci_ms_request(struct m
- 
- 	dev_dbg(ms_dev(host), "--> %s\n", __func__);
- 
-+	if (rtsx_pci_card_exclusive_check(host->pcr, RTSX_MS_CARD))
-+		return;
-+
- 	schedule_work(&host->handle_req);
- }
- 
-@@ -441,6 +444,10 @@ static int rtsx_pci_ms_set_param(struct
- 	dev_dbg(ms_dev(host), "%s: param = %d, value = %d\n",
- 			__func__, param, value);
- 
-+	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_MS_CARD);
-+	if (err)
-+		return err;
-+
- 	switch (param) {
- 	case MEMSTICK_POWER:
- 		if (value == MEMSTICK_POWER_ON)
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -713,6 +713,25 @@ int rtsx_pci_card_power_off(struct rtsx_
- }
- EXPORT_SYMBOL_GPL(rtsx_pci_card_power_off);
- 
-+int rtsx_pci_card_exclusive_check(struct rtsx_pcr *pcr, int card)
-+{
-+	unsigned int cd_mask[] = {
-+		[RTSX_SD_CARD] = SD_EXIST,
-+		[RTSX_MS_CARD] = MS_EXIST
-+	};
-+
-+	if (!pcr->ms_pmos) {
-+		/* When using single PMOS, accessing card is not permitted
-+		 * if the existing card is not the designated one.
-+		 */
-+		if (pcr->card_exist & (~cd_mask[card]))
-+			return -EIO;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(rtsx_pci_card_exclusive_check);
-+
- int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+--- a/crypto/ablkcipher.c
++++ b/crypto/ablkcipher.c
+@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
  {
- 	if (pcr->ops->switch_output_voltage)
-@@ -789,6 +808,9 @@ static void rtsx_pci_card_detect(struct
- 			card_inserted = pcr->ops->cd_deglitch(pcr);
+ 	struct crypto_report_blkcipher rblkcipher;
  
- 		card_detect = card_inserted | card_removed;
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<built-in>");
++	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+--- a/crypto/aead.c
++++ b/crypto/aead.c
+@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 aead->geniv ?: "<built-in>");
++	strncpy(raead.type, "aead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
++	strncpy(raead.type, "nivaead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+--- a/crypto/ahash.c
++++ b/crypto/ahash.c
+@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
+ {
+ 	struct crypto_report_hash rhash;
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
++	strncpy(rhash.type, "ahash", sizeof(rhash.type));
+ 
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
+--- a/crypto/blkcipher.c
++++ b/crypto/blkcipher.c
+@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_blkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -75,7 +75,7 @@ static int crypto_report_cipher(struct s
+ {
+ 	struct crypto_report_cipher rcipher;
+ 
+-	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
++	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
+ 
+ 	rcipher.blocksize = alg->cra_blocksize;
+ 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
+@@ -94,8 +94,7 @@ static int crypto_report_comp(struct sk_
+ {
+ 	struct crypto_report_comp rcomp;
+ 
+-	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
+-
++	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
+ 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		    sizeof(struct crypto_report_comp), &rcomp))
+ 		goto nla_put_failure;
+@@ -108,12 +107,14 @@ nla_put_failure:
+ static int crypto_report_one(struct crypto_alg *alg,
+ 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
+ {
+-	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
+-	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
+-	       sizeof(ualg->cru_driver_name));
+-	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
+-	       CRYPTO_MAX_ALG_NAME);
++	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
++	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
++		sizeof(ualg->cru_driver_name));
++	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
++		sizeof(ualg->cru_module_name));
+ 
++	ualg->cru_type = 0;
++	ualg->cru_mask = 0;
+ 	ualg->cru_flags = alg->cra_flags;
+ 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
+ 
+@@ -122,8 +123,7 @@ static int crypto_report_one(struct cryp
+ 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
+ 		struct crypto_report_larval rl;
+ 
+-		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
+-
++		strncpy(rl.type, "larval", sizeof(rl.type));
+ 		if (nla_put(skb, CRYPTOCFGA_REPORT_LARVAL,
+ 			    sizeof(struct crypto_report_larval), &rl))
+ 			goto nla_put_failure;
+--- a/crypto/pcompress.c
++++ b/crypto/pcompress.c
+@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
+ {
+ 	struct crypto_report_comp rpcomp;
+ 
+-	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
+-
++	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
+ 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		    sizeof(struct crypto_report_comp), &rpcomp))
+ 		goto nla_put_failure;
+--- a/crypto/rng.c
++++ b/crypto/rng.c
+@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
+ {
+ 	struct crypto_report_rng rrng;
+ 
+-	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
++	strncpy(rrng.type, "rng", sizeof(rrng.type));
+ 
+ 	rrng.seedsize = alg->cra_rng.seedsize;
+ 
+--- a/crypto/shash.c
++++ b/crypto/shash.c
+@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
+ 	struct crypto_report_hash rhash;
+ 	struct shash_alg *salg = __crypto_shash_alg(alg);
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
++	strncpy(rhash.type, "shash", sizeof(rhash.type));
 +
-+		pcr->card_exist |= card_inserted;
-+		pcr->card_exist &= ~card_removed;
- 	}
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = salg->digestsize;
  
- 	mutex_unlock(&pcr->pcr_mutex);
-@@ -981,6 +1003,14 @@ static int rtsx_pci_init_hw(struct rtsx_
- 			return err;
- 	}
- 
-+	/* No CD interrupt if probing driver with card inserted.
-+	 * So we need to initialize pcr->card_exist here.
-+	 */
-+	if (pcr->ops->cd_deglitch)
-+		pcr->card_exist = pcr->ops->cd_deglitch(pcr);
-+	else
-+		pcr->card_exist = rtsx_pci_readl(pcr, RTSX_BIPR) & CARD_EXIST;
-+
- 	return 0;
- }
- 
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -678,12 +678,19 @@ static void sdmmc_request(struct mmc_hos
- 	struct mmc_command *cmd = mrq->cmd;
- 	struct mmc_data *data = mrq->data;
- 	unsigned int data_size = 0;
-+	int err;
- 
- 	if (host->eject) {
- 		cmd->error = -ENOMEDIUM;
- 		goto finish;
- 	}
- 
-+	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
-+	if (err) {
-+		cmd->error = err;
-+		goto finish;
-+	}
-+
- 	mutex_lock(&pcr->pcr_mutex);
- 
- 	rtsx_pci_start_run(pcr);
-@@ -901,6 +908,9 @@ static void sdmmc_set_ios(struct mmc_hos
- 	if (host->eject)
- 		return;
- 
-+	if (rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD))
-+		return;
-+
- 	mutex_lock(&pcr->pcr_mutex);
- 
- 	rtsx_pci_start_run(pcr);
-@@ -1073,6 +1083,10 @@ static int sdmmc_switch_voltage(struct m
- 	if (host->eject)
- 		return -ENOMEDIUM;
- 
-+	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
-+	if (err)
-+		return err;
-+
- 	mutex_lock(&pcr->pcr_mutex);
- 
- 	rtsx_pci_start_run(pcr);
-@@ -1122,6 +1136,10 @@ static int sdmmc_execute_tuning(struct m
- 	if (host->eject)
- 		return -ENOMEDIUM;
- 
-+	err = rtsx_pci_card_exclusive_check(host->pcr, RTSX_SD_CARD);
-+	if (err)
-+		return err;
-+
- 	mutex_lock(&pcr->pcr_mutex);
- 
- 	rtsx_pci_start_run(pcr);
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -735,6 +735,7 @@ struct rtsx_pcr {
- 
- 	unsigned int			card_inserted;
- 	unsigned int			card_removed;
-+	unsigned int			card_exist;
- 
- 	struct delayed_work		carddet_work;
- 	struct delayed_work		idle_work;
-@@ -799,6 +800,7 @@ int rtsx_pci_switch_clock(struct rtsx_pc
- 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk);
- int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card);
- int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card);
-+int rtsx_pci_card_exclusive_check(struct rtsx_pcr *pcr, int card);
- int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage);
- unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr);
- void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr);
 
 
