@@ -1,185 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab3CLPov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:44:51 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60093 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab3CLPos (ORCPT
+	id S933002Ab3CLPmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 11:42:36 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:51943 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932865Ab3CLPmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:44:48 -0400
-Date: Tue, 12 Mar 2013 11:44:27 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Xufeng Zhang <xufengzhang.main@gmail.com>,
-        Xufeng Zhang <xufeng.zhang@windriver.com>, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
- so as to find the matched transport
-Message-ID: <20130312154427.GA5969@neilslaptop.think-freely.org>
-References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
- <20130308142720.GA9873@hmsreliant.think-freely.org>
- <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com>
- <20130311133121.GD12682@hmsreliant.think-freely.org>
- <513F1B76.2060603@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513F1B76.2060603@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Tue, 12 Mar 2013 11:42:33 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz,
+        Erez Zadok <ezk@cs.sunysb.edu>
+Subject: [PATCH 06/13] overlayfs-implement-show_options
+Date: Tue, 12 Mar 2013 16:41:41 +0100
+Message-Id: <1363102908-28956-7-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 08:11:34AM -0400, Vlad Yasevich wrote:
-> On 03/11/2013 09:31 AM, Neil Horman wrote:
-> >On Mon, Mar 11, 2013 at 10:14:50AM +0800, Xufeng Zhang wrote:
-> >>On 3/8/13, Neil Horman <nhorman@tuxdriver.com> wrote:
-> >>>On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
-> >>>>sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
-> >>>>was sent on, if not found in the active_path transport, then go search
-> >>>>all the other transports in the peer's transport_addr_list, however, we
-> >>>>should continue to the next entry rather than break the loop when meet
-> >>>>the active_path transport.
-> >>>>
-> >>>>Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> >>>>---
-> >>>>  net/sctp/associola.c |    2 +-
-> >>>>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>>>
-> >>>>diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> >>>>index 43cd0dd..d2709e2 100644
-> >>>>--- a/net/sctp/associola.c
-> >>>>+++ b/net/sctp/associola.c
-> >>>>@@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
-> >>>>sctp_association *asoc,
-> >>>>  			transports) {
-> >>>>
-> >>>>  		if (transport == active)
-> >>>>-			break;
-> >>>>+			continue;
-> >>>>  		list_for_each_entry(chunk, &transport->transmitted,
-> >>>>  				transmitted_list) {
-> >>>>  			if (key == chunk->subh.data_hdr->tsn) {
-> >>>>--
-> >>>>1.7.0.2
-> >>>>
-> >>>>
-> >>>
-> >>>This works, but what might be better would be if we did a move to front
-> >>>heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move
-> >>>the
-> >>>requisite transport to the front of the transport_addr_list.  If we did
-> >>>that,
-> >>>then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
-> >>>implicitly check the active path first without having to check it seprately
-> >>>and
-> >>>skip it in the second for loop.
-> >>
-> >>Thanks for your review, Neil!
-> >>
-> >>I know what you mean, yes, it's most probably that the searched TSN was
-> >>transmitted in the currently active_path, but what should we do if not.
-> >>
-> >>Check the comment in sctp_assoc_lookup_tsn() function:
-> >>/* Let's be hopeful and check the active_path first. */
-> >>/* If not found, go search all the other transports. */
-> >>
-> >>It has checked the active_path first and then traverse all the other
-> >>transports in
-> >>the transport_addr_list except the active_path.
-> >>
-> >>So what I want to fix here is the inconsistency between the function
-> >>should do and
-> >>the code actually does.
-> >>
-> >I understand what you're doing, and I agree that the fix is functional (Hence
-> >my "This works" statement in my last note).  What I'm suggesting is that, since
-> >you're messing about in that code anyway that you clean it up while your at it,
-> >so that we don't need to have the if (transport == active) check at all.  We
-> >trade in some extra work in a non-critical path (sctp_assoc_set_primary), for
-> >the removal of an extra for loop operation and a conditional check in a much
-> >hotter path.  Something like this (completely untested), is what I was thinking
-> >
-> >
-> >diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> >index 43cd0dd..8ae873c 100644
-> >--- a/net/sctp/associola.c
-> >+++ b/net/sctp/associola.c
-> >@@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association *asoc,
-> >
-> >  	asoc->peer.primary_path = transport;
-> >
-> >+	list_del_rcu(&transport->transports);
-> >+	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
-> >+
-> >  	/* Set a default msg_name for events. */
-> >  	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
-> >  	       sizeof(union sctp_addr));
-> >@@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct sctp_association *asoc)
-> >  struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
-> >  					     __u32 tsn)
-> >  {
-> >-	struct sctp_transport *active;
-> >  	struct sctp_transport *match;
-> >  	struct sctp_transport *transport;
-> >  	struct sctp_chunk *chunk;
-> >@@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
-> >  	 * The general strategy is to search each transport's transmitted
-> >  	 * list.   Return which transport this TSN lives on.
-> >  	 *
-> >-	 * Let's be hopeful and check the active_path first.
-> >-	 * Another optimization would be to know if there is only one
-> >-	 * outbound path and not have to look for the TSN at all.
-> >+	 * Note, that sctp_assoc_set_primary does a move to front operation
-> >+	 * on the active_path transport, so this code implicitly checks
-> >+	 * the active_path first, as we most commonly expect to find our TSN
-> >+	 * there.
-> >  	 *
-> >  	 */
-> 
-> Neil, active_patch != primary_path all the time.  In fact, when you
-> have path primary path failure, active path will change while
-> primary
-> may only change when the user says so.
-Thats a good point, thank you Vlad.  We would need to only update the
-transport_addr_list in set_primary if its state is ACTIVE or UNKNOWN.  We would
-also need to update it if the active path changes in
-sctp_assoc_control_transport, if the new active path is different from the old.
-Both of those paths however are not intended to be run frequently, so I think
-this is still a viable optimization.  I'm working on it now.
-Neil
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
 
-> 
-> So, you may still get into a situation where primary and active
-> paths are different.
-> 
-> The optimization here may not work at all under those circumstances.
-> 
-> -vlad
-> 
-> >
-> >-	active = asoc->peer.active_path;
-> >-
-> >-	list_for_each_entry(chunk, &active->transmitted,
-> >-			transmitted_list) {
-> >-
-> >-		if (key == chunk->subh.data_hdr->tsn) {
-> >-			match = active;
-> >-			goto out;
-> >-		}
-> >-	}
-> >-
-> >-	/* If not found, go search all the other transports. */
-> >  	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
-> >  			transports) {
-> >
-> >-		if (transport == active)
-> >-			break;
-> >  		list_for_each_entry(chunk, &transport->transmitted,
-> >  				transmitted_list) {
-> >  			if (key == chunk->subh.data_hdr->tsn) {
-> >
-> 
-> 
+This is useful because of the stacking nature of overlayfs.  Users like to
+find out (via /proc/mounts) which lower/upper directory were used at mount
+time.
+
+Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/overlayfs/super.c |   63 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 43 insertions(+), 20 deletions(-)
+
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 928b1b1..20e5ecf 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -18,6 +18,7 @@
+ #include <linux/cred.h>
+ #include <linux/sched.h>
+ #include <linux/statfs.h>
++#include <linux/seq_file.h>
+ #include "overlayfs.h"
+ 
+ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+@@ -26,12 +27,21 @@ MODULE_LICENSE("GPL");
+ 
+ #define OVERLAYFS_SUPER_MAGIC 0x794c764f
+ 
++struct ovl_config {
++	char *lowerdir;
++	char *upperdir;
++};
++
++/* private information held for overlayfs's superblock */
+ struct ovl_fs {
+ 	struct vfsmount *upper_mnt;
+ 	struct vfsmount *lower_mnt;
+ 	long lower_namelen;
++	/* pathnames of lower and upper dirs, for show_options */
++	struct ovl_config config;
+ };
+ 
++/* private information held for every overlayfs dentry */
+ struct ovl_entry {
+ 	/*
+ 	 * Keep "double reference" on upper dentries, so that
+@@ -388,6 +398,8 @@ static void ovl_put_super(struct super_block *sb)
+ 	mntput(ufs->upper_mnt);
+ 	mntput(ufs->lower_mnt);
+ 
++	kfree(ufs->config.lowerdir);
++	kfree(ufs->config.upperdir);
+ 	kfree(ufs);
+ }
+ 
+@@ -436,15 +448,27 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	return err;
+ }
+ 
++/**
++ * ovl_show_options
++ *
++ * Prints the mount options for a given superblock.
++ * Returns zero; does not fail.
++ */
++static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
++{
++	struct super_block *sb = dentry->d_sb;
++	struct ovl_fs *ufs = sb->s_fs_info;
++
++	seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
++	seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
++	return 0;
++}
++
+ static const struct super_operations ovl_super_operations = {
+ 	.put_super	= ovl_put_super,
+ 	.remount_fs	= ovl_remount_fs,
+ 	.statfs		= ovl_statfs,
+-};
+-
+-struct ovl_config {
+-	char *lowerdir;
+-	char *upperdir;
++	.show_options	= ovl_show_options,
+ };
+ 
+ enum {
+@@ -504,34 +528,33 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct dentry *root_dentry;
+ 	struct ovl_entry *oe;
+ 	struct ovl_fs *ufs;
+-	struct ovl_config config;
+ 	struct kstatfs statfs;
+ 	int err;
+ 
+-	err = ovl_parse_opt((char *) data, &config);
+-	if (err)
++	err = -ENOMEM;
++	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
++	if (!ufs)
+ 		goto out;
+ 
++	err = ovl_parse_opt((char *) data, &ufs->config);
++	if (err)
++		goto out_free_ufs;
++
+ 	err = -EINVAL;
+-	if (!config.upperdir || !config.lowerdir) {
++	if (!ufs->config.upperdir || !ufs->config.lowerdir) {
+ 		printk(KERN_ERR "overlayfs: missing upperdir or lowerdir\n");
+ 		goto out_free_config;
+ 	}
+ 
+-	err = -ENOMEM;
+-	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
+-	if (!ufs)
+-		goto out_free_config;
+-
+ 	oe = ovl_alloc_entry();
+ 	if (oe == NULL)
+-		goto out_free_ufs;
++		goto out_free_config;
+ 
+-	err = kern_path(config.upperdir, LOOKUP_FOLLOW, &upperpath);
++	err = kern_path(ufs->config.upperdir, LOOKUP_FOLLOW, &upperpath);
+ 	if (err)
+ 		goto out_free_oe;
+ 
+-	err = kern_path(config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
++	err = kern_path(ufs->config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
+ 	if (err)
+ 		goto out_put_upperpath;
+ 
+@@ -615,11 +638,11 @@ out_put_upperpath:
+ 	path_put(&upperpath);
+ out_free_oe:
+ 	kfree(oe);
++out_free_config:
++	kfree(ufs->config.lowerdir);
++	kfree(ufs->config.upperdir);
+ out_free_ufs:
+ 	kfree(ufs);
+-out_free_config:
+-	kfree(config.lowerdir);
+-	kfree(config.upperdir);
+ out:
+ 	return err;
+ }
+-- 
+1.7.10.4
+
