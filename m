@@ -1,151 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab3CLTjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:39:42 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42457 "EHLO relay.sgi.com"
+	id S1755632Ab3CLTmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:42:10 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42392 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755611Ab3CLTi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:38:26 -0400
-Message-Id: <20130312193825.402402068@gulag1.americas.sgi.com>
+	id S1754015Ab3CLTiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:38:25 -0400
+Message-Id: <20130312193823.899949784@gulag1.americas.sgi.com>
 References: <20130312193823.212544181@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 12 Mar 2013 14:38:37 -0500
+Date: Tue, 12 Mar 2013 14:38:27 -0500
 From: Mike Travis <travis@sgi.com>
 To: Jason Wessel <jason.wessel@windriver.com>
 Cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH 14/14] x86/UV: Add call to KGDB/KDB from NMI handler
-Content-Disposition: inline; filename=uv-add-nmi-call-kdb.patch
+        linux-kernel@vger.kernel.org,
+        Vincent Stehle <vincent.stehle@laposte.net>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: [PATCH 04/14] KDB: allow KDB modules to be external modules
+Content-Disposition: inline; filename=kdb-allow-ext-modules.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch restores the ability to enter KDB (and KGDB) from the UV
-NMI handler.  It utilizes the newly added kgdb_nmicallin function
-to gain entry to KGDB/KDB by the master.  The slaves still enter via
-the standard kgdb_nmicallback function.
+Since KDB modules are not built within the Linux kernel build domain,
+symbols needed by them must be available in a header file that is
+accessible.  This patch moves the significant routines used by KDB
+modules to the external kdb.h header file.
 
-The handler also uses the new 'send_ready' pointer to tell KGDB/KDB
-to signal the slaves when to proceed into the KGDB slave loop.
-
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Steffen Persvold <sp@numascale.com>
+Cc: Vincent Stehle <vincent.stehle@laposte.net>
+Cc: Andrei Warkentin <andrey.warkentin@gmail.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
 Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Mike Travis <travis@sgi.com>
 ---
- arch/x86/platform/uv/uv_nmi.c |   73 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 71 insertions(+), 2 deletions(-)
+ include/linux/kdb.h            |   89 +++++++++++++++++++++++++++++++++++++++++
+ kernel/debug/debug_core.h      |    1 
+ kernel/debug/kdb/kdb_private.h |   79 ------------------------------------
+ 3 files changed, 89 insertions(+), 80 deletions(-)
 
---- linux.orig/arch/x86/platform/uv/uv_nmi.c
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -21,6 +21,8 @@
- 
- #include <linux/cpu.h>
- #include <linux/delay.h>
-+#include <linux/kgdb.h>
-+#include <linux/kdb.h>
- #include <linux/module.h>
- #include <linux/nmi.h>
+--- linux.orig/include/linux/kdb.h
++++ linux/include/linux/kdb.h
+@@ -25,6 +25,7 @@ typedef int (*kdb_func_t)(int, const cha
+ #include <linux/init.h>
  #include <linux/sched.h>
-@@ -33,6 +35,7 @@
- #include <asm/apic.h>
- #include <asm/current.h>
- #include <asm/kdebug.h>
-+#include <asm/traps.h>
- #include <asm/uv/uv.h>
- #include <asm/uv/uv_hub.h>
- #include <asm/uv/uv_mmrs.h>
-@@ -511,6 +514,68 @@ static void uv_nmi_touch_watchdogs(void)
- 	touch_nmi_watchdog();
- }
+ #include <linux/atomic.h>
++#include <linux/hardirq.h>
  
-+#ifdef CONFIG_KGDB_KDB
+ #define KDB_POLL_FUNC_MAX	5
+ extern int kdb_poll_idx;
+@@ -148,6 +149,93 @@ extern int kdb_register(char *, kdb_func
+ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
+ 			       short, kdb_repeat_t);
+ extern int kdb_unregister(char *);
 +
-+/* Disable to force process dump instead of entering KDB or KGDB */
-+static int uv_nmi_kdb_on = 1;
-+module_param_named(kdb_on, uv_nmi_kdb_on, int, 0644);
++/*
++ * Exported Symbols for kernel loadable modules to use.
++ *
++ * (All of these need to be within an #ifdef CONFIG_KGDB_KDB domain)
++ */
++extern int kdb_parse(const char *cmdstr);
++extern int kdb_getarea_size(void *, unsigned long, size_t);
++extern int kdb_putarea_size(unsigned long, void *, size_t);
 +
-+/* Call KDB from NMI handler */
-+static void uv_call_kdb(int cpu, struct pt_regs *regs,
-+			int master, unsigned long *flags)
-+{
-+	int ret;
++/*
++ * Like get_user and put_user, kdb_getarea and kdb_putarea take variable
++ * names, not pointers.  The underlying *_size functions take pointers.
++ */
++#define kdb_getarea(x, addr) kdb_getarea_size(&(x), addr, sizeof((x)))
++#define kdb_putarea(addr, x) kdb_putarea_size(addr, &(x), sizeof((x)))
 +
-+	if (master) {
-+		/* call KGDB NMI handler as MASTER */
-+		local_irq_restore(*flags);
-+		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
-+					&uv_nmi_slave_continue);
-+		local_irq_save(*flags);
++extern int kdb_getphysword(unsigned long *word,
++			unsigned long addr, size_t size);
++extern int kdb_getword(unsigned long *, unsigned long, size_t);
++extern int kdb_putword(unsigned long, unsigned long, size_t);
 +
-+		/*
-+		 * if KGDB/KDB did not handle the NMI, then signal slaves
-+		 *   to do process dump instead.
-+		 */
-+		if (ret) {
-+			uv_nmi_dump_state(cpu, regs, 1);
-+			return;
-+		}
-+	} else {
-+		int sig;
++extern int kdbgetularg(const char *, unsigned long *);
++extern int kdbgetu64arg(const char *, u64 *);
++extern char *kdbgetenv(const char *);
++extern int kdbgetaddrarg(int, const char **, int*, unsigned long *,
++			 long *, char **);
 +
-+		/* wait for KGDB to say it's ready for slaves to enter */
-+		do {
-+			cpu_relax();
-+			sig = atomic_read(&uv_nmi_slave_continue);
-+		} while (!sig);
++/* Symbol table format returned by kallsyms. */
++typedef struct __ksymtab {
++		unsigned long value;	/* Address of symbol */
++		const char *mod_name;	/* Module containing symbol or
++					 * "kernel" */
++		unsigned long mod_start;
++		unsigned long mod_end;
++		const char *sec_name;	/* Section containing symbol */
++		unsigned long sec_start;
++		unsigned long sec_end;
++		const char *sym_name;	/* Full symbol name, including
++					 * any version */
++		unsigned long sym_start;
++		unsigned long sym_end;
++} kdb_symtab_t;
++extern int kallsyms_symbol_next(char *prefix_name, int flag);
++extern int kallsyms_symbol_complete(char *prefix_name, int max_len);
 +
-+		/*
-+		 * if KGDB/KDB did not handle the NMI for the master, then
-+		 *   the master signals the slaves to do process dump instead.
-+		 */
-+		if (sig == 2) {
-+			uv_nmi_dump_state(cpu, regs, 0);
-+			return;
-+		}
++extern int kdbgetsymval(const char *, kdb_symtab_t *);
++extern int kdbnearsym(unsigned long, kdb_symtab_t *);
++extern void kdbnearsym_cleanup(void);
++extern char *kdb_strdup(const char *str, gfp_t type);
++extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
 +
-+		/* call KGDB as slave */
-+		local_irq_restore(*flags);
-+		ret = kgdb_nmicallback(cpu, regs);
-+		local_irq_save(*flags);
-+	}
-+	uv_nmi_sync_exit(master);
-+}
++extern void kdb_ps_suppressed(void);
++extern void kdb_ps1(const struct task_struct *p);
++extern void kdb_print_nameval(const char *name, unsigned long val);
++extern void kdb_send_sig_info(struct task_struct *p, struct siginfo *info);
++extern void kdb_meminfo_proc_show(void);
++extern char *kdb_getstr(char *, size_t, char *);
 +
-+#else /* !CONFIG_KGDB_KDB */
-+static inline void uv_call_kdb(int cpu, struct pt_regs *regs,
-+				int master, unsigned long *flags)
-+{
-+	pr_err("UV: NMI error: KDB is not enabled in this kernel\n");
-+	uv_nmi_dump_state(cpu, regs, master);
-+}
-+#endif /* !CONFIG_KGDB_KDB */
++/* Defines for kdb_symbol_print */
++#define KDB_SP_SPACEB	0x0001		/* Space before string */
++#define KDB_SP_SPACEA	0x0002		/* Space after string */
++#define KDB_SP_PAREN	0x0004		/* Parenthesis around string */
++#define KDB_SP_VALUE	0x0008		/* Print the value of the address */
++#define KDB_SP_SYMSIZE	0x0010		/* Print the size of the symbol */
++#define KDB_SP_NEWLINE	0x0020		/* Newline after string */
++#define KDB_SP_DEFAULT (KDB_SP_VALUE|KDB_SP_PAREN)
 +
- /*
-  * UV NMI handler
++#define KDB_TSK(cpu) (kgdb_info[cpu].task)
++#define KDB_TSKREGS(cpu) (kgdb_info[cpu].debuggerinfo)
++
++extern struct task_struct *kdb_curr_task(int);
++
++#define kdb_task_has_cpu(p) (task_curr(p))
++
++/* Simplify coexistence with NPTL */
++#define	kdb_do_each_thread(g, p) do_each_thread(g, p)
++#define	kdb_while_each_thread(g, p) while_each_thread(g, p)
++
++#define GFP_KDB (in_interrupt() ? GFP_ATOMIC : GFP_KERNEL)
++
++extern void *debug_kmalloc(size_t size, gfp_t flags);
++extern void debug_kfree(void *);
++extern void debug_kusage(void);
++
++extern void kdb_set_current_task(struct task_struct *);
++extern struct task_struct *kdb_current_task;
+ #else /* ! CONFIG_KGDB_KDB */
+ static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
+ static inline void kdb_init(int level) {}
+@@ -157,6 +245,7 @@ static inline int kdb_register_repeat(ch
+ 				      char *help, short minlen,
+ 				      kdb_repeat_t repeat) { return 0; }
+ static inline int kdb_unregister(char *cmd) { return 0; }
++
+ #endif	/* CONFIG_KGDB_KDB */
+ enum {
+ 	KDB_NOT_INITIALIZED,
+--- linux.orig/kernel/debug/debug_core.h
++++ linux/kernel/debug/debug_core.h
+@@ -71,7 +71,6 @@ extern int dbg_kdb_mode;
+ 
+ #ifdef CONFIG_KGDB_KDB
+ extern int kdb_stub(struct kgdb_state *ks);
+-extern int kdb_parse(const char *cmdstr);
+ extern int kdb_common_init_state(struct kgdb_state *ks);
+ extern int kdb_common_deinit_state(void);
+ #else /* ! CONFIG_KGDB_KDB */
+--- linux.orig/kernel/debug/kdb/kdb_private.h
++++ linux/kernel/debug/kdb/kdb_private.h
+@@ -68,51 +68,6 @@
   */
-@@ -537,8 +602,12 @@ int uv_handle_nmi(unsigned int reason, s
- 	if (master && uv_nmi_kdump_requested)
- 		uv_nmi_kdump(regs);
+ #define KDB_MAXBPT	16
  
--	/* Dump state of each cpu */
--	uv_nmi_dump_state(cpu, regs, master);
-+	/* Call KDB if enabled */
-+	if (uv_nmi_kdb_on)
-+		uv_call_kdb(cpu, regs, master, &flags);
-+
-+	else	/* Otherwise dump state of each cpu */
-+		uv_nmi_dump_state(cpu, regs, master);
+-/* Symbol table format returned by kallsyms. */
+-typedef struct __ksymtab {
+-		unsigned long value;	/* Address of symbol */
+-		const char *mod_name;	/* Module containing symbol or
+-					 * "kernel" */
+-		unsigned long mod_start;
+-		unsigned long mod_end;
+-		const char *sec_name;	/* Section containing symbol */
+-		unsigned long sec_start;
+-		unsigned long sec_end;
+-		const char *sym_name;	/* Full symbol name, including
+-					 * any version */
+-		unsigned long sym_start;
+-		unsigned long sym_end;
+-		} kdb_symtab_t;
+-extern int kallsyms_symbol_next(char *prefix_name, int flag);
+-extern int kallsyms_symbol_complete(char *prefix_name, int max_len);
+-
+-/* Exported Symbols for kernel loadable modules to use. */
+-extern int kdb_getarea_size(void *, unsigned long, size_t);
+-extern int kdb_putarea_size(unsigned long, void *, size_t);
+-
+-/*
+- * Like get_user and put_user, kdb_getarea and kdb_putarea take variable
+- * names, not pointers.  The underlying *_size functions take pointers.
+- */
+-#define kdb_getarea(x, addr) kdb_getarea_size(&(x), addr, sizeof((x)))
+-#define kdb_putarea(addr, x) kdb_putarea_size(addr, &(x), sizeof((x)))
+-
+-extern int kdb_getphysword(unsigned long *word,
+-			unsigned long addr, size_t size);
+-extern int kdb_getword(unsigned long *, unsigned long, size_t);
+-extern int kdb_putword(unsigned long, unsigned long, size_t);
+-
+-extern int kdbgetularg(const char *, unsigned long *);
+-extern int kdbgetu64arg(const char *, u64 *);
+-extern char *kdbgetenv(const char *);
+-extern int kdbgetaddrarg(int, const char **, int*, unsigned long *,
+-			 long *, char **);
+-extern int kdbgetsymval(const char *, kdb_symtab_t *);
+-extern int kdbnearsym(unsigned long, kdb_symtab_t *);
+-extern void kdbnearsym_cleanup(void);
+-extern char *kdb_strdup(const char *str, gfp_t type);
+-extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
+-
+ /* Routine for debugging the debugger state. */
+ extern void kdb_print_state(const char *, int);
  
- 	/* Clear per_cpu "in nmi" flag */
- 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
+@@ -205,42 +160,8 @@ extern unsigned long kdb_task_state_stri
+ extern char kdb_task_state_char (const struct task_struct *);
+ extern unsigned long kdb_task_state(const struct task_struct *p,
+ 				    unsigned long mask);
+-extern void kdb_ps_suppressed(void);
+-extern void kdb_ps1(const struct task_struct *p);
+-extern void kdb_print_nameval(const char *name, unsigned long val);
+-extern void kdb_send_sig_info(struct task_struct *p, struct siginfo *info);
+-extern void kdb_meminfo_proc_show(void);
+-extern char *kdb_getstr(char *, size_t, char *);
+ extern void kdb_gdb_state_pass(char *buf);
+ 
+-/* Defines for kdb_symbol_print */
+-#define KDB_SP_SPACEB	0x0001		/* Space before string */
+-#define KDB_SP_SPACEA	0x0002		/* Space after string */
+-#define KDB_SP_PAREN	0x0004		/* Parenthesis around string */
+-#define KDB_SP_VALUE	0x0008		/* Print the value of the address */
+-#define KDB_SP_SYMSIZE	0x0010		/* Print the size of the symbol */
+-#define KDB_SP_NEWLINE	0x0020		/* Newline after string */
+-#define KDB_SP_DEFAULT (KDB_SP_VALUE|KDB_SP_PAREN)
+-
+-#define KDB_TSK(cpu) kgdb_info[cpu].task
+-#define KDB_TSKREGS(cpu) kgdb_info[cpu].debuggerinfo
+-
+-extern struct task_struct *kdb_curr_task(int);
+-
+-#define kdb_task_has_cpu(p) (task_curr(p))
+-
+-/* Simplify coexistence with NPTL */
+-#define	kdb_do_each_thread(g, p) do_each_thread(g, p)
+-#define	kdb_while_each_thread(g, p) while_each_thread(g, p)
+-
+-#define GFP_KDB (in_interrupt() ? GFP_ATOMIC : GFP_KERNEL)
+-
+-extern void *debug_kmalloc(size_t size, gfp_t flags);
+-extern void debug_kfree(void *);
+-extern void debug_kusage(void);
+-
+-extern void kdb_set_current_task(struct task_struct *);
+-extern struct task_struct *kdb_current_task;
+ 
+ #ifdef CONFIG_KDB_KEYBOARD
+ extern void kdb_kbd_cleanup_state(void);
 
 -- 
