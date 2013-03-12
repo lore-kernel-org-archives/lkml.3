@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab3CLIR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 04:17:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56662 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab3CLIRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 04:17:24 -0400
-Message-ID: <513EE454.5040302@ti.com>
-Date: Tue, 12 Mar 2013 09:16:20 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130301 Thunderbird/17.0.3
+	id S1755178Ab3CLIVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 04:21:18 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:42439 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab3CLIVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 04:21:17 -0400
+Date: Tue, 12 Mar 2013 09:21:12 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
+ section
+Message-ID: <20130312082112.GB30665@gmail.com>
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
 MIME-Version: 1.0
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-CC: <linux-omap@vger.kernel.org>, <jarkko.nikula@bitmer.com>,
-        <lgirdwood@gmail.com>, <broonie@opensource.wolfsonmicro.com>,
-        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] omap: convert to devm_ioremap_resource()
-References: <1363017537-11602-1-git-send-email-silviupopescu1990@gmail.com>
-In-Reply-To: <1363017537-11602-1-git-send-email-silviupopescu1990@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 03/11/2013 04:58 PM, Silviu-Mihai Popescu wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
-> 
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-I believe both of the drivers has been patched for this:
-omap-mcbpdm:
-http://mailman.alsa-project.org/pipermail/alsa-devel/2013-February/059484.html
-http://mailman.alsa-project.org/pipermail/alsa-devel/2013-February/059427.html
-
-omap-dmic:
-http://mailman.alsa-project.org/pipermail/alsa-devel/2013-February/059485.html
-
-and they should be already queued for next.
-
--- 
-Péter
-
-> 
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> ---
->  sound/soc/omap/omap-dmic.c  |    9 +++------
->  sound/soc/omap/omap-mcpdm.c |    8 +++-----
->  2 files changed, 6 insertions(+), 11 deletions(-)
-> 
-> diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
-> index 77e9e7e..8ebaf11 100644
-> --- a/sound/soc/omap/omap-dmic.c
-> +++ b/sound/soc/omap/omap-dmic.c
-> @@ -493,12 +493,9 @@ static int asoc_dmic_probe(struct platform_device *pdev)
->  		goto err_put_clk;
->  	}
+> @@ -31,7 +32,7 @@
+>  #error Wordsize not 32 or 64
+>  #endif
 >  
-> -	dmic->io_base = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!dmic->io_base) {
-> -		dev_err(&pdev->dev, "cannot remap\n");
-> -		ret = -ENOMEM;
-> -		goto err_put_clk;
-> -	}
-> +	dmic->io_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(dmic->io_base))
-> +		return PTR_ERR(dmic->io_base);
->  
->  	ret = snd_soc_register_dai(&pdev->dev, &omap_dmic_dai);
->  	if (ret)
-> diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-> index 079f277..ddfcc18 100644
-> --- a/sound/soc/omap/omap-mcpdm.c
-> +++ b/sound/soc/omap/omap-mcpdm.c
-> @@ -464,11 +464,9 @@ static int asoc_mcpdm_probe(struct platform_device *pdev)
->  	if (res == NULL)
->  		return -ENOMEM;
->  
-> -	mcpdm->io_base = devm_request_and_ioremap(&pdev->dev, res);
-> -	if (!mcpdm->io_base) {
-> -		dev_err(&pdev->dev, "cannot remap\n");
-> -		return -ENOMEM;
-> -	}
-> +	mcpdm->io_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(mcpdm->io_base))
-> +		return PTR_ERR(mcpdm->io_base);
->  
->  	mcpdm->irq = platform_get_irq(pdev, 0);
->  	if (mcpdm->irq < 0)
-> 
+> -static inline u64 hash_64(u64 val, unsigned int bits)
+> +static __kprobes inline u64 hash_64(u64 val, unsigned int bits)
+>  {
+>  	u64 hash = val;
 
+We should also, really, really fix the '__kprobes' misnomer and switch to 
+the '__noprobe' pattern or so. The naming does not make it obvious at all 
+that what we do here is to turn _off_ kprobing of select functions...
+
+The only complication is that __kprobes is now present in 600+ places, 
+which will create merge conflicts. If you remind me during the next merge 
+window I can generate the rename on the spot and send it to Linus without 
+anyone having to carry the patch for too long.
+
+Thanks,
+
+	Ingo
