@@ -1,115 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab3CLAC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:02:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23588 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab3CLACY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:02:24 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-6d-513e708f83cb
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH v2] backlight: l4f00242t03: check return value of
- regulator_enable()
-Date: Tue, 12 Mar 2013 09:02:22 +0900
-Message-id: <008e01ce1eb4$df3a9cb0$9dafd610$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4etN8f2tU+mOK+QJKBWR8HxcDKZQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI93+ArtAg18rWCzmrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroxrx+QK
-	evkrzp76x9rA+JCni5GTQ0LARGLp+W2MELaYxIV769m6GLk4hASWMUpc+LqKDabo1IdNLBCJ
-	6YwSHyY9har6xShxuH8ZK0gVm4CaxJcvh9m7GDk4RAT0JdpaNEDCzAKlElsfvGcBCQsLhEks
-	maQJEmYRUJW4t/IK2GJeAVuJR51NrBC2oMSPyfdYIFq1JNbvPM4EYctLbF7zlhlkjISAusSj
-	v7ogYREBPYmr+3dBlYhI7HvxjhHkMgmBTewSC14eYIHYJSDxbfIhFoheWYlNB5gh3pKUOLji
-	BssERrFZSDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMjJMIm7GC8
-	d8D6EGMy0PqJzFKiyfnACM0riTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1OzW1ILUo
-	vqg0J7X4ECMTB6dUA2N9DHfhti8Xn5/hfx1144NoZS379pm3WAKZJ/K9mZy+MjRN+pzTdxGT
-	6GQBzmMZCu23jwYfigie+Xv6xDsBznnpHAcc3E/K2zPYbJpmFMHsHNrc+NjmwVuP0IOck+y/
-	B/1Ns64rmXssJ11tfUhhnO8ibldHl/nZFTHVPMv7DhikBN/hsei8o8RSnJFoqMVcVJwIAPUi
-	+TbGAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xoG5/gV2gQTeXxZz1a9gsLi+8xGpx
-	edccNovdu56yOrB4nJjxm8Vjz/wfrB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
-	TGOErm9IEFyPkQEaSFjHmHHtmFxBL3/F2VP/WBsYH/J0MXJySAiYSJz6sIkFwhaTuHBvPVsX
-	IxeHkMB0RokPk55COb8YJQ73L2MFqWITUJP48uUwexcjB4eIgL5EW4sGSJhZoFRi64P3LCBh
-	YYEwiSWTNEHCLAKqEvdWXmEEsXkFbCUedTaxQtiCEj8m32OBaNWSWL/zOBOELS+xec1bZpAx
-	EgLqEo/+6oKERQT0JK7u3wVVIiKx78U7xgmMArOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgp
-	PddQrzgxt7g0L10vOT93EyM4ep9J7WBc2WBxiFGAg1GJh1fxm22gEGtiWXFl7iFGCQ5mJRHe
-	yhS7QCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OByaWvJJ4Q2MTMyNLIzMLIxNzc9KElcR5
-	D7RaBwoJpCeWpGanphakFsFsYeLglGpgTPn37fiPpc2crZPeHPm47NZDFo5IxWPrumsPG+h5
-	1hap525Sawrw/LjlXoWGUH30gmkswRP3S2R7ukXV55v6+69cvpfj0KVKG1cTpp6dfFymicen
-	v+tnmvxC/6Fqx+zXPJELVdhuVaifOl8533Lnj0QnAYM9b16Y5q2zy/EpdGlwO3fzp+8SJZbi
-	jERDLeai4kQAiKG+pSIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754668Ab3CLADs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:03:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53027 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab3CLADq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:03:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
+        cpufreq@vger.kernel.org, andrew@lunn.ch, jason@lakedaemon.net,
+        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
+Date: Tue, 12 Mar 2013 01:10:48 +0100
+Message-ID: <8172590.SMZGNxeycF@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1363046296.2291.91.camel@rzhang1-mobl4>
+References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com> <9281321.Y04oYVrc0i@vostro.rjw.lan> <1363046296.2291.91.camel@rzhang1-mobl4>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator_enable() was marked as as __must_check, therefore,
-the return value of regulator_enable() should be checked.
-Also, this patch checks return value of regulator_set_voltage().
+On Tuesday, March 12, 2013 07:58:16 AM Zhang Rui wrote:
+> On Mon, 2013-03-11 at 18:03 +0100, Rafael J. Wysocki wrote:
+> > On Monday, March 11, 2013 10:55:00 PM Zhang Rui wrote:
+> > > On Mon, 2013-03-11 at 09:35 +0200, Silviu-Mihai Popescu wrote:
+> > > > Convert all uses of devm_request_and_ioremap() to the newly introduced
+> > > > devm_ioremap_resource() which provides more consistent error handling.
+> > > > 
+> > > > devm_ioremap_resource() provides its own error messages so all explicit
+> > > > error messages can be removed from the failure code paths.
+> > > > 
+> > > > Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+> > > > ---
+> > > >  drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
+> > > >  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
+> > > >  drivers/thermal/kirkwood_thermal.c |    8 +++-----
+> > > >  3 files changed, 9 insertions(+), 13 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+> > > > index 0e83e3c..6052476 100644
+> > > > --- a/drivers/cpufreq/kirkwood-cpufreq.c
+> > > > +++ b/drivers/cpufreq/kirkwood-cpufreq.c
+> > > > @@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+> > > >  		dev_err(&pdev->dev, "Cannot get memory resource\n");
+> > > >  		return -ENODEV;
+> > > >  	}
+> > > > -	priv.base = devm_request_and_ioremap(&pdev->dev, res);
+> > > > -	if (!priv.base) {
+> > > > -		dev_err(&pdev->dev, "Cannot ioremap\n");
+> > > > -		return -EADDRNOTAVAIL;
+> > > > -	}
+> > > > +	priv.base = devm_ioremap_resource(&pdev->dev, res);
+> > > > +	if (IS_ERR(priv.base))
+> > > > +		return PTR_ERR(priv.base);
+> > > >  
+> > > >  	np = of_find_node_by_path("/cpus/cpu@0");
+> > > >  	if (!np)
+> > > > diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
+> > > > index 670aa1e..53aad73 100644
+> > > > --- a/drivers/cpuidle/cpuidle-kirkwood.c
+> > > > +++ b/drivers/cpuidle/cpuidle-kirkwood.c
+> > > > @@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
+> > > >  	if (res == NULL)
+> > > >  		return -EINVAL;
+> > > >  
+> > > > -	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
+> > > > -	if (!ddr_operation_base)
+> > > > -		return -EADDRNOTAVAIL;
+> > > > +	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
+> > > > +	if (IS_ERR(ddr_operation_base))
+> > > > +		return PTR_ERR(ddr_operation_base);
+> > > >  
+> > > >  	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
+> > > >  	device->state_count = KIRKWOOD_MAX_STATES;
+> > > > diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
+> > > > index 65cb4f0..e5500ed 100644
+> > > > --- a/drivers/thermal/kirkwood_thermal.c
+> > > > +++ b/drivers/thermal/kirkwood_thermal.c
+> > > > @@ -85,11 +85,9 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
+> > > >  	if (!priv)
+> > > >  		return -ENOMEM;
+> > > >  
+> > > > -	priv->sensor = devm_request_and_ioremap(&pdev->dev, res);
+> > > > -	if (!priv->sensor) {
+> > > > -		dev_err(&pdev->dev, "Failed to request_ioremap memory\n");
+> > > > -		return -EADDRNOTAVAIL;
+> > > > -	}
+> > > > +	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
+> > > > +	if (IS_ERR(priv->sensor))
+> > > > +		return PTR_ERR(priv->sensor);
+> > > >  
+> > > >  	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
+> > > >  					       priv, &ops, NULL, 0, 0);
+> > > 
+> > > there is already a fix for kirkwood_thermal.c at
+> > > http://marc.info/?l=linux-pm&m=136238017027514&w=2
+> > > and it has been applied to thermal -next.
+> > > 
+> > > would you please refreshed the patch?
+> > 
+> > Are you going to take that patch into your tree, then?
+> 
+> I'll take the one that fixes kirkwood_thermal.c. :)
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-Change since v1:
-- Added regulator_disable() for IO regulator before returning
+OK
 
- drivers/video/backlight/l4f00242t03.c |   29 ++++++++++++++++++++++++-----
- 1 files changed, 24 insertions(+), 5 deletions(-)
+Thanks,
+Rafael
 
-diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-index fb61557..a35a38c 100644
---- a/drivers/video/backlight/l4f00242t03.c
-+++ b/drivers/video/backlight/l4f00242t03.c
-@@ -51,14 +51,33 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
- 	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
- 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
- 	const u16 cmd[] = { 0x36, param(0), 0x3A, param(0x60) };
-+	int ret;
- 
- 	dev_dbg(&spi->dev, "initializing LCD\n");
- 
--	regulator_set_voltage(priv->io_reg, 1800000, 1800000);
--	regulator_enable(priv->io_reg);
-+	ret = regulator_set_voltage(priv->io_reg, 1800000, 1800000);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to set the IO regulator voltage.\n");
-+		return;
-+	}
-+	ret = regulator_enable(priv->io_reg);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to enable the IO regulator.\n");
-+		return;
-+	}
- 
--	regulator_set_voltage(priv->core_reg, 2800000, 2800000);
--	regulator_enable(priv->core_reg);
-+	ret = regulator_set_voltage(priv->core_reg, 2800000, 2800000);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to set the core regulator voltage.\n");
-+		regulator_disable(priv->io_reg);
-+		return;
-+	}
-+	ret = regulator_enable(priv->core_reg);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to enable the core regulator.\n");
-+		regulator_disable(priv->io_reg);
-+		return;
-+	}
- 
- 	l4f00242t03_reset(pdata->reset_gpio);
- 
+
 -- 
-1.7.2.5
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
