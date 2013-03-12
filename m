@@ -1,123 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3CLAYr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:24:47 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47534 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524Ab3CLAYe (ORCPT
+	id S1754746Ab3CLA3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:29:03 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:55703 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab3CLA3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:24:34 -0400
-Date: Mon, 11 Mar 2013 17:21:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] atomic: improve
- atomic_inc_unless_negative/atomic_dec_unless_positive
-Message-ID: <20130312002131.GA29650@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
+	Mon, 11 Mar 2013 20:29:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031200-5518-0000-0000-00000C71F8FB
+In-Reply-To: <20130312001722.GB973@dcvr.yhbt.net>
+References: <20130307112639.GA25130@dcvr.yhbt.net>
+	<20130308013027.GA31830@dcvr.yhbt.net>
+	<CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
+	<20130308204944.GA27379@dcvr.yhbt.net>
+	<CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
+	<20130309071037.GA13360@dcvr.yhbt.net>
+	<CAMP5Xgdy9hJE1JCHYN2iK9W3UQvmgBGHH_9Jy2-mQyNxkHGwTQ@mail.gmail.com>
+	<20130312001722.GB973@dcvr.yhbt.net>
+Date: Mon, 11 Mar 2013 17:29:00 -0700
+Message-ID: <CAMP5Xgcr97gcD6noP=vkTN7jLrhNGZ2VLVMkOKx+puoP8AiJDA@mail.gmail.com>
+Subject: Re: epoll: possible bug from wakeup_source activation
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 11:38:21PM +0800, Ming Lei wrote:
-> Generally, both atomic_inc_unless_negative() and
-> atomic_dec_unless_positive() need at least two atomic_cmpxchg()
-> to complete the atomic operation. In fact, the 1st atomic_cmpxchg()
-> is just used to read current value of the atomic variable at most times.
-> 
-> Considered memory barrier, bus lock, cache walking, etc. things may be
-> involved in atomic_cmpxchg(), it is much expensive than atomic_read(),
-> which is just the simple below:
-> 
-> 	(*(volatile int *)&(v)->counter)
-> 
-> so this patch can save one extra atomic_cmpxchg() for the two
-> helpers under general situation, and should improve them a bit.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  include/linux/atomic.h |   28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-> index 5b08a85..aa951d8 100644
-> --- a/include/linux/atomic.h
-> +++ b/include/linux/atomic.h
-> @@ -63,26 +63,34 @@ static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
->  #ifndef atomic_inc_unless_negative
->  static inline int atomic_inc_unless_negative(atomic_t *p)
->  {
-> -	int v, v1;
-> -	for (v = 0; v >= 0; v = v1) {
-> -		v1 = atomic_cmpxchg(p, v, v + 1);
-> -		if (likely(v1 == v))
-> +	int v, t;
-> +
-> +	v = atomic_read(p);
-> +	while (1) {
-> +		if (unlikely(v < 0))
+On Mon, Mar 11, 2013 at 5:17 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> Arve Hjønnevåg <arve@android.com> wrote:
+>> On Fri, Mar 8, 2013 at 11:10 PM, Eric Wong <normalperson@yhbt.net> wrote:
+>> > Arve Hjønnevåg <arve@android.com> wrote:
+>> >> On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
+>> >> > What happens if ep_modify calls ep_destroy_wakeup_source
+>> >> > while __pm_stay_awake is running on the same epi->ws?
+>> >>
+>> >> Yes, that looks like a problem. I think calling
+>> >> ep_destroy_wakeup_source with ep->lock held should fix that. It is not
+>> >> clear how useful changing EPOLLWAKEUP in ep_modify is, so
+>> >> alternatively we could remove that feature and instead only allow it
+>> >> to be set in ep_insert.
+>> >
+>> > ep->lock would work, but ep->lock is already a source of heavy
+>> > contention in my multithreaded+epoll webservers.
+>>
+>> This should not have any significant impact on that since you would be
+>> adding a lock to a code path that is, as far as I know, unused.
+>>
+>> > Perhaps RCU can be used?  I've no experience with RCU, but I've been
+>> > meaning to get acquainted with RCU.
+>>
+>> That adds code to the common path however. The wakeup_source is not
+>> touch without holding one of the locks so holding both locks before
+>> deleting it seems like a simpler solution.
+>
+> True.  However, I've been looking into eliminating ep->lock in more
+> places (maybe entirely)[1].
+>
+> I don't think the current overhead of RCU in epoll is significant,
+> either.
+>
+>
+> [1] I'll be testing Mathieu's wait-free concurrent queue soon:
+>     http://mid.gmane.org/20130311213602.GB9829@Krystal
 
-As Frederic noted, you need an smp_mb() right here.  Because
-atomic_inc_unless_negative() returns a value, it is required to
-act as a full memory barrier.  On the other code paths, atomic_cmpxchg()
-supplies the needed memory ordering, but not on this path.
+OK, but is there any way you could use the same locking scheme for the
+wakeup_source and the queue?
 
-> +			return 0;
-> +		t = atomic_cmpxchg(p, v, v + 1);
-> +		if (likely(t == v))
->  			return 1;
-> +		v = t;
->  	}
-> -	return 0;
->  }
->  #endif
->  
->  #ifndef atomic_dec_unless_positive
->  static inline int atomic_dec_unless_positive(atomic_t *p)
->  {
-> -	int v, v1;
-> -	for (v = 0; v <= 0; v = v1) {
-> -		v1 = atomic_cmpxchg(p, v, v - 1);
-> -		if (likely(v1 == v))
-> +	int v, t;
-> +
-> +	v = atomic_read(p);
-> +	while (1) {
-> +		if (unlikely(v > 0))
-
-Ditto here.
-
-							Thanx, Paul
-
-> +			return 0;
-> +		t = atomic_cmpxchg(p, v, v - 1);
-> +		if (likely(t == v))
->  			return 1;
-> +		v = t;
->  	}
-> -	return 0;
->  }
->  #endif
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Arve Hjønnevåg
