@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab3CLT4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:56:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27342 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508Ab3CLT4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:56:44 -0400
-Date: Tue, 12 Mar 2013 15:56:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.9-rc2-tag
-Message-ID: <20130312195637.GA22439@phenom.dumpdata.com>
+	id S933446Ab3CLT4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:56:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933397Ab3CLT4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:56:51 -0400
+Date: Tue, 12 Mar 2013 15:56:47 -0400
+From: Dave Jones <davej@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pipe_release oops.
+Message-ID: <20130312195647.GB2186@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
+ <20130308145306.GA24085@redhat.com>
+ <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+ <20130310221047.GA21522@ZenIV.linux.org.uk>
+ <20130311003530.GE21522@ZenIV.linux.org.uk>
+ <CA+55aFx+TAg+z9eWVm3EeAHQga3ai6YRFEb7rVQ++iNTn4NhGQ@mail.gmail.com>
+ <20130311180543.GF21522@ZenIV.linux.org.uk>
+ <20130312130614.GA32237@ZenIV.linux.org.uk>
+ <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
+ <20130312194353.GI21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130312194353.GI21522@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On Tue, Mar 12, 2013 at 07:43:53PM +0000, Al Viro wrote:
+ > On Tue, Mar 12, 2013 at 08:31:50AM -0700, Linus Torvalds wrote:
+ > 
+ > > Probably not missing anything subtle. I think all of this code is very
+ > > old, and related to previous /proc/<pid>/fd/<n> escapades. And the
+ > > semantics for those files were in flux some time long long ago (the
+ > > whole "dup vs new struct file" issue), it's all just duct-tape, I
+ > > think.
+ > 
+ > Umm...  How about the following, then?  I think it makes the whole thing
+ > simpler and saner...  NOTE: this got only a light beating and we'd
+ > just seen an example of long-standing breakage in that area; I'd really
+ > like to see it tortured by Dave's scripts before it gets merged into
+ > mainline.
 
-Please git pull the following tag:
+I can do that.  I'll holler if I see anything that looks out of place.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.9-rc2-tag
+	Dave
 
-which has three compile fixes - two are for errors on ARM, and
-there is one warning on x86. Then there is run-time WARNING
-in the xen-pciback. The last one is a regression fix - where
-the acpi_processor_register_performance (used in the Xen
-ACPI P-and-C states uploader) started returning -ENODEV when cpuidle API
-is turned off (previous to v3.9 cpuidle API would return -ENODEV for
-some of its functions when it was off, but not all) - Rafael
-preferred that it got through my tree, so here it is.
-
-Please pull!
-
-Ian Campbell (1):
-      xen: arm: mandate EABI and use generic atomic operations.
-
-Konrad Rzeszutek Wilk (2):
-      xen/pciback: Don't disable a PCI device that is already disabled.
-      acpi: Export the acpi_processor_get_performance_info
-
-Liu Jinsong (1):
-      xen/acpi: remove redundant acpi/acpi_drivers.h include
-
- arch/arm/Kconfig                      |  3 ++-
- arch/arm/include/asm/xen/events.h     | 25 ++++---------------------
- drivers/acpi/processor_perflib.c      |  4 ++--
- drivers/xen/xen-acpi-processor.c      |  8 ++++----
- drivers/xen/xen-pciback/pciback_ops.c |  3 ++-
- drivers/xen/xen-stub.c                |  1 -
- include/acpi/processor.h              |  3 +++
- 7 files changed, 17 insertions(+), 30 deletions(-)
