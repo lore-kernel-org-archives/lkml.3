@@ -1,122 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab3CLUqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:46:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19009 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab3CLUq2 (ORCPT
+	id S933587Ab3CLUrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:47:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59242 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933532Ab3CLUrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:46:28 -0400
-X-IronPort-AV: E=Sophos;i="4.84,833,1355126400"; 
-   d="scan'208";a="28887806"
-Message-ID: <513F9424.8020902@codeaurora.org>
-Date: Tue, 12 Mar 2013 13:46:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: David Brown <davidb@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 05/11] SSBI: Convert SSBI to device tree
-References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org> <1363113716-25897-1-git-send-email-davidb@codeaurora.org> <1363113716-25897-6-git-send-email-davidb@codeaurora.org>
-In-Reply-To: <1363113716-25897-6-git-send-email-davidb@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Mar 2013 16:47:04 -0400
+Date: Tue, 12 Mar 2013 13:47:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Tommi Rantala <tt.rantala@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 4/9] mm: use mm_populate() for blocking
+ remap_file_pages()
+Message-Id: <20130312134702.a972d9a141bf86f14768ad41@linux-foundation.org>
+In-Reply-To: <20130312002429.GA24360@google.com>
+References: <1356050997-2688-1-git-send-email-walken@google.com>
+	<1356050997-2688-5-git-send-email-walken@google.com>
+	<CA+ydwtqD67m9_JLCNwvdP72rko93aTkVgC-aK4TacyyM5DoCTA@mail.gmail.com>
+	<20130311160322.830cc6b670fd24faa8366413@linux-foundation.org>
+	<20130312002429.GA24360@google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/13 11:41, David Brown wrote:
-> @@ -261,56 +263,13 @@ int msm_ssbi_write(struct device *dev, u16 addr, u8 *buf, int len)
->  }
->  EXPORT_SYMBOL_GPL(msm_ssbi_write);
+On Mon, 11 Mar 2013 17:24:29 -0700 Michel Lespinasse <walken@google.com> wrote:
+> > --- a/mm/fremap.c~mm-fremapc-fix-oops-on-error-path
+> > +++ a/mm/fremap.c
+> > @@ -163,7 +163,8 @@ SYSCALL_DEFINE5(remap_file_pages, unsign
+> >          * and that the remapped range is valid and fully within
+> >          * the single existing vma.
+> >          */
+> > -       if (!vma || !(vma->vm_flags & VM_SHARED))
+> > +       vm_flags = vma->vm_flags;
+> > +       if (!vma || !(vm_flags & VM_SHARED))
+> >                 goto out;
+> 
+> Your commit message indicates the vm_flags load here doesn't generate any code, but this seems very brittle and compiler dependent. If the compiler was to generate an actual load here, the issue with vma == NULL would reappear.
+
+I didn't try very hard.  I have a surprisingly strong dislike of adding
+"= 0" everywhere just to squish warnings.
+
+There are actually quite a lot of places where this function could use
+s/vma->vm_flags/vm_flags/ and might save a bit of code as a result. 
+But the function's pretty straggly and I stopped doing it.
+
+> 
+> >         if (!vma->vm_ops || !vma->vm_ops->remap_pages)
+> > @@ -254,7 +255,8 @@ get_write_lock:
+> >          */
+> >
+> >  out:
+> > -       vm_flags = vma->vm_flags;
+> > +       if (vma)
+> > +               vm_flags = vma->vm_flags;
+> >         if (likely(!has_write_lock))
+> >                 up_read(&mm->mmap_sem);
+> >         else
+> 
+> 
+> 
+> Would the following work ? I think it's simpler, and with the compiler
+> I'm using here it doesn't emit warnings:
+> 
+> diff --git a/mm/fremap.c b/mm/fremap.c
+> index 0cd4c11488ed..329507e832fb 100644
+> --- a/mm/fremap.c
+> +++ b/mm/fremap.c
+> @@ -254,7 +254,8 @@ get_write_lock:
+>  	 */
 >  
-> -static int msm_ssbi_add_slave(struct msm_ssbi *ssbi,
-> -				const struct msm_ssbi_slave_info *slave)
-> -{
-> -	struct platform_device *slave_pdev;
-> -	int ret;
-> -
-> -	if (ssbi->slave) {
-> -		pr_err("slave already attached??\n");
-> -		return -EBUSY;
-> -	}
-> -
-> -	slave_pdev = platform_device_alloc(slave->name, -1);
-> -	if (!slave_pdev) {
-> -		pr_err("cannot allocate pdev for slave '%s'", slave->name);
-> -		ret = -ENOMEM;
-> -		goto err;
-> -	}
-> -
-> -	slave_pdev->dev.parent = ssbi->dev;
-> -	slave_pdev->dev.platform_data = slave->platform_data;
-> -
-> -	ret = platform_device_add(slave_pdev);
-> -	if (ret) {
-> -		pr_err("cannot add slave platform device for '%s'\n",
-> -				slave->name);
-> -		goto err;
-> -	}
-> -
-> -	ssbi->slave = &slave_pdev->dev;
-> -	return 0;
-> -
-> -err:
-> -	if (slave_pdev)
-> -		platform_device_put(slave_pdev);
-> -	return ret;
-> -}
-> -
->  static int msm_ssbi_probe(struct platform_device *pdev)
->  {
-> -	const struct msm_ssbi_platform_data *pdata = pdev->dev.platform_data;
+>  out:
+> -	vm_flags = vma->vm_flags;
+> +	if (!err)
+> +		vm_flags = vma->vm_flags;
+>  	if (likely(!has_write_lock))
+>  		up_read(&mm->mmap_sem);
+>  	else
 
-Now that all this code is gone do we have a user of the
-msm_ssbi_platform_data struct? Why not remove it from the header file?
-If you remove it from the header you can probably move the enum for
-controller_type into this file too.
+Yes, this will work.
 
-> @@ -334,7 +293,25 @@ static int msm_ssbi_probe(struct platform_device *pdev)
->  	ssbi->dev = &pdev->dev;
->  	platform_set_drvdata(pdev, ssbi);
->  
-> -	ssbi->controller_type = pdata->controller_type;
-> +	type = of_get_property(np, "qcom,controller-type", NULL);
-> +	if (type == NULL) {
-> +		pr_err("Missing qcom,controller-type property\n");
+gcc-4.4.4 does generate the warning with this.
 
-This could be dev_err() considering you use dev_info() below.
-> +		ret = -EINVAL;
-> +		goto err_ssbi_controller;
-> +	}
-> +	dev_info(&pdev->dev, "SSBI controller type: '%s'\n", type);
-> +	if (strcmp(type, "ssbi") == 0)
-> +		ssbi->controller_type = MSM_SBI_CTRL_SSBI;
-> +	else if (strcmp(type, "ssbi2") == 0)
-> +		ssbi->controller_type = MSM_SBI_CTRL_SSBI2;
-> +	else if (strcmp(type, "pmic-arbiter") == 0)
-> +		ssbi->controller_type = MSM_SBI_CTRL_PMIC_ARBITER;
-> +	else {
-> +		pr_err("Unknown qcom,controller-type\n");
-
-dev_err()?
-
-> @@ -370,12 +347,18 @@ static int msm_ssbi_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static struct of_device_id ssbi_match_table[] = {
-
-const?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Testing `err' was my v1, but it is not obvious that err==0 always
+correlates with vma!= NULL.  This is true (I checked), and it had
+better be true in the future, but it just feels safer and simpler to
+test `vma' directly.
 
