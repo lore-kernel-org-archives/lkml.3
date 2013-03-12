@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933252Ab3CLSLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:11:44 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:36854 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3CLSLn (ORCPT
+	id S933258Ab3CLSMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:12:21 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49020 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3CLSMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:11:43 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: netfilter-devel@vger.kernel.org
-Cc: bart.de.schuymer@pandora.be, pablo@netfilter.org, kaber@trash.net,
-        stephen@networkplumber.org, davem@davemloft.net,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] bridge: netfilter: use PTR_RET instead of IS_ERR + PTR_ERR
-Date: Tue, 12 Mar 2013 20:11:33 +0200
-Message-Id: <1363111893-25146-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 12 Mar 2013 14:12:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F79273681@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F79273681@DQHE02.ent.ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 12 Mar 2013 11:11:57 -0700
+Message-ID: <CAK5ve-KwNd9g1n_8ODx5cc0S65CKQAJ-oEmEPNvujy=au9DYYA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] leds: lm355x, lm3642: support Camera LED triggers for flash/torch
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeong, Daniel" <Daniel.Jeong@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
-readability.
+On Wed, Feb 20, 2013 at 12:36 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> LM355x and LM3642 support flash and torch functionality.
+>
+>  (Camera driver)          (LED trigger for camera)       (LED driver)
+>  Turn on the flash  ...>  ledtrig_flash_ctrl(true) ...>  LM355x or LM3642
+>                                                          brightness ctrl
+>                                                        <actual driving here>
+>
+> Flash/torch LEDs are controlled by other driver using LED camera trigger
+> APIs, ledtrig_flash_ctrl()/ledtrig_torch_ctrl().
+> Then, actual device control is activated by each LED driver such like
+> LM355x or LM3642.
+>
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- net/bridge/netfilter/ebtable_broute.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Looks good to me, I will merge this after you update PATCH 2/3.
 
-diff --git a/net/bridge/netfilter/ebtable_broute.c b/net/bridge/netfilter/ebtable_broute.c
-index 40d8258..70f656c 100644
---- a/net/bridge/netfilter/ebtable_broute.c
-+++ b/net/bridge/netfilter/ebtable_broute.c
-@@ -64,9 +64,7 @@ static int ebt_broute(struct sk_buff *skb)
- static int __net_init broute_net_init(struct net *net)
- {
- 	net->xt.broute_table = ebt_register_table(net, &broute_table);
--	if (IS_ERR(net->xt.broute_table))
--		return PTR_ERR(net->xt.broute_table);
--	return 0;
-+	return PTR_RET(net->xt.broute_table);
- }
- 
- static void __net_exit broute_net_exit(struct net *net)
--- 
-1.7.9.5
+Thanks,
+-Bryan
 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lm355x.c |    2 ++
+>  drivers/leds/leds-lm3642.c |    2 ++
+>  2 files changed, 4 insertions(+)
+>
+> diff --git a/drivers/leds/leds-lm355x.c b/drivers/leds/leds-lm355x.c
+> index 4117235..d81a8e7 100644
+> --- a/drivers/leds/leds-lm355x.c
+> +++ b/drivers/leds/leds-lm355x.c
+> @@ -477,6 +477,7 @@ static int lm355x_probe(struct i2c_client *client,
+>         chip->cdev_flash.name = "flash";
+>         chip->cdev_flash.max_brightness = 16;
+>         chip->cdev_flash.brightness_set = lm355x_strobe_brightness_set;
+> +       chip->cdev_flash.default_trigger = "flash";
+>         err = led_classdev_register((struct device *)
+>                                     &client->dev, &chip->cdev_flash);
+>         if (err < 0)
+> @@ -486,6 +487,7 @@ static int lm355x_probe(struct i2c_client *client,
+>         chip->cdev_torch.name = "torch";
+>         chip->cdev_torch.max_brightness = 8;
+>         chip->cdev_torch.brightness_set = lm355x_torch_brightness_set;
+> +       chip->cdev_torch.default_trigger = "torch";
+>         err = led_classdev_register((struct device *)
+>                                     &client->dev, &chip->cdev_torch);
+>         if (err < 0)
+> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
+> index 9f428d9..f361bbe 100644
+> --- a/drivers/leds/leds-lm3642.c
+> +++ b/drivers/leds/leds-lm3642.c
+> @@ -363,6 +363,7 @@ static int lm3642_probe(struct i2c_client *client,
+>         chip->cdev_flash.name = "flash";
+>         chip->cdev_flash.max_brightness = 16;
+>         chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
+> +       chip->cdev_flash.default_trigger = "flash";
+>         err = led_classdev_register((struct device *)
+>                                     &client->dev, &chip->cdev_flash);
+>         if (err < 0) {
+> @@ -380,6 +381,7 @@ static int lm3642_probe(struct i2c_client *client,
+>         chip->cdev_torch.name = "torch";
+>         chip->cdev_torch.max_brightness = 8;
+>         chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
+> +       chip->cdev_torch.default_trigger = "torch";
+>         err = led_classdev_register((struct device *)
+>                                     &client->dev, &chip->cdev_torch);
+>         if (err < 0) {
+> --
+> 1.7.9.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
