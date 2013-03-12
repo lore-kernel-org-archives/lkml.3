@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab3CLNXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:23:32 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:53327 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3CLNXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:23:31 -0400
+	id S1753694Ab3CLNZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:25:19 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52833 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3CLNZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 09:25:17 -0400
+Date: Tue, 12 Mar 2013 09:25:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Morris <jmorris@namei.org>, Linus <torvalds@linux-foundation.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unneeded merge in the security tree
+Message-ID: <20130312132510.GH18595@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	James Morris <jmorris@namei.org>,
+	Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
+ <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
+ <20130312041641.GE18595@thunk.org>
+ <20130312161823.86ea101fc4e45285b205817f@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20130312125524.GA13877@samfundet.no>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
- <1363083150-30964-16-git-send-email-acourbot@nvidia.com> <20130312125524.GA13877@samfundet.no>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 12 Mar 2013 22:23:10 +0900
-Message-ID: <CAAVeFuLHf_-dy_rAgpuYaT5GFk76+StvO6XEKxmMChRin3+AnQ@mail.gmail.com>
-Subject: Re: [RFC 15/17] avr32: default GENERIC_GPIO to false
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312161823.86ea101fc4e45285b205817f@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 9:55 PM, Hans-Christian Egtvedt
-<egtvedt@samfundet.no> wrote:
-> Around Tue 12 Mar 2013 19:12:28 +0900 or thereabout, Alexandre Courbot wrote:
->
-> $(Subject) is wrong, you state avr32, but it is for blackfin.
+On Tue, Mar 12, 2013 at 04:18:23PM +1100, Stephen Rothwell wrote:
+> Well, you used to be able to merge a tag and it would just fast forward
+> if possible.  That was changed (for good reason), but now gives us this
+> outcome.   Also, "git merge --ff" does not override that behaviour, but
+> "git merge --ff-only" does.  Also, of course, if (say) origin/master had
+> been v3.9-rc2, then "git merge origin/master" would have also just done a
+> fast forward.
 
-Argh, apologies. That's very wrong, especially since blackfin is one
-of the archs most affected by this. Thanks for catching this, I hope
-the maintainers will notice it too.
+I'm probably old school (or maybe wacky school --- who knows :-), but
+what I usually do is something like this:
 
-Alex.
+git branch -a --contains HEAD   # make sure the HEAD pointer is
+git tag --contains HEAD         # include where I think it should be
+git reset --hard v3.9-rc2
+
+Yeah, it's more key strokes than "git merge --ff-only v3.9-rc2", but I
+can type the above faster because they're finger macros for me.  :-)
+
+					- Ted
