@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964965Ab3CLWs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:48:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60705 "EHLO
+	id S964846Ab3CLWog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964855Ab3CLWoi (ORCPT
+	with ESMTP id S933856Ab3CLWod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:38 -0400
+	Tue, 12 Mar 2013 18:44:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 06/21] cifs: ensure that cifs_get_root() only traverses directories
-Date: Tue, 12 Mar 2013 15:44:08 -0700
-Message-Id: <20130312223245.881415609@linuxfoundation.org>
+        =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/21] ARM: VFP: fix emulation of second VFP instruction
+Date: Tue, 12 Mar 2013 15:44:03 -0700
+Message-Id: <20130312223245.303933429@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,92 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit ce2ac52105aa663056dfc17966ebed1bf93e6e64 upstream.
+commit 5e4ba617c1b584b2e376f31a63bd4e734109318a upstream.
 
-Kjell Braden reported this oops:
+Martin Storsjö reports that the sequence:
 
-[  833.211970] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  833.212816] IP: [<          (null)>]           (null)
-[  833.213280] PGD 1b9b2067 PUD e9f7067 PMD 0
-[  833.213874] Oops: 0010 [#1] SMP
-[  833.214344] CPU 0
-[  833.214458] Modules linked in: des_generic md4 nls_utf8 cifs vboxvideo drm snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq bnep rfcomm snd_timer bluetooth snd_seq_device ppdev snd vboxguest parport_pc joydev mac_hid soundcore snd_page_alloc psmouse i2c_piix4 serio_raw lp parport usbhid hid e1000
-[  833.215629]
-[  833.215629] Pid: 1752, comm: mount.cifs Not tainted 3.0.0-rc7-bisectcifs-fec11dd9a0+ #18 innotek GmbH VirtualBox/VirtualBox
-[  833.215629] RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-[  833.215629] RSP: 0018:ffff8800119c9c50  EFLAGS: 00010282
-[  833.215629] RAX: ffffffffa02186c0 RBX: ffff88000c427780 RCX: 0000000000000000
-[  833.215629] RDX: 0000000000000000 RSI: ffff88000c427780 RDI: ffff88000c4362e8
-[  833.215629] RBP: ffff8800119c9c88 R08: ffff88001fc15e30 R09: 00000000d69515c7
-[  833.215629] R10: ffffffffa0201972 R11: ffff88000e8f6a28 R12: ffff88000c4362e8
-[  833.215629] R13: 0000000000000000 R14: 0000000000000000 R15: ffff88001181aaa6
-[  833.215629] FS:  00007f2986171700(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
-[  833.215629] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  833.215629] CR2: 0000000000000000 CR3: 000000001b982000 CR4: 00000000000006f0
-[  833.215629] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  833.215629] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  833.215629] Process mount.cifs (pid: 1752, threadinfo ffff8800119c8000, task ffff88001c1c16f0)
-[  833.215629] Stack:
-[  833.215629]  ffffffff8116a9b5 ffff8800119c9c88 ffffffff81178075 0000000000000286
-[  833.215629]  0000000000000000 ffff88000c4276c0 ffff8800119c9ce8 ffff8800119c9cc8
-[  833.215629]  ffffffff8116b06e ffff88001bc6fc00 ffff88000c4276c0 ffff88000c4276c0
-[  833.215629] Call Trace:
-[  833.215629]  [<ffffffff8116a9b5>] ? d_alloc_and_lookup+0x45/0x90
-[  833.215629]  [<ffffffff81178075>] ? d_lookup+0x35/0x60
-[  833.215629]  [<ffffffff8116b06e>] __lookup_hash.part.14+0x9e/0xc0
-[  833.215629]  [<ffffffff8116b1d6>] lookup_one_len+0x146/0x1e0
-[  833.215629]  [<ffffffff815e4f7e>] ? _raw_spin_lock+0xe/0x20
-[  833.215629]  [<ffffffffa01eef0d>] cifs_do_mount+0x26d/0x500 [cifs]
-[  833.215629]  [<ffffffff81163bd3>] mount_fs+0x43/0x1b0
-[  833.215629]  [<ffffffff8117d41a>] vfs_kern_mount+0x6a/0xd0
-[  833.215629]  [<ffffffff8117e584>] do_kern_mount+0x54/0x110
-[  833.215629]  [<ffffffff8117fdc2>] do_mount+0x262/0x840
-[  833.215629]  [<ffffffff81108a0e>] ? __get_free_pages+0xe/0x50
-[  833.215629]  [<ffffffff8117f9ca>] ? copy_mount_options+0x3a/0x180
-[  833.215629]  [<ffffffff8118075d>] sys_mount+0x8d/0xe0
-[  833.215629]  [<ffffffff815ece82>] system_call_fastpath+0x16/0x1b
-[  833.215629] Code:  Bad RIP value.
-[  833.215629] RIP  [<          (null)>]           (null)
-[  833.215629]  RSP <ffff8800119c9c50>
-[  833.215629] CR2: 0000000000000000
-[  833.238525] ---[ end trace ec00758b8d44f529 ]---
+        ee312ac1        vsub.f32        s4, s3, s2
+        ee702ac0        vsub.f32        s5, s1, s0
+        e59f0028        ldr             r0, [pc, #40]
+        ee111a90        vmov            r1, s3
 
-When walking down the path on the server, it's possible to hit a
-symlink. The path walking code assumes that the caller will handle that
-situation properly, but cifs_get_root() isn't set up for it. This patch
-prevents the oops by simply returning an error.
+on Raspberry Pi (implementor 41 architecture 1 part 20 variant b rev 5)
+where s3 is a denormal and s2 is zero results in incorrect behaviour -
+the instruction "vsub.f32 s5, s1, s0" is not executed:
 
-A better solution would be to try and chase the symlinks here, but that's
-fairly complicated to handle.
+        VFP: bounce: trigger ee111a90 fpexc d0000780
+        VFP: emulate: INST=0xee312ac1 SCR=0x00000000
+        ...
 
-Fixes:
+As we can see, the instruction triggering the exception is the "vmov"
+instruction, and we emulate the "vsub.f32 s4, s3, s2" but fail to
+properly take account of the FPEXC_FP2V flag in FPEXC.  This is because
+the test for the second instruction register being valid is bogus, and
+will always skip emulation of the second instruction.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=53221
-
-Reported-and-tested-by: Kjell Braden <afflux@pentabarf.de>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Martin Storsjö <martin@martin.st>
+Tested-by: Martin Storsjö <martin@martin.st>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsfs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/vfp/vfpmodule.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -571,6 +571,11 @@ cifs_get_root(struct smb_vol *vol, struc
- 			dentry = ERR_PTR(-ENOENT);
- 			break;
- 		}
-+		if (!S_ISDIR(dir->i_mode)) {
-+			dput(dentry);
-+			dentry = ERR_PTR(-ENOTDIR);
-+			break;
-+		}
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -369,7 +369,7 @@ void VFP_bounce(u32 trigger, u32 fpexc,
+ 	 * If there isn't a second FP instruction, exit now. Note that
+ 	 * the FPEXC.FP2V bit is valid only if FPEXC.EX is 1.
+ 	 */
+-	if (fpexc ^ (FPEXC_EX | FPEXC_FP2V))
++	if ((fpexc & (FPEXC_EX | FPEXC_FP2V)) != (FPEXC_EX | FPEXC_FP2V))
+ 		goto exit;
  
- 		/* skip separators */
- 		while (*s == sep)
+ 	/*
 
 
