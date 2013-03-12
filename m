@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab3CLWkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:40:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60392 "EHLO
+	id S933730Ab3CLWkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:40:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60400 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab3CLWdb (ORCPT
+	with ESMTP id S1756088Ab3CLWdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 081/100] crypto: user - fix info leaks in report API
-Date: Tue, 12 Mar 2013 15:32:06 -0700
-Message-Id: <20130312223131.667458236@linuxfoundation.org>
+        "Lee, Chun-Yi" <jlee@suse.com>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [ 082/100] acer-wmi: avoid the warning of devices may be used uninitialized
+Date: Tue, 12 Mar 2013 15:32:07 -0700
+Message-Id: <20130312223131.758571232@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,209 +35,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
+commit f24c96eae58aeea4c36fb064cf3ee9734933f8fc upstream.
 
-Three errors resulting in kernel memory disclosure:
+Fengguang Wu run kernel build test to platform-drivers-x86/linux-next git tree
+on x86_64 architecture and found a warning that was introduced by
+727651bf738b6b917335025d09323d0962eda114 commit:
 
-1/ The structures used for the netlink based crypto algorithm report API
-are located on the stack. As snprintf() does not fill the remainder of
-the buffer with null bytes, those stack bytes will be disclosed to users
-of the API. Switch to strncpy() to fix this.
+drivers/platform/x86/acer-wmi.c: In function âWMID_set_capabilitiesâ:
+drivers/platform/x86/acer-wmi.c:1211: warning: âdevicesâ may be used
+uninitialized in this function
 
-2/ crypto_report_one() does not initialize all field of struct
-crypto_user_alg. Fix this to fix the heap info leak.
+This patch fixes the above warning message.
 
-3/ For the module name we should copy only as many bytes as
-module_name() returns -- not as much as the destination buffer could
-hold. But the current code does not and therefore copies random data
-from behind the end of the module name, as the module name is always
-shorter than CRYPTO_MAX_ALG_NAME.
-
-Also switch to use strncpy() to copy the algorithm's name and
-driver_name. They are strings, after all.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/ablkcipher.c  |   12 ++++++------
- crypto/aead.c        |    9 ++++-----
- crypto/ahash.c       |    2 +-
- crypto/blkcipher.c   |    6 +++---
- crypto/crypto_user.c |   20 ++++++++++----------
- crypto/pcompress.c   |    3 +--
- crypto/rng.c         |    2 +-
- crypto/shash.c       |    3 ++-
- 8 files changed, 28 insertions(+), 29 deletions(-)
+ drivers/platform/x86/acer-wmi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/crypto/ablkcipher.c
-+++ b/crypto/ablkcipher.c
-@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
-@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<built-in>");
-+	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
---- a/crypto/aead.c
-+++ b/crypto/aead.c
-@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 aead->geniv ?: "<built-in>");
-+	strncpy(raead.type, "aead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
-@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
-+	strncpy(raead.type, "nivaead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
- {
- 	struct crypto_report_hash rhash;
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
-+	strncpy(rhash.type, "ahash", sizeof(rhash.type));
- 
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_blkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -75,7 +75,7 @@ static int crypto_report_cipher(struct s
- {
- 	struct crypto_report_cipher rcipher;
- 
--	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
-+	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
- 
- 	rcipher.blocksize = alg->cra_blocksize;
- 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
-@@ -94,8 +94,7 @@ static int crypto_report_comp(struct sk_
- {
- 	struct crypto_report_comp rcomp;
- 
--	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
--
-+	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
- 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		    sizeof(struct crypto_report_comp), &rcomp))
- 		goto nla_put_failure;
-@@ -108,12 +107,14 @@ nla_put_failure:
- static int crypto_report_one(struct crypto_alg *alg,
- 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
- {
--	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
--	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
--	       sizeof(ualg->cru_driver_name));
--	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
--	       CRYPTO_MAX_ALG_NAME);
-+	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
-+	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
-+		sizeof(ualg->cru_driver_name));
-+	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
-+		sizeof(ualg->cru_module_name));
- 
-+	ualg->cru_type = 0;
-+	ualg->cru_mask = 0;
- 	ualg->cru_flags = alg->cra_flags;
- 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
- 
-@@ -122,8 +123,7 @@ static int crypto_report_one(struct cryp
- 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
- 		struct crypto_report_larval rl;
- 
--		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
--
-+		strncpy(rl.type, "larval", sizeof(rl.type));
- 		if (nla_put(skb, CRYPTOCFGA_REPORT_LARVAL,
- 			    sizeof(struct crypto_report_larval), &rl))
- 			goto nla_put_failure;
---- a/crypto/pcompress.c
-+++ b/crypto/pcompress.c
-@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
- {
- 	struct crypto_report_comp rpcomp;
- 
--	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
--
-+	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
- 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		    sizeof(struct crypto_report_comp), &rpcomp))
- 		goto nla_put_failure;
---- a/crypto/rng.c
-+++ b/crypto/rng.c
-@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
- {
- 	struct crypto_report_rng rrng;
- 
--	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
-+	strncpy(rrng.type, "rng", sizeof(rrng.type));
- 
- 	rrng.seedsize = alg->cra_rng.seedsize;
- 
---- a/crypto/shash.c
-+++ b/crypto/shash.c
-@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
- 	struct crypto_report_hash rhash;
- 	struct shash_alg *salg = __crypto_shash_alg(alg);
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
-+	strncpy(rhash.type, "shash", sizeof(rhash.type));
-+
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = salg->digestsize;
- 
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1204,6 +1204,9 @@ static acpi_status WMID_set_capabilities
+ 			devices = *((u32 *) obj->buffer.pointer);
+ 		} else if (obj->type == ACPI_TYPE_INTEGER) {
+ 			devices = (u32) obj->integer.value;
++		} else {
++			kfree(out.pointer);
++			return AE_ERROR;
+ 		}
+ 	} else {
+ 		kfree(out.pointer);
 
 
