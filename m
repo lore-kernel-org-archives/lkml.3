@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964970Ab3CLWwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:52:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60665 "EHLO
+	id S964796Ab3CLWo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60613 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964800Ab3CLWo3 (ORCPT
+	with ESMTP id S933858Ab3CLWoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:29 -0400
+	Tue, 12 Mar 2013 18:44:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 37/40] USB: Dont use EHCI port sempahore for USB 3.0 hubs.
-Date: Tue, 12 Mar 2013 15:43:58 -0700
-Message-Id: <20130312223215.450470288@linuxfoundation.org>
+        xiaobing tu <xiaobing.tu@intel.com>,
+        guifang tang <guifang.tang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Colin Cross <ccross@google.com>
+Subject: [ 34/40] Fix memory leak in cpufreq stats.
+Date: Tue, 12 Mar 2013 15:43:55 -0700
+Message-Id: <20130312223215.115972403@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,63 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
 
-[This is upstream commit 0fe51aa5eee51db7c7ecd201d42a977ad79c58b6.
-It needs to be backported to kernels as old as 3.2, because it fixes the
-buggy commit 9dbcaec830cd97f44a0b91b315844e0d7144746b "USB: Handle warm
-reset failure on empty port."]
+commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
 
-The EHCI host controller needs to prevent EHCI initialization when the
-UHCI or OHCI companion controller is in the middle of a port reset.  It
-uses ehci_cf_port_reset_rwsem to do this.  USB 3.0 hubs can't be under
-an EHCI host controller, so it makes no sense to down the semaphore for
-USB 3.0 hubs.  It also makes the warm port reset code more complex.
+When system enters sleep, non-boot CPUs will be disabled.
+Cpufreq stats sysfs is created when the CPU is up, but it is not
+freed when the CPU is going down. This will cause memory leak.
 
-Don't down ehci_cf_port_reset_rwsem for USB 3.0 hubs.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+Signed-off-by: guifang tang <guifang.tang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Colin Cross <ccross@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/cpufreq/cpufreq_stats.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2330,17 +2330,16 @@ static int hub_port_reset(struct usb_hub
- {
- 	int i, status;
- 
--	if (!warm) {
--		/* Block EHCI CF initialization during the port reset.
--		 * Some companion controllers don't like it when they mix.
--		 */
--		down_read(&ehci_cf_port_reset_rwsem);
--	} else {
--		if (!hub_is_superspeed(hub->hdev)) {
-+	if (!hub_is_superspeed(hub->hdev)) {
-+		if (warm) {
- 			dev_err(hub->intfdev, "only USB3 hub support "
- 						"warm reset\n");
- 			return -EINVAL;
- 		}
-+		/* Block EHCI CF initialization during the port reset.
-+		 * Some companion controllers don't like it when they mix.
-+		 */
-+		down_read(&ehci_cf_port_reset_rwsem);
- 	}
- 
- 	/* Reset the port */
-@@ -2378,7 +2377,7 @@ static int hub_port_reset(struct usb_hub
- 		port1);
- 
- done:
--	if (!warm)
-+	if (!hub_is_superspeed(hub->hdev))
- 		up_read(&ehci_cf_port_reset_rwsem);
- 
- 	return status;
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
++	case CPU_DOWN_PREPARE_FROZEN:
+ 		cpufreq_stats_free_sysfs(cpu);
+ 		break;
+ 	case CPU_DEAD:
 
 
