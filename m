@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab3CLTmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:42:10 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42392 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab3CLTiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933440Ab3CLTmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:42:08 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48697 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755404Ab3CLTiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 15:38:25 -0400
-Message-Id: <20130312193823.899949784@gulag1.americas.sgi.com>
+Message-Id: <20130312193824.492463148@gulag1.americas.sgi.com>
 References: <20130312193823.212544181@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 12 Mar 2013 14:38:27 -0500
+Date: Tue, 12 Mar 2013 14:38:31 -0500
 From: Mike Travis <travis@sgi.com>
 To: Jason Wessel <jason.wessel@windriver.com>
 Cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
@@ -17,249 +17,157 @@ Cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
         linux-kernel@vger.kernel.org,
-        Vincent Stehle <vincent.stehle@laposte.net>,
-        Andrei Warkentin <andrey.warkentin@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH 04/14] KDB: allow KDB modules to be external modules
-Content-Disposition: inline; filename=kdb-allow-ext-modules.patch
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 08/14] KDB: Restore call to kdump from KDB
+Content-Disposition: inline; filename=kdb-add-kdump-cmd.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since KDB modules are not built within the Linux kernel build domain,
-symbols needed by them must be available in a header file that is
-accessible.  This patch moves the significant routines used by KDB
-modules to the external kdb.h header file.
+This patch restores the capability of calling kdump from inside
+KDB.  First it returns to the original CPU that KDB was called
+by, and also verifies that the crash_kexec kernel has been loaded.
+Both are better than just using the 'sr c' option and possibly
+hanging the system.
 
-Cc: Vincent Stehle <vincent.stehle@laposte.net>
-Cc: Andrei Warkentin <andrey.warkentin@gmail.com>
 Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Mike Travis <travis@sgi.com>
 ---
- include/linux/kdb.h            |   89 +++++++++++++++++++++++++++++++++++++++++
- kernel/debug/debug_core.h      |    1 
- kernel/debug/kdb/kdb_private.h |   79 ------------------------------------
- 3 files changed, 89 insertions(+), 80 deletions(-)
+ include/linux/kdb.h         |    7 +++
+ kernel/debug/kdb/kdb_main.c |   79 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 86 insertions(+)
 
 --- linux.orig/include/linux/kdb.h
 +++ linux/include/linux/kdb.h
-@@ -25,6 +25,7 @@ typedef int (*kdb_func_t)(int, const cha
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/atomic.h>
-+#include <linux/hardirq.h>
+@@ -144,6 +144,13 @@ static inline const char *kdb_walk_kalls
+ }
+ #endif /* ! CONFIG_KALLSYMS */
  
- #define KDB_POLL_FUNC_MAX	5
- extern int kdb_poll_idx;
-@@ -148,6 +149,93 @@ extern int kdb_register(char *, kdb_func
++#if defined(CONFIG_KEXEC)
++enum {
++	KDB_KDUMP_RESET,
++	KDB_KDUMP_KDUMP,
++};
++#endif
++
+ /* Dynamic kdb shell command registration */
+ extern int kdb_register(char *, kdb_func_t, char *, char *, short);
  extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
- 			       short, kdb_repeat_t);
- extern int kdb_unregister(char *);
-+
-+/*
-+ * Exported Symbols for kernel loadable modules to use.
-+ *
-+ * (All of these need to be within an #ifdef CONFIG_KGDB_KDB domain)
-+ */
-+extern int kdb_parse(const char *cmdstr);
-+extern int kdb_getarea_size(void *, unsigned long, size_t);
-+extern int kdb_putarea_size(unsigned long, void *, size_t);
-+
-+/*
-+ * Like get_user and put_user, kdb_getarea and kdb_putarea take variable
-+ * names, not pointers.  The underlying *_size functions take pointers.
-+ */
-+#define kdb_getarea(x, addr) kdb_getarea_size(&(x), addr, sizeof((x)))
-+#define kdb_putarea(addr, x) kdb_putarea_size(addr, &(x), sizeof((x)))
-+
-+extern int kdb_getphysword(unsigned long *word,
-+			unsigned long addr, size_t size);
-+extern int kdb_getword(unsigned long *, unsigned long, size_t);
-+extern int kdb_putword(unsigned long, unsigned long, size_t);
-+
-+extern int kdbgetularg(const char *, unsigned long *);
-+extern int kdbgetu64arg(const char *, u64 *);
-+extern char *kdbgetenv(const char *);
-+extern int kdbgetaddrarg(int, const char **, int*, unsigned long *,
-+			 long *, char **);
-+
-+/* Symbol table format returned by kallsyms. */
-+typedef struct __ksymtab {
-+		unsigned long value;	/* Address of symbol */
-+		const char *mod_name;	/* Module containing symbol or
-+					 * "kernel" */
-+		unsigned long mod_start;
-+		unsigned long mod_end;
-+		const char *sec_name;	/* Section containing symbol */
-+		unsigned long sec_start;
-+		unsigned long sec_end;
-+		const char *sym_name;	/* Full symbol name, including
-+					 * any version */
-+		unsigned long sym_start;
-+		unsigned long sym_end;
-+} kdb_symtab_t;
-+extern int kallsyms_symbol_next(char *prefix_name, int flag);
-+extern int kallsyms_symbol_complete(char *prefix_name, int max_len);
-+
-+extern int kdbgetsymval(const char *, kdb_symtab_t *);
-+extern int kdbnearsym(unsigned long, kdb_symtab_t *);
-+extern void kdbnearsym_cleanup(void);
-+extern char *kdb_strdup(const char *str, gfp_t type);
-+extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
-+
-+extern void kdb_ps_suppressed(void);
-+extern void kdb_ps1(const struct task_struct *p);
-+extern void kdb_print_nameval(const char *name, unsigned long val);
-+extern void kdb_send_sig_info(struct task_struct *p, struct siginfo *info);
-+extern void kdb_meminfo_proc_show(void);
-+extern char *kdb_getstr(char *, size_t, char *);
-+
-+/* Defines for kdb_symbol_print */
-+#define KDB_SP_SPACEB	0x0001		/* Space before string */
-+#define KDB_SP_SPACEA	0x0002		/* Space after string */
-+#define KDB_SP_PAREN	0x0004		/* Parenthesis around string */
-+#define KDB_SP_VALUE	0x0008		/* Print the value of the address */
-+#define KDB_SP_SYMSIZE	0x0010		/* Print the size of the symbol */
-+#define KDB_SP_NEWLINE	0x0020		/* Newline after string */
-+#define KDB_SP_DEFAULT (KDB_SP_VALUE|KDB_SP_PAREN)
-+
-+#define KDB_TSK(cpu) (kgdb_info[cpu].task)
-+#define KDB_TSKREGS(cpu) (kgdb_info[cpu].debuggerinfo)
-+
-+extern struct task_struct *kdb_curr_task(int);
-+
-+#define kdb_task_has_cpu(p) (task_curr(p))
-+
-+/* Simplify coexistence with NPTL */
-+#define	kdb_do_each_thread(g, p) do_each_thread(g, p)
-+#define	kdb_while_each_thread(g, p) while_each_thread(g, p)
-+
-+#define GFP_KDB (in_interrupt() ? GFP_ATOMIC : GFP_KERNEL)
-+
-+extern void *debug_kmalloc(size_t size, gfp_t flags);
-+extern void debug_kfree(void *);
-+extern void debug_kusage(void);
-+
-+extern void kdb_set_current_task(struct task_struct *);
-+extern struct task_struct *kdb_current_task;
- #else /* ! CONFIG_KGDB_KDB */
- static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
- static inline void kdb_init(int level) {}
-@@ -157,6 +245,7 @@ static inline int kdb_register_repeat(ch
- 				      char *help, short minlen,
- 				      kdb_repeat_t repeat) { return 0; }
- static inline int kdb_unregister(char *cmd) { return 0; }
-+
- #endif	/* CONFIG_KGDB_KDB */
- enum {
- 	KDB_NOT_INITIALIZED,
---- linux.orig/kernel/debug/debug_core.h
-+++ linux/kernel/debug/debug_core.h
-@@ -71,7 +71,6 @@ extern int dbg_kdb_mode;
+--- linux.orig/kernel/debug/kdb/kdb_main.c
++++ linux/kernel/debug/kdb/kdb_main.c
+@@ -42,6 +42,10 @@
+ #include <linux/slab.h>
+ #include "kdb_private.h"
  
- #ifdef CONFIG_KGDB_KDB
- extern int kdb_stub(struct kgdb_state *ks);
--extern int kdb_parse(const char *cmdstr);
- extern int kdb_common_init_state(struct kgdb_state *ks);
- extern int kdb_common_deinit_state(void);
- #else /* ! CONFIG_KGDB_KDB */
---- linux.orig/kernel/debug/kdb/kdb_private.h
-+++ linux/kernel/debug/kdb/kdb_private.h
-@@ -68,51 +68,6 @@
++#if defined(CONFIG_KEXEC)
++#include <linux/kexec.h>
++#endif
++
+ /*
+  * Kernel debugger state flags
   */
- #define KDB_MAXBPT	16
+@@ -1052,6 +1056,73 @@ void kdb_set_current_task(struct task_st
+ }
+ EXPORT_SYMBOL(kdb_set_current_task);
  
--/* Symbol table format returned by kallsyms. */
--typedef struct __ksymtab {
--		unsigned long value;	/* Address of symbol */
--		const char *mod_name;	/* Module containing symbol or
--					 * "kernel" */
--		unsigned long mod_start;
--		unsigned long mod_end;
--		const char *sec_name;	/* Section containing symbol */
--		unsigned long sec_start;
--		unsigned long sec_end;
--		const char *sym_name;	/* Full symbol name, including
--					 * any version */
--		unsigned long sym_start;
--		unsigned long sym_end;
--		} kdb_symtab_t;
--extern int kallsyms_symbol_next(char *prefix_name, int flag);
--extern int kallsyms_symbol_complete(char *prefix_name, int max_len);
--
--/* Exported Symbols for kernel loadable modules to use. */
--extern int kdb_getarea_size(void *, unsigned long, size_t);
--extern int kdb_putarea_size(unsigned long, void *, size_t);
--
--/*
-- * Like get_user and put_user, kdb_getarea and kdb_putarea take variable
-- * names, not pointers.  The underlying *_size functions take pointers.
-- */
--#define kdb_getarea(x, addr) kdb_getarea_size(&(x), addr, sizeof((x)))
--#define kdb_putarea(addr, x) kdb_putarea_size(addr, &(x), sizeof((x)))
--
--extern int kdb_getphysword(unsigned long *word,
--			unsigned long addr, size_t size);
--extern int kdb_getword(unsigned long *, unsigned long, size_t);
--extern int kdb_putword(unsigned long, unsigned long, size_t);
--
--extern int kdbgetularg(const char *, unsigned long *);
--extern int kdbgetu64arg(const char *, u64 *);
--extern char *kdbgetenv(const char *);
--extern int kdbgetaddrarg(int, const char **, int*, unsigned long *,
--			 long *, char **);
--extern int kdbgetsymval(const char *, kdb_symtab_t *);
--extern int kdbnearsym(unsigned long, kdb_symtab_t *);
--extern void kdbnearsym_cleanup(void);
--extern char *kdb_strdup(const char *str, gfp_t type);
--extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
--
- /* Routine for debugging the debugger state. */
- extern void kdb_print_state(const char *, int);
++#if defined(CONFIG_KEXEC)
++
++static int kdb_kdump_state = KDB_KDUMP_RESET;	/* KDB kdump state */
++
++static int kdb_cpu(int argc, const char **argv);
++
++/*
++ * kdb_kdump_check
++ *
++ *	This is where the kdump on monarch cpu is handled.
++ *
++ */
++void kdb_kdump_check(struct pt_regs *regs)
++{
++	if (kdb_kdump_state != KDB_KDUMP_RESET) {
++		crash_kexec(regs);
++
++		/*
++		 * If the call above returned then something didn't work
++		 */
++		kdb_printf("kdb_kdump_check: crash_kexec failed!\n");
++		kdb_printf
++		("Please check if the kdump kernel has been properly loaded\n");
++		kdb_kdump_state = KDB_KDUMP_RESET;
++	}
++}
++
++
++/*
++ * kdb_kdump
++ *     This function implements the 'kdump' command.
++ *
++ * Returns:
++ *     zero for success, a kdb diagnostic if error
++ */
++
++static int
++kdb_kdump(int argc, const char **argv)
++{
++	char cpu_id[8];
++	const char *cpu_argv[] = {NULL, cpu_id, NULL};
++	int ret = KDB_CMD_CPU;
++
++	if (!kexec_crash_image) {
++		kdb_printf("kdump error: crash kernel not loaded\n");
++		return KDB_NOTFOUND;
++	}
++
++	kdb_kdump_state = KDB_KDUMP_KDUMP;
++
++	/* Switch back to the initial cpu before process kdump command */
++	if (smp_processor_id() != kdb_initial_cpu) {
++		scnprintf(cpu_id, sizeof(cpu_id), "%d", kdb_initial_cpu);
++		ret = kdb_cpu(1, cpu_argv);
++		if (ret != KDB_CMD_CPU) {
++			kdb_printf
++			("kdump: Failed to switch to initial cpu %d; aborted\n",
++			kdb_initial_cpu);
++			kdb_kdump_state = KDB_KDUMP_RESET;
++		}
++	}
++
++	return ret;
++}
++
++#endif /* CONFIG_KEXEC */
++
+ /*
+  * kdb_local - The main code for kdb.  This routine is invoked on a
+  *	specific processor, it is not global.  The main kdb() routine
+@@ -1079,6 +1150,10 @@ static int kdb_local(kdb_reason_t reason
+ 	struct task_struct *kdb_current =
+ 		kdb_curr_task(raw_smp_processor_id());
  
-@@ -205,42 +160,8 @@ extern unsigned long kdb_task_state_stri
- extern char kdb_task_state_char (const struct task_struct *);
- extern unsigned long kdb_task_state(const struct task_struct *p,
- 				    unsigned long mask);
--extern void kdb_ps_suppressed(void);
--extern void kdb_ps1(const struct task_struct *p);
--extern void kdb_print_nameval(const char *name, unsigned long val);
--extern void kdb_send_sig_info(struct task_struct *p, struct siginfo *info);
--extern void kdb_meminfo_proc_show(void);
--extern char *kdb_getstr(char *, size_t, char *);
- extern void kdb_gdb_state_pass(char *buf);
- 
--/* Defines for kdb_symbol_print */
--#define KDB_SP_SPACEB	0x0001		/* Space before string */
--#define KDB_SP_SPACEA	0x0002		/* Space after string */
--#define KDB_SP_PAREN	0x0004		/* Parenthesis around string */
--#define KDB_SP_VALUE	0x0008		/* Print the value of the address */
--#define KDB_SP_SYMSIZE	0x0010		/* Print the size of the symbol */
--#define KDB_SP_NEWLINE	0x0020		/* Newline after string */
--#define KDB_SP_DEFAULT (KDB_SP_VALUE|KDB_SP_PAREN)
--
--#define KDB_TSK(cpu) kgdb_info[cpu].task
--#define KDB_TSKREGS(cpu) kgdb_info[cpu].debuggerinfo
--
--extern struct task_struct *kdb_curr_task(int);
--
--#define kdb_task_has_cpu(p) (task_curr(p))
--
--/* Simplify coexistence with NPTL */
--#define	kdb_do_each_thread(g, p) do_each_thread(g, p)
--#define	kdb_while_each_thread(g, p) while_each_thread(g, p)
--
--#define GFP_KDB (in_interrupt() ? GFP_ATOMIC : GFP_KERNEL)
--
--extern void *debug_kmalloc(size_t size, gfp_t flags);
--extern void debug_kfree(void *);
--extern void debug_kusage(void);
--
--extern void kdb_set_current_task(struct task_struct *);
--extern struct task_struct *kdb_current_task;
- 
- #ifdef CONFIG_KDB_KEYBOARD
- extern void kdb_kbd_cleanup_state(void);
++#if defined(CONFIG_KEXEC)
++	kdb_kdump_check(regs);
++#endif
++
+ 	KDB_DEBUG_STATE("kdb_local 1", reason);
+ 	kdb_go_count = 0;
+ 	if (reason == KDB_REASON_DEBUG) {
+@@ -2726,6 +2801,10 @@ static void __init kdb_inittab(void)
+ 	  "Display Help Message", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("cpu", kdb_cpu, "<cpunum>",
+ 	  "Switch to new cpu", 0, KDB_REPEAT_NONE);
++#if defined(CONFIG_KEXEC)
++	kdb_register_repeat("kdump", kdb_kdump, "",
++	  "Enter kdump crash kexec", 0, KDB_REPEAT_NONE);
++#endif
+ 	kdb_register_repeat("kgdb", kdb_kgdb, "",
+ 	  "Enter kgdb mode", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("ps", kdb_ps, "[<flags>|A]",
 
 -- 
