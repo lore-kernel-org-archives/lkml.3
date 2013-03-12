@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933695Ab3CLWdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60443 "EHLO
+	id S933720Ab3CLWei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:34:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756035Ab3CLWdi (ORCPT
+	with ESMTP id S933694Ab3CLWdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:38 -0400
+	Tue, 12 Mar 2013 18:33:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Baatz <gmbnomis@gmail.com>, Jason Cooper <jason@lakedaemon.net>
-Subject: [ 090/100] ARM: kirkwood: of_serial: fix clock gating by removing clock-frequency
-Date: Tue, 12 Mar 2013 15:32:15 -0700
-Message-Id: <20130312223132.570427901@linuxfoundation.org>
+        Hauke Mehrtens <hauke@hauke-m.de>, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [ 100/100] w1-gpio: fix section mismatch
+Date: Tue, 12 Mar 2013 15:32:25 -0700
+Message-Id: <20130312223133.599207869@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,239 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Cooper <jason@lakedaemon.net>
+From: Hauke Mehrtens <hauke@hauke-m.de>
 
-commit 93fff4ce19f9978cc1c59db42760717477939249 upstream.
+commit 06a8f1feb9e82e5b66f781ba3e39055e3f89a641 upstream.
 
-When DT support for kirkwood was first introduced, there was no clock
-infrastructure.  As a result, we had to manually pass the
-clock-frequency to the driver from the device node.
+This fixes the following section mismatch:
 
-Unfortunately, on kirkwood, with minimal config or all module configs,
-clock-frequency breaks booting because of_serial doesn't consume the
-gate_clk when clock-frequency is defined.
+WARNING: drivers/w1/masters/w1-gpio.o(.data+0x188): Section mismatch in
+reference from the variable w1_gpio_driver to the function
+.init.text:w1_gpio_probe()
+The variable w1_gpio_driver references
+the function __init w1_gpio_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-The end result on kirkwood is that runit gets gated, and then the boot
-fails when the kernel tries to write to the serial port.
-
-Fix the issue by removing the clock-frequency parameter from all
-kirkwood dts files.
-
-Booted on dreamplug without earlyprintk and successfully logged in via
-ttyS0.
-
-Reported-by: Simon Baatz <gmbnomis@gmail.com>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/kirkwood-dns320.dts         |    2 --
- arch/arm/boot/dts/kirkwood-dns325.dts         |    1 -
- arch/arm/boot/dts/kirkwood-dockstar.dts       |    1 -
- arch/arm/boot/dts/kirkwood-dreamplug.dts      |    1 -
- arch/arm/boot/dts/kirkwood-goflexnet.dts      |    1 -
- arch/arm/boot/dts/kirkwood-ib62x0.dts         |    1 -
- arch/arm/boot/dts/kirkwood-iconnect.dts       |    1 -
- arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts |    1 -
- arch/arm/boot/dts/kirkwood-km_kirkwood.dts    |    1 -
- arch/arm/boot/dts/kirkwood-lschlv2.dts        |    1 -
- arch/arm/boot/dts/kirkwood-lsxhl.dts          |    1 -
- arch/arm/boot/dts/kirkwood-mplcec4.dts        |    1 -
- arch/arm/boot/dts/kirkwood-ns2-common.dtsi    |    1 -
- arch/arm/boot/dts/kirkwood-nsa310.dts         |    1 -
- arch/arm/boot/dts/kirkwood-openblocks_a6.dts  |    2 --
- arch/arm/boot/dts/kirkwood-topkick.dts        |    1 -
- arch/arm/boot/dts/kirkwood.dtsi               |    2 --
- 17 files changed, 20 deletions(-)
+ drivers/w1/masters/w1-gpio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/kirkwood-dns320.dts
-+++ b/arch/arm/boot/dts/kirkwood-dns320.dts
-@@ -42,12 +42,10 @@
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platf
+ 	return 0;
+ }
  
- 	ocp@f1000000 {
- 		serial@12000 {
--			clock-frequency = <166666667>;
- 			status = "okay";
- 		};
- 
- 		serial@12100 {
--			clock-frequency = <166666667>;
- 			status = "okay";
- 		};
- 	};
---- a/arch/arm/boot/dts/kirkwood-dns325.dts
-+++ b/arch/arm/boot/dts/kirkwood-dns325.dts
-@@ -50,7 +50,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "okay";
- 		};
- 	};
---- a/arch/arm/boot/dts/kirkwood-dockstar.dts
-+++ b/arch/arm/boot/dts/kirkwood-dockstar.dts
-@@ -37,7 +37,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-dreamplug.dts
-+++ b/arch/arm/boot/dts/kirkwood-dreamplug.dts
-@@ -38,7 +38,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-goflexnet.dts
-+++ b/arch/arm/boot/dts/kirkwood-goflexnet.dts
-@@ -73,7 +73,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-ib62x0.dts
-+++ b/arch/arm/boot/dts/kirkwood-ib62x0.dts
-@@ -51,7 +51,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "okay";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-iconnect.dts
-+++ b/arch/arm/boot/dts/kirkwood-iconnect.dts
-@@ -78,7 +78,6 @@
- 			};
- 		};
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
-+++ b/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
-@@ -115,7 +115,6 @@
- 		};
- 
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
-+++ b/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
-@@ -34,7 +34,6 @@
- 		};
- 
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-lschlv2.dts
-+++ b/arch/arm/boot/dts/kirkwood-lschlv2.dts
-@@ -13,7 +13,6 @@
- 
- 	ocp@f1000000 {
- 		serial@12000 {
--			clock-frequency = <166666667>;
- 			status = "okay";
- 		};
- 	};
---- a/arch/arm/boot/dts/kirkwood-lsxhl.dts
-+++ b/arch/arm/boot/dts/kirkwood-lsxhl.dts
-@@ -13,7 +13,6 @@
- 
- 	ocp@f1000000 {
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "okay";
- 		};
- 	};
---- a/arch/arm/boot/dts/kirkwood-mplcec4.dts
-+++ b/arch/arm/boot/dts/kirkwood-mplcec4.dts
-@@ -91,7 +91,6 @@
-                 };
- 
-                 serial@12000 {
--                        clock-frequency = <200000000>;
-                         status = "ok";
-                 };
- 
---- a/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
-@@ -23,7 +23,6 @@
- 		};
- 
- 		serial@12000 {
--			clock-frequency = <166666667>;
- 			status = "okay";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-nsa310.dts
-+++ b/arch/arm/boot/dts/kirkwood-nsa310.dts
-@@ -18,7 +18,6 @@
- 	ocp@f1000000 {
- 
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-+++ b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-@@ -18,12 +18,10 @@
- 
- 	ocp@f1000000 {
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
- 		serial@12100 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood-topkick.dts
-+++ b/arch/arm/boot/dts/kirkwood-topkick.dts
-@@ -17,7 +17,6 @@
- 
- 	ocp@f1000000 {
- 		serial@12000 {
--			clock-frequency = <200000000>;
- 			status = "ok";
- 		};
- 
---- a/arch/arm/boot/dts/kirkwood.dtsi
-+++ b/arch/arm/boot/dts/kirkwood.dtsi
-@@ -59,7 +59,6 @@
- 			reg-shift = <2>;
- 			interrupts = <33>;
- 			clocks = <&gate_clk 7>;
--			/* set clock-frequency in board dts */
- 			status = "disabled";
- 		};
- 
-@@ -69,7 +68,6 @@
- 			reg-shift = <2>;
- 			interrupts = <34>;
- 			clocks = <&gate_clk 7>;
--			/* set clock-frequency in board dts */
- 			status = "disabled";
- 		};
- 
+-static int __init w1_gpio_probe(struct platform_device *pdev)
++static int w1_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct w1_bus_master *master;
+ 	struct w1_gpio_platform_data *pdata;
 
 
