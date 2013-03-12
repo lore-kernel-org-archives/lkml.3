@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3CLAVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:21:30 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:46788 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3CLAV2 convert rfc822-to-8bit (ORCPT
+	id S1754799Ab3CLAV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:21:57 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:53666 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754424Ab3CLAV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:21:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363046657.3724.11.camel@joe-AO722>
-References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
-	<1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
-	<1363044388-11409-4-git-send-email-mirsal@mirsal.fr>
-	<1363046657.3724.11.camel@joe-AO722>
-Date: Mon, 11 Mar 2013 17:21:28 -0700
-Message-ID: <CAMP5XgfwCQDnRvog1tWixo=-mTb4tTZCy33h+Y__H7cW_N_M7g@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] drivers: android: binder: Remove excessive indentation
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Joe Perches <joe@perches.com>
-Cc: Mirsal Ennaime <mirsal@mirsal.fr>, Greg Kroah-Hartman <greg@kroah.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Mar 2013 20:21:56 -0400
+Message-ID: <1363047710.3137.132.camel@x61.thuisdomein>
+Subject: [PATCH] powerpc: remove outdated default
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 01:21:50 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Mar 2013 00:21:51.0075 (UTC) FILETIME=[978CAB30:01CE1EB7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 5:04 PM, Joe Perches <joe@perches.com> wrote:
-...
-> I think it's odd to use pr_info in binder_debug.
-> Why not use KERN_DEBUG or pr_debug/dynamic_debugging?
->
-> #define binder_debug(mask, x...) \
->         do { \
->                 if (binder_debug_mask & mask) \
->                         pr_info(x); \
->         } while (0)
->
->
+The Kconfig symbol PCI_PERMEDIA got removed in v2.6.24, through commit
+e6b6e3ffb9ee8926f9f2f7dc9147df73e27d5828 ("[POWERPC] Remove APUS support
+from arch/ppc"). Remove its last occurrence.
 
-This code predates the dynamic_debugging framework, but I also find it
-easier to use so I would be reluctant to convert it unless there is an
-easy way to match the current behavior. It is useful to turn a set of
-debug messages on by class and to have some classes on by default.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "make ARCH=powerpc menuconfig" using ps3_defconfig, both
+before and after this patch. ("!4xx && !CPM2 && !8xx" is true for ps3,
+and it uses PPC_PCI_CHOICE.) Nothing seemed to change. Which makes
+sense, as defaulting to an undefined symbol should be a nop.
 
+ arch/powerpc/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index b89d7eb..3d566c3 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -744,7 +744,6 @@ config PCI
+ 	bool "PCI support" if PPC_PCI_CHOICE
+ 	default y if !40x && !CPM2 && !8xx && !PPC_83xx \
+ 		&& !PPC_85xx && !PPC_86xx && !GAMECUBE_COMMON
+-	default PCI_PERMEDIA if !4xx && !CPM2 && !8xx
+ 	default PCI_QSPAN if !4xx && !CPM2 && 8xx
+ 	select ARCH_SUPPORTS_MSI
+ 	select GENERIC_PCI_IOMAP
 -- 
-Arve Hjønnevåg
+1.7.11.7
+
