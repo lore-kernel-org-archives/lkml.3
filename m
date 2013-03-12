@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964927Ab3CLWo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60745 "EHLO
+	id S964922Ab3CLWoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964887Ab3CLWoq (ORCPT
+	with ESMTP id S964882Ab3CLWoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:46 -0400
+	Tue, 12 Mar 2013 18:44:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xiaobing tu <xiaobing.tu@intel.com>,
-        guifang tang <guifang.tang@intel.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Bruce Allan <bruce.w.allan@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Colin Cross <ccross@google.com>
-Subject: [ 18/21] Fix memory leak in cpufreq stats.
-Date: Tue, 12 Mar 2013 15:44:20 -0700
-Message-Id: <20130312223247.204701025@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 15/21] e1000e: fix pci-device enable-counter balance
+Date: Tue, 12 Mar 2013 15:44:17 -0700
+Message-Id: <20130312223246.893774808@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -29,33 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
+commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
 
-When system enters sleep, non-boot CPUs will be disabled.
-Cpufreq stats sysfs is created when the CPU is up, but it is not
-freed when the CPU is going down. This will cause memory leak.
+This patch removes redundant and unbalanced pci_disable_device() from
+__e1000_shutdown(). pci_clear_master() is enough, device can go into
+suspended state with elevated enable_cnt.
 
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-Signed-off-by: guifang tang <guifang.tang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Colin Cross <ccross@google.com>
+Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_stats.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/e1000e/netdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -329,6 +329,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
+--- a/drivers/net/e1000e/netdev.c
++++ b/drivers/net/e1000e/netdev.c
+@@ -5330,7 +5330,7 @@ static int __e1000_shutdown(struct pci_d
+ 	 */
+ 	e1000e_release_hw_control(adapter);
+ 
+-	pci_disable_device(pdev);
++	pci_clear_master(pdev);
+ 
+ 	return 0;
+ }
 
 
