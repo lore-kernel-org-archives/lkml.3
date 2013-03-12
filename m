@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab3CLUIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:08:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55611 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755554Ab3CLUIV (ORCPT
+	id S933471Ab3CLUIl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:08:41 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:59991 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755095Ab3CLUIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:08:21 -0400
-Date: Tue, 12 Mar 2013 20:08:17 +0000
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regmap: Expose total memory consumption in the
-	rbtree debugfs entry
-Message-ID: <20130312200817.GA32039@opensource.wolfsonmicro.com>
-References: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com> <20130312181246.GA19942@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312181246.GA19942@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Tue, 12 Mar 2013 16:08:40 -0400
+Message-ID: <1363118918.3137.143.camel@x61.thuisdomein>
+Subject: [PATCH] ASoC: codecs: remove hidden prompt
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 21:08:38 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Mar 2013 20:08:39.0336 (UTC) FILETIME=[62FB0280:01CE1F5D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 06:12:47PM +0000, Mark Brown wrote:
-> On Tue, Mar 12, 2013 at 05:26:49PM +0000, Dimitris Papastamos wrote:
-> 
-> > +	mem_size = sizeof(*rbtree_ctx);
-> > +
-> >  	for (node = rb_first(&rbtree_ctx->root); node != NULL;
-> >  	     node = rb_next(node)) {
-> >  		n = container_of(node, struct regcache_rbtree_node, node);
-> > +		mem_size += sizeof(*n);
-> > +		mem_size += (n->blklen * map->cache_word_size);
-> 
-> This appears to ignore the size of the node structure and only have the
-> root context and the data.
+The Kconfig symbol SND_SOC_OF_SIMPLE got removed in commit
+f0fba2ad1b6b53d5360125c41953b7afcd6deff0 ("ASoC: multi-component - ASoC
+Multi-Component Support"). But that commit missed one instance. Remove
+it now, together with the prompt it has effectively hidden ever since.
 
-I've got mem_size += sizeof(*n) which is the size of the rbnode.  That
-contains the underlying rbtree node links.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Lightly tested (ie, "make menuconfig" still worked).
 
-Thanks,
-Dimitris
+ sound/soc/codecs/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 45b7256..350b864 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -324,7 +324,7 @@ config SND_SOC_TLV320AIC23
+ 	tristate
+ 
+ config SND_SOC_TLV320AIC26
+-	tristate "TI TLV320AIC26 Codec support" if SND_SOC_OF_SIMPLE
++	tristate
+ 	depends on SPI
+ 
+ config SND_SOC_TLV320AIC32X4
+-- 
+1.7.11.7
+
