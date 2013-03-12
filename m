@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3CLFrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:47:19 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:33896 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab3CLFrR (ORCPT
+	id S1755005Ab3CLFsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:48:19 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30057 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3CLFsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:47:17 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-6e-513ec16453fa
+	Tue, 12 Mar 2013 01:48:18 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-62-513ec1a02097
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] rtc: rtc-s3c: convert s3c_rtc to dev_pm_ops
-Date: Tue, 12 Mar 2013 14:47:15 +0900
-Message-id: <003b01ce1ee5$0d2585b0$27709110$%han@samsung.com>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: da903x_bl: switch to using SIMPLE_DEV_PM_OPS
+Date: Tue, 12 Mar 2013 14:48:16 +0900
+Message-id: <003d01ce1ee5$316a57c0$943f0740$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4e5QzoWT5v6vTcQW+UrZiGx5ZsKA==
+Thread-index: Ac4e5TFGbi0DDqigSHaFNclqJo2Q/A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfd2Ug3aBBu/Xc1osuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CV0Tn1EHPBNMmK050rmRsYr4t0MXJySAiYSMxe28QOYYtJXLi3nq2LkYtDSGAZo8Tt
-	U9fYYIq2PmhmgkhMZ5S4OfUZO4Tzi1Fi7rtjrCBVbAJqEl++HAZKcHCICOhLtLVogNQwC/Qy
-	Spzp3Q22QljARmLH02awehYBVYm3J88yg9TzCthKPNsZCRLmFRCU+DH5HguIzSygJbF+53Em
-	CFteYvOat2DlEgLqEo/+6oKERQT0JHb/m84GUSIise/FO0aIm0+xS9w7rQGxSUDi2+RDLBCt
-	shKbDjBDlEhKHFxxg2UCo9gsJItnIVk8C8niWUg2LGBkWcUomlqQXFCclF5krFecmFtcmpeu
-	l5yfu4kREnf9OxjvHrA+xJgMtH4is5Rocj4wbvNK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4U
-	EkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwBh3OvHRwmN+P3nWWhe/EeX9rql154H//1Xic4T/
-	yjo7sPX+ahAT6u7/6uQ51eXF5q6GZ0vElLnStv71dLFJKJrnPs35G4tPzSufOK3KCWfnZyZK
-	ey1hfafPqr8p77Vufrh5oGpy/zO5jZN2J2fnS8xa3FpxmCXF9c3yYN7mI8cimJxjT8mVK7EU
-	ZyQaajEXFScCAFqGHTXRAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd2Ug3aBBvvfsFgsuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmNE59RBzwTTJitOdK5kbGK+LdDFyckgImEhs
-	fdDMBGGLSVy4t56ti5GLQ0hgOqPEzanP2CGcX4wSc98dYwWpYhNQk/jy5TBQgoNDREBfoq1F
-	A6SGWaCXUeJM7252kBphARuJHU+bwepZBFQl3p48ywxSzytgK/FsZyRImFdAUOLH5HssIDaz
-	gJbE+p3HmSBseYnNa96ClUsIqEs8+qsLEhYR0JPY/W86G0SJiMS+F+8YJzAKzEIyaRaSSbOQ
-	TJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOC4fia1g3Flg8UhRgEORiUeXsVv
-	toFCrIllxZW5hxglOJiVRHgzNtsFCvGmJFZWpRblxxeV5qQWH2JMBvpzIrOUaHI+MOXklcQb
-	GpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANjRIjJaR6Gg3KVFVtc
-	on4ul2Per1yw615TSUSvbWGj8+/XqlmnHyxv3H0h5lrx+cqg97l7HiqnnZ9Vrvb4ZnGoBK/P
-	tI1nPQ8LdUlPEvCfazPdceHmD9tjLRWOSiZu9ipPF3tSomZUqfVqHat+icxqtl8p734qTX2e
-	VZ295KVv3I4vOqmXjRYpsRRnJBpqMRcVJwIAAHqpFy8DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zQ90FB+0CDT4tsLaYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDI+XT3O
+	WHCEu+LCIdUGxkucXYycHBICJhIv161jgbDFJC7cW8/WxcjFISSwjFHi278zrDBFZ759YIZI
+	TGeUWLXlABOE84tR4nDLQmaQKjYBNYkvXw6zdzFycIgI6Eu0tWiAhJkFSiW2PngPtkFYwEPi
+	/emHjCA2i4CqxMdJT8BsXgFbiavzZjFB2IISPybfY4Ho1ZJYv/M4E4QtL7F5zVtmkPESAuoS
+	j/7qQmzSkzjw1x2iQkRi34t3jCCXSQhsYpdY8+gBK8QqAYlvkw+xQLTKSmw6wAzxlqTEwRU3
+	WCYwis1CsngWksWzkCyehWTFAkaWVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxghEda/g/Hu
+	AetDjMlA6ycyS4km5wMjNK8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4
+	otKc1OJDjEwcnFINjMWOuyIiNliueLlk0jfTI/PuqDed2Gu6dNLbM/cFnU7kHpG+oZWw6qDD
+	JNGIV/f0p3D5zZkTVbps53l57fitngVJf18yK86N0H7O8LNpj8cZH/8lTVmsq669mNtyVHv9
+	gSX7D7h+eLlX8e2JWCXH757/3ec2RglZ/3h6OHf3hXciX9oNPJMW3/2jxFKckWioxVxUnAgA
+	W28F1MYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd0FB+0CDbbvN7eYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
+	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJ6xgzPl09zlhwhLviwiHVBsZLnF2MnBwSAiYSZ759YIawxSQu3FvP
+	1sXIxSEkMJ1RYtWWA0wQzi9GicMtC8Gq2ATUJL58OczexcjBISKgL9HWogESZhYoldj64D0L
+	iC0s4CHx/vRDRhCbRUBV4uOkJ2A2r4CtxNV5s5ggbEGJH5PvsUD0akms33mcCcKWl9i85i0z
+	yHgJAXWJR391ITbpSRz46w5RISKx78U7xgmMArOQDJqFZNAsJINmIWlZwMiyilE0tSC5oDgp
+	PddQrzgxt7g0L10vOT93EyM4fp9J7WBc2WBxiFGAg1GJh1fxm22gEGtiWXFl7iFGCQ5mJRHe
+	jM12gUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0wteSXxhsYmZkaWRmYWRibm5qQJK4nz
+	Hmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAuFfI6FpE/ivTI2Ka5Xvr9Xgmhfd17xZjDvhSFdek
+	L857O8vmN5Oh7IUvBiFrn1nduMJ0W2U6k92ZiQcOTspu7pQ7EhhqEVRUv/WmC+OWackiFfG5
+	zRtOTpXcJaw5d81utZYTm/6H2nL8cRN7k2G+58cxZplS52jp5FShy+nz51rz+3hcEfqhxFKc
+	kWioxVxUnAgAruMY+yMDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,109 +54,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using legacy suspend/resume methods, using newer
-dev_pm_ops structure allows better control over power management.
-Also, 'wake_en' variable is moved, because it is only used when
-CONFIG_PM_SLEEP is enabled.
+This reduces #ifdefs in the code. Also, CONFIG_PM_SLEEP is used
+to avoid warnings of unused functions if CONFIG_PM_SLEEP is not
+defined.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-s3c.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/video/backlight/da903x_bl.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index fb994e9..c863a93 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -51,7 +51,6 @@ static struct clk *rtc_clk;
- static void __iomem *s3c_rtc_base;
- static int s3c_rtc_alarmno = NO_IRQ;
- static int s3c_rtc_tickno  = NO_IRQ;
--static bool wake_en;
- static enum s3c_cpu_type s3c_rtc_cpu_type;
- 
- static DEFINE_SPINLOCK(s3c_rtc_pie_lock);
-@@ -583,14 +582,16 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 	return ret;
+diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
+index 8179cef..c625f6d 100644
+--- a/drivers/video/backlight/da903x_bl.c
++++ b/drivers/video/backlight/da903x_bl.c
+@@ -161,7 +161,7 @@ static int da903x_backlight_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
 -#ifdef CONFIG_PM
--
 +#ifdef CONFIG_PM_SLEEP
- /* RTC Power management control */
- 
- static int ticnt_save, ticnt_en_save;
-+static bool wake_en;
- 
--static int s3c_rtc_suspend(struct platform_device *pdev, pm_message_t state)
-+static int s3c_rtc_suspend(struct device *dev)
+ static int da903x_backlight_suspend(struct device *dev)
  {
-+	struct platform_device *pdev = to_platform_device(dev);
-+
- 	clk_enable(rtc_clk);
- 	/* save TICNT for anyone using periodic interrupts */
- 	ticnt_save = readb(s3c_rtc_base + S3C2410_TICNT);
-@@ -600,19 +601,20 @@ static int s3c_rtc_suspend(struct platform_device *pdev, pm_message_t state)
- 	}
- 	s3c_rtc_enable(pdev, 0);
- 
--	if (device_may_wakeup(&pdev->dev) && !wake_en) {
-+	if (device_may_wakeup(dev) && !wake_en) {
- 		if (enable_irq_wake(s3c_rtc_alarmno) == 0)
- 			wake_en = true;
- 		else
--			dev_err(&pdev->dev, "enable_irq_wake failed\n");
-+			dev_err(dev, "enable_irq_wake failed\n");
- 	}
- 	clk_disable(rtc_clk);
- 
+ 	struct backlight_device *bl = dev_get_drvdata(dev);
+@@ -176,20 +176,16 @@ static int da903x_backlight_resume(struct device *dev)
+ 	backlight_update_status(bl);
  	return 0;
  }
- 
--static int s3c_rtc_resume(struct platform_device *pdev)
-+static int s3c_rtc_resume(struct device *dev)
- {
-+	struct platform_device *pdev = to_platform_device(dev);
- 	unsigned int tmp;
- 
- 	clk_enable(rtc_clk);
-@@ -623,7 +625,7 @@ static int s3c_rtc_resume(struct platform_device *pdev)
- 		writew(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
- 	}
- 
--	if (device_may_wakeup(&pdev->dev) && wake_en) {
-+	if (device_may_wakeup(dev) && wake_en) {
- 		disable_irq_wake(s3c_rtc_alarmno);
- 		wake_en = false;
- 	}
-@@ -631,11 +633,10 @@ static int s3c_rtc_resume(struct platform_device *pdev)
- 
- 	return 0;
- }
--#else
--#define s3c_rtc_suspend NULL
--#define s3c_rtc_resume  NULL
+-
+-static const struct dev_pm_ops da903x_backlight_pm_ops = {
+-	.suspend	= da903x_backlight_suspend,
+-	.resume		= da903x_backlight_resume,
+-};
  #endif
  
-+static SIMPLE_DEV_PM_OPS(s3c_rtc_pm_ops, s3c_rtc_suspend, s3c_rtc_resume);
++static SIMPLE_DEV_PM_OPS(da903x_backlight_pm_ops, da903x_backlight_suspend,
++			da903x_backlight_resume);
 +
- #ifdef CONFIG_OF
- static struct s3c_rtc_drv_data s3c_rtc_drv_data_array[] = {
- 	[TYPE_S3C2410] = { TYPE_S3C2410 },
-@@ -685,12 +686,11 @@ MODULE_DEVICE_TABLE(platform, s3c_rtc_driver_ids);
- static struct platform_driver s3c_rtc_driver = {
- 	.probe		= s3c_rtc_probe,
- 	.remove		= s3c_rtc_remove,
--	.suspend	= s3c_rtc_suspend,
--	.resume		= s3c_rtc_resume,
- 	.id_table	= s3c_rtc_driver_ids,
+ static struct platform_driver da903x_backlight_driver = {
  	.driver		= {
- 		.name	= "s3c-rtc",
+ 		.name	= "da903x-backlight",
  		.owner	= THIS_MODULE,
-+		.pm	= &s3c_rtc_pm_ops,
- 		.of_match_table	= of_match_ptr(s3c_rtc_dt_match),
+-#ifdef CONFIG_PM
+ 		.pm	= &da903x_backlight_pm_ops,
+-#endif
  	},
- };
+ 	.probe		= da903x_backlight_probe,
+ 	.remove		= da903x_backlight_remove,
 -- 
 1.7.2.5
 
