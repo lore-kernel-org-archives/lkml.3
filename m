@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3CLCcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 22:32:23 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:40119 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab3CLCcW (ORCPT
+	id S932141Ab3CLCeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 22:34:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41423 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab3CLCeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 22:32:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1362663356-21151-1-git-send-email-tom.leiming@gmail.com>
-References: <1362663356-21151-1-git-send-email-tom.leiming@gmail.com>
-Date: Tue, 12 Mar 2013 10:32:21 +0800
-Message-ID: <CACVXFVOhr222CVrzkVP_oLgVkdReD9BXXSBg7fmp6Wvx9_peCw@mail.gmail.com>
-Subject: Re: [PATCH v1] ARM: keep __my_cpu_offset consistent with generic one
-From: Ming Lei <tom.leiming@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Mar 2013 22:34:22 -0400
+Date: Tue, 12 Mar 2013 13:34:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benson Leung <bleung@chromium.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the drivers-x86 tree with the  tree
+Message-Id: <20130312133402.7a3e5edfbbfa423fd91575a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Mar_2013_13_34_02_+1100_YpdBZ6RhOWuGd.Uj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 9:35 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Commit 14318efb(ARM: 7587/1: implement optimized percpu variable access)
-> introduces arm's __my_cpu_offset to optimize percpu vaiable access,
-> which really works well on hackbench, but will cause __my_cpu_offset
-> to return garbage value before it is initialized in cpu_init() called
-> by setup_arch, so accessing percpu variable before setup_arch may cause
-> kernel hang. But generic __my_cpu_offset always returns zero before
-> percpu area is brought up, and won't hang kernel.
->
-> So the patch tries to clear __my_cpu_offset on boot CPU early
-> to avoid boot hang.
->
-> At least now percpu variable is accessed by lockdep before
-> setup_arch(), and enabling CONFIG_LOCK_STAT or CONFIG_DEBUG_LOCKDEP
-> can trigger kernel hang.
->
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
-> V1:
->         - documents lockdep uses percpu variable early
+--Signature=_Tue__12_Mar_2013_13_34_02_+1100_YpdBZ6RhOWuGd.Uj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks no one objects the patch, so I has submitted it into Russell's
-patch system, and hope it can be pushed to linus tree soon and
-make LOCK_STAT/DEBUG_LOCKDEP usable on ARMv7.
+Hi Matthew,
 
+Today's linux-next merge of the drivers-x86 tree got a conflict in
+drivers/platform/x86/chromeos_laptop.c between a series of patches from
+Linus' tree and the same series of patches from the drivers-x86 tree.
 
-Thanks,
--- 
-Ming Lei
+There was an extra patch merged into Linus tree affecting this file, so I
+used that version.
+
+Please, when you rebase/rewrite stuff before sending it to Linus, also
+update your -next included tree (or just *don't do that* :-().
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__12_Mar_2013_13_34_02_+1100_YpdBZ6RhOWuGd.Uj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRPpQaAAoJEECxmPOUX5FE8k8P/j97YNzce0MmOqScophU21HV
+G/WmJkdZwpEtgxdjgV3ArY2vvA99zoxzUdVenS67pqeAGNoNdpDPqxl2pcnJVa+b
+3B5jtOrTusWcC/00m5IoCVfuHw4eC4KW7PM0AjzU3IJe8bHoOKLi9KSaqzjAxmrk
+VB+SnFWoBifhqUrGIi5nwkRHmfGRCsjFClTlPm6kjSbpntr1klatAKCM8SPtoR0A
+jxVdq3kwUXa8PVsOz6C2qUf8hB4DJDxijTnjQ60kCwEEKsNZUElVoIdq5snWu6ks
+FknFGYyeJC7Dx995uE2UNqx3KyWZODSzR2qJs/3AmIhdPNCjQVOg6jbXFK6SRYtE
+cwr9oL+AHtAs2KwNvtdSMn8NCCTuHdr/T91fs3hdEUEpiZarwj3aX+T5V0uZrg2a
+ry9/xi1thX7v4Qda1A+agyq+tPewddz7Mx+1HPc4mSgUNbvYPneZaBY360H7PI47
+1LHG1/X9NHj6CpL5E3pEUqFWlWy28uPvyimu2lRic26oz/r3TcMQeO8qwFLrRC+z
+c5E/2NhXk2+vVnMbjdDrMmDQ8/TU+dwEv/+5K4nUDxZMRUSJ56bCzRF7ETGO8/YW
+3Yr4oDpJOP/Yb1IOdl1fHF+2zS96z+7HvvpnMGOGLzu30z0uPJyfJmjg5TCzB73J
+mh9RE3GCIMMAqD3lgAmA
+=QHRy
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Mar_2013_13_34_02_+1100_YpdBZ6RhOWuGd.Uj--
