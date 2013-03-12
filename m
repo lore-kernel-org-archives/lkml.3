@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab3CLFB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:01:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46177 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752237Ab3CLFBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754486Ab3CLFBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:01:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57723 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab3CLFBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 01:01:23 -0400
-Message-ID: <513EB704.8030907@ti.com>
-Date: Tue, 12 Mar 2013 10:33:00 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: cpufreq <cpufreq@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/2] cpufreq: cpufreq-cpu0: support for clock which are
- not in DT yet.
-References: <1363043130-30270-1-git-send-email-nm@ti.com> <1363043130-30270-2-git-send-email-nm@ti.com>
-In-Reply-To: <1363043130-30270-2-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJd=RBCihXorfLcjHxNUcJcm+CxpnDwMgB9kcC+VrN9bTK0Gkg@mail.gmail.com>
+References: <1356050997-2688-1-git-send-email-walken@google.com>
+	<1356050997-2688-5-git-send-email-walken@google.com>
+	<CA+ydwtqD67m9_JLCNwvdP72rko93aTkVgC-aK4TacyyM5DoCTA@mail.gmail.com>
+	<20130311160322.830cc6b670fd24faa8366413@linux-foundation.org>
+	<20130312002429.GA24360@google.com>
+	<CAJd=RBCihXorfLcjHxNUcJcm+CxpnDwMgB9kcC+VrN9bTK0Gkg@mail.gmail.com>
+Date: Mon, 11 Mar 2013 22:01:22 -0700
+Message-ID: <CANN689H7nvBhe3eTkT-WxG5ZZ-o8S7Hvr=LzKk=mMSY83OEtDw@mail.gmail.com>
+Subject: Re: [PATCH 4/9] mm: use mm_populate() for blocking remap_file_pages()
+From: Michel Lespinasse <walken@google.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 March 2013 04:35 AM, Nishanth Menon wrote:
-> On certain SoCs like variants of OMAP, the clock conversion to DT
-> is not complete. In short, the ability to:
-> cpus {
->     cpu@0 {
-> 	clocks = <&cpuclk 0>;
->     };
->  };
-> is not possible. However, the clock node is registered.
-> Allow for clk names to be provided as string so as to be used when needed.
-> Example (for OMAP3630):
-> cpus {
->     cpu@0 {
-> 	clock-name = "cpufreq_ck";
->     };
->  };
-> 
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: cpufreq@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-omap@vger.kernel.org
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-Seems a reasonable to me.
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Mon, Mar 11, 2013 at 9:23 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> Is it still necessary to populate mm if bail out due
+> to a linear mapping encountered?
 
+Yes. mmap_region() doesn't do it on its own, and we want the emulated
+linear case to behave similarly to the true nonlinear case.
 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
