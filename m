@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab3CLArx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:47:53 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:54262 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3CLArv (ORCPT
+	id S932155Ab3CLAr4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:47:56 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:42358 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932107Ab3CLAry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:47:51 -0400
+	Mon, 11 Mar 2013 20:47:54 -0400
 From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
@@ -14,9 +14,9 @@ Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCH v3 6/7] Split remaining calls to call_usermodehelper_fns()
-Date: Mon, 11 Mar 2013 21:48:10 -0300
-Message-Id: <1363049291-946-6-git-send-email-lucas.demarchi@profusion.mobi>
+Subject: [PATCH v3 7/7] kmod: remove call_usermodehelper_fns()
+Date: Mon, 11 Mar 2013 21:48:11 -0300
+Message-Id: <1363049291-946-7-git-send-email-lucas.demarchi@profusion.mobi>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
 References: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
@@ -24,77 +24,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the only users of call_usermodehelper_fns(). This function
-suffers from not being able to determine if the cleanup is called. Even
-if in this places the cleanup pointer is NULL, convert them to use the
-separate call_usermodehelper_setup() + call_usermodehelper_exec()
-functions so we can remove the _fns variant.
+This function suffers from not being able to determine if the cleanup is
+called in case it returns -ENOMEM. Nobody is using it anymore, so let's
+remove it.
 
 Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 ---
+ include/linux/kmod.h | 11 +----------
+ kernel/kmod.c        | 31 +++++++++++++++++--------------
+ 2 files changed, 18 insertions(+), 24 deletions(-)
 
-Changes from v2: simplify error handling as suggested by Oleg.
-
- fs/coredump.c           | 12 +++++++++---
- init/do_mounts_initrd.c |  8 ++++++--
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 7dfb3b0..d52f6bd 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -525,6 +525,7 @@ void do_coredump(siginfo_t *siginfo)
- 	if (ispipe) {
- 		int dump_count;
- 		char **helper_argv;
-+		struct subprocess_info *sub_info;
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 7eebcf5..0555cc6 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -67,9 +67,7 @@ struct subprocess_info {
+ };
  
- 		if (ispipe < 0) {
- 			printk(KERN_WARNING "format_corename failed\n");
-@@ -571,9 +572,14 @@ void do_coredump(siginfo_t *siginfo)
- 			goto fail_dropcount;
- 		}
+ extern int
+-call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
+-			int (*init)(struct subprocess_info *info, struct cred *new),
+-			void (*cleanup)(struct subprocess_info *), void *data);
++call_usermodehelper(char *path, char **argv, char **envp, int wait);
  
--		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
--					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
--					NULL, &cprm);
-+		retval = -ENOMEM;
-+		sub_info = call_usermodehelper_setup(helper_argv[0],
-+						helper_argv, NULL, GFP_KERNEL,
-+						umh_pipe_setup, NULL, &cprm);
-+		if (sub_info)
-+			retval = call_usermodehelper_exec(sub_info,
-+							  UMH_WAIT_EXEC);
-+
- 		argv_free(helper_argv);
- 		if (retval) {
- 			printk(KERN_INFO "Core dump to %s pipe failed\n",
-diff --git a/init/do_mounts_initrd.c b/init/do_mounts_initrd.c
-index a32ec1c..3e0878e 100644
---- a/init/do_mounts_initrd.c
-+++ b/init/do_mounts_initrd.c
-@@ -50,6 +50,7 @@ static int init_linuxrc(struct subprocess_info *info, struct cred *new)
+ extern struct subprocess_info *
+ call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
+@@ -79,13 +77,6 @@ call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
+ extern int
+ call_usermodehelper_exec(struct subprocess_info *info, int wait);
  
- static void __init handle_initrd(void)
+-static inline int
+-call_usermodehelper(char *path, char **argv, char **envp, int wait)
+-{
+-	return call_usermodehelper_fns(path, argv, envp, wait,
+-				       NULL, NULL, NULL);
+-}
+-
+ extern struct ctl_table usermodehelper_table[];
+ 
+ enum umh_disable_depth {
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index ae255a3..166aff5 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -554,8 +554,8 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+  * call_usermodehelper_exec - start a usermode application
+  * @sub_info: information about the subprocessa
+  * @wait: wait for the application to finish and return status.
+- *        when -1 don't wait at all, but you get no useful error back when
+- *        the program couldn't be exec'ed. This makes it safe to call
++ *        when UMH_NO_WAIT don't wait at all, but you get no useful error back
++ *        when the program couldn't be exec'ed. This makes it safe to call
+  *        from interrupt context.
+  *
+  * Runs a user-space application.  The application is started
+@@ -615,29 +615,32 @@ unlock:
+ }
+ EXPORT_SYMBOL(call_usermodehelper_exec);
+ 
+-/*
+- * call_usermodehelper_fns() will not run the caller-provided cleanup function
+- * if a memory allocation failure is experienced.  So the caller might need to
+- * check the call_usermodehelper_fns() return value: if it is -ENOMEM, perform
+- * the necessaary cleanup within the caller.
++/**
++ * call_usermodehelper() - prepare and start a usermode application
++ * @path: path to usermode executable
++ * @argv: arg vector for process
++ * @envp: environment for process
++ * @wait: wait for the application to finish and return status.
++ *        when UMH_NO_WAIT don't wait at all, but you get no useful error back
++ *        when the program couldn't be exec'ed. This makes it safe to call
++ *        from interrupt context.
++ *
++ * This function is the equivalent to use call_usermodehelper_setup() and
++ * call_usermodehelper_exec().
+  */
+-int call_usermodehelper_fns(
+-	char *path, char **argv, char **envp, int wait,
+-	int (*init)(struct subprocess_info *info, struct cred *new),
+-	void (*cleanup)(struct subprocess_info *), void *data)
++int call_usermodehelper(char *path, char **argv, char **envp, int wait)
  {
-+	struct subprocess_info *info;
- 	static char *argv[] = { "linuxrc", NULL, };
- 	extern char *envp_init[];
- 	int error;
-@@ -70,8 +71,11 @@ static void __init handle_initrd(void)
- 	 */
- 	current->flags |= PF_FREEZER_SKIP;
+ 	struct subprocess_info *info;
+ 	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
  
--	call_usermodehelper_fns("/linuxrc", argv, envp_init, UMH_WAIT_PROC,
--			init_linuxrc, NULL, NULL);
-+	info = call_usermodehelper_setup("/linuxrc", argv, envp_init,
-+					 GFP_KERNEL, init_linuxrc, NULL, NULL);
-+	if (!info)
-+		return;
-+	call_usermodehelper_exec(info, UMH_WAIT_PROC);
+ 	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
+-					 init, cleanup, data);
+-
++					 NULL, NULL, NULL);
+ 	if (info == NULL)
+ 		return -ENOMEM;
  
- 	current->flags &= ~PF_FREEZER_SKIP;
+ 	return call_usermodehelper_exec(info, wait);
+ }
+-EXPORT_SYMBOL(call_usermodehelper_fns);
++EXPORT_SYMBOL(call_usermodehelper);
  
+ static int proc_cap_handler(struct ctl_table *table, int write,
+ 			 void __user *buffer, size_t *lenp, loff_t *ppos)
 -- 
 1.8.1.5
 
