@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964934Ab3CLWsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:48:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60725 "EHLO
+	id S964865Ab3CLWoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964871Ab3CLWom (ORCPT
+	with ESMTP id S964849Ab3CLWog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:42 -0400
+	Tue, 12 Mar 2013 18:44:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 12/21] drm/radeon: add primary dac adj quirk for R200 board
-Date: Tue, 12 Mar 2013 15:44:14 -0700
-Message-Id: <20130312223246.546369831@linuxfoundation.org>
+        Asias He <asias@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 04/21] target/pscsi: Fix page increment
+Date: Tue, 12 Mar 2013 15:44:06 -0700
+Message-Id: <20130312223245.664885170@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -26,37 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Asias He <asias@redhat.com>
 
-commit e8fc41377f5037ff7a661ea06adc05f1daec1548 upstream.
+commit 472b72f2db7831d7dbe22ffdff4adee3bd49b05d upstream.
 
-vbios values are wrong leading to colors that are
-too bright.  Use the default values instead.
+The page++ is wrong. It makes bio_add_pc_page() pointing to a wrong page
+address if the 'while (len > 0 && data_len > 0) { ... }' loop is
+executed more than one once.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Asias He <asias@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/target/target_core_pscsi.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -958,6 +958,15 @@ struct radeon_encoder_primary_dac *radeo
- 			found = 1;
- 	}
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -1210,7 +1210,6 @@ static int __pscsi_map_task_SG(
+ 				bio = NULL;
+ 			}
  
-+	/* quirks */
-+	/* Radeon 9100 (R200) */
-+	if ((dev->pdev->device == 0x514D) &&
-+	    (dev->pdev->subsystem_vendor == 0x174B) &&
-+	    (dev->pdev->subsystem_device == 0x7149)) {
-+		/* vbios value is bad, use the default */
-+		found = 0;
-+	}
-+
- 	if (!found) /* fallback to defaults */
- 		radeon_legacy_get_primary_dac_info_from_table(rdev, p_dac);
- 
+-			page++;
+ 			len -= bytes;
+ 			data_len -= bytes;
+ 			off = 0;
 
 
