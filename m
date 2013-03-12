@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab3CLTA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:00:56 -0400
-Received: from smtp-out-044.synserver.de ([212.40.185.44]:1044 "EHLO
-	smtp-out-039.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932470Ab3CLTAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:00:54 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10785
-Message-ID: <513F7BD2.5040800@metafoo.de>
-Date: Tue, 12 Mar 2013 20:02:42 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S933296Ab3CLTC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:02:59 -0400
+Received: from linux-sh.org ([111.68.239.195]:60595 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932612Ab3CLTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:02:57 -0400
+Date: Wed, 13 Mar 2013 04:00:12 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 0/1] mm/hugetlb: add more arch-defined huge_pte_xxx
+ functions
+Message-ID: <20130312190011.GC20355@linux-sh.org>
+References: <1363114106-30251-1-git-send-email-gerald.schaefer@de.ibm.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Subject: Re: [PATCH] backlight: da903x_bl: switch to using SIMPLE_DEV_PM_OPS
-References: <003d01ce1ee5$316a57c0$943f0740$%han@samsung.com>
-In-Reply-To: <003d01ce1ee5$316a57c0$943f0740$%han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363114106-30251-1-git-send-email-gerald.schaefer@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 06:48 AM, Jingoo Han wrote:
-> This reduces #ifdefs in the code. Also, CONFIG_PM_SLEEP is used
-> to avoid warnings of unused functions if CONFIG_PM_SLEEP is not
-> defined.
+On Tue, Mar 12, 2013 at 07:48:25PM +0100, Gerald Schaefer wrote:
+> This patch introduces those huge_pte_xxx functions and their
+> implementation on all architectures supporting hugetlbfs. This change
+> will be a no-op for all architectures other than s390.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+..
 
-I think you can eliminate the suspend/resume functions all together by using
-the blacklight subsystems CORE_SUSPENDRESUME feature.
-
-E.g.
-
-diff --git a/drivers/video/backlight/da903x_bl.c
-b/drivers/video/backlight/da903x_bl.c
-index 8179cef..80ba6b3 100644
---- a/drivers/video/backlight/da903x_bl.c
-+++ b/drivers/video/backlight/da903x_bl.c
-@@ -88,6 +88,9 @@ static int da903x_backlight_update_status(struct
- 	if (bl->props.fb_blank != FB_BLANK_UNBLANK)
- 		brightness = 0;
-
-+	if (bl->props.state & BL_CORE_SUSPENDED)
-+		brightness = 0;
-+
- 	return da903x_backlight_set(bl, brightness);
- }
-
-@@ -100,6 +103,7 @@ static int da903x_backlight_get_brightness(struct
- static const struct backlight_ops da903x_backlight_ops = {
- 	.update_status	= da903x_backlight_update_status,
- 	.get_brightness	= da903x_backlight_get_brightness,
-+	.options	= BL_CORE_SUSPENDRESUME,
- };
-
- static int da903x_backlight_probe(struct platform_device *pdev)
-@@ -161,35 +165,10 @@ static int da903x_backlight_remove(struct
- 	return 0;
- }
-
--#ifdef CONFIG_PM
--static int da903x_backlight_suspend(struct device *dev)
--{
--	struct backlight_device *bl = dev_get_drvdata(dev);
--
--	return da903x_backlight_set(bl, 0);
--}
--
--static int da903x_backlight_resume(struct device *dev)
--{
--	struct backlight_device *bl = dev_get_drvdata(dev);
--
--	backlight_update_status(bl);
--	return 0;
--}
--
--static const struct dev_pm_ops da903x_backlight_pm_ops = {
--	.suspend	= da903x_backlight_suspend,
--	.resume		= da903x_backlight_resume,
--};
--#endif
--
- static struct platform_driver da903x_backlight_driver = {
- 	.driver		= {
- 		.name	= "da903x-backlight",
- 		.owner	= THIS_MODULE,
--#ifdef CONFIG_PM
--		.pm	= &da903x_backlight_pm_ops,
--#endif
- 	},
- 	.probe		= da903x_backlight_probe,
- 	.remove		= da903x_backlight_remove,
+>  arch/ia64/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+>  arch/mips/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+>  arch/powerpc/include/asm/hugetlb.h | 36 ++++++++++++++++++++++++
+>  arch/s390/include/asm/hugetlb.h    | 56 +++++++++++++++++++++++++++++++++++++-
+>  arch/s390/include/asm/pgtable.h    | 20 --------------
+>  arch/s390/mm/hugetlbpage.c         |  2 +-
+>  arch/sh/include/asm/hugetlb.h      | 36 ++++++++++++++++++++++++
+>  arch/sparc/include/asm/hugetlb.h   | 36 ++++++++++++++++++++++++
+>  arch/tile/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+>  arch/x86/include/asm/hugetlb.h     | 36 ++++++++++++++++++++++++
+>  mm/hugetlb.c                       | 23 ++++++++--------
+>  11 files changed, 320 insertions(+), 33 deletions(-)
+> 
+None of these wrappers are doing anything profound for most platforms, so
+this would be a good candidate for an asm-generic/hugetlb.h (after which
+s390 can continue to be special and no one else has to care).
