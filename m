@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab3CLMfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35384 "EHLO mx1.redhat.com"
+	id S1755383Ab3CLMfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:35:47 -0400
+Received: from mail.southpole.se ([37.247.8.11]:43491 "EHLO mail.southpole.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab3CLMfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:35:23 -0400
-Date: Tue, 12 Mar 2013 08:35:17 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: Re: [PATCH v3 6/7] NFSv4: Add O_DENY* open flags support
-Message-ID: <20130312083517.770a17f6@tlielax.poochiereds.net>
-In-Reply-To: <20130311145434.707f5ed1@corrin.poochiereds.net>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
-	<1362065133-9490-7-git-send-email-piastry@etersoft.ru>
-	<20130311145434.707f5ed1@corrin.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1750946Ab3CLMfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 08:35:46 -0400
+Message-ID: <513F2124.6060504@southpole.se>
+Date: Tue, 12 Mar 2013 13:35:48 +0100
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: arnd@arndb.de
+CC: Jonas Bonn <jonas@southpole.se>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 1/1] asm-generic: move cmpxchg*_local defs to cmpxchg.h
+References: <1362030843-25354-1-git-send-email-jonas@southpole.se>
+In-Reply-To: <1362030843-25354-1-git-send-email-jonas@southpole.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.2.2(12343) on assp.southpole.se
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 91741-00941
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013 14:54:34 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+Hi Arnd,
 
-> On Thu, 28 Feb 2013 19:25:32 +0400
-> Pavel Shilovsky <piastry@etersoft.ru> wrote:
-> 
-> > by passing these flags to NFSv4 open request.
-> > 
-> > Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-> > ---
-> >  fs/nfs/nfs4xdr.c | 24 ++++++++++++++++++++----
-> >  1 file changed, 20 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-> > index 26b1439..58ddc74 100644
-> > --- a/fs/nfs/nfs4xdr.c
-> > +++ b/fs/nfs/nfs4xdr.c
-> > @@ -1325,7 +1325,8 @@ static void encode_lookup(struct xdr_stream *xdr, const struct qstr *name, struc
-> >  	encode_string(xdr, name->len, name->name);
-> >  }
-> >  
-> > -static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
-> > +static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode,
-> > +				int open_flags)
-> >  {
-> >  	__be32 *p;
-> >  
-> > @@ -1343,7 +1344,22 @@ static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
-> >  	default:
-> >  		*p++ = cpu_to_be32(0);
-> >  	}
-> > -	*p = cpu_to_be32(0);		/* for linux, share_deny = 0 always */
-> > +	if (open_flags & O_DENYMAND) {
-> 
-> 
-> As Bruce mentioned, I think a mount option to enable this on a per-fs
-> basis would be a better approach than this new O_DENYMAND flag. 
-> 
-> 
-> > +		switch (open_flags & (O_DENYREAD|O_DENYWRITE)) {
-> > +		case O_DENYREAD:
-> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_READ);
-> > +			break;
-> > +		case O_DENYWRITE:
-> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_WRITE);
-> > +			break;
-> > +		case O_DENYREAD|O_DENYWRITE:
-> > +			*p = cpu_to_be32(NFS4_SHARE_DENY_BOTH);
-> > +			break;
-> > +		default:
-> > +			*p = cpu_to_be32(0);
-> > +		}
-> > +	} else
-> > +		*p = cpu_to_be32(0);
-> >  }
-> >  
-> >  static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_openargs *arg)
-> > @@ -1354,7 +1370,7 @@ static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_opena
-> >   * owner 4 = 32
-> >   */
-> >  	encode_nfs4_seqid(xdr, arg->seqid);
-> > -	encode_share_access(xdr, arg->fmode);
-> > +	encode_share_access(xdr, arg->fmode, arg->open_flags);
-> >  	p = reserve_space(xdr, 36);
-> >  	p = xdr_encode_hyper(p, arg->clientid);
-> >  	*p++ = cpu_to_be32(24);
-> > @@ -1491,7 +1507,7 @@ static void encode_open_downgrade(struct xdr_stream *xdr, const struct nfs_close
-> >  	encode_op_hdr(xdr, OP_OPEN_DOWNGRADE, decode_open_downgrade_maxsz, hdr);
-> >  	encode_nfs4_stateid(xdr, arg->stateid);
-> >  	encode_nfs4_seqid(xdr, arg->seqid);
-> > -	encode_share_access(xdr, arg->fmode);
-> > +	encode_share_access(xdr, arg->fmode, 0);
-> >  }
-> >  
-> >  static void
-> 
-> 
-> Other than that, this seems reasonable.
-> 
-> Acked-by: Jeff Layton <jlayton@redhat.com>
+Can you comment on this patch?  This is needed so that the generic 
+asm/cmpxchg.h can be used standalone (i.e. without pulling in atomic.h). 
+  OpenRISC uses the generic asm/cmpxchg.h and things currently don't 
+build without this since linux/llist.h now includes asm/cmpxchg.h 
+standalone.
 
-Oh duh...
+Thanks,
+Jonas
 
-Please ignore my comment on patch #7 to add a patch for the NFS client.
-This one does that. That said, there may be a potential problem here
-that you need to consider.
+On 02/28/2013 06:54 AM, Jonas Bonn wrote:
+> asm/cmpxchg.h can be included on its own and needs to be self-consistent.
+> The definitions for the cmpxchg*_local macros, as such, need to be part
+> of this file.
+>
+> This fixes a build issue on OpenRISC since the system.h smashing patch
+> 96f951edb1f1bdbbc99b0cd458f9808bb83d58ae that introdued the direct inclusion
+> asm/cmpxchg.h into linux/llist.h.
+>
+> CC: David Howells <dhowells@redhat.com>
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> ---
+>   include/asm-generic/atomic.h  |    6 ------
+>   include/asm-generic/cmpxchg.h |   10 ++++++++++
+>   2 files changed, 10 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+> index 1ced641..33bd2de 100644
+> --- a/include/asm-generic/atomic.h
+> +++ b/include/asm-generic/atomic.h
+> @@ -136,12 +136,6 @@ static inline void atomic_dec(atomic_t *v)
+>   #define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
+>   #define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+>
+> -#define cmpxchg_local(ptr, o, n)				  	       \
+> -	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
+> -			(unsigned long)(n), sizeof(*(ptr))))
+> -
+> -#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+> -
+>   static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+>   {
+>     int c, old;
+> diff --git a/include/asm-generic/cmpxchg.h b/include/asm-generic/cmpxchg.h
+> index 1488302..811fb1e 100644
+> --- a/include/asm-generic/cmpxchg.h
+> +++ b/include/asm-generic/cmpxchg.h
+> @@ -92,6 +92,16 @@ unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
+>    */
+>   #include <asm-generic/cmpxchg-local.h>
+>
+> +#ifndef cmpxchg_local
+> +#define cmpxchg_local(ptr, o, n)				  	       \
+> +	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
+> +			(unsigned long)(n), sizeof(*(ptr))))
+> +#endif
+> +
+> +#ifndef cmpxchg64_local
+> +#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+> +#endif
+> +
+>   #define cmpxchg(ptr, o, n)	cmpxchg_local((ptr), (o), (n))
+>   #define cmpxchg64(ptr, o, n)	cmpxchg64_local((ptr), (o), (n))
+>
+>
 
-In the case of a local filesystem you'll want to set deny locks using
-deny_lock_file(). For a network filesystem like CIFS or NFS though,
-the server will handle that atomically during the open. You need to
-ensure that you don't go trying to set LOCK_MAND locks on the file once
-that's done.
-
-Perhaps you can use a fstype flag to indicate that the filesystem
-handles this during the open and doesn't need to try and set a flock
-lock?
-
--- 
-Jeff Layton <jlayton@redhat.com>
