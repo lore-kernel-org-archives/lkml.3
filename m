@@ -1,74 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3CLArm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:47:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16663 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754981Ab3CLAri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:47:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,827,1355126400"; 
-   d="scan'208";a="213037963"
-Subject: [PATCH 2/3] genirq: Do not consider the irqs with IRQF_NO_SUSPEND
- in check_wakeup_irqs()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tglx@linutronix.de
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-In-Reply-To: <1363024631.31506.64.camel@cliu38-desktop-build>
-References: <1363024396.31506.60.camel@cliu38-desktop-build>
-	 <1363024631.31506.64.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Mar 2013 17:58:14 +0800
-Message-ID: <1363082294.7518.4.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754943Ab3CLArf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:47:35 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41819 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab3CLArc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:47:32 -0400
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: [PATCH v3 2/7] usermodehelper: Export _exec() and _setup() functions
+Date: Mon, 11 Mar 2013 21:48:06 -0300
+Message-Id: <1363049291-946-2-git-send-email-lucas.demarchi@profusion.mobi>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
+References: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+call_usermodehelper_setup() + call_usermodehelper_exec() need to be
+called instead of call_usermodehelper_fns() when the cleanup function
+needs to be called even when an ENOMEM error occurs. In this case using
+call_usermodehelper_fns() the user can't distinguish if the cleanup
+function was called or not.
 
-According to commit 9c6079aa1bf(genirq: Do not consider disabled
-wakeup irqs), we should not break the suspend when one interrupt has
-been disabled before suspending and is pending there.
-
-But there is another case missed:
-If an interrupt which is marked IRQF_NO_SUSPEND has been disabled
-before suspend invocation then desc->depth is 1 and therefor it should
-not be checked for IRQS_PENDING in check_wakeup_irqs().
-
-Here also checking if the desc->istate & IRQS_SUSPENDED is true to avoid
-this case.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 ---
- kernel/irq/pm.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ include/linux/kmod.h |  8 ++++++++
+ kernel/kmod.c        | 56 +++++++++++++++++++++-------------------------------
+ 2 files changed, 31 insertions(+), 33 deletions(-)
 
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..f02a03d 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -107,9 +107,16 @@ int check_wakeup_irqs(void)
- 		 * Only interrupts which are marked as wakeup source
- 		 * and have not been disabled before the suspend check
- 		 * can abort suspend.
-+		 *
-+		 * Meanwhile, if an interrupt which is marked IRQF_NO_SUSPEND
-+		 * has been disabled before suspend invocation then
-+		 * desc->depth is 1 and therefor it should not be checked
-+		 * for IRQS_PENDING, so also adding the checking of
-+		 * desc->istate & IRQS_SUSPENDED for this case.
- 		 */
- 		if (irqd_is_wakeup_set(&desc->irq_data)) {
--			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
-+			if (desc->depth == 1 && (desc->istate & IRQS_PENDING)
-+				&& (desc->istate & IRQS_SUSPENDED))
- 				return -EBUSY;
- 			continue;
- 		}
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 5398d58..7eebcf5 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -71,6 +71,14 @@ call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
+ 			int (*init)(struct subprocess_info *info, struct cred *new),
+ 			void (*cleanup)(struct subprocess_info *), void *data);
+ 
++extern struct subprocess_info *
++call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
++			  int (*init)(struct subprocess_info *info, struct cred *new),
++			  void (*cleanup)(struct subprocess_info *), void *data);
++
++extern int
++call_usermodehelper_exec(struct subprocess_info *info, int wait);
++
+ static inline int
+ call_usermodehelper(char *path, char **argv, char **envp, int wait)
+ {
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 56dd349..b39f240 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -502,14 +502,28 @@ static void helper_unlock(void)
+  * @argv: arg vector for process
+  * @envp: environment for process
+  * @gfp_mask: gfp mask for memory allocation
++ * @cleanup: a cleanup function
++ * @init: an init function
++ * @data: arbitrary context sensitive data
+  *
+  * Returns either %NULL on allocation failure, or a subprocess_info
+  * structure.  This should be passed to call_usermodehelper_exec to
+  * exec the process and free the structure.
++ *
++ * The init function is used to customize the helper process prior to
++ * exec.  A non-zero return code causes the process to error out, exit,
++ * and return the failure to the calling process
++ *
++ * The cleanup function is just before ethe subprocess_info is about to
++ * be freed.  This can be used for freeing the argv and envp.  The
++ * Function must be runnable in either a process context or the
++ * context in which call_usermodehelper_exec is called.
+  */
+-static
+ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+-						  char **envp, gfp_t gfp_mask)
++		char **envp, gfp_t gfp_mask,
++		int (*init)(struct subprocess_info *info, struct cred *new),
++		void (*cleanup)(struct subprocess_info *info),
++		void *data)
+ {
+ 	struct subprocess_info *sub_info;
+ 	sub_info = kzalloc(sizeof(struct subprocess_info), gfp_mask);
+@@ -520,38 +534,15 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+ 	sub_info->path = path;
+ 	sub_info->argv = argv;
+ 	sub_info->envp = envp;
++
++	sub_info->cleanup = cleanup;
++	sub_info->init = init;
++	sub_info->data = data;
+   out:
+ 	return sub_info;
+ }
+ 
+ /**
+- * call_usermodehelper_setfns - set a cleanup/init function
+- * @info: a subprocess_info returned by call_usermodehelper_setup
+- * @cleanup: a cleanup function
+- * @init: an init function
+- * @data: arbitrary context sensitive data
+- *
+- * The init function is used to customize the helper process prior to
+- * exec.  A non-zero return code causes the process to error out, exit,
+- * and return the failure to the calling process
+- *
+- * The cleanup function is just before ethe subprocess_info is about to
+- * be freed.  This can be used for freeing the argv and envp.  The
+- * Function must be runnable in either a process context or the
+- * context in which call_usermodehelper_exec is called.
+- */
+-static
+-void call_usermodehelper_setfns(struct subprocess_info *info,
+-		    int (*init)(struct subprocess_info *info, struct cred *new),
+-		    void (*cleanup)(struct subprocess_info *info),
+-		    void *data)
+-{
+-	info->cleanup = cleanup;
+-	info->init = init;
+-	info->data = data;
+-}
+-
+-/**
+  * call_usermodehelper_exec - start a usermode application
+  * @sub_info: information about the subprocessa
+  * @wait: wait for the application to finish and return status.
+@@ -563,7 +554,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
+  * asynchronously if wait is not set, and runs as a child of keventd.
+  * (ie. it runs with full root capabilities).
+  */
+-static
+ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(done);
+@@ -615,6 +605,7 @@ unlock:
+ 	helper_unlock();
+ 	return retval;
+ }
++EXPORT_SYMBOL(call_usermodehelper_exec);
+ 
+ /*
+  * call_usermodehelper_fns() will not run the caller-provided cleanup function
+@@ -630,13 +621,12 @@ int call_usermodehelper_fns(
+ 	struct subprocess_info *info;
+ 	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+ 
+-	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
++	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
++					 init, cleanup, data);
+ 
+ 	if (info == NULL)
+ 		return -ENOMEM;
+ 
+-	call_usermodehelper_setfns(info, init, cleanup, data);
+-
+ 	return call_usermodehelper_exec(info, wait);
+ }
+ EXPORT_SYMBOL(call_usermodehelper_fns);
 -- 
-1.7.0.4
-
-
+1.8.1.5
 
