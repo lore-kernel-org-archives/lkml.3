@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab3CLWCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:02:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43184 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190Ab3CLWCX (ORCPT
+	id S932302Ab3CLWCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:02:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59871 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab3CLWCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:02:23 -0400
-Date: Tue, 12 Mar 2013 23:01:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Travis <travis@sgi.com>
-cc: Jason Wessel <jason.wessel@windriver.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Cong Wang <amwang@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH 05/14] KDB: add more exports for supporting KDB modules
-In-Reply-To: <20130312193824.025713118@gulag1.americas.sgi.com>
-Message-ID: <alpine.LFD.2.02.1303122245310.22263@ionos>
-References: <20130312193823.212544181@gulag1.americas.sgi.com> <20130312193824.025713118@gulag1.americas.sgi.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 12 Mar 2013 18:02:38 -0400
+Date: Tue, 12 Mar 2013 15:02:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: ipc/testmsg GPF.
+Message-Id: <20130312150236.27ba998a00d31470a2d8aca0@linux-foundation.org>
+In-Reply-To: <1363028602.3234.38.camel@thor.lan>
+References: <20130307213819.GB19543@redhat.com>
+	<1362788821.7755.12.camel@thor.lan>
+	<20130311182621.GA24965@redhat.com>
+	<1363028602.3234.38.camel@thor.lan>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Mar 2013, Mike Travis wrote:
-> This patch adds some important KDB functions to be externally
-> usable by loadable KDB modules.  Note that often drivers bring
-> in KDB modules for debugging, and in the past KDB has not been
-> limited to use by GPL only modules.  This patch restores KDB
-> usefullness to non-GPL modules.
+On Mon, 11 Mar 2013 15:03:22 -0400 Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Which past? We only care about Linus git tree as THE past.
+> On Mon, 2013-03-11 at 14:26 -0400, Dave Jones wrote:
+> >  > >         {
+> > 
+> > I just hit this again on rc2 which looks like it has the fixes that
+> > Peter mentions above.  This time rdi was 6b6b6b6b6b6b6b7b
+> > 
+> > 	Dave
+> 
+> Sorry, Dave. The fix must be in the other 8 patches that Andrew didn't
+> want to apply. I run trinity 10 or more times a day and can't get this
+> to trigger with the whole series.
 
-> -EXPORT_SYMBOL_GPL(kdb_register);
-> +EXPORT_SYMBOL(kdb_register);
-
-AFAICT that function has never been an non GPL symbol in Linus
-tree. Whatever the original out of tree kdb stuff used is totally
-irrelevant.
-
-Stop trying to resolve your companys or your companys customers legal
-issues by false claims.
-
-The GPL is there for a reason.
-
-Aside of that the whole attempt to export stuff which has been not
-exported before without the _GPL extension is also:
-
-	 Nacked-by: Thomas Gleixner <tglx@linutronix.de>
-
-Thanks,
-
-	tglx
+Are you able to reproduce the bug with current mainline?
