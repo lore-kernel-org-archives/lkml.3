@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964952Ab3CLWsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:48:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60723 "EHLO
+	id S964893Ab3CLWsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933871Ab3CLWol (ORCPT
+	with ESMTP id S964862Ab3CLWoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:41 -0400
+	Tue, 12 Mar 2013 18:44:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 11/21] hwmon: (sht15) Check return value of regulator_enable()
-Date: Tue, 12 Mar 2013 15:44:13 -0700
-Message-Id: <20130312223246.431610777@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 07/21] SUNRPC: Dont start the retransmission timer when out of socket space
+Date: Tue, 12 Mar 2013 15:44:09 -0700
+Message-Id: <20130312223245.978272027@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -27,36 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 3e78080f81481aa8340374d5a37ae033c1cf4272 upstream.
+commit a9a6b52ee1baa865283a91eb8d443ee91adfca56 upstream.
 
-Not having power is a pretty serious error so check that we are able to
-enable the supply and error out if we can't.
+If the socket is full, we're better off just waiting until it empties,
+or until the connection is broken. The reason why we generally don't
+want to time out is that the call to xprt->ops->release_xprt() will
+trigger a connection reset, which isn't helpful...
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Let's make an exception for soft RPC calls, since they have to provide
+timeout guarantees.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/sht15.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/sunrpc/xprt.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -926,7 +926,13 @@ static int __devinit sht15_probe(struct
- 		if (voltage)
- 			data->supply_uV = voltage;
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -471,13 +471,17 @@ EXPORT_SYMBOL_GPL(xprt_wake_pending_task
+  * xprt_wait_for_buffer_space - wait for transport output buffer to clear
+  * @task: task to be put to sleep
+  * @action: function pointer to be executed after wait
++ *
++ * Note that we only set the timer for the case of RPC_IS_SOFT(), since
++ * we don't in general want to force a socket disconnection due to
++ * an incomplete RPC call transmission.
+  */
+ void xprt_wait_for_buffer_space(struct rpc_task *task, rpc_action action)
+ {
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
  
--		regulator_enable(data->reg);
-+		ret = regulator_enable(data->reg);
-+		if (ret != 0) {
-+			dev_err(&pdev->dev,
-+				"failed to enable regulator: %d\n", ret);
-+			return ret;
-+		}
-+
- 		/*
- 		 * Setup a notifier block to update this if another device
- 		 * causes the voltage to change
+-	task->tk_timeout = req->rq_timeout;
++	task->tk_timeout = RPC_IS_SOFT(task) ? req->rq_timeout : 0;
+ 	rpc_sleep_on(&xprt->pending, task, action);
+ }
+ EXPORT_SYMBOL_GPL(xprt_wait_for_buffer_space);
 
 
