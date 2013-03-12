@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3CLA3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:29:03 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55703 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab3CLA3B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:29:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130312001722.GB973@dcvr.yhbt.net>
-References: <20130307112639.GA25130@dcvr.yhbt.net>
-	<20130308013027.GA31830@dcvr.yhbt.net>
-	<CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
-	<20130308204944.GA27379@dcvr.yhbt.net>
-	<CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
-	<20130309071037.GA13360@dcvr.yhbt.net>
-	<CAMP5Xgdy9hJE1JCHYN2iK9W3UQvmgBGHH_9Jy2-mQyNxkHGwTQ@mail.gmail.com>
-	<20130312001722.GB973@dcvr.yhbt.net>
-Date: Mon, 11 Mar 2013 17:29:00 -0700
-Message-ID: <CAMP5Xgcr97gcD6noP=vkTN7jLrhNGZ2VLVMkOKx+puoP8AiJDA@mail.gmail.com>
-Subject: Re: epoll: possible bug from wakeup_source activation
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754785Ab3CLAaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:30:01 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51780 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754446Ab3CLA37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:29:59 -0400
+Message-ID: <1363048198.3724.15.camel@joe-AO722>
+Subject: Re: [PATCH v2 3/3] drivers: android: binder: Remove excessive
+ indentation
+From: Joe Perches <joe@perches.com>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Mirsal Ennaime <mirsal@mirsal.fr>, Greg Kroah-Hartman <greg@kroah.com>,
+        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Mon, 11 Mar 2013 17:29:58 -0700
+In-Reply-To: <CAMP5XgfwCQDnRvog1tWixo=-mTb4tTZCy33h+Y__H7cW_N_M7g@mail.gmail.com>
+References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
+	 <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
+	 <1363044388-11409-4-git-send-email-mirsal@mirsal.fr>
+	 <1363046657.3724.11.camel@joe-AO722>
+	 <CAMP5XgfwCQDnRvog1tWixo=-mTb4tTZCy33h+Y__H7cW_N_M7g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 5:17 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> Arve Hjønnevåg <arve@android.com> wrote:
->> On Fri, Mar 8, 2013 at 11:10 PM, Eric Wong <normalperson@yhbt.net> wrote:
->> > Arve Hjønnevåg <arve@android.com> wrote:
->> >> On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
->> >> > What happens if ep_modify calls ep_destroy_wakeup_source
->> >> > while __pm_stay_awake is running on the same epi->ws?
->> >>
->> >> Yes, that looks like a problem. I think calling
->> >> ep_destroy_wakeup_source with ep->lock held should fix that. It is not
->> >> clear how useful changing EPOLLWAKEUP in ep_modify is, so
->> >> alternatively we could remove that feature and instead only allow it
->> >> to be set in ep_insert.
->> >
->> > ep->lock would work, but ep->lock is already a source of heavy
->> > contention in my multithreaded+epoll webservers.
->>
->> This should not have any significant impact on that since you would be
->> adding a lock to a code path that is, as far as I know, unused.
->>
->> > Perhaps RCU can be used?  I've no experience with RCU, but I've been
->> > meaning to get acquainted with RCU.
->>
->> That adds code to the common path however. The wakeup_source is not
->> touch without holding one of the locks so holding both locks before
->> deleting it seems like a simpler solution.
->
-> True.  However, I've been looking into eliminating ep->lock in more
-> places (maybe entirely)[1].
->
-> I don't think the current overhead of RCU in epoll is significant,
-> either.
->
->
-> [1] I'll be testing Mathieu's wait-free concurrent queue soon:
->     http://mid.gmane.org/20130311213602.GB9829@Krystal
+On Mon, 2013-03-11 at 17:21 -0700, Arve Hjønnevåg wrote:
+> On Mon, Mar 11, 2013 at 5:04 PM, Joe Perches <joe@perches.com> wrote:
+> ...
+> > I think it's odd to use pr_info in binder_debug.
+> > Why not use KERN_DEBUG or pr_debug/dynamic_debugging?
+> >
+> > #define binder_debug(mask, x...) \
+> >         do { \
+> >                 if (binder_debug_mask & mask) \
+> >                         pr_info(x); \
+> >         } while (0)
+> >
+> >
+> 
+> This code predates the dynamic_debugging framework, but I also find it
+> easier to use so I would be reluctant to convert it unless there is an
+> easy way to match the current behavior. It is useful to turn a set of
+> debug messages on by class and to have some classes on by default.
 
-OK, but is there any way you could use the same locking scheme for the
-wakeup_source and the queue?
+No doubt it's easier this way and there are many, many
+macros like it sprinkled throughout the kernel sources.
 
--- 
-Arve Hjønnevåg
+The dynamic_debug framework currently has no mask/level
+use than can turn on/off classes of messages.
+
+Emitting at KERN_INFO instead of KERN_DEBUG though is odd.
+
+
+
+
+
