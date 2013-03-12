@@ -1,157 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab3CLK6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:58:45 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:44029 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab3CLK6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:58:44 -0400
-From: Markos Chandras <markos.chandras@imgtec.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "Jaehoon Chung" <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3/3] dw_mmc: Handle unaligned data submission correctly
-Date: Tue, 12 Mar 2013 10:53:13 +0000
-Message-ID: <1363085593-22214-3-git-send-email-markos.chandras@imgtec.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
-References: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
+	id S1755342Ab3CLLD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:03:59 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39595 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab3CLLD5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 07:03:57 -0400
+Message-ID: <513F0B9B.5050307@hitachi.com>
+Date: Tue, 12 Mar 2013 20:03:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_12_10_58_31
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
+ section
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522> <20130312081628.GA30665@gmail.com>
+In-Reply-To: <20130312081628.GA30665@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f9c2a0dc42a6938ff2a80e55ca2bbd1d5581c72e
-"mmc: dw_mmc: Fix PIO mode with support of highmem" introduced
-a regression since v3.2 making the mmc_test hang on test #13
-with a "Data starvation by host timeout" interrupt.
+(2013/03/12 17:16), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Beacuse hash_64() is called from the get_kprobe() inside
+>> int3 handler, kernel causes int3 recursion and crashes if
+>> kprobes user puts a probe on it.
+>>
+>> Usually hash_64() is inlined into caller function, but in
+>> some cases, it has instances by gcc's interprocedural
+>> constant propagation.
+>>
+>> This patch adds __kprobes tag on the hash_64() and moves
+>> all those instances into .text.kprobe section so that
+>> kprobes can refuse probing on the instances.
+>>
+>> I've ensured that all hash_64 instances moves to the
+>> address between __kprobes_text_start and __kprobes_text_end
+>> with this patch as below.
+>>
+>> ffffffff8138bea0 T __kprobes_text_start
+>> ffffffff8138bec0 t hash_64.constprop.8
+>> ffffffff8138ef98 t hash_64.constprop.26
+>> ffffffff8138efae t hash_64
+>> ffffffff8138f066 t hash_64.constprop.43
+>> ffffffff8138f649 t hash_64.constprop.25
+>> ffffffff8139103a t hash_64.constprop.77
+>> ffffffff81391050 t hash_64.constprop.24
+>> ffffffff81391066 t hash_64.constprop.40
+>> ffffffff8139107c t hash_64.constprop.15
+>> ffffffff81391092 T __kprobes_text_end
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+>> Cc: Pavel Emelyanov <xemul@parallels.com>
+>> Cc: Jiri Kosina <jkosina@suse.cz>
+>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>> ---
+>>  include/linux/hash.h |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/hash.h b/include/linux/hash.h
+>> index 61c97ae..d83f62f 100644
+>> --- a/include/linux/hash.h
+>> +++ b/include/linux/hash.h
+>> @@ -15,6 +15,7 @@
+>>   */
+>>  
+>>  #include <asm/types.h>
+>> +#include <linux/kprobes.h>
+> 
+> I have no objections to the fix itself, but this inclusion of kprobes.h in 
+> hash.h is somewhat sad: kprobes.h is a 'fat' header that includes a lot of 
+> header files - while hash.h is a really basic type header included in 
+> close to a hundred .c files.
+> 
+> I think one solution would be for the __kprobes definition to move to a 
+> more basic header file - such as types.h or compiler.h (where the 
+> 'notrace' attribute is placed too), to stop this header dependency creep.
 
-This is because, sg_mapping_iter is used to iterate through the
-data which spans on multiple pages. The problem is detected on
-unaligned data submission where the code previously checked for
-!(sg_next(host->sg)) which is true because we only have a single
-scatter/gather list which then expands to multiple pages.
-Therefore, the driver incorrectly assumed that this was the last
-list item and submitted unaligned data to the mmc device. This
-overflowed the FIFO on the device before all the data were written
-to it. The code was fixed to only submit unaligned data when we are
-handling the last sg_miter item by checking whether we reached
-the desired data length or not.
+Agreed, that sounds nice to me too!
 
-The patch was tested against mmc_test and all the tests passed.
+Thank you,
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>
----
-The patch is based on Chris Ball's mmc-next branch
-
- drivers/mmc/host/dw_mmc.c |   33 ++++++++++++++++++++++++---------
- 1 files changed, 24 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 4e7a5c8..d3f68d4 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1191,12 +1191,15 @@ static void dw_mci_pull_final_bytes(struct dw_mci *host, void *buf, int cnt)
- 
- static void dw_mci_push_data16(struct dw_mci *host, void *buf, int cnt)
- {
-+	struct mmc_data *data = host->data;
-+	int init_cnt = cnt;
-+
- 	/* try and push anything in the part_buf */
- 	if (unlikely(host->part_buf_count)) {
- 		int len = dw_mci_push_part_bytes(host, buf, cnt);
- 		buf += len;
- 		cnt -= len;
--		if (!sg_next(host->sg) || host->part_buf_count == 2) {
-+		if (host->part_buf_count == 2) {
- 			mci_writew(host, DATA(host->data_offset),
- 					host->part_buf16);
- 			host->part_buf_count = 0;
-@@ -1229,9 +1232,11 @@ static void dw_mci_push_data16(struct dw_mci *host, void *buf, int cnt)
- 	/* put anything remaining in the part_buf */
- 	if (cnt) {
- 		dw_mci_set_part_bytes(host, buf, cnt);
--		if (!sg_next(host->sg))
-+		 /* Push data if we have reached the expected data length */
-+		if ((data->bytes_xfered + init_cnt) ==
-+		    (data->blksz * data->blocks))
- 			mci_writew(host, DATA(host->data_offset),
--					host->part_buf16);
-+				   host->part_buf16);
- 	}
- }
- 
-@@ -1269,12 +1274,15 @@ static void dw_mci_pull_data16(struct dw_mci *host, void *buf, int cnt)
- 
- static void dw_mci_push_data32(struct dw_mci *host, void *buf, int cnt)
- {
-+	struct mmc_data *data = host->data;
-+	int init_cnt = cnt;
-+
- 	/* try and push anything in the part_buf */
- 	if (unlikely(host->part_buf_count)) {
- 		int len = dw_mci_push_part_bytes(host, buf, cnt);
- 		buf += len;
- 		cnt -= len;
--		if (!sg_next(host->sg) || host->part_buf_count == 4) {
-+		if (host->part_buf_count == 4) {
- 			mci_writel(host, DATA(host->data_offset),
- 					host->part_buf32);
- 			host->part_buf_count = 0;
-@@ -1307,9 +1315,11 @@ static void dw_mci_push_data32(struct dw_mci *host, void *buf, int cnt)
- 	/* put anything remaining in the part_buf */
- 	if (cnt) {
- 		dw_mci_set_part_bytes(host, buf, cnt);
--		if (!sg_next(host->sg))
-+		 /* Push data if we have reached the expected data length */
-+		if ((data->bytes_xfered + init_cnt) ==
-+		    (data->blksz * data->blocks))
- 			mci_writel(host, DATA(host->data_offset),
--						host->part_buf32);
-+				   host->part_buf32);
- 	}
- }
- 
-@@ -1347,12 +1357,15 @@ static void dw_mci_pull_data32(struct dw_mci *host, void *buf, int cnt)
- 
- static void dw_mci_push_data64(struct dw_mci *host, void *buf, int cnt)
- {
-+	struct mmc_data *data = host->data;
-+	int init_cnt = cnt;
-+
- 	/* try and push anything in the part_buf */
- 	if (unlikely(host->part_buf_count)) {
- 		int len = dw_mci_push_part_bytes(host, buf, cnt);
- 		buf += len;
- 		cnt -= len;
--		if (!sg_next(host->sg) || host->part_buf_count == 8) {
-+		if (host->part_buf_count == 8) {
- 			mci_writew(host, DATA(host->data_offset),
- 					host->part_buf);
- 			host->part_buf_count = 0;
-@@ -1385,9 +1398,11 @@ static void dw_mci_push_data64(struct dw_mci *host, void *buf, int cnt)
- 	/* put anything remaining in the part_buf */
- 	if (cnt) {
- 		dw_mci_set_part_bytes(host, buf, cnt);
--		if (!sg_next(host->sg))
-+		/* Push data if we have reached the expected data length */
-+		if ((data->bytes_xfered + init_cnt) ==
-+		    (data->blksz * data->blocks))
- 			mci_writeq(host, DATA(host->data_offset),
--					host->part_buf);
-+				   host->part_buf);
- 	}
- }
- 
 -- 
-1.7.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
