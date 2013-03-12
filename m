@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab3CLKGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:06:21 -0400
-Received: from smtp5.epfl.ch ([128.178.224.8]:38589 "HELO smtp5.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932241Ab3CLKGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:06:20 -0400
-Message-ID: <513EFE17.6030203@epfl.ch>
-Date: Tue, 12 Mar 2013 11:06:15 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Florian Vaussard <florian.vaussard@epfl.ch>
-Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
- sleep
-References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch> <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de> <512E2F98.6070404@epfl.ch> <51347B06.8090604@epfl.ch> <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932376Ab3CLKJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:09:08 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44096
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754962Ab3CLKJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:09:07 -0400
+Message-ID: <1363082932.14933.19.camel@laptop>
+Subject: Re: [PATCH] sched: wakeup buddy
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Tue, 12 Mar 2013 11:08:52 +0100
+In-Reply-To: <513E9FC6.4060507@linux.vnet.ibm.com>
+References: <5136EB06.2050905@linux.vnet.ibm.com>
+	 <1362677252.10972.26.camel@laptop> <5139520C.1060109@linux.vnet.ibm.com>
+	 <1362998219.14933.9.camel@laptop> <513E9FC6.4060507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+Does something simple like a per-task throttle of wake_affine() gain
+similar benefits? Say something like only do wake_affine() once every
+10 ms or so (counting on the wakee, not waker).
 
->>>>
->>>> Bryan, I assume that you'll be taking this? It doesn't apply cleanly to
->>>> my tree, probably because of Peter's recent changes that you took
->>>> through your tree and Florian based his patches on top of that. The
->>>> conflict resolution should be trivial, though.
->>>>
->>>
->>> It seems that this patch was not taken. Could you pull it, as the other
->>> part is already in linux-pwm? Or is there any show stopper?
->>>
->>
->> Ping? Who should merge this?
->
-> I assume Bryan will take it through the LED tree? Patches 1 & 2 went
-> into v3.9-rc1 through the PWM tree.
->
+The rationale being that wake_affine() relies on load-balance
+statistics that aren't updated that much faster, so calling it more
+often than that seems pointless.
 
-Ping ?
+Something like that should take a lot less lines to implement.
 
-Florian
+Just wondering..
+
