@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab3CLXAC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:00:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60529 "EHLO
+	id S933915Ab3CLXAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:00:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017Ab3CLWoF (ORCPT
+	with ESMTP id S1755978Ab3CLWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:05 -0400
+	Tue, 12 Mar 2013 18:33:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Pisati <p.pisati@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 02/40] ARM: fix scheduling while atomic warning in alignment handling code
-Date: Tue, 12 Mar 2013 15:43:23 -0700
-Message-Id: <20130312223211.739574245@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Russ Dill <Russ.Dill@gmail.com>
+Subject: [ 065/100] random: fix locking dependency with the tasklist_lock
+Date: Tue, 12 Mar 2013 15:31:50 -0700
+Message-Id: <20130312223129.960540099@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
-References: <20130312223211.492954675@linuxfoundation.org>
+In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
+References: <20130312223122.884099393@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit b255188f90e2bade1bd11a986dd1ca4861869f4d upstream.
+commit b980955236922ae6106774511c5c05003d3ad225 upstream.
 
-Paolo Pisati reports that IPv6 triggers this warning:
+Commit 6133705494bb introduced a circular lock dependency because
+posix_cpu_timers_exit() is called by release_task(), which is holding
+a writer lock on tasklist_lock, and this can cause a deadlock since
+kill_fasync() gets called with nonblocking_pool.lock taken.
 
-BUG: scheduling while atomic: swapper/0/0/0x40000100
-Modules linked in:
-[<c001b1c4>] (unwind_backtrace+0x0/0xf0) from [<c0503c5c>] (__schedule_bug+0x48/0x5c)
-[<c0503c5c>] (__schedule_bug+0x48/0x5c) from [<c0508608>] (__schedule+0x700/0x740)
-[<c0508608>] (__schedule+0x700/0x740) from [<c007007c>] (__cond_resched+0x24/0x34)
-[<c007007c>] (__cond_resched+0x24/0x34) from [<c05086dc>] (_cond_resched+0x3c/0x44)
-[<c05086dc>] (_cond_resched+0x3c/0x44) from [<c0021f6c>] (do_alignment+0x178/0x78c)
-[<c0021f6c>] (do_alignment+0x178/0x78c) from [<c00083e0>] (do_DataAbort+0x34/0x98)
-[<c00083e0>] (do_DataAbort+0x34/0x98) from [<c0509a60>] (__dabt_svc+0x40/0x60)
-Exception stack(0xc0763d70 to 0xc0763db8)
-3d60:                                     e97e805e e97e806e 2c000000 11000000
-3d80: ea86bb00 0000002c 00000011 e97e807e c076d2a8 e97e805e e97e806e 0000002c
-3da0: 3d000000 c0763dbc c04b98fc c02a8490 00000113 ffffffff
-[<c0509a60>] (__dabt_svc+0x40/0x60) from [<c02a8490>] (__csum_ipv6_magic+0x8/0xc8)
+There's no reason why kill_fasync() needs to be taken while the random
+pool is locked, so move it out to fix this locking dependency.
 
-Fix this by using probe_kernel_address() stead of __get_user().
-
-Reported-by: Paolo Pisati <p.pisati@gmail.com>
-Tested-by: Paolo Pisati <p.pisati@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Russ Dill <Russ.Dill@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/alignment.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/char/random.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -750,7 +750,6 @@ do_alignment(unsigned long addr, unsigne
- 	unsigned long instr = 0, instrptr;
- 	int (*handler)(unsigned long addr, unsigned long instr, struct pt_regs *regs);
- 	unsigned int type;
--	mm_segment_t fs;
- 	unsigned int fault;
- 	u16 tinstr = 0;
- 	int isize = 4;
-@@ -761,16 +760,15 @@ do_alignment(unsigned long addr, unsigne
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -852,6 +852,7 @@ static size_t account(struct entropy_sto
+ 		      int reserved)
+ {
+ 	unsigned long flags;
++	int wakeup_write = 0;
  
- 	instrptr = instruction_pointer(regs);
+ 	/* Hold lock while accounting */
+ 	spin_lock_irqsave(&r->lock, flags);
+@@ -873,10 +874,8 @@ static size_t account(struct entropy_sto
+ 		else
+ 			r->entropy_count = reserved;
  
--	fs = get_fs();
--	set_fs(KERNEL_DS);
- 	if (thumb_mode(regs)) {
--		fault = __get_user(tinstr, (u16 *)(instrptr & ~1));
-+		u16 *ptr = (u16 *)(instrptr & ~1);
-+		fault = probe_kernel_address(ptr, tinstr);
- 		if (!fault) {
- 			if (cpu_architecture() >= CPU_ARCH_ARMv7 &&
- 			    IS_T32(tinstr)) {
- 				/* Thumb-2 32-bit */
- 				u16 tinst2 = 0;
--				fault = __get_user(tinst2, (u16 *)(instrptr+2));
-+				fault = probe_kernel_address(ptr + 1, tinst2);
- 				instr = (tinstr << 16) | tinst2;
- 				thumb2_32b = 1;
- 			} else {
-@@ -779,8 +777,7 @@ do_alignment(unsigned long addr, unsigne
- 			}
- 		}
- 	} else
--		fault = __get_user(instr, (u32 *)instrptr);
--	set_fs(fs);
-+		fault = probe_kernel_address(instrptr, instr);
+-		if (r->entropy_count < random_write_wakeup_thresh) {
+-			wake_up_interruptible(&random_write_wait);
+-			kill_fasync(&fasync, SIGIO, POLL_OUT);
+-		}
++		if (r->entropy_count < random_write_wakeup_thresh)
++			wakeup_write = 1;
+ 	}
  
- 	if (fault) {
- 		type = TYPE_FAULT;
+ 	DEBUG_ENT("debiting %zu entropy credits from %s%s\n",
+@@ -884,6 +883,11 @@ static size_t account(struct entropy_sto
+ 
+ 	spin_unlock_irqrestore(&r->lock, flags);
+ 
++	if (wakeup_write) {
++		wake_up_interruptible(&random_write_wait);
++		kill_fasync(&fasync, SIGIO, POLL_OUT);
++	}
++
+ 	return nbytes;
+ }
+ 
 
 
