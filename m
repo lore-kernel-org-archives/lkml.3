@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab3CLFqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:46:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59724 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab3CLFqI (ORCPT
+	id S932244Ab3CLFq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:46:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33733 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab3CLFqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:46:08 -0400
-Date: Tue, 12 Mar 2013 16:45:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build warning after merge of the final tree (tip
- tree related)
-Message-Id: <20130312164558.f352a1189f8c99ab73518002@canb.auug.org.au>
-In-Reply-To: <513EBA25.8060106@huawei.com>
-References: <20130312154215.f9c3e957c2a2e510f27b826a@canb.auug.org.au>
-	<513EBA25.8060106@huawei.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_16_45_58_+1100_2=97eZlAb1iF.tQk"
+	Tue, 12 Mar 2013 01:46:24 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-fe-513ec12ec303
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>,
+        "'Herbert Xu'" <herbert@gondor.hengli.com.au>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] hwrng: exynos - add CONFIG_PM_SLEEP to suspend/resume functions
+Date: Tue, 12 Mar 2013 14:46:22 +0900
+Message-id: <003a01ce1ee4$ed8842b0$c898c810$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4e5OiAZ5g7NBjLRumw0P5S25o2nA==
+Content-language: ko
+x-cr-hashedpuzzle: BISX EA8P Ifsp K6zy MCaL Of2x R1gy TR8D WbhZ cldx hO0T ihQv
+ js4U nGM6 vTzX
+ 1QRc;5;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGgAZQByAGIAZQByAHQAQABnAG8AbgBkAG8AcgAuAGEAcABhAG4AYQAuAG8AcgBnAC4AYQB1ADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAHAAbQBAAHMAZQBsAGUAbgBpAGMALgBjAG8AbQA=;Sosha1_v1;7;{725CD89F-1554-4BCC-84D6-4F356746A523};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Tue,
+ 12 Mar 2013 05:46:14
+ GMT;WwBQAEEAVABDAEgAXQAgAGgAdwByAG4AZwA6ACAAZQB4AHkAbgBvAHMAIAAtACAAYQBkAGQAIABDAE8ATgBGAEkARwBfAFAATQBfAFMATABFAEUAUAAgAHQAbwAgAHMAdQBzAHAAZQBuAGQALwByAGUAcwB1AG0AZQAgAGYAdQBuAGMAdABpAG8AbgBzAA==
+x-cr-puzzleid: {725CD89F-1554-4BCC-84D6-4F356746A523}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zI129g3aBBs9umlhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mk1u8C/5xVrSc2MfawHiWo4uRk0NCwERiblM/M4QtJnHh3nq2
+	LkYuDiGBZYwS85+uYYYpunb/GjNEYhGjxNFdhxghnNlMEk8WTmMHqWITUJP48uUwkM3BISKg
+	L9HWogFSwywwhVHi4tpmJpAaYYEAie1Ht7OA2CwCqhLL7hwFi/MK2Eq8ermQEcIWlPgx+R5Y
+	DbOAlsT6nceZIGx5ic1r3jKDzJcQUJd49FcXJCwioCfxZ1s3I0SJiMS+F+/AbpMQ+MAqMa/v
+	CSvEB6YS7dMXMEEklrFL7PvxD+oIAYlvkw+xQAyVldh0AOpjSYmDK26wTGCUmIXkpFlITpqF
+	5KRZSHYvYGRZxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iRESW307GG8esD7EmAy0fiKzlGhy
+	PjA280riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	uEq3cDevyp8rBXZpjRcDPl14e31pVPP2xGk8ysn/tz2r1wn8F65TH3PIa+0RmRa1lqbI1VO5
+	nFdcX8/slXla/eraJY23U3YuWrT2plBU7C7nV294zspOvnNS9EVF0pEn2l8zp7hm9nPUd6uz
+	f8qoic88ffbQ45xpWpeOvGHjPXU3/bLFua0sl5VYijMSDbWYi4oTAXoGv1rDAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgK7eQbtAg7Y+fYvLu+awOTB6fN4k
+	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
+	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcXKLd8E/zoqWE/tYGxjP
+	cnQxcnJICJhIXLt/jRnCFpO4cG89WxcjF4eQwCJGiaO7DjFCOLOZJJ4snMYOUsUmoCbx5cth
+	IJuDQ0RAX6KtRQOkhllgCqPExbXNTCA1wgIBEtuPbmcBsVkEVCWW3TkKFucVsJV49XIhI4Qt
+	KPFj8j2wGmYBLYn1O48zQdjyEpvXvGUGmS8hoC7x6K8uSFhEQE/iz7ZuRogSEYl9L96B3SYh
+	8IFVYl7fE1aID0wl2qcvYJrAKDQLyYpZSFbMQrJiFpJZCxhZVjGKphYkFxQnpeca6hUn5haX
+	5qXrJefnbmIER+4zqR2MKxssDjEKcDAq8fAqfrMNFGJNLCuuzD3EKMHBrCTCm7HZLlCINyWx
+	siq1KD++qDQntfgQYzIwBCYyS4km5wOTSl5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNIT
+	S1KzU1MLUotgtjBxcEo1MGqd5Df6tv6T1I8GrY4Ct57tz1/43VO/mnO7/mS6TUvnm5v7kxmm
+	nlSaoX8jWW+L2W/JqEl5Jww0zhr16n1ZnxA353LrtenBn4QPqu2/ZDfp2Jb/rBJFS3y5hBJS
+	pivpTzY3SHqR5OFm9iP56YzS6tQt+/uZra7lRvb8Ddvez34y/UdYJVvOUyWW4oxEQy3mouJE
+	AG9gAFggAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_16_45_58_+1100_2=97eZlAb1iF.tQk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds CONFIG_PM_SLEEP to suspend/resume functions to fix
+the following build warning when CONFIG_PM_SLEEP is not selected.
 
-Hi,
+drivers/char/hw_random/exynos-rng.c:147:12: warning: 'exynos_rng_runtime_suspend' defined but not used [-Wunused-function]
+drivers/char/hw_random/exynos-rng.c:157:12: warning: 'exynos_rng_runtime_resume' defined but not used [-Wunused-function]
 
-On Tue, 12 Mar 2013 13:16:21 +0800 Li Zefan <lizefan@huawei.com> wrote:
->
-> Should be fixed by this, and it has been queued in tip:sched/core
->=20
-> Commit-ID:  b719203b846284e77f5c50fca04b458b6484aeae
-> Gitweb:     http://git.kernel.org/tip/b719203b846284e77f5c50fca04b458b648=
-4aeae
-> Author:     Li Zefan <lizefan@huawei.com>
-> AuthorDate: Thu, 7 Mar 2013 10:00:26 +0800
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Mon, 11 Mar 2013 09:07:24 +0100
->=20
-> sched: Fix update_group_power() prototype placement to fix build warning =
-when !CONFIG_SMP
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/char/hw_random/exynos-rng.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Good, thanks.
+diff --git a/drivers/char/hw_random/exynos-rng.c b/drivers/char/hw_random/exynos-rng.c
+index ac47631..b7e48a2 100644
+--- a/drivers/char/hw_random/exynos-rng.c
++++ b/drivers/char/hw_random/exynos-rng.c
+@@ -144,6 +144,7 @@ static int exynos_rng_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int exynos_rng_runtime_suspend(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -161,7 +162,7 @@ static int exynos_rng_runtime_resume(struct device *dev)
+ 
+ 	return clk_prepare_enable(exynos_rng->clk);
+ }
+-
++#endif
+ 
+ static UNIVERSAL_DEV_PM_OPS(exynos_rng_pm_ops, exynos_rng_runtime_suspend,
+ 					exynos_rng_runtime_resume, NULL);
+-- 
+1.7.2.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__12_Mar_2013_16_45_58_+1100_2=97eZlAb1iF.tQk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPsEWAAoJEECxmPOUX5FEntAP/R/h9qxTIuI32DxGJcPAc+c6
-SApj3hbPd1Jc4EJuFA5SsdnqOcmoOkIwczpC1ChH28fFwFNoZEXbGQ2FG0HUM2r4
-1iRaOCY4Ql0CtfJjBZd6MzGEwCi6CzdmogMQeB3UKn7oAtjWTpXSJ6OmsedNKi8t
-QqENFZ6eeusIoydcYb0tyZQQLIY54aTpXtLMeGcuQpGDSsD99eP1Et95LnO3xI5h
-ZB1uTNC2vjbS9V/mngq96nsaN5Gkc4KYibCiEHWPoFdu5B3/3f14PSDIQDdrE6h0
-zEnFhJEY0E7aXJTh3ucf6JcxEkBvToghR1UcZbkBsEKa8pQ22naSYKOadawTWaa5
-/4E+g/Wnu5NDx+6ZPoLUBRlAPNpx+Jb2rJ3cYlrRcGcGDHsFbUxqbgxgjCAM2apR
-SF5H1ucqzAoNHh6l2/Hys+0OMSaTaaXmD70Iif/wexb8n7nNGGpD2j0zP3A2lBWv
-tZT4QRKqrs47TzNnULc7woXP6enjjVFWxDHcJkNG31KF8uwHAe8z1+ym/RrZFspu
-x4SUO5k/zLTqEyUnLg9zrzpi9Gbf85xg1IZwuDm7VLq51hYeEYGTtRbvETCEEXzR
-qP54tv5dbomgI1Y2HLEL7bc57tZnCG+Hh3Gb38MqC2i0jktWwlxhZieo6+NC4kQS
-I63ZocuRpd/robFe6wzm
-=36UW
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_16_45_58_+1100_2=97eZlAb1iF.tQk--
