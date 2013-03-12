@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3CLWdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60151 "EHLO
+	id S933825Ab3CLWmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:42:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60357 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933382Ab3CLWcy (ORCPT
+	with ESMTP id S1755889Ab3CLWd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:54 -0400
+	Tue, 12 Mar 2013 18:33:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 027/100] SUNRPC: Dont start the retransmission timer when out of socket space
-Date: Tue, 12 Mar 2013 15:31:12 -0700
-Message-Id: <20130312223125.957628840@linuxfoundation.org>
+        Joseph Yasi <joe.yasi@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 071/100] efivars: efivarfs_valid_name() should handle pstore syntax
+Date: Tue, 12 Mar 2013 15:31:56 -0700
+Message-Id: <20130312223130.570872749@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,45 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit a9a6b52ee1baa865283a91eb8d443ee91adfca56 upstream.
+commit 123abd76edf56c02a76b46d3d673897177ef067b upstream.
 
-If the socket is full, we're better off just waiting until it empties,
-or until the connection is broken. The reason why we generally don't
-want to time out is that the call to xprt->ops->release_xprt() will
-trigger a connection reset, which isn't helpful...
+Stricter validation was introduced with commit da27a24383b2b
+("efivarfs: guid part of filenames are case-insensitive") and commit
+47f531e8ba3b ("efivarfs: Validate filenames much more aggressively"),
+which is necessary for the guid portion of efivarfs filenames, but we
+don't need to be so strict with the first part, the variable name. The
+UEFI specification doesn't impose any constraints on variable names
+other than they be a NULL-terminated string.
 
-Let's make an exception for soft RPC calls, since they have to provide
-timeout guarantees.
+The above commits caused a regression that resulted in users seeing
+the following message,
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+  $ sudo mount -v /sys/firmware/efi/efivars mount: Cannot allocate memory
+
+whenever pstore EFI variables were present in the variable store,
+since their variable names failed to pass the following check,
+
+    /* GUID should be right after the first '-' */
+    if (s - 1 != strchr(str, '-'))
+
+as a typical pstore filename is of the form, dump-type0-10-1-<guid>.
+The fix is trivial since the guid portion of the filename is GUID_LEN
+bytes, we can use (len - GUID_LEN) to ensure the '-' character is
+where we expect it to be.
+
+(The bogus ENOMEM error value will be fixed in a separate patch.)
+
+Reported-by: Joseph Yasi <joe.yasi@gmail.com>
+Tested-by: Joseph Yasi <joe.yasi@gmail.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeremy Kerr <jk@ozlabs.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprt.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/firmware/efivars.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -485,13 +485,17 @@ EXPORT_SYMBOL_GPL(xprt_wake_pending_task
-  * xprt_wait_for_buffer_space - wait for transport output buffer to clear
-  * @task: task to be put to sleep
-  * @action: function pointer to be executed after wait
-+ *
-+ * Note that we only set the timer for the case of RPC_IS_SOFT(), since
-+ * we don't in general want to force a socket disconnection due to
-+ * an incomplete RPC call transmission.
-  */
- void xprt_wait_for_buffer_space(struct rpc_task *task, rpc_action action)
- {
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -921,8 +921,8 @@ static bool efivarfs_valid_name(const ch
+ 	if (len < GUID_LEN + 2)
+ 		return false;
  
--	task->tk_timeout = req->rq_timeout;
-+	task->tk_timeout = RPC_IS_SOFT(task) ? req->rq_timeout : 0;
- 	rpc_sleep_on(&xprt->pending, task, action);
- }
- EXPORT_SYMBOL_GPL(xprt_wait_for_buffer_space);
+-	/* GUID should be right after the first '-' */
+-	if (s - 1 != strchr(str, '-'))
++	/* GUID must be preceded by a '-' */
++	if (*(s - 1) != '-')
+ 		return false;
+ 
+ 	/*
 
 
