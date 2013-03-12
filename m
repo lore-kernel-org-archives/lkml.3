@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab3CLQKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:10:45 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:44416 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755465Ab3CLQKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:10:44 -0400
-Message-ID: <513F5382.8080708@slimlogic.co.uk>
-Date: Tue, 12 Mar 2013 16:10:42 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S932964Ab3CLQNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:13:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65214 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932432Ab3CLQNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 12:13:07 -0400
+Date: Tue, 12 Mar 2013 09:13:02 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Daniel Hellstrom <daniel@gaisler.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20130312161302.GA12317@core.coreip.homeip.net>
+References: <20130312153047.dc10eb2392d07af8822e45f1@canb.auug.org.au>
+ <513EF5DD.2010501@gaisler.com>
+ <20130312225719.c70d478eff3e77633d029386@canb.auug.org.au>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: palmas: Use of_property_read_bool to read
- "ti,warm-reset" DT property
-References: <1363102819.3160.1.camel@phoenix>
-In-Reply-To: <1363102819.3160.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312225719.c70d478eff3e77633d029386@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for catching that typo
+On Tue, Mar 12, 2013 at 10:57:19PM +1100, Stephen Rothwell wrote:
+> On Tue, 12 Mar 2013 10:31:09 +0100 Daniel Hellstrom <daniel@gaisler.com> wrote:
+> >
+> > APBPS2 driver is missing linux/slab.h required on at least PowerPC. See patch below. How do you want me to proceed?
+> 
+> That is up to Dmitry - either a fix up patch (with SoB and commit
+> message) or a replacement patch.
 
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
+I fixed up the commit and refreshed the branch.
 
-On 12/03/13 15:40, Axel Lin wrote:
-> It does not make sense to assign return value of of_property_read_u32() to
-> pdata->reg_init[idx]->warm_reset. Use of_property_read_bool() to read
-> "ti,warm-reset" DT property instead which will return correct setting
-> for pdata->reg_init[idx]->warm_reset.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/palmas-regulator.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index b2b1baa..a9b558e 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -554,8 +554,8 @@ static void palmas_dt_to_pdata(struct device *dev,
->  				sizeof(struct palmas_reg_init), GFP_KERNEL);
->  
->  		pdata->reg_init[idx]->warm_reset =
-> -			of_property_read_u32(palmas_matches[idx].of_node,
-> -					     "ti,warm-reset", &prop);
-> +			of_property_read_bool(palmas_matches[idx].of_node,
-> +					     "ti,warm-reset");
->  
->  		pdata->reg_init[idx]->roof_floor =
->  			of_property_read_bool(palmas_matches[idx].of_node,
+Thanks.
 
+-- 
+Dmitry
