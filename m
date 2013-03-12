@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964785Ab3CLWxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:53:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60638 "EHLO
+	id S964822Ab3CLWy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:54:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933874Ab3CLWoY (ORCPT
+	with ESMTP id S933868Ab3CLWoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:24 -0400
+	Tue, 12 Mar 2013 18:44:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 30/40] keys: fix race with concurrent install_user_keyrings()
-Date: Tue, 12 Mar 2013 15:43:51 -0700
-Message-Id: <20130312223214.693614971@linuxfoundation.org>
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 28/40] xen/pat: Disable PAT using pat_enabled value.
+Date: Tue, 12 Mar 2013 15:43:49 -0700
+Message-Id: <20130312223214.477186496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -28,72 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 0da9dfdd2cd9889201bc6f6f43580c99165cd087 upstream.
+commit c79c49826270b8b0061b2fca840fc3f013c8a78a upstream.
 
-This fixes CVE-2013-1792.
+The git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+(xen/pat: Disable PAT support for now) explains in details why
+we want to disable PAT for right now. However that
+change was not enough and we should have also disabled
+the pat_enabled value. Otherwise we end up with:
 
-There is a race in install_user_keyrings() that can cause a NULL pointer
-dereference when called concurrently for the same user if the uid and
-uid-session keyrings are not yet created.  It might be possible for an
-unprivileged user to trigger this by calling keyctl() from userspace in
-parallel immediately after logging in.
+mmap-example:3481 map pfn expected mapping type write-back for
+[mem 0x00010000-0x00010fff], got uncached-minus
+ ------------[ cut here ]------------
+WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774 untrack_pfn+0xb8/0xd0()
+mem 0x00010000-0x00010fff], got uncached-minus
+------------[ cut here ]------------
+WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774
+untrack_pfn+0xb8/0xd0()
+...
+Pid: 3481, comm: mmap-example Tainted: GF 3.8.0-6-generic #13-Ubuntu
+Call Trace:
+ [<ffffffff8105879f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff810587fa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8104bcc8>] untrack_pfn+0xb8/0xd0
+ [<ffffffff81156c1c>] unmap_single_vma+0xac/0x100
+ [<ffffffff81157459>] unmap_vmas+0x49/0x90
+ [<ffffffff8115f808>] exit_mmap+0x98/0x170
+ [<ffffffff810559a4>] mmput+0x64/0x100
+ [<ffffffff810560f5>] dup_mm+0x445/0x660
+ [<ffffffff81056d9f>] copy_process.part.22+0xa5f/0x1510
+ [<ffffffff81057931>] do_fork+0x91/0x350
+ [<ffffffff81057c76>] sys_clone+0x16/0x20
+ [<ffffffff816ccbf9>] stub_clone+0x69/0x90
+ [<ffffffff816cc89d>] ? system_call_fastpath+0x1a/0x1f
+---[ end trace 4918cdd0a4c9fea4 ]---
 
-Assume that we have two threads both executing lookup_user_key(), both
-looking for KEY_SPEC_USER_SESSION_KEYRING.
+(a similar message shows up if you end up launching 'mcelog')
 
-	THREAD A			THREAD B
-	===============================	===============================
-					==>call install_user_keyrings();
-	if (!cred->user->session_keyring)
-	==>call install_user_keyrings()
-					...
-					user->uid_keyring = uid_keyring;
-	if (user->uid_keyring)
-		return 0;
-	<==
-	key = cred->user->session_keyring [== NULL]
-					user->session_keyring = session_keyring;
-	atomic_inc(&key->usage); [oops]
+The call chain is (as analyzed by Liu, Jinsong):
+do_fork
+  --> copy_process
+    --> dup_mm
+      --> dup_mmap
+       	--> copy_page_range
+          --> track_pfn_copy
+            --> reserve_pfn_range
+              --> line 624: flags != want_flags
+It comes from different memory types of page table (_PAGE_CACHE_WB) and MTRR
+(_PAGE_CACHE_UC_MINUS).
 
-At the point thread A dereferences cred->user->session_keyring, thread B
-hasn't updated user->session_keyring yet, but thread A assumes it is
-populated because install_user_keyrings() returned ok.
+Stefan Bader dug in this deep and found out that:
+"That makes it clearer as this will do
 
-The race window is really small but can be exploited if, for example,
-thread B is interrupted or preempted after initializing uid_keyring, but
-before doing setting session_keyring.
+reserve_memtype(...)
+--> pat_x_mtrr_type
+  --> mtrr_type_lookup
+    --> __mtrr_type_lookup
 
-This couldn't be reproduced on a stock kernel.  However, after placing
-systemtap probe on 'user->session_keyring = session_keyring;' that
-introduced some delay, the kernel could be crashed reliably.
+And that can return -1/0xff in case of MTRR not being enabled/initialized. Which
+is not the case (given there are no messages for it in dmesg). This is not equal
+to MTRR_TYPE_WRBACK and thus becomes _PAGE_CACHE_UC_MINUS.
 
-Fix this by checking both pointers before deciding whether to return.
-Alternatively, the test could be done away with entirely as it is checked
-inside the mutex - but since the mutex is global, that may not be the best
-way.
+It looks like the problem starts early in reserve_memtype:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+       	if (!pat_enabled) {
+                /* This is identical to page table setting without PAT */
+                if (new_type) {
+                        if (req_type == _PAGE_CACHE_WC)
+                                *new_type = _PAGE_CACHE_UC_MINUS;
+                        else
+                               	*new_type = req_type & _PAGE_CACHE_MASK;
+               	}
+                return 0;
+        }
+
+This would be what we want, that is clearing the PWT and PCD flags from the
+supported flags - if pat_enabled is disabled."
+
+This patch does that - disabling PAT.
+
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-and-Tested-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/keys/process_keys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -54,7 +54,7 @@ int install_user_keyrings(void)
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -64,6 +64,7 @@
+ #include <asm/hypervisor.h>
+ #include <asm/mwait.h>
+ #include <asm/pci_x86.h>
++#include <asm/pat.h>
  
- 	kenter("%p{%u}", user, user->uid);
+ #ifdef CONFIG_ACPI
+ #include <linux/acpi.h>
+@@ -1355,7 +1356,14 @@ asmlinkage void __init xen_start_kernel(
+ 	 */
+ 	acpi_numa = -1;
+ #endif
+-
++#ifdef CONFIG_X86_PAT
++	/*
++	 * For right now disable the PAT. We should remove this once
++	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
++	 * (xen/pat: Disable PAT support for now) is reverted.
++	 */
++	pat_enabled = 0;
++#endif
+ 	pgd = (pgd_t *)xen_start_info->pt_base;
  
--	if (user->uid_keyring) {
-+	if (user->uid_keyring && user->session_keyring) {
- 		kleave(" = 0 [exist]");
- 		return 0;
- 	}
+ 	/* Don't do the full vcpu_info placement stuff until we have a
 
 
