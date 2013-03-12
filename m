@@ -1,78 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab3CLMPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:15:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40323 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab3CLMPO (ORCPT
+	id S932623Ab3CLMQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:16:50 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5168 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3CLMQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:15:14 -0400
-Date: Tue, 12 Mar 2013 12:14:58 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Colin Cross <ccross@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Tang, Guifang" <guifang.tang@intel.com>, stable@vger.kernel.org
-Subject: Re: Fix memory leak in cpufreq stats.
-Message-ID: <20130312121458.GC3222@hercules>
-References: <EE928378561BF1449699C96571234A740FE66C2A@SHSMSX102.ccr.corp.intel.com>
- <3402692.Elm8oBRUJI@vostro.rjw.lan>
- <CAMbhsRTi8-41em4+-7NpLwXFpbGcy3Vsib5ees_OWm5JGmOVDw@mail.gmail.com>
+	Tue, 12 Mar 2013 08:16:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 05:10:08 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>,
+        <linaro-dev@lists.linaro.org>, Bill Huang <bilhuang@nvidia.com>
+Subject: [RFC 1/1] clk: Add notifier support in clk_prepare_enable/clk_disable_unprepare
+Date: Tue, 12 Mar 2013 05:37:41 -0700
+Message-ID: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTi8-41em4+-7NpLwXFpbGcy3Vsib5ees_OWm5JGmOVDw@mail.gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 06:23:27PM -0700, Colin Cross wrote:
-> On Mon, Oct 15, 2012 at 1:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday 15 of October 2012 02:48:28 Tu, Xiaobing wrote:
-> >>
-> >> Fix memory leak in cpufreq stats.
-> >>
-> >> When system enter sleep, non-boot CPUs will be disable.
-> >> Cpufreq stats sysfs is created when the CPU is up, but it is not freed when
-> >> the CPU going down. This will cause memory leak.
-> >> signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> >> signed-off-by: guifang tang <guifang.tang@intel.com>
-> >
-> > I will push this patch for v3.7 in the -rc3 time frame if no one objects.
-> >
-> > Thanks,
-> > Rafael
-> >
-> >
-> >> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> >> index b40ee14..3998316 100644
-> >> --- a/drivers/cpufreq/cpufreq_stats.c
-> >> +++ b/drivers/cpufreq/cpufreq_stats.c
-> >> @@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
-> >>                 cpufreq_update_policy(cpu);
-> >>                 break;
-> >>         case CPU_DOWN_PREPARE:
-> >> +       case CPU_DOWN_PREPARE_FROZEN:
-> >>                 cpufreq_stats_free_sysfs(cpu);
-> >>                 break;
-> >>         case CPU_DEAD:
-> >>
-> >> Br
-> >> XiaoBing Tu
-> >> PSI@System Integration Shanghai
-> 
-> This patch, commited as e37736777254ce1abc85493a5cacbefe5983b896 since
-> v3.7, should also have gone to stable.  It should apply all the way
-> back to 3.0.
+Add the below four notifier events so drivers which are interested in
+knowing the clock status can act accordingly. This is extremely useful
+in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
 
-Thanks, I'm queuing it for the 3.5 kernel.
+PRE_CLK_ENABLE
+POST_CLK_ENABLE
+PRE_CLK_DISABLE
+POST_CLK_DISABLE
 
-Cheers,
---
-Luis
+Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+---
+ drivers/clk/clk.c   |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h |   40 ++++++++++++++++++++---------------
+ 2 files changed, 81 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index ed87b24..720a16a 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1104,6 +1104,64 @@ struct clk *clk_get_parent(struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(clk_get_parent);
+ 
++/**
++ * clk_prepare_enable - call clk_enable in non-atomic context.
++ * @clk: the clk to enable
++ *
++ * Send PRE_CLK_ENABLE/POST_CLK_ENABLE before/after calling
++ * clk_enalbe respectively
++ *
++ * Return success (0) or errno.
++ */
++int clk_prepare_enable(struct clk *clk)
++{
++	int ret;
++
++	mutex_lock(&prepare_lock);
++	ret = __clk_prepare(clk);
++	if (ret)
++		return ret;
++
++	if (clk->notifier_count)
++		__clk_notify(clk, PRE_CLK_ENABLE, clk->rate, clk->rate);
++
++	ret = clk_enable(clk);
++	if (ret)
++		__clk_unprepare(clk);
++
++	if (clk->notifier_count)
++		__clk_notify(clk, POST_CLK_ENABLE, clk->rate, clk->rate);
++
++	mutex_unlock(&prepare_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_prepare_enable);
++
++/**
++ * clk_disable_unprepare - call clk_disable in non-atomic context.
++ * @clk: the clk to enable
++ *
++ * Send PRE_CLK_DISABLE/POST_CLK_DISABLE before/after calling
++ * clk_disalbe respectively
++ */
++void clk_disable_unprepare(struct clk *clk)
++{
++	mutex_lock(&prepare_lock);
++
++	if (clk->notifier_count)
++		__clk_notify(clk, PRE_CLK_DISABLE, clk->rate, clk->rate);
++
++	clk_disable(clk);
++	__clk_unprepare(clk);
++
++	if (clk->notifier_count)
++		__clk_notify(clk, POST_CLK_DISABLE, clk->rate, clk->rate);
++
++	mutex_unlock(&prepare_lock);
++}
++EXPORT_SYMBOL_GPL(clk_disable_unprepare);
++
+ /*
+  * .get_parent is mandatory for clocks with multiple possible parents.  It is
+  * optional for single-parent clocks.  Always call .get_parent if it is
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b3ac22d..4bbe1903 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -43,6 +43,10 @@ struct clk;
+ #define PRE_RATE_CHANGE			BIT(0)
+ #define POST_RATE_CHANGE		BIT(1)
+ #define ABORT_RATE_CHANGE		BIT(2)
++#define PRE_CLK_ENABLE			BIT(3)
++#define POST_CLK_ENABLE			BIT(4)
++#define PRE_CLK_DISABLE			BIT(5)
++#define POST_CLK_DISABLE		BIT(6)
+ 
+ /**
+  * struct clk_notifier - associate a clk with a notifier
+@@ -276,6 +280,20 @@ struct clk *clk_get_parent(struct clk *clk);
+  */
+ struct clk *clk_get_sys(const char *dev_id, const char *con_id);
+ 
++/**
++ * clk_prepare_enable - helps cases using clk_enable in non-atomic context.
++ * @clk: clock source
++ *
++ * Return success (0) or nagative errno.
++ */
++int clk_prepare_enable(struct clk *clk);
++
++/**
++ * clk_disable_unprepare - helps cases using clk_disable in non-atomic context.
++ * @clk: clock source
++ */
++void clk_disable_unprepare(struct clk *clk);
++
+ #else /* !CONFIG_HAVE_CLK */
+ 
+ static inline struct clk *clk_get(struct device *dev, const char *id)
+@@ -324,30 +342,18 @@ static inline struct clk *clk_get_parent(struct clk *clk)
+ 	return NULL;
+ }
+ 
+-#endif
+-
+-/* clk_prepare_enable helps cases using clk_enable in non-atomic context. */
+ static inline int clk_prepare_enable(struct clk *clk)
+ {
+-	int ret;
+-
+-	ret = clk_prepare(clk);
+-	if (ret)
+-		return ret;
+-	ret = clk_enable(clk);
+-	if (ret)
+-		clk_unprepare(clk);
+-
+-	return ret;
++	return 0;
+ }
+ 
+-/* clk_disable_unprepare helps cases using clk_disable in non-atomic context. */
+-static inline void clk_disable_unprepare(struct clk *clk)
++static inline int clk_disable_unprepare(struct clk *clk)
+ {
+-	clk_disable(clk);
+-	clk_unprepare(clk);
++	return 0;
+ }
+ 
++#endif
++
+ /**
+  * clk_add_alias - add a new clock alias
+  * @alias: name for clock alias
+-- 
+1.7.9.5
+
