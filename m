@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab3CLPmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:42:46 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:32907 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933052Ab3CLPmm (ORCPT
+	id S933034Ab3CLPmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 11:42:38 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:48950 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932934Ab3CLPmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:42:42 -0400
+	Tue, 12 Mar 2013 11:42:31 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
         ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
         hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 11/13] vfs-export-inode_permission-to-modules
-Date: Tue, 12 Mar 2013 16:41:46 +0100
-Message-Id: <1363102908-28956-12-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/13] overlayfs-add-statfs-support
+Date: Tue, 12 Mar 2013 16:41:40 +0100
+Message-Id: <1363102908-28956-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
 References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
@@ -24,58 +24,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Andy Whitcroft <apw@canonical.com>
 
-We need to be able to check inode permissions (but not filesystem implied
-permissions) for stackable filesystems.  Expose this interface for overlayfs.
+Add support for statfs to the overlayfs filesystem.  As the upper layer
+is the target of all write operations assume that the space in that
+filesystem is the space in the overlayfs.  There will be some inaccuracy as
+overwriting a file will copy it up and consume space we were not expecting,
+but it is better than nothing.
 
+Use the upper layer dentry and mount from the overlayfs root inode,
+passing the statfs call to that filesystem.
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/internal.h      |    5 -----
- fs/namei.c         |    1 +
- include/linux/fs.h |    1 +
- 3 files changed, 2 insertions(+), 5 deletions(-)
+ fs/overlayfs/super.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-diff --git a/fs/internal.h b/fs/internal.h
-index 507141f..89481ac 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -42,11 +42,6 @@ static inline int __sync_blockdev(struct block_device *bdev, int wait)
- extern void __init chrdev_init(void);
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 02deecd..928b1b1 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -17,15 +17,19 @@
+ #include <linux/module.h>
+ #include <linux/cred.h>
+ #include <linux/sched.h>
++#include <linux/statfs.h>
+ #include "overlayfs.h"
  
- /*
-- * namei.c
-- */
--extern int __inode_permission(struct inode *, int);
--
--/*
-  * namespace.c
-  */
- extern int copy_mount_options(const void __user *, unsigned long *);
-diff --git a/fs/namei.c b/fs/namei.c
-index c1c0c15..e1cffbd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -402,6 +402,7 @@ int __inode_permission(struct inode *inode, int mask)
+ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+ MODULE_DESCRIPTION("Overlay filesystem");
+ MODULE_LICENSE("GPL");
  
- 	return security_inode_permission(inode, mask);
++#define OVERLAYFS_SUPER_MAGIC 0x794c764f
++
+ struct ovl_fs {
+ 	struct vfsmount *upper_mnt;
+ 	struct vfsmount *lower_mnt;
++	long lower_namelen;
+ };
+ 
+ struct ovl_entry {
+@@ -406,9 +410,36 @@ static int ovl_remount_fs(struct super_block *sb, int *flagsp, char *data)
+ 		return mnt_want_write(ufs->upper_mnt);
  }
-+EXPORT_SYMBOL(__inode_permission);
  
- /**
-  * sb_permission - Check superblock-level permissions
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e4e5fbd..3353de6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2224,6 +2224,7 @@ extern sector_t bmap(struct inode *, sector_t);
- #endif
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
-+extern int __inode_permission(struct inode *, int);
- extern int generic_permission(struct inode *, int);
++/**
++ * ovl_statfs
++ * @sb: The overlayfs super block
++ * @buf: The struct kstatfs to fill in with stats
++ *
++ * Get the filesystem statistics.  As writes always target the upper layer
++ * filesystem pass the statfs to the same filesystem.
++ */
++static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
++{
++	struct ovl_fs *ofs = dentry->d_sb->s_fs_info;
++	struct dentry *root_dentry = dentry->d_sb->s_root;
++	struct path path;
++	int err;
++
++	ovl_path_upper(root_dentry, &path);
++
++	err = vfs_statfs(&path, buf);
++	if (!err) {
++		buf->f_namelen = max(buf->f_namelen, ofs->lower_namelen);
++		buf->f_type = OVERLAYFS_SUPER_MAGIC;
++	}
++
++	return err;
++}
++
+ static const struct super_operations ovl_super_operations = {
+ 	.put_super	= ovl_put_super,
+ 	.remount_fs	= ovl_remount_fs,
++	.statfs		= ovl_statfs,
+ };
  
- static inline bool execute_ok(struct inode *inode)
+ struct ovl_config {
+@@ -474,6 +505,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct ovl_entry *oe;
+ 	struct ovl_fs *ufs;
+ 	struct ovl_config config;
++	struct kstatfs statfs;
+ 	int err;
+ 
+ 	err = ovl_parse_opt((char *) data, &config);
+@@ -508,6 +540,13 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	    !S_ISDIR(lowerpath.dentry->d_inode->i_mode))
+ 		goto out_put_lowerpath;
+ 
++	err = vfs_statfs(&lowerpath, &statfs);
++	if (err) {
++		printk(KERN_ERR "overlayfs: statfs failed on lowerpath\n");
++		goto out_put_lowerpath;
++	}
++	ufs->lower_namelen = statfs.f_namelen;
++
+ 	ufs->upper_mnt = clone_private_mount(&upperpath);
+ 	err = PTR_ERR(ufs->upper_mnt);
+ 	if (IS_ERR(ufs->upper_mnt)) {
+@@ -556,6 +595,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	root_dentry->d_fsdata = oe;
+ 	root_dentry->d_op = &ovl_dentry_operations;
+ 
++	sb->s_magic = OVERLAYFS_SUPER_MAGIC;
+ 	sb->s_op = &ovl_super_operations;
+ 	sb->s_root = root_dentry;
+ 	sb->s_fs_info = ufs;
 -- 
 1.7.10.4
 
