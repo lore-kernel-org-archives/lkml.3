@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab3CLWKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:10:23 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7791 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab3CLWKT (ORCPT
+	id S1755746Ab3CLWNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:13:43 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:33115 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab3CLWNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:10:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 15:10:02 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: [Patch v3 2/4] mfd: tps65090: Add resources for charger
-Date: Tue, 12 Mar 2013 18:08:07 -0400
-Message-ID: <1363126089-9071-3-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363126089-9071-1-git-send-email-rklein@nvidia.com>
-References: <1363126089-9071-1-git-send-email-rklein@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 12 Mar 2013 18:13:42 -0400
+Date: Tue, 12 Mar 2013 15:13:36 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Cong Wang <amwang@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 05/14] KDB: add more exports for supporting KDB modules
+Message-ID: <20130312221336.GA25699@kroah.com>
+References: <20130312193823.212544181@gulag1.americas.sgi.com>
+ <20130312193824.025713118@gulag1.americas.sgi.com>
+ <87obeo7530.fsf@xmission.com>
+ <513FA625.2020300@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513FA625.2020300@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add irq resources to pass to the charger mfd sub dev so
-the charger can listen for interrupts.
+On Tue, Mar 12, 2013 at 03:03:17PM -0700, Mike Travis wrote:
+> Let me see if I can understand the concept better.  By denying
+> an external hardware vendor the use of KDB to support a significant
+> piece of proprietary hardware on Linux, I furthering the interests
+> of Linux and the community how?
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
-v3:
- - no changes since v2
-v2:
- - no changes since v1
+Did SGI lawyers really agree to this patch?  I consider you running this
+by them if you have any questions as to why we are objecting to this.
+If, after discussing it with them, they still are asking for this
+change, please resend it, with their signed-off-by: on it showing that
+they really want this change.
 
- drivers/mfd/tps65090.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index 98edb5be..88846ae 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -56,12 +56,22 @@
- #define TPS65090_INT2_MASK_OVERLOAD_FET6		6
- #define TPS65090_INT2_MASK_OVERLOAD_FET7		7
- 
-+static struct resource charger_resources[] = {
-+	{
-+		.start  = TPS65090_IRQ_VAC_STATUS_CHANGE,
-+		.end    = TPS65090_IRQ_VAC_STATUS_CHANGE,
-+		.flags  = IORESOURCE_IRQ,
-+	}
-+};
-+
- static struct mfd_cell tps65090s[] = {
- 	{
- 		.name = "tps65090-pmic",
- 	},
- 	{
- 		.name = "tps65090-charger",
-+		.num_resources = ARRAY_SIZE(charger_resources),
-+		.resources = &charger_resources[0],
- 	},
- };
- 
--- 
-1.7.9.5
-
+greg k-h
