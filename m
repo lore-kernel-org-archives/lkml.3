@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3CLTyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:54:39 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:55326 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab3CLTyh (ORCPT
+	id S1755654Ab3CLTzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:55:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49894 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755196Ab3CLTzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:54:37 -0400
-Message-ID: <1363118073.15011.275.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-From: Matt Fleming <matt.fleming@intel.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Date: Tue, 12 Mar 2013 19:54:33 +0000
-In-Reply-To: <20130311211750.GB8440@thinkpad-t410>
-References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>
-	 <5138FAD9.7050504@zytor.com> <20130307205915.GF24233@thinkpad-t410>
-	 <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <513911F9.8050308@zytor.com> <20130311211750.GB8440@thinkpad-t410>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Mar 2013 15:55:49 -0400
+Date: Tue, 12 Mar 2013 19:55:46 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        swarren@nvidia.com
+Subject: Re: [PATCH V2 RESEND 1/2] regmap: irq: Add support for interrupt type
+Message-ID: <20130312195546.GH19942@opensource.wolfsonmicro.com>
+References: <1362673997-6762-1-git-send-email-ldewangan@nvidia.com>
+ <1362673997-6762-2-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PK5kSfjks5jzTD3m"
+Content-Disposition: inline
+In-Reply-To: <1362673997-6762-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 16:17 -0500, Seth Forshee wrote:
-> Here's a patch that does the command line option. I'm happy with either
-> one.
 
-I like the idea, but isn't the logic backwards? I would have expected
-s/EFI_VARS_PSTORE_DEFAULT_DISABLE/EFI_VARS_PSTORE/g and then 'default y'
-in the Kconfig file to maintain backward compatibility?
+--PK5kSfjks5jzTD3m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Is there a reason that wouldn't work?
+On Thu, Mar 07, 2013 at 10:03:17PM +0530, Laxman Dewangan wrote:
 
-I know that Linus has previously denounced setting new Kconfig symbols
-to 'y' by default, but I think there's a case here for doing exactly
-that since the previous behaviour was always enabled. The networking
-folks did something similar recently, where they introduced new Kconfig
-symbols for existing functionality that was previously on by default.
-
-[...]
-
-> +#ifdef CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE
-> +static bool efivars_pstore_disable = true;
-> +#else
-> +static bool efivars_pstore_disable = false;
-> +#endif
-> +module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
+>  /**
+> + * The Regmap IRQ type Index
+> + * REGMAP_IRQ_TYPE_NONE is used for setting inital value for clearing type.
+> + */
+> +enum {
+> +	REGMAP_IRQ_TYPE_NONE,
+> +	REGMAP_IRQ_TYPE_RISING,
+> +	REGMAP_IRQ_TYPE_FALLING,
+> +	REGMAP_IRQ_TYPE_BOTH,
+> +	REGMAP_IRQ_TYPE_LEVEL_HIGH,
+> +	REGMAP_IRQ_TYPE_LEVEL_LOW,
 > +
+> +	/* Last entry to get maximum index */
+> +	REGMAP_IRQ_TYPE_NR,
 
-static bool efivars_pstore_enable = IS_ENABLED(CONFIG_EFI_VARS_PSTORE) ?
+Why can't we just use the normal IRQ_TYPE macros?
 
+> + * @type_reg_sub_offset: Suboffset for type register if type mask are
+> + *              accomodated in the multiple register.
+> + * @type_supported_flags: Supported interrupt type as per interrupt.h.
+> + *             All supported flags are ORed.
+> + * type_mask: Type mask for getting related register bits.
+> + * @type_value: The type value in array form to set value for a given flag.
 
+This is making my head hurt, it's a bit confusing - I'm having to think
+too hard to understand what all these different fields do and how they
+interact.  Especially type_reg_sub_offset which feels like it must be
+part of a wider feature to support a greater range of register layouts.
+
+Can you clarify a bit please?
+
+--PK5kSfjks5jzTD3m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRP4g1AAoJELSic+t+oim9bzYP/jqiZNPB9D5Api8mNcyh8DFU
+NJvOKp/bnaRAxrUhm3NyxKgdx8w+jNDdfA95Sj/fh495N+OzN3q3vGzcZvRqOB73
+tlfUAXybUKITGEP3IoVn//gxwqxtklrp+0OQqcKpgDenW3bjd00edjS7LU9bsjG/
+0zaKvfi3i1WkUphbFKluq6gVnsx/6EL0GDNG5nT/pCyeTAcg/Ry76KW6QzR0ccbV
+EiF4Ij5JgKI6fapzR4nsMuAdH2xy7SaGrV7rcHQoaZKWuLWh7zzf44w9CJd+dZaE
+95fI6WoErcGvAhpH7LqIjthALvXpwz385NADIJ3+KZpZVaDCqn3uWj/YNS3t7pYZ
+t2rFtErSe6efA6WfNrz6NgCGO+6LQTyiQl0zM721SyPxXLJsc7a3DkQu953LbGDD
+84waaFVUHRZaVXKo0RWSRwuLQ51FSVvPjcttmF8zKWAQ3UW1K+uGI54ow6pF6aGg
+nVQrGK73S90PfPq8kKRxTdwkCr2T3iGr/XF5BOKSgum5Hf3ns7BGz9PVrSCJmn9u
+RXdvcg9WscQ7+RDQervjJqvXily33NMka0pr0H7BIuG3OaC6b4tVPHu6qUKb49iT
+Z3LPMJose9/gXjaiZ4FFzwz0kyDRtSqh21aHFu3NoXJBzZIhjYRYEymy0YIlhnbc
+0HVBprFTb23OrqTEa3TG
+=8hB6
+-----END PGP SIGNATURE-----
+
+--PK5kSfjks5jzTD3m--
