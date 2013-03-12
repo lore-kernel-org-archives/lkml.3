@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab3CLKgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:36:53 -0400
-Received: from zimbra.alphalink.fr ([217.15.80.77]:43981 "EHLO
-	mail-2-cbv2.admin.alphalink.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751908Ab3CLKgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:36:52 -0400
-Date: Tue, 12 Mar 2013 11:36:50 +0100
-From: Guillaume Nault <g.nault@alphalink.fr>
-To: David Miller <davem@davemloft.net>
-Cc: jchapman@katalix.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] l2tp: Restore socket refcount when sendmsg succeeds
-Message-ID: <20130312103650.GA4512@alphalink.fr>
-References: <20130301150202.GA3649@alphalink.fr>
- <20130301.141252.1152926224695074046.davem@davemloft.net>
+	id S932457Ab3CLKhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:37:24 -0400
+Received: from linux-sh.org ([111.68.239.195]:46421 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755249Ab3CLKhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:37:22 -0400
+Date: Tue, 12 Mar 2013 19:35:15 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 09/17] sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
+Message-ID: <20130312103515.GD3553@linux-sh.org>
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+ <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130301.141252.1152926224695074046.davem@davemloft.net>
+In-Reply-To: <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 02:12:52PM -0500, David Miller wrote:
-> From: Guillaume Nault <g.nault@alphalink.fr>
-> Date: Fri, 1 Mar 2013 16:02:02 +0100
+On Tue, Mar 12, 2013 at 07:12:22PM +0900, Alexandre Courbot wrote:
+> SH GPIO drivers all use gpiolib and CONFIG_GENERIC_GPIO is only selected
+> through CONFIG_GPIOLIB, yet some compilation units depended on
+> CONFIG_GENERIC_GPIO. Make them depend on CONFIG_GPIOLIB instead since it
+> is more accurate and prepares us for the future removal of
+> CONFIG_GENERIC_GPIO.
 > 
-> > The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
-> > reference counter after successful transmissions. Any successful
-> > sendmsg() call from userspace will then increase the reference counter
-> > forever, thus preventing the kernel's session and tunnel data from
-> > being freed later on.
-> > 
-> > The problem only happens when writing directly on L2TP sockets.
-> > PPP sockets attached to L2TP are unaffected as the PPP subsystem
-> > uses pppol2tp_xmit() which symmetrically increase/decrease reference
-> > counters.
-> > 
-> > This patch adds the missing call to sock_put() before returning from
-> > pppol2tp_sendmsg().
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-> 
-> Looking at how this code works, it is such a terrible design.  This
-> whole reference counting issue exists purely because
-> pppol2tp_sock_to_session() grabs the 'sk' reference.
-> 
-> In all but one case, it need not do this.
-> 
-> The socket system calls have an implicit reference to 'sk' via
-> socket->sk.  If you can get into the system call and socket->sk
-> is non-NULL then 'sk' is NOT going anywhere.
-> 
-> And all of these system call handlers have this pattern:
-> 
-> 	session = pppol2tp_sock_to_session(sk);
-> 	...
-> 	sock_put(sk);
-> 
-> The only case where the reference count is really needed is that
-> sequence in pppol2tp_release().
-> 
-> Long term the right thing to do here is stop having this session
-> grabber function take the 'sk' reference.  Then in pppol2tp_release
-> we'll grab a reference explicitly.  At all the other call sites we
-> then blast aweay all of the sock_put(sk) paths.
-> 
-Could this also apply to l2tp_sock_to_tunnel() (in l2tp_core.h)? As per
-my understanding, none of its callers needs to take a socket reference.
-So sock_hold() could be removed in both pppol2tp_sock_to_session() and
-l2tp_sock_to_tunnel() functions. The corresponding sock_put() calls
-would then be removed from all calling functions but pppol2tp_release().
-If this is correct, I'll send a patch for net-next.
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+
+Note that the bulk of the GENERIC_GPIO use for SH has shifted to
+drivers/pinctrl/sh-pfc/. If GPIOLIB is forced then a good chunk of the
+Kconfig/Makefile bits there ought to be refactored too.
