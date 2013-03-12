@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab3CLHiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:38:55 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50656 "EHLO
+	id S1755170Ab3CLHlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:41:16 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60299 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3CLHix (ORCPT
+	with ESMTP id S932191Ab3CLHiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:38:53 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-2b-513edb8a65d1
+	Tue, 12 Mar 2013 03:38:54 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-3b-513edb8bfec0
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC v7 02/11] add vrange basic data structure and functions
-Date: Tue, 12 Mar 2013 16:38:26 +0900
-Message-Id: <1363073915-25000-3-git-send-email-minchan@kernel.org>
+Subject: [RFC v7 04/11] add proc/pid/vrange information
+Date: Tue, 12 Mar 2013 16:38:28 +0900
+Message-Id: <1363073915-25000-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
 References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
@@ -34,342 +34,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds vrange data structure(interval tree) and
-related functions.
+Add vrange per perocess information.
+It would help debugging.
 
-The vrange uses generic interval tree as main data structure
-because it handles address range so generic interval tree
-fits well for the purpose.
-
-The add_vrange/remove_vrange are core functions for system call
-will be introdcued next patch.
-
-1. add_vrange inserts new address range into interval tree.
-   If new address range crosses over existing volatile range,
-   existing volatile range will be expanded to cover new range.
-   Then, if existing volatile range has purged state, new range
-   will have a purged state.
-   It's not good and we need more fine-grained purged state handling
-   in a vrange(TODO)
-
-   If new address range is inside existing range, we ignore it
-
-2. remove_vrange removes address range
-   Then, return a purged state of the address ranges.
-
-This patch copied some part from John Stultz's work but different semantic.
-
-Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/mm_types.h |   5 ++
- include/linux/vrange.h   |  45 ++++++++++++++
- init/main.c              |   2 +
- kernel/fork.c            |   3 +
- mm/Makefile              |   2 +-
- mm/vrange.c              | 157 +++++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 213 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/vrange.h
- create mode 100644 mm/vrange.c
+ fs/proc/base.c     |   1 +
+ fs/proc/internal.h |   6 +++
+ fs/proc/task_mmu.c | 129 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/vrange.c        |   2 +-
+ 4 files changed, 137 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index ace9a5f..080bf74 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -13,6 +13,7 @@
- #include <linux/page-debug-flags.h>
- #include <linux/uprobes.h>
- #include <linux/page-flags-layout.h>
-+#include <linux/mutex.h>
- #include <asm/page.h>
- #include <asm/mmu.h>
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 69078c7..c1a8506 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2523,6 +2523,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+ 	ONE("statm",      S_IRUGO, proc_pid_statm),
+ 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
++	REG("vrange",     S_IRUGO, proc_pid_vrange_operations),
+ #ifdef CONFIG_NUMA
+ 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
+ #endif
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 85ff3a4..0584035 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -60,6 +60,7 @@ extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
  
-@@ -351,6 +352,10 @@ struct mm_struct {
- 						 */
+ extern const struct file_operations proc_tid_children_operations;
+ extern const struct file_operations proc_pid_maps_operations;
++extern const struct file_operations proc_pid_vrange_operations;
+ extern const struct file_operations proc_tid_maps_operations;
+ extern const struct file_operations proc_pid_numa_maps_operations;
+ extern const struct file_operations proc_tid_numa_maps_operations;
+@@ -82,6 +83,11 @@ struct proc_maps_private {
+ #endif
+ };
  
- 
-+#ifdef CONFIG_MMU
-+	struct rb_root v_rb;		/* vrange rb tree */
-+	struct mutex v_lock;		/* Protect v_rb */
-+#endif
- 	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
- 	unsigned long hiwater_vm;	/* High-water virtual memory usage */
- 
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-new file mode 100644
-index 0000000..74b5e37
---- /dev/null
-+++ b/include/linux/vrange.h
-@@ -0,0 +1,45 @@
-+#ifndef _LINUX_VRANGE_H
-+#define _LINUX_VRANGE_H
-+
-+#include <linux/mutex.h>
-+#include <linux/interval_tree.h>
-+#include <linux/mm.h>
-+
-+struct vrange {
-+	struct interval_tree_node node;
-+	bool purged;
++struct proc_vrange_private {
++	struct pid *pid;
++	struct task_struct *task;
 +};
 +
-+#define vrange_entry(ptr) \
-+	container_of(ptr, struct vrange, node.rb)
-+
-+#ifdef CONFIG_MMU
-+struct mm_struct;
-+
-+static inline void mm_init_vrange(struct mm_struct *mm)
-+{
-+	mm->v_rb = RB_ROOT;
-+	mutex_init(&mm->v_lock);
-+}
-+
-+static inline void vrange_lock(struct mm_struct *mm)
-+{
-+	mutex_lock(&mm->v_lock);
-+}
-+
-+static inline void vrange_unlock(struct mm_struct *mm)
-+{
-+	mutex_unlock(&mm->v_lock);
-+}
-+
-+extern void exit_vrange(struct mm_struct *mm);
-+void vrange_init(void);
-+
-+#else
-+
-+static inline void vrange_init(void) {};
-+static inline void mm_init_vrange(struct mm_struct *mm) {};
-+static inline void exit_vrange(struct mm_struct *mm);
-+
-+#endif
-+#endif /* _LINIUX_VRANGE_H */
-diff --git a/init/main.c b/init/main.c
-index 63534a1..0b9e0b5 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -72,6 +72,7 @@
- #include <linux/ptrace.h>
- #include <linux/blkdev.h>
- #include <linux/elevator.h>
+ void proc_init_inodecache(void);
+ 
+ static inline struct pid *proc_pid(struct inode *inode)
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 3e636d8..df009f0 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -11,6 +11,7 @@
+ #include <linux/rmap.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
 +#include <linux/vrange.h>
  
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -605,6 +606,7 @@ asmlinkage void __init start_kernel(void)
- 	calibrate_delay();
- 	pidmap_init();
- 	anon_vma_init();
-+	vrange_init();
- #ifdef CONFIG_X86
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8d932b1..e3aa120 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -70,6 +70,7 @@
- #include <linux/khugepaged.h>
- #include <linux/signalfd.h>
- #include <linux/uprobes.h>
-+#include <linux/vrange.h>
+ #include <asm/elf.h>
+ #include <asm/uaccess.h>
+@@ -370,6 +371,134 @@ static int show_tid_map(struct seq_file *m, void *v)
+ 	return show_map(m, v, 0);
+ }
  
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -541,6 +542,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 	spin_lock_init(&mm->page_table_lock);
- 	mm->free_area_cache = TASK_UNMAPPED_BASE;
- 	mm->cached_hole_size = ~0UL;
-+	mm_init_vrange(mm);
- 	mm_init_aio(mm);
- 	mm_init_owner(mm, p);
- 
-@@ -612,6 +614,7 @@ void mmput(struct mm_struct *mm)
- 
- 	if (atomic_dec_and_test(&mm->mm_users)) {
- 		uprobe_clear_state(mm);
-+		exit_vrange(mm);
- 		exit_aio(mm);
- 		ksm_exit(mm);
- 		khugepaged_exit(mm); /* must run before exit_mmap */
-diff --git a/mm/Makefile b/mm/Makefile
-index 3a46287..a31235e 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -5,7 +5,7 @@
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
--			   vmalloc.o pagewalk.o pgtable-generic.o
-+			   vmalloc.o pagewalk.o pgtable-generic.o vrange.o
- 
- ifdef CONFIG_CROSS_MEMORY_ATTACH
- mmu-$(CONFIG_MMU)	+= process_vm_access.o
-diff --git a/mm/vrange.c b/mm/vrange.c
-new file mode 100644
-index 0000000..e265c82
---- /dev/null
-+++ b/mm/vrange.c
-@@ -0,0 +1,157 @@
-+/*
-+ * mm/vrange.c
-+ */
-+
-+#include <linux/vrange.h>
-+#include <linux/slab.h>
-+
-+static struct kmem_cache *vrange_cachep;
-+
-+void __init vrange_init(void)
++static void *v_start(struct seq_file *m, loff_t *pos)
 +{
-+	vrange_cachep = KMEM_CACHE(vrange, SLAB_PANIC);
-+}
-+
-+static inline void __set_vrange(struct vrange *range,
-+		unsigned long start_idx, unsigned long end_idx)
-+{
-+	range->node.start = start_idx;
-+	range->node.last = end_idx;
-+}
-+
-+static void __add_range(struct vrange *range,
-+				struct rb_root *root)
-+{
-+	interval_tree_insert(&range->node, root);
-+}
-+
-+static void __remove_range(struct vrange *range,
-+				struct rb_root *root)
-+{
-+	interval_tree_remove(&range->node, root);
-+}
-+
-+static struct vrange *alloc_vrange(void)
-+{
-+	return kmem_cache_alloc(vrange_cachep, GFP_KERNEL);
-+}
-+
-+static void free_vrange(struct vrange *range)
-+{
-+	kmem_cache_free(vrange_cachep, range);
-+}
-+
-+static inline void range_resize(struct rb_root *root,
-+		struct vrange *range,
-+		unsigned long start, unsigned long end)
-+{
-+	__remove_range(range, root);
-+	__set_vrange(range, start, end);
-+	__add_range(range, root);
-+}
-+
-+int add_vrange(struct mm_struct *mm,
-+			unsigned long start, unsigned long end)
-+{
++	struct vrange *range;
++	struct mm_struct *mm;
 +	struct rb_root *root;
-+	struct vrange *new_range, *range;
-+	struct interval_tree_node *node, *next;
-+	int purged = 0;
++	struct rb_node *next;
++	struct proc_vrange_private *priv = m->private;
++	loff_t n = *pos;
 +
-+	new_range = alloc_vrange();
-+	if (!new_range)
-+		return -ENOMEM;
++	/* Clear the per syscall fields in priv */
++	priv->task = NULL;
 +
-+	root = &mm->v_rb;
++	priv->task = get_pid_task(priv->pid, PIDTYPE_PID);
++	if (!priv->task)
++		return ERR_PTR(-ESRCH);
++
++	mm = mm_access(priv->task, PTRACE_MODE_READ);
++	if (!mm || IS_ERR(mm))
++		return mm;
++
 +	vrange_lock(mm);
-+	node = interval_tree_iter_first(root, start, end);
-+	while (node) {
-+		next = interval_tree_iter_next(node, start, end);
++	root = &mm->v_rb;
 +
-+		range = container_of(node, struct vrange, node);
-+		if (node->start < start && node->last > end) {
-+			free_vrange(new_range);
-+			goto out;
-+		}
++	if (RB_EMPTY_ROOT(&mm->v_rb))
++		goto out;
 +
-+		start = min_t(unsigned long, start, node->start);
-+		end = max_t(unsigned long, end, node->last);
-+
-+		purged |= range->purged;
-+		__remove_range(range, root);
-+		free_vrange(range);
-+
-+		node = next;
++	next = rb_first(&mm->v_rb);
++	range = vrange_entry(next);
++	while(n > 0 && range) {
++		n--;
++		next = rb_next(next);
++		if (next)
++			range = vrange_entry(next);
++		else
++			range = NULL;
 +	}
-+
-+	__set_vrange(new_range, start, end);
-+	new_range->purged = purged;
-+
-+	__add_range(new_range, root);
++	if (!n)
++		return range;
 +out:
-+	vrange_unlock(mm);
++	return NULL;
++}
++
++static void *v_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	struct vrange *range = v;
++	struct rb_node *next;
++
++	(*pos)++;
++	next = rb_next(&range->node.rb);
++	if (next) {
++		range = vrange_entry(next);
++		return range;
++	}
++	return NULL;
++}
++
++static void v_stop(struct seq_file *m, void *v)
++{
++	struct proc_vrange_private *priv = m->private;
++	if (priv->task) {
++		struct mm_struct *mm = priv->task->mm;
++		vrange_unlock(mm);
++		mmput(mm);
++		put_task_struct(priv->task);
++	}
++}
++
++static int show_vrange(struct seq_file *m, void *v, int is_pid)
++{
++
++	unsigned long start, end;
++	bool purged;
++	struct vrange *range = v;
++
++	start = range->node.start;
++	end = range->node.last;
++	purged = range->purged;
++
++	seq_printf(m, "%08lx-%08lx %c\n",
++			start,
++			end,
++			purged ? 'p' : 'v');
 +	return 0;
 +}
 +
-+int remove_vrange(struct mm_struct *mm,
-+		unsigned long start, unsigned long end)
++static int show_vrange_map(struct seq_file *m, void *v)
 +{
-+	struct rb_root *root;
-+	struct vrange *new_range, *range;
-+	struct interval_tree_node *node, *next;
-+	int ret	= 0;
-+	bool used_new = false;
++	return show_vrange(m, v, 1);
++}
 +
-+	new_range = alloc_vrange();
-+	if (!new_range)
-+		return -ENOMEM;
++static const struct seq_operations proc_pid_vrange_op = {
++	.start	= v_start,
++	.next	= v_next,
++	.stop	= v_stop,
++	.show	= show_vrange_map
++};
 +
-+	root = &mm->v_rb;
-+	vrange_lock(mm);
-+
-+	node = interval_tree_iter_first(root, start, end);
-+	while (node) {
-+		next = interval_tree_iter_next(node, start, end);
-+
-+		range = container_of(node, struct vrange, node);
-+		ret |= range->purged;
-+
-+		if (start <= node->start && end >= node->last) {
-+			__remove_range(range, root);
-+			free_vrange(range);
-+		} else if (node->start >= start) {
-+			range_resize(root, range, end, node->last);
-+		} else if (node->last <= end) {
-+			range_resize(root, range, node->start, start);
++static int do_vrange_open(struct inode *inode, struct file *file,
++		const struct seq_operations *ops)
++{
++	struct proc_vrange_private *priv;
++	int ret = -ENOMEM;
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (priv) {
++		priv->pid = proc_pid(inode);
++		ret = seq_open(file, ops);
++		if (!ret) {
++			struct seq_file *m = file->private_data;
++			m->private = priv;
 +		} else {
-+			used_new = true;
-+			__set_vrange(new_range, end, node->last);
-+			new_range->purged = range->purged;
-+			range_resize(root, range, node->start, start);
-+			__add_range(new_range, root);
-+			break;
++			kfree(priv);
 +		}
-+
-+		node = next;
 +	}
-+
-+	vrange_unlock(mm);
-+	if (!used_new)
-+		free_vrange(new_range);
-+
 +	return ret;
 +}
 +
-+void exit_vrange(struct mm_struct *mm)
++static int pid_vrange_open(struct inode *inode, struct file *file)
 +{
-+	struct vrange *range;
-+	struct rb_node *next;
-+
-+	next = rb_first(&mm->v_rb);
-+	while (next) {
-+		range = vrange_entry(next);
-+		next = rb_next(next);
-+		__remove_range(range, &mm->v_rb);
-+		free_vrange(range);
-+	}
++	return do_vrange_open(inode, file, &proc_pid_vrange_op);
 +}
++
++const struct file_operations proc_pid_vrange_operations = {
++	.open		= pid_vrange_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release_private,
++};
++
+ static const struct seq_operations proc_pid_maps_op = {
+ 	.start	= m_start,
+ 	.next	= m_next,
+diff --git a/mm/vrange.c b/mm/vrange.c
+index 2f77d89..f8b6f0e 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -199,7 +199,7 @@ SYSCALL_DEFINE4(vrange, unsigned long, start,
+ 	if (!len)
+ 		goto out;
+ 
+-	end = start  len;
++	end = start + len;
+ 	if (end < start)
+ 		goto out;
+ 
 -- 
 1.8.1.1
 
