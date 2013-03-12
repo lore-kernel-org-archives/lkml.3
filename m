@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964818Ab3CLXDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:03:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60299 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755786Ab3CLWdR (ORCPT
+	id S1755889Ab3CLXEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:04:05 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:51224 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab3CLWdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:17 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 058/100] ipc: dont allocate a copy larger than max
-Date: Tue, 12 Mar 2013 15:31:43 -0700
-Message-Id: <20130312223129.241562840@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 12 Mar 2013 18:33:16 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, stigge@antcom.de, edumazet@google.com,
+        gregkh@linuxfoundation.org, jiri@resnulli.us,
+        linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] net: lpc_eth: fix coccicheck warnings
+Date: Wed, 13 Mar 2013 00:33:05 +0200
+Message-Id: <1363127585-7925-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+Use resource_size() instead of explicit calculation and change the way
+debugging for struct resource is done.
 
-------------------
-
-From: Peter Hurley <peter@hurleysoftware.com>
-
-commit 88b9e456b1649722673ffa147914299799dc9041 upstream.
-
-When MSG_COPY is set, a duplicate message must be allocated for the copy
-before locking the queue.  However, the copy could not be larger than was
-sent which is limited to msg_ctlmax.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 ---
- ipc/msg.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/nxp/lpc_eth.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -820,15 +820,17 @@ long do_msgrcv(int msqid, void __user *b
- 	struct msg_msg *copy = NULL;
- 	unsigned long copy_number = 0;
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index c4122c8..7862f96 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1362,7 +1362,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	__lpc_eth_clock_enable(pldat, true);
  
-+	ns = current->nsproxy->ipc_ns;
-+
- 	if (msqid < 0 || (long) bufsz < 0)
- 		return -EINVAL;
- 	if (msgflg & MSG_COPY) {
--		copy = prepare_copy(buf, bufsz, msgflg, &msgtyp, &copy_number);
-+		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax),
-+				    msgflg, &msgtyp, &copy_number);
- 		if (IS_ERR(copy))
- 			return PTR_ERR(copy);
+ 	/* Map IO space */
+-	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++	pldat->net_base = ioremap(res->start, resource_size(res));
+ 	if (!pldat->net_base) {
+ 		dev_err(&pdev->dev, "failed to map registers\n");
+ 		ret = -ENOMEM;
+@@ -1418,10 +1418,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
  	}
- 	mode = convert_mode(&msgtyp, msgflg);
--	ns = current->nsproxy->ipc_ns;
+ 	pldat->dma_buff_base_p = dma_handle;
  
- 	msq = msg_lock_check(ns, msqid);
- 	if (IS_ERR(msq)) {
-
+-	netdev_dbg(ndev, "IO address start     :0x%08x\n",
+-			res->start);
+-	netdev_dbg(ndev, "IO address size      :%d\n",
+-			res->end - res->start + 1);
++	netdev_dbg(ndev, "IO resource          :%pR\n", res);
+ 	netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
+ 			pldat->net_base);
+ 	netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
+-- 
+1.7.9.5
 
