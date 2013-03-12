@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab3CLWw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:52:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60650 "EHLO
+	id S1756194Ab3CLWxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:53:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964783Ab3CLWo1 (ORCPT
+	with ESMTP id S964782Ab3CLWo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:27 -0400
+	Tue, 12 Mar 2013 18:44:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Baatz <gmbnomis@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [ 33/40] rtc: rtc-mv: Add support for clk to avoid lockups
-Date: Tue, 12 Mar 2013 15:43:54 -0700
-Message-Id: <20130312223214.995095830@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 32/40] vfs: fix pipe counter breakage
+Date: Tue, 12 Mar 2013 15:43:53 -0700
+Message-Id: <20130312223214.897049538@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,125 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 89c58c198b252f2bc20657fdd72a2aea788c435c upstream.
+commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
 
-The Marvell RTC on Kirkwood makes use of the runit clock. Ensure the
-driver clk_prepare_enable() this clock, otherwise there is a danger
-the SoC will lockup when accessing RTC registers with the clock
-disabled.
+If you open a pipe for neither read nor write, the pipe code will not
+add any usage counters to the pipe, causing the 'struct pipe_inode_info"
+to be potentially released early.
 
-Reported-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+That doesn't normally matter, since you cannot actually use the pipe,
+but the pipe release code - particularly fasync handling - still expects
+the actual pipe infrastructure to all be there.  And rather than adding
+NULL pointer checks, let's just disallow this case, the same way we
+already do for the named pipe ("fifo") case.
+
+This is ancient going back to pre-2.4 days, and until trinity, nobody
+naver noticed.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/kirkwood.dtsi |    1 +
- drivers/rtc/rtc-mv.c            |   28 ++++++++++++++++++++++++----
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ fs/pipe.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/boot/dts/kirkwood.dtsi
-+++ b/arch/arm/boot/dts/kirkwood.dtsi
-@@ -31,6 +31,7 @@
- 			compatible = "mrvl,kirkwood-rtc", "mrvl,orion-rtc";
- 			reg = <0x10300 0x20>;
- 			interrupts = <53>;
-+			clocks = <&gate_clk 7>;
- 		};
- 	};
- };
---- a/drivers/rtc/rtc-mv.c
-+++ b/drivers/rtc/rtc-mv.c
-@@ -14,6 +14,7 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/delay.h>
-+#include <linux/clk.h>
- #include <linux/gfp.h>
- #include <linux/module.h>
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -860,6 +860,9 @@ pipe_rdwr_open(struct inode *inode, stru
+ {
+ 	int ret = -ENOENT;
  
-@@ -41,6 +42,7 @@ struct rtc_plat_data {
- 	struct rtc_device *rtc;
- 	void __iomem *ioaddr;
- 	int		irq;
-+	struct clk	*clk;
- };
- 
- static int mv_rtc_set_time(struct device *dev, struct rtc_time *tm)
-@@ -221,6 +223,7 @@ static int __devinit mv_rtc_probe(struct
- 	struct rtc_plat_data *pdata;
- 	resource_size_t size;
- 	u32 rtc_time;
-+	int ret = 0;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
-@@ -239,11 +242,17 @@ static int __devinit mv_rtc_probe(struct
- 	if (!pdata->ioaddr)
- 		return -ENOMEM;
- 
-+	pdata->clk = devm_clk_get(&pdev->dev, NULL);
-+	/* Not all SoCs require a clock.*/
-+	if (!IS_ERR(pdata->clk))
-+		clk_prepare_enable(pdata->clk);
++	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
++		return -EINVAL;
 +
- 	/* make sure the 24 hours mode is enabled */
- 	rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
- 	if (rtc_time & RTC_HOURS_12H_MODE) {
- 		dev_err(&pdev->dev, "24 Hours mode not supported.\n");
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out;
- 	}
+ 	mutex_lock(&inode->i_mutex);
  
- 	/* make sure it is actually functional */
-@@ -252,7 +261,8 @@ static int __devinit mv_rtc_probe(struct
- 		rtc_time = readl(pdata->ioaddr + RTC_TIME_REG_OFFS);
- 		if (rtc_time == 0x01000000) {
- 			dev_err(&pdev->dev, "internal RTC not ticking\n");
--			return -ENODEV;
-+			ret = -ENODEV;
-+			goto out;
- 		}
- 	}
- 
-@@ -268,8 +278,10 @@ static int __devinit mv_rtc_probe(struct
- 	} else
- 		pdata->rtc = rtc_device_register(pdev->name, &pdev->dev,
- 						 &mv_rtc_ops, THIS_MODULE);
--	if (IS_ERR(pdata->rtc))
--		return PTR_ERR(pdata->rtc);
-+	if (IS_ERR(pdata->rtc)) {
-+		ret = PTR_ERR(pdata->rtc);
-+		goto out;
-+	}
- 
- 	if (pdata->irq >= 0) {
- 		writel(0, pdata->ioaddr + RTC_ALARM_INTERRUPT_MASK_REG_OFFS);
-@@ -282,6 +294,11 @@ static int __devinit mv_rtc_probe(struct
- 	}
- 
- 	return 0;
-+out:
-+	if (!IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
-+	return ret;
- }
- 
- static int __exit mv_rtc_remove(struct platform_device *pdev)
-@@ -292,6 +309,9 @@ static int __exit mv_rtc_remove(struct p
- 		device_init_wakeup(&pdev->dev, 0);
- 
- 	rtc_device_unregister(pdata->rtc);
-+	if (!IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
- 	return 0;
- }
- 
+ 	if (inode->i_pipe) {
 
 
