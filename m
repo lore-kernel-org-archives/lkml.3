@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab3CLDkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 23:40:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34092 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab3CLDks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 23:40:48 -0400
+	id S1755027Ab3CLDoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 23:44:30 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52723 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754427Ab3CLDo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 23:44:28 -0400
+Date: Mon, 11 Mar 2013 23:44:22 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130312034422.GC18595@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
+References: <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
+ <20130311213837.GA438@x4>
+ <20130311231227.GA319@x4>
+ <20130312030057.GA6142@gmail.com>
+ <20130312033054.GB18595@thunk.org>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 11 Mar 2013 20:40:26 -0700
-X-Google-Sender-Auth: iH26qE35ezIWZKZYtDe8r5GWGz4
-Message-ID: <CAB=NE6Vj1P0fDDvuVqsDcvOhHYJf4=WvGnzM1963RrLvtd6XHg@mail.gmail.com>
-Subject: compat-drivers based on v3.9-rc2
-To: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312033054.GB18595@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've kicked out compat-drivers releases based on v3.9-rc2 [0], be sure
-to use the temporary release page [1] while we get one in place on
-kernel.org. We are on rc2 now... please test and report any issues!
-Please submit your patches for anything you think is critical but not
-'stable' material for inclusion of those patches into their respective
-directory, if unclear please read the additional-patches documentation
-[2]. This should allow us developers to focus on convincing PHBs to
-always work upstream without having them to persuade their own
-'private' releases to customers / your mom that typically do carry
-these patches but they never get merged back upstream.
+On Mon, Mar 11, 2013 at 11:30:54PM -0400, Theodore Ts'o wrote:
+> > As Ted suggested, could you please try to use ext4 git tree?  I want to
+> > make sure whether this bug has been fixed by my lastest patch series or
+> > not.
+> 
+> It's definitely worth a try to compile the master branch of the ext4
+> tree and see if it reproduces or not.
 
-[0] https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.9-rc2/
-[1] http://drvbp1.linux-foundation.org/~mcgrof/rel-html/compat-drivers/
-[2] https://backports.wiki.kernel.org/index.php/Documentation/compat-drivers/additional-patches
+Sorry, what you should try is the dev branch of the ext4 tree.  That
+has the new patches that we are currently QA'ing for 3.9-rc3
+(hopefully).
 
-  Luis
+					- Ted
