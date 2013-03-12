@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab3CLJHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 05:07:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32483 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab3CLJHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 05:07:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,829,1355126400"; 
-   d="scan'208";a="300715833"
-Date: Tue, 12 Mar 2013 09:07:46 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Julien Tinnes <jln@google.com>,
-        marcheu@chromium.org
-Subject: Re: [PATCH v3] drm/i915: bounds check execbuffer relocation count
-Message-ID: <20130312090746.GD31324@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	intel-gfx@lists.freedesktop.org, Julien Tinnes <jln@google.com>,
-	marcheu@chromium.org
-References: <20130312003145.GA28993@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312003145.GA28993@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932400Ab3CLJKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 05:10:40 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:56758 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932122Ab3CLJKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 05:10:38 -0400
+Message-ID: <1363079432.3137.139.camel@x61.thuisdomein>
+Subject: [PATCH] tty: serial: fix typo "SERIAL_S3C2412"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Ben Dooks <ben-linux@fluff.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 10:10:32 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Mar 2013 09:10:32.0451 (UTC) FILETIME=[72F68530:01CE1F01]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 05:31:45PM -0700, Kees Cook wrote:
-> It is possible to wrap the counter used to allocate the buffer for
-> relocation copies. This could lead to heap writing overflows.
-> 
-> CVE-2013-0913
-> 
-> v3: collapse test, improve comment
-> v2: move check into validate_exec_list
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Reported-by: Pinkie Pie
-> Cc: stable@vger.kernel.org
+The Kconfig symbol SERIAL_S3C2412 got removed in commit
+da121506eb03ee5daea55404709110b798bd61d9 ("serial: samsung: merge
+probe() function from all SoC specific extensions"). But it also added a
+last reference to that symbol. The commit and the tree make clear that
+CPU_S3C2412 should have been used instead.
 
-Looks good to me. The only bikeshed that remains is whether we should
-just collapse the two variables into one, but the current 'max - count'
-is more idiomatic and so preferrable.
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) The net effect of this is that the number of uarts of the S3C2412 CPU
+drops from 4 to 3. So this needs testing (by people with access to that
+hardware).
 
+1) Related note: a few lines down there's the line
+    default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+
+The "|| CPU_S3C2416" part looks superfluous.
+
+ drivers/tty/serial/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 40ddbe4..7e7006f 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -211,7 +211,7 @@ config SERIAL_SAMSUNG
+ config SERIAL_SAMSUNG_UARTS_4
+ 	bool
+ 	depends on PLAT_SAMSUNG
+-	default y if !(CPU_S3C2410 || SERIAL_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
++	default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
+ 	help
+ 	  Internal node for the common case of 4 Samsung compatible UARTs
+ 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.11.7
+
