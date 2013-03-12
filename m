@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab3CLWnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:43:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60339 "EHLO
+	id S1756012Ab3CLWoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60332 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab3CLWdX (ORCPT
+	with ESMTP id S1755987Ab3CLWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:23 -0400
+	Tue, 12 Mar 2013 18:33:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 067/100] CIFS: Fix missing of oplock_read value in smb30_values structure
-Date: Tue, 12 Mar 2013 15:31:52 -0700
-Message-Id: <20130312223130.149057958@linuxfoundation.org>
+        Hillf Danton <dhillf@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 066/100] mm/mempolicy.c: fix wrong sp_node insertion
+Date: Tue, 12 Mar 2013 15:31:51 -0700
+Message-Id: <20130312223130.053436431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,25 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Hillf Danton <dhillf@gmail.com>
 
-commit 067785c40e52089993757afa28988c05f3cb2694 upstream.
+commit 5ca3957510b9fc2a14d3647db518014842f9a2b4 upstream.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+n->end is accessed in sp_insert(). Thus it should be update
+before calling sp_insert(). This mistake may make kernel panic.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/smb2ops.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/mempolicy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -744,4 +744,5 @@ struct smb_version_values smb30_values =
- 	.cap_unix = 0,
- 	.cap_nt_find = SMB2_NT_FIND,
- 	.cap_large_files = SMB2_LARGE_FILES,
-+	.oplock_read = SMB2_OPLOCK_LEVEL_II,
- };
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2386,8 +2386,8 @@ restart:
+ 				*mpol_new = *n->policy;
+ 				atomic_set(&mpol_new->refcnt, 1);
+ 				sp_node_init(n_new, n->end, end, mpol_new);
+-				sp_insert(sp, n_new);
+ 				n->end = start;
++				sp_insert(sp, n_new);
+ 				n_new = NULL;
+ 				mpol_new = NULL;
+ 				break;
 
 
