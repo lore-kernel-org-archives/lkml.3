@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3CLFwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:52:24 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57264 "EHLO
+	id S932311Ab3CLFwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:52:44 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:57341 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab3CLFwW (ORCPT
+	with ESMTP id S1754571Ab3CLFwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:52:22 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-6c-513ec2957f88
+	Tue, 12 Mar 2013 01:52:43 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-42-513ec2aae32a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
@@ -15,39 +15,40 @@ Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <003e01ce1ee5$4897e020$d9c7a060$%han@samsung.com>
 In-reply-to: <003e01ce1ee5$4897e020$d9c7a060$%han@samsung.com>
-Subject: [PATCH 10/14] backlight: kb3886_bl: convert kb3886bl to dev_pm_ops
-Date: Tue, 12 Mar 2013 14:52:20 +0900
-Message-id: <004701ce1ee5$c321f650$4965e2f0$%han@samsung.com>
+Subject: [PATCH 11/14] backlight: lm3533_bl: convert lm3533_bl to dev_pm_ops
+Date: Tue, 12 Mar 2013 14:52:41 +0900
+Message-id: <004801ce1ee5$cfa7d570$6ef78050$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4e5UhyF7eo33BPTaGekL6G0bVCBQAAG9Yw
+Thread-index: Ac4e5UhyF7eo33BPTaGekL6G0bVCBQAAHudA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI92ph+wCDT5sEbS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZZ65cZSyYzV8x4+5MlgbGhzxdjJwcEgImEpv6GlkgbDGJC/fW
-	s3UxcnEICSxjlLh+vZcdpujQovdsILaQwCJGiV9tSRBFs5kkTlx5BJZgE1CT+PLlMFADB4eI
-	gL5EW4sGSJhZoFRi64P3LBC9thJ31z9nBCnhFLCT2PI3CyQsLOAt8aNvIdgUFgFViRfT2sDW
-	8gKV/1l3gRnCFpT4MfkeC8RILYn1O48zQdjyEpvXvGUGGSkhoC7x6K8uSFhEwEji3JMHjBAl
-	IhL7XrxjBLlYQmARu8Tl5j2MELsEJL5NPsQC0SsrsekAM8S3khIHV9xgmcAoMQvJ5llINs9C
-	snkWkhULGFlWMYqmFiQXFCelF5noFSfmFpfmpesl5+duYoRE1YQdjPcOWB9iTAZaP5FZSjQ5
-	HxiVeSXxhsZmRhamJqbGRuaWZqQJK4nzqrdYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpg
-	DLfcJyi27NSCAz/67IKL1biiHWaVXtUUUTu76F661kSF7tznpdmWhlHbk6832PBH33vDZvhR
-	qeW7t/cRNeZbG1crfDugrfj6Sart1a/uCrPWBF/YNZHFVmuvpNPasws+OF/20l4vG17zg9Xl
-	M5vrKUkVzbAbnFfXSncyPHZ4feZjZtOtzacNlViKMxINtZiLihMBa7NjX8ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgO7UQ3aBBjd38lhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjDNXrjIWzOavmHF3JksD
-	40OeLkZODgkBE4lDi96zQdhiEhfurQezhQQWMUr8akvqYuQCsmczSZy48ggswSagJvHly2H2
-	LkYODhEBfYm2Fg2QMLNAqcTWB+9ZIHptJe6uf84IUsIpYCex5W8WSFhYwFviR99CsCksAqoS
-	L6a1sYPYvEDlf9ZdYIawBSV+TL7HAjFSS2L9zuNMELa8xOY1b5lBRkoIqEs8+qsLEhYRMJI4
-	9+QBI0SJiMS+F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k
-	/NxNjOCYfSa9g3FVg8UhRgEORiUeXoVvtoFCrIllxZW5hxglOJiVRHgzNtsFCvGmJFZWpRbl
-	xxeV5qQWH2JMBnp0IrOUaHI+MJ3klcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1
-	tSC1CGYLEwenVANj2+nT6UsSNfcFcK1SUjw9e2lJbnTW+jUZDUJKSrNNjk5O0Dle4Xp9du3m
-	X9NbFK+c+uQntDmvIiU9tXbJJ2HnR2+3RUzKjNI/wtp/UOvHr0rRPfePaM3lOf0s3/dH+YeQ
-	x66B19hMMs37ObZMYDqoPnG7Y5tNMFvH04qD9vU7b/gYLLrTM/etEktxRqKhFnNRcSIA1WUq
-	2h0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI91Vh+wCDX7v5LeYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDKuXZzD
+	VrBQoOLF2m6mBsbrvF2MnBwSAiYSbd9Xs0HYYhIX7q0Hsrk4hASWMUr8m3uZEaZoU38bC0Ri
+	OqPEuw+nmCCcX4wSx64sYwapYhNQk/jy5TB7FyMHh4iAvkRbiwZImFmgVGLrg/csILaQgK3E
+	3fXPGUFKOAXsJLb8zQIJCwv4SGxYtxlsCouAqsT9a1uZQGxeoPI3rw+wQNiCEj8m32OBGKkl
+	sX7ncSYIW15i85q3zCAjJQTUJR791YU4wEhi2pVyiAoRiX0v3jGCHCwhcI5dYt+HlSwQqwQk
+	vk0+xALRKiux6QAzxLeSEgdX3GCZwCgxC8niWUgWz0KyeBaSFQsYWVYxiqYWJBcUJ6UXGekV
+	J+YWl+al6yXn525ihERk3w7GmwesDzEmA62fyCwlmpwPjOi8knhDYzMjC1MTU2Mjc0sz0oSV
+	xHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTBq/P/NeHaHQP/JRZ5PFnWcF7K5q197
+	55/r6ZdOc+4k8/7MKDz+cn3W2Rl+dz7eub4s1Oy+xIf9HkeO/JuZz5y0uTFTQ4DvAMdfIavb
+	OzgyVYtnzzq5+0Gal5Hkr2h97nU3zDjTjq3VUW5pWfdlV1PQ2cRF0/dlBYbMbLl+vLT/RORh
+	7iXPOA8sU2Ipzkg01GIuKk4EAPvRv77eAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd1Vh+wCDSZc5LaYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
+	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJ6xgzrl2cw1awUKDixdpupgbG67xdjJwcEgImEpv621ggbDGJC/fW
+	s3UxcnEICUxnlHj34RQThPOLUeLYlWXMIFVsAmoSX74cZu9i5OAQEdCXaGvRAAkzC5RKbH3w
+	HmyQkICtxN31zxlBSjgF7CS2/M0CCQsL+EhsWLcZbAqLgKrE/WtbmUBsXqDyN68PsEDYghI/
+	Jt9jgRipJbF+53EmCFteYvOat8wgIyUE1CUe/dWFOMBIYtqVcogKEYl9L94xTmAUmoVk0Cwk
+	g2YhGTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHx/kx6B+OqBotDjAIcjEo8
+	vArfbAOFWBPLiitzDzFKcDArifBmbLYLFOJNSaysSi3Kjy8qzUktPsSYDPTnRGYp0eR8YCrK
+	K4k3NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQbGTe8y6i46dXQx
+	1pimmt9z7Ug0cDiwdmmBk45YWNxBN9dyXfcul9rjryzsYj+EJ81VC3wXaq4c+C7D1Ud3UtDB
+	qz8ZoxdqTeUuf3bj3pOsg4/W57/Qaj3odrJ0p87faTIfHOPthBXaBI8JWc5TZQ53+rM/e9eP
+	3BCGjd8tjD/0iplcmhYscl+JpTgj0VCLuag4EQA4ytApOwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,61 +61,65 @@ structure allows better control over power management.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/kb3886_bl.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/video/backlight/lm3533_bl.c |   22 ++++++++++------------
+ 1 files changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/video/backlight/kb3886_bl.c b/drivers/video/backlight/kb3886_bl.c
-index 6c5ed6b..bca6ccc 100644
---- a/drivers/video/backlight/kb3886_bl.c
-+++ b/drivers/video/backlight/kb3886_bl.c
-@@ -106,29 +106,28 @@ static int kb3886bl_send_intensity(struct backlight_device *bd)
+diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
+index 5d18d4d..1d1dbfb 100644
+--- a/drivers/video/backlight/lm3533_bl.c
++++ b/drivers/video/backlight/lm3533_bl.c
+@@ -368,29 +368,28 @@ static int lm3533_bl_remove(struct platform_device *pdev)
  	return 0;
  }
  
 -#ifdef CONFIG_PM
--static int kb3886bl_suspend(struct platform_device *pdev, pm_message_t state)
+-static int lm3533_bl_suspend(struct platform_device *pdev, pm_message_t state)
 +#ifdef CONFIG_PM_SLEEP
-+static int kb3886bl_suspend(struct device *dev)
++static int lm3533_bl_suspend(struct device *dev)
  {
--	struct backlight_device *bd = platform_get_drvdata(pdev);
-+	struct backlight_device *bd = dev_get_drvdata(dev);
+-	struct lm3533_bl *bl = platform_get_drvdata(pdev);
++	struct lm3533_bl *bl = dev_get_drvdata(dev);
  
- 	kb3886bl_flags |= KB3886BL_SUSPENDED;
- 	backlight_update_status(bd);
- 	return 0;
+-	dev_dbg(&pdev->dev, "%s\n", __func__);
++	dev_dbg(dev, "%s\n", __func__);
+ 
+ 	return lm3533_ctrlbank_disable(&bl->cb);
  }
  
--static int kb3886bl_resume(struct platform_device *pdev)
-+static int kb3886bl_resume(struct device *dev)
+-static int lm3533_bl_resume(struct platform_device *pdev)
++static int lm3533_bl_resume(struct device *dev)
  {
--	struct backlight_device *bd = platform_get_drvdata(pdev);
-+	struct backlight_device *bd = dev_get_drvdata(dev);
+-	struct lm3533_bl *bl = platform_get_drvdata(pdev);
++	struct lm3533_bl *bl = dev_get_drvdata(dev);
  
- 	kb3886bl_flags &= ~KB3886BL_SUSPENDED;
- 	backlight_update_status(bd);
- 	return 0;
+-	dev_dbg(&pdev->dev, "%s\n", __func__);
++	dev_dbg(dev, "%s\n", __func__);
+ 
+ 	return lm3533_ctrlbank_enable(&bl->cb);
  }
 -#else
--#define kb3886bl_suspend	NULL
--#define kb3886bl_resume		NULL
+-#define lm3533_bl_suspend	NULL
+-#define lm3533_bl_resume	NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(kb3886bl_pm_ops, kb3886bl_suspend, kb3886bl_resume);
++static SIMPLE_DEV_PM_OPS(lm3533_bl_pm_ops, lm3533_bl_suspend, lm3533_bl_resume);
 +
- static int kb3886bl_get_intensity(struct backlight_device *bd)
+ static void lm3533_bl_shutdown(struct platform_device *pdev)
  {
- 	return kb3886bl_intensity;
-@@ -179,10 +178,9 @@ static int kb3886bl_remove(struct platform_device *pdev)
- static struct platform_driver kb3886bl_driver = {
- 	.probe		= kb3886bl_probe,
- 	.remove		= kb3886bl_remove,
--	.suspend	= kb3886bl_suspend,
--	.resume		= kb3886bl_resume,
- 	.driver		= {
- 		.name	= "kb3886-bl",
-+		.pm	= &kb3886bl_pm_ops,
+ 	struct lm3533_bl *bl = platform_get_drvdata(pdev);
+@@ -404,12 +403,11 @@ static struct platform_driver lm3533_bl_driver = {
+ 	.driver = {
+ 		.name	= "lm3533-backlight",
+ 		.owner	= THIS_MODULE,
++		.pm	= &lm3533_bl_pm_ops,
  	},
+ 	.probe		= lm3533_bl_probe,
+ 	.remove		= lm3533_bl_remove,
+ 	.shutdown	= lm3533_bl_shutdown,
+-	.suspend	= lm3533_bl_suspend,
+-	.resume		= lm3533_bl_resume,
  };
+ module_platform_driver(lm3533_bl_driver);
  
 -- 
 1.7.2.5
