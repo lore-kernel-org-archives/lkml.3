@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3CLFYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:24:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6409 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab3CLFYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:24:15 -0400
-X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
-   d="scan'208";a="6856406"
-Message-ID: <513EBBA0.60804@cn.fujitsu.com>
-Date: Tue, 12 Mar 2013 13:22:40 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S932174Ab3CLFYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:24:33 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:62094 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab3CLFYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:24:32 -0400
+Date: Mon, 11 Mar 2013 22:24:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        leiwen@marvell.com, wwang27@marvell.com
+Subject: Re: workqueue panic in 3.4 kernel
+Message-ID: <20130312052426.GV14556@mtj.dyndns.org>
+References: <20130305163228.GA12795@htj.dyndns.org>
+ <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
+ <20130306191408.GN1227@htj.dyndns.org>
+ <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
+ <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
+ <20130307154907.GB29601@htj.dyndns.org>
+ <alpine.LFD.2.02.1303071705310.22263@ionos>
+ <CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
+ <20130312051215.GU14556@mtj.dyndns.org>
+ <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/18] driver: s390: net: remove cast for kzalloc return value
-References: <513EB23D.7020303@cn.fujitsu.com>
-In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:23:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:23:01,
-	Serialize complete at 2013/03/12 13:23:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove cast for kzalloc return value.
+On Tue, Mar 12, 2013 at 01:18:01PM +0800, Lei Wen wrote:
+> > You're initializing random piece of memory which may contain any
+> > garbage and triggering BUG if some bit is set on it. No, you can't do
+> > that. debugobj is the right tool for debugging object lifetime issues
+> > and is already supported.
+> 
+> The debugobj is not helping on this issue, I have enabled both
+> CONFIG_DEBUG_OBJECTS_WORK and CONFIG_DEBUG_OBJECTS.
+> But find they didn't report any issue at all.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
----
- drivers/s390/net/qeth_core_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It should. No idea why it didn't. Would be interesting to find out
+why.
 
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index 0d8cdff..754a54f 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -316,7 +316,7 @@ static inline int qeth_alloc_cq(struct qeth_card *card)
- 
- 		card->qdio.no_in_queues = 2;
- 
--		card->qdio.out_bufstates = (struct qdio_outbuf_state *)
-+		card->qdio.out_bufstates =
- 			kzalloc(card->qdio.no_out_queues *
- 				QDIO_MAX_BUFFERS_PER_Q *
- 				sizeof(struct qdio_outbuf_state), GFP_KERNEL);
+> And I am not init random memory, original issue is call init multi-times
+> for one structure and that piece of memory already been allocated.
+> And __INIT_WORK shouldn't call over random memory, right?
+
+Memory areas aren't always zero on allocation.
+
 -- 
-1.7.1
-
+tejun
