@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab3CLGrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:47:42 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:42645 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab3CLGrl (ORCPT
+	id S1755127Ab3CLGsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:48:15 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:53400 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab3CLGsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 02:47:41 -0400
+	Tue, 12 Mar 2013 02:48:13 -0400
+Date: Tue, 12 Mar 2013 07:48:10 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130312064810.GA426@x4>
+References: <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
+ <20130311213837.GA438@x4>
+ <20130311231227.GA319@x4>
+ <20130312030057.GA6142@gmail.com>
+ <20130312033054.GB18595@thunk.org>
+ <20130312061624.GA436@x4>
+ <20130312064449.GA8806@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1362918403-6530-1-git-send-email-silviupopescu1990@gmail.com>
-References: <1362918403-6530-1-git-send-email-silviupopescu1990@gmail.com>
-Date: Tue, 12 Mar 2013 08:47:40 +0200
-Message-ID: <CAPWTe+KQ3+AFGOsET6FeNmmtx4A4aFLydvOuCSGyi0oh8fE5cQ@mail.gmail.com>
-Subject: Re: [PATCH] aic7xxx: use kzalloc instead of kmalloc + memset
-From: Silviu Popescu <silviupopescu1990@gmail.com>
-To: linux-scsi@vger.kernel.org
-Cc: hare@suse.de, JBottomley@parallels.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312064449.GA8806@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 2:26 PM, Silviu-Mihai Popescu
-<silviupopescu1990@gmail.com> wrote:
-> This replaces a call to kmalloc() followed by memset() with just one
-> call to kzalloc(). This was found using make coccicheck.
->
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> ---
->  drivers/scsi/aic7xxx/aic7xxx_core.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
-> index 10172a3..7f34d25 100644
-> --- a/drivers/scsi/aic7xxx/aic7xxx_core.c
-> +++ b/drivers/scsi/aic7xxx/aic7xxx_core.c
-> @@ -4464,10 +4464,9 @@ ahc_softc_init(struct ahc_softc *ahc)
->         ahc->pause = ahc->unpause | PAUSE;
->         /* XXX The shared scb data stuff should be deprecated */
->         if (ahc->scb_data == NULL) {
-> -               ahc->scb_data = kmalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
-> +               ahc->scb_data = kzalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
->                 if (ahc->scb_data == NULL)
->                         return (ENOMEM);
-> -               memset(ahc->scb_data, 0, sizeof(*ahc->scb_data));
->         }
->
->         return (0);
-> @@ -4780,10 +4779,9 @@ ahc_init_scbdata(struct ahc_softc *ahc)
->         SLIST_INIT(&scb_data->sg_maps);
->
->         /* Allocate SCB resources */
-> -       scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
-> +       scb_data->scbarray = kzalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
->         if (scb_data->scbarray == NULL)
->                 return (ENOMEM);
-> -       memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
->
->         /* Determine the number of hardware SCBs and initialize them */
->
-> @@ -7558,14 +7556,13 @@ ahc_handle_en_lun(struct ahc_softc *ahc, struct cam_sim *sim, union ccb *ccb)
->                                 return;
->                         }
->                 }
-> -               lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
-> +               lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
->                 if (lstate == NULL) {
->                         xpt_print_path(ccb->ccb_h.path);
->                         printk("Couldn't allocate lstate\n");
->                         ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
->                         return;
->                 }
-> -               memset(lstate, 0, sizeof(*lstate));
->                 status = xpt_create_path(&lstate->path, /*periph*/NULL,
->                                          xpt_path_path_id(ccb->ccb_h.path),
->                                          xpt_path_target_id(ccb->ccb_h.path),
-> --
-> 1.7.9.5
->
+On 2013.03.12 at 14:44 +0800, Zheng Liu wrote:
+> On Tue, Mar 12, 2013 at 07:16:24AM +0100, Markus Trippelsdorf wrote:
+> > On 2013.03.11 at 23:30 -0400, Theodore Ts'o wrote:
+> > > On Tue, Mar 12, 2013 at 11:00:58AM +0800, Zheng Liu wrote:
+> > > > 
+> > > > Thanks for reporting this problem.  My deepest apologies.
+> > > > 
+> > > > As Ted suggested, could you please try to use ext4 git tree?  I want to
+> > > > make sure whether this bug has been fixed by my lastest patch series or
+> > > > not.
+> > > 
+> > > It's definitely worth a try to compile the master branch of the ext4
+> > > tree and see if it reproduces or not.
+> > 
+> > I cannot reproduce the issue on top of "ext4.git dev", so fortunately
+> > the problem seems to be already fixed there.
+> > Thanks.
+> 
+> Great!  Thanks for the confirmation.
+> 
+> > 
+> > Do you guys have a hunch which commit is the actual fix? 
+> > (Maybe I will "bisect" it later today.)
+> 
+> I think maybe this two commits can fix it, but I am not sure which one
+> is the actual fix (I guess it is the former one, ;-) ).  Please try it
+> if you could bisect it.  Thanks in advance.
+> 
+>  * 079d7667af20876a59a1d9b0d4d1e15dcf17fa34
+>    ext4: fix wrong the number of the allocated blocks in
+> ext4_split_extent()
 
-Hello,
+Your guess was right. The commit above is the actual fix.
 
-Would anyone be so kind as to review this?
-
-Thanks,
-Silviu Popescu
+-- 
+Markus
