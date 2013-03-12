@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3CLGJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:09:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40009 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754486Ab3CLGJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 02:09:44 -0400
-Date: Tue, 12 Mar 2013 06:09:42 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm nouveau fixes
-Message-ID: <alpine.DEB.2.00.1303120608560.5819@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932198Ab3CLGNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:13:08 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:42769 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3CLGNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 02:13:07 -0400
+Date: Mon, 11 Mar 2013 23:13:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        leiwen@marvell.com, wwang27@marvell.com
+Subject: Re: workqueue panic in 3.4 kernel
+Message-ID: <20130312061303.GB20037@mtj.dyndns.org>
+References: <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
+ <20130307154907.GB29601@htj.dyndns.org>
+ <alpine.LFD.2.02.1303071705310.22263@ionos>
+ <CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
+ <20130312051215.GU14556@mtj.dyndns.org>
+ <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
+ <20130312052426.GV14556@mtj.dyndns.org>
+ <CALZhoSSFnfU1oVtUOXF_gA3QjToqT-wtdckbMC43pDXwXZwupg@mail.gmail.com>
+ <20130312054028.GA20037@mtj.dyndns.org>
+ <CALZhoSQNeaErA5TrovPRTtAwGqsoFwMYRx=rCwSTzUoytw533A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSQNeaErA5TrovPRTtAwGqsoFwMYRx=rCwSTzUoytw533A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 12, 2013 at 02:01:16PM +0800, Lei Wen wrote:
+> I see...
+> How about only check those workqueue structure not on stack?
+> For current onstack usage is rare, and should be easier to check with.
 
-Hi Linus,
+No, kzalloc is not required. The memory area can come from any source.
+If you're interested in improving the debug situation, please stop
+trying to do something impossible (you can't track lifetime of random
+memory area without extra bookkeeping) try to find out why debugobj
+didn't detect it (did you even enable it? either via
+CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT or "debug_objects" boot param).
 
-this is just nouveau fixes from Ben, one fixes a nasty oops that some 
-Fedora people have been seeing, so I'd like to get it out of the way.
-
-Dave.
-
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-for you to fetch changes up to 8698080ee092bdbd6ee2cd5e7f707ceea2812bd8:
-
-  Merge branch 'drm-nouveau-fixes-3.9' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next (2013-03-11 13:53:58 +1000)
-
-----------------------------------------------------------------
-
-Ben Skeggs (1):
-      drm/nv50: encoder creation failure doesn't mean full init failure
-
-Dave Airlie (1):
-      Merge branch 'drm-nouveau-fixes-3.9' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
-
-Maarten Lankhorst (1):
-      drm/nouveau: fix regression in vblanking
-
-Marcin Slusarz (2):
-      drm/nouveau: idle channel before releasing notify object
-      drm/nv50: use correct tiling methods for m2mf buffer moves
-
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c | 4 ++--
- drivers/gpu/drm/nouveau/nouveau_abi16.c         | 5 +++++
- drivers/gpu/drm/nouveau/nouveau_bo.c            | 4 ++--
- drivers/gpu/drm/nouveau/nv50_display.c          | 1 +
- 4 files changed, 10 insertions(+), 4 deletions(-)
+-- 
+tejun
