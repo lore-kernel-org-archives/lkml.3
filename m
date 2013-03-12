@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933986Ab3CLXNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60197 "EHLO
+	id S933760Ab3CLXNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:13:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933523Ab3CLWdA (ORCPT
+	with ESMTP id S1755235Ab3CLWc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:00 -0400
+	Tue, 12 Mar 2013 18:32:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 046/100] drm/radeon: dont set hpd, afmt interrupts when interrupts are disabled
-Date: Tue, 12 Mar 2013 15:31:31 -0700
-Message-Id: <20130312223127.953444908@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 045/100] hwmon: (pmbus/ltc2978) Use detected chip ID to select supported functionality
+Date: Tue, 12 Mar 2013 15:31:30 -0700
+Message-Id: <20130312223127.860019211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,62 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit cc9945bf9cac03860b2f7d59882263c965c6e3af upstream.
+commit f366fccd0809f13ba20d64cae3c83f7338c88af7 upstream.
 
-Avoids splatter if the interrupt handler is not registered due
-to acceleration being disabled.
+We read the chip ID from the chip, use it to determine if the chip ID provided
+to the driver is correct, and report it if wrong. We should also use the
+correct chip ID to select supported functionality.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/hwmon/pmbus/ltc2978.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -400,6 +400,9 @@ void radeon_irq_kms_enable_afmt(struct r
- {
- 	unsigned long irqflags;
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -326,7 +326,7 @@ static int ltc2978_probe(struct i2c_clie
+ 	data->temp_max = 0x7c00;
+ 	data->temp2_max = 0x7c00;
  
-+	if (!rdev->ddev->irq_enabled)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
- 	rdev->irq.afmt[block] = true;
- 	radeon_irq_set(rdev);
-@@ -419,6 +422,9 @@ void radeon_irq_kms_disable_afmt(struct
- {
- 	unsigned long irqflags;
- 
-+	if (!rdev->ddev->irq_enabled)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
- 	rdev->irq.afmt[block] = false;
- 	radeon_irq_set(rdev);
-@@ -438,6 +444,9 @@ void radeon_irq_kms_enable_hpd(struct ra
- 	unsigned long irqflags;
- 	int i;
- 
-+	if (!rdev->ddev->irq_enabled)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
- 	for (i = 0; i < RADEON_MAX_HPD_PINS; ++i)
- 		rdev->irq.hpd[i] |= !!(hpd_mask & (1 << i));
-@@ -458,6 +467,9 @@ void radeon_irq_kms_disable_hpd(struct r
- 	unsigned long irqflags;
- 	int i;
- 
-+	if (!rdev->ddev->irq_enabled)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
- 	for (i = 0; i < RADEON_MAX_HPD_PINS; ++i)
- 		rdev->irq.hpd[i] &= !(hpd_mask & (1 << i));
+-	switch (id->driver_data) {
++	switch (data->id) {
+ 	case ltc2978:
+ 		info->read_word_data = ltc2978_read_word_data;
+ 		info->pages = 8;
 
 
