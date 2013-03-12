@@ -1,53 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab3CLKhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:37:24 -0400
-Received: from linux-sh.org ([111.68.239.195]:46421 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755249Ab3CLKhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:37:22 -0400
-Date: Tue, 12 Mar 2013 19:35:15 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 09/17] sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
-Message-ID: <20130312103515.GD3553@linux-sh.org>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
- <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932656Ab3CLKmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:42:35 -0400
+Received: from vpn.mirsal.fr ([178.79.141.108]:42905 "EHLO
+	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754813Ab3CLKm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:42:29 -0400
+From: Mirsal Ennaime <mirsal@mirsal.fr>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Joe Perches <joe@perches.com>, Mirsal Ennaime <mirsal@mirsal.fr>
+Subject: [PATCH v3 1/4] drivers: android: binder: Move the node release code to a separate function
+Date: Tue, 12 Mar 2013 11:41:59 +0100
+Message-Id: <1363084922-19698-2-git-send-email-mirsal@mirsal.fr>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363084922-19698-1-git-send-email-mirsal@mirsal.fr>
+References: <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
+ <1363084922-19698-1-git-send-email-mirsal@mirsal.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 07:12:22PM +0900, Alexandre Courbot wrote:
-> SH GPIO drivers all use gpiolib and CONFIG_GENERIC_GPIO is only selected
-> through CONFIG_GPIOLIB, yet some compilation units depended on
-> CONFIG_GENERIC_GPIO. Make them depend on CONFIG_GPIOLIB instead since it
-> is more accurate and prepares us for the future removal of
-> CONFIG_GENERIC_GPIO.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+The binder_deferred_release() function has many levels of indentation
+which makes it difficult to read. This patch moves the code which deals
+with disposing of a binder node to a separate binder_node_release()
+function, thus removing one level of indentation and allowing the code to
+fit in 80 columns.
 
-Note that the bulk of the GENERIC_GPIO use for SH has shifted to
-drivers/pinctrl/sh-pfc/. If GPIOLIB is forced then a good chunk of the
-Kconfig/Makefile bits there ought to be refactored too.
+Signed-off-by: Mirsal Ennaime <mirsal@mirsal.fr>
+---
+ drivers/staging/android/binder.c |   76 +++++++++++++++++++++++---------------
+ 1 file changed, 46 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 24456a0..9180a5b 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2878,6 +2878,51 @@ static int binder_release(struct inode *nodp, struct file *filp)
+ 	return 0;
+ }
+ 
++static int binder_node_release(struct binder_node *node, int refs)
++{
++	struct binder_ref *ref;
++	int death = 0;
++
++	list_del_init(&node->work.entry);
++	binder_release_work(&node->async_todo);
++
++	if (hlist_empty(&node->refs)) {
++		kfree(node);
++		binder_stats_deleted(BINDER_STAT_NODE);
++
++		return refs;
++	}
++
++	node->proc = NULL;
++	node->local_strong_refs = 0;
++	node->local_weak_refs = 0;
++	hlist_add_head(&node->dead_node, &binder_dead_nodes);
++
++	hlist_for_each_entry(ref, &node->refs, node_entry) {
++		refs++;
++
++		if (!ref->death)
++			goto out;
++
++		death++;
++
++		if (list_empty(&ref->death->work.entry)) {
++			ref->death->work.type = BINDER_WORK_DEAD_BINDER;
++			list_add_tail(&ref->death->work.entry,
++				      &ref->proc->todo);
++			wake_up_interruptible(&ref->proc->wait);
++		} else
++			BUG();
++	}
++
++out:
++	binder_debug(BINDER_DEBUG_DEAD_BINDER,
++		     "node %d now dead, refs %d, death %d\n",
++		     node->debug_id, refs, death);
++
++	return refs;
++}
++
+ static void binder_deferred_release(struct binder_proc *proc)
+ {
+ 	struct binder_transaction *t;
+@@ -2909,36 +2954,7 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 
+ 		nodes++;
+ 		rb_erase(&node->rb_node, &proc->nodes);
+-		list_del_init(&node->work.entry);
+-		binder_release_work(&node->async_todo);
+-		if (hlist_empty(&node->refs)) {
+-			kfree(node);
+-			binder_stats_deleted(BINDER_STAT_NODE);
+-		} else {
+-			struct binder_ref *ref;
+-			int death = 0;
+-
+-			node->proc = NULL;
+-			node->local_strong_refs = 0;
+-			node->local_weak_refs = 0;
+-			hlist_add_head(&node->dead_node, &binder_dead_nodes);
+-
+-			hlist_for_each_entry(ref, &node->refs, node_entry) {
+-				incoming_refs++;
+-				if (ref->death) {
+-					death++;
+-					if (list_empty(&ref->death->work.entry)) {
+-						ref->death->work.type = BINDER_WORK_DEAD_BINDER;
+-						list_add_tail(&ref->death->work.entry, &ref->proc->todo);
+-						wake_up_interruptible(&ref->proc->wait);
+-					} else
+-						BUG();
+-				}
+-			}
+-			binder_debug(BINDER_DEBUG_DEAD_BINDER,
+-				     "node %d now dead, refs %d, death %d\n",
+-				      node->debug_id, incoming_refs, death);
+-		}
++		incoming_refs = binder_node_release(node, incoming_refs);
+ 	}
+ 	outgoing_refs = 0;
+ 	while ((n = rb_first(&proc->refs_by_desc))) {
+-- 
+1.7.10.4
+
