@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3CLWeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:34:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60486 "EHLO
+	id S933695Ab3CLWdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60443 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab3CLWdp (ORCPT
+	with ESMTP id S1756035Ab3CLWdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:45 -0400
+	Tue, 12 Mar 2013 18:33:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matt Fleming <matt.fleming@intel.com>
-Subject: [ 094/100] efi: be more paranoid about available space when creating variables
-Date: Tue, 12 Mar 2013 15:32:19 -0700
-Message-Id: <20130312223132.986538699@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>, Jason Cooper <jason@lakedaemon.net>
+Subject: [ 090/100] ARM: kirkwood: of_serial: fix clock gating by removing clock-frequency
+Date: Tue, 12 Mar 2013 15:32:15 -0700
+Message-Id: <20130312223132.570427901@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,202 +26,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+From: Jason Cooper <jason@lakedaemon.net>
 
-commit 68d929862e29a8b52a7f2f2f86a0600423b093cd upstream.
+commit 93fff4ce19f9978cc1c59db42760717477939249 upstream.
 
-UEFI variables are typically stored in flash. For various reasons, avaiable
-space is typically not reclaimed immediately upon the deletion of a
-variable - instead, the system will garbage collect during initialisation
-after a reboot.
+When DT support for kirkwood was first introduced, there was no clock
+infrastructure.  As a result, we had to manually pass the
+clock-frequency to the driver from the device node.
 
-Some systems appear to handle this garbage collection extremely poorly,
-failing if more than 50% of the system flash is in use. This can result in
-the machine refusing to boot. The safest thing to do for the moment is to
-forbid writes if they'd end up using more than half of the storage space.
-We can make this more finegrained later if we come up with a method for
-identifying the broken machines.
+Unfortunately, on kirkwood, with minimal config or all module configs,
+clock-frequency breaks booting because of_serial doesn't consume the
+gate_clk when clock-frequency is defined.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+The end result on kirkwood is that runit gets gated, and then the boot
+fails when the kernel tries to write to the serial port.
+
+Fix the issue by removing the clock-frequency parameter from all
+kirkwood dts files.
+
+Booted on dreamplug without earlyprintk and successfully logged in via
+ttyS0.
+
+Reported-by: Simon Baatz <gmbnomis@gmail.com>
+Tested-by: Simon Baatz <gmbnomis@gmail.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |  106 +++++++++++++++++++++++++++++++++------------
- 1 file changed, 79 insertions(+), 27 deletions(-)
+ arch/arm/boot/dts/kirkwood-dns320.dts         |    2 --
+ arch/arm/boot/dts/kirkwood-dns325.dts         |    1 -
+ arch/arm/boot/dts/kirkwood-dockstar.dts       |    1 -
+ arch/arm/boot/dts/kirkwood-dreamplug.dts      |    1 -
+ arch/arm/boot/dts/kirkwood-goflexnet.dts      |    1 -
+ arch/arm/boot/dts/kirkwood-ib62x0.dts         |    1 -
+ arch/arm/boot/dts/kirkwood-iconnect.dts       |    1 -
+ arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts |    1 -
+ arch/arm/boot/dts/kirkwood-km_kirkwood.dts    |    1 -
+ arch/arm/boot/dts/kirkwood-lschlv2.dts        |    1 -
+ arch/arm/boot/dts/kirkwood-lsxhl.dts          |    1 -
+ arch/arm/boot/dts/kirkwood-mplcec4.dts        |    1 -
+ arch/arm/boot/dts/kirkwood-ns2-common.dtsi    |    1 -
+ arch/arm/boot/dts/kirkwood-nsa310.dts         |    1 -
+ arch/arm/boot/dts/kirkwood-openblocks_a6.dts  |    2 --
+ arch/arm/boot/dts/kirkwood-topkick.dts        |    1 -
+ arch/arm/boot/dts/kirkwood.dtsi               |    2 --
+ 17 files changed, 20 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -419,6 +419,44 @@ get_var_data(struct efivars *efivars, st
- 	return status;
- }
+--- a/arch/arm/boot/dts/kirkwood-dns320.dts
++++ b/arch/arm/boot/dts/kirkwood-dns320.dts
+@@ -42,12 +42,10 @@
  
-+static efi_status_t
-+check_var_size_locked(struct efivars *efivars, u32 attributes,
-+			unsigned long size)
-+{
-+	u64 storage_size, remaining_size, max_size;
-+	efi_status_t status;
-+	const struct efivar_operations *fops = efivars->ops;
-+
-+	if (!efivars->ops->query_variable_info)
-+		return EFI_UNSUPPORTED;
-+
-+	status = fops->query_variable_info(attributes, &storage_size,
-+					   &remaining_size, &max_size);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	if (!storage_size || size > remaining_size || size > max_size ||
-+	    (remaining_size - size) < (storage_size / 2))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	return status;
-+}
-+
-+
-+static efi_status_t
-+check_var_size(struct efivars *efivars, u32 attributes, unsigned long size)
-+{
-+	efi_status_t status;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&efivars->lock, flags);
-+	status = check_var_size_locked(efivars, attributes, size);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
-+
-+	return status;
-+}
-+
- static ssize_t
- efivar_guid_read(struct efivar_entry *entry, char *buf)
- {
-@@ -540,11 +578,16 @@ efivar_store_raw(struct efivar_entry *en
- 	}
+ 	ocp@f1000000 {
+ 		serial@12000 {
+-			clock-frequency = <166666667>;
+ 			status = "okay";
+ 		};
  
- 	spin_lock_irq(&efivars->lock);
--	status = efivars->ops->set_variable(new_var->VariableName,
--					    &new_var->VendorGuid,
--					    new_var->Attributes,
--					    new_var->DataSize,
--					    new_var->Data);
-+
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
-+		status = efivars->ops->set_variable(new_var->VariableName,
-+						    &new_var->VendorGuid,
-+						    new_var->Attributes,
-+						    new_var->DataSize,
-+						    new_var->Data);
+ 		serial@12100 {
+-			clock-frequency = <166666667>;
+ 			status = "okay";
+ 		};
+ 	};
+--- a/arch/arm/boot/dts/kirkwood-dns325.dts
++++ b/arch/arm/boot/dts/kirkwood-dns325.dts
+@@ -50,7 +50,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
+ 	};
+--- a/arch/arm/boot/dts/kirkwood-dockstar.dts
++++ b/arch/arm/boot/dts/kirkwood-dockstar.dts
+@@ -37,7 +37,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
- 	spin_unlock_irq(&efivars->lock);
+--- a/arch/arm/boot/dts/kirkwood-dreamplug.dts
++++ b/arch/arm/boot/dts/kirkwood-dreamplug.dts
+@@ -38,7 +38,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
-@@ -695,8 +738,7 @@ static ssize_t efivarfs_file_write(struc
- 	u32 attributes;
- 	struct inode *inode = file->f_mapping->host;
- 	unsigned long datasize = count - sizeof(attributes);
--	unsigned long newdatasize;
--	u64 storage_size, remaining_size, max_size;
-+	unsigned long newdatasize, varsize;
- 	ssize_t bytes = 0;
+--- a/arch/arm/boot/dts/kirkwood-goflexnet.dts
++++ b/arch/arm/boot/dts/kirkwood-goflexnet.dts
+@@ -73,7 +73,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
- 	if (count < sizeof(attributes))
-@@ -715,28 +757,18 @@ static ssize_t efivarfs_file_write(struc
- 	 * amounts of memory. Pick a default size of 64K if
- 	 * QueryVariableInfo() isn't supported by the firmware.
- 	 */
--	spin_lock_irq(&efivars->lock);
+--- a/arch/arm/boot/dts/kirkwood-ib62x0.dts
++++ b/arch/arm/boot/dts/kirkwood-ib62x0.dts
+@@ -51,7 +51,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
  
--	if (!efivars->ops->query_variable_info)
--		status = EFI_UNSUPPORTED;
--	else {
--		const struct efivar_operations *fops = efivars->ops;
--		status = fops->query_variable_info(attributes, &storage_size,
--						   &remaining_size, &max_size);
--	}
--
--	spin_unlock_irq(&efivars->lock);
-+	varsize = datasize + utf16_strsize(var->var.VariableName, 1024);
-+	status = check_var_size(efivars, attributes, varsize);
+--- a/arch/arm/boot/dts/kirkwood-iconnect.dts
++++ b/arch/arm/boot/dts/kirkwood-iconnect.dts
+@@ -78,7 +78,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
- 	if (status != EFI_SUCCESS) {
- 		if (status != EFI_UNSUPPORTED)
- 			return efi_status_to_err(status);
+--- a/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
++++ b/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
+@@ -115,7 +115,6 @@
+ 		};
  
--		remaining_size = 65536;
-+		if (datasize > 65536)
-+			return -ENOSPC;
- 	}
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
--	if (datasize > remaining_size)
--		return -ENOSPC;
--
- 	data = kmalloc(datasize, GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
-@@ -758,6 +790,19 @@ static ssize_t efivarfs_file_write(struc
- 	 */
- 	spin_lock_irq(&efivars->lock);
+--- a/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
++++ b/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
+@@ -34,7 +34,6 @@
+ 		};
  
-+	/*
-+	 * Ensure that the available space hasn't shrunk below the safe level
-+	 */
-+
-+	status = check_var_size_locked(efivars, attributes, varsize);
-+
-+	if (status != EFI_SUCCESS && status != EFI_UNSUPPORTED) {
-+		spin_unlock_irq(&efivars->lock);
-+		kfree(data);
-+
-+		return efi_status_to_err(status);
-+	}
-+
- 	status = efivars->ops->set_variable(var->var.VariableName,
- 					    &var->var.VendorGuid,
- 					    attributes, datasize,
-@@ -1348,7 +1393,6 @@ static int efi_pstore_write(enum pstore_
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
- 	struct efivars *efivars = psi->data;
- 	int i, ret = 0;
--	u64 storage_space, remaining_space, max_variable_size;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	unsigned long flags;
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
  
-@@ -1359,11 +1403,11 @@ static int efi_pstore_write(enum pstore_
- 	 * size: a size of logging data
- 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
- 	 */
--	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
--						   &storage_space,
--						   &remaining_space,
--						   &max_variable_size);
--	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
-+
-+	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
-+					 size + DUMP_NAME_LEN * 2);
-+
-+	if (status) {
- 		spin_unlock_irqrestore(&efivars->lock, flags);
- 		*id = part;
- 		return -ENOSPC;
-@@ -1541,6 +1585,14 @@ static ssize_t efivar_create(struct file
- 		return -EINVAL;
- 	}
+--- a/arch/arm/boot/dts/kirkwood-lschlv2.dts
++++ b/arch/arm/boot/dts/kirkwood-lschlv2.dts
+@@ -13,7 +13,6 @@
  
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status && status != EFI_UNSUPPORTED) {
-+		spin_unlock_irq(&efivars->lock);
-+		return efi_status_to_err(status);
-+	}
-+
- 	/* now *really* create the variable via EFI */
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
+ 	ocp@f1000000 {
+ 		serial@12000 {
+-			clock-frequency = <166666667>;
+ 			status = "okay";
+ 		};
+ 	};
+--- a/arch/arm/boot/dts/kirkwood-lsxhl.dts
++++ b/arch/arm/boot/dts/kirkwood-lsxhl.dts
+@@ -13,7 +13,6 @@
+ 
+ 	ocp@f1000000 {
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
+ 	};
+--- a/arch/arm/boot/dts/kirkwood-mplcec4.dts
++++ b/arch/arm/boot/dts/kirkwood-mplcec4.dts
+@@ -91,7 +91,6 @@
+                 };
+ 
+                 serial@12000 {
+-                        clock-frequency = <200000000>;
+                         status = "ok";
+                 };
+ 
+--- a/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
++++ b/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
+@@ -23,7 +23,6 @@
+ 		};
+ 
+ 		serial@12000 {
+-			clock-frequency = <166666667>;
+ 			status = "okay";
+ 		};
+ 
+--- a/arch/arm/boot/dts/kirkwood-nsa310.dts
++++ b/arch/arm/boot/dts/kirkwood-nsa310.dts
+@@ -18,7 +18,6 @@
+ 	ocp@f1000000 {
+ 
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
+--- a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
++++ b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
+@@ -18,12 +18,10 @@
+ 
+ 	ocp@f1000000 {
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
+ 		serial@12100 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
+--- a/arch/arm/boot/dts/kirkwood-topkick.dts
++++ b/arch/arm/boot/dts/kirkwood-topkick.dts
+@@ -17,7 +17,6 @@
+ 
+ 	ocp@f1000000 {
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
+--- a/arch/arm/boot/dts/kirkwood.dtsi
++++ b/arch/arm/boot/dts/kirkwood.dtsi
+@@ -59,7 +59,6 @@
+ 			reg-shift = <2>;
+ 			interrupts = <33>;
+ 			clocks = <&gate_clk 7>;
+-			/* set clock-frequency in board dts */
+ 			status = "disabled";
+ 		};
+ 
+@@ -69,7 +68,6 @@
+ 			reg-shift = <2>;
+ 			interrupts = <34>;
+ 			clocks = <&gate_clk 7>;
+-			/* set clock-frequency in board dts */
+ 			status = "disabled";
+ 		};
+ 
 
 
