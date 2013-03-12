@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab3CLWy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:54:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60629 "EHLO
+	id S964860Ab3CLWyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:54:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933868Ab3CLWoX (ORCPT
+	with ESMTP id S933862Ab3CLWoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:23 -0400
+	Tue, 12 Mar 2013 18:44:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 28/40] xen/pat: Disable PAT using pat_enabled value.
-Date: Tue, 12 Mar 2013 15:43:49 -0700
-Message-Id: <20130312223214.477186496@linuxfoundation.org>
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 26/40] e1000e: fix pci-device enable-counter balance
+Date: Tue, 12 Mar 2013 15:43:47 -0700
+Message-Id: <20130312223214.273049476@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,121 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit c79c49826270b8b0061b2fca840fc3f013c8a78a upstream.
+commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
 
-The git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
-(xen/pat: Disable PAT support for now) explains in details why
-we want to disable PAT for right now. However that
-change was not enough and we should have also disabled
-the pat_enabled value. Otherwise we end up with:
+This patch removes redundant and unbalanced pci_disable_device() from
+__e1000_shutdown(). pci_clear_master() is enough, device can go into
+suspended state with elevated enable_cnt.
 
-mmap-example:3481 map pfn expected mapping type write-back for
-[mem 0x00010000-0x00010fff], got uncached-minus
- ------------[ cut here ]------------
-WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774 untrack_pfn+0xb8/0xd0()
-mem 0x00010000-0x00010fff], got uncached-minus
-------------[ cut here ]------------
-WARNING: at /build/buildd/linux-3.8.0/arch/x86/mm/pat.c:774
-untrack_pfn+0xb8/0xd0()
-...
-Pid: 3481, comm: mmap-example Tainted: GF 3.8.0-6-generic #13-Ubuntu
-Call Trace:
- [<ffffffff8105879f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff810587fa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8104bcc8>] untrack_pfn+0xb8/0xd0
- [<ffffffff81156c1c>] unmap_single_vma+0xac/0x100
- [<ffffffff81157459>] unmap_vmas+0x49/0x90
- [<ffffffff8115f808>] exit_mmap+0x98/0x170
- [<ffffffff810559a4>] mmput+0x64/0x100
- [<ffffffff810560f5>] dup_mm+0x445/0x660
- [<ffffffff81056d9f>] copy_process.part.22+0xa5f/0x1510
- [<ffffffff81057931>] do_fork+0x91/0x350
- [<ffffffff81057c76>] sys_clone+0x16/0x20
- [<ffffffff816ccbf9>] stub_clone+0x69/0x90
- [<ffffffff816cc89d>] ? system_call_fastpath+0x1a/0x1f
----[ end trace 4918cdd0a4c9fea4 ]---
+Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
 
-(a similar message shows up if you end up launching 'mcelog')
-
-The call chain is (as analyzed by Liu, Jinsong):
-do_fork
-  --> copy_process
-    --> dup_mm
-      --> dup_mmap
-       	--> copy_page_range
-          --> track_pfn_copy
-            --> reserve_pfn_range
-              --> line 624: flags != want_flags
-It comes from different memory types of page table (_PAGE_CACHE_WB) and MTRR
-(_PAGE_CACHE_UC_MINUS).
-
-Stefan Bader dug in this deep and found out that:
-"That makes it clearer as this will do
-
-reserve_memtype(...)
---> pat_x_mtrr_type
-  --> mtrr_type_lookup
-    --> __mtrr_type_lookup
-
-And that can return -1/0xff in case of MTRR not being enabled/initialized. Which
-is not the case (given there are no messages for it in dmesg). This is not equal
-to MTRR_TYPE_WRBACK and thus becomes _PAGE_CACHE_UC_MINUS.
-
-It looks like the problem starts early in reserve_memtype:
-
-       	if (!pat_enabled) {
-                /* This is identical to page table setting without PAT */
-                if (new_type) {
-                        if (req_type == _PAGE_CACHE_WC)
-                                *new_type = _PAGE_CACHE_UC_MINUS;
-                        else
-                               	*new_type = req_type & _PAGE_CACHE_MASK;
-               	}
-                return 0;
-        }
-
-This would be what we want, that is clearing the PWT and PCD flags from the
-supported flags - if pat_enabled is disabled."
-
-This patch does that - disabling PAT.
-
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reported-and-Tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -64,6 +64,7 @@
- #include <asm/hypervisor.h>
- #include <asm/mwait.h>
- #include <asm/pci_x86.h>
-+#include <asm/pat.h>
- 
- #ifdef CONFIG_ACPI
- #include <linux/acpi.h>
-@@ -1355,7 +1356,14 @@ asmlinkage void __init xen_start_kernel(
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -5535,7 +5535,7 @@ static int __e1000_shutdown(struct pci_d
  	 */
- 	acpi_numa = -1;
- #endif
--
-+#ifdef CONFIG_X86_PAT
-+	/*
-+	 * For right now disable the PAT. We should remove this once
-+	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
-+	 * (xen/pat: Disable PAT support for now) is reverted.
-+	 */
-+	pat_enabled = 0;
-+#endif
- 	pgd = (pgd_t *)xen_start_info->pt_base;
+ 	e1000e_release_hw_control(adapter);
  
- 	/* Don't do the full vcpu_info placement stuff until we have a
+-	pci_disable_device(pdev);
++	pci_clear_master(pdev);
+ 
+ 	return 0;
+ }
 
 
