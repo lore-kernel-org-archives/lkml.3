@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933853Ab3CLWoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60573 "EHLO
+	id S964949Ab3CLWo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab3CLWoN (ORCPT
+	with ESMTP id S964892Ab3CLWoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:13 -0400
+	Tue, 12 Mar 2013 18:44:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/40] ath9k_hw: improve reset reliability after errors
-Date: Tue, 12 Mar 2013 15:43:36 -0700
-Message-Id: <20130312223213.119025034@linuxfoundation.org>
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 19/21] ftrace: Update the kconfig for DYNAMIC_FTRACE
+Date: Tue, 12 Mar 2013 15:44:21 -0700
+Message-Id: <20130312223247.344763103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
-References: <20130312223211.492954675@linuxfoundation.org>
+In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
+References: <20130312223245.109098379@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 3412f2f086ea7531378fabe756bd4a1109994ae6 upstream.
+commit db05021d49a994ee40a9735d9c3cb0060c9babb8 upstream.
 
-On many different chips, important aspects of the MAC state are not
-fully cleared by a warm reset. This can show up as tx/rx hangs, those
-annoying "DMA failed to stop in 10 ms..." messages or other quirks.
+The prompt to enable DYNAMIC_FTRACE (the ability to nop and
+enable function tracing at run time) had a confusing statement:
 
-On AR933x, the chip can occasionally get stuck in a way that only a
-driver unload/reload or a reboot would bring it back to life.
+ "enable/disable ftrace tracepoints dynamically"
 
-With this patch, a full reset is issued when bringing the chip out of
-FULL-SLEEP state (after idle), or if either Rx or Tx was not shut down
-properly. This makes the DMA related error messages disappear completely
-in my tests on AR933x, and the chip does not get stuck anymore.
+This was written before tracepoints were added to the kernel,
+but now that tracepoints have been added, this is very confusing
+and has confused people enough to give wrong information during
+presentations.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Not only that, I looked at the help text, and it still references
+that dreaded daemon that use to wake up once a second to update
+the nop locations and brick NICs, that hasn't been around for over
+five years.
+
+Time to bring the text up to the current decade.
+
+Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/trace/Kconfig |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1404,7 +1404,9 @@ static bool ath9k_hw_chip_reset(struct a
- 			reset_type = ATH9K_RESET_POWER_ON;
- 		else
- 			reset_type = ATH9K_RESET_COLD;
--	}
-+	} else if (ah->chip_fullsleep || REG_READ(ah, AR_Q_TXE) ||
-+		   (REG_READ(ah, AR_CR) & AR_CR_RXE))
-+		reset_type = ATH9K_RESET_COLD;
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -386,24 +386,28 @@ config KPROBE_EVENT
+ 	  If you want to use perf tools, this option is strongly recommended.
  
- 	if (!ath9k_hw_set_reset_reg(ah, reset_type))
- 		return false;
+ config DYNAMIC_FTRACE
+-	bool "enable/disable ftrace tracepoints dynamically"
++	bool "enable/disable function tracing dynamically"
+ 	depends on FUNCTION_TRACER
+ 	depends on HAVE_DYNAMIC_FTRACE
+ 	default y
+ 	help
+-          This option will modify all the calls to ftrace dynamically
+-	  (will patch them out of the binary image and replace them
+-	  with a No-Op instruction) as they are called. A table is
+-	  created to dynamically enable them again.
++	  This option will modify all the calls to function tracing
++	  dynamically (will patch them out of the binary image and
++	  replace them with a No-Op instruction) on boot up. During
++	  compile time, a table is made of all the locations that ftrace
++	  can function trace, and this table is linked into the kernel
++	  image. When this is enabled, functions can be individually
++	  enabled, and the functions not enabled will not affect
++	  performance of the system.
++
++	  See the files in /sys/kernel/debug/tracing:
++	    available_filter_functions
++	    set_ftrace_filter
++	    set_ftrace_notrace
+ 
+ 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
+ 	  otherwise has native performance as long as no tracing is active.
+ 
+-	  The changes to the code are done by a kernel thread that
+-	  wakes up once a second and checks to see if any ftrace calls
+-	  were made. If so, it runs stop_machine (stops all CPUS)
+-	  and modifies the code to jump over the call to ftrace.
+-
+ config FUNCTION_PROFILER
+ 	bool "Kernel function profiler"
+ 	depends on FUNCTION_TRACER
 
 
