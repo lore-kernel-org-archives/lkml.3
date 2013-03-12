@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab3CLTIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:08:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35147 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932439Ab3CLTH7 (ORCPT
+	id S933345Ab3CLTIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:08:35 -0400
+Received: from mail1-ar.fullrate.dk ([90.185.0.67]:64125 "EHLO
+	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932680Ab3CLTIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:07:59 -0400
-Date: Tue, 12 Mar 2013 19:07:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, swarren@wwwdotorg.org,
-        spi-devel-general@lists.sourceforge.net, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: slink-tegra20: move runtime pm calls to
- transfer_one_message
-Message-ID: <20130312190756.GB19942@opensource.wolfsonmicro.com>
-References: <1362723679-1155-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 12 Mar 2013 15:08:34 -0400
+X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 15:08:34 EDT
+Message-ID: <513F7AB3.3@molgaard.org>
+Date: Tue, 12 Mar 2013 19:57:55 +0100
+From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0 SeaMonkey/2.19a1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sZvnRN25x3w09J/6"
-Content-Disposition: inline
-In-Reply-To: <1362723679-1155-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: [bisected] nouveau failure with 3.9-rc1 and ongoing
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hiya,
 
---sZvnRN25x3w09J/6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Between 3.8 and 3.9-rc1, the following occurs:
 
-On Fri, Mar 08, 2013 at 11:51:19AM +0530, Laxman Dewangan wrote:
-> The prepare_transfer_hardware() is called in atomic context and
-> calling synchronous runtime pm calls can create scheduling deadlock.
+Upon boot, when KMS kicks in, I get a blank screen. Keyboard responds 
+correctly to "Num Lock" on/off, but machine is unreachable on the network.
 
-Applied, thanks.
+Git bisection says:
 
---sZvnRN25x3w09J/6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+eb6313add6dddf07ea3e50c4caa33a9c3b2379f1 is the first bad commit
+commit eb6313add6dddf07ea3e50c4caa33a9c3b2379f1
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Mon Feb 11 09:52:58 2013 +1000
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+     drm/nv50: initial kms support for off-chip TMDS/DP encoders
 
-iQIcBAEBAgAGBQJRP30FAAoJELSic+t+oim9TWEP/3VVKHnywO7dQ2QXGd/lmQw2
-czvndLWLIeiEHzd8uDZLAcUeVln9xBCYYTHpHo84U8K8PeVROixo7LgYtt6qPNfx
-hKtXqlDg/DPipkrWFlqOAIY2KWSdqDeGNsrcTpM11ei5vTzb+sZ268bWV9xBNaOj
-WONQMCL6qWYQY2keMNBa1v54CLgEwEmA/XwW4Mwov5f+8rMEglftSEqogczR1ak6
-0a5g+eYGzcsm4zCqbbTIw7jk5hEpN7RkYgpT+9t5cAd3UVpLaIp7biyHjRWaqBZx
-CHiF8IYGTM1lR91t1tSQorxvF/aZyz8SwTzrI4GPD1ki66MTUPrVscDkHTQ1j6Zy
-d+CcYHC2kfjRmbAQ+MZ0ZBTZrSfOEK1xovgPwpd7NfL/ptHWjaBW3CNOetNLCdlu
-SrsenMeeHAmFjbWu+EMyGDgxCN8kPUDiGHblnLL95g6L53CmAbOYlhECYmR6tVYA
-FEePkNIhpAbgPnrs/guPckzkYnTTQUM0kEo5FkpPXnxK6qokcF6v/UY3qrNw3sGQ
-mP3DsVec/ukRV9FU5yuzA4YG/sEq5ifAl6DLk8DVqbRzHZu1PB7orJpxXmg+jsEw
-f9j1aMJmD+H2Tbb60xfkPFoamZvQBAoWdaghXJCZ83rjhiwmbTElr3KmJ3QOyt83
-BPHH6oQoEYuw6mLQdhW4
-=eNTy
------END PGP SIGNATURE-----
+     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 
---sZvnRN25x3w09J/6--
+:040000 040000 41f69d26a80082e19d3c76e6556ad5ef9eb2677d 
+216d501e053e9d05136929593e90259c2e59dff0 M	drivers
+
+But even though I marked that last bisection kernel good (since it 
+didn't cause a black-out), it does have problems, namely that GTK themes 
+are reset, and xrandr seems non-functional, inasmuch as my left-ward, 
+secondary screen now seems to be treated as being situated to the right. 
+No previous kernel in the bisection exercise caused anything of the like.
+
+I'd be happy to try out any and all patches proposed, and as for the 
+physical card, this is the relevant part:
+
+02:00.0 VGA compatible controller: NVIDIA Corporation G92 [GeForce 9800 
+GT] (rev a2)
+
+Please let me know if there is anything else I can do to help resolve this!
+
+Best regards,
+
+Sune Mølgaard
+
+-- 
+What a gorgeous day. What effulgent sunshine. It was a day of this
+sort the McGillicuddy brothers murdered their mother with an axe.
+- W. C. Fields
