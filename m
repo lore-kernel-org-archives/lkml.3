@@ -1,190 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab3CLQAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 12:00:38 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:64512 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab3CLQAg (ORCPT
+	id S932892Ab3CLQC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:02:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33383 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab3CLQC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 12:00:36 -0400
-Message-ID: <513F5120.7090209@gmail.com>
-Date: Tue, 12 Mar 2013 12:00:32 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 12 Mar 2013 12:02:28 -0400
+Date: Tue, 12 Mar 2013 16:01:01 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irqchip: Add support for ARMv7-M's NVIC
+Message-ID: <20130312160101.GW4977@n2100.arm.linux.org.uk>
+References: <1363103673-24720-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
-        Xufeng Zhang <xufeng.zhang@windriver.com>, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
- so as to find the matched transport
-References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com> <20130308142720.GA9873@hmsreliant.think-freely.org> <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com> <20130311133121.GD12682@hmsreliant.think-freely.org> <513F1B76.2060603@gmail.com> <20130312154427.GA5969@neilslaptop.think-freely.org>
-In-Reply-To: <20130312154427.GA5969@neilslaptop.think-freely.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363103673-24720-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 11:44 AM, Neil Horman wrote:
-> On Tue, Mar 12, 2013 at 08:11:34AM -0400, Vlad Yasevich wrote:
->> On 03/11/2013 09:31 AM, Neil Horman wrote:
->>> On Mon, Mar 11, 2013 at 10:14:50AM +0800, Xufeng Zhang wrote:
->>>> On 3/8/13, Neil Horman <nhorman@tuxdriver.com> wrote:
->>>>> On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
->>>>>> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
->>>>>> was sent on, if not found in the active_path transport, then go search
->>>>>> all the other transports in the peer's transport_addr_list, however, we
->>>>>> should continue to the next entry rather than break the loop when meet
->>>>>> the active_path transport.
->>>>>>
->>>>>> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
->>>>>> ---
->>>>>>   net/sctp/associola.c |    2 +-
->>>>>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>>>>
->>>>>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
->>>>>> index 43cd0dd..d2709e2 100644
->>>>>> --- a/net/sctp/associola.c
->>>>>> +++ b/net/sctp/associola.c
->>>>>> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
->>>>>> sctp_association *asoc,
->>>>>>   			transports) {
->>>>>>
->>>>>>   		if (transport == active)
->>>>>> -			break;
->>>>>> +			continue;
->>>>>>   		list_for_each_entry(chunk, &transport->transmitted,
->>>>>>   				transmitted_list) {
->>>>>>   			if (key == chunk->subh.data_hdr->tsn) {
->>>>>> --
->>>>>> 1.7.0.2
->>>>>>
->>>>>>
->>>>>
->>>>> This works, but what might be better would be if we did a move to front
->>>>> heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move
->>>>> the
->>>>> requisite transport to the front of the transport_addr_list.  If we did
->>>>> that,
->>>>> then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
->>>>> implicitly check the active path first without having to check it seprately
->>>>> and
->>>>> skip it in the second for loop.
->>>>
->>>> Thanks for your review, Neil!
->>>>
->>>> I know what you mean, yes, it's most probably that the searched TSN was
->>>> transmitted in the currently active_path, but what should we do if not.
->>>>
->>>> Check the comment in sctp_assoc_lookup_tsn() function:
->>>> /* Let's be hopeful and check the active_path first. */
->>>> /* If not found, go search all the other transports. */
->>>>
->>>> It has checked the active_path first and then traverse all the other
->>>> transports in
->>>> the transport_addr_list except the active_path.
->>>>
->>>> So what I want to fix here is the inconsistency between the function
->>>> should do and
->>>> the code actually does.
->>>>
->>> I understand what you're doing, and I agree that the fix is functional (Hence
->>> my "This works" statement in my last note).  What I'm suggesting is that, since
->>> you're messing about in that code anyway that you clean it up while your at it,
->>> so that we don't need to have the if (transport == active) check at all.  We
->>> trade in some extra work in a non-critical path (sctp_assoc_set_primary), for
->>> the removal of an extra for loop operation and a conditional check in a much
->>> hotter path.  Something like this (completely untested), is what I was thinking
->>>
->>>
->>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
->>> index 43cd0dd..8ae873c 100644
->>> --- a/net/sctp/associola.c
->>> +++ b/net/sctp/associola.c
->>> @@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association *asoc,
->>>
->>>   	asoc->peer.primary_path = transport;
->>>
->>> +	list_del_rcu(&transport->transports);
->>> +	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
->>> +
->>>   	/* Set a default msg_name for events. */
->>>   	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
->>>   	       sizeof(union sctp_addr));
->>> @@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct sctp_association *asoc)
->>>   struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
->>>   					     __u32 tsn)
->>>   {
->>> -	struct sctp_transport *active;
->>>   	struct sctp_transport *match;
->>>   	struct sctp_transport *transport;
->>>   	struct sctp_chunk *chunk;
->>> @@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
->>>   	 * The general strategy is to search each transport's transmitted
->>>   	 * list.   Return which transport this TSN lives on.
->>>   	 *
->>> -	 * Let's be hopeful and check the active_path first.
->>> -	 * Another optimization would be to know if there is only one
->>> -	 * outbound path and not have to look for the TSN at all.
->>> +	 * Note, that sctp_assoc_set_primary does a move to front operation
->>> +	 * on the active_path transport, so this code implicitly checks
->>> +	 * the active_path first, as we most commonly expect to find our TSN
->>> +	 * there.
->>>   	 *
->>>   	 */
->>
->> Neil, active_patch != primary_path all the time.  In fact, when you
->> have path primary path failure, active path will change while
->> primary
->> may only change when the user says so.
-> Thats a good point, thank you Vlad.  We would need to only update the
-> transport_addr_list in set_primary if its state is ACTIVE or UNKNOWN.  We would
-> also need to update it if the active path changes in
-> sctp_assoc_control_transport, if the new active path is different from the old.
-> Both of those paths however are not intended to be run frequently, so I think
-> this is still a viable optimization.  I'm working on it now.
-> Neil
+On Tue, Mar 12, 2013 at 04:54:33PM +0100, Uwe Kleine-König wrote:
+> +#include <asm/irq.h>
+> +#include <asm/io.h>
 
-You also need to take special care if an active transport is removed. 
-The active path will get reassigned then.  I am not sure if it is worth 
-doing all these changes to address a corner case optimization (CWR is a 
-corner case).
+linux/io.h
 
--vlad
+> +	unsigned int irqs, i, irq_base;
+> +
+> +	irq_base = irq_alloc_descs(-1, 16, irqs - 16, numa_node_id());
+> +	if (IS_ERR_VALUE(irq_base)) {
 
->
->>
->> So, you may still get into a situation where primary and active
->> paths are different.
->>
->> The optimization here may not work at all under those circumstances.
->>
->> -vlad
->>
->>>
->>> -	active = asoc->peer.active_path;
->>> -
->>> -	list_for_each_entry(chunk, &active->transmitted,
->>> -			transmitted_list) {
->>> -
->>> -		if (key == chunk->subh.data_hdr->tsn) {
->>> -			match = active;
->>> -			goto out;
->>> -		}
->>> -	}
->>> -
->>> -	/* If not found, go search all the other transports. */
->>>   	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
->>>   			transports) {
->>>
->>> -		if (transport == active)
->>> -			break;
->>>   		list_for_each_entry(chunk, &transport->transmitted,
->>>   				transmitted_list) {
->>>   			if (key == chunk->subh.data_hdr->tsn) {
->>>
->>
->>
+Erm... irq_alloc_descs() returns a negative number on error.
 
+	if ((int)irq_base < 0)
+
+or make irq_base an int, and use:
+
+	if (irq_base < 0)
