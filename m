@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab3CLD6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 23:58:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34836 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab3CLD6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 23:58:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,827,1355126400"; 
-   d="scan'208";a="299683732"
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: gong.chen@linux.intel.com, Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v4 1/4] x86: Add cpu capability flag X86_FEATURE_NONSTOP_TSC_S3
-Date: Tue, 12 Mar 2013 11:56:45 +0800
-Message-Id: <1363060608-22657-2-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363060608-22657-1-git-send-email-feng.tang@intel.com>
-References: <1363060608-22657-1-git-send-email-feng.tang@intel.com>
+	id S1751960Ab3CLEDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 00:03:25 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:34549 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab3CLEDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 00:03:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130312033906.GA3725@linux.vnet.ibm.com>
+References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
+	<CAFTL4hyO7HxGYOL=Fvq-g3LY37PY2f+xR6+stA7-wNkh3wkV=Q@mail.gmail.com>
+	<CACVXFVMu9FNTghOQjNryY59S6xkRqg9DR5=OshngUDEZ5Fb=4w@mail.gmail.com>
+	<20130312033906.GA3725@linux.vnet.ibm.com>
+Date: Tue, 12 Mar 2013 12:03:23 +0800
+Message-ID: <CACVXFVMuhFoPat7FAznr4ji5vXeeVBNCWya=JdYGLYqBv5SFUQ@mail.gmail.com>
+Subject: Re: [PATCH] atomic: improve atomic_inc_unless_negative/atomic_dec_unless_positive
+From: Ming Lei <tom.leiming@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Shaohua Li <shli@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some new Intel Atom processors (Penwell and Cloverview), there is
-a feature that the TSC won't stop in S3 state, say the TSC value
-won't be reset to 0 after resume. This feature makes TSC a more reliable
-clocksource and could benefit the timekeeping code during system
-suspend/resume cycle, so add a flag for it.
+On Tue, Mar 12, 2013 at 11:39 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> Atomic operations that return a value are required to act as full memory
+> barriers.  This means that code relying on ordering provided by these
+> atomic operations must also do ordering, either by using an explicit
+> memory barrier or by relying on guarantees from atomic operations.
+>
+> For example:
+>
+>         CPU 0                                   CPU 1
+>
+>         X = 1;                                  r1 = Z;
+>         if (atomic_inc_unless_negative(&Y)      smp_mb();
+>                 do_something();
+>         Z = 1;                                  r2 = X;
+>
+> Assuming X and Z are initially zero, if r1==1, we are guaranteed
+> that r2==1.  However, CPU 1 needs its smp_mb() in order to pair with
+> the barrier implicit in atomic_inc_unless_negative().
+>
+> Make sense?
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
- 2 files changed, 13 insertions(+)
+Yes, it does, and thanks for the explanation.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 93fe929..a8466f2 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -100,6 +100,7 @@
- #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
- #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
- #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
-+#define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
- 
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 1905ce9..fe57544 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -96,6 +96,18 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 			sched_clock_stable = 1;
- 	}
- 
-+	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
-+	if (c->x86 == 6) {
-+		switch (c->x86_model) {
-+		case 0x27:	/* Penwell */
-+		case 0x35:	/* Cloverview */
-+			set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC_S3);
-+			break;
-+		default:
-+			;
-+		}
-+	}
-+
- 	/*
- 	 * There is a known erratum on Pentium III and Core Solo
- 	 * and Core Duo CPUs.
+But looks the above example is not what Frederic described:
+
+"the above atomic_read() might return -1 because there is no
+guarantee it's seeing the recent update on the remote CPU."
+
+Even I am not sure if adding one smp_mb() around atomic_read()
+can guarantee that too.
+
+Andrew, please ignore the patch, thanks.
+
+Thanks,
 -- 
-1.7.9.5
-
+Ming Lei
