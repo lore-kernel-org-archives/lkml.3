@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab3CLJqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 05:46:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab3CLJq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 05:46:29 -0400
-Subject: Re: rcu: fix hlist_bl_set_first_rcu annotation
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        adas@redhat.com, hch@lst.de, npiggin@gmail.com
-In-Reply-To: <20130203183958.GO2632@linux.vnet.ibm.com>
-References: <1359572877.2719.50.camel@menhir>
-	 <20130203183958.GO2632@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 12 Mar 2013 09:44:29 +0000
-Message-ID: <1363081470.2732.1.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932454Ab3CLJuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 05:50:20 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:53958 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab3CLJuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 05:50:18 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAGXu5jJm2QM-s6DV3e5guQc5i-qEK52uRR6xc=ViqrvCibHEUw@mail.gmail.com>
+References: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
+	<CAGXu5jJm2QM-s6DV3e5guQc5i-qEK52uRR6xc=ViqrvCibHEUw@mail.gmail.com>
+Date: Tue, 12 Mar 2013 10:50:16 +0100
+Message-ID: <CA+icZUVJ8bdA9JFMkMnt6ajU2QrATpz2O6VJwGbTQecJ2UYS1Q@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (drm-intel tree related)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Mar 12, 2013 at 6:46 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Mar 11, 2013 at 9:22 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> After merging the final tree, today's linux-next build (i386 defconfig)
+>> failed like this:
+>>
+>> drivers/built-in.o: In function `i915_min_freq_set':
+>> i915_debugfs.c:(.text+0xb1adc): undefined reference to `__udivdi3'
+>> drivers/built-in.o: In function `i915_max_freq_set':
+>> i915_debugfs.c:(.text+0xb1bac): undefined reference to `__udivdi3'
+>>
+>> Caused by commit 2389cc500686 ("drm/i915: use simple attribute in debugfs
+>> routines") from the drm-intel tree.
+>>
+>> I have reverted that commit for today.
+>
+> Ah-ha, thanks. I've sent a follow-up patch to fix this.
+>
 
-On Sun, 2013-02-03 at 10:39 -0800, Paul E. McKenney wrote:
-> On Wed, Jan 30, 2013 at 07:07:57PM +0000, Steven Whitehouse wrote:
-> > 
-> > Abhi noticed that we were getting a complaint from the RCU subsystem
-> > about access of an RCU protected list under the write side bit lock.
-> > This patch adds additional annotation to check both the RCU read
-> > lock and the write side bit lock before printing a message.
-> > 
-> > Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> > Reported-by: Abhijith Das <adas@redhat.com>
-> > Tested-by: Abhijith Das <adas@redhat.com>
-> 
-> Looks plausible to me on first glance, copying Nick Piggin and Christoph
-> Hellwig.  If they have no objections, I will queue this.
-> 
-> 							Thanx, Paul
-> 
+Can you please point to the patch [1] next time?
+Thanks.
 
-Just a quick query to see what happened to this patch... it doesn't
-appear to have landed in Linus' tree yet, and I can't spot it in your
-git trees at korg either,
+- Sedat -
 
-Steve.
+[1] https://patchwork.kernel.org/patch/2253231/
 
-
-> > diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-> > index 31f9d75..2eb8855 100644
-> > --- a/include/linux/list_bl.h
-> > +++ b/include/linux/list_bl.h
-> > @@ -125,6 +125,11 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
-> >  	__bit_spin_unlock(0, (unsigned long *)b);
-> >  }
-> > 
-> > +static inline bool hlist_bl_is_locked(struct hlist_bl_head *b)
-> > +{
-> > +	return bit_spin_is_locked(0, (unsigned long *)b);
-> > +}
-> > +
-> >  /**
-> >   * hlist_bl_for_each_entry	- iterate over list of given type
-> >   * @tpos:	the type * to use as a loop cursor.
-> > diff --git a/include/linux/rculist_bl.h b/include/linux/rculist_bl.h
-> > index cf1244f..4f216c5 100644
-> > --- a/include/linux/rculist_bl.h
-> > +++ b/include/linux/rculist_bl.h
-> > @@ -20,7 +20,7 @@ static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
-> >  static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
-> >  {
-> >  	return (struct hlist_bl_node *)
-> > -		((unsigned long)rcu_dereference(h->first) & ~LIST_BL_LOCKMASK);
-> > +		((unsigned long)rcu_dereference_check(h->first, hlist_bl_is_locked(h)) & ~LIST_BL_LOCKMASK);
-> >  }
-> > 
-> >  /**
-> > 
-> > 
-> 
-
-
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
