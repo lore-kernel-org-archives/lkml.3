@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab3CLOnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 10:43:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47526 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab3CLOnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 10:43:09 -0400
-Message-ID: <513F3EF0.3030609@pengutronix.de>
-Date: Tue, 12 Mar 2013 15:42:56 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1755559Ab3CLOnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 10:43:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35708 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755196Ab3CLOnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 10:43:41 -0400
+Date: Tue, 12 Mar 2013 09:43:34 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, cpufreq <cpufreq@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpufreq: cpufreq-cpu0: provide compatibility string
+ for DT matchup
+Message-ID: <20130312144334.GB21599@kahuna>
+References: <1363043130-30270-1-git-send-email-nm@ti.com>
+ <1363043130-30270-3-git-send-email-nm@ti.com>
+ <513EB7FE.1070000@ti.com>
+ <513F3B98.6050909@ti.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: balbi@ti.com, tony@atomide.com, mark.rutland@arm.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
-References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de> <513F3B7E.8000002@ti.com>
-In-Reply-To: <513F3B7E.8000002@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2JFKJCWOQMMBTRRLLAEMG"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <513F3B98.6050909@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2JFKJCWOQMMBTRRLLAEMG
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 15:28-20130312, Benoit Cousson wrote:
+> On 03/12/2013 06:07 AM, Santosh Shilimkar wrote:
+> > On Tuesday 12 March 2013 04:35 AM, Nishanth Menon wrote:
+> >> commit 5553f9e (cpufreq: instantiate cpufreq-cpu0 as a platform_driver)
+> >> now forces platform device to be registered for allowing cpufreq-cpu0
+> >> to be used by SoCs. example: drivers/cpufreq/highbank-cpufreq.c
+> >>
+> >> However, for SoCs that wish to link up using device tree, instead
+> >> of platform device, provide compatibility string match:
+> >> compatible = "cpufreq,cpu0";
+> 
+> You cannot add a non-HW relative binding... DT is supposed to represent
+> the pure HW.
+> AFAIK, cpufreq has nothing to do with the HW definition.
+Ref:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/cpufreq/highbank-cpufreq.c#n61
+there is a need for a device of some sort.  in the example above, we
+register a dummy device for linking up with cpufreq-cpu0 driver.
+what we do in this patch is to indicate that SoC CPUs are managed by
+cpufreq-cpu0 driver.
 
-On 03/12/2013 03:28 PM, Roger Quadros wrote:
-> On 03/12/2013 04:17 PM, Marc Kleine-Budde wrote:
->> On 03/12/2013 03:12 PM, Roger Quadros wrote:
->>> On 03/12/2013 01:54 PM, Marc Kleine-Budde wrote:
->>>> On 03/12/2013 12:24 PM, Roger Quadros wrote:
->>>>> Add clk_rate parameter to platform data. If supplied, the
->>>>> NOP phy driver will program the clock to that rate during probe.
->>>>>
->>>>> Also add 2 flags, needs_vcc and needs_reset.
->>>>> If the flag is set and the regulator couldn't be found
->>>>> then the driver will bail out with -EPROBE_DEFER.
->>>>
->>>> Is there a platform which fills out pdata.needs_vcc and
->>>> pdata.needs_reset? IMHO it makes no sense to add features for the no=
-n DT
->>>> case, if there isn't any user for it.
->>>>
->>>
->>> There can be a user in the non DT case as well. Consider the followin=
-g example:
->>
->> I'm just saying, let the implementation up to a real user for the non =
-DT
->> case. Beagleboard is ARM and there's no point of implementing non DT
->> fall backs for ARM, IMHO.
->>
->=20
-> Why do you say so?
->=20
-> It doesn't depend on the CPU architecture. It depends on how the board =
-designer
-> wired the board. A non ARM platform could also face the same problem as=
- beagle.
+I am a bit curious to see how else would we represent drivers to manage
+real h/w devices like CPU? Is the highbank style the recommended way to do
+things?
+> 
+> >>
+> >> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> >> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >> Cc: Shawn Guo <shawn.guo@linaro.org>
+> >> Cc: linux-kernel@vger.kernel.org
+> >> Cc: cpufreq@vger.kernel.org
+> >> Cc: linux-pm@vger.kernel.org
+> >> Cc: linux-omap@vger.kernel.org
+> >>
+> >> Signed-off-by: Nishanth Menon <nm@ti.com>
+> >> ---
+> >>  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |    3 +++
+> >>  drivers/cpufreq/cpufreq-cpu0.c                     |    6 ++++++
+> >>  2 files changed, 9 insertions(+)
+> >>
+> > Looks fine to me. CC'ing dt list in case some one has
+> > comments on binding updates.
+> > 
+> > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> Not-Acked-by-me.
 
-Using -EPROBE_DEFER ist the way to solve the problem.
-
-> It is not a non DT fallback. I believe many are still using non DT boot=
- and it
-> needs to work at least till we move all functionality to purely DT.
-
-=46rom my point of view, it makes no sense today to implement new feature=
-s
-which have a fallback for the non-DT case, if there isn't a real user of
-this feature. So IMHO don't add needs_vcc and needs_reset flags to the
-pdata, just take the information from the DT. As soon as there is a
-non-DT user of this feature she/he can implement it or even better
-switch to DT.
-
-just my 2=A2,
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-------enig2JFKJCWOQMMBTRRLLAEMG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlE/PvMACgkQjTAFq1RaXHOogQCfXzW2ObsELUYpeuzM+av4oltJ
-anMAn1qTdhMvcao14GJcr1LIwu+xAE03
-=5H+S
------END PGP SIGNATURE-----
-
-------enig2JFKJCWOQMMBTRRLLAEMG--
+-- 
+Regards,
+Nishanth Menon
