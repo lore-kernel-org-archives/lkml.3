@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab3CLH6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:58:35 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58500 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab3CLH6e (ORCPT
+	id S1755040Ab3CLIQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 04:16:36 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:59216 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3CLIQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:58:34 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-omap@vger.kernel.org
-Cc: tony@atomide.com, linux@arm.linux.org.uk, khilman@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] mach_omap2: use PTR_RET instead of IS_ERR + PTR_ERR
-Date: Tue, 12 Mar 2013 09:58:29 +0200
-Message-Id: <1363075109-27038-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 12 Mar 2013 04:16:34 -0400
+Date: Tue, 12 Mar 2013 09:16:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
+ section
+Message-ID: <20130312081628.GA30665@gmail.com>
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
-readability.
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- arch/arm/mach-omap2/devices.c |    4 ++--
- arch/arm/mach-omap2/fb.c      |    5 +----
- arch/arm/mach-omap2/gpmc.c    |    2 +-
- arch/arm/mach-omap2/pmu.c     |    5 +----
- 4 files changed, 5 insertions(+), 11 deletions(-)
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-index 1ec7f05..2a0816e 100644
---- a/arch/arm/mach-omap2/devices.c
-+++ b/arch/arm/mach-omap2/devices.c
-@@ -66,7 +66,7 @@ static int __init omap3_l3_init(void)
- 
- 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
- 
--	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
-+	return PTR_RET(pdev);
- }
- omap_postcore_initcall(omap3_l3_init);
- 
-@@ -100,7 +100,7 @@ static int __init omap4_l3_init(void)
- 
- 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
- 
--	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
-+	return PTR_RET(pdev);
- }
- omap_postcore_initcall(omap4_l3_init);
- 
-diff --git a/arch/arm/mach-omap2/fb.c b/arch/arm/mach-omap2/fb.c
-index 190ae49..2ca33cc 100644
---- a/arch/arm/mach-omap2/fb.c
-+++ b/arch/arm/mach-omap2/fb.c
-@@ -83,10 +83,7 @@ static int __init omap_init_vrfb(void)
- 	pdev = platform_device_register_resndata(NULL, "omapvrfb", -1,
- 			res, num_res, NULL, 0);
- 
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
--	else
--		return 0;
-+	return PTR_RET(pdev);
- }
- 
- omap_arch_initcall(omap_init_vrfb);
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 410e1ba..c665721 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1448,7 +1448,7 @@ static int __init omap_gpmc_init(void)
- 	pdev = omap_device_build(DEVICE_NAME, -1, oh, NULL, 0);
- 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
- 
--	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
-+	return PTR_RET(pdev);
- }
- omap_postcore_initcall(omap_gpmc_init);
- 
-diff --git a/arch/arm/mach-omap2/pmu.c b/arch/arm/mach-omap2/pmu.c
-index 9debf82..13ff2f5 100644
---- a/arch/arm/mach-omap2/pmu.c
-+++ b/arch/arm/mach-omap2/pmu.c
-@@ -52,10 +52,7 @@ static int __init omap2_init_pmu(unsigned oh_num, char *oh_names[])
- 	WARN(IS_ERR(omap_pmu_dev), "Can't build omap_device for %s.\n",
- 	     dev_name);
- 
--	if (IS_ERR(omap_pmu_dev))
--		return PTR_ERR(omap_pmu_dev);
--
--	return 0;
-+	return PTR_RET(omap_pmu_dev);
- }
- 
- static int __init omap_init_pmu(void)
--- 
-1.7.9.5
+> Beacuse hash_64() is called from the get_kprobe() inside
+> int3 handler, kernel causes int3 recursion and crashes if
+> kprobes user puts a probe on it.
+> 
+> Usually hash_64() is inlined into caller function, but in
+> some cases, it has instances by gcc's interprocedural
+> constant propagation.
+> 
+> This patch adds __kprobes tag on the hash_64() and moves
+> all those instances into .text.kprobe section so that
+> kprobes can refuse probing on the instances.
+> 
+> I've ensured that all hash_64 instances moves to the
+> address between __kprobes_text_start and __kprobes_text_end
+> with this patch as below.
+> 
+> ffffffff8138bea0 T __kprobes_text_start
+> ffffffff8138bec0 t hash_64.constprop.8
+> ffffffff8138ef98 t hash_64.constprop.26
+> ffffffff8138efae t hash_64
+> ffffffff8138f066 t hash_64.constprop.43
+> ffffffff8138f649 t hash_64.constprop.25
+> ffffffff8139103a t hash_64.constprop.77
+> ffffffff81391050 t hash_64.constprop.24
+> ffffffff81391066 t hash_64.constprop.40
+> ffffffff8139107c t hash_64.constprop.15
+> ffffffff81391092 T __kprobes_text_end
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> ---
+>  include/linux/hash.h |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/hash.h b/include/linux/hash.h
+> index 61c97ae..d83f62f 100644
+> --- a/include/linux/hash.h
+> +++ b/include/linux/hash.h
+> @@ -15,6 +15,7 @@
+>   */
+>  
+>  #include <asm/types.h>
+> +#include <linux/kprobes.h>
 
+I have no objections to the fix itself, but this inclusion of kprobes.h in 
+hash.h is somewhat sad: kprobes.h is a 'fat' header that includes a lot of 
+header files - while hash.h is a really basic type header included in 
+close to a hundred .c files.
+
+I think one solution would be for the __kprobes definition to move to a 
+more basic header file - such as types.h or compiler.h (where the 
+'notrace' attribute is placed too), to stop this header dependency creep.
+
+Thanks,
+
+	Ingo
