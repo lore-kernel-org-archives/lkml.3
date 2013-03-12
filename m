@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab3CLVJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 17:09:14 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:56198 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933453Ab3CLVJN (ORCPT
+	id S1755702Ab3CLVOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 17:14:17 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:48476 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3CLVOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 17:09:13 -0400
-Message-ID: <513F9974.8010909@linaro.org>
-Date: Tue, 12 Mar 2013 14:09:08 -0700
+	Tue, 12 Mar 2013 17:14:16 -0400
+Message-ID: <513F9AA4.10005@linaro.org>
+Date: Tue, 12 Mar 2013 14:14:12 -0700
 From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
@@ -19,10 +19,9 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Len Brown <lenb@kernel.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v4 4/4] timekeeping: utilize the suspend-nonstop clocksource
- to count suspended time
-References: <1363060608-22657-1-git-send-email-feng.tang@intel.com> <1363060608-22657-5-git-send-email-feng.tang@intel.com>
-In-Reply-To: <1363060608-22657-5-git-send-email-feng.tang@intel.com>
+Subject: Re: [PATCH v4 1/4] x86: Add cpu capability flag X86_FEATURE_NONSTOP_TSC_S3
+References: <1363060608-22657-1-git-send-email-feng.tang@intel.com> <1363060608-22657-2-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1363060608-22657-2-git-send-email-feng.tang@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,63 +29,54 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 03/11/2013 08:56 PM, Feng Tang wrote:
-> +	/*
-> +	 * After system resumes, we need to calculate the suspended time and
-> +	 * compensate it for the OS time. There are 3 sources that could be
-> +	 * used: Nonstop clocksource during suspend, persistent clock and rtc
-> +	 * device.
-> +	 *
-> +	 * One specific platform may have 1 or 2 or all of them, and the
-> +	 * preference will be:
-> +	 *	suspend-nonstop clocksource -> persistent clock -> rtc
-> +	 * The less preferred source will only be tried if there is no better
-> +	 * usable source. The rtc part is handled separately in rtc core code.
-> +	 */
-> +	cycle_now = clock->read(clock);
-> +	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NONSTOP) &&
-> +		cycle_now > clock->cycle_last) {
-> +		u64 num, max = ULLONG_MAX;
-> +		u32 mult = clock->mult;
-> +		u32 shift = clock->shift;
-> +		s64 nsec = 0;
-> +
-> +		cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
-> +
-> +		/*
-> +		 * "cycle_delta * mutl" may cause 64 bits overflow, if the
-> +		 * suspended time is too long. In that case we need do the
-> +		 * 64 bits math carefully
-> +		 */
-> +		do_div(max, mult);
-> +		if (cycle_delta > max) {
-> +			num = div64_u64(cycle_delta, max);
-> +			nsec = (((u64) max * mult) >> shift) * num;
-> +			cycle_delta -= num * max;
-> +		}
-> +		nsec += ((u64) cycle_delta * mult) >> shift;
-> +
-> +		ts_delta = ns_to_timespec(nsec);
-> +		suspendtime_found = true;
-> +	} else if (timespec_compare(&ts_new, &timekeeping_suspend_time) > 0) {
-> +		ts_delta = timespec_sub(ts_new, timekeeping_suspend_time);
-> +		suspendtime_found = true;
+> On some new Intel Atom processors (Penwell and Cloverview), there is
+> a feature that the TSC won't stop in S3 state, say the TSC value
+> won't be reset to 0 after resume. This feature makes TSC a more reliable
+> clocksource and could benefit the timekeeping code during system
+> suspend/resume cycle, so add a flag for it.
+>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>   arch/x86/include/asm/cpufeature.h |    1 +
+>   arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
+>   2 files changed, 13 insertions(+)
+>
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index 93fe929..a8466f2 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -100,6 +100,7 @@
+>   #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+>   #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+>   #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
+> +#define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
+>   
+>   /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
+>   #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index 1905ce9..fe57544 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -96,6 +96,18 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+>   			sched_clock_stable = 1;
 >   	}
-> -	/* re-base the last cycle value */
-> -	tk->clock->cycle_last = tk->clock->read(tk->clock);
-> +
-> +	if (suspendtime_found)
-> +		__timekeeping_inject_sleeptime(tk, &ts_delta);
-> +
-> +	/* Re-base the last cycle value */
-> +	clock->cycle_last = clock->read(clock);
-It seems like since we unconditionally read the clock above, this last 
-line could be reworked to be:
-     clock->cycle_last = cycle_now;
+>   
+> +	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
+> +	if (c->x86 == 6) {
+> +		switch (c->x86_model) {
+> +		case 0x27:	/* Penwell */
+> +		case 0x35:	/* Cloverview */
+> +			set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC_S3);
+> +			break;
+> +		default:
+> +			;
 
-Which would save re-reading the clocksource.
+Just FYI, checkpatch.sh complains that this should be
+     default:
+         break;
 
-If you don't have any objections I'll fold that small change into your 
-patch.
+I've gone ahead and fixed that, but you might be sure to run checkpatch 
+in the future before submitting.
 
 thanks
 -john
