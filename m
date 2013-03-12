@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856Ab3CLWuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:50:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60687 "EHLO
+	id S964880Ab3CLWup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:50:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933879Ab3CLWoe (ORCPT
+	with ESMTP id S964822Ab3CLWoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:34 -0400
+	Tue, 12 Mar 2013 18:44:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Pisati <p.pisati@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 02/21] ARM: fix scheduling while atomic warning in alignment handling code
-Date: Tue, 12 Mar 2013 15:44:04 -0700
-Message-Id: <20130312223245.442508096@linuxfoundation.org>
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 35/40] ftrace: Update the kconfig for DYNAMIC_FTRACE
+Date: Tue, 12 Mar 2013 15:43:56 -0700
+Message-Id: <20130312223215.231699728@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
-References: <20130312223245.109098379@linuxfoundation.org>
+In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
+References: <20130312223211.492954675@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit b255188f90e2bade1bd11a986dd1ca4861869f4d upstream.
+commit db05021d49a994ee40a9735d9c3cb0060c9babb8 upstream.
 
-Paolo Pisati reports that IPv6 triggers this warning:
+The prompt to enable DYNAMIC_FTRACE (the ability to nop and
+enable function tracing at run time) had a confusing statement:
 
-BUG: scheduling while atomic: swapper/0/0/0x40000100
-Modules linked in:
-[<c001b1c4>] (unwind_backtrace+0x0/0xf0) from [<c0503c5c>] (__schedule_bug+0x48/0x5c)
-[<c0503c5c>] (__schedule_bug+0x48/0x5c) from [<c0508608>] (__schedule+0x700/0x740)
-[<c0508608>] (__schedule+0x700/0x740) from [<c007007c>] (__cond_resched+0x24/0x34)
-[<c007007c>] (__cond_resched+0x24/0x34) from [<c05086dc>] (_cond_resched+0x3c/0x44)
-[<c05086dc>] (_cond_resched+0x3c/0x44) from [<c0021f6c>] (do_alignment+0x178/0x78c)
-[<c0021f6c>] (do_alignment+0x178/0x78c) from [<c00083e0>] (do_DataAbort+0x34/0x98)
-[<c00083e0>] (do_DataAbort+0x34/0x98) from [<c0509a60>] (__dabt_svc+0x40/0x60)
-Exception stack(0xc0763d70 to 0xc0763db8)
-3d60:                                     e97e805e e97e806e 2c000000 11000000
-3d80: ea86bb00 0000002c 00000011 e97e807e c076d2a8 e97e805e e97e806e 0000002c
-3da0: 3d000000 c0763dbc c04b98fc c02a8490 00000113 ffffffff
-[<c0509a60>] (__dabt_svc+0x40/0x60) from [<c02a8490>] (__csum_ipv6_magic+0x8/0xc8)
+ "enable/disable ftrace tracepoints dynamically"
 
-Fix this by using probe_kernel_address() stead of __get_user().
+This was written before tracepoints were added to the kernel,
+but now that tracepoints have been added, this is very confusing
+and has confused people enough to give wrong information during
+presentations.
 
-Reported-by: Paolo Pisati <p.pisati@gmail.com>
-Tested-by: Paolo Pisati <p.pisati@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Not only that, I looked at the help text, and it still references
+that dreaded daemon that use to wake up once a second to update
+the nop locations and brick NICs, that hasn't been around for over
+five years.
+
+Time to bring the text up to the current decade.
+
+Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/alignment.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ kernel/trace/Kconfig |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -721,7 +721,6 @@ do_alignment(unsigned long addr, unsigne
- 	unsigned long instr = 0, instrptr;
- 	int (*handler)(unsigned long addr, unsigned long instr, struct pt_regs *regs);
- 	unsigned int type;
--	mm_segment_t fs;
- 	unsigned int fault;
- 	u16 tinstr = 0;
- 	int isize = 4;
-@@ -729,16 +728,15 @@ do_alignment(unsigned long addr, unsigne
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -386,24 +386,28 @@ config KPROBE_EVENT
+ 	  If you want to use perf tools, this option is strongly recommended.
  
- 	instrptr = instruction_pointer(regs);
+ config DYNAMIC_FTRACE
+-	bool "enable/disable ftrace tracepoints dynamically"
++	bool "enable/disable function tracing dynamically"
+ 	depends on FUNCTION_TRACER
+ 	depends on HAVE_DYNAMIC_FTRACE
+ 	default y
+ 	help
+-          This option will modify all the calls to ftrace dynamically
+-	  (will patch them out of the binary image and replace them
+-	  with a No-Op instruction) as they are called. A table is
+-	  created to dynamically enable them again.
++	  This option will modify all the calls to function tracing
++	  dynamically (will patch them out of the binary image and
++	  replace them with a No-Op instruction) on boot up. During
++	  compile time, a table is made of all the locations that ftrace
++	  can function trace, and this table is linked into the kernel
++	  image. When this is enabled, functions can be individually
++	  enabled, and the functions not enabled will not affect
++	  performance of the system.
++
++	  See the files in /sys/kernel/debug/tracing:
++	    available_filter_functions
++	    set_ftrace_filter
++	    set_ftrace_notrace
  
--	fs = get_fs();
--	set_fs(KERNEL_DS);
- 	if (thumb_mode(regs)) {
--		fault = __get_user(tinstr, (u16 *)(instrptr & ~1));
-+		u16 *ptr = (u16 *)(instrptr & ~1);
-+		fault = probe_kernel_address(ptr, tinstr);
- 		if (!fault) {
- 			if (cpu_architecture() >= CPU_ARCH_ARMv7 &&
- 			    IS_T32(tinstr)) {
- 				/* Thumb-2 32-bit */
- 				u16 tinst2 = 0;
--				fault = __get_user(tinst2, (u16 *)(instrptr+2));
-+				fault = probe_kernel_address(ptr + 1, tinst2);
- 				instr = (tinstr << 16) | tinst2;
- 				thumb2_32b = 1;
- 			} else {
-@@ -747,8 +745,7 @@ do_alignment(unsigned long addr, unsigne
- 			}
- 		}
- 	} else
--		fault = __get_user(instr, (u32 *)instrptr);
--	set_fs(fs);
-+		fault = probe_kernel_address(instrptr, instr);
+ 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
+ 	  otherwise has native performance as long as no tracing is active.
  
- 	if (fault) {
- 		type = TYPE_FAULT;
+-	  The changes to the code are done by a kernel thread that
+-	  wakes up once a second and checks to see if any ftrace calls
+-	  were made. If so, it runs stop_machine (stops all CPUS)
+-	  and modifies the code to jump over the call to ftrace.
+-
+ config FUNCTION_PROFILER
+ 	bool "Kernel function profiler"
+ 	depends on FUNCTION_TRACER
 
 
