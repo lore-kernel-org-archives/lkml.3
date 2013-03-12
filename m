@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab3CLKxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:53:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48932 "EHLO mx1.redhat.com"
+	id S932729Ab3CLKxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:53:43 -0400
+Received: from linux-sh.org ([111.68.239.195]:52074 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab3CLKxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:53:20 -0400
-Date: Tue, 12 Mar 2013 11:53:00 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCHv3] perf: Fix vmalloc ring buffer free function
-Message-ID: <20130312105300.GD1348@krava.brq.redhat.com>
-References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
- <1362994843.10972.40.camel@laptop>
- <20130311112105.GA9737@krava.brq.redhat.com>
- <1363019193.14933.14.camel@laptop>
- <20130311164309.GG13679@krava.brq.redhat.com>
- <1363023885.14933.16.camel@laptop>
- <20130311180229.GI13679@krava.brq.redhat.com>
- <20130312100502.GC1348@krava.brq.redhat.com>
- <1363084030.14933.23.camel@laptop>
+	id S1753933Ab3CLKxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:53:42 -0400
+Date: Tue, 12 Mar 2013 19:52:30 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 09/17] sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
+Message-ID: <20130312105228.GA23752@linux-sh.org>
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+ <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
+ <20130312103515.GD3553@linux-sh.org>
+ <513F06DF.3040105@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363084030.14933.23.camel@laptop>
+In-Reply-To: <513F06DF.3040105@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 11:27:10AM +0100, Peter Zijlstra wrote:
-> On Tue, 2013-03-12 at 11:05 +0100, Jiri Olsa wrote:
-> > +/*
-> > + * Returns the total number of pages allocated
-> > + * by ring buffer including the user page.
-> > + */
-> > +static int page_nr(struct ring_buffer *rb)
-> > +{
-> > +       return page_order(rb) == -1 ?
-> > +               1 :                        /* no data, just user page */
-> > +               1 + (1 << page_order(rb)); /* user page + data pages */
-> > +}
+On Tue, Mar 12, 2013 at 07:43:43PM +0900, Alex Courbot wrote:
+> On 03/12/2013 07:35 PM, Paul Mundt wrote:
+> >On Tue, Mar 12, 2013 at 07:12:22PM +0900, Alexandre Courbot wrote:
+> >>SH GPIO drivers all use gpiolib and CONFIG_GENERIC_GPIO is only selected
+> >>through CONFIG_GPIOLIB, yet some compilation units depended on
+> >>CONFIG_GENERIC_GPIO. Make them depend on CONFIG_GPIOLIB instead since it
+> >>is more accurate and prepares us for the future removal of
+> >>CONFIG_GENERIC_GPIO.
+> >>
+> >>Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> >
+> >Note that the bulk of the GENERIC_GPIO use for SH has shifted to
+> >drivers/pinctrl/sh-pfc/. If GPIOLIB is forced then a good chunk of the
+> >Kconfig/Makefile bits there ought to be refactored too.
 > 
-> > @@ -371,9 +381,24 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
-> >                 goto fail_all_buf;
-> >  
-> >         rb->user_page = all_buf;
-> > -       rb->data_pages[0] = all_buf + PAGE_SIZE;
-> > -       rb->page_order = ilog2(nr_pages);
-> > -       rb->nr_pages = 1;
+> Yes, that is the case for many other drivers actually. This series
+> just makes sure that GENERIC_GPIO is set through GPIOLIB *only*,
+> thus making both options equivalent. If nobody shoots me for this, I
+> will refactor individual drivers and ultimately remove GENERIC_GPIO
+> completely.
 > 
-> > +
-> > +       rb->data_pages[0] = nr_pages ? all_buf + PAGE_SIZE : NULL;
-> > +       rb->nr_pages      = nr_pages ? 1 : 0;
-> > +       rb->page_order    = ilog2(nr_pages);
-> >  
-> >         ring_buffer_init(rb, watermark, flags);
-> 
-> Still somewhat confused by this.. wouldn't something 'simple' like the
-> below suffice?
-> 
-> Note how the !vmalloc branch also sets rb->nr_pages = nr_pages.
+Ok, just wanted to make sure you were aware of this. I don't have any
+strong opinions on this one way or the other, the entire GPIO Kconfig
+mess is too ugly for words, so any effort to clean that up is probably
+worth the added bloat.
 
-yep it would ;-) though I find it little confusing for:
-
-> 
-> ---
->  kernel/events/ring_buffer.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index 23cb34f..4f48d02 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -316,7 +316,7 @@ void rb_free(struct ring_buffer *rb)
->  struct page *
->  perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
->  {
-> -	if (pgoff > (1UL << page_order(rb)))
-> +	if (pgoff > rb->nr_pages)
->  		return NULL;
-
-here it's the '>' that masks that there's actually (rb->nr_pages + 1) pages
-
->  
->  	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
-> @@ -336,7 +336,7 @@ static void rb_free_work(struct work_struct *work)
->  	int i, nr;
->  
->  	rb = container_of(work, struct ring_buffer, work);
-> -	nr = 1 << page_order(rb);
-> +	nr = rb->nr_pages;
->  
->  	base = rb->user_page;
->  	for (i = 0; i < nr + 1; i++)
-
-and here's the user plus one
-
-> @@ -373,7 +373,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
->  	rb->user_page = all_buf;
->  	rb->data_pages[0] = all_buf + PAGE_SIZE;
->  	rb->page_order = ilog2(nr_pages);
-> -	rb->nr_pages = 1;
-> +	rb->nr_pages = nr_pages;
->  
->  	ring_buffer_init(rb, watermark, flags);
-
-but I'll get used to it np.. ;)
-
-jirka
+Acked-by: Paul Mundt <lethal@linux-sh.org>
