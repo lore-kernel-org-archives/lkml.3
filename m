@@ -1,116 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3CLAYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:24:35 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:58431 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab3CLAYd (ORCPT
+	id S1754887Ab3CLAYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:24:47 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47534 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab3CLAYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:24:33 -0400
-Date: Mon, 11 Mar 2013 17:24:29 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tommi Rantala <tt.rantala@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 4/9] mm: use mm_populate() for blocking remap_file_pages()
-Message-ID: <20130312002429.GA24360@google.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
- <1356050997-2688-5-git-send-email-walken@google.com>
- <CA+ydwtqD67m9_JLCNwvdP72rko93aTkVgC-aK4TacyyM5DoCTA@mail.gmail.com>
- <20130311160322.830cc6b670fd24faa8366413@linux-foundation.org>
+	Mon, 11 Mar 2013 20:24:34 -0400
+Date: Mon, 11 Mar 2013 17:21:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] atomic: improve
+ atomic_inc_unless_negative/atomic_dec_unless_positive
+Message-ID: <20130312002131.GA29650@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130311160322.830cc6b670fd24faa8366413@linux-foundation.org>
+In-Reply-To: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031200-5518-0000-0000-00000C71F8FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry for the late reply)
-
-On Mon, Mar 11, 2013 at 4:03 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Sun, 10 Mar 2013 20:55:21 +0200 Tommi Rantala <tt.rantala@gmail.com> wrote:
->
->> 2012/12/21 Michel Lespinasse <walken@google.com>:
->> > Signed-off-by: Michel Lespinasse <walken@google.com>
->>
->> Hello, this patch introduced the following bug, seen while fuzzing with trinity:
->>
->> [  396.825414] BUG: unable to handle kernel NULL pointer dereference
->> at 0000000000000050
-
-Good catch...
-
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm/fremap.c: fix oops on error path
->
-> If find_vma() fails, sys_remap_file_pages() will dereference `vma', which
-> contains NULL.  Fix it by checking the pointer.
->
-> (We could alternatively check for err==0, but this seems more direct)
->
-> (The vm_flags change is to squish a bogus used-uninitialised warning
-> without adding extra code).
->
-> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-> Cc: Michel Lespinasse <walken@google.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+On Sat, Mar 09, 2013 at 11:38:21PM +0800, Ming Lei wrote:
+> Generally, both atomic_inc_unless_negative() and
+> atomic_dec_unless_positive() need at least two atomic_cmpxchg()
+> to complete the atomic operation. In fact, the 1st atomic_cmpxchg()
+> is just used to read current value of the atomic variable at most times.
+> 
+> Considered memory barrier, bus lock, cache walking, etc. things may be
+> involved in atomic_cmpxchg(), it is much expensive than atomic_read(),
+> which is just the simple below:
+> 
+> 	(*(volatile int *)&(v)->counter)
+> 
+> so this patch can save one extra atomic_cmpxchg() for the two
+> helpers under general situation, and should improve them a bit.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Shaohua Li <shli@kernel.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 > ---
->
->  mm/fremap.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff -puN mm/fremap.c~mm-fremapc-fix-oops-on-error-path mm/fremap.c
-> --- a/mm/fremap.c~mm-fremapc-fix-oops-on-error-path
-> +++ a/mm/fremap.c
-> @@ -163,7 +163,8 @@ SYSCALL_DEFINE5(remap_file_pages, unsign
->          * and that the remapped range is valid and fully within
->          * the single existing vma.
->          */
-> -       if (!vma || !(vma->vm_flags & VM_SHARED))
-> +       vm_flags = vma->vm_flags;
-> +       if (!vma || !(vm_flags & VM_SHARED))
->                 goto out;
+>  include/linux/atomic.h |   28 ++++++++++++++++++----------
+>  1 file changed, 18 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
+> index 5b08a85..aa951d8 100644
+> --- a/include/linux/atomic.h
+> +++ b/include/linux/atomic.h
+> @@ -63,26 +63,34 @@ static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
+>  #ifndef atomic_inc_unless_negative
+>  static inline int atomic_inc_unless_negative(atomic_t *p)
+>  {
+> -	int v, v1;
+> -	for (v = 0; v >= 0; v = v1) {
+> -		v1 = atomic_cmpxchg(p, v, v + 1);
+> -		if (likely(v1 == v))
+> +	int v, t;
+> +
+> +	v = atomic_read(p);
+> +	while (1) {
+> +		if (unlikely(v < 0))
 
-Your commit message indicates the vm_flags load here doesn't generate any code, but this seems very brittle and compiler dependent. If the compiler was to generate an actual load here, the issue with vma == NULL would reappear.
+As Frederic noted, you need an smp_mb() right here.  Because
+atomic_inc_unless_negative() returns a value, it is required to
+act as a full memory barrier.  On the other code paths, atomic_cmpxchg()
+supplies the needed memory ordering, but not on this path.
 
->         if (!vma->vm_ops || !vma->vm_ops->remap_pages)
-> @@ -254,7 +255,8 @@ get_write_lock:
->          */
->
->  out:
-> -       vm_flags = vma->vm_flags;
-> +       if (vma)
-> +               vm_flags = vma->vm_flags;
->         if (likely(!has_write_lock))
->                 up_read(&mm->mmap_sem);
->         else
+> +			return 0;
+> +		t = atomic_cmpxchg(p, v, v + 1);
+> +		if (likely(t == v))
+>  			return 1;
+> +		v = t;
+>  	}
+> -	return 0;
+>  }
+>  #endif
+>  
+>  #ifndef atomic_dec_unless_positive
+>  static inline int atomic_dec_unless_positive(atomic_t *p)
+>  {
+> -	int v, v1;
+> -	for (v = 0; v <= 0; v = v1) {
+> -		v1 = atomic_cmpxchg(p, v, v - 1);
+> -		if (likely(v1 == v))
+> +	int v, t;
+> +
+> +	v = atomic_read(p);
+> +	while (1) {
+> +		if (unlikely(v > 0))
 
+Ditto here.
 
+							Thanx, Paul
 
-Would the following work ? I think it's simpler, and with the compiler
-I'm using here it doesn't emit warnings:
+> +			return 0;
+> +		t = atomic_cmpxchg(p, v, v - 1);
+> +		if (likely(t == v))
+>  			return 1;
+> +		v = t;
+>  	}
+> -	return 0;
+>  }
+>  #endif
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 0cd4c11488ed..329507e832fb 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -254,7 +254,8 @@ get_write_lock:
- 	 */
- 
- out:
--	vm_flags = vma->vm_flags;
-+	if (!err)
-+		vm_flags = vma->vm_flags;
- 	if (likely(!has_write_lock))
- 		up_read(&mm->mmap_sem);
- 	else
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
