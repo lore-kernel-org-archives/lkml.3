@@ -1,137 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab3CLCYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 22:24:07 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:60609 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3CLCYF (ORCPT
+	id S932113Ab3CLC2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 22:28:39 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:61042 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab3CLC2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 22:24:05 -0400
+	Mon, 11 Mar 2013 22:28:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130311133121.GD12682@hmsreliant.think-freely.org>
-References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
-	<20130308142720.GA9873@hmsreliant.think-freely.org>
-	<CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com>
-	<20130311133121.GD12682@hmsreliant.think-freely.org>
-Date: Tue, 12 Mar 2013 10:24:02 +0800
-Message-ID: <CA+=dFzjXO_W1v2g2VsBF7EKGj=c75ZrZPDx=R42Ug-waVLoGCw@mail.gmail.com>
-Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
- so as to find the matched transport
-From: Xufeng Zhang <xufengzhang.main@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Xufeng Zhang <xufeng.zhang@windriver.com>, vyasevich@gmail.com,
-        davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+	<1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+Date: Mon, 11 Mar 2013 19:28:36 -0700
+Message-ID: <CANN689HvZK3gHyxRBPZyXwz2cJfheiEoQMA23oRARMCp=7GUCQ@mail.gmail.com>
+Subject: Re: [PATCH v5 00/44] ldisc patchset
+From: Michel Lespinasse <walken@google.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> Thanks for your review, Neil!
->>
->> I know what you mean, yes, it's most probably that the searched TSN was
->> transmitted in the currently active_path, but what should we do if not.
->>
->> Check the comment in sctp_assoc_lookup_tsn() function:
->> /* Let's be hopeful and check the active_path first. */
->> /* If not found, go search all the other transports. */
->>
->> It has checked the active_path first and then traverse all the other
->> transports in
->> the transport_addr_list except the active_path.
->>
->> So what I want to fix here is the inconsistency between the function
->> should do and
->> the code actually does.
->>
-> I understand what you're doing, and I agree that the fix is functional
-> (Hence
-> my "This works" statement in my last note).  What I'm suggesting is that,
-> since
-> you're messing about in that code anyway that you clean it up while your at
-> it,
-> so that we don't need to have the if (transport == active) check at all.
-> We
-> trade in some extra work in a non-critical path (sctp_assoc_set_primary),
-> for
-> the removal of an extra for loop operation and a conditional check in a
-> much
-> hotter path.  Something like this (completely untested), is what I was
-> thinking
+On Mon, Mar 11, 2013 at 1:44 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> Greg,
+> This patchset includes
+>   'tty: Drop lock contention stat from ldsem trylocks'
+> so no need to apply that on this series. Also, I noticed you
+> kept the 'tty is NULL' removal on a different branch so I left
+> my patch in this series that removes it.
+>
+> This series applies cleanly to tty-next.
+>
+> v5 changes:
+>
+> After completing an audit of the recursive use of ldisc
+> references, I discovered the _blocking_ recursive acquisition
+> of ldisc references was limited to line disciplines misusing
+> the tty_perform_flush() function.
+> With that now resolved in,
+>   'tty: Fix recursive deadlock in tty_perform_flush()'
+> the recursion design in ldsem has been removed.
+>
+> The recursion removal is in its own patch,
+>   'tty: Remove ldsem recursion support'
+> to ease review for those that have already reviewed the
+> ldsem implementation.
+>
+> In addition, this patchset implements lock stealing derived
+> from the work of Michel Lespinasse <walken@google.com> on
+> writer lock stealing in rwsem.
+>
+> Although the rwsem write lock stealing changes are motivated
+> by performance criteria, these changes are motivated by reduced
+> code line count and simplicity of design.
+>
+> *** Edited below to remove recursion discussion ***
+>
+> Back in early December I realized that a classic read/write semaphore
+> with writer priority was the ideal mechanism for handling the
+> line discipline referencing.
+>
+> Line discipline references act as "readers"; closing or changing the
+> line discipline is prevented while these references are outstanding.
+> Conversely, line discipline references should not be granted while
+> the line discipline is closing or changing; these are the "writers".
+>
+> Unfortunately, the existing rwsem uses a FIFO priority for
+> waiting threads and does not support timeouts.
+>
+> So this implements just that: a writer-priority
+> read/write semaphore with timed waits.
 
-Aha, seems I have some misunderstanding previously, now I got your point.
-Yeah, it's better to do the clean up by this way, and this fix looks fine to me,
-but I didn't have a test case to test this, actually this problem was detected
-by code review, so I would like to leave the rest of this work to
-determine by you.
+Thanks for eliminating the recursion requirement. I think this really
+helps - I didn't like that multiple readers with a colliding current
+hash could basically starve out a writer forever.
 
-Thank you very much for your clarification!
+Not knowing anything about the tty layer, I am curious about the
+context for your other requirements. What are ldisc references taken
+for and for how long are they held ? I am surprised that the writers
+may hit a 5 second timeout (because I didn't expect the references to
+be held for very long).
 
+Also why the write-priority requirement rather than reader-writer
+fairness ? Is it to make it less likely to hit the writer timeouts ?
 
-Thanks,
-Xufeng
+In short: I am worried about the introduciton of a new lock type, and
+would be happier if rwsem could be made to fit. BTW, extending rwsem
+itself to add writer timeouts seems quite doable (but making it work
+as a write priority lock would seem like a bad idea).
 
->
->
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index 43cd0dd..8ae873c 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association
-> *asoc,
->
->  	asoc->peer.primary_path = transport;
->
-> +	list_del_rcu(&transport->transports);
-> +	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
-> +
->  	/* Set a default msg_name for events. */
->  	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
->  	       sizeof(union sctp_addr));
-> @@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct
-> sctp_association *asoc)
->  struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association
-> *asoc,
->  					     __u32 tsn)
->  {
-> -	struct sctp_transport *active;
->  	struct sctp_transport *match;
->  	struct sctp_transport *transport;
->  	struct sctp_chunk *chunk;
-> @@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
-> sctp_association *asoc,
->  	 * The general strategy is to search each transport's transmitted
->  	 * list.   Return which transport this TSN lives on.
->  	 *
-> -	 * Let's be hopeful and check the active_path first.
-> -	 * Another optimization would be to know if there is only one
-> -	 * outbound path and not have to look for the TSN at all.
-> +	 * Note, that sctp_assoc_set_primary does a move to front operation
-> +	 * on the active_path transport, so this code implicitly checks
-> +	 * the active_path first, as we most commonly expect to find our TSN
-> +	 * there.
->  	 *
->  	 */
->
-> -	active = asoc->peer.active_path;
-> -
-> -	list_for_each_entry(chunk, &active->transmitted,
-> -			transmitted_list) {
-> -
-> -		if (key == chunk->subh.data_hdr->tsn) {
-> -			match = active;
-> -			goto out;
-> -		}
-> -	}
-> -
-> -	/* If not found, go search all the other transports. */
->  	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
->  			transports) {
->
-> -		if (transport == active)
-> -			break;
->  		list_for_each_entry(chunk, &transport->transmitted,
->  				transmitted_list) {
->  			if (key == chunk->subh.data_hdr->tsn) {
->
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
