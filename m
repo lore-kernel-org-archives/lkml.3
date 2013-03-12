@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3CLWoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60524 "EHLO
+	id S933853Ab3CLWoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab3CLWoE (ORCPT
+	with ESMTP id S1756143Ab3CLWoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:04 -0400
+	Tue, 12 Mar 2013 18:44:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 01/40] ARM: VFP: fix emulation of second VFP instruction
-Date: Tue, 12 Mar 2013 15:43:22 -0700
-Message-Id: <20130312223211.644584319@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 15/40] ath9k_hw: improve reset reliability after errors
+Date: Tue, 12 Mar 2013 15:43:36 -0700
+Message-Id: <20130312223213.119025034@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,50 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 5e4ba617c1b584b2e376f31a63bd4e734109318a upstream.
+commit 3412f2f086ea7531378fabe756bd4a1109994ae6 upstream.
 
-Martin Storsjö reports that the sequence:
+On many different chips, important aspects of the MAC state are not
+fully cleared by a warm reset. This can show up as tx/rx hangs, those
+annoying "DMA failed to stop in 10 ms..." messages or other quirks.
 
-        ee312ac1        vsub.f32        s4, s3, s2
-        ee702ac0        vsub.f32        s5, s1, s0
-        e59f0028        ldr             r0, [pc, #40]
-        ee111a90        vmov            r1, s3
+On AR933x, the chip can occasionally get stuck in a way that only a
+driver unload/reload or a reboot would bring it back to life.
 
-on Raspberry Pi (implementor 41 architecture 1 part 20 variant b rev 5)
-where s3 is a denormal and s2 is zero results in incorrect behaviour -
-the instruction "vsub.f32 s5, s1, s0" is not executed:
+With this patch, a full reset is issued when bringing the chip out of
+FULL-SLEEP state (after idle), or if either Rx or Tx was not shut down
+properly. This makes the DMA related error messages disappear completely
+in my tests on AR933x, and the chip does not get stuck anymore.
 
-        VFP: bounce: trigger ee111a90 fpexc d0000780
-        VFP: emulate: INST=0xee312ac1 SCR=0x00000000
-        ...
-
-As we can see, the instruction triggering the exception is the "vmov"
-instruction, and we emulate the "vsub.f32 s4, s3, s2" but fail to
-properly take account of the FPEXC_FP2V flag in FPEXC.  This is because
-the test for the second instruction register being valid is bogus, and
-will always skip emulation of the second instruction.
-
-Reported-by: Martin Storsjö <martin@martin.st>
-Tested-by: Martin Storsjö <martin@martin.st>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/vfp/vfpmodule.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -413,7 +413,7 @@ void VFP_bounce(u32 trigger, u32 fpexc,
- 	 * If there isn't a second FP instruction, exit now. Note that
- 	 * the FPEXC.FP2V bit is valid only if FPEXC.EX is 1.
- 	 */
--	if (fpexc ^ (FPEXC_EX | FPEXC_FP2V))
-+	if ((fpexc & (FPEXC_EX | FPEXC_FP2V)) != (FPEXC_EX | FPEXC_FP2V))
- 		goto exit;
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1404,7 +1404,9 @@ static bool ath9k_hw_chip_reset(struct a
+ 			reset_type = ATH9K_RESET_POWER_ON;
+ 		else
+ 			reset_type = ATH9K_RESET_COLD;
+-	}
++	} else if (ah->chip_fullsleep || REG_READ(ah, AR_Q_TXE) ||
++		   (REG_READ(ah, AR_CR) & AR_CR_RXE))
++		reset_type = ATH9K_RESET_COLD;
  
- 	/*
+ 	if (!ath9k_hw_set_reset_reg(ah, reset_type))
+ 		return false;
 
 
