@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab3CLWiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:38:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60411 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108Ab3CLWdf (ORCPT
+	id S933794Ab3CLWir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:38:47 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40721 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756174Ab3CLWio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:35 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 086/100] vfs: fix pipe counter breakage
-Date: Tue, 12 Mar 2013 15:32:11 -0700
-Message-Id: <20130312223132.194447593@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 12 Mar 2013 18:38:44 -0400
+Date: Tue, 12 Mar 2013 15:38:39 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 0/8] cgroup: a bunch of cleanups
+Message-ID: <20130312223839.GM25266@htj.dyndns.org>
+References: <513ED010.5060906@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513ED010.5060906@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 12, 2013 at 02:49:52PM +0800, Li Zefan wrote:
+> Hi Tejun,
+> 
+> If you're busy with other stuff, just take your time to go through those
+> patches.
+> 
+> 0001-cgroup-remove-cgroup_is_descentant.patch
+> 0002-cgroup-remove-unused-variables-in-cgroup_destroy_loc.patch
+> 0003-cgroup-hold-cgroup_mutex-before-calling-css_offline.patch
+> 0004-cgroup-don-t-bother-to-resize-pid-array.patch
+> 0005-cgroup-remove-useless-code-in-cgroup_write_event_con.patch
+> 0006-cgroup-remove-unneeded-includes-from-cgroup.h.patch
+> 0007-cgroup-fix-an-almost-harmless-off-by-one-bug.patch
+> 0008-cgroup-consolidate-cgroup_attach_task-and-cgroup_att.patch
 
-------------------
+0001-0007 applied to cgroup/for-3.10.  0008 looks fine but in the diff
+cgroup_attach_task_all() is removed completely and added back in
+slightly different form.  If you wanna keep the functions ordered like
+you posted, please put a separate patch to move
+cgroup_attach_task_all() before the consolidation.
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+Thanks.
 
-commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
-
-If you open a pipe for neither read nor write, the pipe code will not
-add any usage counters to the pipe, causing the 'struct pipe_inode_info"
-to be potentially released early.
-
-That doesn't normally matter, since you cannot actually use the pipe,
-but the pipe release code - particularly fasync handling - still expects
-the actual pipe infrastructure to all be there.  And rather than adding
-NULL pointer checks, let's just disallow this case, the same way we
-already do for the named pipe ("fifo") case.
-
-This is ancient going back to pre-2.4 days, and until trinity, nobody
-naver noticed.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/pipe.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -863,6 +863,9 @@ pipe_rdwr_open(struct inode *inode, stru
- {
- 	int ret = -ENOENT;
- 
-+	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
-+		return -EINVAL;
-+
- 	mutex_lock(&inode->i_mutex);
- 
- 	if (inode->i_pipe) {
-
-
+-- 
+tejun
