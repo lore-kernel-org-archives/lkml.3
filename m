@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3CLWn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:43:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60342 "EHLO
+	id S933440Ab3CLWnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab3CLWdY (ORCPT
+	with ESMTP id S1756006Ab3CLWdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:24 -0400
+	Tue, 12 Mar 2013 18:33:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Greear <greearb@candelatech.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 068/100] mac80211: Fix crash due to un-canceled work-items
-Date: Tue, 12 Mar 2013 15:31:53 -0700
-Message-Id: <20130312223130.243283379@linuxfoundation.org>
+        Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 067/100] CIFS: Fix missing of oplock_read value in smb30_values structure
+Date: Tue, 12 Mar 2013 15:31:52 -0700
+Message-Id: <20130312223130.149057958@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,67 +27,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Greear <greearb@candelatech.com>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit 499218595a2e8296b7492af32fcca141b7b8184a upstream.
+commit 067785c40e52089993757afa28988c05f3cb2694 upstream.
 
-Some mlme work structs are not cancelled on disassociation
-nor interface deletion, which leads to them running after
-the memory has been freed
-
-There is not a clean way to cancel these in the disassociation
-logic because they must be canceled outside of the ifmgd->mtx
-lock, so just cancel them in mgd_stop logic that tears down
-the station.
-
-This fixes the crashes we see in 3.7.9+.  The crash stack
-trace itself isn't so helpful, but this warning gives
-more useful info:
-
-WARNING: at /home/greearb/git/linux-3.7.dev.y/lib/debugobjects.c:261 debug_print_object+0x7c/0x8d()
-ODEBUG: free active (active state 0) object type: work_struct hint: ieee80211_sta_monitor_work+0x0/0x14 [mac80211]
-Modules linked in: [...]
-Pid: 14743, comm: iw Tainted: G         C O 3.7.9+ #11
-Call Trace:
- [<ffffffff81087ef8>] warn_slowpath_common+0x80/0x98
- [<ffffffff81087fa4>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff812a2608>] debug_print_object+0x7c/0x8d
- [<ffffffff812a2bca>] debug_check_no_obj_freed+0x95/0x1c3
- [<ffffffff8114cc69>] slab_free_hook+0x70/0x79
- [<ffffffff8114ea3e>] kfree+0x62/0xb7
- [<ffffffff8149f465>] netdev_release+0x39/0x3e
- [<ffffffff8136ad67>] device_release+0x52/0x8a
- [<ffffffff812937db>] kobject_release+0x121/0x158
- [<ffffffff81293612>] kobject_put+0x4c/0x50
- [<ffffffff8148f0d7>] netdev_run_todo+0x25c/0x27e
-
-Signed-off-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ fs/cifs/smb2ops.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -4072,6 +4072,17 @@ void ieee80211_mgd_stop(struct ieee80211
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
- 
-+	/*
-+	 * Make sure some work items will not run after this,
-+	 * they will not do anything but might not have been
-+	 * cancelled when disconnecting.
-+	 */
-+	cancel_work_sync(&ifmgd->monitor_work);
-+	cancel_work_sync(&ifmgd->beacon_connection_loss_work);
-+	cancel_work_sync(&ifmgd->request_smps_work);
-+	cancel_work_sync(&ifmgd->csa_connection_drop_work);
-+	cancel_work_sync(&ifmgd->chswitch_work);
-+
- 	mutex_lock(&ifmgd->mtx);
- 	if (ifmgd->assoc_data)
- 		ieee80211_destroy_assoc_data(sdata, false);
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -744,4 +744,5 @@ struct smb_version_values smb30_values =
+ 	.cap_unix = 0,
+ 	.cap_nt_find = SMB2_NT_FIND,
+ 	.cap_large_files = SMB2_LARGE_FILES,
++	.oplock_read = SMB2_OPLOCK_LEVEL_II,
+ };
 
 
