@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab3CLXAz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:00:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60327 "EHLO
+	id S1755975Ab3CLWdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60122 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab3CLWdW (ORCPT
+	with ESMTP id S1755789Ab3CLWcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:22 -0400
+	Tue, 12 Mar 2013 18:32:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Russ Dill <Russ.Dill@gmail.com>
-Subject: [ 065/100] random: fix locking dependency with the tasklist_lock
-Date: Tue, 12 Mar 2013 15:31:50 -0700
-Message-Id: <20130312223129.960540099@linuxfoundation.org>
+        Benjamin ESTRABAUD <be@mpstor.com>, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 016/100] iscsi-target: Fix immediate queue starvation regression with DATAIN
+Date: Tue, 12 Mar 2013 15:31:01 -0700
+Message-Id: <20130312223124.734770485@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -26,60 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b980955236922ae6106774511c5c05003d3ad225 upstream.
+commit fd3a9025c0349bc9b01d627529f54e6e1e389015 upstream.
 
-Commit 6133705494bb introduced a circular lock dependency because
-posix_cpu_timers_exit() is called by release_task(), which is holding
-a writer lock on tasklist_lock, and this can cause a deadlock since
-kill_fasync() gets called with nonblocking_pool.lock taken.
+This patch addresses a v3.5+ regression in iscsi-target where TX thread
+process context -> handle_response_queue() execution is allowed to run
+unbounded while servicing constant outgoing flow of ISTATE_SEND_DATAIN
+response state.
 
-There's no reason why kill_fasync() needs to be taken while the random
-pool is locked, so move it out to fix this locking dependency.
+This ends up preventing memory release of StatSN acknowledged commands
+in a timely manner when under heavy large block streaming DATAIN
+workloads.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Russ Dill <Russ.Dill@gmail.com>
+The regression bug was initially introduced with:
+
+commit 6f3c0e69a9c20441bdc6d3b2d18b83b244384ec6
+Author: Andy Grover <agrover@redhat.com>
+Date:   Tue Apr 3 15:51:09 2012 -0700
+
+    target/iscsi: Refactor target_tx_thread immediate+response queue loops
+
+Go ahead and follow original iscsi_target_tx_thread() logic and check
+to break for immediate queue processing after each DataIN Sequence and/or
+Response PDU has been sent.
+
+Reported-by: Benjamin ESTRABAUD <be@mpstor.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -852,6 +852,7 @@ static size_t account(struct entropy_sto
- 		      int reserved)
- {
- 	unsigned long flags;
-+	int wakeup_write = 0;
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3570,6 +3570,10 @@ check_rsp_state:
+ 				spin_lock_bh(&cmd->istate_lock);
+ 				cmd->i_state = ISTATE_SENT_STATUS;
+ 				spin_unlock_bh(&cmd->istate_lock);
++
++				if (atomic_read(&conn->check_immediate_queue))
++					return 1;
++
+ 				continue;
+ 			} else if (ret == 2) {
+ 				/* Still must send status,
+@@ -3659,7 +3663,7 @@ check_rsp_state:
+ 		}
  
- 	/* Hold lock while accounting */
- 	spin_lock_irqsave(&r->lock, flags);
-@@ -873,10 +874,8 @@ static size_t account(struct entropy_sto
- 		else
- 			r->entropy_count = reserved;
- 
--		if (r->entropy_count < random_write_wakeup_thresh) {
--			wake_up_interruptible(&random_write_wait);
--			kill_fasync(&fasync, SIGIO, POLL_OUT);
--		}
-+		if (r->entropy_count < random_write_wakeup_thresh)
-+			wakeup_write = 1;
+ 		if (atomic_read(&conn->check_immediate_queue))
+-			break;
++			return 1;
  	}
  
- 	DEBUG_ENT("debiting %zu entropy credits from %s%s\n",
-@@ -884,6 +883,11 @@ static size_t account(struct entropy_sto
+ 	return 0;
+@@ -3703,12 +3707,15 @@ restart:
+ 		     signal_pending(current))
+ 			goto transport_err;
  
- 	spin_unlock_irqrestore(&r->lock, flags);
++get_immediate:
+ 		ret = handle_immediate_queue(conn);
+ 		if (ret < 0)
+ 			goto transport_err;
  
-+	if (wakeup_write) {
-+		wake_up_interruptible(&random_write_wait);
-+		kill_fasync(&fasync, SIGIO, POLL_OUT);
-+	}
-+
- 	return nbytes;
- }
- 
+ 		ret = handle_response_queue(conn);
+-		if (ret == -EAGAIN)
++		if (ret == 1)
++			goto get_immediate;
++		else if (ret == -EAGAIN)
+ 			goto restart;
+ 		else if (ret < 0)
+ 			goto transport_err;
 
 
