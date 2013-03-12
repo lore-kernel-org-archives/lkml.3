@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab3CLWJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:09:11 -0400
-Received: from smtp.damt.gov.gr ([84.205.252.71]:57849 "EHLO mail.damt.gov.gr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932065Ab3CLWJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:09:08 -0400
-X-Greylist: delayed 1406 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Mar 2013 18:09:08 EDT
-Message-ID: <20130312231944.25475vnpeumfxe04@email.damt.gov.gr>
-Date: Tue, 12 Mar 2013 23:19:44 +0200
-From: Margaret Jones <info@loan.com>
-Reply-to: incitipprimfina@citiprimeloan.co.uk
-To: undisclosed-recipients:;
-Subject: Info
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+	id S933353Ab3CLWJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:09:39 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:61199 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932065Ab3CLWJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 18:09:37 -0400
+Message-ID: <1363126175.3137.160.camel@x61.thuisdomein>
+Subject: [PATCH] ASoC: samsung: remove last traces of neo1973-gta01
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 23:09:35 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-OriginalArrivalTime: 12 Mar 2013 22:09:36.0046 (UTC) FILETIME=[485114E0:01CE1F6E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a general notification to the public. We are a reputable and  
-legitimate loan lender company in United Kingdom,Malaysia and Ghana.We  
-give out all kinds of loans, such as personal loans,commercial loans,  
-business loans, investment loans, etc. We offer long and short terms  
-loan services with an affordable interest rate of 3% only. We offer  
-the best loan services on the internet,because our loan services are  
-very genuine and efficient.
+The (rudimentary) support for the Openmoko Neo1973 GTA01 got removed in
+commit 1ae5cbc52e7c6619a3f44b87809fd25370df31bb ("ASoC: neo1973_wm8753:
+remove references to the neo1973-gta01 machine"). Remove its last traces
+in the Kconfig file too.
 
-We have also been awarded by the general loan lending commission as  
-the best loan company on the internet. For details about our loan  
-services, contact us via email for more informations.email:  
-incitipprimfina@citiprimeloan.co.uk
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-1. Names in full :
-2. Country of Residence/Address :
-3. Amount :
-4. Duration Of Loan :
-5. Age:
-6.Phone Number:
-7.Applicant Address:
-We look forward to your patronage.
-Regards
-Margaret Jones
-Secretary
+ sound/soc/samsung/Kconfig | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
+index 90e7e66..475fb0d 100644
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -35,11 +35,10 @@ config SND_SAMSUNG_I2S
+ 	tristate
+ 
+ config SND_SOC_SAMSUNG_NEO1973_WM8753
+-	tristate "Audio support for Openmoko Neo1973 Smartphones (GTA01/GTA02)"
+-	depends on SND_SOC_SAMSUNG && (MACH_NEO1973_GTA01 || MACH_NEO1973_GTA02)
++	tristate "Audio support for Openmoko Neo1973 Smartphones (GTA02)"
++	depends on SND_SOC_SAMSUNG && MACH_NEO1973_GTA02
+ 	select SND_S3C24XX_I2S
+ 	select SND_SOC_WM8753
+-	select SND_SOC_LM4857 if MACH_NEO1973_GTA01
+ 	select SND_SOC_DFBMCS320
+ 	help
+ 	  Say Y here to enable audio support for the Openmoko Neo1973
+-- 
+1.7.11.7
 
