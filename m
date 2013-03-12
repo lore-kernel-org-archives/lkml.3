@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3CLEfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 00:35:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60025 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab3CLEfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 00:35:46 -0400
-Date: Tue, 12 Mar 2013 10:05:27 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into
-	.text.kprobe section
-Message-ID: <20130312043526.GA4668@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031204-7182-0000-0000-000005BF65C6
+	id S1754155Ab3CLEmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 00:42:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45269 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3CLEma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 00:42:30 -0400
+Date: Tue, 12 Mar 2013 15:42:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: build warning after merge of the final tree (tip tree
+ related)
+Message-Id: <20130312154215.f9c3e957c2a2e510f27b826a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Mar_2013_15_42_15_+1100_K0V+qjiLHbzf9wyh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 11:22:33PM +0900, Masami Hiramatsu wrote:
-> Beacuse hash_64() is called from the get_kprobe() inside
-> int3 handler, kernel causes int3 recursion and crashes if
-> kprobes user puts a probe on it.
-> 
-> Usually hash_64() is inlined into caller function, but in
-> some cases, it has instances by gcc's interprocedural
-> constant propagation.
-> 
-> This patch adds __kprobes tag on the hash_64() and moves
-> all those instances into .text.kprobe section so that
-> kprobes can refuse probing on the instances.
-> 
-> I've ensured that all hash_64 instances moves to the
-> address between __kprobes_text_start and __kprobes_text_end
-> with this patch as below.
-> 
-> ffffffff8138bea0 T __kprobes_text_start
-> ffffffff8138bec0 t hash_64.constprop.8
-> ffffffff8138ef98 t hash_64.constprop.26
-> ffffffff8138efae t hash_64
-> ffffffff8138f066 t hash_64.constprop.43
-> ffffffff8138f649 t hash_64.constprop.25
-> ffffffff8139103a t hash_64.constprop.77
-> ffffffff81391050 t hash_64.constprop.24
-> ffffffff81391066 t hash_64.constprop.40
-> ffffffff8139107c t hash_64.constprop.15
-> ffffffff81391092 T __kprobes_text_end
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+--Signature=_Tue__12_Mar_2013_15_42_15_+1100_K0V+qjiLHbzf9wyh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Hi all,
 
+After merging the final tree, today's linux-next build (sparc defconfig)
+produced this warning:
+
+In file included from kernel/sched/core.c:85:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+In file included from kernel/sched/cputime.c:7:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+In file included from kernel/sched/idle_task.c:1:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+In file included from kernel/sched/fair.c:35:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+In file included from kernel/sched/stop_task.c:1:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+In file included from kernel/sched/rt.c:6:0:
+kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared insid=
+e parameter list [enabled by default]
+kernel/sched/sched.h:1043:39: warning: its scope is only this definition or=
+ declaration, which is probably not what you want [enabled by default]
+
+Probably caused by commit c82ba9fa7588 ("sched: Move struct sched_class
+to kernel/sched/sched.h") from the tip tree which removed a forward
+declaration of "struct sched_domain" from include/linux/sched.h - the
+read declaration is protected by CONFIG_SMP (which is not set for this
+build).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__12_Mar_2013_15_42_15_+1100_K0V+qjiLHbzf9wyh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRPrInAAoJEECxmPOUX5FENaQP/iIoo5CqMVvdM8dV6RSS+R2i
+l0T1RG+bd3HdXW2aoo5qUh4y5dz4OJUm7SHTv4QT//AXcvXPXr5CeRAPrXfGzE3A
+0uTo33oK2PeJxizB1We7NeJM3xtp/619U3kAO2pEYoIjF7f6khandLwBkB57yfSj
+5/RzqGn9mQiezMGtyz6J4IjPKCNa3HYuETZByRol8qSGGxDKcrg4HtIBjcoE0xyl
+uPqnMz0d0n34uBH/knF8Aq7om3V5+kL09h/emqkJ2KbLrf0NKDgjVggVs6w5cX2b
+suT7g7G4NSaGGkNwlISFiEqGFbLkmUBxVEIj+udAGqVikpTjkqhxGfHj8SbFGMoG
+fLYHi35yswj+ZYM5yDw1sxgHHceAweSGzJI+dJJl4eA0rmqYA7t253ZJxihfwYEC
+1cHyn8HLrob0ajALieLjvGp11McauDnb6t2rueOUj8xmRe3Q1m0kzGjMyrxl7KdR
+bfGYQOXJ3UbwxbQ7mhpR7EHU+DBXYeqtFvFtFBVd0xaDV2WkArsNWKZmdlVhqNg9
+iyFbU9Z/RoV4MHQwI98INoUKbjp1JRvKLSJPAUoxQ6cTB40OJKxWiYnKBu6konov
+aO2KiIdrfkAunSdHDKTFdp+PnOqHtwLKZVey4qGFqFE4t9n5cItIts+ou/s5nhhR
+d+bdwu2H+QowhWjSuQwl
+=wV6b
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Mar_2013_15_42_15_+1100_K0V+qjiLHbzf9wyh--
