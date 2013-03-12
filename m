@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab3CLFt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:49:29 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:34332 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3CLFt1 (ORCPT
+	id S1755057Ab3CLFuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:50:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30319 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab3CLFt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:49:27 -0400
-X-AuditID: cbfee68d-b7f786d000005188-b6-513ec1e63790
+	Tue, 12 Mar 2013 01:49:59 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-33-513ec2065b9a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
@@ -15,40 +15,40 @@ Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <003e01ce1ee5$4897e020$d9c7a060$%han@samsung.com>
 In-reply-to: <003e01ce1ee5$4897e020$d9c7a060$%han@samsung.com>
-Subject: [PATCH 02/14] backlight: lms501kf03: convert lms501kf03 to dev_pm_ops
-Date: Tue, 12 Mar 2013 14:49:26 +0900
-Message-id: <003f01ce1ee5$5b09dc40$111d94c0$%han@samsung.com>
+Subject: [PATCH 03/14] backlight: s6e63m0: convert s6e63m0 to dev_pm_ops
+Date: Tue, 12 Mar 2013 14:49:57 +0900
+Message-id: <004001ce1ee5$6dd717c0$49854740$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4e5UhyF7eo33BPTaGekL6G0bVCBQAAAb7Q
+Thread-index: Ac4e5UhyF7eo33BPTaGekL6G0bVCBQAABPww
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zY91nB+0CDTYdUrGYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDLOr1/K
-	VLBDsGJR4xeWBsYTfF2MnBwSAiYS0zY1skHYYhIX7q0Hsrk4hASWMUo0PljCDFP07e1TFojE
-	dEaJKWv3QDm/GCVutv1gBKliE1CT+PLlMHsXIweHiIC+RFuLBkiYWaBUYuuD9ywgtpCArcTd
-	9c8ZQUo4BewktvzNAgkLC/hJXH/zixXEZhFQlbj//z3YXl6g8skfbjJB2IISPybfY4EYqSWx
-	fudxJghbXmLzmrfMICMlBNQlHv3VBQmLCBhJrFnzFqpERGLfi3eMIBdLCFxilzh2ew8LxC4B
-	iW+TD7FA9MpKbDoA9a6kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFhnrF
-	ibnFpXnpesn5uZsYITHZu4Px9gHrQ4zJQOsnMkuJJucDYzqvJN7Q2MzIwtTE1NjI3NKMNGEl
-	cV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwnP9SblV4yry8vLWm4sqf1g+y/hTba
-	5pM4Em6ui5pyP+qA122RNSlnnhowdBXH8D3/tl22f39gxr2mz+batWbN0mJNjiWVTM+ysrYa
-	TWpe/Nvw1V/Z7oc/rz2IlGFYtGhJxvcPsguNDxmlzTe83+Yq7F5/6JrGifSQYJW08uLlSzne
-	y/9490GJpTgj0VCLuag4EQADgcWf3wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd1nB+0CDb4+lbeYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
-	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJ6xgzzq9fylSwQ7BiUeMXlgbGE3xdjJwcEgImEt/ePmWBsMUkLtxb
-	z9bFyMUhJDCdUWLK2j0sEM4vRombbT8YQarYBNQkvnw5zN7FyMEhIqAv0daiARJmFiiV2Prg
-	PdggIQFbibvrnzOClHAK2Els+ZsFEhYW8JO4/uYXK4jNIqAqcf//e2YQmxeofPKHm0wQtqDE
-	j8n3WCBGakms33mcCcKWl9i85i0zyEgJAXWJR391QcIiAkYSa9a8hSoRkdj34h3jBEahWUgm
-	zUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzxz6R3MK5qsDjEKMDB
-	qMTDq/DNNlCINbGsuDL3EKMEB7OSCG/GZrtAId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4H
-	JqO8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDk+vkjZtrU
-	oAWzvYS8Gx9wt4p0Ll2nqKTsK/RM1Hv2q4OsId2X9yXsZgyzzDtr/YrvdMaeLannrroaH1zJ
-	zKPo4CZtp/GhaWa70YpX++wL0g/FB1rq/73Huk/x6/EW5orJkV8vHWYKPcaj/muPOJ/+ft17
-	13ylbjxN/3MguOOvx8oER4VJL/mVWIozEg21mIuKEwEGcd4hPAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI122Q3aBBrdesFvMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBl/d/5m
+	L7glUNG0pIO5gfElbxcjJ4eEgIlE76Y1bBC2mMSFe+uBbC4OIYFljBLNZ24zwhSd27CICSIx
+	nVFi+boJUFW/GCUevL7AAlLFJqAm8eXLYfYuRg4OEQF9ibYWDZAws0CpxNYH78FKhARsJe6u
+	f84IUsIpYCex5W8WSFhYwENi35aXYLtYBFQlnrQdAyvnBSo/0XSJDcIWlPgx+R4LxEgtifU7
+	jzNB2PISm9e8ZQYZKSGgLvHory5IWETASOL3jBY2iBIRiX0v3jGCXCwhcIld4s3kD8wQuwQk
+	vk0+xALRKyux6QAzxLuSEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXGekV
+	J+YWl+al6yXn525ihMRk3w7GmwesDzEmA62fyCwlmpwPjOm8knhDYzMjC1MTU2Mjc0sz0oSV
+	xHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAWCqa/WVm/jP/K20mqNe9yqqNf7F8/
+	8dyEafIVf/P/5K4tlVatf+Py78q/Pfp35Xg0ZSu/BHH5uqndviifXLFD1ICvUyhgXkT18qVi
+	l26s5fE5s2RNgupWo8V5pfsXR/8x325vdH1Tyd9r3y1nRGb4X5E7su38v7xUlvAA7aU31z9Z
+	7/TpgcVtJZbijERDLeai4kQArPjEjN8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV22Q3aBBu8vM1vMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZf3f+Zi+4JVDRtKSDuYHxJW8XIyeHhICJxLkNi5ggbDGJC/fW
+	s3UxcnEICUxnlFi+bgKU84tR4sHrCywgVWwCahJfvhxm72Lk4BAR0Jdoa9EACTMLlEpsffAe
+	rERIwFbi7vrnjCAlnAJ2Elv+ZoGEhQU8JPZteckIYrMIqEo8aTsGVs4LVH6i6RIbhC0o8WPy
+	PRaIkVoS63ceZ4Kw5SU2r3nLDDJSQkBd4tFfXZCwiICRxO8ZLWwQJSIS+168Y5zAKDQLyaRZ
+	SCbNQjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCI/6Z1A7GlQ0WhxgFOBiV
+	eHgVv9kGCrEmlhVX5h5ilOBgVhLhzdhsFyjEm5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cBk
+	lFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjAolLC8eWnNf
+	0K0zerVs7m2bldZvggrW6PbdZ4x4O2N+9eKVOTt6xDeGfJ6SOUUkx2bnop61O/RqJPQVVeNu
+	8i1lfTp3z7tUg1D1tMd1296fcuxo1Fv+eF77q5yZdjscvTbnnJ3nxts/k0nU6+cnuYb9J97s
+	uHTFfh9TtdVrhmKlBUlW3Kfe9yuxFGckGmoxFxUnAgDF+HIZPAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,70 +61,68 @@ structure allows better control over power management.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/lms501kf03.c |   22 ++++++++++------------
- 1 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/video/backlight/s6e63m0.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/video/backlight/lms501kf03.c b/drivers/video/backlight/lms501kf03.c
-index b43882a..cf01b9a 100644
---- a/drivers/video/backlight/lms501kf03.c
-+++ b/drivers/video/backlight/lms501kf03.c
-@@ -387,13 +387,12 @@ static int lms501kf03_remove(struct spi_device *spi)
+diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+index 9c2677f..b37bb18 100644
+--- a/drivers/video/backlight/s6e63m0.c
++++ b/drivers/video/backlight/s6e63m0.c
+@@ -817,12 +817,12 @@ static int s6e63m0_remove(struct spi_device *spi)
  	return 0;
  }
  
 -#if defined(CONFIG_PM)
--
--static int lms501kf03_suspend(struct spi_device *spi, pm_message_t mesg)
+-static int s6e63m0_suspend(struct spi_device *spi, pm_message_t mesg)
 +#ifdef CONFIG_PM_SLEEP
-+static int lms501kf03_suspend(struct device *dev)
++static int s6e63m0_suspend(struct device *dev)
  {
--	struct lms501kf03 *lcd = spi_get_drvdata(spi);
-+	struct lms501kf03 *lcd = dev_get_drvdata(dev);
+-	struct s6e63m0 *lcd = spi_get_drvdata(spi);
++	struct s6e63m0 *lcd = dev_get_drvdata(dev);
  
 -	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
 +	dev_dbg(dev, "lcd->power = %d\n", lcd->power);
  
  	/*
  	 * when lcd panel is suspend, lcd panel becomes off
-@@ -402,19 +401,19 @@ static int lms501kf03_suspend(struct spi_device *spi, pm_message_t mesg)
- 	return lms501kf03_power(lcd, FB_BLANK_POWERDOWN);
+@@ -831,19 +831,18 @@ static int s6e63m0_suspend(struct spi_device *spi, pm_message_t mesg)
+ 	return s6e63m0_power(lcd, FB_BLANK_POWERDOWN);
  }
  
--static int lms501kf03_resume(struct spi_device *spi)
-+static int lms501kf03_resume(struct device *dev)
+-static int s6e63m0_resume(struct spi_device *spi)
++static int s6e63m0_resume(struct device *dev)
  {
--	struct lms501kf03 *lcd = spi_get_drvdata(spi);
-+	struct lms501kf03 *lcd = dev_get_drvdata(dev);
+-	struct s6e63m0 *lcd = spi_get_drvdata(spi);
++	struct s6e63m0 *lcd = dev_get_drvdata(dev);
  
  	lcd->power = FB_BLANK_POWERDOWN;
  
- 	return lms501kf03_power(lcd, FB_BLANK_UNBLANK);
+ 	return s6e63m0_power(lcd, FB_BLANK_UNBLANK);
  }
 -#else
--#define lms501kf03_suspend	NULL
--#define lms501kf03_resume	NULL
+-#define s6e63m0_suspend		NULL
+-#define s6e63m0_resume		NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(lms501kf03_pm_ops, lms501kf03_suspend,
-+			lms501kf03_resume);
++static SIMPLE_DEV_PM_OPS(s6e63m0_pm_ops, s6e63m0_suspend, s6e63m0_resume);
 +
- static void lms501kf03_shutdown(struct spi_device *spi)
+ /* Power down all displays on reboot, poweroff or halt. */
+ static void s6e63m0_shutdown(struct spi_device *spi)
  {
- 	struct lms501kf03 *lcd = spi_get_drvdata(spi);
-@@ -426,12 +425,11 @@ static struct spi_driver lms501kf03_driver = {
+@@ -856,12 +855,11 @@ static struct spi_driver s6e63m0_driver = {
  	.driver = {
- 		.name	= "lms501kf03",
+ 		.name	= "s6e63m0",
  		.owner	= THIS_MODULE,
-+		.pm	= &lms501kf03_pm_ops,
++		.pm	= &s6e63m0_pm_ops,
  	},
- 	.probe		= lms501kf03_probe,
- 	.remove		= lms501kf03_remove,
- 	.shutdown	= lms501kf03_shutdown,
--	.suspend	= lms501kf03_suspend,
--	.resume		= lms501kf03_resume,
+ 	.probe		= s6e63m0_probe,
+ 	.remove		= s6e63m0_remove,
+ 	.shutdown	= s6e63m0_shutdown,
+-	.suspend	= s6e63m0_suspend,
+-	.resume		= s6e63m0_resume,
  };
  
- module_spi_driver(lms501kf03_driver);
+ module_spi_driver(s6e63m0_driver);
 -- 
 1.7.2.5
 
