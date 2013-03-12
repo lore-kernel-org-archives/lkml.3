@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3CLNkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:40:36 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:36601 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab3CLNkf (ORCPT
+	id S1754967Ab3CLNks (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:40:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33305 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3CLNkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:40:35 -0400
-Message-ID: <513F304D.4090405@gmail.com>
-Date: Tue, 12 Mar 2013 14:40:29 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Tue, 12 Mar 2013 09:40:47 -0400
+Date: Tue, 12 Mar 2013 13:40:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bill Huang <bilhuang@nvidia.com>
+Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+	clk_prepare_enable/clk_disable_unprepare
+Message-ID: <20130312134032.GU4977@n2100.arm.linux.org.uk>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: lgirdwood@gmail.com, broonie@opensource.wolfsonmicro.com, perex@perex.cz,
-        tiwai@suse.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] ASoC: tas5086: use module_i2c_driver to simplify
- the code
-References: <CAPgLHd_J+xdx6UdSFahEGmPJX-SXEkQBL7xHA7MEGKf21=32Uw@mail.gmail.com>
-In-Reply-To: <CAPgLHd_J+xdx6UdSFahEGmPJX-SXEkQBL7xHA7MEGKf21=32Uw@mail.gmail.com>
-X-Enigmail-Version: undefined
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.03.2013 14:36, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> Add the below four notifier events so drivers which are interested in
+> knowing the clock status can act accordingly. This is extremely useful
+> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
 > 
-> Use the module_i2c_driver() macro to make the code smaller
-> and a bit simpler.
-
-Thanks for catching this!
-
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-
-Acked-by: Daniel Mack <zonque@gmail.com>
-
-
-
-> ---
->  sound/soc/codecs/tas5086.c | 12 +-----------
->  1 file changed, 1 insertion(+), 11 deletions(-)
+> PRE_CLK_ENABLE
+> POST_CLK_ENABLE
+> PRE_CLK_DISABLE
+> POST_CLK_DISABLE
 > 
-> diff --git a/sound/soc/codecs/tas5086.c b/sound/soc/codecs/tas5086.c
-> index 008bea4..40cee84 100644
-> --- a/sound/soc/codecs/tas5086.c
-> +++ b/sound/soc/codecs/tas5086.c
-> @@ -584,17 +584,7 @@ static struct i2c_driver tas5086_i2c_driver = {
->  	.remove		= tas5086_i2c_remove,
->  };
->  
-> -static int __init tas5086_modinit(void)
-> -{
-> -	return i2c_add_driver(&tas5086_i2c_driver);
-> -}
-> -module_init(tas5086_modinit);
-> -
-> -static void __exit tas5086_modexit(void)
-> -{
-> -	i2c_del_driver(&tas5086_i2c_driver);
-> -}
-> -module_exit(tas5086_modexit);
-> +module_i2c_driver(tas5086_i2c_driver);
->  
->  MODULE_AUTHOR("Daniel Mack <zonque@gmail.com>");
->  MODULE_DESCRIPTION("Texas Instruments TAS5086 ALSA SoC Codec Driver");
-> 
-> 
+> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
 
+NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
+
+The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
+*EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
+clk_unprepare().  Those two functions are *merely* helpers for drivers
+who don't wish to make the individual calls.
+
+Drivers are still completely free to call the individual functions, at
+which point your proposal breaks horribly - and they _do_ call the
+individual functions.
