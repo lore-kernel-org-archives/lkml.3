@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab3CLTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:02:59 -0400
-Received: from linux-sh.org ([111.68.239.195]:60595 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612Ab3CLTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:02:57 -0400
-Date: Wed, 13 Mar 2013 04:00:12 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 0/1] mm/hugetlb: add more arch-defined huge_pte_xxx
- functions
-Message-ID: <20130312190011.GC20355@linux-sh.org>
-References: <1363114106-30251-1-git-send-email-gerald.schaefer@de.ibm.com>
+	id S933321Ab3CLTIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:08:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35147 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932439Ab3CLTH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:07:59 -0400
+Date: Tue, 12 Mar 2013 19:07:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, swarren@wwwdotorg.org,
+        spi-devel-general@lists.sourceforge.net, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: slink-tegra20: move runtime pm calls to
+ transfer_one_message
+Message-ID: <20130312190756.GB19942@opensource.wolfsonmicro.com>
+References: <1362723679-1155-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sZvnRN25x3w09J/6"
 Content-Disposition: inline
-In-Reply-To: <1363114106-30251-1-git-send-email-gerald.schaefer@de.ibm.com>
+In-Reply-To: <1362723679-1155-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Excellent day to have a rotten day.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 07:48:25PM +0100, Gerald Schaefer wrote:
-> This patch introduces those huge_pte_xxx functions and their
-> implementation on all architectures supporting hugetlbfs. This change
-> will be a no-op for all architectures other than s390.
-> 
-..
 
->  arch/ia64/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
->  arch/mips/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
->  arch/powerpc/include/asm/hugetlb.h | 36 ++++++++++++++++++++++++
->  arch/s390/include/asm/hugetlb.h    | 56 +++++++++++++++++++++++++++++++++++++-
->  arch/s390/include/asm/pgtable.h    | 20 --------------
->  arch/s390/mm/hugetlbpage.c         |  2 +-
->  arch/sh/include/asm/hugetlb.h      | 36 ++++++++++++++++++++++++
->  arch/sparc/include/asm/hugetlb.h   | 36 ++++++++++++++++++++++++
->  arch/tile/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
->  arch/x86/include/asm/hugetlb.h     | 36 ++++++++++++++++++++++++
->  mm/hugetlb.c                       | 23 ++++++++--------
->  11 files changed, 320 insertions(+), 33 deletions(-)
-> 
-None of these wrappers are doing anything profound for most platforms, so
-this would be a good candidate for an asm-generic/hugetlb.h (after which
-s390 can continue to be special and no one else has to care).
+--sZvnRN25x3w09J/6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Mar 08, 2013 at 11:51:19AM +0530, Laxman Dewangan wrote:
+> The prepare_transfer_hardware() is called in atomic context and
+> calling synchronous runtime pm calls can create scheduling deadlock.
+
+Applied, thanks.
+
+--sZvnRN25x3w09J/6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRP30FAAoJELSic+t+oim9TWEP/3VVKHnywO7dQ2QXGd/lmQw2
+czvndLWLIeiEHzd8uDZLAcUeVln9xBCYYTHpHo84U8K8PeVROixo7LgYtt6qPNfx
+hKtXqlDg/DPipkrWFlqOAIY2KWSdqDeGNsrcTpM11ei5vTzb+sZ268bWV9xBNaOj
+WONQMCL6qWYQY2keMNBa1v54CLgEwEmA/XwW4Mwov5f+8rMEglftSEqogczR1ak6
+0a5g+eYGzcsm4zCqbbTIw7jk5hEpN7RkYgpT+9t5cAd3UVpLaIp7biyHjRWaqBZx
+CHiF8IYGTM1lR91t1tSQorxvF/aZyz8SwTzrI4GPD1ki66MTUPrVscDkHTQ1j6Zy
+d+CcYHC2kfjRmbAQ+MZ0ZBTZrSfOEK1xovgPwpd7NfL/ptHWjaBW3CNOetNLCdlu
+SrsenMeeHAmFjbWu+EMyGDgxCN8kPUDiGHblnLL95g6L53CmAbOYlhECYmR6tVYA
+FEePkNIhpAbgPnrs/guPckzkYnTTQUM0kEo5FkpPXnxK6qokcF6v/UY3qrNw3sGQ
+mP3DsVec/ukRV9FU5yuzA4YG/sEq5ifAl6DLk8DVqbRzHZu1PB7orJpxXmg+jsEw
+f9j1aMJmD+H2Tbb60xfkPFoamZvQBAoWdaghXJCZ83rjhiwmbTElr3KmJ3QOyt83
+BPHH6oQoEYuw6mLQdhW4
+=eNTy
+-----END PGP SIGNATURE-----
+
+--sZvnRN25x3w09J/6--
