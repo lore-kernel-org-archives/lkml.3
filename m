@@ -1,58 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab3CLP56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:57:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37807 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932101Ab3CLP55 (ORCPT
+	id S932833Ab3CLQAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 12:00:38 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:64512 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab3CLQAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:57:57 -0400
-Date: Tue, 12 Mar 2013 11:57:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>
-cc: gregkh@linuxfoundation.org, <b-cousson@ti.com>, <mark.rutland@arm.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 11/12] USB: ehci-omap: Try to get PHY even if not in PHY
- mode
-In-Reply-To: <1363085090-24676-12-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1303121155540.2153-100000@iolanthe.rowland.org>
+	Tue, 12 Mar 2013 12:00:36 -0400
+Message-ID: <513F5120.7090209@gmail.com>
+Date: Tue, 12 Mar 2013 12:00:32 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Xufeng Zhang <xufengzhang.main@gmail.com>,
+        Xufeng Zhang <xufeng.zhang@windriver.com>, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
+ so as to find the matched transport
+References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com> <20130308142720.GA9873@hmsreliant.think-freely.org> <CA+=dFzjyd4av9D1TmrvguRXv-V7JnGWYJcN=ZEDu8Qhz2s+U7Q@mail.gmail.com> <20130311133121.GD12682@hmsreliant.think-freely.org> <513F1B76.2060603@gmail.com> <20130312154427.GA5969@neilslaptop.think-freely.org>
+In-Reply-To: <20130312154427.GA5969@neilslaptop.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Mar 2013, Roger Quadros wrote:
+On 03/12/2013 11:44 AM, Neil Horman wrote:
+> On Tue, Mar 12, 2013 at 08:11:34AM -0400, Vlad Yasevich wrote:
+>> On 03/11/2013 09:31 AM, Neil Horman wrote:
+>>> On Mon, Mar 11, 2013 at 10:14:50AM +0800, Xufeng Zhang wrote:
+>>>> On 3/8/13, Neil Horman <nhorman@tuxdriver.com> wrote:
+>>>>> On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
+>>>>>> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
+>>>>>> was sent on, if not found in the active_path transport, then go search
+>>>>>> all the other transports in the peer's transport_addr_list, however, we
+>>>>>> should continue to the next entry rather than break the loop when meet
+>>>>>> the active_path transport.
+>>>>>>
+>>>>>> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+>>>>>> ---
+>>>>>>   net/sctp/associola.c |    2 +-
+>>>>>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>>
+>>>>>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+>>>>>> index 43cd0dd..d2709e2 100644
+>>>>>> --- a/net/sctp/associola.c
+>>>>>> +++ b/net/sctp/associola.c
+>>>>>> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct
+>>>>>> sctp_association *asoc,
+>>>>>>   			transports) {
+>>>>>>
+>>>>>>   		if (transport == active)
+>>>>>> -			break;
+>>>>>> +			continue;
+>>>>>>   		list_for_each_entry(chunk, &transport->transmitted,
+>>>>>>   				transmitted_list) {
+>>>>>>   			if (key == chunk->subh.data_hdr->tsn) {
+>>>>>> --
+>>>>>> 1.7.0.2
+>>>>>>
+>>>>>>
+>>>>>
+>>>>> This works, but what might be better would be if we did a move to front
+>>>>> heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move
+>>>>> the
+>>>>> requisite transport to the front of the transport_addr_list.  If we did
+>>>>> that,
+>>>>> then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
+>>>>> implicitly check the active path first without having to check it seprately
+>>>>> and
+>>>>> skip it in the second for loop.
+>>>>
+>>>> Thanks for your review, Neil!
+>>>>
+>>>> I know what you mean, yes, it's most probably that the searched TSN was
+>>>> transmitted in the currently active_path, but what should we do if not.
+>>>>
+>>>> Check the comment in sctp_assoc_lookup_tsn() function:
+>>>> /* Let's be hopeful and check the active_path first. */
+>>>> /* If not found, go search all the other transports. */
+>>>>
+>>>> It has checked the active_path first and then traverse all the other
+>>>> transports in
+>>>> the transport_addr_list except the active_path.
+>>>>
+>>>> So what I want to fix here is the inconsistency between the function
+>>>> should do and
+>>>> the code actually does.
+>>>>
+>>> I understand what you're doing, and I agree that the fix is functional (Hence
+>>> my "This works" statement in my last note).  What I'm suggesting is that, since
+>>> you're messing about in that code anyway that you clean it up while your at it,
+>>> so that we don't need to have the if (transport == active) check at all.  We
+>>> trade in some extra work in a non-critical path (sctp_assoc_set_primary), for
+>>> the removal of an extra for loop operation and a conditional check in a much
+>>> hotter path.  Something like this (completely untested), is what I was thinking
+>>>
+>>>
+>>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+>>> index 43cd0dd..8ae873c 100644
+>>> --- a/net/sctp/associola.c
+>>> +++ b/net/sctp/associola.c
+>>> @@ -505,6 +505,9 @@ void sctp_assoc_set_primary(struct sctp_association *asoc,
+>>>
+>>>   	asoc->peer.primary_path = transport;
+>>>
+>>> +	list_del_rcu(&transport->transports);
+>>> +	list_add_rcu(&transport->transports, &asoc->peer.transport_addr_list);
+>>> +
+>>>   	/* Set a default msg_name for events. */
+>>>   	memcpy(&asoc->peer.primary_addr, &transport->ipaddr,
+>>>   	       sizeof(union sctp_addr));
+>>> @@ -1040,7 +1043,6 @@ struct sctp_chunk *sctp_get_ecne_prepend(struct sctp_association *asoc)
+>>>   struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+>>>   					     __u32 tsn)
+>>>   {
+>>> -	struct sctp_transport *active;
+>>>   	struct sctp_transport *match;
+>>>   	struct sctp_transport *transport;
+>>>   	struct sctp_chunk *chunk;
+>>> @@ -1057,29 +1059,16 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+>>>   	 * The general strategy is to search each transport's transmitted
+>>>   	 * list.   Return which transport this TSN lives on.
+>>>   	 *
+>>> -	 * Let's be hopeful and check the active_path first.
+>>> -	 * Another optimization would be to know if there is only one
+>>> -	 * outbound path and not have to look for the TSN at all.
+>>> +	 * Note, that sctp_assoc_set_primary does a move to front operation
+>>> +	 * on the active_path transport, so this code implicitly checks
+>>> +	 * the active_path first, as we most commonly expect to find our TSN
+>>> +	 * there.
+>>>   	 *
+>>>   	 */
+>>
+>> Neil, active_patch != primary_path all the time.  In fact, when you
+>> have path primary path failure, active path will change while
+>> primary
+>> may only change when the user says so.
+> Thats a good point, thank you Vlad.  We would need to only update the
+> transport_addr_list in set_primary if its state is ACTIVE or UNKNOWN.  We would
+> also need to update it if the active path changes in
+> sctp_assoc_control_transport, if the new active path is different from the old.
+> Both of those paths however are not intended to be run frequently, so I think
+> this is still a viable optimization.  I'm working on it now.
+> Neil
 
-> Even when not in PHY mode, the USB device on the port (e.g. HUB)
-> might need resources like RESET which can be modelled as a PHY
-> device. So try to get the PHY device in any case.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> CC: Alan Stern <stern@rowland.harvard.edu>
+You also need to take special care if an active transport is removed. 
+The active path will get reassigned then.  I am not sure if it is worth 
+doing all these changes to address a corner case optimization (CWR is a 
+corner case).
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+-vlad
 
->  		/* get the PHY device */
->  		if (dev->of_node)
->  			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
->  		else
->  			phy = devm_usb_get_phy_dev(dev, i);
->  		if (IS_ERR(phy) || !phy) {
-> +			/* Don't bail out if PHY is not absolutely necessary */
-> +			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
-> +				continue;
-> +
->  			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
->  			dev_err(dev, "Can't get PHY device for port %d: %d\n",
->  					i, ret);
-
-Felipe, this is a strange interface.  Why do we sometimes get an 
-error-pointer and sometimes get just NULL?  Why not always an 
-error-pointer?
-
-Alan Stern
+>
+>>
+>> So, you may still get into a situation where primary and active
+>> paths are different.
+>>
+>> The optimization here may not work at all under those circumstances.
+>>
+>> -vlad
+>>
+>>>
+>>> -	active = asoc->peer.active_path;
+>>> -
+>>> -	list_for_each_entry(chunk, &active->transmitted,
+>>> -			transmitted_list) {
+>>> -
+>>> -		if (key == chunk->subh.data_hdr->tsn) {
+>>> -			match = active;
+>>> -			goto out;
+>>> -		}
+>>> -	}
+>>> -
+>>> -	/* If not found, go search all the other transports. */
+>>>   	list_for_each_entry(transport, &asoc->peer.transport_addr_list,
+>>>   			transports) {
+>>>
+>>> -		if (transport == active)
+>>> -			break;
+>>>   		list_for_each_entry(chunk, &transport->transmitted,
+>>>   				transmitted_list) {
+>>>   			if (key == chunk->subh.data_hdr->tsn) {
+>>>
+>>
+>>
 
