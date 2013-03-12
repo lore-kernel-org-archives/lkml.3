@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3CLKzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:55:08 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:43982 "EHLO multi.imgtec.com"
+	id S932800Ab3CLKz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:55:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6034 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab3CLKzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:55:06 -0400
-From: Markos Chandras <markos.chandras@imgtec.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "Jaehoon Chung" <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 1/3] dw_mmc: Don't loop when handling an interrupt
-Date: Tue, 12 Mar 2013 10:53:11 +0000
-Message-ID: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_12_10_55_04
+	id S932537Ab3CLKzZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:55:25 -0400
+Date: Tue, 12 Mar 2013 07:55:13 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] EDAC fixes for 3.8
+Message-ID: <20130312075513.5953751a@redhat.com>
+In-Reply-To: <20130312085855.GB5455@pd.tnic>
+References: <20121211140108.GC4303@liondog.tnic>
+	<20130307095703.03d040ee@redhat.com>
+	<20130307130635.GD5239@pd.tnic>
+	<20130307110213.7a5a9978@redhat.com>
+	<20130309154635.GA18316@pd.tnic>
+	<20130311090746.199a4c06@redhat.com>
+	<20130311092848.652c0d46@redhat.com>
+	<20130312085855.GB5455@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to loop when handling an interrupt. The "if" clauses
-will handle all of them sequentially. This also eliminates the extra loop
-we used to take with no pending interrupts and we ended up breaking out
-of the while loop.
+Em Tue, 12 Mar 2013 09:58:55 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>
----
-The patch is based on Chris Ball's mmc-next branch
+> On Mon, Mar 11, 2013 at 09:28:48AM -0300, Mauro Carvalho Chehab wrote:
+> > @@ -740,7 +740,6 @@ struct mem_ctl_info {
+> >  	u32 fake_inject_ue;
+> >  	u16 fake_inject_count;
+> >  #endif
+> > -	__u8 csbased : 1,	/* csrow-based memory controller */
+> >  	     __resv  : 7;
+> 
+> I don't know how you tested this one, but it doesn't even build. I fixed
+> it up though, while applying.
 
- drivers/mmc/host/dw_mmc.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+Funny enough, it compiled on one machine. I noticed this issue when
+compiling the Fedora kernel and just dropped the __resv field, that it is
+not used anywhere. So, on the Fedora 18 Kernel I pointed, I just dropped both
+lines.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 60063cc..78c7251 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1563,11 +1563,11 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- {
- 	struct dw_mci *host = dev_id;
- 	u32 pending;
--	unsigned int pass_count = 0;
- 	int i;
- 
--	do {
--		pending = mci_readl(host, MINTSTS); /* read-only mask reg */
-+	pending = mci_readl(host, MINTSTS); /* read-only mask reg */
-+
-+	if (pending) {
- 
- 		/*
- 		 * DTO fix - version 2.10a and below, and only if internal DMA
-@@ -1579,9 +1579,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 				pending |= SDMMC_INT_DATA_OVER;
- 		}
- 
--		if (!pending)
--			break;
--
- 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
- 			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
- 			host->cmd_status = pending;
-@@ -1642,7 +1639,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 			}
- 		}
- 
--	} while (pass_count++ < 5);
-+	}
- 
- #ifdef CONFIG_MMC_DW_IDMAC
- 	/* Handle DMA interrupts */
+Regards,
+Mauro
+
+> 
+> In file included from arch/x86/kernel/nmi.c:23:0:
+> include/linux/edac.h:743:7: error: expected specifier-qualifier-list before ‘__resv’
+> In file included from arch/x86/kernel/traps.c:44:0:
+> include/linux/edac.h:743:7: error: expected specifier-qualifier-list before ‘__resv’
+> make[2]: *** [arch/x86/kernel/nmi.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> make[2]: *** [arch/x86/kernel/traps.o] Error 1
+> make[1]: *** [arch/x86/kernel] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [arch/x86] Error 2
+> make: *** Waiting for unfinished jobs....
+> In file included from drivers/edac/edac_stub.c:16:0:
+> include/linux/edac.h:743:7: error: expected specifier-qualifier-list before ‘__resv’
+> make[2]: *** [drivers/edac/edac_stub.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> In file included from drivers/edac/amd64_edac.h:72:0,
+>                  from drivers/edac/amd64_edac.c:1:
+> include/linux/edac.h:743:7: error: expected specifier-qualifier-list before ‘__resv’
+> In file included from drivers/edac/amd64_edac.h:72:0,
+>                  from drivers/edac/amd64_edac_inj.c:1:
+> include/linux/edac.h:743:7: error: expected specifier-qualifier-list before ‘__resv’
+> make[2]: *** [drivers/edac/amd64_edac_inj.o] Error 1
+> make[2]: *** [drivers/edac/amd64_edac.o] Error 1
+> make[1]: *** [drivers/edac] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [drivers] Error 2
+> 
+
+
 -- 
-1.7.1
 
-
+Cheers,
+Mauro
