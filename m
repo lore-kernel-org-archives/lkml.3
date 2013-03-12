@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab3CLKxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:53:43 -0400
-Received: from linux-sh.org ([111.68.239.195]:52074 "EHLO linux-sh.org"
+	id S932750Ab3CLKyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:54:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37391 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab3CLKxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:53:42 -0400
-Date: Tue, 12 Mar 2013 19:52:30 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 09/17] sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
-Message-ID: <20130312105228.GA23752@linux-sh.org>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
- <1363083150-30964-10-git-send-email-acourbot@nvidia.com>
- <20130312103515.GD3553@linux-sh.org>
- <513F06DF.3040105@nvidia.com>
+	id S1752919Ab3CLKyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:54:09 -0400
+Message-ID: <513F0946.7020507@ti.com>
+Date: Tue, 12 Mar 2013 12:53:58 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513F06DF.3040105@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kishon <kishon@ti.com>
+CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
+        <b-cousson@ti.com>, <mark.rutland@arm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 12/12] USB: ehci-omap: Fix detection in HSIC mode
+References: <1363085090-24676-1-git-send-email-rogerq@ti.com> <1363085090-24676-13-git-send-email-rogerq@ti.com> <513F089B.5080004@ti.com>
+In-Reply-To: <513F089B.5080004@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 07:43:43PM +0900, Alex Courbot wrote:
-> On 03/12/2013 07:35 PM, Paul Mundt wrote:
-> >On Tue, Mar 12, 2013 at 07:12:22PM +0900, Alexandre Courbot wrote:
-> >>SH GPIO drivers all use gpiolib and CONFIG_GENERIC_GPIO is only selected
-> >>through CONFIG_GPIOLIB, yet some compilation units depended on
-> >>CONFIG_GENERIC_GPIO. Make them depend on CONFIG_GPIOLIB instead since it
-> >>is more accurate and prepares us for the future removal of
-> >>CONFIG_GENERIC_GPIO.
-> >>
-> >>Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> >
-> >Note that the bulk of the GENERIC_GPIO use for SH has shifted to
-> >drivers/pinctrl/sh-pfc/. If GPIOLIB is forced then a good chunk of the
-> >Kconfig/Makefile bits there ought to be refactored too.
+On 03/12/2013 12:51 PM, kishon wrote:
+> Hi,
 > 
-> Yes, that is the case for many other drivers actually. This series
-> just makes sure that GENERIC_GPIO is set through GPIOLIB *only*,
-> thus making both options equivalent. If nobody shoots me for this, I
-> will refactor individual drivers and ultimately remove GENERIC_GPIO
-> completely.
+> On Tuesday 12 March 2013 04:14 PM, Roger Quadros wrote:
+>> The HSIC devices need to be kept in reset while the EHCI controller
+>> is being initialized and only brought out of reset after the
+>> initialization is complete, else HSIC devices will not be detected.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> CC: Alan Stern <stern@rowland.harvard.edu>
+>> ---
+>>   drivers/usb/host/ehci-omap.c |   28 +++++++++++-----------------
+>>   1 files changed, 11 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+>> index 1ba1df8..52a2d46 100644
+>> --- a/drivers/usb/host/ehci-omap.c
+>> +++ b/drivers/usb/host/ehci-omap.c
+>> @@ -50,6 +50,7 @@
+>>   #include <linux/usb/hcd.h>
+>>   #include <linux/of.h>
+>>   #include <linux/dma-mapping.h>
+>> +#include <linux/delay.h>
 > 
-Ok, just wanted to make sure you were aware of this. I don't have any
-strong opinions on this one way or the other, the entire GPIO Kconfig
-mess is too ugly for words, so any effort to clean that up is probably
-worth the added bloat.
+> not needed here I guess.
 
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+Right. will remove.
+
+>>
+>>   #include "ehci.h"
+>>
+>> @@ -90,26 +91,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
+>>   static int omap_ehci_init(struct usb_hcd *hcd)
+>>   {
+>>       struct ehci_hcd    *ehci = hcd_to_ehci(hcd);
+>> -    struct omap_hcd    *omap = (struct omap_hcd *)ehci->priv;
+>> -    int rc, i;
+>> -
+>> -    /* Hold PHYs in reset while initializing EHCI controller */
+>> -    for (i = 0; i < omap->nports; i++) {
+>> -        if (omap->phy[i])
+>> -            usb_phy_shutdown(omap->phy[i]);
+>> -    }
+>> +    int rc;
+>>
+>>       /* we know this is the memory we want, no need to ioremap again */
+>>       ehci->caps = hcd->regs;
+>>
+>>       rc = ehci_setup(hcd);
+>>
+>> -    /* Bring PHYs out of reset */
+>> -    for (i = 0; i < omap->nports; i++) {
+>> -        if (omap->phy[i])
+>> -            usb_phy_init(omap->phy[i]);
+>> -    }
+>> -
+>>       return rc;
+>>   }
+>>
+>> @@ -219,9 +207,6 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>>           }
+>>
+>>           omap->phy[i] = phy;
+>> -        usb_phy_init(omap->phy[i]);
+>> -        /* bring PHY out of suspend */
+>> -        usb_phy_set_suspend(omap->phy[i], 0);
+>>       }
+>>
+>>       pm_runtime_enable(dev);
+>> @@ -245,6 +230,15 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>>           goto err_pm_runtime;
+>>       }
+>>
+>> +    /* Bring PHYs out of reset */
+>> +    for (i = 0; i < omap->nports; i++) {
+>> +        if (!omap->phy[i])
+>> +            continue;
+>> +
+>> +        usb_phy_init(omap->phy[i]);
+>> +        /* bring PHY out of suspend */
+>> +        usb_phy_set_suspend(omap->phy[i], 0);
+>> +    }
+> 
+> But isn't HSIC supposed to be PHYless devices. Maybe a comment explaining it might be helpful.
+> 
+
+Yes HSIC is PHYless but they do have reset line between the chips.
+I'll put a comment.
+
+cheers,
+-roger
