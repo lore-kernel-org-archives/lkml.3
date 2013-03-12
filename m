@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3CLEPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 00:15:17 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:55211 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3CLEPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 00:15:15 -0400
+	id S1753114Ab3CLEQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 00:16:48 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52738 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab3CLEQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 00:16:46 -0400
+Date: Tue, 12 Mar 2013 00:16:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: James Morris <jmorris@namei.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unneeded merge in the security tree
+Message-ID: <20130312041641.GE18595@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	James Morris <jmorris@namei.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
+ <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
 MIME-Version: 1.0
-In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C0BDEB0547F@SC-VEXCH1.marvell.com>
-References: <25B60CDC2F704E4E9D88FFD52780CB4C0BDEB0547F@SC-VEXCH1.marvell.com>
-Date: Tue, 12 Mar 2013 12:15:14 +0800
-Message-ID: <CADz5_g+KfxL43BKKsgZZ3Xg4sZWE4-ZaFpFhphKrfj9yK59-XA@mail.gmail.com>
-Subject: Re: FW: Regulator API ignored return values
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Axel Lin <axel.lin@ingics.com>, Jingoo Han <jg1.han@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chris Ball
-> Sent: Tuesday, March 12, 2013 5:56 AM
-> To: Arnd Bergmann
-> Cc: linux-kernel@vger.kernel.org; Stephen Warren; linux-arm-kernel@lists.infradead.org; Mark Brown; Linus Walleij; Axel Lin; Jingoo Han; Felipe Balbi; Dmitry Torokhov; linux-mmc@vger.kernel.org
-> Subject: Re: Regulator API ignored return values
->
-> Hi,
->
-> On Mon, Mar 11 2013, Arnd Bergmann wrote:
->> ==> build/dove_defconfig/faillog <==
->> /git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
->> /git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring
->> return value of 'regulator_enable', declared with attribute
->> warn_unused_result [-Wunused-result]
->
-> Thanks, this looks like the right fix to me:
->
->
-> Subject: [PATCH] mmc: sdhci: Don't ignore regulator_enable() return value
->
-> Fixes:
-> /git/arm-soc/drivers/mmc/host/sdhci.c: In function 'sdhci_add_host':
-> /git/arm-soc/drivers/mmc/host/sdhci.c:2910:19: warning: ignoring
-> return value of 'regulator_enable', declared with attribute
-> warn_unused_result [-Wunused-result]
->
-> Reported-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Chris Ball <cjb@laptop.org>
-> ---
->  drivers/mmc/host/sdhci.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 51bbba4..fbf0b93 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2907,12 +2907,17 @@ int sdhci_add_host(struct sdhci_host *host)
->                         host->vqmmc = NULL;
->                 }
->         } else {
-> -               regulator_enable(host->vqmmc);
-> +               ret = regulator_enable(host->vqmmc);
->                 if (!regulator_is_supported_voltage(host->vqmmc, 1700000,
->                         1950000))
->                         caps[1] &= ~(SDHCI_SUPPORT_SDR104 |
->                                         SDHCI_SUPPORT_SDR50 |
->                                         SDHCI_SUPPORT_DDR50);
-> +               if (ret) {
-> +                       pr_warn("%s: Failed to enable vqmmc regulator: %d\n",
-> +                               mmc_hostname(mmc), ret);
+On Tue, Mar 12, 2013 at 03:10:53PM +1100, James Morris wrote:
+> On Tue, 12 Mar 2013, Stephen Rothwell wrote:
+> > The top commit in the security tree today is a merge of v3.9-rc2.  This
+> > is a completely unnecessary merge as the tree before the merge was a
+> > subset of v3.9-rc1 and so if the merge had been done using anything but
+> > the tag, it would have just been a fast forward.  I know that this is now
+> > deliberate behaviour on git's behalf, but isn't there some way we can
+> > make this easier on maintainers who are just really just trying to pick a
+> > new starting point for their trees after a release?  (at least I assume
+> > that is what James was trying to do)
+> 
+> Yes, and I was merging to a tag as required by Linus.
 
-Need add regulator_put here since regulator_get has succeed?
+Why not just force the head of the security tree to be v3.9-rc2?  Then
+you don't end up creating a completely unnecessary merge commit, and
+users who were at the previous head of the security tree will
+experience a fast forward when they pull your new head.
 
-> +                       host->vqmmc = NULL;
-> +               }
->         }
->
->         if (host->quirks2 & SDHCI_QUIRK2_NO_1_8_V)
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	     	  	       	    	      	  - Ted
