@@ -1,271 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab3CLTjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:39:44 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:39025 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755570Ab3CLTi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:38:26 -0400
-Message-Id: <20130312193824.934809260@gulag1.americas.sgi.com>
-References: <20130312193823.212544181@gulag1.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Tue, 12 Mar 2013 14:38:34 -0500
-From: Mike Travis <travis@sgi.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>,
-        Cliff Wickman <cpw@sgi.com>, Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH 11/14] x86/UV: Move NMI support
-Content-Disposition: inline; filename=uv-move-nmi-support.patch
+	id S933421Ab3CLTlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:41:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56430 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932361Ab3CLTjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:39:43 -0400
+Date: Tue, 12 Mar 2013 19:39:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH linux-next v2] ASoC: adau1373: adau1373_hw_params:
+ Silence overflow warning
+Message-ID: <20130312193940.GF19942@opensource.wolfsonmicro.com>
+References: <513E2895.6040904@metafoo.de>
+ <1363029503-23880-1-git-send-email-tim.gardner@canonical.com>
+ <20130312184741.GP19942@opensource.wolfsonmicro.com>
+ <513F7F46.3050200@canonical.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Mjcb6KWfk+dITC8b"
+Content-Disposition: inline
+In-Reply-To: <513F7F46.3050200@canonical.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the UV NMI support from the x2apic file to a
-new separate uv_nmi.c file in preparation for the next sequence
-of patches.  It minimizes bloat of the x2apic file, and has the
-added benefit of putting the upcoming /sys/module parameters under
-the name 'uv_nmi' instead of 'x2apic_uv_x', which was obscure.
 
-Cc: Alex Shi <alex.shi@intel.com>
-Cc: Cliff Wickman <cpw@sgi.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Steffen Persvold <sp@numascale.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Signed-off-by: Mike Travis <travis@sgi.com>
----
- arch/x86/include/asm/uv/uv.h       |    2 
- arch/x86/kernel/apic/x2apic_uv_x.c |   69 -------------------------
- arch/x86/platform/uv/Makefile      |    2 
- arch/x86/platform/uv/uv_nmi.c      |  101 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 104 insertions(+), 70 deletions(-)
+--Mjcb6KWfk+dITC8b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
---- linux.orig/arch/x86/include/asm/uv/uv.h
-+++ linux/arch/x86/include/asm/uv/uv.h
-@@ -12,6 +12,7 @@ extern enum uv_system_type get_uv_system
- extern int is_uv_system(void);
- extern void uv_cpu_init(void);
- extern void uv_nmi_init(void);
-+extern void uv_register_nmi_notifier(void);
- extern void uv_system_init(void);
- extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 						 struct mm_struct *mm,
-@@ -25,6 +26,7 @@ static inline enum uv_system_type get_uv
- static inline int is_uv_system(void)	{ return 0; }
- static inline void uv_cpu_init(void)	{ }
- static inline void uv_system_init(void)	{ }
-+static inline void uv_register_nmi_notifier(void) { }
- static inline const struct cpumask *
- uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
- 		    unsigned long start, unsigned long end, unsigned int cpu)
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -39,12 +39,6 @@
- #include <asm/emergency-restart.h>
- #include <asm/nmi.h>
- 
--/* BMC sets a bit this MMR non-zero before sending an NMI */
--#define UVH_NMI_MMR				UVH_SCRATCH5
--#define UVH_NMI_MMR_CLEAR			(UVH_NMI_MMR + 8)
--#define UV_NMI_PENDING_MASK			(1UL << 63)
--DEFINE_PER_CPU(unsigned long, cpu_last_nmi_count);
--
- DEFINE_PER_CPU(int, x2apic_extra_bits);
- 
- #define PR_DEVEL(fmt, args...)	pr_devel("%s: " fmt, __func__, args)
-@@ -56,7 +50,6 @@ int uv_min_hub_revision_id;
- EXPORT_SYMBOL_GPL(uv_min_hub_revision_id);
- unsigned int uv_apicid_hibits;
- EXPORT_SYMBOL_GPL(uv_apicid_hibits);
--static DEFINE_SPINLOCK(uv_nmi_lock);
- 
- static struct apic apic_x2apic_uv_x;
- 
-@@ -795,68 +788,6 @@ void __cpuinit uv_cpu_init(void)
- 		set_x2apic_extra_bits(uv_hub_info->pnode);
- }
- 
--/*
-- * When NMI is received, print a stack trace.
-- */
--int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
--{
--	unsigned long real_uv_nmi;
--	int bid;
--
--	/*
--	 * Each blade has an MMR that indicates when an NMI has been sent
--	 * to cpus on the blade. If an NMI is detected, atomically
--	 * clear the MMR and update a per-blade NMI count used to
--	 * cause each cpu on the blade to notice a new NMI.
--	 */
--	bid = uv_numa_blade_id();
--	real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
--
--	if (unlikely(real_uv_nmi)) {
--		spin_lock(&uv_blade_info[bid].nmi_lock);
--		real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
--		if (real_uv_nmi) {
--			uv_blade_info[bid].nmi_count++;
--			uv_write_local_mmr(UVH_NMI_MMR_CLEAR, UV_NMI_PENDING_MASK);
--		}
--		spin_unlock(&uv_blade_info[bid].nmi_lock);
--	}
--
--	if (likely(__get_cpu_var(cpu_last_nmi_count) == uv_blade_info[bid].nmi_count))
--		return NMI_DONE;
--
--	__get_cpu_var(cpu_last_nmi_count) = uv_blade_info[bid].nmi_count;
--
--	/*
--	 * Use a lock so only one cpu prints at a time.
--	 * This prevents intermixed output.
--	 */
--	spin_lock(&uv_nmi_lock);
--	pr_info("UV NMI stack dump cpu %u:\n", smp_processor_id());
--	dump_stack();
--	spin_unlock(&uv_nmi_lock);
--
--	return NMI_HANDLED;
--}
--
--void uv_register_nmi_notifier(void)
--{
--	if (register_nmi_handler(NMI_UNKNOWN, uv_handle_nmi, 0, "uv"))
--		printk(KERN_WARNING "UV NMI handler failed to register\n");
--}
--
--void uv_nmi_init(void)
--{
--	unsigned int value;
--
--	/*
--	 * Unmask NMI on all cpus
--	 */
--	value = apic_read(APIC_LVT1) | APIC_DM_NMI;
--	value &= ~APIC_LVT_MASKED;
--	apic_write(APIC_LVT1, value);
--}
--
- void __init uv_system_init(void)
- {
- 	union uvh_rh_gam_config_mmr_u  m_n_config;
---- linux.orig/arch/x86/platform/uv/Makefile
-+++ linux/arch/x86/platform/uv/Makefile
-@@ -1 +1 @@
--obj-$(CONFIG_X86_UV)		+= tlb_uv.o bios_uv.o uv_irq.o uv_sysfs.o uv_time.o
-+obj-$(CONFIG_X86_UV)		+= tlb_uv.o bios_uv.o uv_irq.o uv_sysfs.o uv_time.o uv_nmi.o
---- /dev/null
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -0,0 +1,101 @@
-+/*
-+ * SGI NMI support routines
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ *  Copyright (c) 2009-2013 Silicon Graphics, Inc.  All Rights Reserved.
-+ *  Copyright (c) Mike Travis
-+ */
-+
-+#include <linux/cpu.h>
-+#include <linux/nmi.h>
-+
-+#include <asm/apic.h>
-+#include <asm/uv/uv.h>
-+#include <asm/uv/uv_hub.h>
-+#include <asm/uv/uv_mmrs.h>
-+
-+/* BMC sets a bit this MMR non-zero before sending an NMI */
-+#define UVH_NMI_MMR				UVH_SCRATCH5
-+#define UVH_NMI_MMR_CLEAR			(UVH_NMI_MMR + 8)
-+#define UV_NMI_PENDING_MASK			(1UL << 63)
-+DEFINE_PER_CPU(unsigned long, cpu_last_nmi_count);
-+static DEFINE_SPINLOCK(uv_nmi_lock);
-+
-+/*
-+ * When NMI is received, print a stack trace.
-+ */
-+int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
-+{
-+	unsigned long real_uv_nmi;
-+	int bid;
-+
-+	/*
-+	 * Each blade has an MMR that indicates when an NMI has been sent
-+	 * to cpus on the blade. If an NMI is detected, atomically
-+	 * clear the MMR and update a per-blade NMI count used to
-+	 * cause each cpu on the blade to notice a new NMI.
-+	 */
-+	bid = uv_numa_blade_id();
-+	real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) & UV_NMI_PENDING_MASK);
-+
-+	if (unlikely(real_uv_nmi)) {
-+		spin_lock(&uv_blade_info[bid].nmi_lock);
-+		real_uv_nmi = (uv_read_local_mmr(UVH_NMI_MMR) &
-+				UV_NMI_PENDING_MASK);
-+		if (real_uv_nmi) {
-+			uv_blade_info[bid].nmi_count++;
-+			uv_write_local_mmr(UVH_NMI_MMR_CLEAR,
-+						UV_NMI_PENDING_MASK);
-+		}
-+		spin_unlock(&uv_blade_info[bid].nmi_lock);
-+	}
-+
-+	if (likely(__get_cpu_var(cpu_last_nmi_count) ==
-+			uv_blade_info[bid].nmi_count))
-+		return NMI_DONE;
-+
-+	__get_cpu_var(cpu_last_nmi_count) = uv_blade_info[bid].nmi_count;
-+
-+	/*
-+	 * Use a lock so only one cpu prints at a time.
-+	 * This prevents intermixed output.
-+	 */
-+	spin_lock(&uv_nmi_lock);
-+	pr_info("UV NMI stack dump cpu %u:\n", smp_processor_id());
-+	dump_stack();
-+	spin_unlock(&uv_nmi_lock);
-+
-+	return NMI_HANDLED;
-+}
-+
-+void uv_register_nmi_notifier(void)
-+{
-+	if (register_nmi_handler(NMI_UNKNOWN, uv_handle_nmi, 0, "uv"))
-+		pr_warn("UV NMI handler failed to register\n");
-+}
-+
-+void uv_nmi_init(void)
-+{
-+	unsigned int value;
-+
-+	/*
-+	 * Unmask NMI on all cpus
-+	 */
-+	value = apic_read(APIC_LVT1) | APIC_DM_NMI;
-+	value &= ~APIC_LVT_MASKED;
-+	apic_write(APIC_LVT1, value);
-+}
-+
+On Tue, Mar 12, 2013 at 01:17:26PM -0600, Tim Gardner wrote:
 
--- 
+> > threads (I nearly deleted this unread) and avoid including
+
+> > enormous CC lists like this in the body of the mail.
+
+> I'm just going by the default output of scripts/get_maintainer.pl. Are
+> there better options to filter the roles ? In this case I received a
+> review from a supporter (Lars), and the patch is being committed by
+> yet another supporter (yourself). Would you have noticed this patch
+> had I restricted the Cc list to just maintainers and lists ?
+
+I specifically mean don't include the lists in the body of the mail - it
+means they either litter the git log or need to be manually deleted.  If
+you're just using unfiltered get_maintainer output then I'd suggest that
+you generate the CCs in your scripts when sending rather than putting
+them in the changelog.
+
+--Mjcb6KWfk+dITC8b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRP4R2AAoJELSic+t+oim9P3AQAIPWUyxRmtIcvzCU0Yed7hil
+nAB3vybN+CHd3/rF+wjKTfXuoZFgDyixcHjgjhV8u1APMl1PNdyixznsT5k2gBxy
+VJEvO3y97vFBvbgF5DTYdKkDzxjx79TqFgqlqwkPPhD98Z0btN+1RbV5c75/yJen
+r45kuZbEbtYgi4L3ghOH3x8vg1mKZaZhRDZYBNx+mvC7f+pfzjABn9MA/xz/CTWo
+R433fKvi08fD1WuxWDEkvHP0lIFUZt8w930bjzzxFsHwUFYyyXZjBcU5FFuTR2O0
+KzWZU0C0SAWZqyxfdmdrhUtZJPwfj70p4lVi9fsFOJaPdyGd+d0ReCbuu5dPfRfz
+EH/OEY0CRGyBw3A3R8c9Zp2XzZ+Sh1w3zC/USeJcce0V4TXXdz/xvlRx3Vx5ByOF
+mWmDhuq1qWPJ/xzJnO9Ig47nMVfjKD7v0Zvotawczge6YjFdOSdxpmBNczCIbAbr
+Aik4ZYWGOuNVYyOWzN8Agm29IDpbKDNBr7yrDBsS4LAL5+gE12CJtKih49YAKFAL
+Io4H4tUrwqkUJKA1NUiXamUl6cfLtGpKK7K5MoenuOCZpOjccfaq3pDMJTWr/rhc
+d1L8mlt61zze7us5mSWuuCDT6QkfI68MQxEq1LtfBiIr9Bj5eX7+qKh5bttWCD6+
+rFwkAie9O4uFGFIEZczh
+=FY2y
+-----END PGP SIGNATURE-----
+
+--Mjcb6KWfk+dITC8b--
