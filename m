@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3CLWde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:33:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60303 "EHLO
+	id S933787Ab3CLWiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:38:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab3CLWdS (ORCPT
+	with ESMTP id S1756104Ab3CLWde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:18 -0400
+	Tue, 12 Mar 2013 18:33:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Tim McGrath <tmhikaru@gmail.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 059/100] dmi_scan: fix missing check for _DMI_ signature in smbios_present()
-Date: Tue, 12 Mar 2013 15:31:44 -0700
-Message-Id: <20130312223129.354909464@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [ 085/100] Fix: compat_rw_copy_check_uvector() misuse in aio, readv, writev, and security keys
+Date: Tue, 12 Mar 2013 15:32:10 -0700
+Message-Id: <20130312223132.097423017@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -29,53 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit a40e7cf8f06b4e322ba902e4e9f6a6b0c2daa907 upstream.
+commit 8aec0f5d4137532de14e6554fd5dd201ff3a3c49 upstream.
 
-Commit 9f9c9cbb6057 ("drivers/firmware/dmi_scan.c: fetch dmi version
-from SMBIOS if it exists") hoisted the check for "_DMI_" into
-dmi_scan_machine(), which means that we don't bother to check for
-"_DMI_" at offset 16 in an SMBIOS entry.  smbios_present() may also call
-dmi_present() for an address where we found "_SM_", if it failed further
-validation.
+Looking at mm/process_vm_access.c:process_vm_rw() and comparing it to
+compat_process_vm_rw() shows that the compatibility code requires an
+explicit "access_ok()" check before calling
+compat_rw_copy_check_uvector(). The same difference seems to appear when
+we compare fs/read_write.c:do_readv_writev() to
+fs/compat.c:compat_do_readv_writev().
 
-Check for "_DMI_" in smbios_present() before calling dmi_present().
+This subtle difference between the compat and non-compat requirements
+should probably be debated, as it seems to be error-prone. In fact,
+there are two others sites that use this function in the Linux kernel,
+and they both seem to get it wrong:
 
-[akpm@linux-foundation.org: fix build]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Reported-by: Tim McGrath <tmhikaru@gmail.com>
-Tested-by: Tim Mcgrath <tmhikaru@gmail.com>
-Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Now shifting our attention to fs/aio.c, we see that aio_setup_iocb()
+also ends up calling compat_rw_copy_check_uvector() through
+aio_setup_vectored_rw(). Unfortunately, the access_ok() check appears to
+be missing. Same situation for
+security/keys/compat.c:compat_keyctl_instantiate_key_iov().
+
+I propose that we add the access_ok() check directly into
+compat_rw_copy_check_uvector(), so callers don't have to worry about it,
+and it therefore makes the compat call code similar to its non-compat
+counterpart. Place the access_ok() check in the same location where
+copy_from_user() can trigger a -EFAULT error in the non-compat code, so
+the ABI behaviors are alike on both compat and non-compat.
+
+While we are here, fix compat_do_readv_writev() so it checks for
+compat_rw_copy_check_uvector() negative return values.
+
+And also, fix a memory leak in compat_keyctl_instantiate_key_iov() error
+handling.
+
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/dmi_scan.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/compat.c            |   15 +++++++--------
+ mm/process_vm_access.c |    8 --------
+ security/keys/compat.c |    4 ++--
+ 3 files changed, 9 insertions(+), 18 deletions(-)
 
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -442,7 +442,6 @@ static int __init dmi_present(const char
- static int __init smbios_present(const char __iomem *p)
- {
- 	u8 buf[32];
--	int offset = 0;
- 
- 	memcpy_fromio(buf, p, 32);
- 	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-@@ -461,9 +460,9 @@ static int __init smbios_present(const c
- 			dmi_ver = 0x0206;
- 			break;
- 		}
--		offset = 16;
-+		return memcmp(p + 16, "_DMI_", 5) || dmi_present(p + 16);
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -558,6 +558,10 @@ ssize_t compat_rw_copy_check_uvector(int
  	}
--	return dmi_present(buf + offset);
-+	return 1;
+ 	*ret_pointer = iov;
+ 
++	ret = -EFAULT;
++	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
++		goto out;
++
+ 	/*
+ 	 * Single unix specification:
+ 	 * We should -EINVAL if an element length is not >= 0 and fitting an
+@@ -1080,17 +1084,12 @@ static ssize_t compat_do_readv_writev(in
+ 	if (!file->f_op)
+ 		goto out;
+ 
+-	ret = -EFAULT;
+-	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
+-		goto out;
+-
+-	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
++	ret = compat_rw_copy_check_uvector(type, uvector, nr_segs,
+ 					       UIO_FASTIOV, iovstack, &iov);
+-	if (tot_len == 0) {
+-		ret = 0;
++	if (ret <= 0)
+ 		goto out;
+-	}
+ 
++	tot_len = ret;
+ 	ret = rw_verify_area(type, file, pos, tot_len);
+ 	if (ret < 0)
+ 		goto out;
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -429,12 +429,6 @@ compat_process_vm_rw(compat_pid_t pid,
+ 	if (flags != 0)
+ 		return -EINVAL;
+ 
+-	if (!access_ok(VERIFY_READ, lvec, liovcnt * sizeof(*lvec)))
+-		goto out;
+-
+-	if (!access_ok(VERIFY_READ, rvec, riovcnt * sizeof(*rvec)))
+-		goto out;
+-
+ 	if (vm_write)
+ 		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
+ 						  UIO_FASTIOV, iovstack_l,
+@@ -459,8 +453,6 @@ free_iovecs:
+ 		kfree(iov_r);
+ 	if (iov_l != iovstack_l)
+ 		kfree(iov_l);
+-
+-out:
+ 	return rc;
  }
  
- void __init dmi_scan_machine(void)
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -40,12 +40,12 @@ static long compat_keyctl_instantiate_ke
+ 					   ARRAY_SIZE(iovstack),
+ 					   iovstack, &iov);
+ 	if (ret < 0)
+-		return ret;
++		goto err;
+ 	if (ret == 0)
+ 		goto no_payload_free;
+ 
+ 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
+-
++err:
+ 	if (iov != iovstack)
+ 		kfree(iov);
+ 	return ret;
 
 
