@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3CLXH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:07:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60252 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab3CLWdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933621Ab3CLWdJ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Mar 2013 18:33:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60091 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab3CLWck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 18:32:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 044/100] hwmon: (pmbus/ltc2978) Fix peak attribute handling
-Date: Tue, 12 Mar 2013 15:31:29 -0700
-Message-Id: <20130312223127.747157833@linuxfoundation.org>
+        Steven Noonan <steven@uplinklabs.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 006/100] xenbus: fix compile failure on ARM with Xen enabled
+Date: Tue, 12 Mar 2013 15:30:51 -0700
+Message-Id: <20130312223123.598183454@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,113 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Steven Noonan <steven@uplinklabs.net>
 
-commit dbd712c2272764a536e29ad6841dba74989a39d9 upstream.
+commit 45e27161c62216c163880d7aed751cb55a65c8e9 upstream.
 
-Peak attributes were not initialized and cleared correctly.
-Also, temp2_max is only supported on page 0 and thus does not need to be
-an array.
+Adding an include of linux/mm.h resolves this:
+	drivers/xen/xenbus/xenbus_client.c: In function ‘xenbus_map_ring_valloc_hvm’:
+	drivers/xen/xenbus/xenbus_client.c:532:66: error: implicit declaration of function ‘page_to_section’ [-Werror=implicit-function-declaration]
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Steven Noonan <steven@uplinklabs.net>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/pmbus/ltc2978.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+ drivers/xen/xenbus/xenbus_client.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/pmbus/ltc2978.c
-+++ b/drivers/hwmon/pmbus/ltc2978.c
-@@ -62,7 +62,7 @@ struct ltc2978_data {
- 	int temp_min, temp_max;
- 	int vout_min[8], vout_max[8];
- 	int iout_max[2];
--	int temp2_max[2];
-+	int temp2_max;
- 	struct pmbus_driver_info info;
- };
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -30,6 +30,7 @@
+  * IN THE SOFTWARE.
+  */
  
-@@ -204,10 +204,9 @@ static int ltc3880_read_word_data(struct
- 		ret = pmbus_read_word_data(client, page,
- 					   LTC3880_MFR_TEMPERATURE2_PEAK);
- 		if (ret >= 0) {
--			if (lin11_to_val(ret)
--			    > lin11_to_val(data->temp2_max[page]))
--				data->temp2_max[page] = ret;
--			ret = data->temp2_max[page];
-+			if (lin11_to_val(ret) > lin11_to_val(data->temp2_max))
-+				data->temp2_max = ret;
-+			ret = data->temp2_max;
- 		}
- 		break;
- 	case PMBUS_VIRT_READ_VIN_MIN:
-@@ -248,11 +247,11 @@ static int ltc2978_write_word_data(struc
- 
- 	switch (reg) {
- 	case PMBUS_VIRT_RESET_IOUT_HISTORY:
--		data->iout_max[page] = 0x7fff;
-+		data->iout_max[page] = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	case PMBUS_VIRT_RESET_TEMP2_HISTORY:
--		data->temp2_max[page] = 0x7fff;
-+		data->temp2_max = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
-@@ -262,12 +261,12 @@ static int ltc2978_write_word_data(struc
- 		break;
- 	case PMBUS_VIRT_RESET_VIN_HISTORY:
- 		data->vin_min = 0x7bff;
--		data->vin_max = 0;
-+		data->vin_max = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
- 		data->temp_min = 0x7bff;
--		data->temp_max = 0x7fff;
-+		data->temp_max = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	default:
-@@ -321,10 +320,11 @@ static int ltc2978_probe(struct i2c_clie
- 	info = &data->info;
- 	info->write_word_data = ltc2978_write_word_data;
- 
--	data->vout_min[0] = 0xffff;
- 	data->vin_min = 0x7bff;
-+	data->vin_max = 0x7c00;
- 	data->temp_min = 0x7bff;
--	data->temp_max = 0x7fff;
-+	data->temp_max = 0x7c00;
-+	data->temp2_max = 0x7c00;
- 
- 	switch (id->driver_data) {
- 	case ltc2978:
-@@ -336,7 +336,6 @@ static int ltc2978_probe(struct i2c_clie
- 		for (i = 1; i < 8; i++) {
- 			info->func[i] = PMBUS_HAVE_VOUT
- 			  | PMBUS_HAVE_STATUS_VOUT;
--			data->vout_min[i] = 0xffff;
- 		}
- 		break;
- 	case ltc3880:
-@@ -352,11 +351,14 @@ static int ltc2978_probe(struct i2c_clie
- 		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT
- 		  | PMBUS_HAVE_POUT
- 		  | PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP;
--		data->vout_min[1] = 0xffff;
-+		data->iout_max[0] = 0x7c00;
-+		data->iout_max[1] = 0x7c00;
- 		break;
- 	default:
- 		return -ENODEV;
- 	}
-+	for (i = 0; i < info->pages; i++)
-+		data->vout_min[i] = 0xffff;
- 
- 	return pmbus_do_probe(client, id, info);
- }
++#include <linux/mm.h>
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/spinlock.h>
 
 
