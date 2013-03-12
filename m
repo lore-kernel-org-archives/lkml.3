@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933659Ab3CLVoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 17:44:17 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:49866 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933646Ab3CLVoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 17:44:15 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: mtk.manpages@gmail.com
-Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Vasily Kulikov <segoon@openwall.com>, Li Zefan <lizefan@huawei.com>
-References: <CAKgNAkgAT8vFr7hbEzOjJG5pCt8-kh_4Wh9yrzHHXrCJ3Fhh+w@mail.gmail.com>
-Date: Tue, 12 Mar 2013 14:43:58 -0700
-In-Reply-To: <CAKgNAkgAT8vFr7hbEzOjJG5pCt8-kh_4Wh9yrzHHXrCJ3Fhh+w@mail.gmail.com>
-	(Michael Kerrisk's message of "Tue, 12 Mar 2013 08:07:30 +0100")
-Message-ID: <871ubkz42p.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S933669Ab3CLVrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 17:47:43 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:57571 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933648Ab3CLVrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 17:47:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=ctGvM9WZbjVTiLnoysS3vo8TTJP3ZuTY
+	QUAOLzmp5xgByaSbz+YWLp6NtzQAJDDM6jj82L8AKkqlQcG2r4Xe4uYWwYszl3LN
+	1Kimzauy7yuhE2CgeHv/vPAr6K06poYjlsRa+9icOT7Dw7OJtDwzaSGylW7mrodD
+	g+5t9PergXQ=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, James Morris <jmorris@namei.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: linux-next: unneeded merge in the security tree
+References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
+ <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
+ <20130312041641.GE18595@thunk.org>
+ <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com>
+ <20130312212027.GE14792@thunk.org>
+ <CA+55aFwHJtOU4Qzt3XZsER165kTc5P0ATQP2wPHvuUiVic8bnA@mail.gmail.com>
+Date: Tue, 12 Mar 2013 14:47:38 -0700
+In-Reply-To: <CA+55aFwHJtOU4Qzt3XZsER165kTc5P0ATQP2wPHvuUiVic8bnA@mail.gmail.com> (Linus
+ Torvalds's message of "Tue, 12 Mar 2013 14:28:39 -0700")
+Message-ID: <7vppz45lz9.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18jnOey1T2rBC7jkfUPeA+GWObxhm3xafQ=
-X-SA-Exim-Connect-IP: 208.54.5.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 XMDrug1234561 Drug references
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;mtk.manpages@gmail.com
-X-Spam-Relay-Country: 
-Subject: Re: For review: pid_namespaces(7) man page (draft 2)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 76690B42-8B5E-11E2-829A-26A52E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> Eric et al.,
->
-> [CCing Li because of reboot(2) changes]
->
-> I have (I think) addressed all previous comments in the current draft
-> of the pid_namespaces(7) page. This is a final sanity check before I
-> call this page complete (modulo any future kernel changes).
+>  - I do think that we might want a "--no-signatures" for the specific
+> case of merging signed tags without actually taking the signature
+> (because it's a "upstream" repo). The "--ff-only" thing is *too*
+> strict. Sometimes you really do want to merge in new code, disallowing
+> it entirely is tough.
 
-Baring the 3.9 reference to reboot(2) which should be 3.4 I don't see
-any problems.
-
-I think you have reached the point where if there are any problems left
-I will just have to send you patches after you publish because my eyes
-are glassing over and I am not going to see any more problems right now.
-
-One of those patches I am going to have to send you is I am fixing the
-case below for 3.10
->            clone(..., CLONE_VM, ...);
->            setns(fd, CLONE_NEWPID);      /* Fails */
->
->            clone(..., CLONE_VM, ...);
->            unshare(CLONE_NEWPID);        /* Fails */
->
-It turns out that the check in fork/clone is sufficient.
-
-The verbage about all of the namespaces is correct however since
-unshare(CLONE_NEWPID) doesn't actually change the pid_namespace it
-doesn't matter.
-
-Eric
+I agree that "--ff-only" thing is too strict and sometimes you would
+want to allow back-merges, but when you do allow such a back-merge,
+is there a reason you want it to be --no-signatures merge?  When a
+subtree maintainer decides to merge a stable release point from you
+with a good reason, I do not see anything wrong in recording that
+the resulting commit _did_ merge what you released with a signature.
