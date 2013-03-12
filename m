@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab3CLKmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:42:35 -0400
-Received: from vpn.mirsal.fr ([178.79.141.108]:42905 "EHLO
+	id S932631Ab3CLKme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:42:34 -0400
+Received: from vpn.mirsal.fr ([178.79.141.108]:42904 "EHLO
 	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754813Ab3CLKm3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754962Ab3CLKm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 06:42:29 -0400
 From: Mirsal Ennaime <mirsal@mirsal.fr>
@@ -14,9 +14,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Joe Perches <joe@perches.com>, Mirsal Ennaime <mirsal@mirsal.fr>
-Subject: [PATCH v3 1/4] drivers: android: binder: Move the node release code to a separate function
-Date: Tue, 12 Mar 2013 11:41:59 +0100
-Message-Id: <1363084922-19698-2-git-send-email-mirsal@mirsal.fr>
+Subject: [PATCH v3 2/4] drivers: android: binder: Fix code style in binder_deferred_release
+Date: Tue, 12 Mar 2013 11:42:00 +0100
+Message-Id: <1363084922-19698-3-git-send-email-mirsal@mirsal.fr>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363084922-19698-1-git-send-email-mirsal@mirsal.fr>
 References: <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
@@ -25,111 +25,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binder_deferred_release() function has many levels of indentation
-which makes it difficult to read. This patch moves the code which deals
-with disposing of a binder node to a separate binder_node_release()
-function, thus removing one level of indentation and allowing the code to
-fit in 80 columns.
+ * Use tabs where applicable
+ * Remove a few "80-columns" checkpatch warnings
+ * Separate code paths with empty lines for readability
 
 Signed-off-by: Mirsal Ennaime <mirsal@mirsal.fr>
 ---
- drivers/staging/android/binder.c |   76 +++++++++++++++++++++++---------------
- 1 file changed, 46 insertions(+), 30 deletions(-)
+ drivers/staging/android/binder.c |   32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 24456a0..9180a5b 100644
+index 9180a5b..ccf3087 100644
 --- a/drivers/staging/android/binder.c
 +++ b/drivers/staging/android/binder.c
-@@ -2878,6 +2878,51 @@ static int binder_release(struct inode *nodp, struct file *filp)
- 	return 0;
- }
- 
-+static int binder_node_release(struct binder_node *node, int refs)
-+{
-+	struct binder_ref *ref;
-+	int death = 0;
-+
-+	list_del_init(&node->work.entry);
-+	binder_release_work(&node->async_todo);
-+
-+	if (hlist_empty(&node->refs)) {
-+		kfree(node);
-+		binder_stats_deleted(BINDER_STAT_NODE);
-+
-+		return refs;
-+	}
-+
-+	node->proc = NULL;
-+	node->local_strong_refs = 0;
-+	node->local_weak_refs = 0;
-+	hlist_add_head(&node->dead_node, &binder_dead_nodes);
-+
-+	hlist_for_each_entry(ref, &node->refs, node_entry) {
-+		refs++;
-+
-+		if (!ref->death)
-+			goto out;
-+
-+		death++;
-+
-+		if (list_empty(&ref->death->work.entry)) {
-+			ref->death->work.type = BINDER_WORK_DEAD_BINDER;
-+			list_add_tail(&ref->death->work.entry,
-+				      &ref->proc->todo);
-+			wake_up_interruptible(&ref->proc->wait);
-+		} else
-+			BUG();
-+	}
-+
-+out:
-+	binder_debug(BINDER_DEBUG_DEAD_BINDER,
-+		     "node %d now dead, refs %d, death %d\n",
-+		     node->debug_id, refs, death);
-+
-+	return refs;
-+}
-+
- static void binder_deferred_release(struct binder_proc *proc)
+@@ -2927,12 +2927,14 @@ static void binder_deferred_release(struct binder_proc *proc)
  {
  	struct binder_transaction *t;
-@@ -2909,36 +2954,7 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 	struct rb_node *n;
+-	int threads, nodes, incoming_refs, outgoing_refs, buffers, active_transactions, page_count;
++	int threads, nodes, incoming_refs, outgoing_refs, buffers,
++		active_transactions, page_count;
  
+ 	BUG_ON(proc->vma);
+ 	BUG_ON(proc->files);
+ 
+ 	hlist_del(&proc->proc_node);
++
+ 	if (binder_context_mgr_node && binder_context_mgr_node->proc == proc) {
+ 		binder_debug(BINDER_DEBUG_DEAD_BINDER,
+ 			     "binder_release: %d context_mgr_node gone\n",
+@@ -2943,33 +2945,42 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 	threads = 0;
+ 	active_transactions = 0;
+ 	while ((n = rb_first(&proc->threads))) {
+-		struct binder_thread *thread = rb_entry(n, struct binder_thread, rb_node);
++		struct binder_thread *thread;
++
++		thread = rb_entry(n, struct binder_thread, rb_node);
+ 		threads++;
+ 		active_transactions += binder_free_thread(proc, thread);
+ 	}
++
+ 	nodes = 0;
+ 	incoming_refs = 0;
+ 	while ((n = rb_first(&proc->nodes))) {
+-		struct binder_node *node = rb_entry(n, struct binder_node, rb_node);
++		struct binder_node *node;
+ 
++		node = rb_entry(n, struct binder_node, rb_node);
  		nodes++;
  		rb_erase(&node->rb_node, &proc->nodes);
--		list_del_init(&node->work.entry);
--		binder_release_work(&node->async_todo);
--		if (hlist_empty(&node->refs)) {
--			kfree(node);
--			binder_stats_deleted(BINDER_STAT_NODE);
--		} else {
--			struct binder_ref *ref;
--			int death = 0;
--
--			node->proc = NULL;
--			node->local_strong_refs = 0;
--			node->local_weak_refs = 0;
--			hlist_add_head(&node->dead_node, &binder_dead_nodes);
--
--			hlist_for_each_entry(ref, &node->refs, node_entry) {
--				incoming_refs++;
--				if (ref->death) {
--					death++;
--					if (list_empty(&ref->death->work.entry)) {
--						ref->death->work.type = BINDER_WORK_DEAD_BINDER;
--						list_add_tail(&ref->death->work.entry, &ref->proc->todo);
--						wake_up_interruptible(&ref->proc->wait);
--					} else
--						BUG();
--				}
--			}
--			binder_debug(BINDER_DEBUG_DEAD_BINDER,
--				     "node %d now dead, refs %d, death %d\n",
--				      node->debug_id, incoming_refs, death);
--		}
-+		incoming_refs = binder_node_release(node, incoming_refs);
+ 		incoming_refs = binder_node_release(node, incoming_refs);
  	}
++
  	outgoing_refs = 0;
  	while ((n = rb_first(&proc->refs_by_desc))) {
+-		struct binder_ref *ref = rb_entry(n, struct binder_ref,
+-						  rb_node_desc);
++		struct binder_ref *ref;
++
++		ref = rb_entry(n, struct binder_ref, rb_node_desc);
+ 		outgoing_refs++;
+ 		binder_delete_ref(ref);
+ 	}
++
+ 	binder_release_work(&proc->todo);
+ 	binder_release_work(&proc->delivered_death);
+-	buffers = 0;
+ 
++	buffers = 0;
+ 	while ((n = rb_first(&proc->allocated_buffers))) {
+-		struct binder_buffer *buffer = rb_entry(n, struct binder_buffer,
+-							rb_node);
++		struct binder_buffer *buffer;
++
++		buffer = rb_entry(n, struct binder_buffer, rb_node);
++
+ 		t = buffer->transaction;
+ 		if (t) {
+ 			t->buffer = NULL;
+@@ -2978,6 +2989,7 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 			       proc->pid, t->debug_id);
+ 			/*BUG();*/
+ 		}
++
+ 		binder_free_buf(proc, buffer);
+ 		buffers++;
+ 	}
+@@ -2987,13 +2999,13 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 	page_count = 0;
+ 	if (proc->pages) {
+ 		int i;
++
+ 		for (i = 0; i < proc->buffer_size / PAGE_SIZE; i++) {
+ 			if (proc->pages[i]) {
+ 				void *page_addr = proc->buffer + i * PAGE_SIZE;
+ 				binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
+ 					     "binder_release: %d: page %d at %p not freed\n",
+-					     proc->pid, i,
+-					     page_addr);
++					     proc->pid, i, page_addr);
+ 				unmap_kernel_range((unsigned long)page_addr,
+ 					PAGE_SIZE);
+ 				__free_page(proc->pages[i]);
 -- 
 1.7.10.4
 
