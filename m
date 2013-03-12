@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538Ab3CLUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:37:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932514Ab3CLUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:37:26 -0400
-Date: Tue, 12 Mar 2013 21:35:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Feng Hong <hongfeng@marvell.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: Regression with orderly_poweroff()
-Message-ID: <20130312203514.GA23488@redhat.com>
-References: <1363058712.4534.12.camel@pasglop> <CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com> <CAKi4VALkUhOtP_8BOi3Mi8fTz8TUPwmwQq7WW27BEDue2wFNRw@mail.gmail.com> <20130312182210.GA15862@redhat.com> <CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com> <20130312191118.GA17439@redhat.com> <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
+	id S933548Ab3CLUns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:43:48 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:40519 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932514Ab3CLUnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 16:43:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=u+vImh0RvxBX/yPUu2shAcm2ewyFjY1X
+	eQvMJxuPx2gbmRHHY7TUCcVW9ullzaARmtMJdYFguLzGS7QMzg56FtqjCB/enVx5
+	Bofdc1/VlQvxUXvkP/yRX0r0WMKiVKnnN4Sy7ML39nG5bXmqRx+Fgi30sSJFGblj
+	uHLqhs2fPK4=
+From: Junio C Hamano <gitster@pobox.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, James Morris <jmorris@namei.org>,
+        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unneeded merge in the security tree
+References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
+ <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
+ <20130312041641.GE18595@thunk.org>
+ <20130312161823.86ea101fc4e45285b205817f@canb.auug.org.au>
+Date: Tue, 12 Mar 2013 13:43:44 -0700
+In-Reply-To: <20130312161823.86ea101fc4e45285b205817f@canb.auug.org.au>
+ (Stephen Rothwell's message of "Tue, 12 Mar 2013 16:18:23 +1100")
+Message-ID: <7vboao73i7.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Pobox-Relay-ID: 88CC38D0-8B55-11E2-80F0-26A52E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12, Linus Torvalds wrote:
->
-> So yeah, I guess
-> everything could just go into a workqueue.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-OK, I'll try to make the patch tomorrow. Should be trivial but it is
-not clear how we should pass "bool force" without allocating the
-work_struct which would be nice to avoid.
+> I wonder if "git merge v3.9-rc2^{}" should work.
 
-And I am a bit worried about UMH_WAIT_EXEC from system_wq. Should be
-fine afaics...
+With less typing, "git merge v3.9-rc2^0", is the more traditional
+way, but "git merge v3.9-rc2^{}" should also work.
 
-And. It seems there is another problem. argv_split(poweroff_cmd) can
-obviously race with proc_dostring() ? If nothing else, argv_split()
-doesn't check 'argc' when it does "*argvp++ = t". And this is not
-__orderly_poweroff-specific. This looks simple... and probably we can
-even simplify argv_split/argv_free. We can simply kstrndup() the
-original string once and do s/space/0/.
-
-Oleg.
 
