@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3CLCpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 22:45:44 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:43884 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab3CLCpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 22:45:42 -0400
-Date: Tue, 12 Mar 2013 11:00:58 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130312030057.GA6142@gmail.com>
-Mail-Followup-To: Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Theodore Ts'o <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Zheng Liu <wenqing.lz@taobao.com>
-References: <20130311171824.GA434@x4>
- <20130311191753.GA439@x4>
- <20130311194159.GB3579@redhat.com>
- <20130311201334.GA444@x4>
- <20130311203738.GB15478@thunk.org>
- <20130311204625.GA433@x4>
- <20130311211833.GC15478@thunk.org>
- <20130311213837.GA438@x4>
- <20130311231227.GA319@x4>
+	id S1755086Ab3CLCxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 22:53:31 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4013 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754591Ab3CLCxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 22:53:30 -0400
+Message-ID: <513E989E.8060206@canonical.com>
+Date: Mon, 11 Mar 2013 20:53:18 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311231227.GA319@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tom Tucker <tom@opengridcomputing.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH linux-next v3] SUNRPC: rpcrdma_register_default_external:
+ Dynamically allocate ib_phys_buf
+References: <4FA345DA4F4AE44899BD2B03EEEC2FA9286BA156@sacexcmbx05-prd.hq.netapp.com> <1363036508-24935-1-git-send-email-tim.gardner@canonical.com> <20130311212535.GG642@fieldses.org> <513E6271.3060107@opengridcomputing.com>
+In-Reply-To: <513E6271.3060107@opengridcomputing.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 12:12:27AM +0100, Markus Trippelsdorf wrote:
-> On 2013.03.11 at 22:38 +0100, Markus Trippelsdorf wrote:
-> > On 2013.03.11 at 17:18 -0400, Theodore Ts'o wrote:
-> > > On Mon, Mar 11, 2013 at 09:46:25PM +0100, Markus Trippelsdorf wrote:
-> > > > > BTW, I'm currently running 3.9-rc2 with some additional fixes from the
-> > > > > ext4 dev branch, and I'm not able to reproduce the problem using
-> > > > > rtorrent on my laptop.  How reliably is it reproducing for you?  Are
-> > > > > you seeing the problem every time you try this?
-> > > > 
-> > > > Yes, it's 100% reproducible for me. If I boot a 3.8 kernel the issue
-> > > > vanishes.
-> > > 
-> > > Would you be willing to try an experiment? 
-> > > 
-> > > Try pulling down the master branch from the ext4 git tree here:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
-> > > 
-> > > This contains all of the ext4 changes which are in 3.9-rc1, based on
-> > > top of 3.8-rc3.  See if it reproduces there.  If it does, then it
-> > > would tend to confirm the hypothesis that the issue was introduced by
-> > > one of the ext4 patches that we merged during the 3.9-rc1 merge
-> > > window... and then, since if you can reproduce the problem, if you
-> > > could do a git bisect to find the guilty commit, that would really
-> > > greatly appreciated.
-> > > 
-> > > If you can't reproduce it from the ext4.git tree, then the problem is
-> > > probably caused by some other change that was introduced between 3.8
-> > > and 3.9-rc1.
-> > 
-> > I've started a full bisection from v3.8 to todays git tree. It will take
-> > ~13 steps. However it's already late here in Germany. I will continue
-> > the bisection tomorrow and report back.
-> 
-> The issue started with:
-> 
-> 74cd15cd02708c7188581f279f33a98b2ae8d322 is the first bad commit
-> commit 74cd15cd02708c7188581f279f33a98b2ae8d322
-> Author: Zheng Liu <wenqing.lz@taobao.com>
-> Date:   Mon Feb 18 00:32:55 2013 -0500
-> 
->     ext4: reclaim extents from extent status tree
-> 
-> Please note that my local rtorrent version was configured with
-> "--with-posix-fallocate". I'm not sure if distributions also enable this
-> flag, but it could explain why Ted and Dave weren't able to reproduce
-> the problem so far.
+On 03/11/2013 05:02 PM, Tom Tucker wrote:
+> On 3/11/13 4:25 PM, J. Bruce Fields wrote:
 
-Hi Markus,
+<snip>
 
-Thanks for reporting this problem.  My deepest apologies.
+>> Looks good to me; wish we could get it tested....
+>
+> I will test it. Tim could you please send me a final version that you'd
+> like tested as a single message?
+>
 
-As Ted suggested, could you please try to use ext4 git tree?  I want to
-make sure whether this bug has been fixed by my lastest patch series or
-not.
+I'm a little confused about what you are asking. I think v3 of the patch 
+is the final version (unless you find bugs with it).
 
-Thanks in advance,
-                                                - Zheng
+> Would someone (like Tim maybe ... hint hint) look at tearing out all
+> those dead registration strategies? I don't think we need or will ever
+> use bounce-buffers, memory windows, or mlnx fmr.  The only two that are
+> used and tested are all-phys and FRMR (the default).
+>
+
+Dunno if I'll get time for that. I had a one day window where I could 
+hack out some simple patches. Now I'm back to the usual grindstone.
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
