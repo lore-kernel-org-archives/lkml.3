@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933980Ab3CLXMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:12:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60215 "EHLO
+	id S933563Ab3CLWdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab3CLWdD (ORCPT
+	with ESMTP id S1755730Ab3CLWci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:03 -0400
+	Tue, 12 Mar 2013 18:32:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 050/100] ARM: 7659/1: mm: make mm->context.id an atomic64_t variable
-Date: Tue, 12 Mar 2013 15:31:35 -0700
-Message-Id: <20130312223128.371905377@linuxfoundation.org>
+Subject: [ 003/100] ARM: 7653/2: do not scale loops_per_jiffy when using a constant delay clock
+Date: Tue, 12 Mar 2013 15:30:48 -0700
+Message-Id: <20130312223123.259378413@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,148 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-commit 8a4e3a9ead7e37ce1505602b564c15da09ac039f upstream.
+commit 70264367a243a68b1d5636ffb570183449803cbe upstream.
 
-mm->context.id is updated under asid_lock when a new ASID is allocated
-to an mm_struct. However, it is also read without the lock when a task
-is being scheduled and checking whether or not the current ASID
-generation is up-to-date.
+When udelay() is implemented using an architected timer, it is wrong
+to scale loops_per_jiffy when changing the CPU clock frequency since
+the timer clock remains constant.
 
-If two threads of the same process are being scheduled in parallel and
-the bottom bits of the generation in their mm->context.id match the
-current generation (that is, the mm_struct has not been used for ~2^24
-rollovers) then the non-atomic, lockless access to mm->context.id may
-yield the incorrect ASID.
+The lpj should probably become an implementation detail relevant to
+the CPU loop based delay routine only and more confined to it. In the
+mean time this is the minimal fix needed to have expected delays with
+the timer based implementation when cpufreq is also in use.
 
-This patch fixes this issue by making mm->context.id and atomic64_t,
-ensuring that the generation is always read consistently. For code that
-only requires access to the ASID bits (e.g. TLB flushing by mm), then
-the value is accessed directly, which GCC converts to an ldrb.
-
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Liviu Dudau <Liviu.Dudau@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/mmu.h         |    8 ++++----
- arch/arm/include/asm/mmu_context.h |    2 +-
- arch/arm/kernel/asm-offsets.c      |    2 +-
- arch/arm/mm/context.c              |   21 +++++++++++++--------
- 4 files changed, 19 insertions(+), 14 deletions(-)
+ arch/arm/include/asm/delay.h |    1 +
+ arch/arm/kernel/smp.c        |    3 +++
+ arch/arm/lib/delay.c         |    1 +
+ 3 files changed, 5 insertions(+)
 
---- a/arch/arm/include/asm/mmu.h
-+++ b/arch/arm/include/asm/mmu.h
-@@ -5,15 +5,15 @@
+--- a/arch/arm/include/asm/delay.h
++++ b/arch/arm/include/asm/delay.h
+@@ -24,6 +24,7 @@ extern struct arm_delay_ops {
+ 	void (*delay)(unsigned long);
+ 	void (*const_udelay)(unsigned long);
+ 	void (*udelay)(unsigned long);
++	bool const_clock;
+ } arm_delay_ops;
  
- typedef struct {
- #ifdef CONFIG_CPU_HAS_ASID
--	u64 id;
-+	atomic64_t	id;
- #endif
--	unsigned int vmalloc_seq;
-+	unsigned int	vmalloc_seq;
- } mm_context_t;
+ #define __delay(n)		arm_delay_ops.delay(n)
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -693,6 +693,9 @@ static int cpufreq_callback(struct notif
+ 	if (freq->flags & CPUFREQ_CONST_LOOPS)
+ 		return NOTIFY_OK;
  
- #ifdef CONFIG_CPU_HAS_ASID
- #define ASID_BITS	8
- #define ASID_MASK	((~0ULL) << ASID_BITS)
--#define ASID(mm)	((mm)->context.id & ~ASID_MASK)
-+#define ASID(mm)	((mm)->context.id.counter & ~ASID_MASK)
- #else
- #define ASID(mm)	(0)
- #endif
-@@ -26,7 +26,7 @@ typedef struct {
-  *  modified for 2.6 by Hyok S. Choi <hyok.choi@samsung.com>
-  */
- typedef struct {
--	unsigned long		end_brk;
-+	unsigned long	end_brk;
- } mm_context_t;
- 
- #endif
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -25,7 +25,7 @@ void __check_vmalloc_seq(struct mm_struc
- #ifdef CONFIG_CPU_HAS_ASID
- 
- void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk);
--#define init_new_context(tsk,mm)	({ mm->context.id = 0; })
-+#define init_new_context(tsk,mm)	({ atomic64_set(&mm->context.id, 0); 0; })
- 
- #else	/* !CONFIG_CPU_HAS_ASID */
- 
---- a/arch/arm/kernel/asm-offsets.c
-+++ b/arch/arm/kernel/asm-offsets.c
-@@ -107,7 +107,7 @@ int main(void)
-   BLANK();
- #endif
- #ifdef CONFIG_CPU_HAS_ASID
--  DEFINE(MM_CONTEXT_ID,		offsetof(struct mm_struct, context.id));
-+  DEFINE(MM_CONTEXT_ID,		offsetof(struct mm_struct, context.id.counter));
-   BLANK();
- #endif
-   DEFINE(VMA_VM_MM,		offsetof(struct vm_area_struct, vm_mm));
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -149,9 +149,9 @@ static int is_reserved_asid(u64 asid)
- 	return 0;
- }
- 
--static void new_context(struct mm_struct *mm, unsigned int cpu)
-+static u64 new_context(struct mm_struct *mm, unsigned int cpu)
- {
--	u64 asid = mm->context.id;
-+	u64 asid = atomic64_read(&mm->context.id);
- 	u64 generation = atomic64_read(&asid_generation);
- 
- 	if (asid != 0 && is_reserved_asid(asid)) {
-@@ -178,13 +178,14 @@ static void new_context(struct mm_struct
- 		cpumask_clear(mm_cpumask(mm));
- 	}
- 
--	mm->context.id = asid;
-+	return asid;
- }
- 
- void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk)
- {
- 	unsigned long flags;
- 	unsigned int cpu = smp_processor_id();
-+	u64 asid;
- 
- 	if (unlikely(mm->context.vmalloc_seq != init_mm.context.vmalloc_seq))
- 		__check_vmalloc_seq(mm);
-@@ -195,19 +196,23 @@ void check_and_switch_context(struct mm_
- 	 */
- 	cpu_set_reserved_ttbr0();
- 
--	if (!((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
--	    && atomic64_xchg(&per_cpu(active_asids, cpu), mm->context.id))
-+	asid = atomic64_read(&mm->context.id);
-+	if (!((asid ^ atomic64_read(&asid_generation)) >> ASID_BITS)
-+	    && atomic64_xchg(&per_cpu(active_asids, cpu), asid))
- 		goto switch_mm_fastpath;
- 
- 	raw_spin_lock_irqsave(&cpu_asid_lock, flags);
- 	/* Check that our ASID belongs to the current generation. */
--	if ((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
--		new_context(mm, cpu);
-+	asid = atomic64_read(&mm->context.id);
-+	if ((asid ^ atomic64_read(&asid_generation)) >> ASID_BITS) {
-+		asid = new_context(mm, cpu);
-+		atomic64_set(&mm->context.id, asid);
-+	}
- 
- 	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
- 		local_flush_tlb_all();
- 
--	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
-+	atomic64_set(&per_cpu(active_asids, cpu), asid);
- 	cpumask_set_cpu(cpu, mm_cpumask(mm));
- 	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
- 
++	if (arm_delay_ops.const_clock)
++		return NOTIFY_OK;
++
+ 	if (!per_cpu(l_p_j_ref, cpu)) {
+ 		per_cpu(l_p_j_ref, cpu) =
+ 			per_cpu(cpu_data, cpu).loops_per_jiffy;
+--- a/arch/arm/lib/delay.c
++++ b/arch/arm/lib/delay.c
+@@ -77,6 +77,7 @@ void __init register_current_timer_delay
+ 		arm_delay_ops.delay		= __timer_delay;
+ 		arm_delay_ops.const_udelay	= __timer_const_udelay;
+ 		arm_delay_ops.udelay		= __timer_udelay;
++		arm_delay_ops.const_clock	= true;
+ 		delay_calibrated		= true;
+ 	} else {
+ 		pr_info("Ignoring duplicate/late registration of read_current_timer delay\n");
 
 
