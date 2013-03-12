@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933995Ab3CLXMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:12:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60206 "EHLO
+	id S933980Ab3CLXMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:12:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60215 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574Ab3CLWdB (ORCPT
+	with ESMTP id S1755730Ab3CLWdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:01 -0400
+	Tue, 12 Mar 2013 18:33:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 048/100] ARM: 7657/1: head: fix swapper and idmap population with LPAE and big-endian
-Date: Tue, 12 Mar 2013 15:31:33 -0700
-Message-Id: <20130312223128.165263660@linuxfoundation.org>
+Subject: [ 050/100] ARM: 7659/1: mm: make mm->context.id an atomic64_t variable
+Date: Tue, 12 Mar 2013 15:31:35 -0700
+Message-Id: <20130312223128.371905377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -30,83 +30,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit d61947a164760ac520cb416768afdf38c33d60e7 upstream.
+commit 8a4e3a9ead7e37ce1505602b564c15da09ac039f upstream.
 
-The LPAE page table format uses 64-bit descriptors, so we need to take
-endianness into account when populating the swapper and idmap tables
-during early initialisation.
+mm->context.id is updated under asid_lock when a new ASID is allocated
+to an mm_struct. However, it is also read without the lock when a task
+is being scheduled and checking whether or not the current ASID
+generation is up-to-date.
 
-This patch ensures that we store the two words making up each page table
-entry in the correct order when running big-endian.
+If two threads of the same process are being scheduled in parallel and
+the bottom bits of the generation in their mm->context.id match the
+current generation (that is, the mm_struct has not been used for ~2^24
+rollovers) then the non-atomic, lockless access to mm->context.id may
+yield the incorrect ASID.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Marc Zyngier <marc.zyngier@arm.com>
+This patch fixes this issue by making mm->context.id and atomic64_t,
+ensuring that the generation is always read consistently. For code that
+only requires access to the ASID bits (e.g. TLB flushing by mm), then
+the value is accessed directly, which GCC converts to an ldrb.
+
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/head.S |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/mmu.h         |    8 ++++----
+ arch/arm/include/asm/mmu_context.h |    2 +-
+ arch/arm/kernel/asm-offsets.c      |    2 +-
+ arch/arm/mm/context.c              |   21 +++++++++++++--------
+ 4 files changed, 19 insertions(+), 14 deletions(-)
 
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -184,13 +184,22 @@ __create_page_tables:
- 	orr	r3, r3, #3			@ PGD block type
- 	mov	r6, #4				@ PTRS_PER_PGD
- 	mov	r7, #1 << (55 - 32)		@ L_PGD_SWAPPER
--1:	str	r3, [r0], #4			@ set bottom PGD entry bits
-+1:
-+#ifdef CONFIG_CPU_ENDIAN_BE8
- 	str	r7, [r0], #4			@ set top PGD entry bits
-+	str	r3, [r0], #4			@ set bottom PGD entry bits
-+#else
-+	str	r3, [r0], #4			@ set bottom PGD entry bits
-+	str	r7, [r0], #4			@ set top PGD entry bits
-+#endif
- 	add	r3, r3, #0x1000			@ next PMD table
- 	subs	r6, r6, #1
- 	bne	1b
+--- a/arch/arm/include/asm/mmu.h
++++ b/arch/arm/include/asm/mmu.h
+@@ -5,15 +5,15 @@
  
- 	add	r4, r4, #0x1000			@ point to the PMD tables
-+#ifdef CONFIG_CPU_ENDIAN_BE8
-+	add	r4, r4, #4			@ we only write the bottom word
-+#endif
+ typedef struct {
+ #ifdef CONFIG_CPU_HAS_ASID
+-	u64 id;
++	atomic64_t	id;
  #endif
+-	unsigned int vmalloc_seq;
++	unsigned int	vmalloc_seq;
+ } mm_context_t;
  
- 	ldr	r7, [r10, #PROCINFO_MM_MMUFLAGS] @ mm_mmuflags
-@@ -258,6 +267,11 @@ __create_page_tables:
- 	addne	r6, r6, #1 << SECTION_SHIFT
- 	strne	r6, [r3]
- 
-+#if defined(CONFIG_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
-+	sub	r4, r4, #4			@ Fixup page table pointer
-+						@ for 64-bit descriptors
-+#endif
-+
- #ifdef CONFIG_DEBUG_LL
- #if !defined(CONFIG_DEBUG_ICEDCC) && !defined(CONFIG_DEBUG_SEMIHOSTING)
- 	/*
-@@ -276,13 +290,17 @@ __create_page_tables:
- 	orr	r3, r7, r3, lsl #SECTION_SHIFT
- #ifdef CONFIG_ARM_LPAE
- 	mov	r7, #1 << (54 - 32)		@ XN
-+#ifdef CONFIG_CPU_ENDIAN_BE8
-+	str	r7, [r0], #4
-+	str	r3, [r0], #4
+ #ifdef CONFIG_CPU_HAS_ASID
+ #define ASID_BITS	8
+ #define ASID_MASK	((~0ULL) << ASID_BITS)
+-#define ASID(mm)	((mm)->context.id & ~ASID_MASK)
++#define ASID(mm)	((mm)->context.id.counter & ~ASID_MASK)
  #else
--	orr	r3, r3, #PMD_SECT_XN
--#endif
- 	str	r3, [r0], #4
--#ifdef CONFIG_ARM_LPAE
- 	str	r7, [r0], #4
+ #define ASID(mm)	(0)
  #endif
-+#else
-+	orr	r3, r3, #PMD_SECT_XN
-+	str	r3, [r0], #4
-+#endif
+@@ -26,7 +26,7 @@ typedef struct {
+  *  modified for 2.6 by Hyok S. Choi <hyok.choi@samsung.com>
+  */
+ typedef struct {
+-	unsigned long		end_brk;
++	unsigned long	end_brk;
+ } mm_context_t;
  
- #else /* CONFIG_DEBUG_ICEDCC || CONFIG_DEBUG_SEMIHOSTING */
- 	/* we don't need any serial debugging mappings */
+ #endif
+--- a/arch/arm/include/asm/mmu_context.h
++++ b/arch/arm/include/asm/mmu_context.h
+@@ -25,7 +25,7 @@ void __check_vmalloc_seq(struct mm_struc
+ #ifdef CONFIG_CPU_HAS_ASID
+ 
+ void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk);
+-#define init_new_context(tsk,mm)	({ mm->context.id = 0; })
++#define init_new_context(tsk,mm)	({ atomic64_set(&mm->context.id, 0); 0; })
+ 
+ #else	/* !CONFIG_CPU_HAS_ASID */
+ 
+--- a/arch/arm/kernel/asm-offsets.c
++++ b/arch/arm/kernel/asm-offsets.c
+@@ -107,7 +107,7 @@ int main(void)
+   BLANK();
+ #endif
+ #ifdef CONFIG_CPU_HAS_ASID
+-  DEFINE(MM_CONTEXT_ID,		offsetof(struct mm_struct, context.id));
++  DEFINE(MM_CONTEXT_ID,		offsetof(struct mm_struct, context.id.counter));
+   BLANK();
+ #endif
+   DEFINE(VMA_VM_MM,		offsetof(struct vm_area_struct, vm_mm));
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -149,9 +149,9 @@ static int is_reserved_asid(u64 asid)
+ 	return 0;
+ }
+ 
+-static void new_context(struct mm_struct *mm, unsigned int cpu)
++static u64 new_context(struct mm_struct *mm, unsigned int cpu)
+ {
+-	u64 asid = mm->context.id;
++	u64 asid = atomic64_read(&mm->context.id);
+ 	u64 generation = atomic64_read(&asid_generation);
+ 
+ 	if (asid != 0 && is_reserved_asid(asid)) {
+@@ -178,13 +178,14 @@ static void new_context(struct mm_struct
+ 		cpumask_clear(mm_cpumask(mm));
+ 	}
+ 
+-	mm->context.id = asid;
++	return asid;
+ }
+ 
+ void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk)
+ {
+ 	unsigned long flags;
+ 	unsigned int cpu = smp_processor_id();
++	u64 asid;
+ 
+ 	if (unlikely(mm->context.vmalloc_seq != init_mm.context.vmalloc_seq))
+ 		__check_vmalloc_seq(mm);
+@@ -195,19 +196,23 @@ void check_and_switch_context(struct mm_
+ 	 */
+ 	cpu_set_reserved_ttbr0();
+ 
+-	if (!((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
+-	    && atomic64_xchg(&per_cpu(active_asids, cpu), mm->context.id))
++	asid = atomic64_read(&mm->context.id);
++	if (!((asid ^ atomic64_read(&asid_generation)) >> ASID_BITS)
++	    && atomic64_xchg(&per_cpu(active_asids, cpu), asid))
+ 		goto switch_mm_fastpath;
+ 
+ 	raw_spin_lock_irqsave(&cpu_asid_lock, flags);
+ 	/* Check that our ASID belongs to the current generation. */
+-	if ((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
+-		new_context(mm, cpu);
++	asid = atomic64_read(&mm->context.id);
++	if ((asid ^ atomic64_read(&asid_generation)) >> ASID_BITS) {
++		asid = new_context(mm, cpu);
++		atomic64_set(&mm->context.id, asid);
++	}
+ 
+ 	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
+ 		local_flush_tlb_all();
+ 
+-	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
++	atomic64_set(&per_cpu(active_asids, cpu), asid);
+ 	cpumask_set_cpu(cpu, mm_cpumask(mm));
+ 	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
+ 
 
 
