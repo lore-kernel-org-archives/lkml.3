@@ -1,141 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab3CLGnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 02:43:37 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:34500 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab3CLGnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 02:43:35 -0400
+	id S932237Ab3CLGqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 02:46:52 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51008 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752776Ab3CLGqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 02:46:50 -0400
+Message-ID: <513ECF1A.2020300@ti.com>
+Date: Tue, 12 Mar 2013 12:15:46 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <20130312023658.GH21651@dastard>
-References: <1362612111-28673-1-git-send-email-walken@google.com>
-	<1362612111-28673-12-git-send-email-walken@google.com>
-	<20130309003221.GE23616@dastard>
-	<CANN689F9Zy=cTdi3D4d4iw66eeGLTtpudmAJgxYHGgDUsNU2Mg@mail.gmail.com>
-	<20130311001650.GB20565@dastard>
-	<CANN689FF+fjphwNqRz_ixpo4hW-rkXq6fbmJf7xDacBbP48BXw@mail.gmail.com>
-	<20130312023658.GH21651@dastard>
-Date: Mon, 11 Mar 2013 23:43:34 -0700
-Message-ID: <CANN689Hu4S6hQaZ0tytNuToCpwtdJmyisyqyrDrNK+buJXTsKA@mail.gmail.com>
-Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a reader
-From: Michel Lespinasse <walken@google.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
+To: Matt Porter <mporter@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v9 3/9] ARM: edma: add AM33XX support to the private EDMA
+ API
+References: <1362586540-10393-1-git-send-email-mporter@ti.com> <1362586540-10393-4-git-send-email-mporter@ti.com>
+In-Reply-To: <1362586540-10393-4-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
 
-On Mon, Mar 11, 2013 at 7:36 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Sun, Mar 10, 2013 at 10:17:42PM -0700, Michel Lespinasse wrote:
->> - since all readers are woken at once, you might see burst of direct
->> IO operations followed by bursts of truncate operations, instead of
->> having them interleaved in smaller groups as before.
->
-> And this will result in the same application IO pattern giving
-> vastly different results. e.g. a read IO promoted ahead of a
-> truncate will now return data instead of -1 (beyond EOF).
 
-I will reply to this part first, as I think this gives a more concrete
-anchor to the discussion.
+On 3/6/2013 9:45 PM, Matt Porter wrote:
+> Adds support for parsing the TI EDMA DT data into the
+> required EDMA private API platform data. Enables runtime
+> PM support to initialize the EDMA hwmod. Adds AM33XX EDMA
+> crossbar event mux support. Enables build on OMAP.
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> ---
+>  arch/arm/common/edma.c             |  300 ++++++++++++++++++++++++++++++++++--
+>  arch/arm/mach-omap2/Kconfig        |    1 +
+>  include/linux/platform_data/edma.h |    1 +
+>  3 files changed, 292 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index a1db6cd..e68ac38 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -24,6 +24,13 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> +#include <linux/edma.h>
+> +#include <linux/err.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_dma.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/pm_runtime.h>
+>  
+>  #include <linux/platform_data/edma.h>
+>  
+> @@ -1369,31 +1376,278 @@ void edma_clear_event(unsigned channel)
+>  EXPORT_SYMBOL(edma_clear_event);
+>  
+>  /*-----------------------------------------------------------------------*/
+> +static int edma_of_read_u32_to_s8_array(const struct device_node *np,
+> +					 const char *propname, s8 *out_values,
+> +					 size_t sz)
+> +{
+> +	int ret;
+> +
+> +	ret = of_property_read_u8_array(np, propname, out_values, sz);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Terminate it */
+> +	*out_values++ = -1;
+> +	*out_values++ = -1;
+> +
+> +	return 0;
+> +}
+> +
+> +static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+> +					 const char *propname, s16 *out_values,
+> +					 size_t sz)
+> +{
+> +	int ret;
+> +
+> +	ret = of_property_read_u16_array(np, propname, out_values, sz);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Terminate it */
+> +	*out_values++ = -1;
+> +	*out_values++ = -1;
+> +
+> +	return 0;
+> +}
+> +
+> +static int edma_xbar_event_map(struct device *dev,
+> +			       struct device_node *node,
+> +			       struct edma_soc_info *pdata, int len)
+> +{
 
-The crucial point is that the truncate system call hasn't completed
-yet - that thread is still queued in the rwsem.
+It will be nice to separate the xbar feature from DT'fication of the
+existing driver. Right now because of the mix the patch has become
+pretty big and its becoming tough to review in isolation.
 
-You still have the guarantee that the truncate will complete
-eventually (even if there is a never-ending stream of IOs), and that
-all IO system calls that start after the truncate system call
-completes will see the file as truncated.
+> +	int ret = 0;
+> +	int i;
+> +	struct resource res;
+> +	void *xbar;
+> +	const s16 (*xbar_chans)[2];
+> +	u32 shift, offset, mux;
+> +
+> +	xbar_chans = devm_kzalloc(dev,
+> +				  len/sizeof(s16) + 2*sizeof(s16),
+> +				  GFP_KERNEL);
+> +	if (!xbar_chans)
+> +		return -ENOMEM;
+> +
+> +	ret = of_address_to_resource(node, 1, &res);
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	xbar = devm_ioremap(dev, res.start, resource_size(&res));
+> +	if (!xbar)
+> +		return -ENOMEM;
+> +
+> +	ret = edma_of_read_u32_to_s16_array(node,
+> +					    "ti,edma-xbar-event-map",
+> +					    (s16 *)xbar_chans,
+> +					    len/sizeof(u32));
+> +	if (ret)
+> +		return -EIO;
+> +
+> +	for (i = 0; xbar_chans[i][0] != -1; i++) {
+> +		shift = (xbar_chans[i][1] % 4) * 8;
+> +		offset = xbar_chans[i][1] >> 2;
+> +		offset <<= 2;
+> +		mux = readl((void *)((u32)xbar + offset));
+> +		mux &= ~(0xff << shift);
+> +		mux |= xbar_chans[i][0] << shift;
+> +		writel(mux, (void *)((u32)xbar + offset));
+> +	}
+> +
+> +	pdata->xbar_chans = xbar_chans;
+> +
+> +	return 0;
+> +}
+> +
+> +static int edma_of_parse_dt(struct device *dev,
+> +			    struct device_node *node,
+> +			    struct edma_soc_info *pdata)
+> +{
+> +	int ret = 0;
+> +	u32 value;
+> +	struct property *prop;
+> +	size_t sz;
+> +	struct edma_rsv_info *rsv_info;
+> +	const s16 (*rsv_chans)[2], (*rsv_slots)[2];
+> +	const s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
+> +
+> +	memset(pdata, 0, sizeof(struct edma_soc_info));
+> +
+> +	ret = of_property_read_u32(node, "dma-channels", &value);
+> +	if (ret < 0)
+> +		return ret;
+> +	pdata->n_channel = value;
+> +
+> +	ret = of_property_read_u32(node, "ti,edma-regions", &value);
+> +	if (ret < 0)
+> +		return ret;
+> +	pdata->n_region = value;
+> +
+> +	ret = of_property_read_u32(node, "ti,edma-slots", &value);
+> +	if (ret < 0)
+> +		return ret;
+> +	pdata->n_slot = value;
+> +
+> +	pdata->n_cc = 1;
+> +	pdata->n_tc = 3;
 
-You don't have guarantees about which system call will "appear to run
-before the other" if the execution times of the two system calls
-overlap each other, but you actually never had such a guarantee from a
-correctness perspective (i.e. you could never guarantee which of the
-two would get queued on the rwsem ahead of the other).
+Will this mean the DT portion of this driver cannot be used on SoCs
+where there are two CCs like DA850? If you are hard-coding this, will it
+make sense to set to to EDMA_MAX_CC instead? Okay I see a comment down
+below saying DT will support only one CC. Not sure why, but this is
+probably related to that.
 
-> So:
->
->         RRRRRRRRRRRRRW1rrrrrrrrrrrrW2
->>
->> As our N-1 readers
->> complete their IO operations, they might get queued again after W2,
->
-> So:
->         W1rrrrrrrrrrrrW2RRRRRRRRRRRRR
->
->> and then skip ahead of W2 when RN reaches the front of the queue. So,
->> W2 is still guaranteed to run eventually, but with a worst case
->> latency that is ~2x worse than before
->
-> So, when W1 is released, the queue is treated as though it was:
->
->         rrrrrrrrrrrrRRRRRRRRRRRRRW2
->
-> yes?
+> +
+> +	rsv_info =
+> +		devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
+> +	if (!rsv_info)
+> +		return -ENOMEM;
+> +	pdata->rsv = rsv_info;
+> +
+> +	/* Build the reserved channel/slots arrays */
+> +	prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
+> +	if (prop) {
+> +		rsv_chans = devm_kzalloc(dev,
+> +					 sz/sizeof(s16) + 2*sizeof(s16),
+> +					 GFP_KERNEL);
+> +		if (!rsv_chans)
+> +			return -ENOMEM;
+> +		pdata->rsv->rsv_chans = rsv_chans;
+> +
+> +		ret = edma_of_read_u32_to_s16_array(node,
+> +						    "ti,edma-reserved-channels",
+> +						    (s16 *)rsv_chans,
+> +						    sz/sizeof(u32));
 
-Yes.
+Is this binding accepted? I cant find it in v3.9-rc1. IMHO, this
+configuration should not be through DT. This is configuration material
+for a given application (which channels should Linux running on ARM use
+vs which channels should DSP use?) but not hardware description.
+Probably configfs is useful here but I myself need to go through the
+details.
 
-> Ok, so I can see where your latency figure comes from, but it's
-> still a change of ordering in that W2 is no longer a barrier to the
-> reads queued after it.
+On AM335x the usage of this is further limited use since applications
+which need DMA from PRU or M3 are limited (at least I don't know of any).
 
-My claim is that it's not a visible change from a correctness
-perspective - if the extra readers R are submitted before W2 completes
-then they can't assume their execution order vs W2. From a correctness
-perspective, the outcome won't look any different as if W2's thread
-had been delayed right before entering the truncate system call.
+I know its frustrating to get these comments piece by piece and after v9
+has already been posted. Sorry about that. I think it will be easier to
+drop this and some other may-not-really-be-a-hardware-description
+bindings like "ti,edma-reserved-slots" for now and just get the basic
+support in. The other ones can then be discussed/handled separately.
 
-Now from a performance point of view, I concede there IS a difference
-as this will happen more often than before. But from a correctness
-point of view, this is not a new possible outcome - it was already
-possible before.
 
-> And if we extend that to WN, we have an interleaved queue
-> similar to this:
->
->         W1R1W2R2W3R3.....WnRm
->
-> By my reading of the algorithm you are proposing, after W1 is
-> released, we end up with the queue being treated like this:
->
->         R1R2R3....RmW2W3....Wn
->
-> Right?
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+>  
+> -static int __init edma_probe(struct platform_device *pdev)
+> +	prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
+> +	if (prop) {
+> +		rsv_slots = devm_kzalloc(dev,
+> +					 sz/sizeof(s16) + 2*sizeof(s16),
+> +					 GFP_KERNEL);
+> +		if (!rsv_slots)
+> +			return -ENOMEM;
+> +		pdata->rsv->rsv_slots = rsv_slots;
+> +
+> +		ret = edma_of_read_u32_to_s16_array(node,
+> +						    "ti,edma-reserved-slots",
+> +						    (s16 *)rsv_slots,
+> +						    sz/sizeof(u32));
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
 
-Yes, if what you are representing is the state of the queue at a given
-point of time (which implies R1..Rm must be distinct threads, not just
-the same thread doing repeated requests).
+Again, this is application-driven configuration from EDMA IP
+point-of-view. For some of these may be you can leave some sane defaults
+which will work on most systems (AM335x included) and then we can look
+at how this can be configured when an actual need arises (and at that
+time we can look at the best way of doing it). Same thing for a number
+of other properties below.
 
-As new requests come in over time, one important point to remember is
-that each writer will see at most one batch of readers wake up ahead
-of it (though this batch may include readers that were originally
-queued both before and after it). This guarantees that the writer
-won't get starved / will get its turn running eventually.
+> +	if (!prop)
+> +		return -EINVAL;
+> +
+> +	queue_tc_map = devm_kzalloc(dev,
+> +				    sz/sizeof(s8) + 2*sizeof(s8),
+> +				    GFP_KERNEL);
+> +	if (!queue_tc_map)
+> +		return -ENOMEM;
+> +	pdata->queue_tc_mapping = queue_tc_map;
+> +
+> +	ret = edma_of_read_u32_to_s8_array(node,
+> +					   "ti,edma-queue-tc-map",
+> +					   (s8 *)queue_tc_map,
+> +					   sz/sizeof(u32));
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
+> +	if (!prop)
+> +		return -EINVAL;
+> +
+> +	queue_priority_map = devm_kzalloc(dev,
+> +					  sz/sizeof(s8) + 2*sizeof(s8),
+> +					  GFP_KERNEL);
+> +	if (!queue_priority_map)
+> +		return -ENOMEM;
+> +	pdata->queue_priority_mapping = queue_priority_map;
+> +
+> +	ret = edma_of_read_u32_to_s8_array(node,
+> +					   "ti,edma-queue-tc-map",
+> +					   (s8 *)queue_priority_map,
+> +					   sz/sizeof(u32));
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
+> +	if (ret < 0)
+> +		return ret;
+> +	pdata->default_queue = value;
+> +
+> +	prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
+> +	if (prop)
+> +		ret = edma_xbar_event_map(dev, node, pdata, sz);
+> +
+> +	return ret;
+> +}
 
-> If so, that is definitely a change of lock ordering semantics -
-> writes do not have barrier properties anymore.
-
-I find the name 'barrier' actually confusing when used to describe
-synchronous operations. To me a barrier is usualy between asynchronous
-operations, and it is well defined which operations are ahead or
-behind of the barrier (either because they were queued by the same
-thread, or they were queued by different threads which may have
-synchronized together some other way). But in this case, we have two
-synchronous operations with overlapping execution times - they don't
-have a way to know which one is 'supposed to' be ahead of the other.
-The two threads can't observe their relative ordering since they are
-blocked during the operation...
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks,
+Sekhar
