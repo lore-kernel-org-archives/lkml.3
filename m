@@ -1,140 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab3CLTtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 15:49:43 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:65090 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755572Ab3CLTtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 15:49:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=BT1j88wpJuk2s+Vv4ceBzt+NDrMX+ws/
-	5cbcZr1Ygv+4oVstdO2cg6jV61cxzc2HPUmYgEf7jEnyiSItMUhpdU+/f8QkCokk
-	3lrmFfquDm1GM6xJFScmeLXMBmsqW9v1IODS9NxBmJtTDRldtlVgw2hd2Fh2Kilv
-	XZ2+4eebS3w=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, James Morris <jmorris@namei.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Git Mailing List <git@vger.kernel.org>
-Subject: Re: linux-next: unneeded merge in the security tree
-References: <20130312100950.e45ef0e721492ff0d5fd7c8d@canb.auug.org.au>
- <alpine.LRH.2.02.1303121510270.25612@tundra.namei.org>
- <20130312041641.GE18595@thunk.org>
- <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com>
-Date: Tue, 12 Mar 2013 12:49:38 -0700
-In-Reply-To: <CA+55aFzFLDcN-1GKae6Xqrns59K1xOD_HPzuv2Lv1__fZpqFMw@mail.gmail.com> (Linus
- Torvalds's message of "Tue, 12 Mar 2013 10:13:21 -0700")
-Message-ID: <7vsj40760d.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S932744Ab3CLTwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 15:52:38 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:46997 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755090Ab3CLTwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 15:52:37 -0400
+Date: Tue, 12 Mar 2013 16:52:28 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 00/12] perf annotate: Add support for event group view
+ (v2)
+Message-ID: <20130312195228.GC11779@ghostprotocols.net>
+References: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
+ <20130311205316.GA11779@ghostprotocols.net>
+ <878v5tl2vc.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: FA420A1A-8B4D-11E2-A082-26A52E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <878v5tl2vc.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Em Tue, Mar 12, 2013 at 12:21:27PM +0900, Namhyung Kim escreveu:
+> On Mon, 11 Mar 2013 17:53:16 -0300, Arnaldo Carvalho de Melo wrote:
+> > I need to go thru this more thoroughly, as at least one thing caught my
+> > attention, in some cases ->nr_pcnt is used and in others
+> > evsel->nr_members, do we need both?
 
-> One is simple:
->
->     git config alias.sync="pull --ff-only"
+> Probably not.  I was thought keeping an array and its length together is
+> better.  But it's rather a waste to save the same information to every
+> date structure so I move it to the struct annotate_browser->nr_events.
+ 
+> For evsel->nr_members, current code sets it only for grouping is enabled
+> so the individual events will have value of 0.  Also it's not pass the
+> evsel to every function need it.  But if you think it should really be
+> fixed that way I can make the change to pass and use evsel->nr_members.
 
-Heh, I just wrote that myself after reading the early part of this
-message ;-)
+This can be left for later, my point here is that we should try to avoid
+the various UIs from diverging too much, i.e. the code for --gtk,
+--stdio and --tui should be as close and using the same abstractions as
+possible.
+ 
+> Anyway, below is a fixed version that could survived my testing.
 
-> which works fine, but forces submaintainers to be careful when doing
-> things like this, and using a special command to do back-merges.
+indeed, works, compared the output of --stdio --group with --tui --group
+and it matches.
 
-> And maybe that's the right thing to do? Back-merges *are* special,
+While looking at it I noticed that the stdio output wastes the initial
+columns, at some point we may want to make the hist_entry lines match
+the TUI ones, so that going back and forth on two xterm tabs shows no
+differences.
 
-Yes.
+Anyway, thanks, applied!
 
-> after all. But the above alias is particularly fragile, in that
-> there's both "pull" and "merge" that people want to use this for, and
-> it doesn't really handle both. And --ff-only will obviously fail if
-> you actually have some work in your tree, and want to do a real merge,
-> so then you have to do that differently. So I'm mentioning this as a
-> better model than "git reset", but not really a *solution*.
-
-> That said, the fact that "--ff-only" errors out if you have local
-> development may actually be a big bonus - because you really shouldn't
-> do merges at all if you have local development, but syncing up to my
-> tree if you don't have it (and are going to start it) may be something
-> reasonable.
-
-Yes, that's the reasoning behind all the behaviours you described
-above.
-
-> Now, the other approach - and perhaps preferable, but requiring actual
-> changes to git itself - is to do the non-fast-forward merge *only* for
-> FETCH_HEAD, which already has magic semantics in other ways. So if
-> somebody does
->
->     git fetch linus
->     git merge v3.8
->
-> to sync with me, they would *not* get a merge commit with a signature,
-> just a fast-forward. But if you do
->
->     git pull linus v3.8
->
-> or a
->
->     git fetch linus v3.8
->     git merge FETCH_HEAD
->
-> it would look like a "maintainer merge"....
-
-I am not sure I follow.  Are you solving the real problem, the
-pointeless merge in the "security tree" that started this thread?
-
-I would imagine it was made by somebody thinking that pulling a
-tagged stable point from you is a good idea, like this:
-
-	git pull linus v3.9-rc2
-
-which under your FETCH_HEAD rule would look like a maintainer merge,
-no?
-
-An alternative may be to activate the magic "mergetag" thing only
-when you give "--no-ff" explicitly; otherwise merge would unwrap the
-tag, whether it comes from FETCH_HEAD.
-
-The following examples all assume that your HEAD is somewhere
-behind v3.9-rc2, perhaps done by
-
-	git checkout -b test v3.8^0
-
-Then under the "--no-ff activates the magic" rule:
-
-	git merge v3.9-rc2
-
-will fast-forward, but this
-
-	git merge --no-ff v3.9-rc2
-
-creates a real merge with the "mergetag" signature block.  The one
-that caused trouble in the "security tree", i.e.
-
-        git pull linus v3.9-rc2
-
-or its equivalent
-
-        git fetch linus v3.9-rc2
-        git merge FETCH_HEAD
-
-would still fast-forward under this rule.  The maintainer needs to
-do
-
-	git pull --no-ff git://git.kernel.org/... for-linus
-
-if the pull could fast-forward under this rule, though.
-
-Having thought this up to this point, I am not sure it generally is
-a good change.  It feels that "pull --ff-only" that prevents people
-from creating pointless back-merges may still be a better mechanism.
-
-I dunno.
-
+- Arnaldo
