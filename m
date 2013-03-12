@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964779Ab3CLWo0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:44:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60611 "EHLO
+	id S1756207Ab3CLWxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:53:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933857Ab3CLWoU (ORCPT
+	with ESMTP id S964773Ab3CLWoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:20 -0400
+	Tue, 12 Mar 2013 18:44:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/40] ath9k: fix RSSI dummy marker value
-Date: Tue, 12 Mar 2013 15:43:35 -0700
-Message-Id: <20130312223213.016372414@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [ 31/40] Fix: compat_rw_copy_check_uvector() misuse in aio, readv, writev, and security keys
+Date: Tue, 12 Mar 2013 15:43:52 -0700
+Message-Id: <20130312223214.785524949@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -27,34 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit a3d63cadbad97671d740a9698acc2c95d1ca6e79 upstream.
+commit 8aec0f5d4137532de14e6554fd5dd201ff3a3c49 upstream.
 
-RSSI is being stored internally as s8 in several places. The indication
-of an unset RSSI value, ATH_RSSI_DUMMY_MARKER, was supposed to have been
-set to 127, but ended up being set to 0x127 because of a code cleanup
-mistake. This could lead to invalid signal strength values in a few
-places.
+Looking at mm/process_vm_access.c:process_vm_rw() and comparing it to
+compat_process_vm_rw() shows that the compatibility code requires an
+explicit "access_ok()" check before calling
+compat_rw_copy_check_uvector(). The same difference seems to appear when
+we compare fs/read_write.c:do_readv_writev() to
+fs/compat.c:compat_do_readv_writev().
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This subtle difference between the compat and non-compat requirements
+should probably be debated, as it seems to be error-prone. In fact,
+there are two others sites that use this function in the Linux kernel,
+and they both seem to get it wrong:
+
+Now shifting our attention to fs/aio.c, we see that aio_setup_iocb()
+also ends up calling compat_rw_copy_check_uvector() through
+aio_setup_vectored_rw(). Unfortunately, the access_ok() check appears to
+be missing. Same situation for
+security/keys/compat.c:compat_keyctl_instantiate_key_iov().
+
+I propose that we add the access_ok() check directly into
+compat_rw_copy_check_uvector(), so callers don't have to worry about it,
+and it therefore makes the compat call code similar to its non-compat
+counterpart. Place the access_ok() check in the same location where
+copy_from_user() can trigger a -EFAULT error in the non-compat code, so
+the ABI behaviors are alike on both compat and non-compat.
+
+While we are here, fix compat_do_readv_writev() so it checks for
+compat_rw_copy_check_uvector() negative return values.
+
+And also, fix a memory leak in compat_keyctl_instantiate_key_iov() error
+handling.
+
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/common.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/compat.c            |   15 +++++++--------
+ mm/process_vm_access.c |    8 --------
+ security/keys/compat.c |    4 ++--
+ 3 files changed, 9 insertions(+), 18 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/common.h
-+++ b/drivers/net/wireless/ath/ath9k/common.h
-@@ -35,7 +35,7 @@
- #define WME_AC_BK   3
- #define WME_NUM_AC  4
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -558,6 +558,10 @@ ssize_t compat_rw_copy_check_uvector(int
+ 	}
+ 	*ret_pointer = iov;
  
--#define ATH_RSSI_DUMMY_MARKER   0x127
-+#define ATH_RSSI_DUMMY_MARKER   127
- #define ATH_RSSI_LPF_LEN 		10
- #define RSSI_LPF_THRESHOLD		-20
- #define ATH_RSSI_EP_MULTIPLIER     (1<<7)
++	ret = -EFAULT;
++	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
++		goto out;
++
+ 	/*
+ 	 * Single unix specification:
+ 	 * We should -EINVAL if an element length is not >= 0 and fitting an
+@@ -1089,17 +1093,12 @@ static ssize_t compat_do_readv_writev(in
+ 	if (!file->f_op)
+ 		goto out;
+ 
+-	ret = -EFAULT;
+-	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
+-		goto out;
+-
+-	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
++	ret = compat_rw_copy_check_uvector(type, uvector, nr_segs,
+ 					       UIO_FASTIOV, iovstack, &iov, 1);
+-	if (tot_len == 0) {
+-		ret = 0;
++	if (ret <= 0)
+ 		goto out;
+-	}
+ 
++	tot_len = ret;
+ 	ret = rw_verify_area(type, file, pos, tot_len);
+ 	if (ret < 0)
+ 		goto out;
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -429,12 +429,6 @@ compat_process_vm_rw(compat_pid_t pid,
+ 	if (flags != 0)
+ 		return -EINVAL;
+ 
+-	if (!access_ok(VERIFY_READ, lvec, liovcnt * sizeof(*lvec)))
+-		goto out;
+-
+-	if (!access_ok(VERIFY_READ, rvec, riovcnt * sizeof(*rvec)))
+-		goto out;
+-
+ 	if (vm_write)
+ 		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
+ 						  UIO_FASTIOV, iovstack_l,
+@@ -459,8 +453,6 @@ free_iovecs:
+ 		kfree(iov_r);
+ 	if (iov_l != iovstack_l)
+ 		kfree(iov_l);
+-
+-out:
+ 	return rc;
+ }
+ 
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -40,12 +40,12 @@ long compat_keyctl_instantiate_key_iov(
+ 					   ARRAY_SIZE(iovstack),
+ 					   iovstack, &iov, 1);
+ 	if (ret < 0)
+-		return ret;
++		goto err;
+ 	if (ret == 0)
+ 		goto no_payload_free;
+ 
+ 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
+-
++err:
+ 	if (iov != iovstack)
+ 		kfree(iov);
+ 	return ret;
 
 
