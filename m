@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab3CLXL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:11:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60210 "EHLO
+	id S933995Ab3CLXMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:12:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847Ab3CLWdD (ORCPT
+	with ESMTP id S933574Ab3CLWdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:03 -0400
+	Tue, 12 Mar 2013 18:33:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 036/100] ath9k_hw: improve reset reliability after errors
-Date: Tue, 12 Mar 2013 15:31:21 -0700
-Message-Id: <20130312223126.904814994@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 048/100] ARM: 7657/1: head: fix swapper and idmap population with LPAE and big-endian
+Date: Tue, 12 Mar 2013 15:31:33 -0700
+Message-Id: <20130312223128.165263660@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,42 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3412f2f086ea7531378fabe756bd4a1109994ae6 upstream.
+commit d61947a164760ac520cb416768afdf38c33d60e7 upstream.
 
-On many different chips, important aspects of the MAC state are not
-fully cleared by a warm reset. This can show up as tx/rx hangs, those
-annoying "DMA failed to stop in 10 ms..." messages or other quirks.
+The LPAE page table format uses 64-bit descriptors, so we need to take
+endianness into account when populating the swapper and idmap tables
+during early initialisation.
 
-On AR933x, the chip can occasionally get stuck in a way that only a
-driver unload/reload or a reboot would bring it back to life.
+This patch ensures that we store the two words making up each page table
+entry in the correct order when running big-endian.
 
-With this patch, a full reset is issued when bringing the chip out of
-FULL-SLEEP state (after idle), or if either Rx or Tx was not shut down
-properly. This makes the DMA related error messages disappear completely
-in my tests on AR933x, and the chip does not get stuck anymore.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/kernel/head.S |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1480,7 +1480,9 @@ static bool ath9k_hw_chip_reset(struct a
- 			reset_type = ATH9K_RESET_POWER_ON;
- 		else
- 			reset_type = ATH9K_RESET_COLD;
--	}
-+	} else if (ah->chip_fullsleep || REG_READ(ah, AR_Q_TXE) ||
-+		   (REG_READ(ah, AR_CR) & AR_CR_RXE))
-+		reset_type = ATH9K_RESET_COLD;
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -184,13 +184,22 @@ __create_page_tables:
+ 	orr	r3, r3, #3			@ PGD block type
+ 	mov	r6, #4				@ PTRS_PER_PGD
+ 	mov	r7, #1 << (55 - 32)		@ L_PGD_SWAPPER
+-1:	str	r3, [r0], #4			@ set bottom PGD entry bits
++1:
++#ifdef CONFIG_CPU_ENDIAN_BE8
+ 	str	r7, [r0], #4			@ set top PGD entry bits
++	str	r3, [r0], #4			@ set bottom PGD entry bits
++#else
++	str	r3, [r0], #4			@ set bottom PGD entry bits
++	str	r7, [r0], #4			@ set top PGD entry bits
++#endif
+ 	add	r3, r3, #0x1000			@ next PMD table
+ 	subs	r6, r6, #1
+ 	bne	1b
  
- 	if (!ath9k_hw_set_reset_reg(ah, reset_type))
- 		return false;
+ 	add	r4, r4, #0x1000			@ point to the PMD tables
++#ifdef CONFIG_CPU_ENDIAN_BE8
++	add	r4, r4, #4			@ we only write the bottom word
++#endif
+ #endif
+ 
+ 	ldr	r7, [r10, #PROCINFO_MM_MMUFLAGS] @ mm_mmuflags
+@@ -258,6 +267,11 @@ __create_page_tables:
+ 	addne	r6, r6, #1 << SECTION_SHIFT
+ 	strne	r6, [r3]
+ 
++#if defined(CONFIG_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
++	sub	r4, r4, #4			@ Fixup page table pointer
++						@ for 64-bit descriptors
++#endif
++
+ #ifdef CONFIG_DEBUG_LL
+ #if !defined(CONFIG_DEBUG_ICEDCC) && !defined(CONFIG_DEBUG_SEMIHOSTING)
+ 	/*
+@@ -276,13 +290,17 @@ __create_page_tables:
+ 	orr	r3, r7, r3, lsl #SECTION_SHIFT
+ #ifdef CONFIG_ARM_LPAE
+ 	mov	r7, #1 << (54 - 32)		@ XN
++#ifdef CONFIG_CPU_ENDIAN_BE8
++	str	r7, [r0], #4
++	str	r3, [r0], #4
+ #else
+-	orr	r3, r3, #PMD_SECT_XN
+-#endif
+ 	str	r3, [r0], #4
+-#ifdef CONFIG_ARM_LPAE
+ 	str	r7, [r0], #4
+ #endif
++#else
++	orr	r3, r3, #PMD_SECT_XN
++	str	r3, [r0], #4
++#endif
+ 
+ #else /* CONFIG_DEBUG_ICEDCC || CONFIG_DEBUG_SEMIHOSTING */
+ 	/* we don't need any serial debugging mappings */
 
 
