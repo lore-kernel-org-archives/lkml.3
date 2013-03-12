@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933018Ab3CLL5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:57:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47872 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3CLL5b (ORCPT
+	id S932834Ab3CLMBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:01:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11495 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab3CLMBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:57:31 -0400
-Date: Tue, 12 Mar 2013 22:57:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Hellstrom <daniel@gaisler.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20130312225719.c70d478eff3e77633d029386@canb.auug.org.au>
-In-Reply-To: <513EF5DD.2010501@gaisler.com>
-References: <20130312153047.dc10eb2392d07af8822e45f1@canb.auug.org.au>
-	<513EF5DD.2010501@gaisler.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Mar_2013_22_57_19_+1100_e7UZIWh9GNnJ2Vsx"
+	Tue, 12 Mar 2013 08:01:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 05:01:38 -0700
+From: Danny Huang <dahuang@nvidia.com>
+To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <hdoyu@nvidia.com>,
+        <olof@lixom.net>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <josephl@nvidia.com>, <pdeschrijver@nvidia.com>, <pgaikwad@nvidia.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Danny Huang <dahuang@nvidia.com>
+Subject: [PATCH v2] ARM: tegra: expose chip ID and revision
+Date: Tue, 12 Mar 2013 20:01:07 +0800
+Message-ID: <1363089667-15737-1-git-send-email-dahuang@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Mar_2013_22_57_19_+1100_e7UZIWh9GNnJ2Vsx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Expose Tegra chip ID and revision in /sys/devices/soc for user mode
+usage
 
-On Tue, 12 Mar 2013 10:31:09 +0100 Daniel Hellstrom <daniel@gaisler.com> wr=
-ote:
->
-> APBPS2 driver is missing linux/slab.h required on at least PowerPC. See p=
-atch below. How do you want me to proceed?
+Signed-off-by: Danny Huang <dahuang@nvidia.com>
+---
+ arch/arm/mach-tegra/Kconfig  |  3 +++
+ arch/arm/mach-tegra/common.c | 23 +++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
-That is up to Dmitry - either a fix up patch (with SoB and commit
-message) or a replacement patch.
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index d1c4893..b7abcfa 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -17,6 +17,7 @@ config ARCH_TEGRA_2x_SOC
+ 	select PINCTRL_TEGRA20
+ 	select PL310_ERRATA_727915 if CACHE_L2X0
+ 	select PL310_ERRATA_769419 if CACHE_L2X0
++	select SOC_BUS
+ 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+ 	select USB_ULPI if USB
+ 	select USB_ULPI_VIEWPORT if USB_SUPPORT
+@@ -36,6 +37,7 @@ config ARCH_TEGRA_3x_SOC
+ 	select PINCTRL
+ 	select PINCTRL_TEGRA30
+ 	select PL310_ERRATA_769419 if CACHE_L2X0
++	select SOC_BUS
+ 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+ 	select USB_ULPI if USB
+ 	select USB_ULPI_VIEWPORT if USB_SUPPORT
+@@ -51,6 +53,7 @@ config ARCH_TEGRA_114_SOC
+ 	select CPU_V7
+ 	select PINCTRL
+ 	select PINCTRL_TEGRA114
++	select SOC_BUS
+ 	help
+ 	  Support for NVIDIA Tegra T114 processor family, based on the
+ 	  ARM CortexA15MP CPU
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index f0315c9..9547c59 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -23,6 +23,8 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/irqchip.h>
++#include <linux/slab.h>
++#include <linux/sys_soc.h>
+ #include <linux/clk/tegra.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+@@ -94,6 +96,26 @@ static void __init tegra_init_cache(void)
+ 
+ }
+ 
++void __init tegra_soc_device_init(void)
++{
++	struct soc_device *soc_dev;
++	struct soc_device_attribute *soc_dev_attr;
++
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (!soc_dev_attr)
++		return;
++
++	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
++	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
++	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
++
++	soc_dev = soc_device_register(soc_dev_attr);
++	if (IS_ERR_OR_NULL(soc_dev))
++		kfree(soc_dev_attr);
++
++	return;
++}
++
+ void __init tegra_init_early(void)
+ {
+ 	tegra_cpu_reset_handler_init();
+@@ -108,4 +130,5 @@ void __init tegra_init_early(void)
+ void __init tegra_init_late(void)
+ {
+ 	tegra_powergate_debugfs_init();
++	tegra_soc_device_init();
+ }
+-- 
+1.8.1.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__12_Mar_2013_22_57_19_+1100_e7UZIWh9GNnJ2Vsx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRPxgfAAoJEECxmPOUX5FEsfUP/19j8nMytK98oUzSSHiKsxO3
-lKnCzgeYe2fff+Np2wZL/FbY7OlpWxJU/vQr4HA+JWF44bmIHZBXVfa93Z5WpHuA
-Rqr2QDPiwpwTH3EF3lOB+yCoaAjU4LgScZ/C4aOljoW78hknjnjafeQd894yu2C9
-/W+hTHAsMUAjtUr4k15qVS09WtQIJuWnQ8XjvmQCmrFOlxoquGDl90P0l1pL9cGC
-XCnP0dM8cK3dDLg5o0XFRIfCwlkYoRODI4dwElJrN/VgNSAk/C9l7aYQIYIkGd6b
-6CYoJbmd/OeEMUEgzxhEa5yUeJQp0WVDHUc689w2uS0HBrkMKtw4VfukKsPATNxk
-dyo8jHYVBCQkQhE+Z7+aFK7jOxDj3ytjfo9hq6NvlYe2k+89iwkEGmJkWWrDYXMY
-0IFLn+TDCNTtxJh7gb13NIHX3IzyROrbbaga2e+YDJ5RxiZdTd3sTu3KaLcuHeft
-L9kOobSm1YfbxPW0YlFb1/ksW4LynxvqKxIhf6NQdvbw8uVH8h2ThFqQ0ikWDkm/
-KSRBPMXcHCgbKzjBa3lO3EGbL2uVoQnn4kYdyUWiqFgl+Mku6CaN5TzXy8J92uBR
-48UZ2gSWVaJ6mNwzQgacZA+hB/h7lfc9OpmubzMt2dw8XfMAxtDAcpthqwwIdNoK
-8WbCHLJBiZ5se7T/J6qy
-=zSXT
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Mar_2013_22_57_19_+1100_e7UZIWh9GNnJ2Vsx--
