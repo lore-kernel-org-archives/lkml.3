@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964888Ab3CLXQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:16:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60158 "EHLO
+	id S964956Ab3CLXRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:17:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60155 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755680Ab3CLWc4 (ORCPT
+	with ESMTP id S933449Ab3CLWcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:56 -0400
+	Tue, 12 Mar 2013 18:32:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aurelien Jarno <aurelien@aurel32.net>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 030/100] hw_random: make buffer usable in scatterlist.
-Date: Tue, 12 Mar 2013 15:31:15 -0700
-Message-Id: <20130312223126.280515029@linuxfoundation.org>
+        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>,
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 029/100] NFSv4.1: Hold reference to layout hdr in layoutget
+Date: Tue, 12 Mar 2013 15:31:14 -0700
+Message-Id: <20130312223126.165828459@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,75 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit f7f154f1246ccc5a0a7e9ce50932627d60a0c878 upstream.
+commit a47970ff7814718fec31b7d966747c6aa1a3545f upstream.
 
-virtio_rng feeds the randomness buffer handed by the core directly
-into the scatterlist, since commit bb347d98079a547e80bd4722dee1de61e4dca0e8.
+This fixes an oops where a LAYOUTGET is in still in the rpciod queue,
+but the requesting processes has been killed.  Without this, killing
+the process does the final pnfs_put_layout_hdr() and sets NFS_I(inode)->layout
+to NULL while the LAYOUTGET rpc task still references it.
 
-However, if CONFIG_HW_RANDOM=m, the static buffer isn't a linear address
-(at least on most archs).  We could fix this in virtio_rng, but it's actually
-far easier to just do it in the core as virtio_rng would have to allocate
-a buffer every time (it doesn't know how much the core will want to read).
+Example oops:
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Tested-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000080
+IP: [<ffffffffa01bd586>] pnfs_choose_layoutget_stateid+0x37/0xef [nfsv4]
+PGD 7365b067 PUD 7365d067 PMD 0
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+Modules linked in: nfs_layout_nfsv41_files nfsv4 auth_rpcgss nfs lockd sunrpc ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ip6table_filter ip6_tables ppdev e1000 i2c_piix4 i2c_core shpchp parport_pc parport crc32c_intel aesni_intel xts aes_x86_64 lrw gf128mul ablk_helper cryptd mptspi scsi_transport_spi mptscsih mptbase floppy autofs4
+CPU 0
+Pid: 27, comm: kworker/0:1 Not tainted 3.8.0-dros_cthon2013+ #4 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+RIP: 0010:[<ffffffffa01bd586>]  [<ffffffffa01bd586>] pnfs_choose_layoutget_stateid+0x37/0xef [nfsv4]
+RSP: 0018:ffff88007b0c1c88  EFLAGS: 00010246
+RAX: ffff88006ed36678 RBX: 0000000000000000 RCX: 0000000ea877e3bc
+RDX: ffff88007a729da8 RSI: 0000000000000000 RDI: ffff88007a72b958
+RBP: ffff88007b0c1ca8 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88007a72b958
+R13: ffff88007a729da8 R14: 0000000000000000 R15: ffffffffa011077e
+FS:  0000000000000000(0000) GS:ffff88007f600000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000080 CR3: 00000000735f8000 CR4: 00000000001407f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process kworker/0:1 (pid: 27, threadinfo ffff88007b0c0000, task ffff88007c2fa0c0)
+Stack:
+ ffff88006fc05388 ffff88007a72b908 ffff88007b240900 ffff88006fc05388
+ ffff88007b0c1cd8 ffffffffa01a2170 ffff88007b240900 ffff88007b240900
+ ffff88007b240970 ffffffffa011077e ffff88007b0c1ce8 ffffffffa0110791
+Call Trace:
+ [<ffffffffa01a2170>] nfs4_layoutget_prepare+0x7b/0x92 [nfsv4]
+ [<ffffffffa011077e>] ? __rpc_atrun+0x15/0x15 [sunrpc]
+ [<ffffffffa0110791>] rpc_prepare_task+0x13/0x15 [sunrpc]
+
+Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/hw_random/core.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4proc.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -40,6 +40,7 @@
- #include <linux/init.h>
- #include <linux/miscdevice.h>
- #include <linux/delay.h>
-+#include <linux/slab.h>
- #include <asm/uaccess.h>
- 
- 
-@@ -52,8 +53,12 @@ static struct hwrng *current_rng;
- static LIST_HEAD(rng_list);
- static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
--static u8 rng_buffer[SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES]
--	__cacheline_aligned;
-+static u8 *rng_buffer;
-+
-+static size_t rng_buffer_size(void)
-+{
-+	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
-+}
- 
- static inline int hwrng_init(struct hwrng *rng)
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6087,11 +6087,13 @@ static struct page **nfs4_alloc_pages(si
+ static void nfs4_layoutget_release(void *calldata)
  {
-@@ -116,7 +121,7 @@ static ssize_t rng_dev_read(struct file
+ 	struct nfs4_layoutget *lgp = calldata;
+-	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
++	struct inode *inode = lgp->args.inode;
++	struct nfs_server *server = NFS_SERVER(inode);
+ 	size_t max_pages = max_response_pages(server);
  
- 		if (!data_avail) {
- 			bytes_read = rng_get_data(current_rng, rng_buffer,
--				sizeof(rng_buffer),
-+				rng_buffer_size(),
- 				!(filp->f_flags & O_NONBLOCK));
- 			if (bytes_read < 0) {
- 				err = bytes_read;
-@@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
- 
- 	mutex_lock(&rng_mutex);
- 
-+	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
-+	err = -ENOMEM;
-+	if (!rng_buffer) {
-+		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
-+		if (!rng_buffer)
-+			goto out_unlock;
-+	}
+ 	dprintk("--> %s\n", __func__);
+ 	nfs4_free_pages(lgp->args.layout.pages, max_pages);
++	pnfs_put_layout_hdr(NFS_I(inode)->layout);
+ 	put_nfs_open_context(lgp->args.ctx);
+ 	kfree(calldata);
+ 	dprintk("<-- %s\n", __func__);
+@@ -6106,7 +6108,8 @@ static const struct rpc_call_ops nfs4_la
+ struct pnfs_layout_segment *
+ nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
+ {
+-	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
++	struct inode *inode = lgp->args.inode;
++	struct nfs_server *server = NFS_SERVER(inode);
+ 	size_t max_pages = max_response_pages(server);
+ 	struct rpc_task *task;
+ 	struct rpc_message msg = {
+@@ -6136,6 +6139,10 @@ nfs4_proc_layoutget(struct nfs4_layoutge
+ 	lgp->res.layoutp = &lgp->args.layout;
+ 	lgp->res.seq_res.sr_slot = NULL;
+ 	nfs41_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
 +
- 	/* Must not register two RNGs with the same name. */
- 	err = -EEXIST;
- 	list_for_each_entry(tmp, &rng_list, list) {
++	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
++	pnfs_get_layout_hdr(NFS_I(inode)->layout);
++
+ 	task = rpc_run_task(&task_setup_data);
+ 	if (IS_ERR(task))
+ 		return ERR_CAST(task);
 
 
