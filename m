@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab3CLADs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:03:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53027 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188Ab3CLADq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:03:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
-        cpufreq@vger.kernel.org, andrew@lunn.ch, jason@lakedaemon.net,
-        rob.lee@linaro.org, len.brown@intel.com, khilman@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kirkwood: fix coccicheck warnings
-Date: Tue, 12 Mar 2013 01:10:48 +0100
-Message-ID: <8172590.SMZGNxeycF@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1363046296.2291.91.camel@rzhang1-mobl4>
-References: <1362987319-6369-1-git-send-email-silviupopescu1990@gmail.com> <9281321.Y04oYVrc0i@vostro.rjw.lan> <1363046296.2291.91.camel@rzhang1-mobl4>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754796Ab3CLAEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:04:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54714 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754188Ab3CLAES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:04:18 -0400
+Message-ID: <1363046657.3724.11.camel@joe-AO722>
+Subject: Re: [PATCH v2 3/3] drivers: android: binder: Remove excessive
+ indentation
+From: Joe Perches <joe@perches.com>
+To: Mirsal Ennaime <mirsal@mirsal.fr>
+Cc: Greg Kroah-Hartman <greg@kroah.com>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Mon, 11 Mar 2013 17:04:17 -0700
+In-Reply-To: <1363044388-11409-4-git-send-email-mirsal@mirsal.fr>
+References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
+	 <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
+	 <1363044388-11409-4-git-send-email-mirsal@mirsal.fr>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 12, 2013 07:58:16 AM Zhang Rui wrote:
-> On Mon, 2013-03-11 at 18:03 +0100, Rafael J. Wysocki wrote:
-> > On Monday, March 11, 2013 10:55:00 PM Zhang Rui wrote:
-> > > On Mon, 2013-03-11 at 09:35 +0200, Silviu-Mihai Popescu wrote:
-> > > > Convert all uses of devm_request_and_ioremap() to the newly introduced
-> > > > devm_ioremap_resource() which provides more consistent error handling.
-> > > > 
-> > > > devm_ioremap_resource() provides its own error messages so all explicit
-> > > > error messages can be removed from the failure code paths.
-> > > > 
-> > > > Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> > > > ---
-> > > >  drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
-> > > >  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
-> > > >  drivers/thermal/kirkwood_thermal.c |    8 +++-----
-> > > >  3 files changed, 9 insertions(+), 13 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-> > > > index 0e83e3c..6052476 100644
-> > > > --- a/drivers/cpufreq/kirkwood-cpufreq.c
-> > > > +++ b/drivers/cpufreq/kirkwood-cpufreq.c
-> > > > @@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
-> > > >  		dev_err(&pdev->dev, "Cannot get memory resource\n");
-> > > >  		return -ENODEV;
-> > > >  	}
-> > > > -	priv.base = devm_request_and_ioremap(&pdev->dev, res);
-> > > > -	if (!priv.base) {
-> > > > -		dev_err(&pdev->dev, "Cannot ioremap\n");
-> > > > -		return -EADDRNOTAVAIL;
-> > > > -	}
-> > > > +	priv.base = devm_ioremap_resource(&pdev->dev, res);
-> > > > +	if (IS_ERR(priv.base))
-> > > > +		return PTR_ERR(priv.base);
-> > > >  
-> > > >  	np = of_find_node_by_path("/cpus/cpu@0");
-> > > >  	if (!np)
-> > > > diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-> > > > index 670aa1e..53aad73 100644
-> > > > --- a/drivers/cpuidle/cpuidle-kirkwood.c
-> > > > +++ b/drivers/cpuidle/cpuidle-kirkwood.c
-> > > > @@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
-> > > >  	if (res == NULL)
-> > > >  		return -EINVAL;
-> > > >  
-> > > > -	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
-> > > > -	if (!ddr_operation_base)
-> > > > -		return -EADDRNOTAVAIL;
-> > > > +	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
-> > > > +	if (IS_ERR(ddr_operation_base))
-> > > > +		return PTR_ERR(ddr_operation_base);
-> > > >  
-> > > >  	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
-> > > >  	device->state_count = KIRKWOOD_MAX_STATES;
-> > > > diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
-> > > > index 65cb4f0..e5500ed 100644
-> > > > --- a/drivers/thermal/kirkwood_thermal.c
-> > > > +++ b/drivers/thermal/kirkwood_thermal.c
-> > > > @@ -85,11 +85,9 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
-> > > >  	if (!priv)
-> > > >  		return -ENOMEM;
-> > > >  
-> > > > -	priv->sensor = devm_request_and_ioremap(&pdev->dev, res);
-> > > > -	if (!priv->sensor) {
-> > > > -		dev_err(&pdev->dev, "Failed to request_ioremap memory\n");
-> > > > -		return -EADDRNOTAVAIL;
-> > > > -	}
-> > > > +	priv->sensor = devm_ioremap_resource(&pdev->dev, res);
-> > > > +	if (IS_ERR(priv->sensor))
-> > > > +		return PTR_ERR(priv->sensor);
-> > > >  
-> > > >  	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
-> > > >  					       priv, &ops, NULL, 0, 0);
-> > > 
-> > > there is already a fix for kirkwood_thermal.c at
-> > > http://marc.info/?l=linux-pm&m=136238017027514&w=2
-> > > and it has been applied to thermal -next.
-> > > 
-> > > would you please refreshed the patch?
-> > 
-> > Are you going to take that patch into your tree, then?
+On Tue, 2013-03-12 at 00:26 +0100, Mirsal Ennaime wrote:
+> Remove one level of indentation from the binder proc page release code
+> by using slightly different control semantics.
 > 
-> I'll take the one that fixes kirkwood_thermal.c. :)
+> This is a cosmetic patch which removes checkpatch "80-columns" warnings
 
-OK
+More trivia:
 
-Thanks,
-Rafael
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+[]
+> @@ -3001,17 +3001,20 @@ static void binder_deferred_release(struct binder_proc *proc)
+>  		int i;
+>  
+>  		for (i = 0; i < proc->buffer_size / PAGE_SIZE; i++) {
+> -			if (proc->pages[i]) {
+> -				void *page_addr = proc->buffer + i * PAGE_SIZE;
+> -				binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
+> -					"binder_release: %d: page %d at %p not freed\n",
+> -					proc->pid, i,
+> -					page_addr);
+> -				unmap_kernel_range((unsigned long)page_addr,
+> -					PAGE_SIZE);
+> -				__free_page(proc->pages[i]);
+> -				page_count++;
+> -			}
+> +			void *page_addr;
+> +
+> +			if (!proc->pages[i])
+> +				continue;
+> +
+> +			page_addr = proc->buffer + i * PAGE_SIZE;
+> +			binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
+> +				"binder_release: %d: page %d at %p not freed\n",
+> +				proc->pid, i,
+> +				page_addr);
+> +			unmap_kernel_range((unsigned long)page_addr,
+> +				PAGE_SIZE);
+
+Please align single function call args to open parenthesis.
+Please fill to 80 chars where appropriate.
+I think using %s, __func__ is better than embedded function names.
+
+like:
+			binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
+				     "%s: %d: page %d at %p not freed\n",
+				     __func__, proc->pid, i, page_addr);
+			unmap_kernel_range((unsigned long)page_addr, PAGE_SIZE);
+
+Also for the binder folk:
+
+I think it's odd to use pr_info in binder_debug.
+Why not use KERN_DEBUG or pr_debug/dynamic_debugging?
+
+#define binder_debug(mask, x...) \
+	do { \
+		if (binder_debug_mask & mask) \
+			pr_info(x); \
+	} while (0)
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
