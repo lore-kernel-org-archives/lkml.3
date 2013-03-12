@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934024Ab3CLXPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:15:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60183 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933471Ab3CLWc6 (ORCPT
+	id S964815Ab3CLXPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:15:31 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:33554 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804Ab3CLXP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:58 -0400
+	Tue, 12 Mar 2013 19:15:26 -0400
+Date: Tue, 12 Mar 2013 16:15:23 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lubomir Rintel <lkundrak@v3.sk>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 033/100] libertas: fix crash for SD8688
-Date: Tue, 12 Mar 2013 15:31:18 -0700
-Message-Id: <20130312223126.583109553@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Simon Baatz <gmbnomis@gmail.com>, Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [ 33/40] rtc: rtc-mv: Add support for clk to avoid lockups
+Message-ID: <20130312231523.GB21836@kroah.com>
+References: <20130312223211.492954675@linuxfoundation.org>
+ <20130312223214.995095830@linuxfoundation.org>
+ <20130312230843.GK12700@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312230843.GK12700@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 12, 2013 at 07:08:43PM -0400, Jason Cooper wrote:
+> Greg,
+> 
+> On Tue, Mar 12, 2013 at 03:43:54PM -0700, Greg Kroah-Hartman wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Andrew Lunn <andrew@lunn.ch>
+> > 
+> > commit 89c58c198b252f2bc20657fdd72a2aea788c435c upstream.
+> > 
+> > The Marvell RTC on Kirkwood makes use of the runit clock. Ensure the
+> > driver clk_prepare_enable() this clock, otherwise there is a danger
+> > the SoC will lockup when accessing RTC registers with the clock
+> > disabled.
+> > 
+> > Reported-by: Simon Baatz <gmbnomis@gmail.com>
+> > Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+> > Tested-by: Simon Baatz <gmbnomis@gmail.com>
+> > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> >  arch/arm/boot/dts/kirkwood.dtsi |    1 +
+> >  drivers/rtc/rtc-mv.c            |   28 ++++++++++++++++++++++++----
+> >  2 files changed, 25 insertions(+), 4 deletions(-)
+> 
+> Please drop from 3.4-stable.  devm_clk_get() wasn't available.
 
-------------------
-
-From: Bing Zhao <bzhao@marvell.com>
-
-commit 466026989f112e0546ca39ab00a759af82dbe83a upstream.
-
-For SD8688, FUNC_INIT command is queued before fw_ready flag is
-set. This causes the following crash as lbs_thread blocks any
-command if fw_ready is not set.
-
-[  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
-[  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
-[  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
-[  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
-[  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
-[  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
-[  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
-[  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
-[  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
-[  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
-[  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
-[  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
-[  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
-[  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
-[  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
-
-Fix it by setting fw_ready flag prior to queuing FUNC_INIT command.
-
-Reported-by: Lubomir Rintel <lkundrak@v3.sk>
-Tested-by: Lubomir Rintel <lkundrak@v3.sk>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/libertas/if_sdio.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/net/wireless/libertas/if_sdio.c
-+++ b/drivers/net/wireless/libertas/if_sdio.c
-@@ -825,6 +825,11 @@ static void if_sdio_finish_power_on(stru
- 
- 	sdio_release_host(func);
- 
-+	/* Set fw_ready before queuing any commands so that
-+	 * lbs_thread won't block from sending them to firmware.
-+	 */
-+	priv->fw_ready = 1;
-+
- 	/*
- 	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
- 	 */
-@@ -839,7 +844,6 @@ static void if_sdio_finish_power_on(stru
- 			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
- 	}
- 
--	priv->fw_ready = 1;
- 	wake_up(&card->pwron_waitq);
- 
- 	if (!card->started) {
-
+Now dropped.
 
