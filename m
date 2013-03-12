@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab3CLHi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:38:58 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60299 "EHLO
+	id S932428Ab3CLHjG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:39:06 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50656 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab3CLHix (ORCPT
+	with ESMTP id S932361Ab3CLHjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:38:53 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-26-513edb8933f4
+	Tue, 12 Mar 2013 03:39:01 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-67-513edb8f7d4e
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC v7 01/11] vrange: enable generic interval tree
-Date: Tue, 12 Mar 2013 16:38:25 +0900
-Message-Id: <1363073915-25000-2-git-send-email-minchan@kernel.org>
+Subject: [RFC v7 11/11] add purged page information in vmstat
+Date: Tue, 12 Mar 2013 16:38:35 +0900
+Message-Id: <1363073915-25000-12-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
 References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
@@ -34,27 +34,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anon vrange patch will use generic interval tree so let's enable it.
+This patch adds vmstat information about discarded page in vrange
+so admin can see how many of volatile pages are discarded by VM
+and efficieny. it could be indicator for seeing vrange working
+well.
 
-Cc: Michel Lespinasse <walken@google.com>
+PG_VRANGE_SCAN : the number of scanned pages for discarding
+PG_VRANGE_DISCARD: the number of discarded pages in kswapd's vrange LRU order
+PGDISCARD_DIRECT : the number of discarded pages in process context
+PGDISCARD_KSWAPD : the number of discarded pages in kswapd's page LRU order
+
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- lib/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/vm_event_item.h | 4 ++++
+ mm/vmstat.c                   | 4 ++++
+ mm/vrange.c                   | 9 +++++++++
+ 3 files changed, 17 insertions(+)
 
-diff --git a/lib/Makefile b/lib/Makefile
-index d7946ff..17986fb 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o interval_tree.o
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index bd6cf61..3d8ad18 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -25,6 +25,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGALLOC),
+ 		PGFREE, PGACTIVATE, PGDEACTIVATE,
+ 		PGFAULT, PGMAJFAULT,
++		PG_VRANGE_SCAN,
++		PG_VRANGE_DISCARD,
++		PGDISCARD_DIRECT,
++		PGDISCARD_KSWAPD,
+ 		FOR_ALL_ZONES(PGREFILL),
+ 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
+ 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index e1d8ed1..55806d2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -754,6 +754,10 @@ const char * const vmstat_text[] = {
  
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
+ 	"pgfault",
+ 	"pgmajfault",
++	"pgvrange_scan",
++	"pgvrange_discard",
++	"pgdiscard_direct",
++	"pgdiscard_kswapd",
+ 
+ 	TEXTS_FOR_ZONES("pgrefill")
+ 	TEXTS_FOR_ZONES("pgsteal_kswapd")
+diff --git a/mm/vrange.c b/mm/vrange.c
+index 2f56d36..c0c5d50 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -518,6 +518,10 @@ int discard_vpage(struct page *page)
+ 		if (page_freeze_refs(page, 1)) {
+ 			unlock_page(page);
+ 			dec_zone_page_state(page, NR_ISOLATED_ANON);
++			if (current_is_kswapd())
++				count_vm_event(PGDISCARD_KSWAPD);
++			else
++				count_vm_event(PGDISCARD_DIRECT);
+ 			return 1;
+ 		}
+ 	}
+@@ -584,11 +588,15 @@ static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ {
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
++	unsigned long start = addr;
+ 
+ 	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE)
+ 		vrange_pte_entry(*pte, addr, PAGE_SIZE, walk);
+ 	pte_unmap_unlock(pte - 1, ptl);
++
++	count_vm_events(PG_VRANGE_SCAN, (end - start) / PAGE_SIZE);
++
+ 	cond_resched();
+ 	return 0;
+ 
+@@ -741,5 +749,6 @@ unsigned int discard_vrange_pages(struct zone *zone, int nr_to_discard)
+ 	if (start_vrange)
+ 		put_victim_range(start_vrange);
+ 
++	count_vm_events(PG_VRANGE_DISCARD, nr_discarded);
+ 	return nr_discarded;
+ }
 -- 
 1.8.1.1
 
