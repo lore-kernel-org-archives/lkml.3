@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3CLKO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:14:27 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4048 "EHLO
+	id S932534Ab3CLKNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:13:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3883 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab3CLKOZ (ORCPT
+	with ESMTP id S932513Ab3CLKNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:14:25 -0400
+	Tue, 12 Mar 2013 06:13:39 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 03:14:10 -0700
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 03:06:45 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -29,9 +29,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         Max Filippov <jcmvbkbc@gmail.com>
 CC: Alexandre Courbot <gnurou@gmail.com>, <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 10/17] xtensa: remove explicit selection of GENERIC_GPIO
-Date: Tue, 12 Mar 2013 19:12:23 +0900
-Message-ID: <1363083150-30964-11-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 02/17] arm: remove redundant GENERIC_GPIO selection
+Date: Tue, 12 Mar 2013 19:12:15 +0900
+Message-ID: <1363083150-30964-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
 References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
@@ -42,39 +42,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Xtensa GPIO driver uses gpiolib and cannot compile with only
-GENERIC_GPIO.
+GENERIC_GPIO was selected next to ARCH_REQUIRE_GPIOLIB, which itself
+selects GENERIC_GPIO.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/xtensa/configs/iss_defconfig   | 1 -
- arch/xtensa/configs/s6105_defconfig | 1 -
- 2 files changed, 2 deletions(-)
+ arch/mips/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/xtensa/configs/iss_defconfig b/arch/xtensa/configs/iss_defconfig
-index ddab37b..77c52f8 100644
---- a/arch/xtensa/configs/iss_defconfig
-+++ b/arch/xtensa/configs/iss_defconfig
-@@ -10,7 +10,6 @@ CONFIG_RWSEM_XCHGADD_ALGORITHM=y
- CONFIG_GENERIC_FIND_NEXT_BIT=y
- CONFIG_GENERIC_HWEIGHT=y
- CONFIG_GENERIC_HARDIRQS=y
--CONFIG_GENERIC_GPIO=y
- # CONFIG_ARCH_HAS_ILOG2_U32 is not set
- # CONFIG_ARCH_HAS_ILOG2_U64 is not set
- CONFIG_NO_IOPORT=y
-diff --git a/arch/xtensa/configs/s6105_defconfig b/arch/xtensa/configs/s6105_defconfig
-index eaf1b8f..4799c6a 100644
---- a/arch/xtensa/configs/s6105_defconfig
-+++ b/arch/xtensa/configs/s6105_defconfig
-@@ -10,7 +10,6 @@ CONFIG_RWSEM_XCHGADD_ALGORITHM=y
- CONFIG_GENERIC_FIND_NEXT_BIT=y
- CONFIG_GENERIC_HWEIGHT=y
- CONFIG_GENERIC_HARDIRQS=y
--CONFIG_GENERIC_GPIO=y
- # CONFIG_ARCH_HAS_ILOG2_U32 is not set
- # CONFIG_ARCH_HAS_ILOG2_U64 is not set
- CONFIG_NO_IOPORT=y
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 32eb3d6..b7b7228 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -225,7 +225,6 @@ config MACH_JZ4740
+ 	select SYS_SUPPORTS_ZBOOT_UART16550
+ 	select DMA_NONCOHERENT
+ 	select IRQ_CPU
+-	select GENERIC_GPIO
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select SYS_HAS_EARLY_PRINTK
+ 	select HAVE_PWM
+@@ -935,7 +934,6 @@ config CSRC_SB1250
+ 	bool
+ 
+ config GPIO_TXX9
+-	select GENERIC_GPIO
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	bool
+ 
 -- 
 1.8.1.5
 
