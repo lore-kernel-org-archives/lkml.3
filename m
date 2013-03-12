@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3CLAAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:00:03 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:58236 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab3CLAAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:00:01 -0400
+	id S1754767Ab3CLABP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:01:15 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:53016 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754484Ab3CLABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:01:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "toddpoynor@google.com" <toddpoynor@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] alarmtimer: add error prints when suspend failed
+Date: Tue, 12 Mar 2013 01:08:16 +0100
+Message-ID: <1646942.hLd8ZoS5fE@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <513E6E02.8030602@linaro.org>
+References: <1362684457-32570-1-git-send-email-ldewangan@nvidia.com> <51399243.6050007@nvidia.com> <513E6E02.8030602@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
-References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
-Date: Tue, 12 Mar 2013 00:59:59 +0100
-Message-ID: <CAFTL4hyO7HxGYOL=Fvq-g3LY37PY2f+xR6+stA7-wNkh3wkV=Q@mail.gmail.com>
-Subject: Re: [PATCH] atomic: improve atomic_inc_unless_negative/atomic_dec_unless_positive
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/9 Ming Lei <tom.leiming@gmail.com>:
-> Generally, both atomic_inc_unless_negative() and
-> atomic_dec_unless_positive() need at least two atomic_cmpxchg()
-> to complete the atomic operation. In fact, the 1st atomic_cmpxchg()
-> is just used to read current value of the atomic variable at most times.
->
-> Considered memory barrier, bus lock, cache walking, etc. things may be
-> involved in atomic_cmpxchg(), it is much expensive than atomic_read(),
-> which is just the simple below:
->
->         (*(volatile int *)&(v)->counter)
->
-> so this patch can save one extra atomic_cmpxchg() for the two
-> helpers under general situation, and should improve them a bit.
->
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  include/linux/atomic.h |   28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
->
-> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-> index 5b08a85..aa951d8 100644
-> --- a/include/linux/atomic.h
-> +++ b/include/linux/atomic.h
-> @@ -63,26 +63,34 @@ static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
->  #ifndef atomic_inc_unless_negative
->  static inline int atomic_inc_unless_negative(atomic_t *p)
->  {
-> -       int v, v1;
-> -       for (v = 0; v >= 0; v = v1) {
-> -               v1 = atomic_cmpxchg(p, v, v + 1);
-> -               if (likely(v1 == v))
-> +       int v, t;
-> +
-> +       v = atomic_read(p);
-> +       while (1) {
-> +               if (unlikely(v < 0))
-> +                       return 0;
+On Monday, March 11, 2013 04:51:30 PM John Stultz wrote:
+> On 03/07/2013 11:24 PM, Laxman Dewangan wrote:
+> > On Friday 08 March 2013 04:46 AM, Greg KH wrote:
+> >> On Fri, Mar 08, 2013 at 12:57:37AM +0530, Laxman Dewangan wrote:
+> >>> The alramtimer suspend failed when nearest alarm wakeup time is
+> >>> less than 2 sec or rtc timer can not start.
+> >>>
+> >>> In suspend/resume stress testing, we found that sometimes alramtimer
+> >>> failed to suspend and hence it cancel the suspend ops. Add error prints
+> >>> in suspend failure to provide more info when failure occurs to help
+> >>> debugging.
+> >>>
+> >>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> >>> ---
+> >>>   kernel/time/alarmtimer.c |    6 +++++-
+> >>>   1 files changed, 5 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+> >>> index f11d83b..eed5646 100644
+> >>> --- a/kernel/time/alarmtimer.c
+> >>> +++ b/kernel/time/alarmtimer.c
+> >>> @@ -249,6 +249,8 @@ static int alarmtimer_suspend(struct device *dev)
+> >>>         if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
+> >>>           __pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
+> >>> +        dev_err(dev,
+> >>> +            "Nearest alarm wakeup time < 2sec, avoiding suspend\n");
+> >> What can userspace now do with this information?  How often is this now
+> >> going to spam the syslog and cause confusion?
+> >
+> >
+> > When we executed the stress on suspend/resume for system stability, 
+> > occasionally we get such error (3/4 times in 1000 cycle):
+> > [ 235.508010] dpm_run_callback(): platform_pm_suspend+0x0/0x64 returns 
+> > -16
+> > [ 235.514999] PM: Device alarmtimer failed to suspend: error -16
+> > [ 235.520958] PM: Some devices failed to suspend
+> >
+> >
+> > After tracing back the failure case, we found that possible reason 
+> > could be above one.
+> > In this case, if any function returns error then always better to 
+> > print the error so that it is easy to findout the cause of the error 
+> > and analyse.
+> >
+> > It should not generate spam as this does happen on some cases.
+> 
+> But if there is a recurring alarm timer that triggers every second, it 
+> will print out every time.
+> 
+> Greg's concern is that the error message is unhelpful, since it just 
+> will cause lots of log messages when the system is actually behaving as 
+> designed. That said, the PM suspend messages are fairly noisy as well, 
+> even when there are no errors.
+> 
+> Rafael: What are your thoughts here? If the alarmtimer subsystem blocks 
+> a suspend attempt (returning EBUSY, as a pending alarm will fire soon), 
+> how verbose should we be, since this isn't really an error case?
 
-But atomic_read() lacks the full memory barrier that is needed for
-proper atomicity here.
+I wouldn't be too verbose, but that also depends on whether or not autosleep
+is used.  I think our suspend messages are too verbose for autosleep anyway,
+but for non-autosleep suspends it would be good to know why the system didn't
+suspend.
 
-For example if the initial value of p is -1 and another CPU just did
-an atomic_inc() that resulted in the new value to be 0, the above
-atomic_read() might return -1 because there is no guarantee it's
-seeing the recent update on the remote CPU.
+Thanks,
+Rafael
 
-atomic_cmpxchg() OTOH provides that guarantee.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
