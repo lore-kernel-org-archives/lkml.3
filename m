@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964944Ab3CLWrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:47:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60728 "EHLO
+	id S964934Ab3CLWsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:48:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964877Ab3CLWon (ORCPT
+	with ESMTP id S964871Ab3CLWom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:43 -0400
+	Tue, 12 Mar 2013 18:44:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 03/21] SCSI: dc395x: uninitialized variable in device_alloc()
-Date: Tue, 12 Mar 2013 15:44:05 -0700
-Message-Id: <20130312223245.554878147@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 12/21] drm/radeon: add primary dac adj quirk for R200 board
+Date: Tue, 12 Mar 2013 15:44:14 -0700
+Message-Id: <20130312223246.546369831@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
 References: <20130312223245.109098379@linuxfoundation.org>
@@ -28,38 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 208afec4f3be8c51ad6eebe6611dd6d2ad2fa298 upstream.
+commit e8fc41377f5037ff7a661ea06adc05f1daec1548 upstream.
 
-This bug was introduced back in bitkeeper days in 2003.  We use
-"dcb->dev_mode" before it has been initialized.
+vbios values are wrong leading to colors that are
+too bright.  Use the default values instead.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/dc395x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/scsi/dc395x.c
-+++ b/drivers/scsi/dc395x.c
-@@ -3747,13 +3747,13 @@ static struct DeviceCtlBlk *device_alloc
- 	dcb->max_command = 1;
- 	dcb->target_id = target;
- 	dcb->target_lun = lun;
-+	dcb->dev_mode = eeprom->target[target].cfg0;
- #ifndef DC395x_NO_DISCONNECT
- 	dcb->identify_msg =
- 	    IDENTIFY(dcb->dev_mode & NTC_DO_DISCONNECT, lun);
- #else
- 	dcb->identify_msg = IDENTIFY(0, lun);
- #endif
--	dcb->dev_mode = eeprom->target[target].cfg0;
- 	dcb->inquiry7 = 0;
- 	dcb->sync_mode = 0;
- 	dcb->min_nego_period = clock_period[period_index];
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -958,6 +958,15 @@ struct radeon_encoder_primary_dac *radeo
+ 			found = 1;
+ 	}
+ 
++	/* quirks */
++	/* Radeon 9100 (R200) */
++	if ((dev->pdev->device == 0x514D) &&
++	    (dev->pdev->subsystem_vendor == 0x174B) &&
++	    (dev->pdev->subsystem_device == 0x7149)) {
++		/* vbios value is bad, use the default */
++		found = 0;
++	}
++
+ 	if (!found) /* fallback to defaults */
+ 		radeon_legacy_get_primary_dac_info_from_table(rdev, p_dac);
+ 
 
 
