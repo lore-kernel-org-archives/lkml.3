@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab3CLFYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:24:33 -0400
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:62094 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab3CLFYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:24:32 -0400
-Date: Mon, 11 Mar 2013 22:24:26 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        leiwen@marvell.com, wwang27@marvell.com
-Subject: Re: workqueue panic in 3.4 kernel
-Message-ID: <20130312052426.GV14556@mtj.dyndns.org>
-References: <20130305163228.GA12795@htj.dyndns.org>
- <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
- <20130306191408.GN1227@htj.dyndns.org>
- <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
- <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
- <20130307154907.GB29601@htj.dyndns.org>
- <alpine.LFD.2.02.1303071705310.22263@ionos>
- <CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
- <20130312051215.GU14556@mtj.dyndns.org>
- <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
+	id S932104Ab3CLF0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:26:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34643 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752813Ab3CLF0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:26:38 -0400
+X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
+   d="scan'208";a="6856423"
+Message-ID: <513EBC2F.6030601@cn.fujitsu.com>
+Date: Tue, 12 Mar 2013 13:25:03 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 12/18] driver: scsi: remove cast for kmalloc/kzalloc return
+ value
+References: <513EB23D.7020303@cn.fujitsu.com>
+In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 13:25:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/12 13:25:24,
+	Serialize complete at 2013/03/12 13:25:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 01:18:01PM +0800, Lei Wen wrote:
-> > You're initializing random piece of memory which may contain any
-> > garbage and triggering BUG if some bit is set on it. No, you can't do
-> > that. debugobj is the right tool for debugging object lifetime issues
-> > and is already supported.
-> 
-> The debugobj is not helping on this issue, I have enabled both
-> CONFIG_DEBUG_OBJECTS_WORK and CONFIG_DEBUG_OBJECTS.
-> But find they didn't report any issue at all.
+remove cast for kmalloc/kzalloc return value.
 
-It should. No idea why it didn't. Would be interesting to find out
-why.
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-scsi@vger.kernel.org
+---
+ drivers/scsi/hpsa.c           |    3 +--
+ drivers/scsi/lpfc/lpfc_init.c |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-> And I am not init random memory, original issue is call init multi-times
-> for one structure and that piece of memory already been allocated.
-> And __INIT_WORK shouldn't call over random memory, right?
-
-Memory areas aren't always zero on allocation.
-
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 7f4f790..7a5a002 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3071,8 +3071,7 @@ static int hpsa_big_passthru_ioctl(struct ctlr_info *h, void __user *argp)
+ 		return -EINVAL;
+ 	if (!capable(CAP_SYS_RAWIO))
+ 		return -EPERM;
+-	ioc = (BIG_IOCTL_Command_struct *)
+-	    kmalloc(sizeof(*ioc), GFP_KERNEL);
++	ioc = kmalloc(sizeof(*ioc), GFP_KERNEL);
+ 	if (!ioc) {
+ 		status = -ENOMEM;
+ 		goto cleanup1;
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 314b4f6..f9a3b30 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -4674,7 +4674,7 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
+ 	}
+ 
+ 	if (!phba->sli.ring)
+-		phba->sli.ring = (struct lpfc_sli_ring *)
++		phba->sli.ring =
+ 			kzalloc(LPFC_SLI3_MAX_RING *
+ 			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
+ 	if (!phba->sli.ring)
 -- 
-tejun
+1.7.1
+
