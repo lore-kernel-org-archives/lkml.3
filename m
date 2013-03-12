@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab3CLUeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:34:24 -0400
-Received: from longford.logfs.org ([213.229.74.203]:58663 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab3CLUeW (ORCPT
+	id S933540Ab3CLUfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:35:22 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49505 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932514Ab3CLUfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:34:22 -0400
-Date: Tue, 12 Mar 2013 15:09:55 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: pipe_release oops.
-Message-ID: <20130312190955.GB19035@logfs.org>
-References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
- <20130307213819.GB19543@redhat.com>
- <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
- <20130307220333.GA31039@redhat.com>
- <20130307223610.GA2494@redhat.com>
- <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
- <20130308145306.GA24085@redhat.com>
- <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
- <20130308182648.GA25175@logfs.org>
- <20130310233318.GC21522@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130310233318.GC21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Mar 2013 16:35:21 -0400
+Message-ID: <1363120519.3137.148.camel@x61.thuisdomein>
+Subject: [PATCH] sparc: delete "if !ULTRA_HAS_POPULATION_COUNT"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 21:35:19 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Mar 2013 20:35:19.0851 (UTC) FILETIME=[1CF637B0:01CE1F61]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 March 2013 23:33:18 +0000, Al Viro wrote:
-> On Fri, Mar 08, 2013 at 01:26:49PM -0500, J??rn Engel wrote:
-> 
-> > +	files_cookie = async_schedule(exit_files_async, tsk);
-> >  	exit_mm(tsk);
-> >  
-> >  	if (group_dead)
-> > @@ -990,7 +998,7 @@ void do_exit(long code)
-> >  
-> >  	exit_sem(tsk);
-> >  	exit_shm(tsk);
-> > -	exit_files(tsk);
-> > +	async_synchronize_cookie(files_cookie);
-> 
-> That doesn't do what you seem to think it's doing.  It does *not* wait
-> for the completion of that sucker's execution - only the ones scheduled
-> before it.  IOW, your exit_files_async() might very well be executed
-> *after* do_exit() completes and tsk gets reused.
+Commit 2d78d4beb64eb07d50665432867971c481192ebf ("[PATCH] bitops:
+sparc64: use generic bitops") made the default of GENERIC_HWEIGHT depend
+on !ULTRA_HAS_POPULATION_COUNT. But since there's no Kconfig symbol with
+that name, this always evaluates to true. Delete this dependency.
 
-Indeed.  Maybe async_barrier() would have been a less dangerous name
-in the presence of people like me.  Oh well!
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested with "make ARCH=sparc menuconfig" (before and after this
+patch).
 
-I have kernel/async.c on my list anyway.  We've had a number of cases
-where a single bad scsi device turned the "do the scanning
-asynchronously" idea into a "make completely unrelated stuff
-synchonously wait for a broken disk" reality.
+1) There apparently is an (obscure) preprocessor macro
+ULTRA_HAS_POPULATION_COUNT. But the check for it got removed in commit
+ef7c4d4675d2a9206f913f26ca1a5cd41bff9d41 ("sparc: Use popc if possible
+for hweight routines."). 
 
-Thanks for spotting this!
+ arch/sparc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Jörn
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 289127d..7fcd4b4 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -197,7 +197,7 @@ config RWSEM_XCHGADD_ALGORITHM
+ 
+ config GENERIC_HWEIGHT
+ 	bool
+-	default y if !ULTRA_HAS_POPULATION_COUNT
++	default y
+ 
+ config GENERIC_CALIBRATE_DELAY
+ 	bool
+-- 
+1.7.11.7
 
---
-The cheapest, fastest and most reliable components of a computer
-system are those that aren't there.
--- Gordon Bell, DEC labratories
