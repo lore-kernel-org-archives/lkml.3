@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab3CLFsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:48:19 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30057 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab3CLFsS (ORCPT
+	id S1755052Ab3CLFs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:48:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56497 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab3CLFs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:48:18 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-62-513ec1a02097
+	Tue, 12 Mar 2013 01:48:56 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-c8-513ec1c71b89
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: da903x_bl: switch to using SIMPLE_DEV_PM_OPS
-Date: Tue, 12 Mar 2013 14:48:16 +0900
-Message-id: <003d01ce1ee5$316a57c0$943f0740$%han@samsung.com>
+Subject: [PATCH 01/14] backlight: ld9040: convert ld9040 to dev_pm_ops
+Date: Tue, 12 Mar 2013 14:48:55 +0900
+Message-id: <003e01ce1ee5$4897e020$d9c7a060$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4e5TFGbi0DDqigSHaFNclqJo2Q/A==
+Thread-index: Ac4e5UhyF7eo33BPTaGekL6G0bVCBQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zQ90FB+0CDT4tsLaYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDI+XT3O
-	WHCEu+LCIdUGxkucXYycHBICJhIv161jgbDFJC7cW8/WxcjFISSwjFHi278zrDBFZ759YIZI
-	TGeUWLXlABOE84tR4nDLQmaQKjYBNYkvXw6zdzFycIgI6Eu0tWiAhJkFSiW2PngPtkFYwEPi
-	/emHjCA2i4CqxMdJT8BsXgFbiavzZjFB2IISPybfY4Ho1ZJYv/M4E4QtL7F5zVtmkPESAuoS
-	j/7qQmzSkzjw1x2iQkRi34t3jCCXSQhsYpdY8+gBK8QqAYlvkw+xQLTKSmw6wAzxlqTEwRU3
-	WCYwis1CsngWksWzkCyehWTFAkaWVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxghEda/g/Hu
-	AetDjMlA6ycyS4km5wMjNK8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4
-	otKc1OJDjEwcnFINjMWOuyIiNliueLlk0jfTI/PuqDed2Gu6dNLbM/cFnU7kHpG+oZWw6qDD
-	JNGIV/f0p3D5zZkTVbps53l57fitngVJf18yK86N0H7O8LNpj8cZH/8lTVmsq669mNtyVHv9
-	gSX7D7h+eLlX8e2JWCXH757/3ec2RglZ/3h6OHf3hXciX9oNPJMW3/2jxFKckWioxVxUnAgA
-	W28F1MYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd0FB+0CDbbvN7eYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
-	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJ6xgzPl09zlhwhLviwiHVBsZLnF2MnBwSAiYSZ759YIawxSQu3FvP
-	1sXIxSEkMJ1RYtWWA0wQzi9GicMtC8Gq2ATUJL58OczexcjBISKgL9HWogESZhYoldj64D0L
-	iC0s4CHx/vRDRhCbRUBV4uOkJ2A2r4CtxNV5s5ggbEGJH5PvsUD0akms33mcCcKWl9i85i0z
-	yHgJAXWJR391ITbpSRz46w5RISKx78U7xgmMArOQDJqFZNAsJINmIWlZwMiyilE0tSC5oDgp
-	PddQrzgxt7g0L10vOT93EyM4fp9J7WBc2WBxiFGAg1GJh1fxm22gEGtiWXFl7iFGCQ5mJRHe
-	jM12gUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0wteSXxhsYmZkaWRmYWRibm5qQJK4nz
-	Hmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAuFfI6FpE/ivTI2Ka5Xvr9Xgmhfd17xZjDvhSFdek
-	L857O8vmN5Oh7IUvBiFrn1nduMJ0W2U6k92ZiQcOTspu7pQ7EhhqEVRUv/WmC+OWackiFfG5
-	zRtOTpXcJaw5d81utZYTm/6H2nL8cRN7k2G+58cxZplS52jp5FShy+nz51rz+3hcEfqhxFKc
-	kWioxVxUnAgAruMY+yMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t8zI93jB+0CDfo+qltc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9hmTWAp2C1SceRLSwHiKt4uRk0NCwERiyteJ7BC2mMSFe+vZ
+	QGwhgWWMEl3zmLoYOcBq7lz26mLkAgovYpTYcW0VC4Qzm0niS8sesGY2ATWJL18Os4M0iAjo
+	S7S1aICEmQVKJbY+eM8CYgsLuElM2bUTbD6LgKrE9r+7wWxeAVuJqR/OQ9mCEj8m32OB6NWS
+	WL/zOBOELS+xec1bZoh71CUe/dUFCYsI6EnMeH0QqlxEYt+Ld4wgp0kINLNLbPmzkBlil4DE
+	t8mHWCB6ZSU2HWCGeFdS4uCKGywTGMVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiI73i
+	xNzi0rx0veT83E2MkBjp28F484D1IcZkoPUTmaVEk/OBMZZXEm9obGZkYWpiamxkbmlGmrCS
+	OK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbyVkE299x7/oVvP23Y65z6e/ebBQan
+	M03rvtfd8jyS+XGh2sraL1dnLdxvE7dW4MAz7Uwl5RNN8gpHBD8rR/34tFvhuFVv7xmlZx+M
+	Ehwi5eYJHVu6Srh4XfcmvkUxMx+3LZvwttp6zRnOfxM12Szqtvn3LxLfUMzt8JhhoXXrop+L
+	wrmvzCxTYinOSDTUYi4qTgQAEqkCMKcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t9jAd3jB+0CDf4uVrG4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGe0zJrEU7BaoOPMkpIHx
+	FG8XIweHhICJxJ3LXl2MnECmmMSFe+vZuhi5OIQEFjFK7Li2igXCmc0k8aVlDztIFZuAmsSX
+	L4fZQZpFBPQl2lo0QMLMAqUSWx+8ZwGxhQXcJKbs2skGYrMIqEps/7sbzOYVsJWY+uE8lC0o
+	8WPyPRaIXi2J9TuPM0HY8hKb17xlhrhNXeLRX12QsIiAnsSM1wehykUk9r14xziBUWAWkkmz
+	kEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx+Az6R2MqxosDjEKcDAq
+	8fAqfLMNFGJNLCuuzD3EKMHBrCTCm7HZLlCINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84Hp
+	Ia8k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGPuUpp6p4Fuy
+	nrFmDpdgffa6bkXdWsnZvIo7DGey2y9NEEteG166XVrIQ2Tdfv6bNdMbHx/sUN7QJLfw8wT3
+	GjNPjs647cuuTZe4LyaWzeF+2/hl1+anmVMmasT0tUzu+TVlqkUdx1d7tSkH8s1zdrnE83j5
+	BmjPWTo3KoFnj/v8NSI7/vxtUWIpzkg01GIuKk4EAEiIX+QFAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,52 +52,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces #ifdefs in the code. Also, CONFIG_PM_SLEEP is used
-to avoid warnings of unused functions if CONFIG_PM_SLEEP is not
-defined.
+Instead of using legacy suspend/resume methods, using newer dev_pm_ops
+structure allows better control over power management.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/da903x_bl.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/video/backlight/ld9040.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
-index 8179cef..c625f6d 100644
---- a/drivers/video/backlight/da903x_bl.c
-+++ b/drivers/video/backlight/da903x_bl.c
-@@ -161,7 +161,7 @@ static int da903x_backlight_remove(struct platform_device *pdev)
+diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+index 1b642f5f..1e0a309 100644
+--- a/drivers/video/backlight/ld9040.c
++++ b/drivers/video/backlight/ld9040.c
+@@ -775,12 +775,12 @@ static int ld9040_remove(struct spi_device *spi)
  	return 0;
  }
  
--#ifdef CONFIG_PM
+-#if defined(CONFIG_PM)
+-static int ld9040_suspend(struct spi_device *spi, pm_message_t mesg)
 +#ifdef CONFIG_PM_SLEEP
- static int da903x_backlight_suspend(struct device *dev)
++static int ld9040_suspend(struct device *dev)
  {
- 	struct backlight_device *bl = dev_get_drvdata(dev);
-@@ -176,20 +176,16 @@ static int da903x_backlight_resume(struct device *dev)
- 	backlight_update_status(bl);
- 	return 0;
+-	struct ld9040 *lcd = spi_get_drvdata(spi);
++	struct ld9040 *lcd = dev_get_drvdata(dev);
+ 
+-	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
++	dev_dbg(dev, "lcd->power = %d\n", lcd->power);
+ 
+ 	/*
+ 	 * when lcd panel is suspend, lcd panel becomes off
+@@ -789,19 +789,18 @@ static int ld9040_suspend(struct spi_device *spi, pm_message_t mesg)
+ 	return ld9040_power(lcd, FB_BLANK_POWERDOWN);
  }
--
--static const struct dev_pm_ops da903x_backlight_pm_ops = {
--	.suspend	= da903x_backlight_suspend,
--	.resume		= da903x_backlight_resume,
--};
+ 
+-static int ld9040_resume(struct spi_device *spi)
++static int ld9040_resume(struct device *dev)
+ {
+-	struct ld9040 *lcd = spi_get_drvdata(spi);
++	struct ld9040 *lcd = dev_get_drvdata(dev);
+ 
+ 	lcd->power = FB_BLANK_POWERDOWN;
+ 
+ 	return ld9040_power(lcd, FB_BLANK_UNBLANK);
+ }
+-#else
+-#define ld9040_suspend		NULL
+-#define ld9040_resume		NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(da903x_backlight_pm_ops, da903x_backlight_suspend,
-+			da903x_backlight_resume);
++static SIMPLE_DEV_PM_OPS(ld9040_pm_ops, ld9040_suspend, ld9040_resume);
 +
- static struct platform_driver da903x_backlight_driver = {
- 	.driver		= {
- 		.name	= "da903x-backlight",
+ /* Power down all displays on reboot, poweroff or halt. */
+ static void ld9040_shutdown(struct spi_device *spi)
+ {
+@@ -814,12 +813,11 @@ static struct spi_driver ld9040_driver = {
+ 	.driver = {
+ 		.name	= "ld9040",
  		.owner	= THIS_MODULE,
--#ifdef CONFIG_PM
- 		.pm	= &da903x_backlight_pm_ops,
--#endif
++		.pm	= &ld9040_pm_ops,
  	},
- 	.probe		= da903x_backlight_probe,
- 	.remove		= da903x_backlight_remove,
+ 	.probe		= ld9040_probe,
+ 	.remove		= ld9040_remove,
+ 	.shutdown	= ld9040_shutdown,
+-	.suspend	= ld9040_suspend,
+-	.resume		= ld9040_resume,
+ };
+ 
+ module_spi_driver(ld9040_driver);
 -- 
 1.7.2.5
 
