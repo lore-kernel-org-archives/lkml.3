@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3CLABP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:01:15 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53016 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484Ab3CLABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:01:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "toddpoynor@google.com" <toddpoynor@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] alarmtimer: add error prints when suspend failed
-Date: Tue, 12 Mar 2013 01:08:16 +0100
-Message-ID: <1646942.hLd8ZoS5fE@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <513E6E02.8030602@linaro.org>
-References: <1362684457-32570-1-git-send-email-ldewangan@nvidia.com> <51399243.6050007@nvidia.com> <513E6E02.8030602@linaro.org>
+	id S1754811Ab3CLABf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:01:35 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34325 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab3CLABe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:01:34 -0400
+X-Spam-Score: -100.8
+Message-ID: <513E7043.4090304@asianux.com>
+Date: Tue, 12 Mar 2013 08:01:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Miller <davem@davemloft.net>, mgherzan@gmail.com,
+        nschichan@freebox.fr, daniel.borkmann@tik.ee.ethz.ch,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
+References: <513BECDA.3030803@asianux.com> <20130310.171238.330349067962026661.davem@davemloft.net> <20130311164741.GL4977@n2100.arm.linux.org.uk>
+In-Reply-To: <20130311164741.GL4977@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 11, 2013 04:51:30 PM John Stultz wrote:
-> On 03/07/2013 11:24 PM, Laxman Dewangan wrote:
-> > On Friday 08 March 2013 04:46 AM, Greg KH wrote:
-> >> On Fri, Mar 08, 2013 at 12:57:37AM +0530, Laxman Dewangan wrote:
-> >>> The alramtimer suspend failed when nearest alarm wakeup time is
-> >>> less than 2 sec or rtc timer can not start.
-> >>>
-> >>> In suspend/resume stress testing, we found that sometimes alramtimer
-> >>> failed to suspend and hence it cancel the suspend ops. Add error prints
-> >>> in suspend failure to provide more info when failure occurs to help
-> >>> debugging.
-> >>>
-> >>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> >>> ---
-> >>>   kernel/time/alarmtimer.c |    6 +++++-
-> >>>   1 files changed, 5 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-> >>> index f11d83b..eed5646 100644
-> >>> --- a/kernel/time/alarmtimer.c
-> >>> +++ b/kernel/time/alarmtimer.c
-> >>> @@ -249,6 +249,8 @@ static int alarmtimer_suspend(struct device *dev)
-> >>>         if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
-> >>>           __pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
-> >>> +        dev_err(dev,
-> >>> +            "Nearest alarm wakeup time < 2sec, avoiding suspend\n");
-> >> What can userspace now do with this information?  How often is this now
-> >> going to spam the syslog and cause confusion?
-> >
-> >
-> > When we executed the stress on suspend/resume for system stability, 
-> > occasionally we get such error (3/4 times in 1000 cycle):
-> > [ 235.508010] dpm_run_callback(): platform_pm_suspend+0x0/0x64 returns 
-> > -16
-> > [ 235.514999] PM: Device alarmtimer failed to suspend: error -16
-> > [ 235.520958] PM: Some devices failed to suspend
-> >
-> >
-> > After tracing back the failure case, we found that possible reason 
-> > could be above one.
-> > In this case, if any function returns error then always better to 
-> > print the error so that it is easy to findout the cause of the error 
-> > and analyse.
-> >
-> > It should not generate spam as this does happen on some cases.
+于 2013年03月12日 00:47, Russell King - ARM Linux 写道:
+> On Sun, Mar 10, 2013 at 05:12:38PM -0400, David Miller wrote:
+>> > From: Chen Gang <gang.chen@asianux.com>
+>> > Date: Sun, 10 Mar 2013 10:15:54 +0800
+>> > 
+>>> > > 
+>>> > >   k is u32 which never < 0, need type cast, or cause issue.
+>>> > > 
+>>> > > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > 
+>> > Who will apply this, ARM folks or me?
+> I'm happy if you wish to take the patch:
 > 
-> But if there is a recurring alarm timer that triggers every second, it 
-> will print out every time.
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 > 
-> Greg's concern is that the error message is unhelpful, since it just 
-> will cause lots of log messages when the system is actually behaving as 
-> designed. That said, the PM suspend messages are fairly noisy as well, 
-> even when there are no errors.
+> Thanks.
 > 
-> Rafael: What are your thoughts here? If the alarmtimer subsystem blocks 
-> a suspend attempt (returning EBUSY, as a pending alarm will fire soon), 
-> how verbose should we be, since this isn't really an error case?
+> 
 
-I wouldn't be too verbose, but that also depends on whether or not autosleep
-is used.  I think our suspend messages are too verbose for autosleep anyway,
-but for non-autosleep suspends it would be good to know why the system didn't
-suspend.
+  thank you very much.
 
-Thanks,
-Rafael
-
+  :-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Chen Gang
+
+Asianux Corporation
