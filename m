@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964920Ab3CLXFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:05:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60283 "EHLO
+	id S964972Ab3CLXFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:05:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab3CLWdO (ORCPT
+	with ESMTP id S933659Ab3CLWdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Mar 2013 18:33:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Imre Deak <imre.deak@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 055/100] drm/i915: enable irqs earlier when resuming
-Date: Tue, 12 Mar 2013 15:31:40 -0700
-Message-Id: <20130312223128.903478508@linuxfoundation.org>
+Subject: [ 054/100] drm/i915: reorder setup sequence to have irqs for output setup
+Date: Tue, 12 Mar 2013 15:31:39 -0700
+Message-Id: <20130312223128.792253799@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -30,80 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 15239099d7a7a9ecdc1ccb5b187ae4cda5488ff9 upstream.
+commit 52d7ecedac3f96fb562cb482c139015372728638 upstream.
 
-We need it to restore the ilk rc6 context, since the gpu wait no
-requires interrupts. But in general having interrupts around should
-help in code sanity, since more and more stuff is interrupt driven.
+Otherwise the new&shiny irq-driven gmbus and dp aux code won't work that
+well. Noticed since the dp aux code doesn't have an automatic fallback
+with a timeout (since the hw provides for that already).
 
-This regression has been introduced in
+v2: Simple move drm_irq_install before intel_modeset_gem_init, as
+suggested by Ben Widawsky.
 
-commit 3e9605018ab3e333d51cc90fccfde2031886763b
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Nov 27 16:22:54 2012 +0000
+v3: Now that interrupts are enabled before all connectors are fully
+set up, we might fall over serving a HPD interrupt while things are
+still being set up. Instead of jumping through massive hoops and
+complicating the code with a separate hpd irq enable step, simply
+block out the hotplug work item from doing anything until things are
+in place.
 
-    drm/i915: Rearrange code to only have a single method for waiting upon the ring
+v4: Actually, we can enable hotplug processing only after the fbdev is
+fully set up, since we call down into the fbdev from the hotplug work
+functions. So stick the hpd enabling right next to the poll helper
+initialization.
 
-Like in the driver load code we need to make sure that hotplug
-interrupts don't cause havoc with our modeset state, hence block them
-with the existing infrastructure. Again we ignore races where we might
-loose hotplug interrupts ...
+v5: We need to enable irqs before intel_modeset_init, since that
+function sets up the outputs.
 
-Note that the driver load part of the regression has already been
-fixed in
+v6: Fixup cleanup sequence, too.
 
-commit 52d7ecedac3f96fb562cb482c139015372728638
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sat Dec 1 21:03:22 2012 +0100
-
-    drm/i915: reorder setup sequence to have irqs for output setup
-
-v2: Add a note to the commit message about which patch fixed the
-driver load part of the regression. Stable kernels need to backport
-both patches.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=54691
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Reported-and-Tested-by: Ilya Tumaykin <itumaykin@gmail.com>
-Reviewed-by: Chris wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Imre Deak <imre.deak@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c |   23 ++++++++++++++---------
+ drivers/gpu/drm/i915/i915_drv.h |    1 +
+ drivers/gpu/drm/i915/i915_irq.c |    4 ++++
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -486,6 +486,7 @@ static int i915_drm_freeze(struct drm_de
- 		intel_modeset_disable(dev);
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1297,19 +1297,21 @@ static int i915_load_modeset_init(struct
+ 	if (ret)
+ 		goto cleanup_vga_switcheroo;
  
- 		drm_irq_uninstall(dev);
-+		dev_priv->enable_hotplug_processing = false;
- 	}
- 
- 	i915_save_state(dev);
-@@ -562,9 +563,19 @@ static int __i915_drm_thaw(struct drm_de
- 		error = i915_gem_init_hw(dev);
- 		mutex_unlock(&dev->struct_mutex);
- 
-+		/* We need working interrupts for modeset enabling ... */
-+		drm_irq_install(dev);
++	ret = drm_irq_install(dev);
++	if (ret)
++		goto cleanup_gem_stolen;
 +
- 		intel_modeset_init_hw(dev);
- 		intel_modeset_setup_hw_state(dev, false);
--		drm_irq_install(dev);
-+
-+		/*
-+		 * ... but also need to make sure that hotplug processing
-+		 * doesn't cause havoc. Like in the driver load code we don't
-+		 * bother with the tiny race here where we might loose hotplug
-+		 * notifications.
-+		 * */
-+		dev_priv->enable_hotplug_processing = true;
- 	}
++	/* Important: The output setup functions called by modeset_init need
++	 * working irqs for e.g. gmbus and dp aux transfers. */
+ 	intel_modeset_init(dev);
  
- 	intel_opregion_init(dev);
+ 	ret = i915_gem_init(dev);
+ 	if (ret)
+-		goto cleanup_gem_stolen;
+-
+-	intel_modeset_gem_init(dev);
++		goto cleanup_irq;
+ 
+ 	INIT_WORK(&dev_priv->console_resume_work, intel_console_resume);
+ 
+-	ret = drm_irq_install(dev);
+-	if (ret)
+-		goto cleanup_gem;
++	intel_modeset_gem_init(dev);
+ 
+ 	/* Always safe in the mode setting case. */
+ 	/* FIXME: do pre/post-mode set stuff in core KMS code */
+@@ -1317,7 +1319,10 @@ static int i915_load_modeset_init(struct
+ 
+ 	ret = intel_fbdev_init(dev);
+ 	if (ret)
+-		goto cleanup_irq;
++		goto cleanup_gem;
++
++	/* Only enable hotplug handling once the fbdev is fully set up. */
++	dev_priv->enable_hotplug_processing = true;
+ 
+ 	drm_kms_helper_poll_init(dev);
+ 
+@@ -1326,13 +1331,13 @@ static int i915_load_modeset_init(struct
+ 
+ 	return 0;
+ 
+-cleanup_irq:
+-	drm_irq_uninstall(dev);
+ cleanup_gem:
+ 	mutex_lock(&dev->struct_mutex);
+ 	i915_gem_cleanup_ringbuffer(dev);
+ 	mutex_unlock(&dev->struct_mutex);
+ 	i915_gem_cleanup_aliasing_ppgtt(dev);
++cleanup_irq:
++	drm_irq_uninstall(dev);
+ cleanup_gem_stolen:
+ 	i915_gem_cleanup_stolen(dev);
+ cleanup_vga_switcheroo:
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -672,6 +672,7 @@ typedef struct drm_i915_private {
+ 
+ 	u32 hotplug_supported_mask;
+ 	struct work_struct hotplug_work;
++	bool enable_hotplug_processing;
+ 
+ 	int num_pipe;
+ 	int num_pch_pll;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -287,6 +287,10 @@ static void i915_hotplug_work_func(struc
+ 	struct drm_mode_config *mode_config = &dev->mode_config;
+ 	struct intel_encoder *encoder;
+ 
++	/* HPD irq before everything is fully set up. */
++	if (!dev_priv->enable_hotplug_processing)
++		return;
++
+ 	mutex_lock(&mode_config->mutex);
+ 	DRM_DEBUG_KMS("running encoder hotplug functions\n");
+ 
 
 
