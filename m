@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933800Ab3CLWlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:41:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60379 "EHLO
+	id S1756066Ab3CLWd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60210 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab3CLWd3 (ORCPT
+	with ESMTP id S1755325Ab3CLWdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:29 -0400
+	Tue, 12 Mar 2013 18:33:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 078/100] x86/kvm: Fix pvclock vsyscall fixmap
-Date: Tue, 12 Mar 2013 15:32:03 -0700
-Message-Id: <20130312223131.322574387@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 049/100] ARM: 7658/1: mm: fix race updating mm->context.id on ASID rollover
+Date: Tue, 12 Mar 2013 15:31:34 -0700
+Message-Id: <20130312223128.263018588@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -28,40 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3d2a80a230250c2534ce5b17503670adaf1d7fff upstream.
+commit 37f47e3d62533c931b04cb409f2eb299e6342331 upstream.
 
-The physical memory fixmapped for the pvclock clock_gettime vsyscall
-was allocated, and thus is not a kernel symbol. __pa() is the proper
-method to use in this case.
+If a thread triggers an ASID rollover, other threads of the same process
+must be made to wait until the mm->context.id for the shared mm_struct
+has been updated to new generation and associated book-keeping (e.g.
+TLB invalidation) has ben performed.
 
-Fixes the crash below when booting a next-20130204+ smp guest on a
-3.8-rc5+ KVM host.
+However, there is a *tiny* window where both mm->context.id and the
+relevant active_asids entry are updated to the new generation, but the
+TLB flush has not been performed, which could allow another thread to
+return to userspace with a dirty TLB, potentially leading to data
+corruption. In reality this will never occur because one CPU would need
+to perform a context-switch in the time it takes another to do a couple
+of atomic test/set operations but we should plug the race anyway.
 
-[    0.666410] udevd[97]: starting version 175
-[    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020
-     ip 00007fff069e277f sp 00007fff068c9ef8 error d
+This patch moves the active_asids update until after the potential TLB
+flush on context-switch.
 
-Acked-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/pvclock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/context.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -185,7 +185,7 @@ int __init pvclock_init_vsyscall(struct
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -204,11 +204,11 @@ void check_and_switch_context(struct mm_
+ 	if ((mm->context.id ^ atomic64_read(&asid_generation)) >> ASID_BITS)
+ 		new_context(mm, cpu);
  
- 	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
- 		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
--			     __pa_symbol(i) + (idx*PAGE_SIZE),
-+			     __pa(i) + (idx*PAGE_SIZE),
- 			     PAGE_KERNEL_VVAR);
- 	}
+-	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
+-	cpumask_set_cpu(cpu, mm_cpumask(mm));
+-
+ 	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
+ 		local_flush_tlb_all();
++
++	atomic64_set(&per_cpu(active_asids, cpu), mm->context.id);
++	cpumask_set_cpu(cpu, mm_cpumask(mm));
+ 	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
  
+ switch_mm_fastpath:
 
 
