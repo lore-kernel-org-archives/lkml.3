@@ -1,170 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab3CLArf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:47:35 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:41819 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab3CLArc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:47:32 -0400
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCH v3 2/7] usermodehelper: Export _exec() and _setup() functions
-Date: Mon, 11 Mar 2013 21:48:06 -0300
-Message-Id: <1363049291-946-2-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
-References: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
+	id S1754947Ab3CLAvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:51:51 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:47782 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754484Ab3CLAvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:51:50 -0400
+Date: Tue, 12 Mar 2013 01:51:06 +0100
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        rubini@gnudd.com, sameo@linux.intel.com, giancarlo.asnaghi@st.com,
+        mturquette@linaro.org, linus.walleij@linaro.org,
+        rob.herring@calxeda.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] x86, pci sta2x11-fixup: add function to access sta2x11 instance id
+Message-ID: <20130312005106.GB15494@mail.gnudd.com>
+References: <1362756691-14736-1-git-send-email-ciminaghi@gnudd.com> <1362756691-14736-3-git-send-email-ciminaghi@gnudd.com> <201303081613.34371.arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <201303081613.34371.arnd@arndb.de>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call_usermodehelper_setup() + call_usermodehelper_exec() need to be
-called instead of call_usermodehelper_fns() when the cleanup function
-needs to be called even when an ENOMEM error occurs. In this case using
-call_usermodehelper_fns() the user can't distinguish if the cleanup
-function was called or not.
+On Fri, Mar 08, 2013 at 04:13:34PM +0000, Arnd Bergmann wrote:
+> On Friday 08 March 2013, Davide Ciminaghi wrote:
+> > 
+> > The sta2x11 instance id will be included in clock names to make them
+> > unique in case of multiple sta2x11's living on the same machine.
+> > 
+> > Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+> 
+> I might be missing something, but this seems counterintuitive. Shouldn't
+> the clock names really be constant and independent of the instance?
+> 
+> The instance should be identified already by the dev_name, right?
+>
+Hi,
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
----
- include/linux/kmod.h |  8 ++++++++
- kernel/kmod.c        | 56 +++++++++++++++++++++-------------------------------
- 2 files changed, 31 insertions(+), 33 deletions(-)
+sorry for the delay.
+Well, I actually wrote this some months ago, so I might also be missing
+something (yes, I know I shouldn't :-).
+If I understand well, I should call clk_register_* with dev pointing to
+the struct device corresponding to the sta2x11 instance to which the clock
+belongs and a constant name (while currently I set dev to NULL and use a
+different name for each instance of the same clock, by postfixing the name
+with an instance id).
+You're probably right, even if looking at the code in drivers/clk/clk.c,
+there's something I'm not sure about (and I cannot do any tests right now):
 
-diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-index 5398d58..7eebcf5 100644
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -71,6 +71,14 @@ call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
- 			int (*init)(struct subprocess_info *info, struct cred *new),
- 			void (*cleanup)(struct subprocess_info *), void *data);
- 
-+extern struct subprocess_info *
-+call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
-+			  int (*init)(struct subprocess_info *info, struct cred *new),
-+			  void (*cleanup)(struct subprocess_info *), void *data);
-+
-+extern int
-+call_usermodehelper_exec(struct subprocess_info *info, int wait);
-+
- static inline int
- call_usermodehelper(char *path, char **argv, char **envp, int wait)
- {
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 56dd349..b39f240 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -502,14 +502,28 @@ static void helper_unlock(void)
-  * @argv: arg vector for process
-  * @envp: environment for process
-  * @gfp_mask: gfp mask for memory allocation
-+ * @cleanup: a cleanup function
-+ * @init: an init function
-+ * @data: arbitrary context sensitive data
-  *
-  * Returns either %NULL on allocation failure, or a subprocess_info
-  * structure.  This should be passed to call_usermodehelper_exec to
-  * exec the process and free the structure.
-+ *
-+ * The init function is used to customize the helper process prior to
-+ * exec.  A non-zero return code causes the process to error out, exit,
-+ * and return the failure to the calling process
-+ *
-+ * The cleanup function is just before ethe subprocess_info is about to
-+ * be freed.  This can be used for freeing the argv and envp.  The
-+ * Function must be runnable in either a process context or the
-+ * context in which call_usermodehelper_exec is called.
-  */
--static
- struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
--						  char **envp, gfp_t gfp_mask)
-+		char **envp, gfp_t gfp_mask,
-+		int (*init)(struct subprocess_info *info, struct cred *new),
-+		void (*cleanup)(struct subprocess_info *info),
-+		void *data)
- {
- 	struct subprocess_info *sub_info;
- 	sub_info = kzalloc(sizeof(struct subprocess_info), gfp_mask);
-@@ -520,38 +534,15 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
- 	sub_info->path = path;
- 	sub_info->argv = argv;
- 	sub_info->envp = envp;
-+
-+	sub_info->cleanup = cleanup;
-+	sub_info->init = init;
-+	sub_info->data = data;
-   out:
- 	return sub_info;
- }
- 
- /**
-- * call_usermodehelper_setfns - set a cleanup/init function
-- * @info: a subprocess_info returned by call_usermodehelper_setup
-- * @cleanup: a cleanup function
-- * @init: an init function
-- * @data: arbitrary context sensitive data
-- *
-- * The init function is used to customize the helper process prior to
-- * exec.  A non-zero return code causes the process to error out, exit,
-- * and return the failure to the calling process
-- *
-- * The cleanup function is just before ethe subprocess_info is about to
-- * be freed.  This can be used for freeing the argv and envp.  The
-- * Function must be runnable in either a process context or the
-- * context in which call_usermodehelper_exec is called.
-- */
--static
--void call_usermodehelper_setfns(struct subprocess_info *info,
--		    int (*init)(struct subprocess_info *info, struct cred *new),
--		    void (*cleanup)(struct subprocess_info *info),
--		    void *data)
--{
--	info->cleanup = cleanup;
--	info->init = init;
--	info->data = data;
--}
--
--/**
-  * call_usermodehelper_exec - start a usermode application
-  * @sub_info: information about the subprocessa
-  * @wait: wait for the application to finish and return status.
-@@ -563,7 +554,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
-  * asynchronously if wait is not set, and runs as a child of keventd.
-  * (ie. it runs with full root capabilities).
-  */
--static
- int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- {
- 	DECLARE_COMPLETION_ONSTACK(done);
-@@ -615,6 +605,7 @@ unlock:
- 	helper_unlock();
- 	return retval;
- }
-+EXPORT_SYMBOL(call_usermodehelper_exec);
- 
- /*
-  * call_usermodehelper_fns() will not run the caller-provided cleanup function
-@@ -630,13 +621,12 @@ int call_usermodehelper_fns(
- 	struct subprocess_info *info;
- 	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
- 
--	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
-+	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-+					 init, cleanup, data);
- 
- 	if (info == NULL)
- 		return -ENOMEM;
- 
--	call_usermodehelper_setfns(info, init, cleanup, data);
--
- 	return call_usermodehelper_exec(info, wait);
- }
- EXPORT_SYMBOL(call_usermodehelper_fns);
--- 
-1.8.1.5
+_clk_register() takes hw->init->name as clock name, where hw->init->name
+should come from the second arg of clk_register_*, if I'm not wrong.
+Then __clk_init does:
 
+if (__clk_lookup(clk->name)) {
+   	pr_debug("%s: clk %s already initialized\n", __func__, clk->name);
+	ret = -EEXIST;
+	goto out;
+}
+
+Is it actually possible registering multiple clocks with the same name ?
+Sorry maybe I missed your point ...
+
+
+Thanks and regards
+Davide
