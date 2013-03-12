@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3CLAra (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:47:30 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:56781 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab3CLAr3 (ORCPT
+	id S1754905Ab3CLArh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:47:37 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:52073 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab3CLArf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:47:29 -0400
+	Mon, 11 Mar 2013 20:47:35 -0400
 From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
@@ -14,40 +14,60 @@ Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: [PATCH v3 1/7] kernel/sys.c: Use the simpler call_usermodehelper()
-Date: Mon, 11 Mar 2013 21:48:05 -0300
-Message-Id: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
+Subject: [PATCH v3 3/7] kmod: split call to call_usermodehelper_fns()
+Date: Mon, 11 Mar 2013 21:48:07 -0300
+Message-Id: <1363049291-946-3-git-send-email-lucas.demarchi@profusion.mobi>
 X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
+References: <1363049291-946-1-git-send-email-lucas.demarchi@profusion.mobi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "7ff6764 usermodehelper: cleanup/fix __orderly_poweroff() &&
-argv_free()" simplified __orderly_poweroff() removing the need to use
-call_usermodehelper_fns().
-
-Since we are not passing any callback, it's simpler to use
-call_usermodehelper().
+Use call_usermodehelper_setup() + call_usermodehelper_exec() instead of
+calling call_usermodehelper_fns(). In case the latter returns -ENOMEM
+the cleanup function may had not been called - in this case we would
+not free argv and module_name.
 
 Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 ---
- kernel/sys.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 81f5644..bd15276 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -2203,8 +2203,7 @@ static int __orderly_poweroff(void)
- 		return -ENOMEM;
- 	}
+Changes from v2: remove check for wait == UMH_NO_WAIT since this never happens,
+	as pointed out by Oleg
+
+ kernel/kmod.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index b39f240..ae255a3 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -77,6 +77,7 @@ static void free_modprobe_argv(struct subprocess_info *info)
  
--	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_EXEC,
--				      NULL, NULL, NULL);
-+	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
- 	argv_free(argv);
+ static int call_modprobe(char *module_name, int wait)
+ {
++	struct subprocess_info *info;
+ 	static char *envp[] = {
+ 		"HOME=/",
+ 		"TERM=linux",
+@@ -98,8 +99,15 @@ static int call_modprobe(char *module_name, int wait)
+ 	argv[3] = module_name;	/* check free_modprobe_argv() */
+ 	argv[4] = NULL;
  
- 	return ret;
+-	return call_usermodehelper_fns(modprobe_path, argv, envp,
+-		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
++	info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
++					 NULL, free_modprobe_argv, NULL);
++	if (!info)
++		goto free_module_name;
++
++	return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
++
++free_module_name:
++	kfree(module_name);
+ free_argv:
+ 	kfree(argv);
+ out:
 -- 
 1.8.1.5
 
