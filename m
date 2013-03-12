@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933186Ab3CLS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 14:28:16 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:36783 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab3CLS2P convert rfc822-to-8bit (ORCPT
+	id S933145Ab3CLSaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 14:30:46 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:34932 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab3CLSap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 14:28:15 -0400
-References: <47BBCF14-C7BC-4C35-826A-52A50EFB8B4B@sonatest.com> <1362690424-324-1-git-send-email-jeff.dagenais@gmail.com> <20130312020909.GA8181@ioremap.net>
-In-Reply-To: <20130312020909.GA8181@ioremap.net>
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <03063BB2-C4D2-4620-AD68-4E479A9595F3@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: linux-kernel@vger.kernel.org, olivier@okprods.com
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-Subject: Re: [PATCH 1/2] w1: ds2408: make value read-back check a Kconfig option
-Date: Tue, 12 Mar 2013 14:28:11 -0400
-To: Evgeniy Polyakov <zbr@ioremap.net>
-X-Mailer: Apple Mail (2.1085)
+	Tue, 12 Mar 2013 14:30:45 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, stigge@antcom.de, edumazet@google.com,
+        gregkh@linuxfoundation.org, jiri@resnulli.us,
+        linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] ethernet: nxp: use resource_size()
+Date: Tue, 12 Mar 2013 20:30:35 +0200
+Message-Id: <1363113035-11269-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use resource_size() instead of explicit calculation. This was found via
+make coccicheck.
 
-On 2013-03-11, at 10:09 PM, Evgeniy Polyakov wrote:
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/net/ethernet/nxp/lpc_eth.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Hi
-> 
-> On Thu, Mar 07, 2013 at 04:07:03PM -0500, Jean-Francois Dagenais (jeff.dagenais@gmail.com) wrote:
->> De-activating this reading back will effectively half the time required
->> for a write to the output register.
-> 
-> Are you sure you want this to be compile-time option and not module
-> parameter?
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index c4122c8..bc493c8 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1362,7 +1362,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	__lpc_eth_clock_enable(pldat, true);
+ 
+ 	/* Map IO space */
+-	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++	pldat->net_base = ioremap(res->start, resource_size(res));
+ 	if (!pldat->net_base) {
+ 		dev_err(&pdev->dev, "failed to map registers\n");
+ 		ret = -ENOMEM;
+@@ -1421,7 +1421,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	netdev_dbg(ndev, "IO address start     :0x%08x\n",
+ 			res->start);
+ 	netdev_dbg(ndev, "IO address size      :%d\n",
+-			res->end - res->start + 1);
++			resource_size(res));
+ 	netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
+ 			pldat->net_base);
+ 	netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
+-- 
+1.7.9.5
 
-My experience showed that having this kind of check was only useful for HW/SW
-debug development phases, which usually require debug configs. Later in the
-development process, when HW and SW are stable, we usually optimize for actual
-production. Removing un-needed debug features and modules.
-
-Assuming that, for historical reasons, implementing this new option as a module
-parameter would imply initializing it to "true" (i.e. read-back check enabled),
-then user-space or kernel invocation would have to override this to "false" in
-order to benefit from the enhancement. I felt that this was an awkward burden to
-propagate and maintain outside the kernel's config (.config). Especially since
-usually, the debug and release configs are meant exactly for this kind of stuff.
-
-Also, it's not so off from the "Protect DS2433 data with a CRC16" option nearby.
-
-We could do the "best of both worlds" and have the Kconfig influence the init
-value of a new module parameter which controls whether we read-back or not...
-
-All that said, kernel style and good practices should win here over my own
-experiences as the extra run-time "if" check is not an issue really an issue on
-most platform.
-
-Thoughts?
-/jfd
