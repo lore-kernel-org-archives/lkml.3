@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877Ab3CLW45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 18:56:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60583 "EHLO
+	id S1756157Ab3CLWoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:44:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab3CLWoP (ORCPT
+	with ESMTP id S1755917Ab3CLWoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:44:15 -0400
+	Tue, 12 Mar 2013 18:44:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [ 17/40] md: fix two bugs when attempting to resize RAID0 array.
-Date: Tue, 12 Mar 2013 15:43:38 -0700
-Message-Id: <20130312223213.354267306@linuxfoundation.org>
+        Dave Wysochanski <dwysocha@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: [ 09/40] NFS: Dont allow NFS silly-renamed files to be deleted, no signal
+Date: Tue, 12 Mar 2013 15:43:30 -0700
+Message-Id: <20130312223212.472055765@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
 References: <20130312223211.492954675@linuxfoundation.org>
@@ -26,65 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a64685399181780998281fe07309a94b25dd24c3 upstream.
+commit 5a7a613a47a715711b3f2d3322a0eac21d459166 upstream.
 
-You cannot resize a RAID0 array (in terms of making the devices
-bigger), but the code doesn't entirely stop you.
-So:
+Commit 73ca100 broke the code that prevents the client from deleting
+a silly renamed dentry.  This affected "delete on last close"
+semantics as after that commit, nothing prevented removal of
+silly-renamed files.  As a result, a process holding a file open
+could easily get an ESTALE on the file in a directory where some
+other process issued 'rm -rf some_dir_containing_the_file' twice.
+Before the commit, any attempt at unlinking silly renamed files would
+fail inside may_delete() with -EBUSY because of the
+DCACHE_NFSFS_RENAMED flag.  The following testcase demonstrates
+the problem:
+  tail -f /nfsmnt/dir/file &
+  rm -rf /nfsmnt/dir
+  rm -rf /nfsmnt/dir
+  # second removal does not fail, 'tail' process receives ESTALE
 
- disable setting of the available size on each device for
- RAID0 and Linear devices.  This must not change as doing so
- can change the effective layout of data.
+The problem with the above commit is that it unhashes the old and
+new dentries from the lookup path, even in the normal case when
+a signal is not encountered and it would have been safe to call
+d_move.  Unfortunately the old dentry has the special
+DCACHE_NFSFS_RENAMED flag set on it.  Unhashing has the
+side-effect that future lookups call d_alloc(), allocating a new
+dentry without the special flag for any silly-renamed files.  As a
+result, subsequent calls to unlink silly renamed files do not fail
+but allow the removal to go through.  This will result in ESTALE
+errors for any other process doing operations on the file.
 
- Make sure that the size that raid0_size() reports is accurate,
- but rounding devices sizes to chunk sizes.  As the device sizes
- cannot change now, this isn't so important, but it is best to be
- safe.
+To fix this, go back to using d_move on success.
+For the signal case, it's unclear what we may safely do beyond d_drop.
 
-Without this change:
-  mdadm --grow /dev/md0 -z max
-  mdadm --grow /dev/md0 -Z max
-  then read to the end of the array
-
-can cause a BUG in a RAID0 array.
-
-These bugs have been present ever since it became possible
-to resize any device, which is a long time.  So the fix is
-suitable for any -stable kerenl.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Dave Wysochanski <dwysocha@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c    |    3 +++
- drivers/md/raid0.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ fs/nfs/unlink.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -2886,6 +2886,9 @@ rdev_size_store(struct md_rdev *rdev, co
- 		} else if (!sectors)
- 			sectors = (i_size_read(rdev->bdev->bd_inode) >> 9) -
- 				rdev->data_offset;
-+		if (!my_mddev->pers->resize)
-+			/* Cannot change size for RAID0 or Linear etc */
-+			return -EINVAL;
+--- a/fs/nfs/unlink.c
++++ b/fs/nfs/unlink.c
+@@ -336,20 +336,14 @@ static void nfs_async_rename_done(struct
+ 	struct inode *old_dir = data->old_dir;
+ 	struct inode *new_dir = data->new_dir;
+ 	struct dentry *old_dentry = data->old_dentry;
+-	struct dentry *new_dentry = data->new_dentry;
+ 
+ 	if (!NFS_PROTO(old_dir)->rename_done(task, old_dir, new_dir)) {
+ 		rpc_restart_call_prepare(task);
+ 		return;
  	}
- 	if (sectors < my_mddev->dev_sectors)
- 		return -EINVAL; /* component must fit device */
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -402,7 +402,8 @@ static sector_t raid0_size(struct mddev
- 		  "%s does not support generic reshape\n", __func__);
  
- 	rdev_for_each(rdev, mddev)
--		array_sectors += rdev->sectors;
-+		array_sectors += (rdev->sectors &
-+				  ~(sector_t)(mddev->chunk_sectors-1));
- 
- 	return array_sectors;
+-	if (task->tk_status != 0) {
++	if (task->tk_status != 0)
+ 		nfs_cancel_async_unlink(old_dentry);
+-		return;
+-	}
+-
+-	d_drop(old_dentry);
+-	d_drop(new_dentry);
  }
+ 
+ /**
+@@ -550,6 +544,18 @@ nfs_sillyrename(struct inode *dir, struc
+ 	error = rpc_wait_for_completion_task(task);
+ 	if (error == 0)
+ 		error = task->tk_status;
++	switch (error) {
++	case 0:
++		/* The rename succeeded */
++		nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
++		d_move(dentry, sdentry);
++		break;
++	case -ERESTARTSYS:
++		/* The result of the rename is unknown. Play it safe by
++		 * forcing a new lookup */
++		d_drop(dentry);
++		d_drop(sdentry);
++	}
+ 	rpc_put_task(task);
+ out_dput:
+ 	dput(sdentry);
 
 
