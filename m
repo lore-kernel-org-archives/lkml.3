@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab3CLHix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:38:53 -0400
+	id S932346Ab3CLHlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:41:36 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50656 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3CLHiv (ORCPT
+	with ESMTP id S932132Ab3CLHiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:38:51 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-21-513edb89c144
+	Tue, 12 Mar 2013 03:38:54 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-31-513edb8abefb
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -23,192 +23,173 @@ Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC v7 00/11] Support vrange for anonymous page
-Date: Tue, 12 Mar 2013 16:38:24 +0900
-Message-Id: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+Subject: [RFC v7 03/11] add new system call vrange(2)
+Date: Tue, 12 Mar 2013 16:38:27 +0900
+Message-Id: <1363073915-25000-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, let's define the term.
->From now on, I'd like to call it as vrange(a.k.a volatile range)
-for anonymous page. If you have a better name in mind, please suggest.
+This patch adds new system call sys_vrange.
 
-This version is still *RFC* because it's just quick prototype so
-it doesn't support THP/HugeTLB/KSM and even couldn't build on !x86.
-Before further sorting out issues, I'd like to post current direction
-and discuss it. Of course, I'd like to extend this discussion in
-comming LSF/MM.
+NAME
+	vrange - give pin/unpin hint for kernel to help reclaim.
 
-In this version, I changed lots of thing, expecially removed vma-based
-approach because it needs write-side lock for mmap_sem, which will drop
-performance in mutli-threaded big SMP system, KOSAKI pointed out.
-And vma-based approach is hard to meet requirement of new system call by
-John Stultz's suggested semantic for consistent purged handling.
-(http://linux-kernel.2935.n7.nabble.com/RFC-v5-0-8-Support-volatile-for-anonymous-range-tt575773.html#none)
+SYNOPSIS
+	int vrange(unsigned_long start, size_t length, int mode, int behavior);
 
-I tested this patchset with modified jemalloc allocator which was
-leaded by Jason Evans(jemalloc author) who was interest in this feature
-and was happy to port his allocator to use new system call.
-Super Thanks Jason!
+DESCRIPTOIN
+	Applications can use vrange(2) to advise the kernel how it should
+	handle paging I/O in this VM area.  The idea is to help the kernel
+	discard pages of vrange instead of reclaiming when memory pressure
+	happens. It means kernel doesn't discard any pages of vrange if ther is
+	no memory pressure.
 
-The benchmark for test is ebizzy. It have been used for testing the
-allocator performance so it's good for me. Again, thanks for recommending
-the benchmark, Jason.
-(http://people.freebsd.org/~kris/scaling/ebizzy.html)
+	mode:
 
-The result is good on my machine (12 CPU, 1.2GHz, DRAM 2G)
+	VRANGE_VOLATILE
+		hint to kernel so VM can discard in vrange pages when
+		memory pressure happens.
+	VRANGE_NOVOLATILE
+		hint to kernel so VM doesn't discard vrange pages
+		any more.
 
-	ebizzy -S 20
+	behavior:
 
-jemalloc-vanilla: 52389 records/sec
-jemalloc-vrange: 203414 records/sec
+	VRANGE_FULL_MODE
+		Once VM start to discard pages, it discards all pages
+		in a vrange.
+	VRANGE_PARTIAL_MODE
+		VM discards some pages of all vranges by round-robin
+		return values:
 
-	ebizzy -S 20 with background memory pressure
+	If user try to access purged memory without VRANGE_NOVOLATILE call,
+	he can encounter SIGBUS if the page was discarded by kernel.
 
-jemalloc-vanilla: 40746 records/sec
-jemalloc-vrange: 174910 records/sec
+RETURN VALUE
+	On success vrange returns zero or 1. zero means kernel doesn't discard
+	any pages on [start, start + length). 1 means kernel did discard
+	one of pages on the range.
 
-And it's much improved on KVM virtual machine.
+ERRORS
+	EINVAL This error can occur for the following reasons:
 
-This patchset is based on v3.9-rc2
+		* The value length is negative.
+		* addr is not page-aligned
+		* mode or behavior are not a vaild value.
 
-- What's the sys_vrange(addr, length, mode, behavior)?
+	ENOMEM Not enough memory
 
-  It's a hint that user deliver to kernel so kernel can *discard*
-  pages in a range anytime. mode is one of VRANGE_VOLATILE and
-  VRANGE_NOVOLATILE. VRANGE_NOVOLATILE is memory pin operation so
-  kernel coudn't discard any pages any more while VRANGE_VOLATILE
-  is memory unpin opeartion so kernel can discard pages in vrange
-  anytime. At a moment, behavior is one of VRANGE_FULL and VRANGE
-  PARTIAL. VRANGE_FULL tell kernel that once kernel decide to
-  discard page in a vrange, please, discard all of pages in a
-  vrange selected by victim vrange. VRANGE_PARTIAL tell kernel
-  that please discard of some pages in a vrange. But now I didn't
-  implemented VRANGE_PARTIAL handling yet.
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ arch/x86/syscalls/syscall_64.tbl       |  1 +
+ include/uapi/asm-generic/mman-common.h |  5 +++
+ mm/vrange.c                            | 58 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 64 insertions(+)
 
-- What happens if user access page(ie, virtual address) discarded
-  by kernel?
-
-  The user can encounter SIGBUS.
-
-- What should user do for avoding SIGBUS?
-  He should call vrange(addr, length, VRANGE_NOVOLATILE, mode) before
-  accessing the range which was called
-  vrange(addr, length, VRANGE_VOLATILE, mode)
-
-- What happens if user access page(ie, virtual address) doesn't
-  discarded by kernel?
-
-  The user can see vaild data which was there before calling
-vrange(., VRANGE_VOLATILE) without page fault.
-
-- What's different with madvise(DONTNEED)?
-
-  System call semantic
-
-  DONTNEED makes sure user always can see zero-fill pages after
-  he calls madvise while vrange can see data or encounter SIGBUS.
-
-  Internal implementation
-
-  The madvise(DONTNEED) should zap all mapped pages in range so
-  overhead is increased linearly with the number of mapped pages.
-  Even, if user access zapped pages as write mode, page fault +
-  page allocation + memset should be happened.
-
-  The vrange just register a address range instead of zapping all of pte
-  n the vma so it doesn't touch ptes any more.
-
-- What's the benefit compared to DONTNEED?
-
-  1. The system call overhead is smaller because vrange just registers
-     a range using interval tree instead of zapping all the page in a range
-     so overhead should be really cheap.
-
-  2. It has a chance to eliminate overheads (ex, zapping pte + page fault
-     + page allocation + memset(PAGE_SIZE)) if memory pressure isn't
-     severe.
-
-  3. It has a potential to zap all ptes and free the pages if memory
-     pressure is severe so discard scanning overhead could be smaller - TODO
-
-- What's for targetting?
-
-  Firstly, user-space allocator like ptmalloc, jemalloc or heap management
-  of virtual machine like Dalvik. Also, it comes in handy for embedded
-  which doesn't have swap device so they can't reclaim anonymous pages.
-  By discarding instead of swapout, it could be used in the non-swap system.
-
-Changelog from v6 - There are many changes.
- * Remove vma-based approach
- * Change system call semantic
- * Add more meaningful experiment
-
-Changelog from v5 - There are many changes.
-
- * Support CONFIG_VOLATILE_PAGE
- * Working with THP/KSM
- * Remove vma hacking logic in m[no]volatile system call
- * Discard page without swap cache
- * Kswapd discard volatile page so we can discard volatile pages
-   although we don't have swap.
-
-Changelog from v4
-
- * Add new system call mvolatile/mnovolatile
- * Add sigbus when user try to access volatile range
- * Rebased on v3.7
- * Applied bug fix from John Stultz, Thanks!
-
-Changelog from v3
-
- * Removing madvise(addr, length, MADV_NOVOLATILE).
- * add vmstat about the number of discarded volatile pages
- * discard volatile pages without promotion in reclaim path
-
-Minchan Kim (11):
-  vrange: enable generic interval tree
-  add vrange basic data structure and functions
-  add new system call vrange(2)
-  add proc/pid/vrange information
-  Add purge operation
-  send SIGBUS when user try to access purged page
-  keep mm_struct to vrange when system call context
-  add LRU handling for victim vrange
-  Get rid of depenceny that all pages is from a zone in shrink_page_list
-  Purging vrange pages without swap
-  add purged page information in vmstat
-
- arch/x86/include/asm/pgtable_types.h   |   2 +
- arch/x86/syscalls/syscall_64.tbl       |   1 +
- fs/proc/base.c                         |   1 +
- fs/proc/internal.h                     |   6 +
- fs/proc/task_mmu.c                     | 129 ++++++
- include/asm-generic/pgtable.h          |  11 +
- include/linux/mm_types.h               |   5 +
- include/linux/rmap.h                   |  15 +-
- include/linux/swap.h                   |   1 +
- include/linux/vm_event_item.h          |   4 +
- include/linux/vrange.h                 |  59 +++
- include/uapi/asm-generic/mman-common.h |   5 +
- init/main.c                            |   2 +
- kernel/fork.c                          |   3 +
- lib/Makefile                           |   2 +-
- mm/Makefile                            |   2 +-
- mm/ksm.c                               |   2 +-
- mm/memory.c                            |  24 +-
- mm/rmap.c                              |  23 +-
- mm/swapfile.c                          |  36 ++
- mm/vmscan.c                            |  74 +++-
- mm/vmstat.c                            |   4 +
- mm/vrange.c                            | 754 +++++++++++++++++++++++++++++++++
- 23 files changed, 1143 insertions(+), 22 deletions(-)
- create mode 100644 include/linux/vrange.h
- create mode 100644 mm/vrange.c
-
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65d..dc332bd 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -320,6 +320,7 @@
+ 311	64	process_vm_writev	sys_process_vm_writev
+ 312	common	kcmp			sys_kcmp
+ 313	common	finit_module		sys_finit_module
++314	common	vrange			sys_vrange
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
+index 4164529..736696e 100644
+--- a/include/uapi/asm-generic/mman-common.h
++++ b/include/uapi/asm-generic/mman-common.h
+@@ -66,4 +66,9 @@
+ #define MAP_HUGE_SHIFT	26
+ #define MAP_HUGE_MASK	0x3f
+ 
++#define VRANGE_VOLATILE	0	/* unpin all pages so VM can discard them */
++#define VRANGE_NOVOLATILE	1	/* pin all pages so VM can't discard them */
++
++#define VRANGE_FULL_MODE	0	/* discard all pages of the range */
++#define VRANGE_PARTIAL_MODE	1	/* discard a few pages of the range */
+ #endif /* __ASM_GENERIC_MMAN_COMMON_H */
+diff --git a/mm/vrange.c b/mm/vrange.c
+index e265c82..2f77d89 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -4,6 +4,8 @@
+ 
+ #include <linux/vrange.h>
+ #include <linux/slab.h>
++#include <linux/syscalls.h>
++#include <linux/mman.h>
+ 
+ static struct kmem_cache *vrange_cachep;
+ 
+@@ -155,3 +157,59 @@ void exit_vrange(struct mm_struct *mm)
+ 		free_vrange(range);
+ 	}
+ }
++
++/*
++ * The vrange(2) system call.
++ *
++ * Applications can use vrange() to advise the kernel how it should
++ * handle paging I/O in this VM area.  The idea is to help the kernel
++ * discard pages of vrange instead of swapping out when memory pressure
++ * happens. The information provided is advisory only, and can be safely
++ * disregarded by the kernel if system has enough free memory.
++ *
++ * mode values:
++ *  VRANGE_VOLATILE - hint to kernel so VM can discard vrange pages when
++ *		memory pressure happens.
++ *  VRANGE_NOVOLATILE - hint to kernel so VM doesn't discard vrange pages
++ *		any more.
++ * behavior values:
++ *
++ * VRANGE_FULL_MODE - Once VM start to discard pages, it discards all pages
++ * 		in a vrange.
++ * VRANGE_PARTIAL_MODE - VM discards some pages of all vranges by round-robin
++ *
++ * return values:
++ *  0 - success and NOT purged.
++ *  1 - at least, one of pages [start, start + len) is discarded by VM.
++ *  -EINVAL - start  len < 0, start is not page-aligned, start is greater
++ *		than TASK_SIZE or "mode" is not a valid value.
++ *  -ENOMEM -  Short of free memory in system for successful system call.
++ */
++SYSCALL_DEFINE4(vrange, unsigned long, start,
++		size_t, len, int, mode, int, behavior)
++{
++	unsigned long end;
++	struct mm_struct *mm = current->mm;
++	int ret = -EINVAL;
++
++	if (start & ~PAGE_MASK)
++		goto out;
++
++	len &= PAGE_MASK;
++	if (!len)
++		goto out;
++
++	end = start  len;
++	if (end < start)
++		goto out;
++
++	if (start >= TASK_SIZE)
++		goto out;
++
++	if (mode == VRANGE_VOLATILE)
++		ret = add_vrange(mm, start, end - 1);
++	else if (mode == VRANGE_NOVOLATILE)
++		ret = remove_vrange(mm, start, end - 1);
++out:
++	return ret;
++}
 -- 
 1.8.1.1
 
