@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab3CLRSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 13:18:23 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:36657 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab3CLRSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 13:18:22 -0400
-MIME-Version: 1.0
+	id S933102Ab3CLRTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 13:19:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932270Ab3CLRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 13:19:37 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
 In-Reply-To: <CA+icZUUqSCZeb2JOFv-OSRXAQyD+crvGqg9E0FAUF=+ZAg5vFA@mail.gmail.com>
 References: <CA+icZUUqSCZeb2JOFv-OSRXAQyD+crvGqg9E0FAUF=+ZAg5vFA@mail.gmail.com>
-Date: Tue, 12 Mar 2013 10:18:20 -0700
-Message-ID: <CAK2H+edwEjoRK0MWMBi0iXtAnGH8nvJgVRpvvEmo7FQ2VeMiiA@mail.gmail.com>
-Subject: Re: Status of union-mount?
-From: Mark Knecht <markknecht@gmail.com>
 To: sedat.dilek@gmail.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: Status of union-mount?
+Date: Tue, 12 Mar 2013 17:19:28 +0000
+Message-ID: <16729.1363108768@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi,
->
+Sedat Dilek <sedat.dilek@gmail.com> wrote:
+
 > what's the status of union-mount?
+
+It's being reengineered again to take account of VFS changes that went in in
+the last merge window.
+
 > Where does the development happen - in [1]?
->
-> Regards,
-> - Sedat -
->
-> [1] http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=unionmount
 
-Sedat,
-   Did you look here for info?
+On a git tree on my PC - which is occasionally mirrored in [1] when I've got
+it working.
 
-http://unionfs.filesystems.org/
-
-Cheers,
-Mark
+David
