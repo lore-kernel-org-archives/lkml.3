@@ -1,233 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab3CLLiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 07:38:46 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1314 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271Ab3CLLio (ORCPT
+	id S932400Ab3CLLnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 07:43:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44440 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3CLLnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 07:38:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 12 Mar 2013 04:38:40 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <swarren@wwwdotorg.org>, <linux-input@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] input: keyboard: tegra: support for defining row/columns based on SoC
-Date: Tue, 12 Mar 2013 17:06:29 +0530
-Message-ID: <1363088189-14654-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 12 Mar 2013 07:43:39 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
+Subject: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Date: Tue, 12 Mar 2013 13:43:02 +0200
+Message-ID: <1363088606-2692-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra20 and Tegra30 supports the 16x8 keyboard matrix and T114
-support the 11x8 Key matrix.
+Hi Tony,
 
-Add support for defining the maximum row/columns based on SoC through
-proper compatibity.
+These patches provide the SoC side code required to support
+the changes in the OMAP USB Host drivers done in [1], [2] & [3].
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/input/keyboard/tegra-kbc.c |   81 +++++++++++++++++++++++++++--------
- 1 files changed, 62 insertions(+), 19 deletions(-)
+Device tree support is added for Beagleboard and Panda.
 
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index 0e138eb..ccb9298 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -27,17 +27,18 @@
- #include <linux/io.h>
- #include <linux/interrupt.h>
- #include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/clk.h>
- #include <linux/slab.h>
- #include <linux/input/matrix_keypad.h>
- #include <linux/clk/tegra.h>
- 
--#define KBC_MAX_GPIO	24
- #define KBC_MAX_KPENT	8
- 
--#define KBC_MAX_ROW	16
--#define KBC_MAX_COL	8
--#define KBC_MAX_KEY	(KBC_MAX_ROW * KBC_MAX_COL)
-+/* Maximum row/column supported by Tegra KBC yet  is 16x8 */
-+#define KBC_MAX_GPIO	24
-+/* Maximum keys supported by Tegra KBC yet is 16 x 8*/
-+#define KBC_MAX_KEY	(16 * 8)
- 
- #define KBC_MAX_DEBOUNCE_CNT	0x3ffu
- 
-@@ -80,6 +81,12 @@ enum tegra_pin_type {
- 	PIN_CFG_ROW,
- };
- 
-+/* Tegra KBC hw support */
-+struct tegra_kbc_hw_support {
-+	int max_rows;
-+	int max_columns;
-+};
-+
- struct tegra_kbc_pin_cfg {
- 	enum tegra_pin_type type;
- 	unsigned char num;
-@@ -108,6 +115,9 @@ struct tegra_kbc {
- 	u32 wakeup_key;
- 	struct timer_list timer;
- 	struct clk *clk;
-+	const struct tegra_kbc_hw_support *hw_support;
-+	int max_keys;
-+	int max_row_columns;
- };
- 
- static void tegra_kbc_report_released_keys(struct input_dev *input,
-@@ -204,11 +214,11 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
- 
- 	/*
- 	 * If the platform uses Fn keymaps, translate keys on a Fn keypress.
--	 * Function keycodes are KBC_MAX_KEY apart from the plain keycodes.
-+	 * Function keycodes are max_keys apart from the plain keycodes.
- 	 */
- 	if (fn_keypress) {
- 		for (i = 0; i < num_down; i++) {
--			scancodes[i] += KBC_MAX_KEY;
-+			scancodes[i] += kbc->max_keys;
- 			keycodes[i] = kbc->keycode[scancodes[i]];
- 		}
- 	}
-@@ -315,7 +325,7 @@ static void tegra_kbc_setup_wakekeys(struct tegra_kbc *kbc, bool filter)
- 	/* Either mask all keys or none. */
- 	rst_val = (filter && !kbc->wakeup) ? ~0 : 0;
- 
--	for (i = 0; i < KBC_MAX_ROW; i++)
-+	for (i = 0; i < kbc->hw_support->max_rows; i++)
- 		writel(rst_val, kbc->mmio + KBC_ROW0_MASK_0 + i * 4);
- }
- 
-@@ -452,7 +462,7 @@ static bool tegra_kbc_check_pin_cfg(const struct tegra_kbc *kbc,
- 
- 		switch (pin_cfg->type) {
- 		case PIN_CFG_ROW:
--			if (pin_cfg->num >= KBC_MAX_ROW) {
-+			if (pin_cfg->num >= kbc->hw_support->max_rows) {
- 				dev_err(kbc->dev,
- 					"pin_cfg[%d]: invalid row number %d\n",
- 					i, pin_cfg->num);
-@@ -462,7 +472,7 @@ static bool tegra_kbc_check_pin_cfg(const struct tegra_kbc *kbc,
- 			break;
- 
- 		case PIN_CFG_COL:
--			if (pin_cfg->num >= KBC_MAX_COL) {
-+			if (pin_cfg->num >= kbc->hw_support->max_columns) {
- 				dev_err(kbc->dev,
- 					"pin_cfg[%d]: invalid column number %d\n",
- 					i, pin_cfg->num);
-@@ -520,6 +530,18 @@ static int tegra_kbc_parse_dt(struct tegra_kbc *kbc)
- 	}
- 	num_cols = proplen / sizeof(u32);
- 
-+	if (num_rows > kbc->hw_support->max_rows) {
-+		dev_err(kbc->dev,
-+			"Number of row is more than supported on SoCs\n");
-+		return -EINVAL;
-+	}
-+
-+	if (num_cols > kbc->hw_support->max_columns) {
-+		dev_err(kbc->dev,
-+			"Number of column is more than supported on SoCs\n");
-+		return -EINVAL;
-+	}
-+
- 	if (!of_get_property(np, "linux,keymap", &proplen)) {
- 		dev_err(kbc->dev, "property linux,keymap not found\n");
- 		return -ENOENT;
-@@ -532,7 +554,7 @@ static int tegra_kbc_parse_dt(struct tegra_kbc *kbc)
- 	}
- 
- 	/* Set all pins as non-configured */
--	for (i = 0; i < KBC_MAX_GPIO; i++)
-+	for (i = 0; i < kbc->max_row_columns; ++i)
- 		kbc->pin_cfg[i].type = PIN_CFG_IGNORE;
- 
- 	ret = of_property_read_u32_array(np, "nvidia,kbc-row-pins",
-@@ -562,6 +584,24 @@ static int tegra_kbc_parse_dt(struct tegra_kbc *kbc)
- 	return 0;
- }
- 
-+static const struct tegra_kbc_hw_support tegra20_kbc_hw_support = {
-+	.max_rows	= 16,
-+	.max_columns	= 8,
-+};
-+
-+static const struct tegra_kbc_hw_support tegra11_kbc_hw_support = {
-+	.max_rows	= 11,
-+	.max_columns	= 8,
-+};
-+
-+static const struct of_device_id tegra_kbc_of_match[] = {
-+	{ .compatible = "nvidia,tegra114-kbc", .data = &tegra11_kbc_hw_support},
-+	{ .compatible = "nvidia,tegra30-kbc", .data = &tegra20_kbc_hw_support},
-+	{ .compatible = "nvidia,tegra20-kbc", .data = &tegra20_kbc_hw_support},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, tegra_kbc_of_match);
-+
- static int tegra_kbc_probe(struct platform_device *pdev)
- {
- 	struct tegra_kbc *kbc;
-@@ -570,7 +610,10 @@ static int tegra_kbc_probe(struct platform_device *pdev)
- 	int num_rows = 0;
- 	unsigned int debounce_cnt;
- 	unsigned int scan_time_rows;
--	unsigned int keymap_rows = KBC_MAX_KEY;
-+	unsigned int keymap_rows;
-+	const struct of_device_id *match;
-+
-+	match = of_match_device(of_match_ptr(tegra_kbc_of_match), &pdev->dev);
- 
- 	kbc = devm_kzalloc(&pdev->dev, sizeof(*kbc), GFP_KERNEL);
- 	if (!kbc) {
-@@ -579,6 +622,12 @@ static int tegra_kbc_probe(struct platform_device *pdev)
- 	}
- 
- 	kbc->dev = &pdev->dev;
-+	kbc->hw_support = match->data;
-+	kbc->max_keys = (kbc->hw_support->max_rows *
-+				kbc->hw_support->max_columns);
-+	kbc->max_row_columns = (kbc->hw_support->max_rows +
-+					kbc->hw_support->max_columns);
-+	keymap_rows = kbc->max_keys;
- 	spin_lock_init(&kbc->lock);
- 
- 	err = tegra_kbc_parse_dt(kbc);
-@@ -641,8 +690,8 @@ static int tegra_kbc_probe(struct platform_device *pdev)
- 		keymap_rows *= 2;
- 
- 	err = matrix_keypad_build_keymap(kbc->keymap_data, NULL,
--					 keymap_rows, KBC_MAX_COL,
--					 kbc->keycode, kbc->idev);
-+				 keymap_rows, kbc->hw_support->max_columns,
-+				 kbc->keycode, kbc->idev);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to setup keymap\n");
- 		return err;
-@@ -767,12 +816,6 @@ static int tegra_kbc_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(tegra_kbc_pm_ops, tegra_kbc_suspend, tegra_kbc_resume);
- 
--static const struct of_device_id tegra_kbc_of_match[] = {
--	{ .compatible = "nvidia,tegra20-kbc", },
--	{ },
--};
--MODULE_DEVICE_TABLE(of, tegra_kbc_of_match);
--
- static struct platform_driver tegra_kbc_driver = {
- 	.probe		= tegra_kbc_probe,
- 	.driver	= {
--- 
-1.7.1.1
+NOTE: The first patch needs to be shared between the
+OMAP tree and Felipe's USB tree.
+
+[1] MFD side changes to omap-usb-host and omap-usb-tll
+  https://lkml.org/lkml/2013/3/12/179
+[2] USB EHCI side changes to ehci-omap 
+  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86265.html
+[3] USB PHY driver changes
+  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86293.html
+
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+
+are available in the git repository at:
+  git://github.com/rogerq/linux.git usbhost-arm-next
+
+Roger Quadros (24):
+  usb: phy: nop: Add some parameters to platform data
+  ARM: OMAP2+: omap4panda: Provide USB Host's PHY platform data
+  ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
+  ARM: OMAP3: Beagle: Adapt to ehci-omap changes
+  ARM: OMAP3: 3430SDP: Adapt to ehci-omap changes
+  ARM: OMAP3: 3630SDP: Adapt to ehci-omap changes
+  ARM: OMAP: AM3517crane: Adapt to ehci-omap changes
+  ARM: OMAP: AM3517evm: Adapt to ehci-omap changes
+  ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
+  ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
+  ARM: OMAP: devkit8000: Adapt to ehci-omap changes
+  ARM: OMAP3: igep0020: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3evm: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3stalker: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3touchbook: Adapt to ehci-omap changes
+  ARM: OMAP3: overo: Adapt to ehci-omap changes
+  ARM: OMAP: zoom: Adapt to ehci-omap changes
+  ARM: dts: OMAP4: Add HS USB Host IP nodes
+  ARM: dts: omap4-panda: Add USB Host support
+  ARM: dts: OMAP3: Add HS USB Host IP nodes
+  ARM: dts: omap3-beagle: Add USB Host support
+  ARM: OMAP2+: Allow clock alias provision from device tree
+  ARM: dts: omap4-panda: Add clock alias for USB PHY
+
+ .../devicetree/bindings/clock/ti-clock-alias.txt   |   26 ++++
+ arch/arm/boot/dts/omap3-beagle.dts                 |   71 +++++++++++
+ arch/arm/boot/dts/omap3.dtsi                       |   31 +++++
+ arch/arm/boot/dts/omap4-panda.dts                  |   63 ++++++++++
+ arch/arm/boot/dts/omap4.dtsi                       |   30 +++++
+ arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
+ arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
+ arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
+ arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
+ arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
+ arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
+ arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
+ arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
+ arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
+ arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
+ arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
+ arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
+ arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
+ arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
+ arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
+ arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
+ arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
+ include/linux/usb/nop-usb-xceiv.h                  |    5 +
+ 23 files changed, 1377 insertions(+), 151 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti-clock-alias.txt
+
+--
+cheers,
+-roger 
 
