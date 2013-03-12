@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3CLKma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:42:30 -0400
-Received: from vpn.mirsal.fr ([178.79.141.108]:42906 "EHLO
-	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751908Ab3CLKm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:42:29 -0400
-From: Mirsal Ennaime <mirsal@mirsal.fr>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Joe Perches <joe@perches.com>, Mirsal Ennaime <mirsal@mirsal.fr>
-Subject: [PATCH v3 4/4] drivers: android: binder: Use __func__ in debug messages
-Date: Tue, 12 Mar 2013 11:42:02 +0100
-Message-Id: <1363084922-19698-5-git-send-email-mirsal@mirsal.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363084922-19698-1-git-send-email-mirsal@mirsal.fr>
-References: <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
- <1363084922-19698-1-git-send-email-mirsal@mirsal.fr>
+	id S1755311Ab3CLKn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:43:57 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:42786 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751825Ab3CLKn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:43:56 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-mmc@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH] mmc: dw_mmc: setpower on MMC_POWER_{UP,OFF}
+Date: Tue, 12 Mar 2013 10:43:32 +0000
+Message-ID: <1363085012-9220-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_03_12_10_43_47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debug messages sent in binder_deferred_release begin with
-"binder_release:" which is a bit misleading as binder_release is not
-directly part of the call stack. Use __func__ instead for debug messages
-in binder_deferred_release.
+Call the setpower platform callback in response to set_ios with
+ios->power_mode == MMC_POWER_UP or MMC_POWER_OFF, instead of from the
+card detect work function.
 
-Signed-off-by: Mirsal Ennaime <mirsal@mirsal.fr>
+This appears to fix a problem I have where a card stuck in a funny state
+doesn't get properly cleared by the power being turned off, presumably
+due to lack of power sequencing. This resulted in the following log
+messages after boot:
+
+mmc0: error -110 whilst initialising SD card
+mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
+mmc0: error -110 whilst initialising SD card
+mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 200000Hz, actual 199680HZ div = 250)
+mmc0: error -110 whilst initialising SD card
+mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 195765Hz, actual 195764HZ div = 255)
+mmc0: error -110 whilst initialising SD card
+mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 400000Hz, actual 399360HZ div = 125)
+mmc0: error -110 whilst initialising SD card
+mmc_host mmc0: Bus speed (slot 0) = 99840000Hz (slot req 300000Hz, actual 298922HZ div = 167)
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>
 ---
- drivers/staging/android/binder.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/mmc/host/dw_mmc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 9db21b4..1567ac2 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2937,8 +2937,8 @@ static void binder_deferred_release(struct binder_proc *proc)
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 60063cc..1a42c7c 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -818,6 +818,14 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	switch (ios->power_mode) {
+ 	case MMC_POWER_UP:
+ 		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
++		/* Power up slot */
++		if (slot->host->pdata->setpower)
++			slot->host->pdata->setpower(slot->id, mmc->ocr_avail);
++		break;
++	case MMC_POWER_OFF:
++		/* Power down slot */
++		if (slot->host->pdata->setpower)
++			slot->host->pdata->setpower(slot->id, 0);
+ 		break;
+ 	default:
+ 		break;
+@@ -1674,10 +1682,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+ 			dev_dbg(&slot->mmc->class_dev, "card %s\n",
+ 				present ? "inserted" : "removed");
  
- 	if (binder_context_mgr_node && binder_context_mgr_node->proc == proc) {
- 		binder_debug(BINDER_DEBUG_DEAD_BINDER,
--			     "binder_release: %d context_mgr_node gone\n",
--			     proc->pid);
-+			     "%s: %d context_mgr_node gone\n",
-+			     __func__, proc->pid);
- 		binder_context_mgr_node = NULL;
- 	}
+-			/* Power up slot (before spin_lock, may sleep) */
+-			if (present != 0 && host->pdata->setpower)
+-				host->pdata->setpower(slot->id, mmc->ocr_avail);
+-
+ 			spin_lock_bh(&host->lock);
  
-@@ -3008,8 +3008,8 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 			/* Card change detected */
+@@ -1760,10 +1764,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
  
- 			page_addr = proc->buffer + i * PAGE_SIZE;
- 			binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
--				     "binder_release: %d: page %d at %p not freed\n",
--				     proc->pid, i, page_addr);
-+				     "%s: %d: page %d at %p not freed\n",
-+				     __func__, proc->pid, i, page_addr);
- 			unmap_kernel_range((unsigned long)page_addr, PAGE_SIZE);
- 			__free_page(proc->pages[i]);
- 			page_count++;
-@@ -3021,9 +3021,9 @@ static void binder_deferred_release(struct binder_proc *proc)
- 	put_task_struct(proc->tsk);
+ 			spin_unlock_bh(&host->lock);
  
- 	binder_debug(BINDER_DEBUG_OPEN_CLOSE,
--		     "binder_release: %d threads %d, nodes %d (ref %d), refs %d, active transactions %d, buffers %d, pages %d\n",
--		     proc->pid, threads, nodes, incoming_refs, outgoing_refs,
--		     active_transactions, buffers, page_count);
-+		     "%s: %d threads %d, nodes %d (ref %d), refs %d, active transactions %d, buffers %d, pages %d\n",
-+		     __func__, proc->pid, threads, nodes, incoming_refs,
-+		     outgoing_refs, active_transactions, buffers, page_count);
+-			/* Power down slot (after spin_unlock, may sleep) */
+-			if (present == 0 && host->pdata->setpower)
+-				host->pdata->setpower(slot->id, 0);
+-
+ 			present = dw_mci_get_cd(mmc);
+ 		}
  
- 	kfree(proc);
- }
 -- 
-1.7.10.4
+1.8.1.2
+
 
