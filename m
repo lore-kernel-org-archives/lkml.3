@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab3CLKp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 06:45:58 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:49179 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932583Ab3CLKp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 06:45:56 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: rui.zhang@intel.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH V2] drivers: thermal: cpu_cooling: fix checkpatch warning
-Date: Tue, 12 Mar 2013 11:47:50 +0100
-Message-Id: <1363085270-22886-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932755Ab3CLKqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 06:46:32 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51577 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932519Ab3CLKpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 06:45:32 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <b-cousson@ti.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <rogerq@ti.com>
+Subject: [PATCH 11/12] USB: ehci-omap: Try to get PHY even if not in PHY mode
+Date: Tue, 12 Mar 2013 12:44:49 +0200
+Message-ID: <1363085090-24676-12-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1363085090-24676-1-git-send-email-rogerq@ti.com>
+References: <1363085090-24676-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- WARNING: Avoid CamelCase: <maskPtr>
+Even when not in PHY mode, the USB device on the port (e.g. HUB)
+might need resources like RESET which can be modelled as a PHY
+device. So try to get the PHY device in any case.
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+CC: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/thermal/cpu_cooling.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/host/ehci-omap.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 8dc44cb..be2e6b0 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -168,8 +168,8 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
- 				unsigned long cooling_state)
- {
- 	unsigned int cpuid, clip_freq;
--	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
--	unsigned int cpu = cpumask_any(maskPtr);
-+	struct cpumask *mask = &cpufreq_device->allowed_cpus;
-+	unsigned int cpu = cpumask_any(mask);
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 45cd01e..1ba1df8 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -202,15 +202,16 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 	for (i = 0 ; i < omap->nports ; i++) {
+ 		struct usb_phy *phy;
  
- 
- 	/* Check if the old cooling action is same as new cooling action */
-@@ -184,7 +184,7 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
- 	cpufreq_device->cpufreq_val = clip_freq;
- 	notify_device = cpufreq_device;
- 
--	for_each_cpu(cpuid, maskPtr) {
-+	for_each_cpu(cpuid, mask) {
- 		if (is_cpufreq_valid(cpuid))
- 			cpufreq_update_policy(cpuid);
- 	}
-@@ -235,13 +235,13 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
- 				 unsigned long *state)
- {
- 	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
--	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
-+	struct cpumask *mask = &cpufreq_device->allowed_cpus;
- 	unsigned int cpu;
- 	struct cpufreq_frequency_table *table;
- 	unsigned long count = 0;
- 	int i = 0;
- 
--	cpu = cpumask_any(maskPtr);
-+	cpu = cpumask_any(mask);
- 	table = cpufreq_frequency_get_table(cpu);
- 	if (!table) {
- 		*state = 0;
+-		if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
+-			continue;
+-
+ 		/* get the PHY device */
+ 		if (dev->of_node)
+ 			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
+ 		else
+ 			phy = devm_usb_get_phy_dev(dev, i);
+ 		if (IS_ERR(phy) || !phy) {
++			/* Don't bail out if PHY is not absolutely necessary */
++			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
++				continue;
++
+ 			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
+ 			dev_err(dev, "Can't get PHY device for port %d: %d\n",
+ 					i, ret);
 -- 
-1.7.10.4
+1.7.4.1
 
