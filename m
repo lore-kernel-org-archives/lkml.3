@@ -1,119 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956Ab3CLXRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:17:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60155 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933449Ab3CLWcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:32:55 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 029/100] NFSv4.1: Hold reference to layout hdr in layoutget
-Date: Tue, 12 Mar 2013 15:31:14 -0700
-Message-Id: <20130312223126.165828459@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S934003Ab3CLXRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 19:17:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:48626 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933449Ab3CLXRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 19:17:21 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [ 008/153] powerpc/eeh: Fix crash when adding a device in a slot with DDW
+In-reply-to: <20130312181457.GA24837@oc0268524204.ibm.com>
+References: <20130304033707.648729212@decadent.org.uk> <20130304033708.479195432@decadent.org.uk> <CAEjGV6z-d2f6G_bozJmaeg7pmK71uM_JjBZ24KgijnjO1wv+4g@mail.gmail.com> <1362713395.3768.466.camel@deadeye.wl.decadent.org.uk> <20130312181457.GA24837@oc0268524204.ibm.com>
+Comments: In-reply-to Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+   message dated "Tue, 12 Mar 2013 15:14:57 -0300."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Wed, 13 Mar 2013 10:17:18 +1100
+Message-ID: <5857.1363130238@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com> wrote:
 
-------------------
+> On Fri, Mar 08, 2013 at 03:29:55AM +0000, Ben Hutchings wrote:
+> > On Fri, 2013-03-08 at 13:51 +1100, Michael Neuling wrote:
+> > > This patch is breaking the celleb_defconfig on powerpc with:
+> > > 
+> > > arch/powerpc/kernel/of_platform.c: In function 'of_pci_phb_probe':
+> > > arch/powerpc/kernel/of_platform.c:95:2: error: implicit declaration of
+> > > function 'eeh_add_sysfs_files' [-Werror=implicit-function-declaration]
+> > 
+> > In 3.2 this file doesn't (directly) include <asm/eeh.h> which is where
+> > the definition was added.  In mainline it does.
+> > 
+> > Assuming that this change is actually required for 3.2 (which I'm not
+> > sure about), I suppose we just need to add the #include.
+> > 
+> > Ben.
+> > 
+> 
+> This is not required for 3.2. The patch that *may* have broken DLPAR
+> (39baadbf36cee3ede5fdb8a34006d9109e5e2570) was introduced between 3.3
+> and 3.4.
 
-From: Weston Andros Adamson <dros@netapp.com>
+Reverting 066f289835f09a3f744d6bac96f25e25d20b3ded (from 3.2.40) fixes
+the problem for me so I'm ok if we do that instead.
 
-commit a47970ff7814718fec31b7d966747c6aa1a3545f upstream.
+Mikey
 
-This fixes an oops where a LAYOUTGET is in still in the rpciod queue,
-but the requesting processes has been killed.  Without this, killing
-the process does the final pnfs_put_layout_hdr() and sets NFS_I(inode)->layout
-to NULL while the LAYOUTGET rpc task still references it.
-
-Example oops:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000080
-IP: [<ffffffffa01bd586>] pnfs_choose_layoutget_stateid+0x37/0xef [nfsv4]
-PGD 7365b067 PUD 7365d067 PMD 0
-Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-Modules linked in: nfs_layout_nfsv41_files nfsv4 auth_rpcgss nfs lockd sunrpc ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ip6table_filter ip6_tables ppdev e1000 i2c_piix4 i2c_core shpchp parport_pc parport crc32c_intel aesni_intel xts aes_x86_64 lrw gf128mul ablk_helper cryptd mptspi scsi_transport_spi mptscsih mptbase floppy autofs4
-CPU 0
-Pid: 27, comm: kworker/0:1 Not tainted 3.8.0-dros_cthon2013+ #4 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-RIP: 0010:[<ffffffffa01bd586>]  [<ffffffffa01bd586>] pnfs_choose_layoutget_stateid+0x37/0xef [nfsv4]
-RSP: 0018:ffff88007b0c1c88  EFLAGS: 00010246
-RAX: ffff88006ed36678 RBX: 0000000000000000 RCX: 0000000ea877e3bc
-RDX: ffff88007a729da8 RSI: 0000000000000000 RDI: ffff88007a72b958
-RBP: ffff88007b0c1ca8 R08: 0000000000000002 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88007a72b958
-R13: ffff88007a729da8 R14: 0000000000000000 R15: ffffffffa011077e
-FS:  0000000000000000(0000) GS:ffff88007f600000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000080 CR3: 00000000735f8000 CR4: 00000000001407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/0:1 (pid: 27, threadinfo ffff88007b0c0000, task ffff88007c2fa0c0)
-Stack:
- ffff88006fc05388 ffff88007a72b908 ffff88007b240900 ffff88006fc05388
- ffff88007b0c1cd8 ffffffffa01a2170 ffff88007b240900 ffff88007b240900
- ffff88007b240970 ffffffffa011077e ffff88007b0c1ce8 ffffffffa0110791
-Call Trace:
- [<ffffffffa01a2170>] nfs4_layoutget_prepare+0x7b/0x92 [nfsv4]
- [<ffffffffa011077e>] ? __rpc_atrun+0x15/0x15 [sunrpc]
- [<ffffffffa0110791>] rpc_prepare_task+0x13/0x15 [sunrpc]
-
-Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/nfs4proc.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6087,11 +6087,13 @@ static struct page **nfs4_alloc_pages(si
- static void nfs4_layoutget_release(void *calldata)
- {
- 	struct nfs4_layoutget *lgp = calldata;
--	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	struct inode *inode = lgp->args.inode;
-+	struct nfs_server *server = NFS_SERVER(inode);
- 	size_t max_pages = max_response_pages(server);
- 
- 	dprintk("--> %s\n", __func__);
- 	nfs4_free_pages(lgp->args.layout.pages, max_pages);
-+	pnfs_put_layout_hdr(NFS_I(inode)->layout);
- 	put_nfs_open_context(lgp->args.ctx);
- 	kfree(calldata);
- 	dprintk("<-- %s\n", __func__);
-@@ -6106,7 +6108,8 @@ static const struct rpc_call_ops nfs4_la
- struct pnfs_layout_segment *
- nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
- {
--	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	struct inode *inode = lgp->args.inode;
-+	struct nfs_server *server = NFS_SERVER(inode);
- 	size_t max_pages = max_response_pages(server);
- 	struct rpc_task *task;
- 	struct rpc_message msg = {
-@@ -6136,6 +6139,10 @@ nfs4_proc_layoutget(struct nfs4_layoutge
- 	lgp->res.layoutp = &lgp->args.layout;
- 	lgp->res.seq_res.sr_slot = NULL;
- 	nfs41_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
-+
-+	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
-+	pnfs_get_layout_hdr(NFS_I(inode)->layout);
-+
- 	task = rpc_run_task(&task_setup_data);
- 	if (IS_ERR(task))
- 		return ERR_CAST(task);
-
-
+> 
+> Regards.
+> Cascardo.
+> 
+> > > Mikey
+> > > 
+> > > On Mon, Mar 4, 2013 at 2:37 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> > > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > > >
+> > > > ------------------
+> > > >
+> > > > From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> > > >
+> > > > commit 6a040ce72598159a74969a2d01ab0ba5ee6536b3 upstream.
+> > > >
+> > > > The DDW code uses a eeh_dev struct from the pci_dev. However, this is
+> > > > not set until eeh_add_device_late is called.
+> > > >
+> > > > Since pci_bus_add_devices is called before eeh_add_device_late, the PCI
+> > > > devices are added to the bus, making drivers' probe hooks to be called.
+> > > > These will call set_dma_mask, which will call the DDW code, which will
+> > > > require the eeh_dev struct from pci_dev. This would result in a crash,
+> > > > due to a NULL dereference.
+> > > >
+> > > > Calling eeh_add_device_late after pci_bus_add_devices would make the
+> > > > system BUG, because device files shouldn't be added to devices there
+> > > > were not added to the system. So, a new function is needed to add such
+> > > > files only after pci_bus_add_devices have been called.
+> > > >
+> > > > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> > > > Acked-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> > > > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > > > [bwh: Backported to 3.2: adjust context]
+> > > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > > > ---
+> > > >  arch/powerpc/include/asm/eeh.h       |    3 +++
+> > > >  arch/powerpc/kernel/of_platform.c    |    3 +++
+> > > >  arch/powerpc/kernel/pci-common.c     |    7 +++++--
+> > > >  arch/powerpc/platforms/pseries/eeh.c |   24 +++++++++++++++++++++++-
+> > > >  4 files changed, 34 insertions(+), 3 deletions(-)
+> > > >
+> > > > --- a/arch/powerpc/include/asm/eeh.h
+> > > > +++ b/arch/powerpc/include/asm/eeh.h
+> > > > @@ -61,6 +61,7 @@ void __init pci_addr_cache_build(void);
+> > > >   */
+> > > >  void eeh_add_device_tree_early(struct device_node *);
+> > > >  void eeh_add_device_tree_late(struct pci_bus *);
+> > > > +void eeh_add_sysfs_files(struct pci_bus *);
+> > > >
+> > > >  /**
+> > > >   * eeh_remove_device_recursive - undo EEH for device & children.
+> > > > @@ -105,6 +106,8 @@ static inline void eeh_add_device_tree_e
+> > > >
+> > > >  static inline void eeh_add_device_tree_late(struct pci_bus *bus) { }
+> > > >
+> > > > +static inline void eeh_add_sysfs_files(struct pci_bus *bus) { }
+> > > > +
+> > > >  static inline void eeh_remove_bus_device(struct pci_dev *dev) { }
+> > > >  #define EEH_POSSIBLE_ERROR(val, type) (0)
+> > > >  #define EEH_IO_ERROR_VALUE(size) (-1UL)
+> > > > --- a/arch/powerpc/kernel/of_platform.c
+> > > > +++ b/arch/powerpc/kernel/of_platform.c
+> > > > @@ -91,6 +91,9 @@ static int __devinit of_pci_phb_probe(st
+> > > >         /* Add probed PCI devices to the device model */
+> > > >         pci_bus_add_devices(phb->bus);
+> > > >
+> > > > +       /* sysfs files should only be added after devices are added */
+> > > > +       eeh_add_sysfs_files(phb->bus);
+> > > > +
+> > > >         return 0;
+> > > >  }
+> > > >
+> > > > --- a/arch/powerpc/kernel/pci-common.c
+> > > > +++ b/arch/powerpc/kernel/pci-common.c
+> > > > @@ -1536,11 +1536,14 @@ void pcibios_finish_adding_to_bus(struct
+> > > >         pcibios_allocate_bus_resources(bus);
+> > > >         pcibios_claim_one_bus(bus);
+> > > >
+> > > > +       /* Fixup EEH */
+> > > > +       eeh_add_device_tree_late(bus);
+> > > > +
+> > > >         /* Add new devices to global lists.  Register in proc, sysfs. */
+> > > >         pci_bus_add_devices(bus);
+> > > >
+> > > > -       /* Fixup EEH */
+> > > > -       eeh_add_device_tree_late(bus);
+> > > > +       /* sysfs files should only be added after devices are added */
+> > > > +       eeh_add_sysfs_files(bus);
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(pcibios_finish_adding_to_bus);
+> > > >
+> > > > --- a/arch/powerpc/platforms/pseries/eeh.c
+> > > > +++ b/arch/powerpc/platforms/pseries/eeh.c
+> > > > @@ -1238,7 +1238,6 @@ static void eeh_add_device_late(struct p
+> > > >         pdn->pcidev = dev;
+> > > >
+> > > >         pci_addr_cache_insert_device(dev);
+> > > > -       eeh_sysfs_add_device(dev);
+> > > >  }
+> > > >
+> > > >  void eeh_add_device_tree_late(struct pci_bus *bus)
+> > > > @@ -1257,6 +1256,29 @@ void eeh_add_device_tree_late(struct pci
+> > > >  EXPORT_SYMBOL_GPL(eeh_add_device_tree_late);
+> > > >
+> > > >  /**
+> > > > + * eeh_add_sysfs_files - Add EEH sysfs files for the indicated PCI bus
+> > > > + * @bus: PCI bus
+> > > > + *
+> > > > + * This routine must be used to add EEH sysfs files for PCI
+> > > > + * devices which are attached to the indicated PCI bus. The PCI bus
+> > > > + * is added after system boot through hotplug or dlpar.
+> > > > + */
+> > > > +void eeh_add_sysfs_files(struct pci_bus *bus)
+> > > > +{
+> > > > +       struct pci_dev *dev;
+> > > > +
+> > > > +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> > > > +               eeh_sysfs_add_device(dev);
+> > > > +               if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
+> > > > +                       struct pci_bus *subbus = dev->subordinate;
+> > > > +                       if (subbus)
+> > > > +                               eeh_add_sysfs_files(subbus);
+> > > > +               }
+> > > > +       }
+> > > > +}
+> > > > +EXPORT_SYMBOL_GPL(eeh_add_sysfs_files);
+> > > > +
+> > > > +/**
+> > > >   * eeh_remove_device - undo EEH setup for the indicated pci device
+> > > >   * @dev: pci device to be removed
+> > > >   *
+> > > >
+> > > >
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > >
+> > > 
+> > 
+> > -- 
+> > Ben Hutchings
+> > Always try to do things in chronological order;
+> > it's less confusing that way.
+> 
+> 
