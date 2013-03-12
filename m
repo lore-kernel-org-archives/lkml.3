@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab3CLFik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:38:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16289 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab3CLFij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:38:39 -0400
-X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
-   d="scan'208";a="6856519"
-Message-ID: <513EBF01.2010401@cn.fujitsu.com>
-Date: Tue, 12 Mar 2013 13:37:05 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1754882Ab3CLFkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:40:35 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59050 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3CLFke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:40:34 -0400
+Date: Mon, 11 Mar 2013 22:40:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        leiwen@marvell.com, wwang27@marvell.com
+Subject: Re: workqueue panic in 3.4 kernel
+Message-ID: <20130312054028.GA20037@mtj.dyndns.org>
+References: <20130306191408.GN1227@htj.dyndns.org>
+ <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
+ <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
+ <20130307154907.GB29601@htj.dyndns.org>
+ <alpine.LFD.2.02.1303071705310.22263@ionos>
+ <CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
+ <20130312051215.GU14556@mtj.dyndns.org>
+ <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
+ <20130312052426.GV14556@mtj.dyndns.org>
+ <CALZhoSSFnfU1oVtUOXF_gA3QjToqT-wtdckbMC43pDXwXZwupg@mail.gmail.com>
 MIME-Version: 1.0
-To: Evgeniy Dushistov <dushistov@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/18] fs: ufs: remove cast for kmalloc return value
-References: <513EB23D.7020303@cn.fujitsu.com>
-In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:37:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:37:25,
-	Serialize complete at 2013/03/12 13:37:25
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSSFnfU1oVtUOXF_gA3QjToqT-wtdckbMC43pDXwXZwupg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove cast for kmalloc return value.
+On Tue, Mar 12, 2013 at 01:34:56PM +0800, Lei Wen wrote:
+> > Memory areas aren't always zero on allocation.
+> 
+> Shouldn't work structure be allocated with kzalloc?
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Evgeniy Dushistov <dushistov@mail.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- fs/ufs/util.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+It's not required to. work_struct can also be on stack. It's "init"
+after all. Also, if you require clearing the memory before initing,
+you would be just shifting problem from INIT to memory clearing.
 
-diff --git a/fs/ufs/util.c b/fs/ufs/util.c
-index 95425b5..b6c2f94 100644
---- a/fs/ufs/util.c
-+++ b/fs/ufs/util.c
-@@ -26,8 +26,7 @@ struct ufs_buffer_head * _ubh_bread_ (struct ufs_sb_private_info * uspi,
- 	count = size >> uspi->s_fshift;
- 	if (count > UFS_MAXFRAG)
- 		return NULL;
--	ubh = (struct ufs_buffer_head *)
--		kmalloc (sizeof (struct ufs_buffer_head), GFP_NOFS);
-+	ubh = kmalloc (sizeof (struct ufs_buffer_head), GFP_NOFS);
- 	if (!ubh)
- 		return NULL;
- 	ubh->fragment = fragment;
 -- 
-1.7.1
-
+tejun
