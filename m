@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3CLFR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:17:29 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:63689 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab3CLFRZ (ORCPT
+	id S932171Ab3CLFSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:18:05 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34510 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab3CLFSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:17:25 -0400
-Message-ID: <513EBA25.8060106@huawei.com>
-Date: Tue, 12 Mar 2013 13:16:21 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 12 Mar 2013 01:18:03 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build warning after merge of the final tree (tip
- tree related)
-References: <20130312154215.f9c3e957c2a2e510f27b826a@canb.auug.org.au>
-In-Reply-To: <20130312154215.f9c3e957c2a2e510f27b826a@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130312051215.GU14556@mtj.dyndns.org>
+References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
+	<20130305163228.GA12795@htj.dyndns.org>
+	<CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
+	<20130306191408.GN1227@htj.dyndns.org>
+	<CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
+	<CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
+	<20130307154907.GB29601@htj.dyndns.org>
+	<alpine.LFD.2.02.1303071705310.22263@ionos>
+	<CALZhoSQBH3RxSoaVDCYoCyRVRndht-Rk0rh_w5Dbp6+5T_auSw@mail.gmail.com>
+	<20130312051215.GU14556@mtj.dyndns.org>
+Date: Tue, 12 Mar 2013 13:18:01 +0800
+Message-ID: <CALZhoSTnCC4si12xQXy2Cid5S2vAwOneOnZ_o2XNjidoqA9bsg@mail.gmail.com>
+Subject: Re: workqueue panic in 3.4 kernel
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        leiwen@marvell.com, wwang27@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/12 12:42, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (sparc defconfig)
-> produced this warning:
-> 
-> In file included from kernel/sched/core.c:85:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> In file included from kernel/sched/cputime.c:7:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> In file included from kernel/sched/idle_task.c:1:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> In file included from kernel/sched/fair.c:35:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> In file included from kernel/sched/stop_task.c:1:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> In file included from kernel/sched/rt.c:6:0:
-> kernel/sched/sched.h:1043:39: warning: 'struct sched_domain' declared inside parameter list [enabled by default]
-> kernel/sched/sched.h:1043:39: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> 
-> Probably caused by commit c82ba9fa7588 ("sched: Move struct sched_class
-> to kernel/sched/sched.h") from the tip tree which removed a forward
-> declaration of "struct sched_domain" from include/linux/sched.h - the
-> read declaration is protected by CONFIG_SMP (which is not set for this
-> build).
-> 
+Tejun,
 
-Should be fixed by this, and it has been queued in tip:sched/core
+On Tue, Mar 12, 2013 at 1:12 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Mar 12, 2013 at 01:08:15PM +0800, Lei Wen wrote:
+>> diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+>> index 8afab27..425d5a2 100644
+>> --- a/include/linux/workqueue.h
+>> +++ b/include/linux/workqueue.h
+>> @@ -189,12 +189,16 @@ static inline unsigned int work_static(struct
+>> work_struct *work) { return 0; }
+>>   * NOTE! No point in using "atomic_long_set()": using a direct
+>>   * assignment of the work data initializer allows the compiler
+>>   * to generate better code.
+>> + *
+>> + * We take the assumption that work should not be inited if it already
+>> + * hold the pending bit, or bug would be reported.
+>>   */
+>>  #ifdef CONFIG_LOCKDEP
+>>  #define __INIT_WORK(_work, _func, _onstack)                            \
+>>         do {                                                            \
+>>                 static struct lock_class_key __key;                     \
+>>                                                                         \
+>> +               BUG_ON(work_pending(_work));                            \
+>
+> You're initializing random piece of memory which may contain any
+> garbage and triggering BUG if some bit is set on it. No, you can't do
+> that. debugobj is the right tool for debugging object lifetime issues
+> and is already supported.
 
-Commit-ID:  b719203b846284e77f5c50fca04b458b6484aeae
-Gitweb:     http://git.kernel.org/tip/b719203b846284e77f5c50fca04b458b6484aeae
-Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Thu, 7 Mar 2013 10:00:26 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Mar 2013 09:07:24 +0100
+The debugobj is not helping on this issue, I have enabled both
+CONFIG_DEBUG_OBJECTS_WORK and CONFIG_DEBUG_OBJECTS.
+But find they didn't report any issue at all.
 
-sched: Fix update_group_power() prototype placement to fix build warning when !CONFIG_SMP
+And I am not init random memory, original issue is call init multi-times
+for one structure and that piece of memory already been allocated.
+And __INIT_WORK shouldn't call over random memory, right?
 
+All this patch is adding a check here.
+
+Thanks,
+Lei
