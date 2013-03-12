@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab3CLPdW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 11:33:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54006 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab3CLPdU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 11:33:20 -0400
-Date: Tue, 12 Mar 2013 11:33:28 -0400 (EDT)
-Message-Id: <20130312.113328.1340895896039295892.davem@davemloft.net>
-To: linux@arm.linux.org.uk
-Cc: gang.chen@asianux.com, mgherzan@gmail.com, nschichan@freebox.fr,
-        daniel.borkmann@tik.ee.ethz.ch, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130311164741.GL4977@n2100.arm.linux.org.uk>
-References: <513BECDA.3030803@asianux.com>
-	<20130310.171238.330349067962026661.davem@davemloft.net>
-	<20130311164741.GL4977@n2100.arm.linux.org.uk>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 12 Mar 2013 08:33:24 -0700 (PDT)
+	id S932610Ab3CLPcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 11:32:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48589 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932065Ab3CLPce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 11:32:34 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Fix eDP breakages on HP Z1 desktop
+Date: Tue, 12 Mar 2013 16:32:26 +0100
+Message-Id: <1363102348-16337-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Mon, 11 Mar 2013 16:47:41 +0000
+Hi,
 
-> On Sun, Mar 10, 2013 at 05:12:38PM -0400, David Miller wrote:
->> From: Chen Gang <gang.chen@asianux.com>
->> Date: Sun, 10 Mar 2013 10:15:54 +0800
->> 
->> > 
->> >   k is u32 which never < 0, need type cast, or cause issue.
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> 
->> Who will apply this, ARM folks or me?
-> 
-> I'm happy if you wish to take the patch:
-> 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+this is a patch series to fix the breakages of eDP output on HP Z1
+desktop machine with IvyBridge since 3.6 kernel.
 
-Great, applied, thanks.
+The first patch is identical as what I already sent yesterday, reverting
+a bogus check in the dp train loop.  The second one is the patch I cooked
+today, for using the correct pixel clock for the fixed eDP panel.
+
+I guess the second patch won't be applied cleanly to the old kernels,
+so it'd need to be sent individually to stable kernel if needed.
+
+
+thanks,
+
+Takashi
+
