@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3CLMiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:38:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35592 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab3CLMiy (ORCPT
+	id S1755345Ab3CLMre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:47:34 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59136 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755127Ab3CLMrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:38:54 -0400
-Message-ID: <1363091919.24558.1.camel@laptop>
-Subject: Re: [PATCHv3] perf: Fix vmalloc ring buffer free function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 12 Mar 2013 13:38:39 +0100
-In-Reply-To: <20130312105300.GD1348@krava.brq.redhat.com>
-References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
-	 <1362994843.10972.40.camel@laptop>
-	 <20130311112105.GA9737@krava.brq.redhat.com>
-	 <1363019193.14933.14.camel@laptop>
-	 <20130311164309.GG13679@krava.brq.redhat.com>
-	 <1363023885.14933.16.camel@laptop>
-	 <20130311180229.GI13679@krava.brq.redhat.com>
-	 <20130312100502.GC1348@krava.brq.redhat.com>
-	 <1363084030.14933.23.camel@laptop>
-	 <20130312105300.GD1348@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Mar 2013 08:47:32 -0400
+Date: Tue, 12 Mar 2013 05:46:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        adas@redhat.com, hch@lst.de, npiggin@gmail.com
+Subject: Re: rcu: fix hlist_bl_set_first_rcu annotation
+Message-ID: <20130312124648.GC3725@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1359572877.2719.50.camel@menhir>
+ <20130203183958.GO2632@linux.vnet.ibm.com>
+ <1363081470.2732.1.camel@menhir>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363081470.2732.1.camel@menhir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031212-7408-0000-0000-00000DB785C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-12 at 11:53 +0100, Jiri Olsa wrote:
-> > @@ -316,7 +316,7 @@ void rb_free(struct ring_buffer *rb)
-> >  struct page *
-> >  perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
-> >  {
-> > -     if (pgoff > (1UL << page_order(rb)))
-> > +     if (pgoff > rb->nr_pages)
-> >               return NULL;
+On Tue, Mar 12, 2013 at 09:44:29AM +0000, Steven Whitehouse wrote:
+> Hi,
 > 
-> here it's the '>' that masks that there's actually (rb->nr_pages + 1) pages
+> On Sun, 2013-02-03 at 10:39 -0800, Paul E. McKenney wrote:
+> > On Wed, Jan 30, 2013 at 07:07:57PM +0000, Steven Whitehouse wrote:
+> > > 
+> > > Abhi noticed that we were getting a complaint from the RCU subsystem
+> > > about access of an RCU protected list under the write side bit lock.
+> > > This patch adds additional annotation to check both the RCU read
+> > > lock and the write side bit lock before printing a message.
+> > > 
+> > > Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> > > Reported-by: Abhijith Das <adas@redhat.com>
+> > > Tested-by: Abhijith Das <adas@redhat.com>
+> > 
+> > Looks plausible to me on first glance, copying Nick Piggin and Christoph
+> > Hellwig.  If they have no objections, I will queue this.
+> > 
+> > 							Thanx, Paul
+> > 
 > 
-> >  
-> >       return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
-> > @@ -336,7 +336,7 @@ static void rb_free_work(struct work_struct *work)
-> >       int i, nr;
-> >  
-> >       rb = container_of(work, struct ring_buffer, work);
-> > -     nr = 1 << page_order(rb);
-> > +     nr = rb->nr_pages;
-> >  
-> >       base = rb->user_page;
-> >       for (i = 0; i < nr + 1; i++)
-> 
-> and here's the user plus one
+> Just a quick query to see what happened to this patch... it doesn't
+> appear to have landed in Linus' tree yet, and I can't spot it in your
+> git trees at korg either,
 
-Right, we could make that either '< nr' and '<= nr' or '<= nr+1' and '<
-nr+1'. No real preference either way, but you're right in that being
-consistent here makes sense.
+Hello, Steve,
+
+I have queued it for 3.10, and will push it to -rcu shortly.
+
+							Thanx, Paul
+
+> Steve.
+> 
+> 
+> > > diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+> > > index 31f9d75..2eb8855 100644
+> > > --- a/include/linux/list_bl.h
+> > > +++ b/include/linux/list_bl.h
+> > > @@ -125,6 +125,11 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
+> > >  	__bit_spin_unlock(0, (unsigned long *)b);
+> > >  }
+> > > 
+> > > +static inline bool hlist_bl_is_locked(struct hlist_bl_head *b)
+> > > +{
+> > > +	return bit_spin_is_locked(0, (unsigned long *)b);
+> > > +}
+> > > +
+> > >  /**
+> > >   * hlist_bl_for_each_entry	- iterate over list of given type
+> > >   * @tpos:	the type * to use as a loop cursor.
+> > > diff --git a/include/linux/rculist_bl.h b/include/linux/rculist_bl.h
+> > > index cf1244f..4f216c5 100644
+> > > --- a/include/linux/rculist_bl.h
+> > > +++ b/include/linux/rculist_bl.h
+> > > @@ -20,7 +20,7 @@ static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
+> > >  static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
+> > >  {
+> > >  	return (struct hlist_bl_node *)
+> > > -		((unsigned long)rcu_dereference(h->first) & ~LIST_BL_LOCKMASK);
+> > > +		((unsigned long)rcu_dereference_check(h->first, hlist_bl_is_locked(h)) & ~LIST_BL_LOCKMASK);
+> > >  }
+> > > 
+> > >  /**
+> > > 
+> > > 
+> > 
+> 
+> 
 
