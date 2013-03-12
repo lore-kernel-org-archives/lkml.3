@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab3CLHjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 03:39:06 -0400
+	id S932400Ab3CLHjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 03:39:04 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50656 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3CLHjB (ORCPT
+	with ESMTP id S932346Ab3CLHi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 03:39:01 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-67-513edb8f7d4e
+	Tue, 12 Mar 2013 03:38:59 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-4c-513edb8db01f
 From: Minchan Kim <minchan@kernel.org>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC v7 11/11] add purged page information in vmstat
-Date: Tue, 12 Mar 2013 16:38:35 +0900
-Message-Id: <1363073915-25000-12-git-send-email-minchan@kernel.org>
+Subject: [RFC v7 07/11] keep mm_struct to vrange when system call context
+Date: Tue, 12 Mar 2013 16:38:31 +0900
+Message-Id: <1363073915-25000-8-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
 References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
@@ -34,91 +34,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds vmstat information about discarded page in vrange
-so admin can see how many of volatile pages are discarded by VM
-and efficieny. it could be indicator for seeing vrange working
-well.
-
-PG_VRANGE_SCAN : the number of scanned pages for discarding
-PG_VRANGE_DISCARD: the number of discarded pages in kswapd's vrange LRU order
-PGDISCARD_DIRECT : the number of discarded pages in process context
-PGDISCARD_KSWAPD : the number of discarded pages in kswapd's page LRU order
+We need mm_struct for discarding vrange pages in kswapd context.
+It's a preparatoin for it.
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/vm_event_item.h | 4 ++++
- mm/vmstat.c                   | 4 ++++
- mm/vrange.c                   | 9 +++++++++
- 3 files changed, 17 insertions(+)
+ include/linux/vrange.h |  1 +
+ mm/vrange.c            | 20 +++++++++++---------
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index bd6cf61..3d8ad18 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -25,6 +25,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGALLOC),
- 		PGFREE, PGACTIVATE, PGDEACTIVATE,
- 		PGFAULT, PGMAJFAULT,
-+		PG_VRANGE_SCAN,
-+		PG_VRANGE_DISCARD,
-+		PGDISCARD_DIRECT,
-+		PGDISCARD_KSWAPD,
- 		FOR_ALL_ZONES(PGREFILL),
- 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index e1d8ed1..55806d2 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -754,6 +754,10 @@ const char * const vmstat_text[] = {
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index 24ed4c1..5238a67 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -11,6 +11,7 @@ static DECLARE_RWSEM(vrange_fork_lock);
+ struct vrange {
+ 	struct interval_tree_node node;
+ 	bool purged;
++	struct mm_struct *mm;
+ };
  
- 	"pgfault",
- 	"pgmajfault",
-+	"pgvrange_scan",
-+	"pgvrange_discard",
-+	"pgdiscard_direct",
-+	"pgdiscard_kswapd",
- 
- 	TEXTS_FOR_ZONES("pgrefill")
- 	TEXTS_FOR_ZONES("pgsteal_kswapd")
+ #define vrange_entry(ptr) \
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 2f56d36..c0c5d50 100644
+index 89fcae4..f4c1d04 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -518,6 +518,10 @@ int discard_vpage(struct page *page)
- 		if (page_freeze_refs(page, 1)) {
- 			unlock_page(page);
- 			dec_zone_page_state(page, NR_ISOLATED_ANON);
-+			if (current_is_kswapd())
-+				count_vm_event(PGDISCARD_KSWAPD);
-+			else
-+				count_vm_event(PGDISCARD_DIRECT);
- 			return 1;
- 		}
- 	}
-@@ -584,11 +588,15 @@ static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- {
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	unsigned long start = addr;
- 
- 	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
- 		vrange_pte_entry(*pte, addr, PAGE_SIZE, walk);
- 	pte_unmap_unlock(pte - 1, ptl);
-+
-+	count_vm_events(PG_VRANGE_SCAN, (end - start) / PAGE_SIZE);
-+
- 	cond_resched();
- 	return 0;
- 
-@@ -741,5 +749,6 @@ unsigned int discard_vrange_pages(struct zone *zone, int nr_to_discard)
- 	if (start_vrange)
- 		put_victim_range(start_vrange);
- 
-+	count_vm_events(PG_VRANGE_DISCARD, nr_discarded);
- 	return nr_discarded;
+@@ -29,8 +29,9 @@ static inline void __set_vrange(struct vrange *range,
  }
+ 
+ static void __add_range(struct vrange *range,
+-				struct rb_root *root)
++			struct rb_root *root, struct mm_struct *mm)
+ {
++	range->mm = mm;
+ 	interval_tree_insert(&range->node, root);
+ }
+ 
+@@ -52,11 +53,12 @@ static void free_vrange(struct vrange *range)
+ 
+ static inline void range_resize(struct rb_root *root,
+ 		struct vrange *range,
+-		unsigned long start, unsigned long end)
++		unsigned long start, unsigned long end,
++		struct mm_struct *mm)
+ {
+ 	__remove_range(range, root);
+ 	__set_vrange(range, start, end);
+-	__add_range(range, root);
++	__add_range(range, root, mm);
+ }
+ 
+ int add_vrange(struct mm_struct *mm,
+@@ -95,8 +97,7 @@ int add_vrange(struct mm_struct *mm,
+ 
+ 	__set_vrange(new_range, start, end);
+ 	new_range->purged = purged;
+-
+-	__add_range(new_range, root);
++	__add_range(new_range, root, mm);
+ out:
+ 	vrange_unlock(mm);
+ 	return 0;
+@@ -129,15 +130,16 @@ int remove_vrange(struct mm_struct *mm,
+ 			__remove_range(range, root);
+ 			free_vrange(range);
+ 		} else if (node->start >= start) {
+-			range_resize(root, range, end, node->last);
++			range_resize(root, range, end, node->last, mm);
+ 		} else if (node->last <= end) {
+-			range_resize(root, range, node->start, start);
++			range_resize(root, range, node->start, start, mm);
+ 		} else {
+ 			used_new = true;
+ 			__set_vrange(new_range, end, node->last);
+ 			new_range->purged = range->purged;
+-			range_resize(root, range, node->start, start);
+-			__add_range(new_range, root);
++			new_range->mm = mm;
++			range_resize(root, range, node->start, start, mm);
++			__add_range(new_range, root, mm);
+ 			break;
+ 		}
+ 
 -- 
 1.8.1.1
 
