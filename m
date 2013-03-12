@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3CLXIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 19:08:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60247 "EHLO
+	id S1755883Ab3CLWdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 18:33:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933582Ab3CLWdI (ORCPT
+	with ESMTP id S1755749Ab3CLWci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 18:33:08 -0400
+	Tue, 12 Mar 2013 18:32:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 043/100] hwmon: (sht15) Check return value of regulator_enable()
-Date: Tue, 12 Mar 2013 15:31:28 -0700
-Message-Id: <20130312223127.643372511@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Subash Patel <subash.rp@samsung.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 004/100] ARM: 7654/1: Preserve L_PTE_VALID in pte_modify()
+Date: Tue, 12 Mar 2013 15:30:49 -0700
+Message-Id: <20130312223123.379378133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
 References: <20130312223122.884099393@linuxfoundation.org>
@@ -27,36 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 3e78080f81481aa8340374d5a37ae033c1cf4272 upstream.
+commit 69dde4c52dbac2891b49ff9723d9c84efc5baf6f upstream.
 
-Not having power is a pretty serious error so check that we are able to
-enable the supply and error out if we can't.
+Following commit 26ffd0d4 (ARM: mm: introduce present, faulting entries
+for PAGE_NONE), if a page has been mapped as PROT_NONE, the L_PTE_VALID
+bit is cleared by the set_pte_ext() code. With LPAE the software and
+hardware pte share the same location and subsequent modifications of pte
+range (change_protection()) will leave the L_PTE_VALID bit cleared.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This patch adds the L_PTE_VALID bit to the newprot mask in pte_modify().
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Subash Patel <subash.rp@samsung.com>
+Tested-by: Subash Patel <subash.rp@samsung.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/sht15.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/pgtable.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -926,7 +926,13 @@ static int sht15_probe(struct platform_d
- 		if (voltage)
- 			data->supply_uV = voltage;
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -240,7 +240,8 @@ static inline pte_t pte_mkspecial(pte_t
  
--		regulator_enable(data->reg);
-+		ret = regulator_enable(data->reg);
-+		if (ret != 0) {
-+			dev_err(&pdev->dev,
-+				"failed to enable regulator: %d\n", ret);
-+			return ret;
-+		}
-+
- 		/*
- 		 * Setup a notifier block to update this if another device
- 		 * causes the voltage to change
+ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+ {
+-	const pteval_t mask = L_PTE_XN | L_PTE_RDONLY | L_PTE_USER | L_PTE_NONE;
++	const pteval_t mask = L_PTE_XN | L_PTE_RDONLY | L_PTE_USER |
++		L_PTE_NONE | L_PTE_VALID;
+ 	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
+ 	return pte;
+ }
 
 
