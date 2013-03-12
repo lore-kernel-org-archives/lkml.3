@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3CLMre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 08:47:34 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59136 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab3CLMrc (ORCPT
+	id S1755353Ab3CLMst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 08:48:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64584 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab3CLMss convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 08:47:32 -0400
-Date: Tue, 12 Mar 2013 05:46:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        adas@redhat.com, hch@lst.de, npiggin@gmail.com
-Subject: Re: rcu: fix hlist_bl_set_first_rcu annotation
-Message-ID: <20130312124648.GC3725@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1359572877.2719.50.camel@menhir>
- <20130203183958.GO2632@linux.vnet.ibm.com>
- <1363081470.2732.1.camel@menhir>
+	Tue, 12 Mar 2013 08:48:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Cooper <jason@lakedaemon.net>
+Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
+Date: Tue, 12 Mar 2013 12:48:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, Andrew Lunn <andrew@lunn.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <20130312144714.39749c5b0bd1aea14c4d2ff8@canb.auug.org.au> <CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com> <20130312115339.GF12700@titan.lakedaemon.net>
+In-Reply-To: <20130312115339.GF12700@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363081470.2732.1.camel@menhir>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031212-7408-0000-0000-00000DB785C8
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201303121248.24736.arnd@arndb.de>
+X-Provags-ID: V02:K0:jTuTViFQzKsjlSMVDcYly/S0A/EJy/ObUAvPy0TPY46
+ dwX6FgtZCM1rxhDcXm6R0XcU3FwSKbWLiR32y2sKIeIXFPgu8b
+ laDVxha9ijsXkxjl5WefAmqUQ0l7odmGwMkC4YN+aHEycJ/XS1
+ 4zwUcMPyZf8MXKAes3dehvyJhu5OGb5Tvwmrk4ulHMJ/9LJNO+
+ toLoln0eCSGT2fdf6atR0z/m+9ES94QMtReYCGQZuYGPWE213e
+ GELrdIWVoYJ4GvMwGheFLrt+CCau6MacJWvGhF/iR4I9BhB+BJ
+ 9A0EWEV7GiLYa+++LsA0sKEWrtXmfZCuQTzYuQAH1uYcsM4Glq
+ XcWszwZfjOPgvWg7UMWs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 09:44:29AM +0000, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Sun, 2013-02-03 at 10:39 -0800, Paul E. McKenney wrote:
-> > On Wed, Jan 30, 2013 at 07:07:57PM +0000, Steven Whitehouse wrote:
-> > > 
-> > > Abhi noticed that we were getting a complaint from the RCU subsystem
-> > > about access of an RCU protected list under the write side bit lock.
-> > > This patch adds additional annotation to check both the RCU read
-> > > lock and the write side bit lock before printing a message.
-> > > 
-> > > Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> > > Reported-by: Abhijith Das <adas@redhat.com>
-> > > Tested-by: Abhijith Das <adas@redhat.com>
-> > 
-> > Looks plausible to me on first glance, copying Nick Piggin and Christoph
-> > Hellwig.  If they have no objections, I will queue this.
-> > 
-> > 							Thanx, Paul
-> > 
-> 
-> Just a quick query to see what happened to this patch... it doesn't
-> appear to have landed in Linus' tree yet, and I can't spot it in your
-> git trees at korg either,
+On Tuesday 12 March 2013, Jason Cooper wrote:
+> I chose to keep them together to maintain bisectability.  Either you
+> have all of the fix (you landed on this branch), or you don't.  Was this
+> the correct decision in this case, or did I miss something?
 
-Hello, Steve,
+I think you don't need to worry about bisection in this case, especially
+as you mentioned that 3.8 is already broken.
 
-I have queued it for 3.10, and will push it to -rcu shortly.
+>From all I can tell, these are four separate fixes, and you want to have
+all of them get merged, but applying just one of them will not make the
+state of the kernel tree any worse than what it is before the patches.
 
-							Thanx, Paul
-
-> Steve.
-> 
-> 
-> > > diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-> > > index 31f9d75..2eb8855 100644
-> > > --- a/include/linux/list_bl.h
-> > > +++ b/include/linux/list_bl.h
-> > > @@ -125,6 +125,11 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
-> > >  	__bit_spin_unlock(0, (unsigned long *)b);
-> > >  }
-> > > 
-> > > +static inline bool hlist_bl_is_locked(struct hlist_bl_head *b)
-> > > +{
-> > > +	return bit_spin_is_locked(0, (unsigned long *)b);
-> > > +}
-> > > +
-> > >  /**
-> > >   * hlist_bl_for_each_entry	- iterate over list of given type
-> > >   * @tpos:	the type * to use as a loop cursor.
-> > > diff --git a/include/linux/rculist_bl.h b/include/linux/rculist_bl.h
-> > > index cf1244f..4f216c5 100644
-> > > --- a/include/linux/rculist_bl.h
-> > > +++ b/include/linux/rculist_bl.h
-> > > @@ -20,7 +20,7 @@ static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
-> > >  static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
-> > >  {
-> > >  	return (struct hlist_bl_node *)
-> > > -		((unsigned long)rcu_dereference(h->first) & ~LIST_BL_LOCKMASK);
-> > > +		((unsigned long)rcu_dereference_check(h->first, hlist_bl_is_locked(h)) & ~LIST_BL_LOCKMASK);
-> > >  }
-> > > 
-> > >  /**
-> > > 
-> > > 
-> > 
-> 
-> 
-
+	Arnd
