@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab3CLONZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 10:13:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47132 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932392Ab3CLONW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 10:13:22 -0400
-Message-ID: <513F37DD.9030301@ti.com>
-Date: Tue, 12 Mar 2013 16:12:45 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755514Ab3CLONx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 10:13:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52441 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab3CLONv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 10:13:51 -0400
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <linux-mmc@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <hs@denx.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <cjb@laptop.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 3/4] ARM: davinci: da850: add mmc DT entries
+Date: Tue, 12 Mar 2013 19:43:56 +0530
+Message-ID: <1363097637-11371-4-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363097637-11371-1-git-send-email-prakash.pm@ti.com>
+References: <1363097637-11371-1-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: <balbi@ti.com>, <tony@atomide.com>, <mark.rutland@arm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
-References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de>
-In-Reply-To: <513F177D.40500@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 01:54 PM, Marc Kleine-Budde wrote:
-> On 03/12/2013 12:24 PM, Roger Quadros wrote:
->> Add clk_rate parameter to platform data. If supplied, the
->> NOP phy driver will program the clock to that rate during probe.
->>
->> Also add 2 flags, needs_vcc and needs_reset.
->> If the flag is set and the regulator couldn't be found
->> then the driver will bail out with -EPROBE_DEFER.
-> 
-> Is there a platform which fills out pdata.needs_vcc and
-> pdata.needs_reset? IMHO it makes no sense to add features for the non DT
-> case, if there isn't any user for it.
->
+Add DT entry for MMC. Also add entry for pinmux information.
+Tested:
+1) Without GPIO card detection and EDMA support as DT support for
+   GPIO and EDMA are yet come.
+2) By creating/deleting files and mounting/unmounting the partition.
 
-There can be a user in the non DT case as well. Consider the following example:
-The power regulator that supplies VCC to the PHY device sits over the I2C bus.
-The NOP transceiver driver is built into the kernel but the regulator driver
-is built as a module.
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: cjb@laptop.org
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+ arch/arm/boot/dts/da850-evm.dts |    7 +++++++
+ arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-During boot, the NOP transceiver driver's probe is called before the regulator can
-be probed. So regulator_get() will fail and if the platform doesn't set the
-needs_vcc flag, the driver will continue as normal and the PHY device won't work.
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index fe2bbe7..bc1f951 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -81,6 +81,13 @@
+ 				};
+ 			};
+ 		};
++		mmc0: mmc@1c40000 {
++			max-frequency = <50000000>;
++			bus-width = <4>;
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&mmc0_pins>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		status = "okay";
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index 327fb06..142382d 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -70,6 +70,15 @@
+ 					0x14 0x00111111 0x00ffffff
+ 				>;
+ 			};
++			mmc0_pins: pinmux_mmc_pins {
++				pinctrl-single,bits = <
++					/* MMCSD0_DAT[3] MMCSD0_DAT[2]
++					 * MMCSD0_DAT[1] MMCSD0_DAT[0]
++					 * MMCSD0_CMD    MMCSD0_CLK
++					 */
++					0x28 0x00222222  0x00ffffff
++				>;
++			};
+ 		};
+ 		serial0: serial@1c42000 {
+ 			compatible = "ns16550a";
+@@ -115,6 +124,12 @@
+ 			reg = <0x21000 0x1000>;
+ 			status = "disabled";
+ 		};
++		mmc0: mmc@1c40000 {
++			compatible = "ti,davinci-mmc-da830";
++			reg = <0x40000 0x1000>;
++			interrupts = <16>;
++			status = "disabled";
++		};
+ 		spi1: spi@1f0e000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-- 
+1.7.4.1
 
-I know that beagleboard can benefit from this. The current workaround is to
-register the regulator before we register the PHY in the board file. With the
-needs_vcc flag, we don't need to have that limitation.
-
-cheers,
--roger
