@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3CLNFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 09:05:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53815 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3CLNFO (ORCPT
+	id S932471Ab3CLNGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 09:06:19 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:46369 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab3CLNGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 09:05:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH 1/1] asm-generic: move cmpxchg*_local defs to cmpxchg.h
-Date: Tue, 12 Mar 2013 13:05:08 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-References: <1362030843-25354-1-git-send-email-jonas@southpole.se> <513F2124.6060504@southpole.se>
-In-Reply-To: <513F2124.6060504@southpole.se>
+	Tue, 12 Mar 2013 09:06:16 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303121305.08691.arnd@arndb.de>
-X-Provags-ID: V02:K0:JBTWV2LalLcDXaE4rPfmQrOYF9Kr5m7lMxxbf3jSKPS
- 7dCW05wapJpCOcv+QjR7qJhkku0GBev7o+/xNGt97LX7a8/vkg
- tstJ7e3Go/CsGdLC9V6bbc33rwSHZjI1JIClV6gy7sox1E0iCc
- rVJ4hdW1wFFDng3uD9Q3Ia++IwET2SivW/6cg23TaxRuCgqSwJ
- y+UJaSWRRPKK/7E9yeX9XNVtVQyS701AIH97ASGly3UT/3yHyV
- JhTYFZjQWaDYo5Y3mjtcxIJOcxyyetmixHHBR/6I0sN8VkSqOi
- uYUpWMswRbKnhPE8svJieGKyiUjOb6+P7ghJk8f4WAoDsxAfWE
- Hux9jyWXwrvTXNmv6w7k=
+In-Reply-To: <20130311191507.GA31827@phenom.dumpdata.com>
+References: <20130311191507.GA31827@phenom.dumpdata.com>
+Date: Tue, 12 Mar 2013 14:06:12 +0100
+Message-ID: <CABPqkBQ66sAWKTMTxQ1QTkG5Zf0RAsanJxygGxODaOAJekyX9Q@mail.gmail.com>
+Subject: Re: SNB-PEBS errate in perf code - omits stepping 2?
+From: Stephane Eranian <eranian@google.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: jun.nakajima@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 March 2013, Jonas Bonn wrote:
-> Can you comment on this patch?  This is needed so that the generic 
-> asm/cmpxchg.h can be used standalone (i.e. without pulling in atomic.h). 
->   OpenRISC uses the generic asm/cmpxchg.h and things currently don't 
-> build without this since linux/llist.h now includes asm/cmpxchg.h 
-> standalone.
+On Mon, Mar 11, 2013 at 8:15 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> Hey,
+>
+> I think quirk:
+>
+> +static int intel_snb_pebs_broken(int cpu)
+> +{
+> +       u32 rev = UINT_MAX; /* default to broken for unknown models */
+> +
+> +       switch (cpu_data(cpu).x86_model) {
+> +       case 42: /* SNB */
+> +               rev = 0x28;
+> +               break;
+> +
+> +       case 45: /* SNB-EP */
+> +               switch (cpu_data(cpu).x86_mask) {
+> +               case 6: rev = 0x618; break;
+> +               case 7: rev = 0x70c; break;
+> +               }
+> +       }
+> +
+> +       return (cpu_data(cpu).microcode < rev);
+> +}
+> +
+>
+>
+> needs a bit of update? I've this CPU:
+>
+> vendor_id       : GenuineIntel
+> cpu family      : 6
+> model           : 45
+> model name      : Genuine Intel(R) CPU  @ 2.30GHz
+> stepping        : 2
+> cpu MHz         : 2294.534
+> cache size      : 20480 KB
+> ..
+> microcode       : 0x8000020c
+>
+> and since the stepping is '2' and there are no 'default' case
+> in the switch statement, it ends up failing b/c it is asking
+> for revision UINT_MAX.
+>
+> Is there a specific microcode errate version for this type
+> of CPU? Or am I a lucky recipient of an early development CPU?
+>
+I believe you have an early sample CPU.
+But I think you comment is still valid. I think the kernel should print
+a message once for your situation.
 
-Looks fine to me, I thought I had replied to this earlier, but I don't
-see it in my 'sent-mail' folder now, so I assume I did not.
-
-Please send this as a bug fix through your own tree.
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Perhaps that check should also have this:
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 529c893..287d43a 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1845,6 +1845,9 @@ static int intel_snb_pebs_broken(int cpu)
+>                 case 7: rev = 0x70c; break;
+>                 }
+>         }
+> +       if (rev == UINT_MAX)
+> +               pr_warn("Please contact Intel to update quirk as you have"
+> +                       "an unknown CPU stepping: %d\n", cpu_data(cpu).x86_mask);
+>
+>         return (cpu_data(cpu).microcode < rev);
+>  }
