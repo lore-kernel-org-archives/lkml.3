@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493Ab3CLUR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 16:17:29 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:42359 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3CLUR2 (ORCPT
+	id S933482Ab3CLUUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 16:20:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59102 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508Ab3CLUUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 16:17:28 -0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: ben@decadent.org.uk, tmhikaru@gmail.com
-Cc: akpm@linux-foundation.org, zhenzhong.duan@oracle.com,
-        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
-Subject: [PATCH] dmi_scan: proper buf type in dmi_present()
-Date: Wed, 13 Mar 2013 00:17:07 +0400
-Message-Id: <1363119427-4371-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
+	Tue, 12 Mar 2013 16:20:09 -0400
+Date: Tue, 12 Mar 2013 13:20:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Lunn <andrew@lunn.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
+Message-Id: <20130312132007.d1336d28311d3fbda324942d@linux-foundation.org>
+In-Reply-To: <20130312115339.GF12700@titan.lakedaemon.net>
+References: <20130312144714.39749c5b0bd1aea14c4d2ff8@canb.auug.org.au>
+	<20130312062509.GQ21478@lunn.ch>
+	<20130312111246.GD12700@titan.lakedaemon.net>
+	<CAOesGMgSzn+uCVEMKZgtorcNkdzzvntmnfoej5vN-AjF43pnyQ@mail.gmail.com>
+	<20130312115339.GF12700@titan.lakedaemon.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-buf needs to be unsigned in dmi_present(), otherwise dmi_base calculation
-doesn't work properly leading to a wraparound during dmi_ioremap:
+On Tue, 12 Mar 2013 07:53:39 -0400 Jason Cooper <jason@lakedaemon.net> wrote:
 
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] WARNING: at arch/x86/mm/ioremap.c:524 __early_ioremap+0x85/0x18a()
-[    0.000000] Modules linked in:
-[    0.000000] Pid: 0, comm: swapper Not tainted 3.9.0-rc2-next-20130312 #283
-[    0.000000] Call Trace:
-[    0.000000]  [<c1036992>] warn_slowpath_common+0x72/0xa0
-[    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
-[    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
-[    0.000000]  [<c10369e2>] warn_slowpath_null+0x22/0x30
-[    0.000000]  [<c19cc176>] __early_ioremap+0x85/0x18a
-[    0.000000]  [<c19cc1ed>] ? __early_ioremap+0xfc/0x18a
-[    0.000000]  [<c19cc412>] early_ioremap+0xd/0xf
-[    0.000000]  [<c19fbba9>] dmi_present+0xf5/0x22a
-[    0.000000]  [<c19fbd9d>] dmi_scan_machine+0xbf/0x11c
-[    0.000000]  [<c19bd781>] setup_arch+0x4db/0xca0
-[    0.000000]  [<c168105c>] ? printk+0x3d/0x3f
-[    0.000000]  [<c19ba763>] start_kernel+0x7b/0x329
-[    0.000000]  [<c19ba361>] i386_start_kernel+0x137/0x13a
-[    0.000000] ---[ end trace 4eaa2a86a8e2da22 ]---
-[    0.000000] DMI not present or invalid.
+> On Tue, Mar 12, 2013 at 04:37:39AM -0700, Olof Johansson wrote:
+> > On Tue, Mar 12, 2013 at 4:12 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > > On Tue, Mar 12, 2013 at 07:25:09AM +0100, Andrew Lunn wrote:
+> > >> On Tue, Mar 12, 2013 at 02:47:14PM +1100, Stephen Rothwell wrote:
+> > >> > Hi Andrew,
+> > >> >
+> > >> > Today's linux-next merge of the akpm tree got a conflict in
+> > >> > drivers/rtc/rtc-mv.c between commit 89c58c198b25 ("rtc: rtc-mv: Add
+> > >> > support for clk to avoid lockups") from the arm-soc tree and commit "rtc:
+> > >> > rtc-mv: use devm_rtc_device_register()" from the akpm tree.
+> > >> >
+> > >> > I fixed it up (I think - see below) and can carry the fix as necessary
+> > >> > (no action is required).
+> > >>
+> > >> Hi Stephan
+> > >>
+> > >> Looks O.K. to me.
+> > >>
+> > >> Acked-by: Andrew Lunn <andrew@lunn.ch>
+> > >
+> > > Same here,
+> > >
+> > > Acked-by: Jason Cooper <jason@lakedaemon.net>
+> > 
+> > We should make sure that future RTC changes get queued through AKPM
+> > and not through us to avoid these kind of conflicts. Same as other
+> > driver subsystems..
+> 
+> I agree, however, this patch is part of a four patch series fixing a
+> single problem reported by Simon Baatz:
+> 
+>   89c58c1 rtc: rtc-mv: Add support for clk to avoid lockups
+>   de88747 gpio: mvebu: Add clk support to prevent lockup
+>   7bf5b40 ARM: kirkwood: fix to retain gbe MAC addresses for DT kernels
+>   93fff4c ARM: kirkwood: of_serial: fix clock gating by removing clock-frequency
 
-Introduced in "dmi_scan: refactor dmi_scan_machine(), {smbios,dmi}_present()"
-
-Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
----
- drivers/firmware/dmi_scan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 3439f59..40e940d 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -410,7 +410,7 @@ static void __init dmi_dump_ids(void)
- 	printk(KERN_CONT "\n");
- }
- 
--static int __init dmi_present(const char *buf)
-+static int __init dmi_present(const u8 *buf)
- {
- 	int smbios_ver;
- 
--- 
-1.8.1.5
-
+Yep, don't go out of your way to avoid the cross-tree conflicts - we
+fix those up all the time.  It's best to keep a patch series like this
+all in one place.
