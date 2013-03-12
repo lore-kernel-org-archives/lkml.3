@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab3CLO2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 10:28:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34684 "EHLO comal.ext.ti.com"
+	id S932505Ab3CLO2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 10:28:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34713 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694Ab3CLO2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 10:28:32 -0400
-Message-ID: <513F3B7E.8000002@ti.com>
-Date: Tue, 12 Mar 2013 16:28:14 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S932293Ab3CLO2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 10:28:52 -0400
+Message-ID: <513F3B98.6050909@ti.com>
+Date: Tue, 12 Mar 2013 15:28:40 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: <balbi@ti.com>, <tony@atomide.com>, <mark.rutland@arm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
-References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de>
-In-Reply-To: <513F38DF.5040404@pengutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>, Nishanth Menon <nm@ti.com>
+CC: <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, cpufreq <cpufreq@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpufreq: cpufreq-cpu0: provide compatibility string
+ for DT matchup
+References: <1363043130-30270-1-git-send-email-nm@ti.com> <1363043130-30270-3-git-send-email-nm@ti.com> <513EB7FE.1070000@ti.com>
+In-Reply-To: <513EB7FE.1070000@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 04:17 PM, Marc Kleine-Budde wrote:
-> On 03/12/2013 03:12 PM, Roger Quadros wrote:
->> On 03/12/2013 01:54 PM, Marc Kleine-Budde wrote:
->>> On 03/12/2013 12:24 PM, Roger Quadros wrote:
->>>> Add clk_rate parameter to platform data. If supplied, the
->>>> NOP phy driver will program the clock to that rate during probe.
->>>>
->>>> Also add 2 flags, needs_vcc and needs_reset.
->>>> If the flag is set and the regulator couldn't be found
->>>> then the driver will bail out with -EPROBE_DEFER.
->>>
->>> Is there a platform which fills out pdata.needs_vcc and
->>> pdata.needs_reset? IMHO it makes no sense to add features for the non DT
->>> case, if there isn't any user for it.
->>>
+On 03/12/2013 06:07 AM, Santosh Shilimkar wrote:
+> On Tuesday 12 March 2013 04:35 AM, Nishanth Menon wrote:
+>> commit 5553f9e (cpufreq: instantiate cpufreq-cpu0 as a platform_driver)
+>> now forces platform device to be registered for allowing cpufreq-cpu0
+>> to be used by SoCs. example: drivers/cpufreq/highbank-cpufreq.c
 >>
->> There can be a user in the non DT case as well. Consider the following example:
+>> However, for SoCs that wish to link up using device tree, instead
+>> of platform device, provide compatibility string match:
+>> compatible = "cpufreq,cpu0";
+
+You cannot add a non-HW relative binding... DT is supposed to represent
+the pure HW.
+AFAIK, cpufreq has nothing to do with the HW definition.
+
+>>
+>> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Cc: Shawn Guo <shawn.guo@linaro.org>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: cpufreq@vger.kernel.org
+>> Cc: linux-pm@vger.kernel.org
+>> Cc: linux-omap@vger.kernel.org
+>>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+>>  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |    3 +++
+>>  drivers/cpufreq/cpufreq-cpu0.c                     |    6 ++++++
+>>  2 files changed, 9 insertions(+)
+>>
+> Looks fine to me. CC'ing dt list in case some one has
+> comments on binding updates.
 > 
-> I'm just saying, let the implementation up to a real user for the non DT
-> case. Beagleboard is ARM and there's no point of implementing non DT
-> fall backs for ARM, IMHO.
-> 
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Why do you say so?
+Not-Acked-by-me.
 
-It doesn't depend on the CPU architecture. It depends on how the board designer
-wired the board. A non ARM platform could also face the same problem as beagle.
+Regards,
+Benoit
 
-It is not a non DT fallback. I believe many are still using non DT boot and it
-needs to work at least till we move all functionality to purely DT.
 
-cheers,
--roger
+
