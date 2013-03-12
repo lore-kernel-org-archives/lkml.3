@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3CLAaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 20:30:01 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51780 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754446Ab3CLA37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 20:29:59 -0400
-Message-ID: <1363048198.3724.15.camel@joe-AO722>
-Subject: Re: [PATCH v2 3/3] drivers: android: binder: Remove excessive
- indentation
-From: Joe Perches <joe@perches.com>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Mirsal Ennaime <mirsal@mirsal.fr>, Greg Kroah-Hartman <greg@kroah.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Mon, 11 Mar 2013 17:29:58 -0700
-In-Reply-To: <CAMP5XgfwCQDnRvog1tWixo=-mTb4tTZCy33h+Y__H7cW_N_M7g@mail.gmail.com>
-References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
-	 <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
-	 <1363044388-11409-4-git-send-email-mirsal@mirsal.fr>
-	 <1363046657.3724.11.camel@joe-AO722>
-	 <CAMP5XgfwCQDnRvog1tWixo=-mTb4tTZCy33h+Y__H7cW_N_M7g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754842Ab3CLAby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 20:31:54 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48630 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754446Ab3CLAbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 20:31:53 -0400
+Date: Mon, 11 Mar 2013 17:31:45 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+        Julien Tinnes <jln@google.com>, marcheu@chromium.org
+Subject: [PATCH v3] drm/i915: bounds check execbuffer relocation count
+Message-ID: <20130312003145.GA28993@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 17:21 -0700, Arve Hjønnevåg wrote:
-> On Mon, Mar 11, 2013 at 5:04 PM, Joe Perches <joe@perches.com> wrote:
-> ...
-> > I think it's odd to use pr_info in binder_debug.
-> > Why not use KERN_DEBUG or pr_debug/dynamic_debugging?
-> >
-> > #define binder_debug(mask, x...) \
-> >         do { \
-> >                 if (binder_debug_mask & mask) \
-> >                         pr_info(x); \
-> >         } while (0)
-> >
-> >
-> 
-> This code predates the dynamic_debugging framework, but I also find it
-> easier to use so I would be reluctant to convert it unless there is an
-> easy way to match the current behavior. It is useful to turn a set of
-> debug messages on by class and to have some classes on by default.
+It is possible to wrap the counter used to allocate the buffer for
+relocation copies. This could lead to heap writing overflows.
 
-No doubt it's easier this way and there are many, many
-macros like it sprinkled throughout the kernel sources.
+CVE-2013-0913
 
-The dynamic_debug framework currently has no mask/level
-use than can turn on/off classes of messages.
+v3: collapse test, improve comment
+v2: move check into validate_exec_list
 
-Emitting at KERN_INFO instead of KERN_DEBUG though is odd.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Pinkie Pie
+Cc: stable@vger.kernel.org
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index b3a40ee..094ba41 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -732,6 +732,8 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		   int count)
+ {
+ 	int i;
++	int relocs_total = 0;
++	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
+ 
+ 	for (i = 0; i < count; i++) {
+ 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
+@@ -740,10 +742,13 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		if (exec[i].flags & __EXEC_OBJECT_UNKNOWN_FLAGS)
+ 			return -EINVAL;
+ 
+-		/* First check for malicious input causing overflow */
+-		if (exec[i].relocation_count >
+-		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
++		/* First check for malicious input causing overflow in
++		 * the worst case where we need to allocate the entire
++		 * relocation tree as a single array.
++		 */
++		if (exec[i].relocation_count > relocs_max - relocs_total)
+ 			return -EINVAL;
++		relocs_total += exec[i].relocation_count;
+ 
+ 		length = exec[i].relocation_count *
+ 			sizeof(struct drm_i915_gem_relocation_entry);
+-- 
+1.7.9.5
 
 
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
