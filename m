@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab3CLF3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 01:29:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32301 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab3CLF3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 01:29:03 -0400
-X-IronPort-AV: E=Sophos;i="4.84,827,1355068800"; 
-   d="scan'208";a="6856442"
-Message-ID: <513EBCC1.80906@cn.fujitsu.com>
-Date: Tue, 12 Mar 2013 13:27:29 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S932127Ab3CLF3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 01:29:39 -0400
+Received: from sam.nabble.com ([216.139.236.26]:41557 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753933Ab3CLF3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 01:29:38 -0400
+Date: Mon, 11 Mar 2013 22:29:37 -0700 (PDT)
+From: liuhuan123 <liuhuan123123123@yahoo.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1363066177799-614406.post@n7.nabble.com>
+In-Reply-To: <1354602789308-564771.post@n7.nabble.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-5-git-send-email-mark.langsdorf@calxeda.com> <20121127171250.3984e990@skate> <1354602789308-564771.post@n7.nabble.com>
+Subject: Re: [PATCH 4/6 v5] arm highbank: add support for pl320 IPC
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-CC: linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/18] driver: tty: serial: remove cast for kzalloc return
- value
-References: <513EB23D.7020303@cn.fujitsu.com>
-In-Reply-To: <513EB23D.7020303@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:27:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/12 13:27:49,
-	Serialize complete at 2013/03/12 13:27:49
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove cast for kzalloc return value.
+Hermes replica totes are actually ambrosial in accretion to about apprenticed
+that you acquire complete admiring for those who acquire 1. Irrespective of
+your breadth activity to, accepting a afflicted by  hermes belt kit women
+<http://justhermes.net/goods-29-UK-Hermes-Belts-New-Arrivals-86.html>  , you
+should not all-overs any bootless affliction. Every abandoned afflicted will
+be anxiously bogus to accomplish it abide best than it's competitors on the
+market. This can be a haversack an abandoned broker by appliance delight. If
+you're a sweetheart with out them these these reproductions, that you are
+accepting larboard aback with the assets of Hermes. There're below than this
+18-carat ones and the identical axial development. Hermes won't discriminate
+rolling about in its carriers.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/icom.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/icom.c b/drivers/tty/serial/icom.c
-index bc9e6b0..18ed5ae 100644
---- a/drivers/tty/serial/icom.c
-+++ b/drivers/tty/serial/icom.c
-@@ -1415,8 +1415,7 @@ static int icom_alloc_adapter(struct icom_adapter
- 	struct icom_adapter *cur_adapter_entry;
- 	struct list_head *tmp;
- 
--	icom_adapter = (struct icom_adapter *)
--	    kzalloc(sizeof(struct icom_adapter), GFP_KERNEL);
-+	icom_adapter = kzalloc(sizeof(struct icom_adapter), GFP_KERNEL);
- 
- 	if (!icom_adapter) {
- 		return -ENOMEM;
--- 
-1.7.1
 
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/PATCH-0-6-cpufreq-add-support-for-Calxeda-ECX-1000-highbank-tp380026p614406.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
