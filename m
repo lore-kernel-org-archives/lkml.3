@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934198Ab3CMTul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:50:41 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:40313 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236Ab3CMTuk (ORCPT
+	id S934259Ab3CMTwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:52:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17381 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab3CMTwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:50:40 -0400
-Message-ID: <1363204232.25976.106.camel@thor.lan>
-Subject: Re: [PATCH v3 0/6] TTY: port hangup and close fixes
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Mar 2013 15:50:32 -0400
-In-Reply-To: <1362668153-10972-1-git-send-email-jhovold@gmail.com>
-References: <51361724.4050107@suse.cz>
-	 <1362668153-10972-1-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Wed, 13 Mar 2013 15:52:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 12:45:22 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 2/5] ARM: tegra: add i2c nodes to Tegra114 DT
+Date: Thu, 14 Mar 2013 01:19:51 +0530
+Message-ID: <1363204194-19487-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1363204194-19487-1-git-send-email-ldewangan@nvidia.com>
+References: <1363204194-19487-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 15:55 +0100, Johan Hovold wrote:
-> These patches against 3.9-rc1 fix a few issues with tty-port hangup and
-> close.
-> 
-> The first and fifth patch are essentially clean ups.
-> 
-> The second and third patch fix the fact that DTR could get raised
-> (rather than dropped) at hangup if there are blocked opens. [ Note that
-> the second patch has been separated into its own patch and that the
-> third patch is new in v3 of this series. ]
-> 
-> The fourth patch makes sure DTR is dropped also on hangup and that DTR
-> is only dropped for initialised ports (where it could have been raised
-> in the first place).
-> 
-> The sixth and final patch, makes sure no tty callbacks are made from
-> tty_port_close_start when the port has not been initialised (successfully
-> opened). This was previously only done for wait_until_sent but there's
-> no reason to call flush_buffer or to honour port drain delay either.
-> The latter could cause a failed open to stall for up to two seconds.
-> 
-> As a side-effect, these patches also fix an issue in USB-serial where we
-> could get tty-port callbacks on an uninitialised port after having hung
-> up and unregistered a device after disconnect.
-> 
-> Johan
-> 
-> 
-> v3: 
->  - amend series with fix of DTR sometimes being raised on hang-up
->  - do not lower DTR on hangup if port tty is gone
->  - make sure tty in call to shutdown is refcounted
->  - use cflag-macros throughout
+NVIDIA's Tegra114 has 5 i2c controllers. These controllers have
+following changes which makes incompatible with previous hardware:
+- Single clock source to i2c controller.
+- Interrupt support for per packet transfer.
 
-Other than the comments for patch 3/6, this series looks good. Thanks
-again for your work on this.
+Add DT entry for i2c controllers and make it compatible with
+"nvidia,tegra114-i2c".
 
-Please cc: me on the USB serial core changes as well, if you don't mind.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- None
 
-Regards,
-Peter Hurley
+Changes from V2:
+- Rebase to for-3.10/dt of Stephen's tegra tree.
+- Better describe why Tegra114 is not compatible with previous hardware.
 
+ arch/arm/boot/dts/tegra114.dtsi |   55 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 55 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 634d70c..ce44938 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -138,6 +138,61 @@
+ 		status = "disabled";
+ 	};
+ 
++	i2c@7000c000 {
++		compatible = "nvidia,tegra114-i2c";
++		reg = <0x7000c000 0x100>;
++		interrupts = <0 38 0x04>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++		clocks = <&tegra_car 12>;
++		clock-names = "div-clk";
++	};
++
++	i2c@7000c400 {
++		compatible = "nvidia,tegra114-i2c";
++		reg = <0x7000c400 0x100>;
++		interrupts = <0 84 0x04>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++		clocks = <&tegra_car 54>;
++		clock-names = "div-clk";
++	};
++
++	i2c@7000c500 {
++		compatible = "nvidia,tegra114-i2c";
++		reg = <0x7000c500 0x100>;
++		interrupts = <0 92 0x04>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++		clocks = <&tegra_car 67>;
++		clock-names = "div-clk";
++	};
++
++	i2c@7000c700 {
++		compatible = "nvidia,tegra114-i2c";
++		reg = <0x7000c700 0x100>;
++		interrupts = <0 120 0x04>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++		clocks = <&tegra_car 103>;
++		clock-names = "div-clk";
++	};
++
++	i2c@7000d000 {
++		compatible = "nvidia,tegra114-i2c";
++		reg = <0x7000d000 0x100>;
++		interrupts = <0 53 0x04>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++		clocks = <&tegra_car 47>;
++		clock-names = "div-clk";
++	};
++
+ 	rtc {
+ 		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
+ 		reg = <0x7000e000 0x100>;
+-- 
+1.7.1.1
 
