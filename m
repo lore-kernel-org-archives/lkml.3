@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3CMXOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:14:25 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35389 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755639Ab3CMXOX (ORCPT
+	id S934370Ab3CMXQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:16:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38785 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166Ab3CMXQG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:14:23 -0400
-X-Originating-IP: 67.232.160.146
-Date: Wed, 13 Mar 2013 16:14:15 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] fs: Don't compile in drop_caches.c when CONFIG_SYSCTL=n
-Message-ID: <20130313231413.GA3265@jtriplet-mobl1>
+	Wed, 13 Mar 2013 19:16:06 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeong, Daniel" <Daniel.Jeong@ti.com>
+Subject: RE: [PATCH 2/3] leds: add LED Trigger for camera function
+Thread-Topic: [PATCH 2/3] leds: add LED Trigger for camera function
+Thread-Index: Ac4PRVGs1jaCsF+dQo64EeKjGOQWtwPxIECAAE2KISA=
+Date: Wed, 13 Mar 2013 23:16:01 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E487A0@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F79273676@DQHE02.ent.ti.com>
+ <CAK5ve-KT3NEv=MYv2ZQ9YQ8L-TS9KFaL0VNXzO7KoG9gvSRGcg@mail.gmail.com>
+In-Reply-To: <CAK5ve-KT3NEv=MYv2ZQ9YQ8L-TS9KFaL0VNXzO7KoG9gvSRGcg@mail.gmail.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drop_caches.c provides code only invokable via sysctl, so don't compile
-it in when CONFIG_SYSCTL=n.
+> > +#if defined(CONFIG_LEDS_TRIGGER_CAMERA) ||
+> defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
+> > +extern void ledtrig_flash_ctrl(bool on);
+> > +extern void ledtrig_torch_ctrl(bool on);
+> > +#else
+> > +#define ledtrig_flash_ctrl(x) do {} while(0)
+> > +#define ledtrig_torch_ctrl(x) do {} while(0)
+> 
+> It's better don't use #define macros but use real empty functions like
+> this:
+> static inline void ledtrig_flash_ctrl(bool on)
+> {
+>         return;
+> }
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- fs/Makefile        |    3 ++-
- include/linux/mm.h |    4 ++++
- kernel/sysctl.c    |    1 -
- 3 files changed, 6 insertions(+), 2 deletions(-)
+I agree, but other trigger functions are declared as do-while definition.
+So I would let them unify if it's not critical.
+I'd like to have your opinion, which is better.
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 9d53192..3b2c767 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -10,7 +10,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
- 		ioctl.o readdir.o select.o fifo.o dcache.o inode.o \
- 		attr.o bad_inode.o file.o filesystems.o namespace.o \
- 		seq_file.o xattr.o libfs.o fs-writeback.o \
--		pnode.o drop_caches.o splice.o sync.o utimes.o \
-+		pnode.o splice.o sync.o utimes.o \
- 		stack.o fs_struct.o statfs.o
- 
- ifeq ($(CONFIG_BLOCK),y)
-@@ -49,6 +49,7 @@ obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o xattr_acl.o
- obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
- obj-$(CONFIG_COREDUMP)		+= coredump.o
-+obj-$(CONFIG_SYSCTL)		+= drop_caches.o
- 
- obj-$(CONFIG_FHANDLE)		+= fhandle.o
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 7acc9dc..1bb400f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1674,8 +1674,12 @@ int in_gate_area_no_mm(unsigned long addr);
- #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
-+#ifdef CONFIG_SYSCTL
-+extern int sysctl_drop_caches;
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
-+#endif
-+
- unsigned long shrink_slab(struct shrink_control *shrink,
- 			  unsigned long nr_pages_scanned,
- 			  unsigned long lru_pages);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index afc1dc6..3dadde5 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -106,7 +106,6 @@ extern unsigned int core_pipe_limit;
- #endif
- extern int pid_max;
- extern int pid_max_min, pid_max_max;
--extern int sysctl_drop_caches;
- extern int percpu_pagelist_fraction;
- extern int compat_log;
- extern int latencytop_enabled;
--- 
-1.7.10.4
-
+Thanks,
+Milo
