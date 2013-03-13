@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab3CME4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 00:56:47 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36449 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3CME4q (ORCPT
+	id S932170Ab3CME47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 00:56:59 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63139 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3CME45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 00:56:46 -0400
-Message-ID: <51400705.9080405@linux.vnet.ibm.com>
-Date: Wed, 13 Mar 2013 12:56:37 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 13 Mar 2013 00:56:57 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 12 Mar 2013 21:56:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: devicetree-discuss@lists.ozlabs.org, dianders@chromium.org,
+        linux-kernel@vger.kernel.org, naveenkrishna.ch@gmail.com,
+        lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH v4] hwmon: ntc: Add DT with IIO support to
+ NTC thermistor driver
+Message-ID: <20130313045656.GA15989@roeck-us.net>
+References: <1363077566-6254-1-git-send-email-ch.naveen@samsung.com>
+ <1363147700-7042-1-git-send-email-ch.naveen@samsung.com>
+ <20130313045226.GA15611@roeck-us.net>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 2/6] KVM: MMU: introduce mmu_cache->pte_list_descs
-References: <514006AC.2020904@linux.vnet.ibm.com>
-In-Reply-To: <514006AC.2020904@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031304-9264-0000-0000-0000035267A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130313045226.GA15611@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This list is used to link all the pte_list_desc used by mmu cache, so
-we can easily free the memory used by gfn's rmap and parent spte list
+On Tue, Mar 12, 2013 at 09:52:26PM -0700, Guenter Roeck wrote:
+> On Wed, Mar 13, 2013 at 09:38:20AM +0530, Naveen Krishna Chatradhi wrote:
+> > This patch adds DT support to NTC driver to parse the
+> > platform data.
+> > 
+> > Also adds the support to work as an iio device.
+> > 
+> > During the probe ntc driver gets the respective channels of ADC
+> > and uses iio_raw_read calls to get the ADC converted value.
+> > 
+> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> 
+> Unfortunately there is still something we'll need to sort out:
+> 
+> fs/sysfs/Kconfig:1:     symbol SYSFS is selected by AT91_ADC
+> drivers/iio/adc/Kconfig:85:     symbol AT91_ADC depends on IIO
+> drivers/iio/Kconfig:5:  symbol IIO is selected by SENSORS_NTC_THERMISTOR
+> drivers/hwmon/Kconfig:900:      symbol SENSORS_NTC_THERMISTOR depends on HWMON
+> drivers/hwmon/Kconfig:5:        symbol HWMON is selected by EEEPC_LAPTOP
+> drivers/platform/x86/Kconfig:477:       symbol EEEPC_LAPTOP depends on
+> HOTPLUG_PCI
+> drivers/pci/hotplug/Kconfig:5:  symbol HOTPLUG_PCI depends on SYSFS
+> 
+> So we can not just select IIO. I'll see if I can find a solution.
+> 
+Here it is:
 
-[ The new function name: kvm_mmu_init is vey similar with init_kvm_mmu
-  which actually init vcpu mmu, will rename init_kvm_mmu to init_vcpu_mmu ]
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index f7adbe8..47d2176 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -899,7 +899,7 @@ config SENSORS_MCP3021
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
- ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |   14 +++++++++++++-
- arch/x86/kvm/mmu.h              |    1 +
- arch/x86/kvm/x86.c              |    2 +-
- 4 files changed, 16 insertions(+), 2 deletions(-)
+ config SENSORS_NTC_THERMISTOR
+         tristate "NTC thermistor support"
+-	 select IIO if OF
++	 depends on (!OF && !IIO) || (OF && IIO)
+	 help
+		This driver supports NTC thermistors sensor reading and its
+		interpretation. The driver can also monitor the temperature and
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 85291b08..04d8897 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -535,6 +535,7 @@ struct kvm_mmu_cache {
- 	 * Hash table of struct kvm_mmu_page.
- 	 */
- 	struct list_head active_mmu_pages;
-+	struct list_head pte_list_descs;
- };
+I'll modify the patch accordingly. No need to resubmit.
 
- struct kvm_arch {
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c52d147..4152766 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -156,6 +156,7 @@ module_param(dbg, bool, 0644);
- struct pte_list_desc {
- 	u64 *sptes[PTE_LIST_EXT];
- 	struct pte_list_desc *more;
-+	struct list_head list;
- };
-
- struct kvm_shadow_walk_iterator {
-@@ -701,11 +702,16 @@ static void *mmu_memory_cache_alloc(struct kvm_mmu_memory_cache *mc)
-
- static struct pte_list_desc *mmu_alloc_pte_list_desc(struct kvm_vcpu *vcpu)
- {
--	return mmu_memory_cache_alloc(&vcpu->arch.mmu_pte_list_desc_cache);
-+	struct pte_list_desc *desc;
-+
-+	desc = mmu_memory_cache_alloc(&vcpu->arch.mmu_pte_list_desc_cache);
-+	list_add(&desc->list, &vcpu->kvm->arch.mmu_cache.pte_list_descs);
-+	return desc;
- }
-
- static void mmu_free_pte_list_desc(struct pte_list_desc *pte_list_desc)
- {
-+	list_del(&pte_list_desc->list);
- 	kmem_cache_free(pte_list_desc_cache, pte_list_desc);
- }
-
-@@ -4320,6 +4326,12 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
-
-+void kvm_mmu_init(struct kvm *kvm)
-+{
-+	INIT_LIST_HEAD(&kvm->arch.mmu_cache.active_mmu_pages);
-+	INIT_LIST_HEAD(&kvm->arch.mmu_cache.pte_list_descs);
-+}
-+
- void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
- {
- 	ASSERT(vcpu);
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index 2e61c24..76adc5f 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -50,6 +50,7 @@
- #define PFERR_RSVD_MASK (1U << 3)
- #define PFERR_FETCH_MASK (1U << 4)
-
-+void kvm_mmu_init(struct kvm *kvm);
- int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
- void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
- int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9cb899c..7083568 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6757,7 +6757,7 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
- 	if (type)
- 		return -EINVAL;
-
--	INIT_LIST_HEAD(&kvm->arch.mmu_cache.active_mmu_pages);
-+	kvm_mmu_init(kvm);
- 	INIT_LIST_HEAD(&kvm->arch.assigned_dev_head);
-
- 	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
--- 
-1.7.7.6
-
+Thanks,
+Guenter
