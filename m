@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934114Ab3CMSAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:00:05 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:62482 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab3CMSAD (ORCPT
+	id S934041Ab3CMSBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:01:07 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35840 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095Ab3CMSBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 14:00:03 -0400
+	Wed, 13 Mar 2013 14:01:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363145044-14442-1-git-send-email-s-anna@ti.com>
-References: <1363145044-14442-1-git-send-email-s-anna@ti.com>
-Date: Wed, 13 Mar 2013 19:00:02 +0100
-Message-ID: <CACRpkdY8ZWNUVHJorbhN7XvOys9KJH8hKeCBYARih=1FiNk-CQ@mail.gmail.com>
-Subject: Re: [PATCHv3 03/14] mailbox: OMAP: introduce mailbox framework
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>
+In-Reply-To: <1363150138-20819-1-git-send-email-ch.naveen@samsung.com>
+References: <1362625743-10401-1-git-send-email-ch.naveen@samsung.com>
+	<1363150138-20819-1-git-send-email-ch.naveen@samsung.com>
+Date: Wed, 13 Mar 2013 11:01:03 -0700
+X-Google-Sender-Auth: 6LTjcU8YNICZvvQmK7fYM3uLMgM
+Message-ID: <CAD=FV=XoE6NCruDUv2UajaP+LWDCp+pgaZJsEKpkoxy3tZNeAw@mail.gmail.com>
+Subject: Re: [PATCH v3] iio: adc: exynos5_adc: fix compilation warnings
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-iio <linux-iio@vger.kernel.org>, dan.carpenter@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 4:24 AM, Suman Anna <s-anna@ti.com> wrote:
+Naveen,
 
-> From: Omar Ramirez Luna <omar.luna@linaro.org>
-(...)
+On Tue, Mar 12, 2013 at 9:48 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> Doug, There was a comment from Lars regarding the match not
+> being NULL, if driver depends on CONFIG_OF. So, i've removed
+> the NULL check in v2 of this patch.
+>         https://patchwork.kernel.org/patch/2222841/
 >
-> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
-> [s-anna@ti.com: Kconfig fixes for build errors]
-> Signed-off-by: Suman Anna <s-anna@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> I'm checking the return value of get_version() for -ve values before
+> assigning to info->version. So, i left the (unsigned int) unchanged.
 
-It's not like I care super-much, but I think your SoB should
-be at the bottom.
+Hmmm, I guess this was the point that confused me.  I went back and
+agree with Lars--it can't be NULL.  ...but that means that
+exynos_adc_get_version() can't return an error, so why are we checking
+for an error?
 
-It's a simple git rebase -i anyway...
-
-Yours,
-Linus Walleij
+-Doug
