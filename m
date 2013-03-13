@@ -1,176 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab3CMQlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:41:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57559 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756330Ab3CMQlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:41:44 -0400
-Message-ID: <5140AC2C.50309@ti.com>
-Date: Wed, 13 Mar 2013 17:41:16 +0100
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S933609Ab3CMQmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:42:17 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:34718 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab3CMQmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:42:16 -0400
+Date: Wed, 13 Mar 2013 18:42:12 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: linux 3.9-rc1: nouveau crash on PPC
+Message-ID: <20130313164212.GD8798@blackmetal.musicnaut.iki.fi>
+References: <20130309184431.GF14552@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-CC: Matthias Brugger <matthias.bgg@gmail.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "eballetbo@gmail.com" <eballetbo@gmail.com>,
-        "elezegarcia@gmail.com" <elezegarcia@gmail.com>,
-        "ebutera@gmail.com" <ebutera@gmail.com>,
-        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
-References: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com> <50C8AC3C.9020908@ti.com> <CABuKBeJsHCq98Pe-BwPajbQ+2OLQpwrbtVTJe=j9thPDQCCBrg@mail.gmail.com> <CAAwP0s01Jxh0f-T0sd5D980dZPcEV0J1KzjPbNHkrXLaKA3YUg@mail.gmail.com> <CABuKBeJsg_P=aDr0s9iVOD+7YTNoVUFQJCJymJyJ7NqXHUBzKQ@mail.gmail.com> <511E0807.8000200@ti.com> <CAAwP0s3bs=uqCRPgQiXQUnHq-6L61ayrP0WrXdJrNxNuGfmV0A@mail.gmail.com>
-In-Reply-To: <CAAwP0s3bs=uqCRPgQiXQUnHq-6L61ayrP0WrXdJrNxNuGfmV0A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130309184431.GF14552@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
+Hi,
 
-On 03/02/2013 02:52 AM, Javier Martinez Canillas wrote:
-> On Fri, Feb 15, 2013 at 11:03 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
->> Hi Matthias,
->>
->>
->> On 2/15/2013 10:35 AM, Matthias Brugger wrote:
->>>
->>> 2013/1/26 Javier Martinez Canillas <martinez.javier@gmail.com>:
->>>>
->>>> On Sat, Jan 26, 2013 at 4:16 PM, Matthias Brugger
->>>> <matthias.bgg@gmail.com>
->>>> wrote:
->>>>>
->>>>> Hi Benoit,
->>>>>
->>>>> 2012/12/12 Benoit Cousson <b-cousson@ti.com>:
->>>>>>
->>>>>> Hi Matthias,
->>>>>>
->>>>>> On 12/12/2012 04:33 PM, Matthias Brugger wrote:
->>>>>>>
->>>>>>> This patch is a follow-up patch for Javier Martinez effort adding
->>>>>>> initial
->>>>>>> device tree support to IGEP technology devices. [1]
->>>>>>>
->>>>>>> It adds uart1 and uart2 bindings to the generic dtsi for the IGEP
->>>>>>> boards.
->>>>>>>
->>>>>>> [1] http://www.spinics.net/lists/linux-omap/msg83409.html
->>>>>>>
->>>>>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->>>>>>> ---
->>>>>>>   arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
->>>>>>>   1 file changed, 24 insertions(+)
->>>>>>>
->>>>>>> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi
->>>>>>> b/arch/arm/boot/dts/omap3-igep.dtsi
->>>>>>> index 125fe00..c02e3c0 100644
->>>>>>> --- a/arch/arm/boot/dts/omap3-igep.dtsi
->>>>>>> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
->>>>>>> @@ -27,6 +27,20 @@
->>>>>>>   };
->>>>>>>
->>>>>>>   &omap3_pmx_core {
->>>>>>> +     uart1_pins: pinmux_uart1_pins {
->>>>>>> +             pinctrl-single,pins = <
->>>>>>> +                     0x152 0x100     /* uart1_rx.uart1_rx INPUT |
->>>>>>> MODE0
->>>>>>> */
->>>>>>> +                     0x14c 0         /* uart1_tx.uart1_tx OUTPUT |
->>>>>>> MODE0 */
->>>>>>> +             >;
->>>>>>> +     };
->>>>>>> +
->>>>>>> +     uart2_pins: pinmux_uart2_pins {
->>>>>>> +             pinctrl-single,pins = <
->>>>>>> +                     0x14a 0x100     /* uart2_rx.uart2_rx INPUT |
->>>>>>> MODE0
->>>>>>> */
->>>>>>> +                     0x148 0         /* uart2_tx.uart2_tx OUTPUT |
->>>>>>> MODE0 */
->>>>>>> +             >;
->>>>>>> +     };
->>>>>>> +
->>>>>>>        uart3_pins: pinmux_uart3_pins {
->>>>>>>                pinctrl-single,pins = <
->>>>>>>                        0x16e 0x100     /* uart3_rx.uart3_rx INPUT |
->>>>>>> MODE0
->>>>>>> */
->>>>>>> @@ -77,6 +91,16 @@
->>>>>>>        status = "disabled";
->>>>>>>   };
->>>>>>>
->>>>>>> +&uart1 {
->>>>>>> +       pinctrl-names = "default";
->>>>>>> +       pinctrl-0 = <&uart1_pins>;
->>>>>>> +};
->>>>>>> +
->>>>>>> +&uart2 {
->>>>>>> +       pinctrl-names = "default";
->>>>>>> +       pinctrl-0 = <&uart2_pins>;
->>>>>>> +};
->>>>>>> +
->>>>>>>   &uart3 {
->>>>>>>          pinctrl-names = "default";
->>>>>>>          pinctrl-0 = <&uart3_pins>;
->>>>>>>
->>>>>>
->>>>>> That looks good to me. I'll apply it on top of javier's series for 3.9.
->>>>>
->>>>>
->>>>> Can you pin-point me to the repository where this patches are in right
->>>>> now? I tried to figure it out these days, but didn't found where to
->>>>> clone the repository from.
->>>>>
->>>>> Thanks,
->>>>> Matthias
->>>>>
->>>>
->>>> Hi Matthias,
->>>>
->>>> OMAP DT tree is:
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
->>>
->>>
->>> Hi all,
->>>
->>> unfortunately I can't find the patch in this tree.
->>
->>
->> Sorry about that. I've never pushed the latest branch, and was busy the past
->> month. I'll refresh the branch with all the pending patches.
->>
->> Regards,
->> Benoit
->>
+On Sat, Mar 09, 2013 at 08:44:31PM +0200, Aaro Koskinen wrote:
+> There's nouveau crash during boot with 3.9-rc1 on iMac G5 (nVidia GeForce
+> FX 5200 Ultra). This happens also with current mainline kernel HEAD
+> (0aefda3e8188ad71168bd32152d41b3d72f04087).
 > 
-> Hi Benoit,
+> git bisect tells the first bad commit is
+> 1d7c71a3e2f77336df536855b0efd2dc5bdeb41b (drm/nouveau/disp: port vblank
+> handling to event interface).
 > 
-> I realized that your for_3.9/dts branch has not landed in mainline yet
-> and we are near to the end of the merge window.
+> The crash is (manually copied from screen):
 > 
-> Are you still planing to include those changes for 3.9 or are you
-> going to wait until the next release?
+> [...]
+> 
+> Unable to handle kernel paging request for data at address 0x100000000
+> 
+> call trace:
+> nouveau_event_trigger
 
-I'm really sorry about that. I was not available to push it at the proper time.
+The cause is event handling linked lists getting corrupted.
 
-I've just rebased it on 3.9-rc2 and pushed it to a new branch.
-git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.10/dts
+I'm not sure how that code is intented to work, but with the below HACK
+I can at least boot the iMac without crashing, and get a working display:
 
-It includes the one from Matthias and yours as well. I'm still checking my inbox to catch up on the new ones I missed.
-
-I'm planning to push this ASAP to avoid missing the deadline again.
-
-
-Regards,
-Benoit
+diff --git a/drivers/gpu/drm/nouveau/core/core/event.c b/drivers/gpu/drm/nouveau/core/core/event.c
+index 6d01e0f..ab8d6c7 100644
+--- a/drivers/gpu/drm/nouveau/core/core/event.c
++++ b/drivers/gpu/drm/nouveau/core/core/event.c
+@@ -29,7 +29,7 @@ nouveau_event_put_locked(struct nouveau_event *event, int index,
+ {
+ 	if (!--event->index[index].refs)
+ 		event->disable(event, index);
+-	list_del(&handler->head);
++	list_del(&handler->heads[index]);
+ }
+ 
+ void
+@@ -39,7 +39,7 @@ nouveau_event_put(struct nouveau_event *event, int index,
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&event->lock, flags);
+-	if (index < event->index_nr)
++	if (index < ARRAY_SIZE(handler->heads) && index < event->index_nr)
+ 		nouveau_event_put_locked(event, index, handler);
+ 	spin_unlock_irqrestore(&event->lock, flags);
+ }
+@@ -51,8 +51,8 @@ nouveau_event_get(struct nouveau_event *event, int index,
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&event->lock, flags);
+-	if (index < event->index_nr) {
+-		list_add(&handler->head, &event->index[index].list);
++	if (index < ARRAY_SIZE(handler->heads) && index < event->index_nr) {
++		list_add(&handler->heads[index], &event->index[index].list);
+ 		if (!event->index[index].refs++)
+ 			event->enable(event, index);
+ 	}
+@@ -69,7 +69,7 @@ nouveau_event_trigger(struct nouveau_event *event, int index)
+ 		return;
+ 
+ 	spin_lock_irqsave(&event->lock, flags);
+-	list_for_each_entry_safe(handler, temp, &event->index[index].list, head) {
++	list_for_each_entry_safe(handler, temp, &event->index[index].list, heads[index]) {
+ 		if (handler->func(handler, index) == NVKM_EVENT_DROP) {
+ 			nouveau_event_put_locked(event, index, handler);
+ 		}
+diff --git a/drivers/gpu/drm/nouveau/core/include/core/event.h b/drivers/gpu/drm/nouveau/core/include/core/event.h
+index 9e09440..ba52172 100644
+--- a/drivers/gpu/drm/nouveau/core/include/core/event.h
++++ b/drivers/gpu/drm/nouveau/core/include/core/event.h
+@@ -6,7 +6,7 @@
+ #define NVKM_EVENT_KEEP 1
+ 
+ struct nouveau_eventh {
+-	struct list_head head;
++	struct list_head heads[2];
+ 	int (*func)(struct nouveau_eventh *, int index);
+ };
+ 
+A.
