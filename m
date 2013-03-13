@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab3CMNl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 09:41:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49171 "EHLO comal.ext.ti.com"
+	id S933053Ab3CMNpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 09:45:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21879 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756414Ab3CMNlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 09:41:55 -0400
-Message-ID: <5140821B.2030902@ti.com>
-Date: Wed, 13 Mar 2013 15:41:47 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1756280Ab3CMNpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 09:45:17 -0400
+Date: Wed, 13 Mar 2013 09:44:43 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        mingo@redhat.com, tglx@linutronix.de, konrad.wilk@oracle.com,
+        rostedt@goodmis.org, gregkh@linuxfoundation.org,
+        samu.kallio@aberdeencloud.com, kraman@redhat.com,
+        xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when
+ running on bare metal
+Message-ID: <20130313134442.GE7718@hansolo.jdub.homelinux.org>
+References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
+ <20130228233720.GB17468@pd.tnic>
+ <20130301000539.GA31649@hansolo.jdub.homelinux.org>
+ <512FF331.5050008@zytor.com>
+ <20130301003629.GG9767@pd.tnic>
+ <20130301004211.GB31649@hansolo.jdub.homelinux.org>
+ <512FFBC4.4070400@zytor.com>
+ <20130301121444.GC31649@hansolo.jdub.homelinux.org>
+ <51407E58.8020200@oracle.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
-References: <1363088606-2692-1-git-send-email-rogerq@ti.com> <20130312164007.GZ26093@atomide.com>
-In-Reply-To: <20130312164007.GZ26093@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51407E58.8020200@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 06:40 PM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [130312 04:47]:
->> Hi Tony,
->>
->> These patches provide the SoC side code required to support
->> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
-> ... 
+On Wed, Mar 13, 2013 at 09:25:44AM -0400, Boris Ostrovsky wrote:
+> On 03/01/2013 07:14 AM, Josh Boyer wrote:
+> >On Thu, Feb 28, 2013 at 04:52:20PM -0800, H. Peter Anvin wrote:
+> >>On 02/28/2013 04:42 PM, Josh Boyer wrote:
+> >>>On Fri, Mar 01, 2013 at 01:36:29AM +0100, Borislav Petkov wrote:
+> >>>>On Thu, Feb 28, 2013 at 04:15:45PM -0800, H. Peter Anvin wrote:
+> >>>>>>I'll try to get someone to test this tomorrow.
+> >>>>Btw, you'd need to apply that other patch too
+> >>>>
+> >>>>http://marc.info/?l=xen-devel&m=136206183814547&w=2
+> >>>>
+> >>>>so that arch_flush_lazy_mmu_mode() has at least one caller on x86_64.
+> >>>Yeah, we already have that applied.  It stops crashes in xen
+> >>>environments so we pulled it in as a bugfix.  Thanks though!
+> >>>
+> >>Who are "we"?
+> >Sorry, Fedora.  That patch has a link to a bug in it.  We applied the
+> >patch for that bug.  I'll apply Boris' patch on top and get the same
+> >people to test it.
 > 
->>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
->>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
->>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
->>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
->>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
->>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
->>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
->>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
->>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
->>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
->>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
->>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
->>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
->>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
->>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
->>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
->>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
-> 
-> Can't you have some mach-omap2/ehci-common.c that takes care
-> of the initializiation to avoid this much addition to the
-> board-*.c files? You may be able to have just a common function
-> to do it and pass few parameters?
+> Josh, have you had a chance to test this?
 
-Since we moved reset and power handling for the USB PHYs from omap-echi
-driver into the USB PHY driver we need to define the regulator data
-for RESET and Power line of each PHY. So most of the code added is just
-regulator data for the PHY rather than omap-ehci.
+I've tested it on bare metal for a while now.  No problems noticed at
+all.  I've not heard back from Krishna who was testing it in the Xen
+environment.  Krishna?
 
-Instead of a common function, I can implement some macros that make it
-easier to define the regulators for the PHY in the board files.
-Does this sound OK?
-
-Personally I don't like such macros because it hides the implementation
-and is difficult to read/debug.
-
-cheers,
--roger
+josh
