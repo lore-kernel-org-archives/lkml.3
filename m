@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3CMQVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:21:34 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:37011 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab3CMQVd (ORCPT
+	id S933876Ab3CMQXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:23:24 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:42495 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab3CMQXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:21:33 -0400
+	Wed, 13 Mar 2013 12:23:23 -0400
+Message-ID: <5140A7F2.5080203@xs4all.nl>
+Date: Wed, 13 Mar 2013 17:23:14 +0100
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
-	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
-	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
-	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
-	<CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
-	<CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
-Date: Wed, 13 Mar 2013 17:21:31 +0100
-Message-ID: <CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: sedat.dilek@gmail.com
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.6.11: khubd issue SLAB related?
+References: <5139E36A.5000109@xs4all.nl> <alpine.DEB.2.02.1303111410470.4160@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1303111410470.4160@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On 2013-03-11 22:23, David Rientjes wrote:
+> On Fri, 8 Mar 2013, Udo van den Heuvel wrote:
+> 
+>> [3663200.799579] SLAB: Unable to allocate memory on node 0 (gfp=0xd0)
+>> [3663200.799581]   cache: size-65536, object size: 65536, order: 4
+>> [3663200.799583]   node 0: slabs: 6/6, objs: 6/6, free: 0
+>> [3663200.799585] pwc: Oops, could not allocate memory for pwc_device.
+> 
+> You have memory freed, but like your earlier page allocation failure on 
+> mount, it is too fragmented.  This is an order-4 page allocation, the 
+> kmalloc() of struct pwc_device, and you don't even have any order-3 pages 
+> that are available.  Are you running with CONFIG_COMPACTION enabled?
 
-> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
-> when the kernel-module is loaded.
-> So, is this intended?
-> SquashFS prints into the logs, so what is it doing differently?
+Yes.
 
-Some modules do, some don't.  It's not compulsory and not very useful.
+> If not, enable it and try again, or get root and manually try to 
+> defragment memory by doing echo 1 > /proc/sys/vm/compact_memory.
 
-Thanks,
-Miklos
+This needs to be done regularly, I assume?
+
+> If so, try killing a memory hogging process to free some memory and 
+> attempt to get some higher order pages available.
+
+It's a 8GB box (7.5GB available to software) with modest load. Mostly
+email & web browsing, some torrents, nntp stuff, etc. Nothing weird.
+Around 4.8G in buffers/cache right now.
+
+Why is this issue occurring?
+Why did I not see this in the past?
+
+Udo
