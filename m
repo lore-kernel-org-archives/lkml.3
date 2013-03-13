@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab3CMGzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:55:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54311 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3CMGz3 (ORCPT
+	id S1755364Ab3CMG7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:59:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51140 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3CMG67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:55:29 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <514022BF.3080303@jp.fujitsu.com>
-Date: Wed, 13 Mar 2013 15:54:55 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Wed, 13 Mar 2013 02:58:59 -0400
+Message-ID: <514023AA.4070004@hitachi.com>
+Date: Wed, 13 Mar 2013 15:58:50 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: <rjw@sisk.pl>
-CC: <toshi.kani@hp.com>, <linux-acpi@vger.kernel.org>,
-        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: [Bug fix PATCH] ACPI,acpi_memhotplug: enable acpi_memory_info->enabled
- of memory device presented at boot-time
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
+ section
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522> <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
+In-Reply-To: <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At http://marc.info/?l=linux-acpi&m=135769405622667&w=2 thread,
-Toshi Kani mentioned as follows:
+(2013/03/13 1:04), Linus Torvalds wrote:
+> On Mon, Mar 11, 2013 at 7:22 AM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> Beacuse hash_64() is called from the get_kprobe() inside
+>> int3 handler, kernel causes int3 recursion and crashes if
+>> kprobes user puts a probe on it.
+>>
+>> Usually hash_64() is inlined into caller function, but in
+>> some cases, it has instances by gcc's interprocedural
+>> constant propagation.
+>>
+>> This patch adds __kprobes tag on the hash_64()
+> 
+> NAK. Don't do this. Just force inlining. There's absolutely no way we
+> want to start adding __kprobe to random helper functions like this.
 
-"I have a question about the change you made in commit 65479472 in
-acpi_memhotplug.c.  This change seems to require that
-acpi_memory_enable_device() calls add_memory() to add all memory ranges
-represented by memory device objects at boot-time, and keep the results
-be used for hot-remove.  
+I see.
 
-If I understand it right, this add_memory() call fails with EEXIST at
-boot-time since all memory ranges should have been added from EFI memory
-table (or e820) already.  This results all memory ranges be marked as !
-enabled & !failed.  I think this means that we cannot hot-delete any
-memory ranges presented at boot-time since acpi_memory_remove_memory()
-only calls remove_memory() when the enabled flag is set.  Is that
-correct?"
+> This isn't even about where "__kprobes" exists and whether we want to
+> include the header file. This is about the fact that hash64 has
+> absolutely *nothing* to do with kprobes, and we simply shouldn't do
+> crap like this regardless of whether we need a new #include or not.
 
-Above mention is correct. Thus even if memory device supports hotplug,
-memory presented at boot-time cannot be hot removed since the memory
-device's acpi_memory_info->enabled is always 0.
+OK, then I'll update it to just use __always_inline.
 
-This patch changes to set 1 to "acpi_memory_info->enabled" of memory
-device presented at boot-time for hot removing the memory device.
+Thank you!
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
----
- drivers/acpi/acpi_memhotplug.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index da1f82b..88fd46a 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -254,8 +254,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 			continue;
- 		}
- 
--		if (!result)
--			info->enabled = 1;
-+		info->enabled = 1;
-+
- 		/*
- 		 * Add num_enable even if add_memory() returns -EEXIST, so the
- 		 * device is bound to this driver.
 
