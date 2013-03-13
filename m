@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab3CMJpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:45:41 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:47286 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008Ab3CMJpj (ORCPT
+	id S1756089Ab3CMJqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:46:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33389 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab3CMJqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:45:39 -0400
-Message-ID: <51404ABF.7080405@atmel.com>
-Date: Wed, 13 Mar 2013 10:45:35 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] at91: fixes for 3.9-rc #1
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Wed, 13 Mar 2013 05:46:09 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, olof@lixom.net, sachin.kamat@linaro.org
+Subject: [PATCH 1/1] irqchip: irq-gic: Fix checkpatch errors
+Date: Wed, 13 Mar 2013 15:05:15 +0530
+Message-Id: <1363167315-12753-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Fixes the following errors:
+ERROR: do not initialise statics to 0 or NULL
+ERROR: space required after that ',' (ctx:VxV)
 
-Here is a little pull-request for 3.9-rc (I guess it if -rc4 now that
-you've just sent the one for -rc3).
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+Compile tested and based on linux-next tree (20130313).
+---
+ drivers/irqchip/irq-gic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I have other material but it is related to the AT91 framebuffer and we are
-currently discussing it so I hold them back for now.
-
-Thanks, best regards,
-
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 5982c177468eb5829146e16b55d43f0b08270ac0:
-
-  ARM: at91: fix infinite loop in at91_irq_suspend/resume (2013-03-13 10:25:38 +0100)
-
-----------------------------------------------------------------
-Two patches for Device Tree on at91sam9x5/NAND.
-Two more for fixing PM suspend/resume IRQ on AIC5 and
-GPIO used with pinctrl.
-
-----------------------------------------------------------------
-Ludovic Desroches (2):
-      ARM: at91: add gpio suspend/resume support when using pinctrl
-      ARM: at91: fix infinite loop in at91_irq_suspend/resume
-
-Richard Genoud (2):
-      ARM: at91: dt: at91sam9x5: correct NAND pins comments
-      ARM: at91: dt: at91sam9x5: complete NAND pinctrl
-
- arch/arm/boot/dts/at91sam9x5.dtsi      | 28 ++++++++++++++--
- arch/arm/mach-at91/include/mach/gpio.h |  8 +++++
- arch/arm/mach-at91/irq.c               | 20 +++++-------
- arch/arm/mach-at91/pm.c                | 10 ++++--
- drivers/pinctrl/pinctrl-at91.c         | 61 ++++++++++++++++++++++++++++++++++-
- 5 files changed, 110 insertions(+), 17 deletions(-)
-
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index a32e0d5..d06d5a4 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -127,7 +127,7 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
+ #else
+ #define gic_data_dist_base(d)	((d)->dist_base.common_base)
+ #define gic_data_cpu_base(d)	((d)->cpu_base.common_base)
+-#define gic_set_base_accessor(d,f)
++#define gic_set_base_accessor(d, f)
+ #endif
+ 
+ static inline void __iomem *gic_dist_base(struct irq_data *d)
+@@ -807,7 +807,7 @@ void __cpuinit gic_secondary_init(unsigned int gic_nr)
+ }
+ 
+ #ifdef CONFIG_OF
+-static int gic_cnt __initdata = 0;
++static int gic_cnt __initdata;
+ 
+ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+ {
 -- 
-Nicolas Ferre
+1.7.4.1
+
