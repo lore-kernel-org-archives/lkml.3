@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933831Ab3CMRUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:20:34 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:52317 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322Ab3CMRUd (ORCPT
+	id S933974Ab3CMRUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:20:39 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:43939 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab3CMRUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:20:33 -0400
+	Wed, 13 Mar 2013 13:20:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130305003219.14792.13300.sendpatchset@w520>
-References: <20130305003219.14792.13300.sendpatchset@w520>
-Date: Wed, 13 Mar 2013 18:20:32 +0100
-Message-ID: <CACRpkdbTXoB_zf1axVaM89Uoxa-vXWwgEHv9nWU-jbo_P1pioA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Renesas R-Car GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, linux-sh@vger.kernel.org
+In-Reply-To: <1363195044-15715-1-git-send-email-dianders@chromium.org>
+References: <1363195044-15715-1-git-send-email-dianders@chromium.org>
+Date: Wed, 13 Mar 2013 10:20:34 -0700
+X-Google-Sender-Auth: yyc6g1NabzUqlqvKznbthMHjuRI
+Message-ID: <CAD=FV=W9KF4OM9VzMse4rRnKsph2h2izLKHptvffz4gRkFmBNw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: add usb 2.0 clock references to device tree
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 1:32 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+Argh...
 
-> +static int gpio_rcar_irq_set_type(struct irq_data *d, unsigned int type)
-> +{
-> +       struct gpio_rcar_priv *p = irq_data_get_irq_chip_data(d);
-> +       unsigned int hwirq = irqd_to_hwirq(d);
-> +
-> +       pr_debug("gpio: sense irq = %d, type = %d\n", hwirq, type);
-> +
-> +       switch (type & IRQ_TYPE_SENSE_MASK) {
-> +       case IRQ_TYPE_LEVEL_HIGH:
-> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, true, true);
-> +               break;
-> +       case IRQ_TYPE_LEVEL_LOW:
-> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, false, true);
-> +               break;
-> +       case IRQ_TYPE_EDGE_RISING:
-> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, true, false);
-> +               break;
-> +       case IRQ_TYPE_EDGE_FALLING:
-> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, false, false);
-> +               break;
+On Wed, Mar 13, 2013 at 10:17 AM, Doug Anderson <dianders@chromium.org> wrote:
+> This is a fixup to two device tree nodes that have already landed but
+> without clock nodes since the transition to common clock happened at
+> the same time.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-It is quite common to request IRQ on *both* rising and falling edges,
-what happens then?
+Please forgive my fat finger and see the version with the updated
+description: "[PATCH] ARM: dts: add usb 2.0 clock references to
+exynos5250 device tree".  There is no difference other than the title.
 
-See <linux/irqs.h>
-        IRQ_TYPE_EDGE_RISING    = 0x00000001,
-        IRQ_TYPE_EDGE_FALLING   = 0x00000002,
-        IRQ_TYPE_EDGE_BOTH      = (IRQ_TYPE_EDGE_FALLING |
-IRQ_TYPE_EDGE_RISING),
-
-I guess then you get just rising edge...
-
-
-> +       default:
-> +               return -EINVAL;
-> +       }
-> +       return 0;
-> +}
-
-(...)
-
-The rest I think is already covered by Laurent's comments.
-
-Yours,
-Linus Walleij
+-Doug
