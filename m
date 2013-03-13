@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388Ab3CMXRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:17:47 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:58128 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab3CMXRp (ORCPT
+	id S934438Ab3CMXRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:17:49 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61069 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934397Ab3CMXRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:17:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130313231413.GA3265@jtriplet-mobl1>
-References: <20130313231413.GA3265@jtriplet-mobl1>
-Date: Wed, 13 Mar 2013 16:17:44 -0700
-X-Google-Sender-Auth: hOmPE58znKfpZjW3mwhbxkdAEn8
-Message-ID: <CAGXu5jJe-XG7jLcx4GCysXQujH2sUdgF-NuLVVeB5TWGUikhxg@mail.gmail.com>
-Subject: Re: [PATCH] fs: Don't compile in drop_caches.c when CONFIG_SYSCTL=n
-From: Kees Cook <keescook@chromium.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Mar 2013 19:17:48 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] drivers: dma: Use devm_ioremap_resource
+Date: Thu, 14 Mar 2013 01:17:06 +0200
+Message-Id: <1363216626-16693-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 4:14 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> drop_caches.c provides code only invokable via sysctl, so don't compile
-> it in when CONFIG_SYSCTL=n.
->
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Replaced call to devm_request_and_ioremap with devm_ioremap_resource which
+provides better error handling.
 
-Seems reasonable to me.
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ drivers/dma/pl330.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Kees Cook <keescook@chromium.org>
-
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 7181531..c0a81fb 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2904,9 +2904,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
+ 
+ 	res = &adev->res;
+-	pi->base = devm_request_and_ioremap(&adev->dev, res);
+-	if (!pi->base)
+-		return -ENXIO;
++	pi->base = devm_ioremap_resource(&adev->dev, res);
++	if (IS_ERR(pi->base))
++		return PTR_ERR(pi->base);
+ 
+ 	amba_set_drvdata(adev, pdmac);
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.5
+
