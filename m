@@ -1,109 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab3CMU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:27:25 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48366 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab3CMU1Y (ORCPT
+	id S934253Ab3CMU2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:28:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56833 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933199Ab3CMU2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:27:24 -0400
+	Wed, 13 Mar 2013 16:28:35 -0400
+Message-ID: <5140E16D.8060102@wwwdotorg.org>
+Date: Wed, 13 Mar 2013 14:28:29 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFyawa76qCrCXnjYRf=U8xcEwV2UrqNV_J0Z-rVDrSgsHg@mail.gmail.com>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
-	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
-	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
-	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
-	<CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
-	<CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
-	<CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
-	<CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com>
-	<20130313181251.GA6023@sgi.com>
-	<5140C77E.7030206@openwrt.org>
-	<CA+icZUUPTryfL9S2vHopPTcRkhV=Qxd1w_fh0mWbPrUE7Lw=zQ@mail.gmail.com>
-	<87k3pbhy7o.fsf@xmission.com>
-	<CA+55aFyawa76qCrCXnjYRf=U8xcEwV2UrqNV_J0Z-rVDrSgsHg@mail.gmail.com>
-Date: Wed, 13 Mar 2013 21:27:22 +0100
-Message-ID: <CA+icZUUmbik_+WXzhwYSV4X1aj=zT0nyyc76o5ZrYBpxAUp=Mw@mail.gmail.com>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Felix Fietkau <nbd@openwrt.org>, Robin Holt <holt@sgi.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Neil Brown <neilb@suse.de>,
-        Jordi Pujol <jordipujolp@gmail.com>, ezk@fsl.cs.sunysb.edu,
-        David Howells <dhowells@redhat.com>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Ian Lartey <ian@slimlogic.co.uk>
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, mturquette@linaro.org, linus.walleij@linaro.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, sameo@linux.intel.com,
+        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
+        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
+Subject: Re: [PATCH v8 01/12] mfd: DT bindings for the palmas family MFD
+References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
+In-Reply-To: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 8:58 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Mar 13, 2013 at 12:54 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>>
->>> Hehe, I just checked my new kernel... that does not work (nothing in the logs).
->>> But I think it's good to see if the filesystem is registered/loaded.
->>
->> lsmod | grep overlayfs
->
-> How about the compiled-in case? What's wrong with just using the
-> obvious /proc/filesystems?
->
+On 03/07/2013 06:17 AM, Ian Lartey wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+> 
+> Add the various binding files for the palmas family of chips. There is a
+> top level MFD binding then a seperate binding for IP blocks on chips.
 
-As I don't need OverlayFS in my daily life, I have it here built as a module.
+Sorry for the slow review. Thanks for the binding docs. I understand the
+structure a bit better now.
 
-Nevertheless, as module or built-in /me as an end-user wants to know
-what's going on.
-So, dmesg is normally my first weapon.
+> diff --git a/Documentation/devicetree/bindings/clock/palmas-clk.txt b/Documentation/devicetree/bindings/clock/palmas-clk.txt
 
-I grep-ed trrough a bit through all the filesystems in fs/ and it is
-not handled unique.
+> +* palmas and palmas-charger resource clock IP block devicetree bindings
+> +
+> +Required properties:
+> +- compatible : Should be from the list
+> +  ti,twl6035-clk
+...
+> +and also the generic series names
+> +  ti,palmas-clk
+> +  ti,palmas-charger-clk
 
-"Loaded" BTW is not the right term in FS-folks-jargon: The functions
-are called (un)register_filesystem().
+(Most of these comments apply to all the binding files).
 
-$ dmesg | grep -i loaded
-[    0.241037] vgaarb: loaded
-[    0.241243] libata version 3.00 loaded.
-[    0.358574] Block layer SCSI generic (bsg) driver version 0.4
-loaded (major 252)
-[    0.368711] brd: module loaded
-[    0.369832] loop: module loaded
-[    0.650086] PM: Hibernation image not present or could not be loaded.
-[    0.651150] Loaded X.509 cert 'Magrathea: Glacier signing key:
-e75e3a59e59cb48db975ac12e21a905289ada56f'
-[    1.788947] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-[    8.617549] lp: driver loaded but no devices found
-[   10.490721] wmi: Mapper loaded
-[   11.994985] iwlwifi 0000:01:00.0: loaded firmware version 18.168.6.1
-[   73.885056] squashfs: loaded
-[   81.345070] overlayfs: loaded
+How do I know which one of those to pick; I guess you intend it to be
+based on whether the top-level chip is a charger or not?
 
-I am not sure whether those lines "blabla: module loaded" is true for
-loop (block) it is a hardcoded printk-line.
-I doubt...
+I don't see why the clock sub-module would care about that; isn't it
+just an (the same) IP block that has been slapped inside some top-level
+chip?
 
-CONFIG_BLK_DEV_LOOP=y
+In other words, do we really need two separate compatible values here,
+or should there just be a single generic "ti,palmas-clk"?
 
-Last but not least, user-space apps like GRUB trigger fs loaded.
-For me this is helpful.
-You might be bored or whatever reason I can't or don't want to understand.
+> +Optional properties:
+> +- ti,clk32g-mode-sleep		- mode to adopt in pmic sleep 0 - off, 1 - on
+> +- ti,clkg32kgaudio-mode-sleep	- see above
 
-And just to have some fun about status informations:
-Check your drm (kms) driver with date and version :-).
-Stuff that is not maintained should be thrown out (yes, I had sent patches...).
+If this is a clock provider (i.e. the HW has clock output signals),
+shouldn't it also have #clock-cells, and a description of the clock
+specifier format?
 
-- Sedat -
+If this is a clock consumer (i.e. the HW has clock input signals),
+shouldn't it also have clocks/clock-names properties to describe what
+the source of those clocks is?
 
->              Linus
+Did you omit the reg property from this document just because it's so
+standard you didn't think describing it was necessary? Certainly the
+final DT file must have a reg property if the use of sub-nodes is to be
+useful; the block could easily be instantiated at different addresses in
+different top-level chips, so the base register address for this block
+has to be defined in DT, I think.
+
+> +Examples:
+> +
+> +clk {
+> +    compatible = "ti,twl6035-clk", "ti,palmas-clk";
+> +    ti,clk32kg-mode-sleep = <0>;
+> +    ti,clk32kgaudio-mode-sleep = <0>;
+> +};
+
+It might be nice to show the sub-block examples within a parent
+top-level Palmas node just to make it clear. But probably not a big deal.
+
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-palmas.txt b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+
+This document needs to describe the #gpio-cells property, and the format
+of the GPIO specifier.
+
+Can the GPIOs be used for a purpose other than plain GPIO (i.e. dedicate
+signals such as IRQ output?). If so, don't you need to describe that pin
+setup here? Perhaps that'd be part of the top-level MFD node or a
+separate pinctrl node though.
+
+Can the GPIOs act as interrupt inputs i.e. generate interrupts on
+change/level? In which case, the interrupt-controller and
+#interrupt-cells properties must be present, and the format of the IRQ
+specifier documented.
+
+> diff --git a/Documentation/devicetree/bindings/input/palmas-pwrbutton.txt b/Documentation/devicetree/bindings/input/palmas-pwrbutton.txt
+> new file mode 100644
+> index 0000000..00739e9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/palmas-pwrbutton.txt
+> @@ -0,0 +1,22 @@
+> +* palmas and palmas-charger Button IP block devicetree bindings
+> +
+> +Required properties:
+> +- compatible : Should be from the list
+> +  ti,twl6035-pwrbutton
+...
+> +
+> +Examples:
+
+s/Examples/Example/. Same elsewhere.
+
+> +pwrbutton {
+> +    compatible = "ti,twl6035-pwrbutton", "ti,palmas-pwrbutton";
+> +    interrupt-parent = <&palmas>;
+> +    interrupts = <1 0>;
+> +    interrupt-name = "pwron-irq";
+
+Don't you need to describe the interrupt-related properties in the list
+of required properties above? This is especially true since this example
+implies that a particular interrupt-names (which incidentally should be
+plural in the example above) value is required.
+
+> diff --git a/Documentation/devicetree/bindings/leds/leds-palmas.txt b/Documentation/devicetree/bindings/leds/leds-palmas.txt
+
+> +-ti,chrg-led-mode	- mode for led operation 0 - Charging indicator
+> +				1 - controlled as a general purpose LED
+> +-ti,chrg-led-vbat-low	- low battery blinking 0 - blinking is enabled,
+> +				1 - blinking is disabled
+
+Which LED(s) do those two properties apply to?
+
+> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+
+> +- interrupt-controller : palmas has its own internal IRQs
+> +- #interrupt-cells : should be set to 2 for IRQ number and flags
+
+At least a mention of the valid IRQ flags (or pointer to another
+document which defines this) should be included.
+
+> +Optional properties:
+> +  ti,mux_padX : set the pad register X (1-2) to the correct muxing for the hardware,
+> +	        if not set will use muxing in OTP.
+
+This doesn't really describe what value to put here. I assume it's the
+raw value to write into the register?
+
+Is there any need to expose a full pinctrl driver here, for dynamic pin
+muxing?
+
+Since this node is a bus which has child devices on it, you should
+include either a ranges property (if the children fit directly into the
+parent bus's address space), or more likely if the address space "starts
+over" at this point, you need #address-cells and #size-cells to describe
+the format of child nodes' reg properties.
+
+> diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+
+> +Optional properties:
+
+"regulators" below isn't a property, it's a node.
+
+> +- regulators : should contain the constrains and init information for the
+> +	       regulators. It should contain a subnode per regulator from the
+> +	       list.
+> +	       For palmas - smps12, smps123, smps3 depending on OTP,
+> +	       smps45, smps457, smps7 depending on varient, smps6, smps[8-10],
+> +	       ldo[1-9], ldoln, ldousb
+> +	       For palmas-charger - smps12, smps123, smps3 depending on OTP,
+> +	       smps[6-9], boost, ldo[1-14], ldoln, ldousb
+
+Rather than "For palmas" and "For palmas-charger", shouldn't that say
+"For ti,palmas-pmic" and "For ti,palmas-charger-pmic", since the
+internals of this node should be entirely self-contained and defined by
+this one binding, rather than being influenced by the top-level chip
+that contains this block.
