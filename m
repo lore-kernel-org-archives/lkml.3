@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab3CMCRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 22:17:49 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:48021 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab3CMCRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 22:17:48 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: Print the correct information in debugfs pinconf-state file
-Date: Wed, 13 Mar 2013 03:18:18 +0100
-Message-Id: <1363141098-4974-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1755903Ab3CMCae (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 22:30:34 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53013 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755550Ab3CMCac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 22:30:32 -0400
+Date: Tue, 12 Mar 2013 22:30:26 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Junio C Hamano <gitster@pobox.com>
+Cc: James Morris <jmorris@namei.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: linux-next: unneeded merge in the security tree
+Message-ID: <20130313023026.GD16919@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Junio C Hamano <gitster@pobox.com>,
+	James Morris <jmorris@namei.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Git Mailing List <git@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7vtxog5msj.fsf@alter.siamese.dyndns.org>
+ <CA+55aFwHJtOU4Qzt3XZsER165kTc5P0ATQP2wPHvuUiVic8bnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bad copy&paste resulted in the debugfs pinconf-state file printing the
-pin name instead of the state name. Fix it.
+On Tue, Mar 12, 2013 at 02:30:04PM -0700, Junio C Hamano wrote:
+> Theodore Ts'o <tytso@mit.edu> writes:
+> 
+> > [remote "origin"]
+> > 	url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> > 	fetch = +refs/heads/master:refs/heads/master
+> > 	mergeoptions = --ff-only
+> >
+> 
+> Is there an escape hatch for that rare case?  IOW, how does a
+> submaintainer who configured the above to override --ff-only?
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/pinctrl/pinconf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hmm, maybe we would need to add a --no-ff-only?  Or they could just
+do:
 
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index 8aefd28..dae927f 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -622,7 +622,7 @@ static const struct file_operations pinconf_dbg_pinname_fops = {
- static int pinconf_dbg_state_print(struct seq_file *s, void *d)
- {
- 	if (strlen(dbg_state_name))
--		seq_printf(s, "%s\n", dbg_pinname);
-+		seq_printf(s, "%s\n", dbg_state_name);
- 	else
- 		seq_printf(s, "No pin state set\n");
- 	return 0;
--- 
-Regards,
+	git fetch origin
+	git merge FETCH_HEAD
 
-Laurent Pinchart
+On Tue, Mar 12, 2013 at 02:28:39PM -0700, Linus Torvalds wrote:
+>
+> Of course, I'm not really sure if we want to list the flags. Maybe
+> it's better to just introduce the notion of "upstream" directly, and
+> make that a flag, and make "origin" default to that when you clone.
+> And then have git use different heurstics for pulling upstream (like
+> warning by default when doing a back-merge, perhaps?)
 
+What if git automaticallly set up the origin branch to have a certain
+set of mergeoptions by default?  That would probably be right for most
+users, but it makes it obvious what's going on when they take a look
+at the .git/config file, and doesn't make the remote that happens to
+have the name "origin" as having certain magic properties.  Using a
+set of mergeoptions would also be bit more general, and might have
+applications in the future.
+
+     	      	       	  	 	       - Ted
