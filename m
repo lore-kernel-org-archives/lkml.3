@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3CMHvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 03:51:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63332 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab3CMHvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 03:51:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,834,1355126400"; 
-   d="asc'?scan'208";a="278028275"
-Message-ID: <1363161099.2099.17.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] igb: SR-IOV init reordering
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: gregory.v.rose@intel.com, netdev@vger.kernel.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org, sassmann@redhat.com
-Date: Wed, 13 Mar 2013 00:51:39 -0700
-In-Reply-To: <20130312212533.19552.92159.stgit@bling.home>
-References: <20130312212533.19552.92159.stgit@bling.home>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-bdvXE9+oBTXnoj8HQCHQ"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S932427Ab3CMHw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 03:52:28 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:41646 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375Ab3CMHw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 03:52:26 -0400
+Message-ID: <51403036.3030702@openvz.org>
+Date: Wed, 13 Mar 2013 11:52:22 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: Re: [ 069/100] e1000e: fix pci-device enable-counter balance
+References: <20130312223122.884099393@linuxfoundation.org> <20130312223130.360294627@linuxfoundation.org>
+In-Reply-To: <20130312223130.360294627@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greg Kroah-Hartman wrote:
+> 3.8-stable review patch.  If anyone has any objections, please let me know.
 
---=-bdvXE9+oBTXnoj8HQCHQ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Vivek Goyal reported about problem caused by this improper fix.
 
-On Tue, 2013-03-12 at 15:25 -0600, Alex Williamson wrote:
-> igb is ineffective at setting a lower total VFs because:
->=20
-> int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs)
-> {
->         ...
->         /* Shouldn't change if VFs already enabled */
->         if (dev->sriov->ctrl & PCI_SRIOV_CTRL_VFE)
->                 return -EBUSY;
->=20
-> Swap init ordering.
->=20
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+https://lkml.org/lkml/2013/3/12/529
+
+(this patch also pending to 3.0-stable and 3.4-stable)
+
+>
+> ------------------
+>
+> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
+>
+> This patch removes redundant and unbalanced pci_disable_device() from
+> __e1000_shutdown(). pci_clear_master() is enough, device can go into
+> suspended state with elevated enable_cnt.
+>
+> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+>
+> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Cc: Bruce Allan<bruce.w.allan@intel.com>
+> Acked-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+> Tested-by: Borislav Petkov<bp@suse.de>
+> Tested-by: Aaron Brown<aaron.f.brown@intel.com>
+> Signed-off-by: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
+> Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>
 > ---
->  drivers/net/ethernet/intel/igb/igb_main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)=20
-
-I have added the patch to my igb queue, thanks!
-
---=-bdvXE9+oBTXnoj8HQCHQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABCgAGBQJRQDALAAoJEOVv75VaS+3OIREQAJDpWbjN+3mgxMTaealS7Xp9
-kcRi4BWFXL4BZ7kKoPtv2CumZrr6iLfnvlIegrPTFd/wUU8O1KfroDAX4yX1jL5j
-d8Rpvj05WYjEbZRehDM41wUVgdiJuT5YkyXupO1XgocO5ylETvSydl2vuPw4bu3I
-LNSJelOIbovZTvihue8LsnPBQl52xqt3lrHpkWMUYPrBWGnhsHf3l3So0BGflwgV
-ouxRwy/kQYIGqnuAzbPjuJCfwsMq7sdfhJPOqeXTOgGc4//VHHy1a0lSQs7ePqAi
-FQcTttH1LHQ6rFRvvlR900q6zgCkNbeGdau5RECX4s/jiXw/ezJKMHZkusUhTpam
-b9v4SbYGKSFhUZcDhL5GZ9iqx7fPIuRF5XkMfF56yjAl+DTO1eO7h/YItMDT/z8K
-/rva8UvaFTYXMn3k2CCknV4waQ39OsDSO9KwNet6ORElPnpf2EviVkB1817MIK7d
-Ag+3hb4lkxcMVJJskAw7tDO8mbiAQP6CX7zUMVNdccqrhpfkMMJFMco0Fc+PlCRL
-BMH+O8JU00i+WVS2zgB6KIo9ztKvVlm83LcysM6Z0kDTvcRKNkrX5uMfWZdVRYCx
-w/WhdTeVBX++LelT0gKL7oEMY4q3S2xsD4QHZJ66FqRTITn0K7LfdtRcA0weD8cb
-BpfQcc/xI3Slf15eNW3+
-=pCCR
------END PGP SIGNATURE-----
-
---=-bdvXE9+oBTXnoj8HQCHQ--
+>   drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+> @@ -5549,7 +5549,7 @@ static int __e1000_shutdown(struct pci_d
+>   	 */
+>   	e1000e_release_hw_control(adapter);
+>
+> -	pci_disable_device(pdev);
+> +	pci_clear_master(pdev);
+>
+>   	return 0;
+>   }
+>
+>
 
