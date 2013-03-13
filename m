@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3CMFcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 01:32:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55056 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3CMFcL convert rfc822-to-8bit (ORCPT
+	id S1754007Ab3CMFi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 01:38:56 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60735 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3CMFiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 01:32:11 -0400
-From: "Anna, Suman" <s-anna@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Ohad Ben-Cohen" <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: RE: [PATCHv3 01/14] mailbox: rename pl320-ipc specific mailbox.h
-Thread-Topic: [PATCHv3 01/14] mailbox: rename pl320-ipc specific mailbox.h
-Thread-Index: AQHOH5rdpQiXhpN28USwLigRpWbWH5ijURQA//+9t5A=
-Date: Wed, 13 Mar 2013 05:31:53 +0000
-Message-ID: <37C860A02101E749A747FA2D3C1E3C504978B9@DLEE11.ent.ti.com>
-References: <1363145030-14373-1-git-send-email-s-anna@ti.com>
- <20130313035252.GA1515@kroah.com>
-In-Reply-To: <20130313035252.GA1515@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Mar 2013 01:38:55 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <514010B8.2030304@jp.fujitsu.com>
+Date: Wed, 13 Mar 2013 14:38:00 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: Jiang Liu <liuj97@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2, part1 25/29] mm/x86: use common help functions to
+ free reserved pages
+References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com> <1362896833-21104-26-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1362896833-21104-26-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Mar 12, 2013 at 10:23:50PM -0500, Suman Anna wrote:
-> > The patch 30058677 "ARM / highbank: add support for pl320 IPC"
-> > added a pl320 IPC specific header file as a generic mailbox.h.
-> > This file has been renamed appropriately to allow the introduction of
-> > the generic mailbox API framework.
-> >
-> > Signed-off-by: Suman Anna <s-anna@ti.com>
-> > Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> > Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/cpufreq/highbank-cpufreq.c |  2 +-
-> >  drivers/mailbox/pl320-ipc.c        |  2 +-
-> >  include/linux/mailbox.h            | 17 -----------------
-> >  include/linux/pl320-ipc.h          | 17 +++++++++++++++++
-> >  4 files changed, 19 insertions(+), 19 deletions(-)  delete mode
-> > 100644 include/linux/mailbox.h  create mode 100644
-> > include/linux/pl320-ipc.h
+Hi Jiang,
+
+2013/03/10 15:27, Jiang Liu wrote:
+> Use common help functions to free reserved pages.
 > 
-> Why are you sending these To: me?  I'm not the mailbox maintainer, and have
-> never handled them before that I can remember.  Who is the maintainer?
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> ---
+>   arch/x86/mm/init.c    |    5 +----
+>   arch/x86/mm/init_64.c |    5 ++---
+>   2 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 4903a03..4a705e6 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -516,11 +516,8 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
 
-Er.. sorry Greg, I have taken the recipient list from the original series posting, but this series should have been directed to the ARM-SoC maintainer. The patches are generalizing the OMAP mailbox driver to add support for ST's mailbox as well,  and moving it to under /drivers/mailbox. The folder is new in 3.9, and the code under this, so far,  has all been for ARM based chips. I guess the maintainer for this folder needs to be sorted out for the long-term.
+>   	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+>   
+>   	for (; addr < end; addr += PAGE_SIZE) {
+> -		ClearPageReserved(virt_to_page(addr));
+> -		init_page_count(virt_to_page(addr));
+>   		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+> -		free_page(addr);
+> -		totalram_pages++;
+> +		free_reserved_page(virt_to_page(addr));
+>   	}
 
-Regards
-Suman
+If I don't misread your code, avobe codes can replace to free_reserved_area()
+as follow:
+
+	free_reserved_area(addr, end, POISON_FREE_INITMEM, what)
+
+Am I wrong?
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   #endif
+>   }
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 474e28f..2ef81f1 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -1067,10 +1067,9 @@ void __init mem_init(void)
+>   
+>   	/* clear_bss() already clear the empty_zero_page */
+>   
+> -	reservedpages = 0;
+> -
+> -	/* this will put all low memory onto the freelists */
+>   	register_page_bootmem_info();
+> +
+> +	/* this will put all memory onto the freelists */
+>   	totalram_pages = free_all_bootmem();
+>   
+>   	absent_pages = absent_pages_in_range(0, max_pfn);
+> 
+
+
