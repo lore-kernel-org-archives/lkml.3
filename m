@@ -1,103 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab3CMUM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:12:29 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:42435 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933130Ab3CMUM1 (ORCPT
+	id S934212Ab3CMUSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:18:10 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:50386 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933201Ab3CMUSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:12:27 -0400
+	Wed, 13 Mar 2013 16:18:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <5140C816.3090008@metafoo.de>
-References: <1362625743-10401-1-git-send-email-ch.naveen@samsung.com>
-	<1363150138-20819-1-git-send-email-ch.naveen@samsung.com>
-	<CAD=FV=XoE6NCruDUv2UajaP+LWDCp+pgaZJsEKpkoxy3tZNeAw@mail.gmail.com>
-	<5140C155.2070507@metafoo.de>
-	<CAD=FV=XZMDrhQm+tZKL1RW35ZiT-JuDpmdGUXB9A6e9fG+54Fw@mail.gmail.com>
-	<5140C6EE.9080802@metafoo.de>
-	<5140C816.3090008@metafoo.de>
-Date: Wed, 13 Mar 2013 13:12:25 -0700
-X-Google-Sender-Auth: zWblpNtzk7EKZoRMp1HAcUX8Jt0
-Message-ID: <CAD=FV=UBaVQyz-UJPVWy5fik+OfmeCZtF99qTMd0RPErugPdZw@mail.gmail.com>
-Subject: Re: [PATCH v3] iio: adc: exynos5_adc: fix compilation warnings
-From: Doug Anderson <dianders@chromium.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>, dan.carpenter@oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>
+In-Reply-To: <CAKwO_5E38qFYVM+DbnhuYOr9bs32nKKFTzcdqh-BZe=p8wDmYg@mail.gmail.com>
+References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
+	<20130304174254.GF8913@agk.fab.redhat.com>
+	<CAKwO_5GwN8PCtK6tM=KWvZMJHb357O+Bh3TpF3k3vB_0x_FtpQ@mail.gmail.com>
+	<Pine.LNX.4.64.1303041711070.28666@file.rdu.redhat.com>
+	<CAKwO_5EEW3Aqoua1zBOa8s3mrEDf7ncOvg6t_AAeSnk0jYcUWg@mail.gmail.com>
+	<CAKwO_5E38qFYVM+DbnhuYOr9bs32nKKFTzcdqh-BZe=p8wDmYg@mail.gmail.com>
+Date: Wed, 13 Mar 2013 13:18:05 -0700
+Message-ID: <CAKwO_5GsCO3iLgmrHHjUYW0w-ZE6XJ_0RbhH5uEVCSsMDkG9qA@mail.gmail.com>
+Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
+From: Paul Taysom <taysom@google.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Paul Taysom <taysom@chromium.org>, agk@redhat.com, dm-devel@redhat.com,
+        neilb@suse.de, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars,
-
-On Wed, Mar 13, 2013 at 11:40 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> Yes, but that's a different issue and to be honest I didn't even realize
->> that the patch was trying to fix this as well. In my opinion it's best to
->> split this up into two patches one which fixes the OF dependency. The other
->> fixing the timeout issue. Cause there is more to it than just changing the type.
-
-Sounds fair to split into two patches.  ;)
-
-
->> wait_for_completion_interruptible_timeout() may return
->>       1) 0, if there was a timeout, waiting for the completion
->>       2) > 0, if the completion was completeted, the returned value
->>          the  remaining time.
->>       3) < 0, If it was interrupt while waiting for the completion
->>
->> The code currently only handles 1) and 2), but it also needs to handle 3).
->> Since the completion has not been completed in case 3.
->>
->> E.g. something like this should work:
->>
->>       if (timeout == 0)
->>               return -ETIMEDOUT;
->>       else if(timeout < 0)
->>               return timeout;
->>       return 0;
-
-Good catch.  Yes, that looks right to me.
-
-
-> I just saw, there is another issue related to this. The driver should call
-> INIT_COMPLETION(&info->completion) before starting the conversion. Otherwise
-> there may be a problem if we got interrupted while waiting for the
-> interrupt. E.g. imagine the following sequence.
+On Tue, Mar 12, 2013 at 7:46 AM, Paul Taysom <taysom@google.com> wrote:
+> Looks good to me.
 >
-> 1) Start conversion
-> 2) Wait for completion
-> 3) Abort waiting
-> 4) Interrupt kicks in and marks the completion as done
->
-> Now if another conversion is started the completion will already be
-> completed and wait_for_completion_interruptible_timeout() will return right
-> away without waiting for the conversion to be finished.
+> On Tue, Mar 5, 2013 at 3:30 PM, Paul Taysom <taysom@google.com> wrote:
+>> seconds_kernel_to_login: 8.17s
+>> Passed all my other tests
+>>
+>> On Mon, Mar 4, 2013 at 2:15 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>>>
+>>>
+>>> On Mon, 4 Mar 2013, Paul Taysom wrote:
+>>>
+>>>> On Mon, Mar 4, 2013 at 9:42 AM, Alasdair G Kergon <agk@redhat.com> wrote:
+>>>> > On Mon, Mar 04, 2013 at 08:45:48AM -0800, Paul Taysom wrote:
+>>>> >> @@ -449,8 +468,14 @@ static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+>>>> >>                               hash_block_end = v->hash_blocks - 1;
+>>>> >>               }
+>>>> >>  no_prefetch_cluster:
+>>>> >> -             dm_bufio_prefetch(v->bufio, hash_block_start,
+>>>> >> -                               hash_block_end - hash_block_start + 1);
+>>>> >> +             vw = kmalloc(sizeof(*vw), GFP_KERNEL);
+>>>> >
+>>>> > kmalloc?  mempool? ...
+>>>> >
+>>>> > Alasdair
+>>>> >
+>>>> The use of mempool would be a separate patch that would have to be
+>>>> measured for performance impact.
+>>>> -Paul
+>>>>
+>>>
+>>> You don't have to use mempool. Just avoid prefetching if there is not
+>>> enough memory for the prefetch structure.
+>>>
+>>> I reworked the patch, is uses an allocation that can fail and it generates
+>>> just one workqueue entry for one request (the original patch generated one
+>>> workqueue entry for hash tree level).
+>>>
+>>> Please test the patch and if it works and performs well, let's submit it.
+>>>
+>>> Mikulas
+>>>
+>>> ---
+>>>
+>>> Changed the dm-verity prefetching to use a worker thread to avoid
+>>> a deadlock in dm-bufio.
+>>>
+>>> If generic_make_request is called recursively, it queues the I/O
+>>> request on the current->bio_list without making the I/O request
+>>> and returns. The routine making the recursive call cannot wait
+>>> for the I/O to complete.
+>>>
+>>> The deadlock occurred when one thread grabbed the bufio_client
+>>> mutex and waited for an I/O to complete but the I/O was queued
+>>> on another thread's current->bio_list and it was waiting to get
+>>> the mutex held by the first thread.
+>>>
+>>> The fix allows only one I/O request from dm-verity to dm-bufio
+>>> per thread. To do this, the prefetch requests were queued on worker
+>>> threads.
+>>>
+>>> In addition to avoiding the deadlock, this fix made a slight
+>>> improvement in performance.
+>>>
+>>> seconds_kernel_to_login:
+>>>   with prefetch:    8.43s
+>>>   without prefetch: 9.2s
+>>>   worker prefetch:  8.28s
+>>>
+>>> Signed-off-by: Paul Taysom <taysom@chromium.org>
+>>> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+>>> Cc: stable@kernel.org
+>>> ---
+>>>  drivers/md/dm-bufio.c  |    2 ++
+>>>  drivers/md/dm-verity.c |   37 +++++++++++++++++++++++++++++++++----
+>>>  2 files changed, 35 insertions(+), 4 deletions(-)
+>>>
+>>> Index: linux-3.8-fast/drivers/md/dm-verity.c
+>>> ===================================================================
+>>> --- linux-3.8-fast.orig/drivers/md/dm-verity.c  2013-03-04 22:49:20.000000000 +0100
+>>> +++ linux-3.8-fast/drivers/md/dm-verity.c       2013-03-04 23:10:45.000000000 +0100
+>>> @@ -93,6 +93,13 @@ struct dm_verity_io {
+>>>          */
+>>>  };
+>>>
+>>> +struct dm_verity_prefetch_work {
+>>> +       struct work_struct work;
+>>> +       struct dm_verity *v;
+>>> +       sector_t block;
+>>> +       unsigned n_blocks;
+>>> +};
+>>> +
+>>>  static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
+>>>  {
+>>>         return (struct shash_desc *)(io + 1);
+>>> @@ -424,15 +431,18 @@ static void verity_end_io(struct bio *bi
+>>>   * The root buffer is not prefetched, it is assumed that it will be cached
+>>>   * all the time.
+>>>   */
+>>> -static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+>>> +static void verity_prefetch_io(struct work_struct *work)
+>>>  {
+>>> +       struct dm_verity_prefetch_work *pw =
+>>> +               container_of(work, struct dm_verity_prefetch_work, work);
+>>> +       struct dm_verity *v = pw->v;
+>>>         int i;
+>>>
+>>>         for (i = v->levels - 2; i >= 0; i--) {
+>>>                 sector_t hash_block_start;
+>>>                 sector_t hash_block_end;
+>>> -               verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
+>>> -               verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
+>>> +               verity_hash_at_level(v, pw->block, i, &hash_block_start, NULL);
+>>> +               verity_hash_at_level(v, pw->block + pw->n_blocks - 1, i, &hash_block_end, NULL);
+>>>                 if (!i) {
+>>>                         unsigned cluster = ACCESS_ONCE(dm_verity_prefetch_cluster);
+>>>
+>>> @@ -452,6 +462,25 @@ no_prefetch_cluster:
+>>>                 dm_bufio_prefetch(v->bufio, hash_block_start,
+>>>                                   hash_block_end - hash_block_start + 1);
+>>>         }
+>>> +
+>>> +       kfree(pw);
+>>> +}
+>>> +
+>>> +static void verity_submit_prefetch(struct dm_verity *v, struct dm_verity_io *io)
+>>> +{
+>>> +       struct dm_verity_prefetch_work *pw;
+>>> +
+>>> +       pw = kmalloc(sizeof(struct dm_verity_prefetch_work),
+>>> +               GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
+>>> +
+>>> +       if (!pw)
+>>> +               return;
+>>> +
+>>> +       INIT_WORK(&pw->work, verity_prefetch_io);
+>>> +       pw->v = v;
+>>> +       pw->block = io->block;
+>>> +       pw->n_blocks = io->n_blocks;
+>>> +       queue_work(v->verify_wq, &pw->work);
+>>>  }
+>>>
+>>>  /*
+>>> @@ -498,7 +527,7 @@ static int verity_map(struct dm_target *
+>>>         memcpy(io->io_vec, bio_iovec(bio),
+>>>                io->io_vec_size * sizeof(struct bio_vec));
+>>>
+>>> -       verity_prefetch_io(v, io);
+>>> +       verity_submit_prefetch(v, io);
+>>>
+>>>         generic_make_request(bio);
+>>>
+>>> Index: linux-3.8-fast/drivers/md/dm-bufio.c
+>>> ===================================================================
+>>> --- linux-3.8-fast.orig/drivers/md/dm-bufio.c   2013-03-04 23:03:14.000000000 +0100
+>>> +++ linux-3.8-fast/drivers/md/dm-bufio.c        2013-03-04 23:04:19.000000000 +0100
+>>> @@ -1026,6 +1026,8 @@ void dm_bufio_prefetch(struct dm_bufio_c
+>>>  {
+>>>         struct blk_plug plug;
+>>>
+>>> +       BUG_ON(dm_bufio_in_request());
+>>> +
+>>>         blk_start_plug(&plug);
+>>>         dm_bufio_lock(c);
+>>>
 
-Another good catch.  ...but are you sure that your solution is enough?
- It seems like we'd also want to lock a spinlock in the ISR and to
-consider the completion protected by the lock.  If we don't do that it
-seems like you could get an interrupt _right_ after you re-init the
-completion.
-
-Notes:
-* I thought we could perhaps just disable the interrupt after
-wait_for_completion_interruptible_timeout() returns, but I'm not sure
-that's guaranteed to work in a multiprocessor environment.
-
-* I don't see any other iio/adc drivers using a spin_lock so maybe
-there's a better way to do it (or I'm misunderstanding).  A quick scan
-shows only two other iio/adc drivers even use request_irq().
-at91_adc.c appears to suffer from similar problems to what we're
-discussing here (only init the completion in probe).  ad_sigma_delta
-at lest calls INIT_COMPLETION before waiting but seems like it still
-has a small window of race (I'd have to dig more to be sure).
-
-
-Perhaps someone will tell me that I'm just confused.  ;)
-
--Doug
+Signed-off-by: Paul Taysom <taysom@chromium.org>
