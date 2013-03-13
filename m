@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934446Ab3CMXgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:36:51 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:45360 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933435Ab3CMXgt (ORCPT
+	id S934431Ab3CMXvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:51:09 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:47126 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932532Ab3CMXvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:36:49 -0400
-Date: Wed, 13 Mar 2013 16:36:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11: khubd issue SLAB related?
-In-Reply-To: <5140A7F2.5080203@xs4all.nl>
-Message-ID: <alpine.DEB.2.02.1303131633320.25372@chino.kir.corp.google.com>
-References: <5139E36A.5000109@xs4all.nl> <alpine.DEB.2.02.1303111410470.4160@chino.kir.corp.google.com> <5140A7F2.5080203@xs4all.nl>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 13 Mar 2013 19:51:07 -0400
+From: Benson Leung <bleung@chromium.org>
+To: rydberg@euromail.se, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com
+Cc: bleung@chromium.org, olofj@chromium.org, djkurtz@chromium.org,
+        dudl@cypress.com
+Subject: [PATCH 0/4] Input: cyapa - Add firmware update feature
+Date: Wed, 13 Mar 2013 16:50:47 -0700
+Message-Id: <1363218651-22457-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Mar 2013, Udo van den Heuvel wrote:
+Add a feature to update trackpad firmware via request_firmware to cyapa.
+The last patch in the series adds sysfs attributses useful for version
+and product identification that a user mode utility will need to
+keep track of the current firmware on the device.
 
-> > If not, enable it and try again, or get root and manually try to 
-> > defragment memory by doing echo 1 > /proc/sys/vm/compact_memory.
-> 
-> This needs to be done regularly, I assume?
-> 
+This is used today on Chromebook systems with cypress trackpads:
+Samsung Series 5 550 Chromebook
+Acer C7
+HP Pavilion 14
+Samsung Chromebook (2012, ARM version)
 
-It's done when the page allocation initially fails, so it shouldn't need 
-to be done explicitly by you.  I was hoping to see if that helped to solve 
-the problem and something like deferred compaction wasn't involved.
-
-> > If so, try killing a memory hogging process to free some memory and 
-> > attempt to get some higher order pages available.
-> 
-> It's a 8GB box (7.5GB available to software) with modest load. Mostly
-> email & web browsing, some torrents, nntp stuff, etc. Nothing weird.
-> Around 4.8G in buffers/cache right now.
-> 
-
-That may be true, but you only have about 300MB available at the time of 
-failure.
-
-> Why is this issue occurring?
-> Why did I not see this in the past?
-> 
-
-I already added Hans to the cc to see if the struct has grown recently.
+[PATCH 1/4] Input: cyapa - Move common initialization to cyapa_detect
+[PATCH 2/4] Input: cyapa - Firmware update via request firmware
+[PATCH 3/4] Input: cyapa - Allow filename to be changed in update_fw
+[PATCH 4/4] Input: cyapa - Add sysfs attrs for product_id and fw_version
