@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934310Ab3CMVee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 17:34:34 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35819 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932597Ab3CMVec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 17:34:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com
-Subject: Re: [PATCH V3 4/4] cpufreq: Add Kconfig option to enable/disable have_multiple_policies
-Date: Wed, 13 Mar 2013 22:41:36 +0100
-Message-ID: <3174774.7AKCbYrzc6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpompsA5bR6TauM7Wa6ciLxYYc7GdpN1NXdHF_WbP2ki=qA@mail.gmail.com>
-References: <cover.1362381470.git.viresh.kumar@linaro.org> <1687194.MelaMkNoiM@vostro.rjw.lan> <CAKohpompsA5bR6TauM7Wa6ciLxYYc7GdpN1NXdHF_WbP2ki=qA@mail.gmail.com>
+	id S934320Ab3CMVe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 17:34:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33759 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932597Ab3CMVez convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 17:34:55 -0400
+From: "Anna, Suman" <s-anna@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: RE: [PATCHv3 03/14] mailbox: OMAP: introduce mailbox framework
+Thread-Topic: [PATCHv3 03/14] mailbox: OMAP: introduce mailbox framework
+Thread-Index: AQHOH5rnfMcntSyh8kCsyEL56+3TdpikPcYA///mG1A=
+Date: Wed, 13 Mar 2013 21:34:36 +0000
+Message-ID: <37C860A02101E749A747FA2D3C1E3C50498B8E@DLEE11.ent.ti.com>
+References: <1363145044-14442-1-git-send-email-s-anna@ti.com>
+ <CACRpkdY8ZWNUVHJorbhN7XvOys9KJH8hKeCBYARih=1FiNk-CQ@mail.gmail.com>
+In-Reply-To: <CACRpkdY8ZWNUVHJorbhN7XvOys9KJH8hKeCBYARih=1FiNk-CQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 12, 2013 08:55:12 AM Viresh Kumar wrote:
-> On 12 March 2013 07:38, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > One more question before I apply it.
-> >
-> > Is there any architecture/platform that will set
-> > CONFIG_CPU_FREQ_HAVE_MULTIPLE_POLICIES and keep have_multiple_policies unset
-> > at the same time?
+> On Wed, Mar 13, 2013 at 4:24 AM, Suman Anna <s-anna@ti.com> wrote:
 > 
-> No, they are redundant. That's why i have been forcing to drop this patch.
+> > From: Omar Ramirez Luna <omar.luna@linaro.org>
+> (...)
+> >
+> > Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+> > [s-anna@ti.com: Kconfig fixes for build errors]
+> > Signed-off-by: Suman Anna <s-anna@ti.com>
+> > Acked-by: Tony Lindgren <tony@atomide.com>
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> It's not like I care super-much, but I think your SoB should be at the bottom.
+> 
+> It's a simple git rebase -i anyway...
 
-I see.
+Sure, will do. Only this patch, right? I have my SoB only on one another original patch, will adjust on that as well, but all the remaining ones will have yours at the bottom.
 
-What about having the Kconfig option alone, however?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards
+Suman
