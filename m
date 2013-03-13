@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388Ab3CMX61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:58:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58794 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588Ab3CMX60 (ORCPT
+	id S934477Ab3CMX6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:58:38 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:64213 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934407Ab3CMX61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:58:26 -0400
+	Wed, 13 Mar 2013 19:58:27 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: laijs@cn.fujitsu.com
-Subject: [PATCHSET wq/for-3.10] workqueue: misc cleanups
-Date: Wed, 13 Mar 2013 16:58:12 -0700
-Message-Id: <1363219098-16083-1-git-send-email-tj@kernel.org>
+Cc: laijs@cn.fujitsu.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/6] workqueue: relocate pwq_set_max_active()
+Date: Wed, 13 Mar 2013 16:58:13 -0700
+Message-Id: <1363219098-16083-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1363219098-16083-1-git-send-email-tj@kernel.org>
+References: <1363219098-16083-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+pwq_set_max_active() is gonna be modified and used during
+pool_workqueue init.  Move it above init_and_link_pwq().
 
-This patchset contains mostly cleanups and a fix for a bug in the new
-unbound pools w/ attrs.
+This patch is pure code reorganization and doesn't introduce any
+functional changes.
 
-This patchset contains the following six patches.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/workqueue.c | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
- 0001-workqueue-relocate-pwq_set_max_active.patch
- 0002-workqueue-implement-and-use-pwq_adjust_max_active.patch
- 0003-workqueue-fix-max_active-handling-in-init_and_link_p.patch
- 0004-workqueue-update-comments-and-a-warning-message.patch
- 0005-workqueue-rename-id-to-pi-in-for_each_each_pool.patch
- 0006-workqueue-inline-trivial-wrappers.patch
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f5c8bbb..d519289 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3725,6 +3725,26 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+ 		kfree(wq);
+ }
+ 
++/**
++ * pwq_set_max_active - adjust max_active of a pwq
++ * @pwq: target pool_workqueue
++ * @max_active: new max_active value.
++ *
++ * Set @pwq->max_active to @max_active and activate delayed works if
++ * increased.
++ *
++ * CONTEXT:
++ * spin_lock_irq(pool->lock).
++ */
++static void pwq_set_max_active(struct pool_workqueue *pwq, int max_active)
++{
++	pwq->max_active = max_active;
++
++	while (!list_empty(&pwq->delayed_works) &&
++	       pwq->nr_active < pwq->max_active)
++		pwq_activate_first_delayed(pwq);
++}
++
+ static void init_and_link_pwq(struct pool_workqueue *pwq,
+ 			      struct workqueue_struct *wq,
+ 			      struct worker_pool *pool,
+@@ -4012,26 +4032,6 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ EXPORT_SYMBOL_GPL(destroy_workqueue);
+ 
+ /**
+- * pwq_set_max_active - adjust max_active of a pwq
+- * @pwq: target pool_workqueue
+- * @max_active: new max_active value.
+- *
+- * Set @pwq->max_active to @max_active and activate delayed works if
+- * increased.
+- *
+- * CONTEXT:
+- * spin_lock_irq(pool->lock).
+- */
+-static void pwq_set_max_active(struct pool_workqueue *pwq, int max_active)
+-{
+-	pwq->max_active = max_active;
+-
+-	while (!list_empty(&pwq->delayed_works) &&
+-	       pwq->nr_active < pwq->max_active)
+-		pwq_activate_first_delayed(pwq);
+-}
+-
+-/**
+  * workqueue_set_max_active - adjust max_active of a workqueue
+  * @wq: target workqueue
+  * @max_active: new max_active value.
+-- 
+1.8.1.4
 
-0001-0002 clean up pwq->max_active handling.
-
-0003 fixes a race condition around max_active handling for the new
-unbound pools w/ attrs.
-
-0004-0006 are cleanups which make no functional differences other than
-inlining of some trivial wrappers.
-
-This patch is on top of wq/for-3.10 e626761691 ("workqueue: implement
-current_is_workqueue_rescuer()").
-
-diffstat follows.  Thanks.
-
- include/linux/workqueue.h |  123 +++++++++++++++--
- kernel/workqueue.c        |  324 +++++++++++++++-------------------------------
- 2 files changed, 218 insertions(+), 229 deletions(-)
-
---
-tejun
