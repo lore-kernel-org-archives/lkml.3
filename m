@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934127Ab3CMTDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:03:54 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33629 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933024Ab3CMTDx (ORCPT
+	id S934089Ab3CMTGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:06:39 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:33305 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933024Ab3CMTGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:03:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363163037-23995-1-git-send-email-haojian.zhuang@linaro.org>
-References: <1363163037-23995-1-git-send-email-haojian.zhuang@linaro.org>
-Date: Wed, 13 Mar 2013 20:03:53 +0100
-Message-ID: <CACRpkdasacB-jVtzgKimEWhf0Xhm8u5jAQgN6EqNLkEE_htUrg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: remove pxa pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Mar 2013 15:06:38 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] arch: s390: mm: Use PTR_RET function
+Date: Wed, 13 Mar 2013 21:05:57 +0200
+Message-Id: <1363201557-17715-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 9:23 AM, Haojian Zhuang
-<haojian.zhuang@linaro.org> wrote:
+Used PTR_RET function instead of IS_ERR and PTR_ERR.
+Patch found using coccinelle.
 
-> pinctrl-pxa driver doesn't support well on DT mode. Now pinctrl-single
-> could support DT mode & pin configuration. Use pinctrl-single driver to
-> support MMP/PXA silicons instead.
->
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ arch/s390/mm/cmm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Is the switch to pinctrl-single already done for these platforms,
-i.e. the device trees are updated to contain pinctrl-single data?
+diff --git a/arch/s390/mm/cmm.c b/arch/s390/mm/cmm.c
+index 479e942..5cf867f 100644
+--- a/arch/s390/mm/cmm.c
++++ b/arch/s390/mm/cmm.c
+@@ -458,7 +458,7 @@ static int __init cmm_init(void)
+ 	if (rc)
+ 		goto out_pm;
+ 	cmm_thread_ptr = kthread_run(cmm_thread, NULL, "cmmthread");
+-	rc = IS_ERR(cmm_thread_ptr) ? PTR_ERR(cmm_thread_ptr) : 0;
++	rc = PTR_RET(cmm_thread_ptr);
+ 	if (rc)
+ 		goto out_kthread;
+ 	return 0;
+-- 
+1.7.9.5
 
-And is ATAG code path removed, so noone needs the old driver?
-
-And is the defconfig or Kconfig for PXA/MMP altered to select
-the single driver instead?
-
-Else I cannot merge it...
-
-Yours,
-Linus Walleij
