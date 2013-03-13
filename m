@@ -1,379 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab3CMEqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 00:46:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61588 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab3CMEqq (ORCPT
+	id S1752034Ab3CMEtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 00:49:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36188 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab3CMEtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 00:46:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 12 Mar 2013 21:46:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        devicetree-discuss@lists.ozlabs.org, khali@linux-fr.org,
-        dianders@chromium.org, naveenkrishna.ch@gmail.com
-Subject: Re: [PATCH v4] hwmon: ntc: Add DT with IIO support to NTC thermistor
- driver
-Message-ID: <20130313044648.GA10059@roeck-us.net>
-References: <1363077566-6254-1-git-send-email-ch.naveen@samsung.com>
- <1363147700-7042-1-git-send-email-ch.naveen@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363147700-7042-1-git-send-email-ch.naveen@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Mar 2013 00:49:18 -0400
+Date: Wed, 13 Mar 2013 15:49:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: linux-next: manual merge of the akpm tree with the workqueues tree
+Message-Id: <20130313154905.59d00adb5b62d5169649aea0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__13_Mar_2013_15_49_05_+1100_MzgEDV51=LS.H0.a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 09:38:20AM +0530, Naveen Krishna Chatradhi wrote:
-> This patch adds DT support to NTC driver to parse the
-> platform data.
-> 
-> Also adds the support to work as an iio device.
-> 
-> During the probe ntc driver gets the respective channels of ADC
-> and uses iio_raw_read calls to get the ADC converted value.
-> 
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
-> Changes since v3:
-> 1. Added a NULL check before iio_channel_release
-> 2. Modified a return statement
-> 
-> Guenter Roeck, Its wonderful working with you. Thanks.
-> 
-My pleasure.
+--Signature=_Wed__13_Mar_2013_15_49_05_+1100_MzgEDV51=LS.H0.a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Patch looks ok to me now. I'll wait a couple of days to see if there is some
-feedback from the devicetree folks. Unless there are objections, I'll then queue
-it for 3.10.
+Hi Andrew,
 
-Thanks,
-Guenter
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/workqueue.c between commit fa1b54e69bc6 ("workqueue: update
+synchronization rules on worker_pool_idr") from the workqueues tree and
+commit "workqueue: convert to idr_alloc()" from the akpm tree.
 
->  .../devicetree/bindings/hwmon/ntc_thermistor.txt   |   29 ++++
->  drivers/hwmon/Kconfig                              |    1 +
->  drivers/hwmon/ntc_thermistor.c                     |  145 +++++++++++++++++---
->  include/linux/platform_data/ntc_thermistor.h       |    8 +-
->  4 files changed, 163 insertions(+), 20 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
-> new file mode 100644
-> index 0000000..c6f6667
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/ntc_thermistor.txt
-> @@ -0,0 +1,29 @@
-> +NTC Thermistor hwmon sensors
-> +-------------------------------
-> +
-> +Requires node properties:
-> +- "compatible" value : one of
-> +	"ntc,ncp15wb473"
-> +	"ntc,ncp18wb473"
-> +	"ntc,ncp21wb473"
-> +	"ntc,ncp03wb473"
-> +	"ntc,ncp15wl333"
-> +- "pullup-uv"	Pull up voltage in micro volts
-> +- "pullup-ohm"	Pull up resistor value in ohms
-> +- "pulldown-ohm" Pull down resistor value in ohms
-> +- "connected-positive" Always ON, If not specified.
-> +		Status change is possible.
-> +- "io-channels"	Channel node of ADC to be used for
-> +		conversion.
-> +
-> +Read more about iio bindings at
-> +	Documentation/devicetree/bindings/iio/iio-bindings.txt
-> +
-> +Example:
-> +	ncp15wb473@0 {
-> +		compatible = "ntc,ncp15wb473";
-> +		pullup-uv = <1800000>;
-> +		pullup-ohm = <47000>;
-> +		pulldown-ohm = <0>;
-> +		io-channels = <&adc 3>;
-> +	};
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 89ac1cb..cc47c12 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -879,6 +879,7 @@ config SENSORS_MCP3021
->  
->  config SENSORS_NTC_THERMISTOR
->  	tristate "NTC thermistor support"
-> +	select IIO if OF
->  	help
->  	  This driver supports NTC thermistors sensor reading and its
->  	  interpretation. The driver can also monitor the temperature and
-> diff --git a/drivers/hwmon/ntc_thermistor.c b/drivers/hwmon/ntc_thermistor.c
-> index b5f63f9..a6997a1 100644
-> --- a/drivers/hwmon/ntc_thermistor.c
-> +++ b/drivers/hwmon/ntc_thermistor.c
-> @@ -26,9 +26,16 @@
->  #include <linux/math64.h>
->  #include <linux/platform_device.h>
->  #include <linux/err.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  
->  #include <linux/platform_data/ntc_thermistor.h>
->  
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/machine.h>
-> +#include <linux/iio/driver.h>
-> +#include <linux/iio/consumer.h>
-> +
->  #include <linux/hwmon.h>
->  #include <linux/hwmon-sysfs.h>
->  
-> @@ -37,6 +44,15 @@ struct ntc_compensation {
->  	unsigned int	ohm;
->  };
->  
-> +static const struct platform_device_id ntc_thermistor_id[] = {
-> +	{ "ncp15wb473", TYPE_NCPXXWB473 },
-> +	{ "ncp18wb473", TYPE_NCPXXWB473 },
-> +	{ "ncp21wb473", TYPE_NCPXXWB473 },
-> +	{ "ncp03wb473", TYPE_NCPXXWB473 },
-> +	{ "ncp15wl333", TYPE_NCPXXWL333 },
-> +	{ },
-> +};
-> +
->  /*
->   * A compensation table should be sorted by the values of .ohm
->   * in descending order.
-> @@ -125,6 +141,92 @@ struct ntc_data {
->  	char name[PLATFORM_NAME_SIZE];
->  };
->  
-> +#ifdef CONFIG_OF
-> +static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
-> +{
-> +	struct iio_channel *channel = pdata->chan;
-> +	unsigned int result;
-> +	int val, ret;
-> +
-> +	ret = iio_read_channel_raw(channel, &val);
-> +	if (ret < 0) {
-> +		pr_err("read channel() error: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	/* unit: mV */
-> +	result = pdata->pullup_uV * val;
-> +	result >>= 12;
-> +
-> +	return result;
-> +}
-> +
-> +static const struct of_device_id ntc_match[] = {
-> +	{ .compatible = "ntc,ncp15wb473",
-> +		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-> +	{ .compatible = "ntc,ncp18wb473",
-> +		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-> +	{ .compatible = "ntc,ncp21wb473",
-> +		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-> +	{ .compatible = "ntc,ncp03wb473",
-> +		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-> +	{ .compatible = "ntc,ncp15wl333",
-> +		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, ntc_match);
-> +
-> +static struct ntc_thermistor_platform_data *
-> +ntc_thermistor_parse_dt(struct platform_device *pdev)
-> +{
-> +	struct iio_channel *chan;
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct ntc_thermistor_platform_data *pdata;
-> +
-> +	if (!np)
-> +		return NULL;
-> +
-> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	chan = iio_channel_get(&pdev->dev, NULL);
-> +	if (IS_ERR(chan))
-> +		return ERR_PTR(PTR_ERR(chan));
-> +
-> +	if (of_property_read_u32(np, "pullup-uv", &pdata->pullup_uV))
-> +		return ERR_PTR(-ENODEV);
-> +	if (of_property_read_u32(np, "pullup-ohm", &pdata->pullup_ohm))
-> +		return ERR_PTR(-ENODEV);
-> +	if (of_property_read_u32(np, "pulldown-ohm", &pdata->pulldown_ohm))
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	if (of_find_property(np, "connected-positive", NULL))
-> +		pdata->connect = NTC_CONNECTED_POSITIVE;
-> +	else /* status change should be possible if not always on. */
-> +		pdata->connect = NTC_CONNECTED_GROUND;
-> +
-> +	pdata->chan = chan;
-> +	pdata->read_uV = ntc_adc_iio_read;
-> +
-> +	return pdata;
-> +}
-> +static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
-> +{
-> +	if (pdata->chan)
-> +		iio_channel_release(pdata->chan);
-> +}
-> +#else
-> +static struct ntc_thermistor_platform_data *
-> +ntc_thermistor_parse_dt(struct platform_device *pdev)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
-> +{ }
-> +#endif
-> +
->  static inline u64 div64_u64_safe(u64 dividend, u64 divisor)
->  {
->  	if (divisor == 0 && dividend == 0)
-> @@ -259,7 +361,7 @@ static int ntc_thermistor_get_ohm(struct ntc_data *data)
->  		return data->pdata->read_ohm();
->  
->  	if (data->pdata->read_uV) {
-> -		read_uV = data->pdata->read_uV();
-> +		read_uV = data->pdata->read_uV(data->pdata);
->  		if (read_uV < 0)
->  			return read_uV;
->  		return get_ohm_of_thermistor(data, read_uV);
-> @@ -311,9 +413,18 @@ static const struct attribute_group ntc_attr_group = {
->  
->  static int ntc_thermistor_probe(struct platform_device *pdev)
->  {
-> +	const struct of_device_id *of_id =
-> +			of_match_device(of_match_ptr(ntc_match), &pdev->dev);
-> +	const struct platform_device_id *pdev_id;
-> +	struct ntc_thermistor_platform_data *pdata;
->  	struct ntc_data *data;
-> -	struct ntc_thermistor_platform_data *pdata = pdev->dev.platform_data;
-> -	int ret = 0;
-> +	int ret;
-> +
-> +	pdata = ntc_thermistor_parse_dt(pdev);
-> +	if (IS_ERR(pdata))
-> +		return PTR_ERR(pdata);
-> +	else if (pdata == NULL)
-> +		pdata = pdev->dev.platform_data;
->  
->  	if (!pdata) {
->  		dev_err(&pdev->dev, "No platform init data supplied.\n");
-> @@ -349,11 +460,13 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
->  	if (!data)
->  		return -ENOMEM;
->  
-> +	pdev_id = of_id ? of_id->data : platform_get_device_id(pdev);
-> +
->  	data->dev = &pdev->dev;
->  	data->pdata = pdata;
-> -	strlcpy(data->name, pdev->id_entry->name, sizeof(data->name));
-> +	strlcpy(data->name, pdev_id->name, sizeof(data->name));
->  
-> -	switch (pdev->id_entry->driver_data) {
-> +	switch (pdev_id->driver_data) {
->  	case TYPE_NCPXXWB473:
->  		data->comp = ncpXXwb473;
->  		data->n_comp = ARRAY_SIZE(ncpXXwb473);
-> @@ -364,8 +477,7 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
->  		break;
->  	default:
->  		dev_err(&pdev->dev, "Unknown device type: %lu(%s)\n",
-> -				pdev->id_entry->driver_data,
-> -				pdev->id_entry->name);
-> +				pdev_id->driver_data, pdev_id->name);
->  		return -EINVAL;
->  	}
->  
-> @@ -384,39 +496,34 @@ static int ntc_thermistor_probe(struct platform_device *pdev)
->  		goto err_after_sysfs;
->  	}
->  
-> -	dev_info(&pdev->dev, "Thermistor %s:%d (type: %s/%lu) successfully probed.\n",
-> -			pdev->name, pdev->id, pdev->id_entry->name,
-> -			pdev->id_entry->driver_data);
-> +	dev_info(&pdev->dev, "Thermistor type: %s successfully probed.\n",
-> +								pdev->name);
-> +
->  	return 0;
->  err_after_sysfs:
->  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
-> +	ntc_iio_channel_release(pdata);
->  	return ret;
->  }
->  
->  static int ntc_thermistor_remove(struct platform_device *pdev)
->  {
->  	struct ntc_data *data = platform_get_drvdata(pdev);
-> +	struct ntc_thermistor_platform_data *pdata = data->pdata;
->  
->  	hwmon_device_unregister(data->hwmon_dev);
->  	sysfs_remove_group(&data->dev->kobj, &ntc_attr_group);
-> +	ntc_iio_channel_release(pdata);
->  	platform_set_drvdata(pdev, NULL);
->  
->  	return 0;
->  }
->  
-> -static const struct platform_device_id ntc_thermistor_id[] = {
-> -	{ "ncp15wb473", TYPE_NCPXXWB473 },
-> -	{ "ncp18wb473", TYPE_NCPXXWB473 },
-> -	{ "ncp21wb473", TYPE_NCPXXWB473 },
-> -	{ "ncp03wb473", TYPE_NCPXXWB473 },
-> -	{ "ncp15wl333", TYPE_NCPXXWL333 },
-> -	{ },
-> -};
-> -
->  static struct platform_driver ntc_thermistor_driver = {
->  	.driver = {
->  		.name = "ntc-thermistor",
->  		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(ntc_match),
->  	},
->  	.probe = ntc_thermistor_probe,
->  	.remove = ntc_thermistor_remove,
-> diff --git a/include/linux/platform_data/ntc_thermistor.h b/include/linux/platform_data/ntc_thermistor.h
-> index 88734e8..fa95f9c 100644
-> --- a/include/linux/platform_data/ntc_thermistor.h
-> +++ b/include/linux/platform_data/ntc_thermistor.h
-> @@ -21,6 +21,8 @@
->  #ifndef _LINUX_NTC_H
->  #define _LINUX_NTC_H
->  
-> +struct iio_channel;
-> +
->  enum ntc_thermistor_type {
->  	TYPE_NCPXXWB473,
->  	TYPE_NCPXXWL333,
-> @@ -39,13 +41,17 @@ struct ntc_thermistor_platform_data {
->  	 * described at Documentation/hwmon/ntc_thermistor
->  	 *
->  	 * pullup/down_ohm: 0 for infinite / not-connected
-> +	 *
-> +	 * chan: iio_channel pointer to communicate with the ADC which the
-> +	 * thermistor is using for conversion of the analog values.
->  	 */
-> -	int (*read_uV)(void);
-> +	int (*read_uV)(struct ntc_thermistor_platform_data *);
->  	unsigned int pullup_uV;
->  
->  	unsigned int pullup_ohm;
->  	unsigned int pulldown_ohm;
->  	enum { NTC_CONNECTED_POSITIVE, NTC_CONNECTED_GROUND } connect;
-> +	struct iio_channel *chan;
->  
->  	int (*read_ohm)(void);
->  };
-> -- 
-> 1.7.9.5
-> 
-> 
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc kernel/workqueue.c
+index 2f43753,09bee1d..0000000
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@@ -456,31 -456,40 +456,31 @@@ static int worker_pool_assign_id(struc
+  {
+  	int ret;
+ =20
+ -	mutex_lock(&worker_pool_idr_mutex);
+ -	ret =3D idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
+ -	if (ret >=3D 0)
+ -		pool->id =3D ret;
+ -	mutex_unlock(&worker_pool_idr_mutex);
+ +	do {
+- 		if (!idr_pre_get(&worker_pool_idr, GFP_KERNEL))
+- 			return -ENOMEM;
+-=20
+++		idr_preload(GFP_KERNEL);
+ +		spin_lock_irq(&workqueue_lock);
+- 		ret =3D idr_get_new(&worker_pool_idr, pool, &pool->id);
+++		ret =3D idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_NOWAIT);
+++		if (ret >=3D 0)
+++			pool->id =3D ret;
+ +		spin_unlock_irq(&workqueue_lock);
+ +	} while (ret =3D=3D -EAGAIN);
+ =20
+- 	return ret;
++ 	return ret < 0 ? ret : 0;
+  }
+ =20
+ -/*
+ - * Lookup worker_pool by id.  The idr currently is built during boot and
+ - * never modified.  Don't worry about locking for now.
+ +/**
+ + * first_pwq - return the first pool_workqueue of the specified workqueue
+ + * @wq: the target workqueue
+ + *
+ + * This must be called either with workqueue_lock held or sched RCU read
+ + * locked.  If the pwq needs to be used beyond the locking in effect, the
+ + * caller is responsible for guaranteeing that the pwq stays online.
+   */
+ -static struct worker_pool *worker_pool_by_id(int pool_id)
+ -{
+ -	return idr_find(&worker_pool_idr, pool_id);
+ -}
+ -
+ -static struct worker_pool *get_std_worker_pool(int cpu, bool highpri)
+ -{
+ -	struct worker_pool *pools =3D std_worker_pools(cpu);
+ -
+ -	return &pools[highpri];
+ -}
+ -
+ -static struct pool_workqueue *get_pwq(unsigned int cpu,
+ -				      struct workqueue_struct *wq)
+ +static struct pool_workqueue *first_pwq(struct workqueue_struct *wq)
+  {
+ -	if (!(wq->flags & WQ_UNBOUND)) {
+ -		if (likely(cpu < nr_cpu_ids))
+ -			return per_cpu_ptr(wq->pool_wq.pcpu, cpu);
+ -	} else if (likely(cpu =3D=3D WORK_CPU_UNBOUND))
+ -		return wq->pool_wq.single;
+ -	return NULL;
+ +	assert_rcu_or_wq_lock();
+ +	return list_first_or_null_rcu(&wq->pwqs, struct pool_workqueue,
+ +				      pwqs_node);
+  }
+ =20
+  static unsigned int work_color_to_flags(int color)
+
+--Signature=_Wed__13_Mar_2013_15_49_05_+1100_MzgEDV51=LS.H0.a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRQAVBAAoJEECxmPOUX5FElYkP/3EoCACvyWeNh0zJjpuufkEI
+oMVUexBtpIqmfEK669lEO4UGkNTIH8zU04Yz7gprwvnIwbe35eUC0ajtVHROcWr0
+HV2f2cErxcKPWmspOS6PeHpc/FoI0wKkRu4hhC2hhlr4tO0qrWCM78Yoczro/yNo
++p+mWx4hG8c/XdKFGTLu0bnC+ZYL39I5Vmvn7CfTk1xRTKc7/t78qynzShbKmpiA
+jib9o/Cih961KuByT9VBNsEq6Q1lgfPRXpC+r0D4T5Tp7J/rHu4KgTRCp8uaeD4x
+kIxCNiCeU6cxkqMZiIZV1LcMF8zxcjvmuJDD6UDFSnYDxLigCq/09QRFUu7qh/tr
+/rGx3wIAtRAAJLi9K5j9KwZRCht2r+5E0DlbFX7eYRq2/aJWvx541otEDJEcMAkr
+P4hhMSLUgB8aKj1JEBKOLapB/rT4aGr3FK8y7gi7Hd71uY5bXsVD9jy2qP5OoKqc
+ssVav30kqB649xETd1VvyE/Q6LWuvkGSoVI1SbDwouq2BPtrxyR+u6RZMXb8l4/S
+D+SabAn+5rC26ePnYOffA3d+ypy/zR11yD1Z/ZeVEeeNHJKqKn2PfIk6pZM4b4Ab
+301tg3qRPVV0tExCZgC46Yns3VeFbEbf54XZp+KV4XKzUtxNJjw5FSve5NbvENhz
+QYDorR99GIpUuGHYxMTP
+=et9E
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__13_Mar_2013_15_49_05_+1100_MzgEDV51=LS.H0.a--
