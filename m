@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab3CMJwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:52:01 -0400
-Received: from mail.nanl.de ([217.115.11.12]:52720 "EHLO mail.nanl.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab3CMJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:52:00 -0400
+	id S932183Ab3CMJxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:53:06 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:39014 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3CMJxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 05:53:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363165170.3137.182.camel@x61.thuisdomein>
-References: <1363165170.3137.182.camel@x61.thuisdomein>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Wed, 13 Mar 2013 10:51:33 +0100
-Message-ID: <CAOiHx=n4a26z=PS02E2KjD2Y3Pp0P0x-5Ns6WRc-WScNF=EO_Q@mail.gmail.com>
-Subject: Re: rt2x00: Kconfig symbols RALINK_RT288X and RALINK_RT305X
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Crispin <blogic@openwrt.org>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAK2H+edwEjoRK0MWMBi0iXtAnGH8nvJgVRpvvEmo7FQ2VeMiiA@mail.gmail.com>
+References: <CA+icZUUqSCZeb2JOFv-OSRXAQyD+crvGqg9E0FAUF=+ZAg5vFA@mail.gmail.com>
+	<CAK2H+edwEjoRK0MWMBi0iXtAnGH8nvJgVRpvvEmo7FQ2VeMiiA@mail.gmail.com>
+Date: Wed, 13 Mar 2013 10:53:01 +0100
+Message-ID: <CA+icZUXgEZ3ihYQbEf3-FDvn5Mb2SiL8Tjb2_D9oAuhvSQ1gpQ@mail.gmail.com>
+Subject: Re: Status of union-mount?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Mark Knecht <markknecht@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Erez Zadok <ezk@cs.sunysb.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 March 2013 09:59, Paul Bolle <pebolle@tiscali.nl> wrote:
-> 0) Support for rt2800pci (or "the rt2860/rt3090 chipsets") was added in
-> v2.6.33 (three years ago). References to the related Kconfig symbols
-> RALINK_RT288X and RALINK_RT305X were introduced in that release. So were
-> checks for their macros (CONFIG_RALINK_RT288X and CONFIG_RALINK_RT305X).
+On Tue, Mar 12, 2013 at 6:18 PM, Mark Knecht <markknecht@gmail.com> wrote:
+> On Tue, Mar 12, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> Hi,
+>>
+>> what's the status of union-mount?
+>> Where does the development happen - in [1]?
+>>
+>> Regards,
+>> - Sedat -
+>>
+>> [1] http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=unionmount
 >
-> 1) The Kconfig symbols themselves were never added in mainline. So these
-> references and macros appear to be just markers for dead code in
-> mainline, as that code will not be built.
+> Sedat,
+>    Did you look here for info?
 >
-> 2) This was previously discussed in
-> https://lkml.org/lkml/2010/7/14/110 . The patch submitted in that
-> message (which would remove all the dead code at the time) did not get
-> applied.
+> http://unionfs.filesystems.org/
 >
-> 3) What is the current status of the (out of tree) code that adds
-> RALINK_RT288X and RALINK_RT305X?
 
-They are now present in 3.9-rc1, see a0b0197c (more specifically
-85639910..d3d2b420) :)
+[ CC Erez ]
 
-The actual accepted Kconfig symbol names are different though, so they
-should be changed in rt2x00 to match them (SOC_RT288X and SOC_RT305X).
+Hi,
 
+UnionFS is a different solution than union-mount.
+Checking the official GIT repositories, the last commit is from February 2012.
+Can't say if the development stopped.
 
-Jonas
+Regards,
+- Sedat -
+
+[1] http://git.fsl.cs.sunysb.edu/?p=unionfs-latest.git;a=commitdiff;h=6a0a7bb2656c8790d355e2dfcdd13332da319b8f
+
+> Cheers,
+> Mark
