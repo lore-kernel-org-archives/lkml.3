@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab3CME47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 00:56:59 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63139 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab3CME45 (ORCPT
+	id S932463Ab3CME5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 00:57:49 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:59348 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3CME5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 00:56:57 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 12 Mar 2013 21:56:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: devicetree-discuss@lists.ozlabs.org, dianders@chromium.org,
-        linux-kernel@vger.kernel.org, naveenkrishna.ch@gmail.com,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH v4] hwmon: ntc: Add DT with IIO support to
- NTC thermistor driver
-Message-ID: <20130313045656.GA15989@roeck-us.net>
-References: <1363077566-6254-1-git-send-email-ch.naveen@samsung.com>
- <1363147700-7042-1-git-send-email-ch.naveen@samsung.com>
- <20130313045226.GA15611@roeck-us.net>
+	Wed, 13 Mar 2013 00:57:48 -0400
+Message-ID: <5140072E.30008@linux.vnet.ibm.com>
+Date: Wed, 13 Mar 2013 12:57:18 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130313045226.GA15611@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 3/6] KVM: x86: introduce memslot_set_lpage_disallowed
+References: <514006AC.2020904@linux.vnet.ibm.com>
+In-Reply-To: <514006AC.2020904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031304-3568-0000-0000-00000347E263
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 09:52:26PM -0700, Guenter Roeck wrote:
-> On Wed, Mar 13, 2013 at 09:38:20AM +0530, Naveen Krishna Chatradhi wrote:
-> > This patch adds DT support to NTC driver to parse the
-> > platform data.
-> > 
-> > Also adds the support to work as an iio device.
-> > 
-> > During the probe ntc driver gets the respective channels of ADC
-> > and uses iio_raw_read calls to get the ADC converted value.
-> > 
-> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> 
-> Unfortunately there is still something we'll need to sort out:
-> 
-> fs/sysfs/Kconfig:1:     symbol SYSFS is selected by AT91_ADC
-> drivers/iio/adc/Kconfig:85:     symbol AT91_ADC depends on IIO
-> drivers/iio/Kconfig:5:  symbol IIO is selected by SENSORS_NTC_THERMISTOR
-> drivers/hwmon/Kconfig:900:      symbol SENSORS_NTC_THERMISTOR depends on HWMON
-> drivers/hwmon/Kconfig:5:        symbol HWMON is selected by EEEPC_LAPTOP
-> drivers/platform/x86/Kconfig:477:       symbol EEEPC_LAPTOP depends on
-> HOTPLUG_PCI
-> drivers/pci/hotplug/Kconfig:5:  symbol HOTPLUG_PCI depends on SYSFS
-> 
-> So we can not just select IIO. I'll see if I can find a solution.
-> 
-Here it is:
+It is used to set disallowed lage page on the specified level, can be
+used in later patch
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index f7adbe8..47d2176 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -899,7 +899,7 @@ config SENSORS_MCP3021
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/x86.c |   53 ++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 35 insertions(+), 18 deletions(-)
 
- config SENSORS_NTC_THERMISTOR
-         tristate "NTC thermistor support"
--	 select IIO if OF
-+	 depends on (!OF && !IIO) || (OF && IIO)
-	 help
-		This driver supports NTC thermistors sensor reading and its
-		interpretation. The driver can also monitor the temperature and
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 7083568..2cf3722 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6847,12 +6847,45 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+ 	}
+ }
 
-I'll modify the patch accordingly. No need to resubmit.
++static void
++memslot_set_lpage_disallowed(struct kvm_memory_slot *slot,
++			     unsigned long npages, int lpage_size,
++			     int lpages)
++{
++	struct kvm_lpage_info *lpage_info;
++	unsigned long ugfn;
++	int level = lpage_size + 1;
++
++	WARN_ON(!lpage_size);
++
++	lpage_info = slot->arch.lpage_info[lpage_size - 1];
++
++	if (slot->base_gfn & (KVM_PAGES_PER_HPAGE(level) - 1))
++		lpage_info[0].write_count = 1;
++
++	if ((slot->base_gfn + npages) & (KVM_PAGES_PER_HPAGE(level) - 1))
++		lpage_info[lpages - 1].write_count = 1;
++
++	ugfn = slot->userspace_addr >> PAGE_SHIFT;
++	/*
++	 * If the gfn and userspace address are not aligned wrt each
++	 * other, or if explicitly asked to, disable large page
++	 * support for this slot
++	 */
++	if ((slot->base_gfn ^ ugfn) & (KVM_PAGES_PER_HPAGE(level) - 1) ||
++	      !kvm_largepages_enabled()) {
++		unsigned long j;
++
++		for (j = 0; j < lpages; ++j)
++			lpage_info[j].write_count = 1;
++	}
++}
++
+ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+ {
+ 	int i;
 
-Thanks,
-Guenter
+ 	for (i = 0; i < KVM_NR_PAGE_SIZES; ++i) {
+-		unsigned long ugfn;
+ 		int lpages;
+ 		int level = i + 1;
+
+@@ -6871,23 +6904,7 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+ 		if (!slot->arch.lpage_info[i - 1])
+ 			goto out_free;
+
+-		if (slot->base_gfn & (KVM_PAGES_PER_HPAGE(level) - 1))
+-			slot->arch.lpage_info[i - 1][0].write_count = 1;
+-		if ((slot->base_gfn + npages) & (KVM_PAGES_PER_HPAGE(level) - 1))
+-			slot->arch.lpage_info[i - 1][lpages - 1].write_count = 1;
+-		ugfn = slot->userspace_addr >> PAGE_SHIFT;
+-		/*
+-		 * If the gfn and userspace address are not aligned wrt each
+-		 * other, or if explicitly asked to, disable large page
+-		 * support for this slot
+-		 */
+-		if ((slot->base_gfn ^ ugfn) & (KVM_PAGES_PER_HPAGE(level) - 1) ||
+-		    !kvm_largepages_enabled()) {
+-			unsigned long j;
+-
+-			for (j = 0; j < lpages; ++j)
+-				slot->arch.lpage_info[i - 1][j].write_count = 1;
+-		}
++		memslot_set_lpage_disallowed(slot, npages, i, lpages);
+ 	}
+
+ 	return 0;
+-- 
+1.7.7.6
+
