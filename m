@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3CMLNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 07:13:06 -0400
-Received: from mercuryimc.plus.com ([80.229.200.144]:44409 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754451Ab3CMLND (ORCPT
+	id S1756213Ab3CMLN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 07:13:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56162 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754451Ab3CMLN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 07:13:03 -0400
-Message-ID: <51405F3A.3090901@mimc.co.uk>
-Date: Wed, 13 Mar 2013 11:12:58 +0000
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 13 Mar 2013 07:13:28 -0400
+Date: Wed, 13 Mar 2013 11:13:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regmap: Expose total memory consumption in the rbtree
+ debugfs entry
+Message-ID: <20130313111326.GM25610@opensource.wolfsonmicro.com>
+References: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
-Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
-References: <5134CEF9.5070502@mimc.co.uk> <1363087506.3348.62.camel@sauron.fi.intel.com>
-In-Reply-To: <1363087506.3348.62.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="I4g3zIzscEHdx6fd"
+Content-Disposition: inline
+In-Reply-To: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Cookie: Your ignorance cramps my conversation.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/13 11:25, Artem Bityutskiy wrote:
-> On Mon, 2013-03-04 at 16:42 +0000, Mark Jackson wrote:
->> I'm encountering an oops when remounting my ubifs volume as read/write.
->>
->> # mount -o remount,rw /
->> [   89.434974] UBIFS assert failed in ubifs_write_node at 869 (pid 628)
->> [   89.442122] [<c001b124>] (unwind_backtrace+0x0/0xf0) from [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4)
->> [   89.451896] [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4) from [<c01b3878>] (ubifs_write_master+0x9c/0x134)
->> [   89.462018] [<c01b3878>] (ubifs_write_master+0x9c/0x134) from [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8)
->> [   89.472133] [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8) from [<c010dbf4>] (do_remount_sb+0x98/0x16c)
->> [   89.481790] [<c010dbf4>] (do_remount_sb+0x98/0x16c) from [<c0128268>] (do_mount+0x830/0x888)
->> [   89.490708] [<c0128268>] (do_mount+0x830/0x888) from [<c0128344>] (sys_mount+0x84/0xb8)
->> [   89.499178] [<c0128344>] (sys_mount+0x84/0xb8) from [<c0013800>] (ret_fast_syscall+0x0/0x3c)
->> [   89.510997] UBIFS assert failed in ubifs_write_node at 869 (pid 628)
->> [   89.517884] [<c001b124>] (unwind_backtrace+0x0/0xf0) from [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4)
->> [   89.527641] [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4) from [<c01b38b4>] (ubifs_write_master+0xd8/0x134)
->> [   89.537760] [<c01b38b4>] (ubifs_write_master+0xd8/0x134) from [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8)
->> [   89.547869] [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8) from [<c010dbf4>] (do_remount_sb+0x98/0x16c)
->> [   89.557526] [<c010dbf4>] (do_remount_sb+0x98/0x16c) from [<c0128268>] (do_mount+0x830/0x888)
->> [   89.566435] [<c0128268>] (do_mount+0x830/0x888) from [<c0128344>] (sys_mount+0x84/0xb8)
->> [   89.574905] [<c0128344>] (sys_mount+0x84/0xb8) from [<c0013800>] (ret_fast_syscall+0x0/0x3c)
->> [   89.585939] UBIFS: start fixing up free space
->> [   89.592237] UBIFS: background thread "ubifs_bgt0_0" started, PID 629
->> [   91.419951] UBIFS: free space fixup complete
->> #
->>
->> If it's any help, if the remount is put into my inittab, I don't get any oops.
-> 
-> Would you please try this patch (also attached):
-> 
-> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-> index ac838b8..9791b3c 100644
-> --- a/fs/ubifs/super.c
-> +++ b/fs/ubifs/super.c
-> @@ -1568,6 +1568,12 @@ static int ubifs_remount_rw(struct ubifs_info *c)
->  	c->remounting_rw = 1;
->  	c->ro_mount = 0;
->  
-> +	if (c->space_fixup) {
-> +		err = ubifs_fixup_free_space(c);
-> +		if (err)
-> +			goto out;
-> +	}
-> +
->  	err = check_free_space(c);
->  	if (err)
->  		goto out;
-> @@ -1684,12 +1690,6 @@ static int ubifs_remount_rw(struct ubifs_info *c)
->  		err = dbg_check_space_info(c);
->  	}
->  
-> -	if (c->space_fixup) {
-> -		err = ubifs_fixup_free_space(c);
-> -		if (err)
-> -			goto out;
-> -	}
-> -
->  	mutex_unlock(&c->umount_mutex);
->  	return err;
-> 
 
-Sorry ... this just locks up the unit.
+--I4g3zIzscEHdx6fd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Mark J.
+On Tue, Mar 12, 2013 at 05:26:49PM +0000, Dimitris Papastamos wrote:
+> Provide a feel of how much overhead the rbtree cache adds to
+> the game.
+
+Applied, with a tweak to the log to say "used X bytes" for clarity (it's
+arguable if the cached data itself is overhead, depends on what you're
+comparing to).
+
+--I4g3zIzscEHdx6fd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQF8zAAoJELSic+t+oim99ugP/RJ7C2gY+aFr6nSMtsyGnBKS
+sN0Rf1J+rDOD50C7a4552l4kXR5jeNyF/8ENVaUU3BTkga95sBZuL4VLtFIbhdIZ
+BLH7ymuK2ERKeI3OxH2aaUtO0jCkWSwik0VoZQO4Pjlfo85Mzq/FjtzeKfCOpX8W
+xXuyngIATJXL6gqI1t4EBqO+YJdNzfp3wdvztwzSmMM5fW6NWMD0WipWNFmL0FeB
+f26pkyqelX/0ufJ4diTmbOljSJa89uNJCfZEhBtiETVCim6hyigj90kARe2SIgiD
+Nh3ZBAtD1Iqd6Ob3N6mDXirr+fHL57cl9o4w9krSXvnATEMLiRPrMTfTJ9O+FZH4
+SoOH4lYwaJ/qdLY0FA35tY1tq/ydn/72mVNpGspV0390d/jtJgpXoqv2p0eGTkz7
+1x5POgv2qE0t/AUjx03IJ1WSZmuPDbr8g+jeEYBDFm5AMh6PP4jula3FxqG3MKgH
+MRrC3klBLqrNeH3LBCEFrzKJ2XWXSLL/MEcjg2hBQkH3l4MNTmeQvTx/izicbl++
+PxAMimNLrpbF1yM9I8jHQTG5f1ro/QZg53TlNBcPlENSIWpis4rMW3aQS1CzhnqF
+sOnCtcFxhTwk5uPdmqDhW9q3m1ipeA9bcIbyi5midewUCrXvSz8uN63020fH5cBV
+OOtcjSI66axw1pGvoaNI
+=MeQV
+-----END PGP SIGNATURE-----
+
+--I4g3zIzscEHdx6fd--
