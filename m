@@ -1,166 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3CMGpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:45:07 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43319 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932961Ab3CMGpC (ORCPT
+	id S932503Ab3CMGoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:44:13 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48637 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab3CMGn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:45:02 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-f7-5140206b0d95
-Date: Wed, 13 Mar 2013 15:44:59 +0900
-From: Minchan Kim <minchan.kim@lge.com>
-To: Paul Turner <pjt@google.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, Sanjay Ghemawat <sanjay@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
-Message-ID: <20130313064459.GC13815@blaptop>
-References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
- <CAPM31RJ1tzd7yWQEgL0u-PjK7mV=wY57OPDJ76ijJAC2YnDuHw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31RJ1tzd7yWQEgL0u-PjK7mV=wY57OPDJ76ijJAC2YnDuHw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 13 Mar 2013 02:43:57 -0400
+From: Girish K S <girishks2000@gmail.com>
+To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: grant.likely@secretlab.ca, t.figa@samsung.com,
+        broonie@opensource.wolfsonmicro.com,
+        Girish K S <girishks2000@gmail.com>
+Subject: [PATCH V3 1/5] spi: s3c64xx: modified error interrupt handling and init
+Date: Wed, 13 Mar 2013 12:13:30 +0530
+Message-Id: <1363157014-9615-2-git-send-email-ks.giri@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 04:16:57PM -0700, Paul Turner wrote:
-> On Tue, Mar 12, 2013 at 12:38 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > First of all, let's define the term.
-> > From now on, I'd like to call it as vrange(a.k.a volatile range)
-> > for anonymous page. If you have a better name in mind, please suggest.
-> >
-> > This version is still *RFC* because it's just quick prototype so
-> > it doesn't support THP/HugeTLB/KSM and even couldn't build on !x86.
-> > Before further sorting out issues, I'd like to post current direction
-> > and discuss it. Of course, I'd like to extend this discussion in
-> > comming LSF/MM.
-> >
-> > In this version, I changed lots of thing, expecially removed vma-based
-> > approach because it needs write-side lock for mmap_sem, which will drop
-> > performance in mutli-threaded big SMP system, KOSAKI pointed out.
-> > And vma-based approach is hard to meet requirement of new system call by
-> > John Stultz's suggested semantic for consistent purged handling.
-> > (http://linux-kernel.2935.n7.nabble.com/RFC-v5-0-8-Support-volatile-for-anonymous-range-tt575773.html#none)
-> >
-> > I tested this patchset with modified jemalloc allocator which was
-> > leaded by Jason Evans(jemalloc author) who was interest in this feature
-> > and was happy to port his allocator to use new system call.
-> > Super Thanks Jason!
-> >
-> > The benchmark for test is ebizzy. It have been used for testing the
-> > allocator performance so it's good for me. Again, thanks for recommending
-> > the benchmark, Jason.
-> > (http://people.freebsd.org/~kris/scaling/ebizzy.html)
-> >
-> > The result is good on my machine (12 CPU, 1.2GHz, DRAM 2G)
-> >
-> >         ebizzy -S 20
-> >
-> > jemalloc-vanilla: 52389 records/sec
-> > jemalloc-vrange: 203414 records/sec
-> >
-> >         ebizzy -S 20 with background memory pressure
-> >
-> > jemalloc-vanilla: 40746 records/sec
-> > jemalloc-vrange: 174910 records/sec
-> >
-> > And it's much improved on KVM virtual machine.
-> >
-> > This patchset is based on v3.9-rc2
-> >
-> > - What's the sys_vrange(addr, length, mode, behavior)?
-> >
-> >   It's a hint that user deliver to kernel so kernel can *discard*
-> >   pages in a range anytime. mode is one of VRANGE_VOLATILE and
-> >   VRANGE_NOVOLATILE. VRANGE_NOVOLATILE is memory pin operation so
-> >   kernel coudn't discard any pages any more while VRANGE_VOLATILE
-> >   is memory unpin opeartion so kernel can discard pages in vrange
-> >   anytime. At a moment, behavior is one of VRANGE_FULL and VRANGE
-> >   PARTIAL. VRANGE_FULL tell kernel that once kernel decide to
-> >   discard page in a vrange, please, discard all of pages in a
-> >   vrange selected by victim vrange. VRANGE_PARTIAL tell kernel
-> >   that please discard of some pages in a vrange. But now I didn't
-> >   implemented VRANGE_PARTIAL handling yet.
-> >
-> > - What happens if user access page(ie, virtual address) discarded
-> >   by kernel?
-> >
-> >   The user can encounter SIGBUS.
-> >
-> > - What should user do for avoding SIGBUS?
-> >   He should call vrange(addr, length, VRANGE_NOVOLATILE, mode) before
-> >   accessing the range which was called
-> >   vrange(addr, length, VRANGE_VOLATILE, mode)
-> >
-> > - What happens if user access page(ie, virtual address) doesn't
-> >   discarded by kernel?
-> >
-> >   The user can see vaild data which was there before calling
-> > vrange(., VRANGE_VOLATILE) without page fault.
-> >
-> > - What's different with madvise(DONTNEED)?
-> >
-> >   System call semantic
-> >
-> >   DONTNEED makes sure user always can see zero-fill pages after
-> >   he calls madvise while vrange can see data or encounter SIGBUS.
-> >
-> >   Internal implementation
-> >
-> >   The madvise(DONTNEED) should zap all mapped pages in range so
-> >   overhead is increased linearly with the number of mapped pages.
-> >   Even, if user access zapped pages as write mode, page fault +
-> >   page allocation + memset should be happened.
-> >
-> >   The vrange just register a address range instead of zapping all of pte
-> >   n the vma so it doesn't touch ptes any more.
-> >
-> > - What's the benefit compared to DONTNEED?
-> >
-> >   1. The system call overhead is smaller because vrange just registers
-> >      a range using interval tree instead of zapping all the page in a range
-> >      so overhead should be really cheap.
-> >
-> >   2. It has a chance to eliminate overheads (ex, zapping pte + page fault
-> >      + page allocation + memset(PAGE_SIZE)) if memory pressure isn't
-> >      severe.
-> >
-> >   3. It has a potential to zap all ptes and free the pages if memory
-> >      pressure is severe so discard scanning overhead could be smaller - TODO
-> >
-> > - What's for targetting?
-> >
-> >   Firstly, user-space allocator like ptmalloc, jemalloc or heap management
-> >   of virtual machine like Dalvik. Also, it comes in handy for embedded
-> >   which doesn't have swap device so they can't reclaim anonymous pages.
-> >   By discarding instead of swapout, it could be used in the non-swap system.
-> 
-> I think that another potentially useful use-case would be using this
-> -- or a similar API -- to opportunistically return deep user stack
-> frames.
-> 
-> This is another place where we strongly care about the time-to-free as
-> well as the time-to-reallocate in the case of relatively immediate
-> re-use.
+From: Girish K S <girishks2000@gmail.com>
 
-Indeed. Great idea!
-Thanks, Paul.
+The status of the interrupt is available in the status register,
+so reading the clear pending register and writing back the same
+value will not actually clear the pending interrupts. This patch
+modifies the interrupt handler to read the status register and
+clear the corresponding pending bit in the clear pending register.
 
+Modified the hwInit function to clear all the pending interrupts.
+
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+---
+ drivers/spi/spi-s3c64xx.c | 41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index e862ab8..4188b2f 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -994,25 +994,30 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
+ {
+ 	struct s3c64xx_spi_driver_data *sdd = data;
+ 	struct spi_master *spi = sdd->master;
+-	unsigned int val;
++	unsigned int val, clr = 0;
+ 
+-	val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
++	val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+ 
+-	val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+-		S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+-		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+-		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+-
+-	writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+-
+-	if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
++	if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
++		clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+ 		dev_err(&spi->dev, "RX overrun\n");
+-	if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+ 		dev_err(&spi->dev, "RX underrun\n");
+-	if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+ 		dev_err(&spi->dev, "TX overrun\n");
+-	if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+ 		dev_err(&spi->dev, "TX underrun\n");
++	}
++
++	/* Clear the pending irq by setting and then clearing it */
++	writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
++	writel(0, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -1036,9 +1041,13 @@ static void s3c64xx_spi_hwinit(struct s3c64xx_spi_driver_data *sdd, int channel)
+ 	writel(0, regs + S3C64XX_SPI_MODE_CFG);
+ 	writel(0, regs + S3C64XX_SPI_PACKET_CNT);
+ 
+-	/* Clear any irq pending bits */
+-	writel(readl(regs + S3C64XX_SPI_PENDING_CLR),
+-				regs + S3C64XX_SPI_PENDING_CLR);
++	/* Clear any irq pending bits, should set and clear the bits */
++	val = S3C64XX_SPI_PND_RX_OVERRUN_CLR |
++		S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
++		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
++		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
++	writel(val, regs + S3C64XX_SPI_PENDING_CLR);
++	writel(0, regs + S3C64XX_SPI_PENDING_CLR);
+ 
+ 	writel(0, regs + S3C64XX_SPI_SWAP_CFG);
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.8.0
+
