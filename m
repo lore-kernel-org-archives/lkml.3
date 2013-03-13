@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239Ab3CMUST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:18:19 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:61662 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934218Ab3CMUSO (ORCPT
+	id S934216Ab3CMUXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:23:45 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:41640 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab3CMUXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:18:14 -0400
-Date: Wed, 13 Mar 2013 21:18:09 +0100
+	Wed, 13 Mar 2013 16:23:44 -0400
+Date: Wed, 13 Mar 2013 21:23:22 +0100
 From: Daniel Vetter <daniel@ffwll.ch>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: use do_div() as needed in debugfs code
-Message-ID: <20130313201809.GB1896@bremse>
-Mail-Followup-To: Kees Cook <keescook@chromium.org>,
-	linux-kernel@vger.kernel.org,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	intel-gfx@lists.freedesktop.org
-References: <20130312054631.GA21167@www.outflux.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (drm-intel tree related)
+Message-ID: <20130313202322.GC1896@bremse>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Kees Cook <keescook@chromium.org>
+References: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130312054631.GA21167@www.outflux.net>
+In-Reply-To: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
 X-Operating-System: Linux bremse 3.8.0-rc6+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 10:46:31PM -0700, Kees Cook wrote:
-> This replaces the open-coded divisions in the debugfs code by calls
-> to do_div().
+On Tue, Mar 12, 2013 at 03:22:26PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
+> 
+> drivers/built-in.o: In function `i915_min_freq_set':
+> i915_debugfs.c:(.text+0xb1adc): undefined reference to `__udivdi3'
+> drivers/built-in.o: In function `i915_max_freq_set':
+> i915_debugfs.c:(.text+0xb1bac): undefined reference to `__udivdi3'
+> 
+> Caused by commit 2389cc500686 ("drm/i915: use simple attribute in debugfs
+> routines") from the drm-intel tree.
+> 
+> I have reverted that commit for today.
 
-Squashed into the debugfs patch which introduced this regression, thanks
-for the quick fixup.
+Should be fixed now, thanks for the report (and my apologies for the
+little screw-up).
 -Daniel
-
-> ---
->  drivers/gpu/drm/i915/i915_debugfs.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-> index d86c304..6f3cbf8 100644
-> --- a/drivers/gpu/drm/i915/i915_debugfs.c
-> +++ b/drivers/gpu/drm/i915/i915_debugfs.c
-> @@ -1814,9 +1814,9 @@ i915_max_freq_set(void *data, u64 val)
->  	/*
->  	 * Turbo will still be enabled, but won't go above the set value.
->  	 */
-> -	dev_priv->rps.max_delay = val / GT_FREQUENCY_MULTIPLIER;
-> -
-> -	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
-> +	do_div(val, GT_FREQUENCY_MULTIPLIER);
-> +	dev_priv->rps.max_delay = val;
-> +	gen6_set_rps(dev, val);
->  	mutex_unlock(&dev_priv->rps.hw_lock);
->  
->  	return 0;
-> @@ -1865,9 +1865,9 @@ i915_min_freq_set(void *data, u64 val)
->  	/*
->  	 * Turbo will still be enabled, but won't go below the set value.
->  	 */
-> -	dev_priv->rps.min_delay = val / GT_FREQUENCY_MULTIPLIER;
-> -
-> -	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
-> +	do_div(val, GT_FREQUENCY_MULTIPLIER);
-> +	dev_priv->rps.min_delay = val;
-> +	gen6_set_rps(dev, val);
->  	mutex_unlock(&dev_priv->rps.hw_lock);
->  
->  	return 0;
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-
 -- 
 Daniel Vetter
 Software Engineer, Intel Corporation
