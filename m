@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934146Ab3CMSSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:18:45 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34786 "EHLO
+	id S934163Ab3CMSTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:19:16 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34795 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934043Ab3CMSSB (ORCPT
+	with ESMTP id S933997Ab3CMSSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Mar 2013 14:18:01 -0400
 X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
-   d="scan'208";a="29403406"
+   d="scan'208";a="29403403"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv3 10/10] ARM: smp: Remove local timer API
-Date: Wed, 13 Mar 2013 11:17:56 -0700
-Message-Id: <1363198676-30417-11-git-send-email-sboyd@codeaurora.org>
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: [PATCHv3 07/10] ARM: msm: Divorce msm_timer from local timer API
+Date: Wed, 13 Mar 2013 11:17:53 -0700
+Message-Id: <1363198676-30417-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
 In-Reply-To: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
 References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
@@ -23,208 +24,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no more users of this API, remove it.
+Separate the msm_timer from the local timer API. This will allow
+us to remove ARM local timer support in the near future and gets
+us closer to moving this driver to drivers/clocksource.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/Kconfig                  | 10 ------
- arch/arm/include/asm/localtimer.h | 34 -------------------
- arch/arm/kernel/smp.c             | 69 ---------------------------------------
- 3 files changed, 113 deletions(-)
- delete mode 100644 arch/arm/include/asm/localtimer.h
+ arch/arm/mach-msm/timer.c | 125 +++++++++++++++++++++++++---------------------
+ 1 file changed, 67 insertions(+), 58 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5ad2ccf..f1a4c57 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1647,16 +1647,6 @@ config ARM_PSCI
- 	  0022A ("Power State Coordination Interface System Software on
- 	  ARM processors").
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 2969027..4675c5e 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -16,6 +16,7 @@
  
--config LOCAL_TIMERS
--	bool "Use local timer interrupts"
--	depends on SMP
--	default y
--	help
--	  Enable support for local timers on SMP platforms, rather then the
--	  legacy IPI broadcast method.  Local timers allows the system
--	  accounting to be spread across the timer interval, preventing a
--	  "thundering herd" at every timer tick.
--
- config ARCH_NR_GPIO
- 	int
- 	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
-diff --git a/arch/arm/include/asm/localtimer.h b/arch/arm/include/asm/localtimer.h
-deleted file mode 100644
-index f77ffc1..0000000
---- a/arch/arm/include/asm/localtimer.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- *  arch/arm/include/asm/localtimer.h
-- *
-- *  Copyright (C) 2004-2005 ARM Ltd.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_ARM_LOCALTIMER_H
--#define __ASM_ARM_LOCALTIMER_H
--
--#include <linux/errno.h>
--
--struct clock_event_device;
--
--struct local_timer_ops {
--	int  (*setup)(struct clock_event_device *);
--	void (*stop)(struct clock_event_device *);
+ #include <linux/clocksource.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+@@ -25,7 +26,6 @@
+ #include <linux/of_irq.h>
+ 
+ #include <asm/mach/time.h>
+-#include <asm/localtimer.h>
+ #include <asm/sched_clock.h>
+ 
+ #include "common.h"
+@@ -46,7 +46,7 @@ static void __iomem *event_base;
+ 
+ static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
+ {
+-	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++	struct clock_event_device *evt = dev_id;
+ 	/* Stop the timer tick */
+ 	if (evt->mode == CLOCK_EVT_MODE_ONESHOT) {
+ 		u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
+@@ -90,18 +90,7 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
+ 	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
+ }
+ 
+-static struct clock_event_device msm_clockevent = {
+-	.name		= "gp_timer",
+-	.features	= CLOCK_EVT_FEAT_ONESHOT,
+-	.rating		= 200,
+-	.set_next_event	= msm_timer_set_next_event,
+-	.set_mode	= msm_timer_set_mode,
 -};
 -
+-static union {
+-	struct clock_event_device *evt;
+-	struct clock_event_device * __percpu *percpu_evt;
+-} msm_evt;
++static struct clock_event_device __percpu *msm_evt;
+ 
+ static void __iomem *source_base;
+ 
+@@ -127,40 +116,66 @@ static struct clocksource msm_clocksource = {
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+ 
 -#ifdef CONFIG_LOCAL_TIMERS
--/*
-- * Register a local timer driver
-- */
--int local_timer_register(struct local_timer_ops *);
--#else
--static inline int local_timer_register(struct local_timer_ops *ops)
--{
--	return -ENXIO;
--}
--#endif
--
--#endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4de4d14..4c49138 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -41,7 +41,6 @@
- #include <asm/sections.h>
- #include <asm/tlbflush.h>
- #include <asm/ptrace.h>
--#include <asm/localtimer.h>
- #include <asm/smp_plat.h>
- #include <asm/virt.h>
- #include <asm/mach/arch.h>
-@@ -133,8 +132,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--static void percpu_timer_stop(void);
--
- static int platform_cpu_kill(unsigned int cpu)
++static int msm_timer_irq;
++static int msm_timer_has_ppi;
++
+ static int __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
  {
- 	if (smp_ops.cpu_kill)
-@@ -178,11 +175,6 @@ int __cpuinit __cpu_disable(void)
- 	migrate_irqs();
+-	/* Use existing clock_event for cpu 0 */
+-	if (!smp_processor_id())
+-		return 0;
++	int cpu = smp_processor_id();
++	int err;
  
- 	/*
--	 * Stop the local timer for this CPU.
--	 */
--	percpu_timer_stop();
--
--	/*
- 	 * Flush user cache and TLB mappings, and then remove this CPU
- 	 * from the vm mask set of all processes.
- 	 *
-@@ -269,8 +261,6 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
- 	store_cpu_topology(cpuid);
+ 	writel_relaxed(0, event_base + TIMER_ENABLE);
+ 	writel_relaxed(0, event_base + TIMER_CLEAR);
+ 	writel_relaxed(~0, event_base + TIMER_MATCH_VAL);
+-	evt->irq = msm_clockevent.irq;
++	evt->irq = msm_timer_irq;
+ 	evt->name = "local_timer";
+-	evt->features = msm_clockevent.features;
+-	evt->rating = msm_clockevent.rating;
++	evt->features = CLOCK_EVT_FEAT_ONESHOT;
++	evt->rating = 200;
+ 	evt->set_mode = msm_timer_set_mode;
+ 	evt->set_next_event = msm_timer_set_next_event;
++	evt->cpumask = cpumask_of(cpu);
++
++	clockevents_config_and_register(evt, GPT_HZ, 4, 0xffffffff);
++
++	if (msm_timer_has_ppi) {
++		enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
++	} else {
++		err = request_irq(evt->irq, msm_timer_interrupt,
++				IRQF_TIMER | IRQF_NOBALANCING |
++				IRQF_TRIGGER_RISING, "gp_timer", evt);
++		if (err)
++			pr_err("request_irq failed\n");
++	}
+ 
+-	*__this_cpu_ptr(msm_evt.percpu_evt) = evt;
+-	clockevents_config_and_register(evt, GPT_HZ, 4, 0xf0000000);
+-	enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
+ 	return 0;
  }
  
--static void percpu_timer_setup(void);
--
- /*
-  * This is the secondary CPU boot entry.  We're using this CPUs
-  * idle thread stack, but a set of temporary page tables.
-@@ -325,11 +315,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	set_cpu_online(cpu, true);
- 	complete(&cpu_running);
- 
--	/*
--	 * Setup the percpu timer for this CPU.
--	 */
--	percpu_timer_setup();
--
- 	local_irq_enable();
- 	local_fiq_enable();
- 
-@@ -376,12 +361,6 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 		max_cpus = ncores;
- 	if (ncores > 1 && max_cpus) {
- 		/*
--		 * Enable the local timer or broadcast device for the
--		 * boot CPU, but only if we have more than one CPU.
--		 */
--		percpu_timer_setup();
--
--		/*
- 		 * Initialise the present map, which describes the set of CPUs
- 		 * actually populated at the present time. A platform should
- 		 * re-initialize the map in the platforms smp_prepare_cpus()
-@@ -457,11 +436,6 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- 	return sum;
- }
- 
--/*
-- * Timer (local or broadcast) support
-- */
--static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
--
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- void tick_broadcast(const struct cpumask *mask)
+-static void msm_local_timer_stop(struct clock_event_device *evt)
++static void __cpuinit msm_local_timer_stop(struct clock_event_device *evt)
  {
-@@ -469,49 +443,6 @@ void tick_broadcast(const struct cpumask *mask)
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+ 	disable_percpu_irq(evt->irq);
  }
- #endif
  
--static struct local_timer_ops *lt_ops;
+-static struct local_timer_ops msm_local_timer_ops __cpuinitdata = {
+-	.setup	= msm_local_timer_setup,
+-	.stop	= msm_local_timer_stop,
++static int __cpuinit msm_timer_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	struct clock_event_device *evt = this_cpu_ptr(msm_evt);
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		msm_local_timer_setup(evt);
++		break;
++	case CPU_DYING:
++		msm_local_timer_stop(evt);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block msm_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = msm_timer_cpu_notify,
+ };
+-#endif /* CONFIG_LOCAL_TIMERS */
+ 
+ static notrace u32 msm_sched_clock_read(void)
+ {
+@@ -170,41 +185,35 @@ static notrace u32 msm_sched_clock_read(void)
+ static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
+ 				  bool percpu)
+ {
+-	struct clock_event_device *ce = &msm_clockevent;
+ 	struct clocksource *cs = &msm_clocksource;
+-	int res;
++	int res = 0;
+ 
+-	writel_relaxed(0, event_base + TIMER_ENABLE);
+-	writel_relaxed(0, event_base + TIMER_CLEAR);
+-	writel_relaxed(~0, event_base + TIMER_MATCH_VAL);
+-	ce->cpumask = cpumask_of(0);
+-	ce->irq = irq;
 -
+-	clockevents_config_and_register(ce, GPT_HZ, 4, 0xffffffff);
+-	if (percpu) {
+-		msm_evt.percpu_evt = alloc_percpu(struct clock_event_device *);
+-		if (!msm_evt.percpu_evt) {
+-			pr_err("memory allocation failed for %s\n", ce->name);
++	msm_timer_irq = irq;
++	msm_timer_has_ppi = percpu;
++
++	msm_evt = alloc_percpu(struct clock_event_device);
++	if (!msm_evt) {
++		pr_err("memory allocation failed for clockevents\n");
++		goto err;
++	}
++
++	if (percpu)
++		res = request_percpu_irq(irq, msm_timer_interrupt,
++					 "gp_timer", msm_evt);
++
++	if (res) {
++		pr_err("request_percpu_irq failed\n");
++	} else {
++		res = register_cpu_notifier(&msm_timer_cpu_nb);
++		if (res) {
++			free_percpu_irq(irq, msm_evt);
+ 			goto err;
+ 		}
+-		*__this_cpu_ptr(msm_evt.percpu_evt) = ce;
+-		res = request_percpu_irq(ce->irq, msm_timer_interrupt,
+-					 ce->name, msm_evt.percpu_evt);
+-		if (!res) {
+-			enable_percpu_irq(ce->irq, IRQ_TYPE_EDGE_RISING);
 -#ifdef CONFIG_LOCAL_TIMERS
--int local_timer_register(struct local_timer_ops *ops)
--{
--	if (!is_smp() || !setup_max_cpus)
--		return -ENXIO;
--
--	if (lt_ops)
--		return -EBUSY;
--
--	lt_ops = ops;
--	return 0;
--}
+-			local_timer_register(&msm_local_timer_ops);
 -#endif
--
--static void __cpuinit percpu_timer_setup(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	evt->cpumask = cpumask_of(cpu);
--
--	if (lt_ops)
--		lt_ops->setup(evt);
--}
--
--#ifdef CONFIG_HOTPLUG_CPU
--/*
-- * The generic clock events code purposely does not stop the local timer
-- * on CPU_DEAD/CPU_DEAD_FROZEN hotplug events, so we have to do it
-- * manually here.
-- */
--static void percpu_timer_stop(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	if (lt_ops)
--		lt_ops->stop(evt);
--}
--#endif
--
- static DEFINE_RAW_SPINLOCK(stop_lock);
+-		}
+-	} else {
+-		msm_evt.evt = ce;
+-		res = request_irq(ce->irq, msm_timer_interrupt,
+-				  IRQF_TIMER | IRQF_NOBALANCING |
+-				  IRQF_TRIGGER_RISING, ce->name, &msm_evt.evt);
++
++		/* Immediately configure the timer on the boot CPU */
++		msm_local_timer_setup(this_cpu_ptr(msm_evt));
+ 	}
  
- /*
+-	if (res)
+-		pr_err("request_irq failed for %s\n", ce->name);
+ err:
+ 	writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
+ 	res = clocksource_register_hz(cs, dgt_hz);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
