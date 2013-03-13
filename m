@@ -1,50 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3CMUh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:37:56 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18493 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3CMUhz (ORCPT
+	id S964793Ab3CMUkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:40:21 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:62784 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab3CMUkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:37:55 -0400
-Date: Wed, 13 Mar 2013 23:37:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jacob Garber <ajtgarber@gmail.com>
-Cc: greg@kroah.com, devel@driverdev.osuosl.org, fmhess@users.sourceforge.net,
-        abbotti@mev.co.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: Fixed camel case style issue in usbdux.c
-Message-ID: <20130313203718.GG9138@mwanda>
-References: <1363191560-4410-1-git-send-email-ajtgarber@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363191560-4410-1-git-send-email-ajtgarber@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 13 Mar 2013 16:40:14 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Jonathan Cameron <jic23@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
+        Doug Anderson <dianders@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: [PATCH v2 2/4] iio: adc: Add dt support for turning on the phy in exynos-adc
+Date: Wed, 13 Mar 2013 13:40:00 -0700
+Message-Id: <1363207202-10858-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363207202-10858-1-git-send-email-dianders@chromium.org>
+References: <1363129994-10438-1-git-send-email-dianders@chromium.org>
+ <1363207202-10858-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 12:19:20PM -0400, Jacob Garber wrote:
-> This is a patch to usbdux.c that fixes the camel case warnings found
-> by the checkpatch.pl tool
-> 
-> Signed-off-by: Jacob Garber <ajtgarber@gmail.com>
-> ---
-> -static int usbduxsub_submit_InURBs(struct usbduxsub *usbduxsub)
-> +static int usbduxsub_submit_inurbs(struct usbduxsub *usbduxsub)
->  {
-> -	int i, errFlag;
-> +	int i, err_flag;
->  
+Without this change the exynos adc controller needed to have its phy
+enabled in some out-of-driver C code.  Add support for specifying the
+phy enable register by listing it in the reg list.
 
-This is really just a regular error code, not a flag.  But that was
-there in the original so no worries.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2: None
 
-Looks good.
+ .../devicetree/bindings/arm/samsung/exynos-adc.txt         |  4 ++--
+ drivers/iio/adc/exynos_adc.c                               | 14 +++++++++++++-
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-regards,
-dan carpenter
+diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+index 96db940..05be151 100644
+--- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
++++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+@@ -15,7 +15,7 @@ Required properties:
+ 			Must be "samsung,exynos-adc-v2" for
+ 				future controllers.
+ - reg:			Contains ADC register address range (base address and
+-			length).
++			length) and the address of the phy enable register.
+ - interrupts: 		Contains the interrupt information for the timer. The
+ 			format is being dependent on which interrupt controller
+ 			the Samsung device uses.
+@@ -30,7 +30,7 @@ Example: adding device info in dtsi file
+ 
+ adc: adc@12D10000 {
+ 	compatible = "samsung,exynos-adc-v1";
+-	reg = <0x12D10000 0x100>;
++	reg = <0x12D10000 0x100>, <0x10040718 0x4>;
+ 	interrupts = <0 106 0>;
+ 	#io-channel-cells = <1>;
+ 	io-channel-ranges;
+diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+index ed6fdd7..5ab0dfd 100644
+--- a/drivers/iio/adc/exynos_adc.c
++++ b/drivers/iio/adc/exynos_adc.c
+@@ -85,6 +85,7 @@ enum adc_version {
+ 
+ struct exynos_adc {
+ 	void __iomem		*regs;
++	void __iomem		*enable_reg;
+ 	struct clk		*clk;
+ 	unsigned int		irq;
+ 	struct regulator	*vdd;
+@@ -269,13 +270,19 @@ static int exynos_adc_probe(struct platform_device *pdev)
+ 	info = iio_priv(indio_dev);
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-
+ 	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
+ 	if (!info->regs) {
+ 		ret = -ENOMEM;
+ 		goto err_iio;
+ 	}
+ 
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	info->enable_reg = devm_request_and_ioremap(&pdev->dev, mem);
++	if (!info->enable_reg) {
++		ret = -ENOMEM;
++		goto err_iio;
++	}
++
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "no irq resource?\n");
+@@ -295,6 +302,8 @@ static int exynos_adc_probe(struct platform_device *pdev)
+ 		goto err_iio;
+ 	}
+ 
++	writel(1, info->enable_reg);
++
+ 	info->clk = devm_clk_get(&pdev->dev, "adc");
+ 	if (IS_ERR(info->clk)) {
+ 		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
+@@ -370,6 +379,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
+ 				exynos_adc_remove_devices);
+ 	regulator_disable(info->vdd);
+ 	clk_disable_unprepare(info->clk);
++	writel(0, info->enable_reg);
+ 	iio_device_unregister(indio_dev);
+ 	free_irq(info->irq, info);
+ 	iio_device_free(indio_dev);
+@@ -395,6 +405,7 @@ static int exynos_adc_suspend(struct device *dev)
+ 	}
+ 
+ 	clk_disable_unprepare(info->clk);
++	writel(0, info->enable_reg);
+ 	regulator_disable(info->vdd);
+ 
+ 	return 0;
+@@ -410,6 +421,7 @@ static int exynos_adc_resume(struct device *dev)
+ 	if (ret)
+ 		return ret;
+ 
++	writel(1, info->enable_reg);
+ 	clk_prepare_enable(info->clk);
+ 
+ 	exynos_adc_hw_init(info);
+-- 
+1.8.1.3
 
