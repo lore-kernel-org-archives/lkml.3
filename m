@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab3CMPBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 11:01:23 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:6865 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab3CMPBV (ORCPT
+	id S933188Ab3CMPEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 11:04:24 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:45302 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932656Ab3CMPEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 11:01:21 -0400
-Message-ID: <1363186213.12845.174.camel@misato.fc.hp.com>
-Subject: Re: [Bug fix PATCH] ACPI,acpi_memhotplug: enable
- acpi_memory_info->enabled of memory device presented at boot-time
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, tangchen@cn.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Mar 2013 08:50:13 -0600
-In-Reply-To: <514022BF.3080303@jp.fujitsu.com>
-References: <514022BF.3080303@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Wed, 13 Mar 2013 11:04:23 -0400
+Message-ID: <51409575.9060304@mimc.co.uk>
+Date: Wed, 13 Mar 2013 15:04:21 +0000
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: Kernel oops on mmap ?
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-13 at 15:54 +0900, Yasuaki Ishimatsu wrote:
-> At http://marc.info/?l=linux-acpi&m=135769405622667&w=2 thread,
-> Toshi Kani mentioned as follows:
-> 
-> "I have a question about the change you made in commit 65479472 in
-> acpi_memhotplug.c.  This change seems to require that
-> acpi_memory_enable_device() calls add_memory() to add all memory ranges
-> represented by memory device objects at boot-time, and keep the results
-> be used for hot-remove.  
-> 
-> If I understand it right, this add_memory() call fails with EEXIST at
-> boot-time since all memory ranges should have been added from EFI memory
-> table (or e820) already.  This results all memory ranges be marked as !
-> enabled & !failed.  I think this means that we cannot hot-delete any
-> memory ranges presented at boot-time since acpi_memory_remove_memory()
-> only calls remove_memory() when the enabled flag is set.  Is that
-> correct?"
-> 
-> Above mention is correct. Thus even if memory device supports hotplug,
-> memory presented at boot-time cannot be hot removed since the memory
-> device's acpi_memory_info->enabled is always 0.
-> 
-> This patch changes to set 1 to "acpi_memory_info->enabled" of memory
-> device presented at boot-time for hot removing the memory device.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/acpi/acpi_memhotplug.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index da1f82b..88fd46a 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -254,8 +254,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->  			continue;
->  		}
->  
-> -		if (!result)
-> -			info->enabled = 1;
-> +		info->enabled = 1;
+Can any help diagnose what my userspace task is doing to get the followings oops ?
 
-Do we still need to keep the enable bit?  I think !failed means enabled
-with this change.
+[   42.587772] Unable to handle kernel paging request at virtual address bfac6004
+[   42.595431] pgd = cf748000
+[   42.598291] [bfac6004] *pgd=00000000
+[   42.602079] Internal error: Oops: 5 [#1] ARM
+[   42.606592] CPU: 0    Not tainted  (3.8.0-next-20130225-00001-g2d0ce24-dirty #38)
+[   42.614509] PC is at unmap_single_vma+0x2d8/0x5bc
+[   42.619476] LR is at unmap_single_vma+0x29c/0x5bc
+[   42.624447] pc : [<c00aed0c>]    lr : [<c00aecd0>]    psr: 60000013
+[   42.624447] sp : cf685d88  ip : 8f9523cd  fp : cf680004
+[   42.636567] r10: 00000000  r9 : bfac6000  r8 : 00200000
+[   42.642079] r7 : cf685e00  r6 : cf5e93a8  r5 : cf5e93ac  r4 : 000ea000
+[   42.648969] r3 : 00000001  r2 : 00000000  r1 : 00000040  r0 : 00000000
+[   42.655864] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   42.663400] Control: 10c5387d  Table: 8f748019  DAC: 00000015
+[   42.669467] Process rdserver (pid: 673, stack limit = 0xcf684238)
+[   42.675902] Stack: (0xcf685d88 to 0xcf686000)
+[   42.680507] 5d80:                   cf2ff06c cf5a28b8 cf2ff040 00000000 8f9523cd cf680000
+[   42.689145] 5da0: 0021d000 0021cfff c0c8ea80 00000000 ffffff35 00000000 f451edbe cf5a28b8
+[   42.697786] 5dc0: ffffffff cf685e00 00000000 00000000 cf6716e8 cf2ff040 cf5956c0 c00af730
+[   42.706421] 5de0: 00000000 cf5a58c0 cf5a2548 cf2ff040 cf685e00 cf301c80 cf5a58c0 c00b5884
+[   42.715061] 5e00: cf2ff040 00000001 00000000 00000080 00000000 000000d2 00000400 cf796000
+[   42.723698] 5e20: cf301c80 cf5a58c0 cf6716e8 cf2ff040 cf5956c0 c0402400 60000013 cf2ff090
+[   42.732338] 5e40: cf2ff060 cf2ff040 00000000 cf684000 cf301c80 c00364d4 cf2ff040 cf671340
+[   42.740975] 5e60: cf684000 c00ccb90 cf60ae40 cf301c80 cf60aea4 cf685e88 cf60ae74 cf684000
+[   42.749616] 5e80: 00000001 c010a29c cf301c80 00000080 00000000 cf301d80 0000000d 00000000
+[   42.758252] 5ea0: cf684000 cf55cd80 00000001 c057dd34 cf684000 c0109774 000002a1 c0075390
+[   42.766892] 5ec0: 00000002 00000000 00000000 c00cd260 00000000 00000000 cf671340 c057dd18
+[   42.775529] 5ee0: 00000002 00000000 c057dd18 cf301c80 fffffff8 00000000 c057e674 c057dd34
+[   42.784164] 5f00: cf684000 c010a05c 000002a1 c00cd24c 00000001 00000000 c00cd19c befff000
+[   42.792800] 5f20: cf684000 00000001 00000001 cf684000 00000001 cf6c4128 00000001 cf301c80
+[   42.801439] 5f40: becefdbc becef378 00000000 c00cd790 00000001 00000000 c00cd40c 00000ff0
+[   42.810074] 5f60: cf5a590c cf5a58c0 cf671560 00000000 00000000 cf343000 becefdbc becef378
+[   42.818710] 5f80: 0000000b c0013968 cf684000 00000000 becef3a0 c00cda98 becef3b4 00000000
+[   42.827346] 5fa0: becefbec c00137c0 becef3b4 00000000 0021c8f0 becef378 becefdbc b6ead190
+[   42.835981] 5fc0: becef3b4 00000000 becefbec 0000000b 00000000 0001f300 00000000 becef3a0
+[   42.844616] 5fe0: becef384 becef370 b6e97c7c b6e6ae88 60000010 0021c8f0 00000000 00000000
+[   42.853266] [<c00aed0c>] (unmap_single_vma+0x2d8/0x5bc) from [<c00af730>] (unmap_vmas+0x54/0x68)
+[   42.862552] [<c00af730>] (unmap_vmas+0x54/0x68) from [<c00b5884>] (exit_mmap+0xd0/0x1f4)
+[   42.871106] [<c00b5884>] (exit_mmap+0xd0/0x1f4) from [<c00364d4>] (mmput+0x34/0xb8)
+[   42.879202] [<c00364d4>] (mmput+0x34/0xb8) from [<c00ccb90>] (flush_old_exec+0x240/0x4c8)
+[   42.887849] [<c00ccb90>] (flush_old_exec+0x240/0x4c8) from [<c010a29c>] (load_elf_binary+0x240/0x1204)
+[   42.897687] [<c010a29c>] (load_elf_binary+0x240/0x1204) from [<c00cd24c>] (search_binary_handler+0xe4/0x1f4)
+[   42.908075] [<c00cd24c>] (search_binary_handler+0xe4/0x1f4) from [<c00cd790>] (do_execve+0x434/0x4ec)
+[   42.917816] [<c00cd790>] (do_execve+0x434/0x4ec) from [<c00cda98>] (sys_execve+0x30/0x44)
+[   42.926465] [<c00cda98>] (sys_execve+0x30/0x44) from [<c00137c0>] (ret_fast_syscall+0x0/0x3c)
+[   42.935472] Code: 0affffa4 e59d000c e3500000 1a0000a2 (e5993004)
+[   42.941912] ---[ end trace 8e32e7f68f5ea19a ]---
 
-Thanks,
--Toshi
-
-
+Cheers
+Mark J.
