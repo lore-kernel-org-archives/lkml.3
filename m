@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab3CMKLj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:11:39 -0400
-Received: from mercuryimc.plus.com ([80.229.200.144]:44155 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756176Ab3CMKLh (ORCPT
+	id S1756255Ab3CMKNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:13:00 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:50910 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab3CMKM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:11:37 -0400
-Message-ID: <514050D8.2@mimc.co.uk>
-Date: Wed, 13 Mar 2013 10:11:36 +0000
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 13 Mar 2013 06:12:58 -0400
+Message-ID: <51405126.3090009@atmel.com>
+Date: Wed, 13 Mar 2013 11:12:54 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Excessive ethernet interrupts on AM335x board
-References: <513F4B58.1000204@mimc.co.uk> <85569979-6B4C-46D0-BDC8-B70785375D64@dominion.thruhere.net>
-In-Reply-To: <85569979-6B4C-46D0-BDC8-B70785375D64@dominion.thruhere.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johan Hovold <jhovold@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "Arnd Bergmann" <arnd@arndb.de>
+CC: <FlorianSchandinat@gmx.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <jacmet@sunsite.dk>
+Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
+References: <cover.1360340791.git.nicolas.ferre@atmel.com> <20130210004740.GH16278@quad.lixom.net> <CAMgPeKV4=C_msvZixVS-o3-QHaJxZP7T4EwLa9vnmYgVheXHgQ@mail.gmail.com> <5139B169.7050807@atmel.com>
+In-Reply-To: <5139B169.7050807@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/03/13 08:44, Koen Kooi wrote:
-> 
-> Op 12 mrt. 2013, om 16:35 heeft Mark Jackson <mpfj-list@mimc.co.uk> het volgende geschreven:
-> 
->> I'm just fighting an issue with ethernet on our custom AM335x board:-
+On 03/08/2013 10:37 AM, Nicolas Ferre :
+> On 02/10/2013 07:45 PM, Johan Hovold :
+>> On Sun, Feb 10, 2013 at 1:47 AM, Olof Johansson <olof@lixom.net> wrote:
+>>> On Fri, Feb 08, 2013 at 05:35:13PM +0100, Nicolas Ferre wrote:
+>>>> These patches fix a regression in 16-bpp support for older SOCs which
+>>>> use IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to
+>>>> determine if the controller uses the intensity-bit and restore the
+>>>> old layout in that case.
+>>>>
+>>>> The last patch is a removal of uses of cpu_is_xxxx() macros in
+>>>> atmel_lcdfb with a platform-device-id table and static
+>>>> configurations.
+>>>>
+>>>>
+>>>> Patches from Johan Hovold taken from: "[PATCH 0/3] atmel_lcdfb: fix
+>>>> 16-bpp regression" and "[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb:
+>>>> remove cpu_is macros" patch series to form a clean patch series with
+>>>> my signature.
+>>>>
+>>>> Arnd, Olof, as it seems that old fbdev drivers are not so much
+>>>> reviewed those days, can we take the decision to queue this material
+>>>> through arm-soc with other AT91 drivers updates?
+>>>
+>>> It would be beneficial to get an ack from Florian. Was he involved in
+>>> the review of the code that regressed 16-bpp support in the first
+>>> place? When was the regression introduced?
 >>
->> # uname -a
->> Linux nanobone 3.9.0-rc2-00113-gd60f039 #139 Tue Mar 12 15:14:01 GMT 2013 armv7l GNU/Linux
->>
->> Every now and then, the whole unit slows to a crawl.  The only indication of any problem is:-
->>
->> (a) the serial tty port becomes much less responsive
->> (b) normal ping times jump from 1ms to >10sec (sometimes >20sec !!)
->> (c) the ethernet interrupt count rockets (see below)
+>> In v3.4 by commit 787f9fd2328 ("atmel_lcdfb: support 16bit BGR:565 mode,
+>> remove unsupported 15bit modes").
 > 
-> You probably have PG2.x silicon, have a look at this patch: https://github.com/beagleboard/kernel/blob/3.8/patches/net/0003-cpsw-Fix-interrupt-storm-among-other-things.patch
+> Arnd, Olof,
+> 
+> Please tell me if I can do something to ease the adoption of these
+> patches during 3.9-rc timeframe (I can rebase it on top of 3.9-rc1 to
+> avoid any conflict: the file board-neocore926.c was removed during the
+> merge window).
+> Johan has written the series a long time ago and we still do not have it
+> in mainline.
+> 
+> If the option to ask Andrew is better in your opinion, please tell me.
 
-No, it's 1.0 ...
+In case we end-up with an agreement on the path those fixes should
+follow, here is the location of my updated material rebased on top of 3.9-rc2:
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Linux version 3.9.0-rc2-00113-gd60f039-dirty (mpfj@mpfj-nanobone) (gcc version 4.5.4 (Buildroot 2012.11) ) #141 Wed Mar 13 09:14:03 GMT 2013
-[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c53c7d
-[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
-[    0.000000] Machine: Generic AM33XX (Flattened Device Tree), model: Newflow AM335x NanoBone
-[    0.000000] Memory policy: ECC disabled, Data cache writeback
-[    0.000000] CPU: All CPU(s) started in SVC mode.
-[    0.000000] AM335X ES1.0 (neon )
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-The patch certainly didn't fix things (and possibly made things worse i.e. my nfs root kept dropping off even more).
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-> I saw some patches going into net-next today that might address this in a different way, but I haven't tried 3.9rc on an am335x yet.
+are available in the git repository at:
 
-I might track those down and test them.
+  git://github.com/at91linux/linux-at91.git at91-3.9-fixesLCD
 
-Cheers
-Mark J.
+for you to fetch changes up to bbd44f6bd9d1aa735b180b29b5719d63a8e87b55:
+
+  ARM: at91/avr32/atmel_lcdfb: add platform device-id table (2013-03-13 11:05:12 +0100)
+
+----------------------------------------------------------------
+Johan Hovold (5):
+      atmel_lcdfb: fix 16-bpp modes on older SOCs
+      ARM: at91: fix LCD-wiring mode
+      ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
+      atmel_lcdfb: move lcdcon2 register access to compute_hozval
+      ARM: at91/avr32/atmel_lcdfb: add platform device-id table
+
+ arch/arm/mach-at91/at91sam9261.c         |   2 +
+ arch/arm/mach-at91/at91sam9261_devices.c |   6 +-
+ arch/arm/mach-at91/at91sam9263.c         |   1 +
+ arch/arm/mach-at91/at91sam9263_devices.c |   2 +-
+ arch/arm/mach-at91/at91sam9g45.c         |   2 +
+ arch/arm/mach-at91/at91sam9g45_devices.c |   6 +-
+ arch/arm/mach-at91/at91sam9rl.c          |   1 +
+ arch/arm/mach-at91/at91sam9rl_devices.c  |   2 +-
+ arch/avr32/mach-at32ap/at32ap700x.c      |   6 +-
+ drivers/video/atmel_lcdfb.c              | 130 +++++++++++++++++++++++++++--------
+ include/video/atmel_lcdc.h               |   4 +-
+ 11 files changed, 126 insertions(+), 36 deletions(-)
+
+
+Thanks, best regards,
+-- 
+Nicolas Ferre
