@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373Ab3CMDbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 23:31:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39996 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932893Ab3CMD3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 23:29:36 -0400
+	id S932869Ab3CMD3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 23:29:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33041 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756003Ab3CMD3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 23:29:25 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Linus Walleij <linus.walleij@linaro.org>,
@@ -16,10 +15,10 @@ CC: Linus Walleij <linus.walleij@linaro.org>,
         <linux-omap@vger.kernel.org>,
         Omar Ramirez Luna <omar.ramirez@copitl.com>,
         Loic Pallardy <loic.pallardy@st.com>, Suman Anna <s-anna@ti.com>,
-        Fernando Guzman Lugo <lugo.fernando@gmail.com>
-Subject: [PATCHv3 12/14] mailbox/omap: check iomem resource before dereferencing it
-Date: Tue, 12 Mar 2013 22:24:28 -0500
-Message-ID: <1363145068-14752-1-git-send-email-s-anna@ti.com>
+        Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: [PATCHv3 04/14] mailbox: split internal header from API header
+Date: Tue, 12 Mar 2013 22:24:13 -0500
+Message-ID: <1363145053-14476-1-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,45 +26,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a NULL check for iomem resource in mailbox probe functions.
+From: Omar Ramirez Luna <omar.luna@linaro.org>
 
-Signed-off-by: Fernando Guzman Lugo <lugo.fernando@gmail.com>
-Signed-off-by: Suman Anna <s-anna@ti.com>
+Now internal structures can remain hidden to the user and just API
+related functions and defines are made available.
+
+Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mailbox/mailbox-omap1.c | 3 +++
- drivers/mailbox/mailbox-omap2.c | 5 +++++
- 2 files changed, 8 insertions(+)
+ drivers/mailbox/mailbox.c          | 34 ++++++++++++++
+ drivers/mailbox/mailbox_internal.h | 55 +++++++++++++++++++++++
+ include/linux/mailbox.h            | 90 ++------------------------------------
+ 3 files changed, 93 insertions(+), 86 deletions(-)
 
-diff --git a/drivers/mailbox/mailbox-omap1.c b/drivers/mailbox/mailbox-omap1.c
-index 7b30157..4441872 100644
---- a/drivers/mailbox/mailbox-omap1.c
-+++ b/drivers/mailbox/mailbox-omap1.c
-@@ -179,6 +179,9 @@ static int omap1_mbox_probe(struct platform_device *pdev)
- 	list[0]->irq = platform_get_irq_byname(pdev, "dsp");
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index 6c738aa..31303c5 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -116,6 +116,40 @@ out:
+ }
+ EXPORT_SYMBOL(omap_mbox_msg_send);
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem)
-+		return -ENOMEM;
-+
- 	mbox_base = ioremap(mem->start, resource_size(mem));
- 	if (!mbox_base)
- 		return -ENOMEM;
-diff --git a/drivers/mailbox/mailbox-omap2.c b/drivers/mailbox/mailbox-omap2.c
-index 72f8368..eed5a3d 100644
---- a/drivers/mailbox/mailbox-omap2.c
-+++ b/drivers/mailbox/mailbox-omap2.c
-@@ -296,6 +296,11 @@ static int omap2_mbox_probe(struct platform_device *pdev)
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		ret = -ENOMEM;
-+		goto free_privblk;
++void omap_mbox_save_ctx(struct omap_mbox *mbox)
++{
++	if (!mbox->ops->save_ctx) {
++		dev_err(mbox->dev, "%s:\tno save\n", __func__);
++		return;
 +	}
 +
- 	mbox_base = ioremap(mem->start, resource_size(mem));
- 	if (!mbox_base) {
- 		ret = -ENOMEM;
++	mbox->ops->save_ctx(mbox);
++}
++EXPORT_SYMBOL(omap_mbox_save_ctx);
++
++void omap_mbox_restore_ctx(struct omap_mbox *mbox)
++{
++	if (!mbox->ops->restore_ctx) {
++		dev_err(mbox->dev, "%s:\tno restore\n", __func__);
++		return;
++	}
++
++	mbox->ops->restore_ctx(mbox);
++}
++EXPORT_SYMBOL(omap_mbox_restore_ctx);
++
++void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++{
++	mbox->ops->enable_irq(mbox, irq);
++}
++EXPORT_SYMBOL(omap_mbox_enable_irq);
++
++void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++{
++	mbox->ops->disable_irq(mbox, irq);
++}
++EXPORT_SYMBOL(omap_mbox_disable_irq);
++
+ static void mbox_tx_tasklet(unsigned long tx_data)
+ {
+ 	struct omap_mbox *mbox = (struct omap_mbox *)tx_data;
+diff --git a/drivers/mailbox/mailbox_internal.h b/drivers/mailbox/mailbox_internal.h
+index b39badb..d8896ca 100644
+--- a/drivers/mailbox/mailbox_internal.h
++++ b/drivers/mailbox/mailbox_internal.h
+@@ -9,6 +9,61 @@
+ #ifndef MAILBOX_INTERNAL_H
+ #define MAILBOX_INTERNAL_H
+ 
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/kfifo.h>
+ #include <linux/mailbox.h>
++#include <linux/spinlock.h>
++#include <linux/workqueue.h>
++
++typedef int __bitwise omap_mbox_type_t;
++#define OMAP_MBOX_TYPE1 ((__force omap_mbox_type_t) 1)
++#define OMAP_MBOX_TYPE2 ((__force omap_mbox_type_t) 2)
++
++struct omap_mbox_ops {
++	omap_mbox_type_t	type;
++	int		(*startup)(struct omap_mbox *mbox);
++	void		(*shutdown)(struct omap_mbox *mbox);
++	/* fifo */
++	mbox_msg_t	(*fifo_read)(struct omap_mbox *mbox);
++	void		(*fifo_write)(struct omap_mbox *mbox, mbox_msg_t msg);
++	int		(*fifo_empty)(struct omap_mbox *mbox);
++	int		(*fifo_full)(struct omap_mbox *mbox);
++	/* irq */
++	void		(*enable_irq)(struct omap_mbox *mbox,
++						omap_mbox_irq_t irq);
++	void		(*disable_irq)(struct omap_mbox *mbox,
++						omap_mbox_irq_t irq);
++	void		(*ack_irq)(struct omap_mbox *mbox, omap_mbox_irq_t irq);
++	int		(*is_irq)(struct omap_mbox *mbox, omap_mbox_irq_t irq);
++	/* ctx */
++	void		(*save_ctx)(struct omap_mbox *mbox);
++	void		(*restore_ctx)(struct omap_mbox *mbox);
++};
++
++struct omap_mbox_queue {
++	spinlock_t		lock;
++	struct kfifo		fifo;
++	struct work_struct	work;
++	struct tasklet_struct	tasklet;
++	struct omap_mbox	*mbox;
++	bool full;
++};
++
++struct omap_mbox {
++	const char		*name;
++	unsigned int		irq;
++	struct omap_mbox_queue	*txq, *rxq;
++	struct omap_mbox_ops	*ops;
++	struct device		*dev;
++	void			*priv;
++	int			use_count;
++	struct blocking_notifier_head	notifier;
++};
++
++void omap_mbox_init_seq(struct omap_mbox *);
++
++int omap_mbox_register(struct device *parent, struct omap_mbox **);
++int omap_mbox_unregister(void);
+ 
+ #endif /* MAILBOX_INTERNAL_H */
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+index 5722b93..e97824e 100644
+--- a/include/linux/mailbox.h
++++ b/include/linux/mailbox.h
+@@ -9,12 +9,6 @@
+ #ifndef MAILBOX_H
+ #define MAILBOX_H
+ 
+-#include <linux/spinlock.h>
+-#include <linux/workqueue.h>
+-#include <linux/interrupt.h>
+-#include <linux/device.h>
+-#include <linux/kfifo.h>
+-
+ typedef u32 mbox_msg_t;
+ struct omap_mbox;
+ 
+@@ -22,90 +16,14 @@ typedef int __bitwise omap_mbox_irq_t;
+ #define IRQ_TX ((__force omap_mbox_irq_t) 1)
+ #define IRQ_RX ((__force omap_mbox_irq_t) 2)
+ 
+-typedef int __bitwise omap_mbox_type_t;
+-#define OMAP_MBOX_TYPE1 ((__force omap_mbox_type_t) 1)
+-#define OMAP_MBOX_TYPE2 ((__force omap_mbox_type_t) 2)
+-
+-struct omap_mbox_ops {
+-	omap_mbox_type_t	type;
+-	int		(*startup)(struct omap_mbox *mbox);
+-	void		(*shutdown)(struct omap_mbox *mbox);
+-	/* fifo */
+-	mbox_msg_t	(*fifo_read)(struct omap_mbox *mbox);
+-	void		(*fifo_write)(struct omap_mbox *mbox, mbox_msg_t msg);
+-	int		(*fifo_empty)(struct omap_mbox *mbox);
+-	int		(*fifo_full)(struct omap_mbox *mbox);
+-	/* irq */
+-	void		(*enable_irq)(struct omap_mbox *mbox,
+-						omap_mbox_irq_t irq);
+-	void		(*disable_irq)(struct omap_mbox *mbox,
+-						omap_mbox_irq_t irq);
+-	void		(*ack_irq)(struct omap_mbox *mbox, omap_mbox_irq_t irq);
+-	int		(*is_irq)(struct omap_mbox *mbox, omap_mbox_irq_t irq);
+-	/* ctx */
+-	void		(*save_ctx)(struct omap_mbox *mbox);
+-	void		(*restore_ctx)(struct omap_mbox *mbox);
+-};
+-
+-struct omap_mbox_queue {
+-	spinlock_t		lock;
+-	struct kfifo		fifo;
+-	struct work_struct	work;
+-	struct tasklet_struct	tasklet;
+-	struct omap_mbox	*mbox;
+-	bool full;
+-};
+-
+-struct omap_mbox {
+-	const char		*name;
+-	unsigned int		irq;
+-	struct omap_mbox_queue	*txq, *rxq;
+-	struct omap_mbox_ops	*ops;
+-	struct device		*dev;
+-	void			*priv;
+-	int			use_count;
+-	struct blocking_notifier_head	notifier;
+-};
+-
+ int omap_mbox_msg_send(struct omap_mbox *, mbox_msg_t msg);
+-void omap_mbox_init_seq(struct omap_mbox *);
+ 
+ struct omap_mbox *omap_mbox_get(const char *, struct notifier_block *nb);
+ void omap_mbox_put(struct omap_mbox *mbox, struct notifier_block *nb);
+ 
+-int omap_mbox_register(struct device *parent, struct omap_mbox **);
+-int omap_mbox_unregister(void);
+-
+-static inline void omap_mbox_save_ctx(struct omap_mbox *mbox)
+-{
+-	if (!mbox->ops->save_ctx) {
+-		dev_err(mbox->dev, "%s:\tno save\n", __func__);
+-		return;
+-	}
+-
+-	mbox->ops->save_ctx(mbox);
+-}
+-
+-static inline void omap_mbox_restore_ctx(struct omap_mbox *mbox)
+-{
+-	if (!mbox->ops->restore_ctx) {
+-		dev_err(mbox->dev, "%s:\tno restore\n", __func__);
+-		return;
+-	}
+-
+-	mbox->ops->restore_ctx(mbox);
+-}
+-
+-static inline void omap_mbox_enable_irq(struct omap_mbox *mbox,
+-					omap_mbox_irq_t irq)
+-{
+-	mbox->ops->enable_irq(mbox, irq);
+-}
+-
+-static inline void omap_mbox_disable_irq(struct omap_mbox *mbox,
+-					 omap_mbox_irq_t irq)
+-{
+-	mbox->ops->disable_irq(mbox, irq);
+-}
++void omap_mbox_save_ctx(struct omap_mbox *mbox);
++void omap_mbox_restore_ctx(struct omap_mbox *mbox);
++void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
++void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
+ 
+ #endif /* MAILBOX_H */
 -- 
 1.8.1.2
 
