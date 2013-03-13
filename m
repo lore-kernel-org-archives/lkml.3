@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3CMKAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:00:12 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:45614 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375Ab3CMKAJ (ORCPT
+	id S1756241Ab3CMKEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:04:07 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55260 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755186Ab3CMKEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:00:09 -0400
-Date: Wed, 13 Mar 2013 18:15:29 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: torrent hash failures since 3.9.0-rc1
-Message-ID: <20130313101529.GA12012@gmail.com>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
-References: <20130311211833.GC15478@thunk.org>
- <20130311213837.GA438@x4>
- <20130311231227.GA319@x4>
- <20130312030057.GA6142@gmail.com>
- <20130312033054.GB18595@thunk.org>
- <20130312061624.GA436@x4>
- <20130312064449.GA8806@gmail.com>
- <20130312064810.GA426@x4>
- <20130312071606.GA8900@gmail.com>
- <20130312132811.GI18595@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312132811.GI18595@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Mar 2013 06:04:05 -0400
+Message-ID: <1363169039.3137.186.camel@x61.thuisdomein>
+Subject: Re: rt2x00: Kconfig symbols RALINK_RT288X and RALINK_RT305X
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Crispin <blogic@openwrt.org>
+Date: Wed, 13 Mar 2013 11:03:59 +0100
+In-Reply-To: <CAOiHx=n4a26z=PS02E2KjD2Y3Pp0P0x-5Ns6WRc-WScNF=EO_Q@mail.gmail.com>
+References: <1363165170.3137.182.camel@x61.thuisdomein>
+	 <CAOiHx=n4a26z=PS02E2KjD2Y3Pp0P0x-5Ns6WRc-WScNF=EO_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Mar 2013 10:04:00.0416 (UTC) FILETIME=[1578E200:01CE1FD2]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 09:28:11AM -0400, Theodore Ts'o wrote:
-> On Tue, Mar 12, 2013 at 03:16:06PM +0800, Zheng Liu wrote:
-> > 
-> > Ted, I am wandering if we need to Cc this patch to stable kernel.  We
-> > don't receive any report to complaint it, though, but it is worth
-> > backporting it I think.
+On Wed, 2013-03-13 at 10:51 +0100, Jonas Gorski wrote:
+> On 13 March 2013 09:59, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > 3) What is the current status of the (out of tree) code that adds
+> > RALINK_RT288X and RALINK_RT305X?
 > 
-> I'll check, bu I suspect it will require an explicit backport; it's
-> not going to apply cleanly automatically, will it?  
+> They are now present in 3.9-rc1, see a0b0197c (more specifically
+> 85639910..d3d2b420) :)
 
-I check the linux-stable tree and I think it can be applied cleanly from
-3.0.y. because ext4_split_extent is introduced from 3.0 kernel.  So
-maybe we can cc to stable@vger.kernel.org.  That would be great if you
-could double check it.
+Great.
 
-Thanks,
-                                                - Zheng
+> The actual accepted Kconfig symbol names are different though, so they
+> should be changed in rt2x00 to match them (SOC_RT288X and SOC_RT305X).
+
+Thanks. Note that I could not find an actual Kconfig symbol SOC_RT288X! 
+
+Anyhow, I guess somebody has the (trivial) patch to convert
+RALINK_RT...X and CONFIG_RALINK_RT...X to their SOC_* equivalents queued
+for inclusion in v3.9-rcX. Is that correct?
+
+
+Paul Bolle
+
