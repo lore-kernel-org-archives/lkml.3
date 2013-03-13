@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab3CMJnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:43:32 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:33287 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab3CMJn2 (ORCPT
+	id S1756185Ab3CMJnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:43:45 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:64904 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506Ab3CMJnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:43:28 -0400
+	Wed, 13 Mar 2013 05:43:43 -0400
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 5/8]Perf: add extend mechanism for evsel->id & evsel->fd
-Date: Wed, 13 Mar 2013 17:42:15 +0800
-Message-Id: <1363167740-27735-4-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v3 4/8]perf: Transform evsel->id to xyarray
+Date: Wed, 13 Mar 2013 17:42:16 +0800
+Message-Id: <1363167740-27735-5-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
 References: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,7 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-Add extend mechanism for evsel->id & evsel->fd.
+Transform evsel->id to xyarray, so it is transformed to a linked list
+instead an array.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -46,151 +47,190 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/util/evsel.c      |   76 ++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evsel.h      |    8 +++++
- tools/perf/util/thread_map.c |    2 +-
- 3 files changed, 85 insertions(+), 1 deletion(-)
+ tools/perf/util/evlist.c |    4 +++-
+ tools/perf/util/evsel.c  |   19 +++++++++++++++++--
+ tools/perf/util/evsel.h  |    5 ++++-
+ tools/perf/util/header.c |   28 ++++++++++++++++++----------
+ tools/perf/util/header.h |    3 ++-
+ 5 files changed, 44 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 015321f..2eb75f9 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -599,6 +599,16 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- 	return evsel->fd != NULL ? 0 : -ENOMEM;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 7515651..c1cd8f9 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -287,8 +287,10 @@ static void perf_evlist__id_hash(struct perf_evlist *evlist,
+ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
+ 			 int cpu, int thread, u64 id)
+ {
++	u64* idp = perf_evsel__get_id(evsel, -1);
+ 	perf_evlist__id_hash(evlist, evsel, cpu, thread, id);
+-	evsel->id[evsel->ids++] = id;
++	*idp = id;
++	evsel->ids++;
  }
  
-+/*
-+ * Return the pointer to new fds (fds for the new thread at all cpus).
-+ */
-+static int** perf_evsel__extend_fd(struct perf_evsel *evsel)
-+{
-+	int init_fd = -1;
-+
-+	return (int**)xyarray__append(evsel->fd, (char *)&init_fd);
-+}
-+
- int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
- 			   const char *filter)
- {
-@@ -617,6 +627,26 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 57c569d..015321f 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -623,7 +623,7 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 	if (evsel->sample_id == NULL)
+ 		return -ENOMEM;
+ 
+-	evsel->id = zalloc(ncpus * nthreads * sizeof(u64));
++	evsel->id = xyarray__new(1, ncpus * nthreads, sizeof(u64));
+ 	if (evsel->id == NULL) {
+ 		xyarray__delete(evsel->sample_id);
+ 		evsel->sample_id = NULL;
+@@ -633,6 +633,21 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
  	return 0;
  }
  
-+int perf_evsel__extend_id(struct perf_evsel *evsel)
++void perf_evsel__id_new(struct perf_evsel *evsel, int nr)
 +{
-+	if (xyarray__append(evsel->sample_id, NULL) == NULL)
-+		return -ENOMEM;
++	if (evsel->id)
++		xyarray__delete(evsel->id);
 +
-+	if (xyarray__append(evsel->id, NULL) == NULL) {
-+		xyarray__remove(evsel->sample_id, -1);
-+		return -ENOMEM;
-+	}
++	evsel->id = NULL;
 +
-+	return 0;
++	evsel->id = xyarray__new(1, nr, sizeof(u64));
 +}
 +
-+void perf_evsel__remove_id(struct perf_evsel *evsel, int tidx)
++u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx)
 +{
-+	xyarray__remove(evsel->id, tidx);
-+	evsel->ids--;
-+	xyarray__remove(evsel->sample_id, tidx);
++	return (u64 *)xyarray__entry(evsel->id, 0, idx);
 +}
 +
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
  {
- 	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
-@@ -937,6 +967,52 @@ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
- 	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads);
+ 	evsel->counts = zalloc((sizeof(*evsel->counts) +
+@@ -650,7 +665,7 @@ void perf_evsel__free_id(struct perf_evsel *evsel)
+ {
+ 	xyarray__delete(evsel->sample_id);
+ 	evsel->sample_id = NULL;
+-	free(evsel->id);
++	xyarray__delete(evsel->id);
+ 	evsel->id = NULL;
  }
  
-+void perf_evsel__close_single_thread(struct perf_evsel *evsel, int cpu_nr,
-+				     int tidx)
-+{
-+	int cpu;
-+
-+	for (cpu = 0; cpu < cpu_nr; cpu++) {
-+		if (FD(evsel, cpu, tidx) >= 0)
-+			close(FD(evsel, cpu, tidx));
-+	}
-+	xyarray__remove(evsel->fd, tidx); 
-+}
-+
-+int perf_evsel__open_single_thread(struct perf_evsel *evsel,
-+                                   struct cpu_map *cpus, int tid)
-+{
-+	int cpu;
-+	int pid = -1;
-+	unsigned long flags = 0;
-+	int **new_fds;
-+
-+	if ((new_fds = perf_evsel__extend_fd(evsel)) == NULL)
-+		return -1;
-+
-+	if (evsel->cgrp) {
-+		flags = PERF_FLAG_PID_CGROUP;
-+		pid = evsel->cgrp->fd;
-+	}
-+
-+	for (cpu = 0; cpu < cpus->nr; cpu++) {
-+		int group_fd;
-+
-+		if (!evsel->cgrp)
-+			pid = tid;
-+
-+		group_fd = get_group_fd(evsel, cpu, -1);
-+		evsel->attr.disabled = 0;
-+		*new_fds[cpu] = sys_perf_event_open(&evsel->attr, pid,
-+						    cpus->map[cpu], group_fd,
-+						    flags);
-+		if (*new_fds[cpu] < 0)
-+			return -errno;
-+	}
-+
-+	return 0;
-+}
-+
- static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
- 				       const union perf_event *event,
- 				       struct perf_sample *sample)
 diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 7adb116..ae391d4 100644
+index 52021c3..7adb116 100644
 --- a/tools/perf/util/evsel.h
 +++ b/tools/perf/util/evsel.h
-@@ -128,6 +128,9 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- void perf_evsel__id_new(struct perf_evsel *evsel, int nr);
- u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx);
+@@ -51,7 +51,7 @@ struct perf_evsel {
+ 	char			*filter;
+ 	struct xyarray		*fd;
+ 	struct xyarray		*sample_id;
+-	u64			*id;
++	struct xyarray		*id;
+ 	struct perf_counts	*counts;
+ 	struct perf_counts	*prev_raw_counts;
+ 	int			idx;
+@@ -125,6 +125,9 @@ void perf_evsel__free_id(struct perf_evsel *evsel);
+ void perf_evsel__free_counts(struct perf_evsel *evsel);
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
  
-+int perf_evsel__extend_id(struct perf_evsel *evsel);
-+void perf_evsel__remove_id(struct perf_evsel *evsel, int tidx);
++void perf_evsel__id_new(struct perf_evsel *evsel, int nr);
++u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx);
 +
  void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
  				  enum perf_event_sample_format bit);
  void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
-@@ -152,6 +155,11 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 		     struct thread_map *threads);
- void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index f4bfd79..d344e61 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1325,19 +1325,18 @@ read_event_desc(struct perf_header *ph, int fd)
+ 		if (!nr)
+ 			continue;
  
-+int perf_evsel__open_single_thread(struct perf_evsel *evsel,
-+				   struct cpu_map *cpus, int tid);
-+void perf_evsel__close_single_thread(struct perf_evsel *evsel, int cpu_nr,
-+				     int tidx);
-+
- struct perf_sample;
+-		id = calloc(nr, sizeof(*id));
+-		if (!id)
+-			goto error;
+ 		evsel->ids = nr;
+-		evsel->id = id;
++		perf_evsel__id_new(evsel, nr);
++		if (!evsel->id)
++			goto error;
  
- void *perf_evsel__rawptr(struct perf_evsel *evsel, struct perf_sample *sample,
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 301f4ce..76f3da7 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -64,7 +64,7 @@ int thread_map__has_pid(struct thread_map *threads, pid_t pid)
+ 		for (j = 0 ; j < nr; j++) {
++			id = perf_evsel__get_id(evsel, j);
+ 			ret = readn(fd, id, sizeof(*id));
+ 			if (ret != (ssize_t)sizeof(*id))
+ 				goto error;
+ 			if (ph->needs_swap)
+ 				*id = bswap_64(*id);
+-			id++;
+ 		}
+ 	}
+ out:
+@@ -1384,7 +1383,8 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
+ 
+ 		if (evsel->ids) {
+ 			fprintf(fp, ", id = {");
+-			for (j = 0, id = evsel->id; j < evsel->ids; j++, id++) {
++			for (j = 0; j < evsel->ids; j++) {
++				id = perf_evsel__get_id(evsel, j);
+ 				if (j)
+ 					fputc(',', fp);
+ 				fprintf(fp, " %"PRIu64, *id);
+@@ -2880,12 +2880,15 @@ out_delete_evlist:
  }
  
- /*
-- * Append a thread_pid at the last of @threads.
-+ * Append a thread_pid at the tail of @threads.
-  */
- int thread_map__append(struct thread_map *threads, pid_t pid)
+ int perf_event__synthesize_attr(struct perf_tool *tool,
+-				struct perf_event_attr *attr, u32 ids, u64 *id,
++				struct perf_event_attr *attr,
++				struct perf_evsel *evsel,
+ 				perf_event__handler_t process)
  {
+ 	union perf_event *ev;
+ 	size_t size;
+ 	int err;
++	u32 ids = evsel->ids;
++	u32 i;
+ 
+ 	size = sizeof(struct perf_event_attr);
+ 	size = PERF_ALIGN(size, sizeof(u64));
+@@ -2898,7 +2901,12 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
+ 		return -ENOMEM;
+ 
+ 	ev->attr.attr = *attr;
+-	memcpy(ev->attr.id, id, ids * sizeof(u64));
++	for (i = 0; i < ids; i++) {
++		u64 *id;
++
++		id = perf_evsel__get_id(evsel, i);
++		ev->attr.id[i] = *id;
++        }
+ 
+ 	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
+ 	ev->attr.header.size = (u16)size;
+@@ -2921,8 +2929,8 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 	int err = 0;
+ 
+ 	list_for_each_entry(evsel, &session->evlist->entries, node) {
+-		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
+-						  evsel->id, process);
++		err = perf_event__synthesize_attr(tool, &evsel->attr,
++						  evsel, process);
+ 		if (err) {
+ 			pr_debug("failed to create perf header attribute\n");
+ 			return err;
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index c9fc55c..60f85ca 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -126,7 +126,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+ 
+ int perf_event__synthesize_attr(struct perf_tool *tool,
+-				struct perf_event_attr *attr, u32 ids, u64 *id,
++				struct perf_event_attr *attr,
++				struct perf_evsel *evsel,
+ 				perf_event__handler_t process);
+ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 				 struct perf_session *session,
 -- 
 1.7.9.5
 
