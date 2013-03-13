@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab3CMOcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 10:32:18 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33364 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756420Ab3CMOcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 10:32:17 -0400
-Date: Wed, 13 Mar 2013 10:32:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <kishon@ti.com>
-Subject: Re: [PATCH 13/13] USB: ehci-omap: Get rid of omap_ehci_init()
-In-Reply-To: <1363180563-10658-1-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1303131032020.1705-100000@iolanthe.rowland.org>
+	id S933548Ab3CMOdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 10:33:53 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:43092 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755556Ab3CMOdw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 10:33:52 -0400
+From: Patrice CHOTARD <patrice.chotard@st.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Axel Lin <axel.lin@ingics.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Mar 2013 15:33:29 +0100
+Subject: Re: [PATCH RFT] pinctrl: abx500: Fix checking if pin use
+ AlternateFunction register
+Thread-Topic: [PATCH RFT] pinctrl: abx500: Fix checking if pin use
+ AlternateFunction register
+Thread-Index: Ac4f97q/y+2vi0XRQLufKuBsfApiDg==
+Message-ID: <51408E39.80406@st.com>
+References: <1362466733.9427.2.camel@phoenix>
+ <CACRpkda-BvUQKPPC9rrQiG=p0OUtaqrtYp7uveBFopgqu_WdhQ@mail.gmail.com>
+In-Reply-To: <CACRpkda-BvUQKPPC9rrQiG=p0OUtaqrtYp7uveBFopgqu_WdhQ@mail.gmail.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Mar 2013, Roger Quadros wrote:
+On 03/13/2013 02:59 PM, Linus Walleij wrote:
 
-> As it does almost nothing, get rid of omap_ehci_init()
-> and move the ehci->caps initialization part into probe().
+> On Tue, Mar 5, 2013 at 7:58 AM, Axel Lin <axel.lin@ingics.com> wrote:
 > 
-> Also remove the outdated TODO list from header.
+>> It's pointless to check "af.alt_bit1 == UNUSED" twice.
+>> This looks like a copy-paste bug, I think what we want is to check if *both*
+>> af.alt_bit1 and af.alt_bit2 are UNUSED.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> CC: Alan Stern <stern@rowland.harvard.edu>
+> Tentatively applied to fixes, waiting for Patrice to confirm...
+> 
+> Thanks!
+> Linus Walleij
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
+Acked-by: Patrice Chotard <patrice.chotard@st.com>
+
+Patrice
