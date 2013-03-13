@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139Ab3CMTIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:08:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54372 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933024Ab3CMTI3 (ORCPT
+	id S933251Ab3CMTKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:10:23 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38902 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab3CMTKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:08:29 -0400
-Date: Wed, 13 Mar 2013 19:08:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] regmap: Fix regcache-rbtree sync
-Message-ID: <20130313190824.GB2912@opensource.wolfsonmicro.com>
-References: <1363189113-9757-1-git-send-email-lars@metafoo.de>
+	Wed, 13 Mar 2013 15:10:22 -0400
+X-Originating-IP: 67.232.160.146
+Date: Wed, 13 Mar 2013 12:10:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: NULL pointer dereference in ext4_superblock_csum_set with
+ mounted filesystem
+Message-ID: <20130313191016.GA1793@jtriplet-mobl1>
+References: <20130313185911.GA1446@jtriplet-mobl1>
+ <20130313190141.GF5604@thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uQr8t48UFsdbeI+V"
+Content-Type: multipart/mixed; boundary="tThc/1wpZn/ma/RB"
 Content-Disposition: inline
-In-Reply-To: <1363189113-9757-1-git-send-email-lars@metafoo.de>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <20130313190141.GF5604@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---uQr8t48UFsdbeI+V
+--tThc/1wpZn/ma/RB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Mar 13, 2013 at 04:38:33PM +0100, Lars-Peter Clausen wrote:
-> The last register block, which falls into the specified range, is not handled
-> correctly. The formula which calculates the number of register which should be
+On Wed, Mar 13, 2013 at 03:01:41PM -0400, Theodore Ts'o wrote:
+> On Wed, Mar 13, 2013 at 11:59:13AM -0700, Josh Triplett wrote:
+> > I frequently test kernel changes by booting them with kvm's -kernel
+> > option, with -hda pointing to my host system's root filesystem, and
+> > -snapshot to prevent writing to (and likely corrupting) that root
+> > filesystem.  I tried this with a kernel built from git commit
+> > 7c6baa304b841673d3a55ea4fcf9a5cbf7a1674b, with a stock x86-64 "make
+> > defconfig", and got a kernel panic:
+> 
+> Can you send me the output of "dumpe2fs -h" on your host system's root
+> file system?
 
-Applied, thanks.
+Attached.
 
---uQr8t48UFsdbeI+V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+- Josh Triplett
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="dumpe2fs.log"
 
-iQIcBAEBAgAGBQJRQM6XAAoJELSic+t+oim9JC0P/j49JEAsSoYfkpfHjAhIornr
-/oCLaI4ECZtdTQ4g93h7RABk7NOxe7601KB4510SZja9Y5w4ODOlz30mfz6ur6OE
-8hbCI8WX/0RU44YZUAFx+bx8MB9N2IiF7y7vb9qwQeCndPoH+KK8vf3/3pcfv5lU
-otjTQZ9jNCHSSCm+BRA3/cpYY/u9KG8Qc+wNUF3xEiS/0uEGcWFE/RHK1nyIzdbu
-KKlatMg5mMt24862L/KtBTh0PGZQ0ykd+/iY6u6L4H8qdM9EKCEh65ISsjWqR1Xf
-GrE+kEQ/PJqKa0c+Km/PT2xJrIhSkrDPfzVwKypcQy7H9yXia1M2uXf73t0vjS2q
-oxrzJlh2hKwxzeSR/xWTqWP3/gtx7YC563eP0QT68+Xw6OW4XWic9ASA/kEKMKBp
-uc6fHbRkpmccW3ARo7+9Q9rTXUSc6tXHuAef61sCquLKKNbqGANm01sakpaDDlzD
-MxwWYKuhy8BvxufFtKG2HXtPQTpzZDBQTiqL9+gf082AfdrxtkYhnulx5xo6YrFD
-AmMkOkyFNOUorPsmh24rM7SFa1iWzM/Q7sVo63ulpdy1yEAgoq0z8Kszcqqz4CQz
-5F94qICEmxPPQRJgJxglOiB+OaGMLE+VUpEZgQxkGzuYglNElcpH1If6aCIacDER
-zV8sYopx2Xydg2GHE+p1
-=OrlW
------END PGP SIGNATURE-----
+dumpe2fs 1.42.5 (29-Jul-2012)
+Filesystem volume name:   <none>
+Last mounted on:          /
+Filesystem UUID:          e23a62e0-8a4a-48d0-b781-e11ae069ab06
+Filesystem magic number:  0xEF53
+Filesystem revision #:    1 (dynamic)
+Filesystem features:      has_journal ext_attr resize_inode dir_index filetype needs_recovery extent flex_bg sparse_super large_file huge_file uninit_bg dir_nlink extra_isize
+Filesystem flags:         signed_directory_hash 
+Default mount options:    (none)
+Filesystem state:         clean
+Errors behavior:          Continue
+Filesystem OS type:       Linux
+Inode count:              17711104
+Block count:              70817792
+Reserved block count:     708177
+Free blocks:              50350508
+Free inodes:              17149541
+First block:              0
+Block size:               4096
+Fragment size:            4096
+Reserved GDT blocks:      1007
+Blocks per group:         32768
+Fragments per group:      32768
+Inodes per group:         8192
+Inode blocks per group:   512
+Flex block group size:    16
+Filesystem created:       Tue Jul 10 22:09:47 2012
+Last mount time:          Wed Mar 13 10:19:40 2013
+Last write time:          Wed Mar 13 10:19:40 2013
+Mount count:              6
+Maximum mount count:      27
+Last checked:             Mon Mar 11 21:27:56 2013
+Check interval:           15552000 (6 months)
+Next check after:         Sat Sep  7 21:27:56 2013
+Lifetime writes:          776 GB
+Reserved blocks uid:      0 (user root)
+Reserved blocks gid:      0 (group root)
+First inode:              11
+Inode size:	          256
+Required extra isize:     28
+Desired extra isize:      28
+Journal inode:            8
+First orphan inode:       12845162
+Default directory hash:   half_md4
+Directory Hash Seed:      22edf7ec-c22c-43aa-a7ea-c3349da9a00c
+Journal backup:           inode blocks
+Journal features:         journal_incompat_revoke
+Journal size:             128M
+Journal length:           32768
+Journal sequence:         0x0023bba0
+Journal start:            10041
 
---uQr8t48UFsdbeI+V--
+
+--tThc/1wpZn/ma/RB--
