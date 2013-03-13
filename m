@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208Ab3CMTzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:55:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36525 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236Ab3CMTzv (ORCPT
+	id S934195Ab3CMT5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:57:08 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:45746 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab3CMT5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:55:51 -0400
-Message-ID: <5140D9DF.4010506@infradead.org>
-Date: Wed, 13 Mar 2013 12:56:15 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 13 Mar 2013 15:57:07 -0400
+Date: Wed, 13 Mar 2013 16:56:56 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf fails to compile for latest Linus tree
+Message-ID: <20130313195656.GG11779@ghostprotocols.net>
+References: <5140923B.4040102@gmail.com>
 MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_EARLY_PRINTK
-References: <1363194921.1218.14.camel@localhost.localdomain>
-In-Reply-To: <1363194921.1218.14.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5140923B.4040102@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/13 10:15, Thomas Meyer wrote:
-> Hi,
-> 
->  -*- Early printk 
-> 
-> help text says:
-> "You should normally N here, unless you want to debug such a crash.
-> (Depends on: EXPERT [=n])"
-> 
-> How to normally N here?
+Em Wed, Mar 13, 2013 at 08:50:35AM -0600, David Ahern escreveu:
+> I believe this has been fixed but I don't see it in your tree
+> (perf/core or perf/urgent) or in the tip tree:
+ 
+> builtin-annotate.c: In function ‘hists__find_annotations’:
+> builtin-annotate.c:161:4: error: duplicate case value
+> builtin-annotate.c:154:4: error: previously used here
+> make: *** [/tmp/pbuild/builtin-annotate.o] Error 1
+> make: *** Waiting for unfinished jobs....
 
-You'll have to enable CONFIG_EXPERT and then you can disable EARLY_PRINTK.
+Yeah, this is because you don't have newt-devel installed, please try
+with acme/perf/urgent after two patches from Michael Ellerman appear at
+its head, I just pushed it.
 
-You may even have to disable CONFIG_EMBEDDED before you can enable
-CONFIG_EXPERT (I did).
-
-Too many hoops to have to jump through.   :(
-
-
--- 
-~Randy
+- Arnaldo
