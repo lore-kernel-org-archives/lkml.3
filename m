@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab3CMKXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:23:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50900 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755224Ab3CMKXD (ORCPT
+	id S1756280Ab3CMK0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:26:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56853 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab3CMK0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:23:03 -0400
-Date: Wed, 13 Mar 2013 10:23:00 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: samsung: remove last traces of neo1973-gta01
-Message-ID: <20130313102300.GC25610@opensource.wolfsonmicro.com>
-References: <1363126175.3137.160.camel@x61.thuisdomein>
+	Wed, 13 Mar 2013 06:26:47 -0400
+Date: Wed, 13 Mar 2013 12:26:35 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <kgene.kim@samsung.com>, <p.paneri@samsung.com>,
+        <gregkh@linuxfoundation.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH v6 0/2] Adding USB 3.0 DRD-phy support for exynos5250
+Message-ID: <20130313102635.GG6270@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1361976229-16024-1-git-send-email-gautam.vivek@samsung.com>
+ <CAFp+6iGon4sD4=qKpAVG-OGm9brwnz1O6sdCKmh8o9Wy1e_6ow@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kVXhAStRUZ/+rrGn"
+	protocol="application/pgp-signature"; boundary="XRI2XbIfl/05pQwm"
 Content-Disposition: inline
-In-Reply-To: <1363126175.3137.160.camel@x61.thuisdomein>
-X-Cookie: Your ignorance cramps my conversation.
+In-Reply-To: <CAFp+6iGon4sD4=qKpAVG-OGm9brwnz1O6sdCKmh8o9Wy1e_6ow@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---kVXhAStRUZ/+rrGn
+--XRI2XbIfl/05pQwm
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Mar 12, 2013 at 11:09:35PM +0100, Paul Bolle wrote:
-> The (rudimentary) support for the Openmoko Neo1973 GTA01 got removed in
-> commit 1ae5cbc52e7c6619a3f44b87809fd25370df31bb ("ASoC: neo1973_wm8753:
-> remove references to the neo1973-gta01 machine"). Remove its last traces
-> in the Kconfig file too.
+On Wed, Mar 13, 2013 at 03:41:15PM +0530, Vivek Gautam wrote:
+> Hi Felipe,
+>=20
+>=20
+> On Wed, Feb 27, 2013 at 8:13 PM, Vivek Gautam <gautam.vivek@samsung.com> =
+wrote:
+> > Based on 'usb-next'
+> >
+> > Changes from v5:
+> >  - Squashed the following change from Felipe in this patch-set:
+> >    [PATCH] usb: phy: samsung: let it be built as a module
+> >  - Using EXPORT_SYMBOL_GPL() to export symbols in "samsung-usbphy.c"
+> >    to allow module builds of these samsung PHY drivers.
+> >
+> > Vivek Gautam (2):
+> >   usb: phy: samsung: Common out the generic stuff
+> >   usb: phy: samsung: Add PHY support for USB 3.0 controller
+> >
+>=20
+> I am rebasing this pach-set on top of your PHY driver changes in
+> 'testing' branch of your tree.
+> I took first 194 patches ;) from top of testing branch (i could find
+> these on top of 3.9 rc2 merge),
+> and applied the same on 'usb-next' branch in my development tree in
+> order to test further.
+>=20
+> I shall be posting these rebased patch-set, so that it will be easier
+> for you to merge the changes in.
+> Is there something you want to point out to me while i do this ?
 
-The support wasn't rudimentary, it was a pretty much complete audio
-driver.  Anyway I've applied this with a fixed up commit message.
+nothing to point out as of now :-)
 
---kVXhAStRUZ/+rrGn
+Thanks a lot.
+
+--=20
+balbi
+
+--XRI2XbIfl/05pQwm
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRQFN0AAoJELSic+t+oim9DwAP/iQJhVjm91JrgipPMtlcxS2F
-y7cs4SYGwMxFz/bmrhDRtnMuMLZvV4Vu2NcpRCEphrCPD50k2D/Ky6w1mbm7VaMv
-cSPLL4m/rtH/1XkETBJjeB99je8NjdgcrwPQ5XstyGsiP7chtdaNjBn6Sv2cHbiy
-VQouBtFHtcGrY5vr8WBzxA2d5Vt35IXo8r38AFoP/zArbbbSHcEjwvGY03S6yZS8
-GSQguTDvSd0B7cr5e8pmZcHSyMydFajyozv1DDtEWifW/lwEroUoJQYWhEYz5ZJp
-gzxi1k0m2avLjO0fS2l2ZoT/oKCocNkb5UQ7YzZGvC9wgeQ0ArjUw+5uDqxyboXQ
-NNgKZ6Shp6WOoK4jKhqcV5cXNqN/m5VgSUn9DHOPNpimxSnHzxUizWHQN1pyQqv9
-nsRm7gMXBo1MZiGh0dyUcxPMt4cfVCRwD74nJxWSc3LGivMYyz5JFznEJaeAARH1
-4E5+VdE8Zxa+8x/Vssuy30od8wWiXm9YjFhpj3XKynya55OrNu/Rq2c8XnrESAGL
-s4/SX8fIgvJCzUsR2l4aweTBRnPyQFcjFqwC5qhgB2ZVLvDTwNkkShuhNf/o6CeU
-fwKzdWyWpMKTfmZMLyyOXeBRrLEy9DD6Tf3d+wft9RvRYMRO6o80Ws0LF6lsXQmq
-Il8w5kmCBKs4ZrUImIwZ
-=pAAo
+iQIcBAEBAgAGBQJRQFRbAAoJEIaOsuA1yqREZRkQAI8z6M6Ms30CCHV+3x+cS8d3
+CHcO5lYTl4dwTbAtvjN2RELbtGFdVdsKiOCYqFKQQaMGk2Ui+wSbwf4XhUyRNcF7
+tqgsVAPxEMFaquAdzx7s1etxsRgDcKlyrWlI9re55d043qslkA4kpLlbsY7AjbII
+JFjA1yCAdpqJFcwrt0/14LWo8kheKJhc1intPJ4/XpuagDZdvT5ACJ0RVTMImgEz
+Q9bCyex+IEN1+FaB8CP/Zi9286NK2MzROQZJEr9RyqUjf/iihe6Pq3YhZw9AIoVp
+1/Cjo/HxzLKkLclF3Vgp3lv/qxd/TfSijvJ90Dybv3tpqUCmdPJWtt5O9OsKKM/+
+sBqlhG79OLWjQZ7X9qPurFvasvh8LXRvPqabeQLua2q6K/uC5Ia/K2/QfChQoVrl
+Z+J/D0BdE2RrJM7BK6YyFi6Y4AOc6h/3HNFmf1POujfa/8Cplv5/4FUH7QuJRsl5
+fqC48Kp3/3ka8iL7ZLqrQvOw5siBKD5ZWB6cbEJh1XV0/ACIY/zT6/F7ZQUCVZyY
+1EPN6eTMkD3Bgqys5KeZaR3HebKvTB5hI5YFvCbo6ffsQ3vb7QIyqs6LFpaBRH8i
+517Fx1G+8eqC9aGl8EyKJgHSAkUl1VQYBde5NhtTkfhXS5lXpFgnAaFu4rGrQrii
+SJLMlFd2LGEkojxdEYHt
+=Roi7
 -----END PGP SIGNATURE-----
 
---kVXhAStRUZ/+rrGn--
+--XRI2XbIfl/05pQwm--
