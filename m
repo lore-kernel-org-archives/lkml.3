@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041Ab3CMSBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:01:07 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:35840 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab3CMSBF (ORCPT
+	id S934121Ab3CMSBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:01:13 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39161 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095Ab3CMSBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 14:01:05 -0400
+	Wed, 13 Mar 2013 14:01:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363150138-20819-1-git-send-email-ch.naveen@samsung.com>
-References: <1362625743-10401-1-git-send-email-ch.naveen@samsung.com>
-	<1363150138-20819-1-git-send-email-ch.naveen@samsung.com>
-Date: Wed, 13 Mar 2013 11:01:03 -0700
-X-Google-Sender-Auth: 6LTjcU8YNICZvvQmK7fYM3uLMgM
-Message-ID: <CAD=FV=XoE6NCruDUv2UajaP+LWDCp+pgaZJsEKpkoxy3tZNeAw@mail.gmail.com>
-Subject: Re: [PATCH v3] iio: adc: exynos5_adc: fix compilation warnings
-From: Doug Anderson <dianders@chromium.org>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-iio <linux-iio@vger.kernel.org>, dan.carpenter@oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
+In-Reply-To: <CACxGe6shiqqACd6S1VTEkno993xB+E7y2cLi3HOw6yUH+Mbn7A@mail.gmail.com>
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkdbozpAVNb+7QLhiiinC+MMERvA=vNFP5kZiWLnsiv7dpg@mail.gmail.com>
+	<CACxGe6shiqqACd6S1VTEkno993xB+E7y2cLi3HOw6yUH+Mbn7A@mail.gmail.com>
+Date: Wed, 13 Mar 2013 19:01:07 +0100
+Message-ID: <CACRpkdbXhV_4PwOzAaTKtRB4-vjBB5hp007EWdz_DiDjtBgv4g@mail.gmail.com>
+Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
+        Max Filippov <jcmvbkbc@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naveen,
-
-On Tue, Mar 12, 2013 at 9:48 PM, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> Doug, There was a comment from Lars regarding the match not
-> being NULL, if driver depends on CONFIG_OF. So, i've removed
-> the NULL check in v2 of this patch.
->         https://patchwork.kernel.org/patch/2222841/
+On Wed, Mar 13, 2013 at 8:53 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Wed, Mar 13, 2013 at 1:12 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Tue, Mar 12, 2013 at 11:12 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>
+>>> This series makes sure the GENERIC_GPIO option can only be set through GPIOLIB
+>>> (and not by individual architectures), as a first step towards its removal.
+>>
+>> Nice!
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> I bet something will break, anyway: no pain no gain.
 >
-> I'm checking the return value of get_version() for -ve values before
-> assigning to info->version. So, i left the (unsigned int) unchanged.
+> Since this is a pretty invasive patch series that touches a lot of
+> architectures, we should get it into a separate branch that can get
+> pulled into linux-next.
 
-Hmmm, I guess this was the point that confused me.  I went back and
-agree with Lars--it can't be NULL.  ...but that means that
-exynos_adc_get_version() can't return an error, so why are we checking
-for an error?
+Good point. Alexandre, do you have a git repo to attain this?
 
--Doug
+Yours,
+Linus Walleij
