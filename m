@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3CMFMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 01:12:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58827 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab3CMFMn (ORCPT
+	id S1754506Ab3CMFMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 01:12:55 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:43258 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3CMFMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 01:12:43 -0400
-Date: Wed, 13 Mar 2013 16:12:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: linux-next: build failure after merge of the final tree (cgroup
- tree related)
-Message-Id: <20130313161236.760c25633a4e8ea8d4847ccb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Mar_2013_16_12_36_+1100_AqYCaqDMOr_YKbvE"
+	Wed, 13 Mar 2013 01:12:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+Date: Wed, 13 Mar 2013 06:12:52 +0100
+Message-ID: <CACRpkdbozpAVNb+7QLhiiinC+MMERvA=vNFP5kZiWLnsiv7dpg@mail.gmail.com>
+Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
+        Max Filippov <jcmvbkbc@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Mar_2013_16_12_36_+1100_AqYCaqDMOr_YKbvE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 12, 2013 at 11:12 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Hi all,
+> This series makes sure the GENERIC_GPIO option can only be set through GPIOLIB
+> (and not by individual architectures), as a first step towards its removal.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+Nice!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-In file included from include/linux/memcontrol.h:22:0,
-                 from include/linux/swap.h:8,
-                 from include/linux/suspend.h:4,
-                 from arch/powerpc/kernel/asm-offsets.c:24:
-include/linux/cgroup.h:748:13: warning: 'struct cgroupstats' declared insid=
-e parameter list [enabled by default]
-include/linux/cgroup.h:748:13: warning: its scope is only this definition o=
-r declaration, which is probably not what you want [enabled by default]
-cc1: all warnings being treated as errors
+I bet something will break, anyway: no pain no gain.
 
-and many more similar.
-
-Caused by commit c2c9ad164fa3 ("cgroup: remove unneeded includes from
-cgroup.h").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__13_Mar_2013_16_12_36_+1100_AqYCaqDMOr_YKbvE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRQArEAAoJEECxmPOUX5FE5AYP/jDkTkqIMC+X6xys8RP/JfUJ
-Nopq6OCc2962v2hXdEWxcPgwihcItRdxeoI7NQYx1ndMXk57/CwT+xVTKFxdBQNH
-Q0EtGMN30j5twcqQXSYk2bX4iAG0dsnjXK6pqtYk0dR5yCrr9trMZPm+XZdCUT7/
-zU096e8xzvZGwa/s7gp84/hMPartBnu0XeX/1WpdP+CCcLrd8u9gpoATg1P4M07e
-bRdah8pnueHMs1T9Yt/E7kPR4ZIij4hHdGXyv9geUUO7e4OtHuk0mP/qDkLkspoh
-3i21wnbROiu5O3JTRH1zK0B/qH/fldjorBW8343IdqXUbfFL/nJPouAdHogZKUrj
-iNhQtLckDMxsgGoyoGlFb0kLhP/PNQNrWS2cFuIeihOY4Pgz3uV5Eg4gAN78Mtmh
-x0Cb5iObQidoLUMGbOJAH0lRiwQpY1tmZDjK5Ovzd2ztBqisBBvBo/+3n02F5e6Z
-02UWEo0Q4opUouOpzBnI+nYQrA4ltFB6A8a95/8fJaw+UBVGKMRR9wl+D/7CoDpu
-z+5sG/Sw2lbajl6lNLbRGAHqqcdPk/kn4G1pyn+m8phyB5OMqkBCdXwghVprKpHz
-MbotdsoCSGljuZOkvmtup2xCJtaCtNi5AR3xD0jopSCnxtR3eo1JXAE54TI2IF+z
-TdIkdkBQZRgPU4pcqn35
-=TfYy
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Mar_2013_16_12_36_+1100_AqYCaqDMOr_YKbvE--
+Yours,
+Linus Walleij
