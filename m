@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934029Ab3CMRqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:46:36 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44456 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933778Ab3CMRpz (ORCPT
+	id S934019Ab3CMRrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:47:37 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:37238 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932881Ab3CMRrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:45:55 -0400
-Message-ID: <5140BB50.8080004@wwwdotorg.org>
-Date: Wed, 13 Mar 2013 11:45:52 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 13 Mar 2013 13:47:36 -0400
 MIME-Version: 1.0
-To: Danny Huang <dahuang@nvidia.com>
-CC: linux@arm.linux.org.uk, ldewangan@nvidia.com, olof@lixom.net,
-        hdoyu@nvidia.com, thierry.reding@avionic-design.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: tegra: expose chip ID and revision
-References: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
-In-Reply-To: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <1363196155-1620-1-git-send-email-jason@lakedaemon.net>
+References: <1362872371.3690.106.camel@shinybook.infradead.org>
+	<1363196155-1620-1-git-send-email-jason@lakedaemon.net>
+Date: Wed, 13 Mar 2013 18:47:36 +0100
+Message-ID: <CACRpkdaoF-PqqOi3bCQXnuey_2U+niHA8RWriXiJUE=kUZB0dQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: mvebu: prevent walking off the end of group array
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        David Woodhouse <David.Woodhouse@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2013 03:48 AM, Danny Huang wrote:
-> Expose Tegra chip ID and revision in /sys/devices/soc for user mode
-> usage
+On Wed, Mar 13, 2013 at 6:35 PM, Jason Cooper <jason@lakedaemon.net> wrote:
 
-> diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+> From: David Woodhouse <dwmw2@infradead.org>
+>
+> While investigating (ab)use of krealloc, David found this bug.  It's
+> unlikely to occur, but now we detect the condition and error out
+> appropriately.
+>
+> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> ---
+> David, please double check that this is as you intended.  I had to hand-jam it in due to some peculiarities on my side.
 
->  static void __init tegra_dt_init(void)
->  {
-> +	struct device *parent = NULL;
-> +	struct soc_device *soc_dev;
-> +	struct soc_device_attribute *soc_dev_attr;
+I have tentatively applied this to my fixes branch.
 
-Since Russell asked you to redo the patch anyway, I'd prefer that
-variables be declared in the order they're used. So, soc_dev_attr, then
-soc_dev, then parent.
+Yours,
+Linus Walleij
