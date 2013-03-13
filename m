@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab3CMQfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:35:20 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64276 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3CMQfS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:35:18 -0400
+	id S933656Ab3CMQgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:36:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40339 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756441Ab3CMQgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:36:20 -0400
+Message-ID: <5140AAFD.4080508@ti.com>
+Date: Wed, 13 Mar 2013 18:36:13 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
-	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
-	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
-	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
-	<CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
-	<CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
-	<CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
-Date: Wed, 13 Mar 2013 17:35:16 +0100
-Message-ID: <CA+icZUUAq0h2kpy1fVSBkJ_21VwLyGpr3s+ErhSgMxxeR-C3+A@mail.gmail.com>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+To: Tony Lindgren <tony@atomide.com>
+CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+References: <1363088606-2692-1-git-send-email-rogerq@ti.com> <20130312164007.GZ26093@atomide.com> <5140821B.2030902@ti.com> <20130313162454.GE26093@atomide.com>
+In-Reply-To: <20130313162454.GE26093@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
->> when the kernel-module is loaded.
->> So, is this intended?
->> SquashFS prints into the logs, so what is it doing differently?
->
-> Some modules do, some don't.  It's not compulsory and not very useful.
->
+On 03/13/2013 06:24 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [130313 06:46]:
+>> On 03/12/2013 06:40 PM, Tony Lindgren wrote:
+>>> * Roger Quadros <rogerq@ti.com> [130312 04:47]:
+>>>> Hi Tony,
+>>>>
+>>>> These patches provide the SoC side code required to support
+>>>> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+>>> ... 
+>>>
+>>>>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
+>>>>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
+>>>>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
+>>>>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
+>>>>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
+>>>>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
+>>>>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
+>>>>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
+>>>>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
+>>>>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
+>>>>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
+>>>>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
+>>>>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
+>>>>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
+>>>>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
+>>>>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
+>>>>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
+>>>
+>>> Can't you have some mach-omap2/ehci-common.c that takes care
+>>> of the initializiation to avoid this much addition to the
+>>> board-*.c files? You may be able to have just a common function
+>>> to do it and pass few parameters?
+>>
+>> Since we moved reset and power handling for the USB PHYs from omap-echi
+>> driver into the USB PHY driver we need to define the regulator data
+>> for RESET and Power line of each PHY. So most of the code added is just
+>> regulator data for the PHY rather than omap-ehci.
+> 
+> It seems that you're now repeating minor variations of the same PHY
+> over and over again though.
 
-That's some hardcoded printk-stuff which is IMHO wrong implemented and outdated.
-I hoped that this is handled in al FS-modules the same way.
-Do not assume...
+Yes it is the vcc and reset regulator data for the PHY that
+is getting repeated with variations in the GPIO number.
 
-- Sedat -
+>  
+>> Instead of a common function, I can implement some macros that make it
+>> easier to define the regulators for the PHY in the board files.
+>> Does this sound OK?
+>>
+>> Personally I don't like such macros because it hides the implementation
+>> and is difficult to read/debug.
+> 
+> I'd prefer a common function to initialize the PHY though as it sounds
+> like using macros would just allocate similar PHY many times which seems
+> unnecessary.
+> 
+OK, so we want to create the regulator data at runtime to save some memory?
+I'll come up with something.
 
-[1] http://marc.info/?l=linux-kernel&m=136319193916686&w=2
-
-> Thanks,
-> Miklos
+cheers,
+-roger
