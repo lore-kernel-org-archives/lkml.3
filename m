@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3CMBcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 21:32:06 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:59897 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab3CMBcE (ORCPT
+	id S1755857Ab3CMBnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 21:43:41 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1045 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755285Ab3CMBnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 21:32:04 -0400
-X-IronPort-AV: E=Sophos;i="4.84,833,1355126400"; 
-   d="scan'208";a="28951501"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 0/3] Detect UDIV/SDIV support from ISAR0
-Date: Tue, 12 Mar 2013 18:31:58 -0700
-Message-Id: <1363138321-27849-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
+	Tue, 12 Mar 2013 21:43:39 -0400
+Message-ID: <513FD9C1.4020604@huawei.com>
+Date: Wed, 13 Mar 2013 09:43:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2] cgroup: consolidate cgroup_attach_task() and cgroup_attach_proc()
+References: <513FD395.7000906@huawei.com> <20130313011939.GC2999@htj.dyndns.org>
+In-Reply-To: <20130313011939.GC2999@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While attempting to upstream a patch to add the IDIV hwcap for
-Krait processors, Will suggested we move the code to read the
-ISAR0 register. This patchset does that and also works around
-the early Krait CPU designs that don't follow the latest ARM ARM
-for the ISAR0 register.
+On 2013/3/13 9:19, Tejun Heo wrote:
+> On Wed, Mar 13, 2013 at 09:17:09AM +0800, Li Zefan wrote:
+>> These two functions share most of the code.
+>>
+>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+>> ---
+>>
+>> v2: Not necessary to move cgroup_attach_task_all().
+> 
+> I supposed this one is the one to apply?
+> 
 
-Stephen Boyd (3):
-  ARM: Clear IDIVT hwcap if CONFIG_ARM_THUMB=n
-  ARM: Detect support for SDIV/UDIV from ISAR0 register
-  ARM: Work around faulty ISAR0 register in some Krait CPUs
-
- arch/arm/kernel/setup.c | 30 +++++++++++++++++++++++++++++-
- arch/arm/mm/proc-v7.S   |  4 ++--
- 2 files changed, 31 insertions(+), 3 deletions(-)
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+yep.
 
