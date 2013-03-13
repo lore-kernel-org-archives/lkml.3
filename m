@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934416Ab3CMXK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:10:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49487 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab3CMXK0 convert rfc822-to-8bit (ORCPT
+	id S1756560Ab3CMXOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:14:25 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35389 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755639Ab3CMXOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:10:26 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] leds: add new LP5562 LED driver
-Thread-Topic: [PATCH 1/2] leds: add new LP5562 LED driver
-Thread-Index: Ac4OX2Yv741ZKDVwRS2bm8JjE2iaBQQpOkOAAE7VN3A=
-Date: Wed, 13 Mar 2013 23:10:20 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E4878C@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F79272C46@DQHE02.ent.ti.com>
- <CAK5ve-+p1-QQutH=1S3rV5WF9ePE2Q99WWmaSS-EAdm=jama0Q@mail.gmail.com>
-In-Reply-To: <CAK5ve-+p1-QQutH=1S3rV5WF9ePE2Q99WWmaSS-EAdm=jama0Q@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Mar 2013 19:14:23 -0400
+X-Originating-IP: 67.232.160.146
+Date: Wed, 13 Mar 2013 16:14:15 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] fs: Don't compile in drop_caches.c when CONFIG_SYSCTL=n
+Message-ID: <20130313231413.GA3265@jtriplet-mobl1>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sorry for the delay. I'm busy in company work.
-> These 2 patches looks fine with me.
-> But I think we can fold this 2 patches into one.
-> Do you mind I doing this and merge to my for-next?
+drop_caches.c provides code only invokable via sysctl, so don't compile
+it in when CONFIG_SYSCTL=n.
 
-Hi Bryan,
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ fs/Makefile        |    3 ++-
+ include/linux/mm.h |    4 ++++
+ kernel/sysctl.c    |    1 -
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-It looks you've already done in 'devel' branch in linux-leds.
-Thanks!
+diff --git a/fs/Makefile b/fs/Makefile
+index 9d53192..3b2c767 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -10,7 +10,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+ 		ioctl.o readdir.o select.o fifo.o dcache.o inode.o \
+ 		attr.o bad_inode.o file.o filesystems.o namespace.o \
+ 		seq_file.o xattr.o libfs.o fs-writeback.o \
+-		pnode.o drop_caches.o splice.o sync.o utimes.o \
++		pnode.o splice.o sync.o utimes.o \
+ 		stack.o fs_struct.o statfs.o
+ 
+ ifeq ($(CONFIG_BLOCK),y)
+@@ -49,6 +49,7 @@ obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o xattr_acl.o
+ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
+ obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+ obj-$(CONFIG_COREDUMP)		+= coredump.o
++obj-$(CONFIG_SYSCTL)		+= drop_caches.o
+ 
+ obj-$(CONFIG_FHANDLE)		+= fhandle.o
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7acc9dc..1bb400f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1674,8 +1674,12 @@ int in_gate_area_no_mm(unsigned long addr);
+ #define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
+ #endif	/* __HAVE_ARCH_GATE_AREA */
+ 
++#ifdef CONFIG_SYSCTL
++extern int sysctl_drop_caches;
+ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
++#endif
++
+ unsigned long shrink_slab(struct shrink_control *shrink,
+ 			  unsigned long nr_pages_scanned,
+ 			  unsigned long lru_pages);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index afc1dc6..3dadde5 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -106,7 +106,6 @@ extern unsigned int core_pipe_limit;
+ #endif
+ extern int pid_max;
+ extern int pid_max_min, pid_max_max;
+-extern int sysctl_drop_caches;
+ extern int percpu_pagelist_fraction;
+ extern int compat_log;
+ extern int latencytop_enabled;
+-- 
+1.7.10.4
 
-Best Regards,
-Milo
