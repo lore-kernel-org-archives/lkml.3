@@ -1,74 +1,470 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab3CMAPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 20:15:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:37533 "EHLO ozlabs.org"
+	id S932614Ab3CMA0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 20:26:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:34370 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab3CMAPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 20:15:45 -0400
-Date: Wed, 13 Mar 2013 11:15:43 +1100
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, benh@kernel.crashing.org
-Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
- format
-Message-ID: <20130313001542.GA5058@concordia>
-References: <20130123062201.GA13720@us.ibm.com>
- <20130123062613.GF13720@us.ibm.com>
- <20130226052646.GB21553@concordia>
- <20130226200343.GA21543@us.ibm.com>
- <20130227011725.GA5819@concordia>
- <20130306054826.GA14627@us.ibm.com>
- <20130312092740.GC30591@iris.ozlabs.ibm.com>
+	id S1755290Ab3CMA0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Mar 2013 20:26:11 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-next@vger.kernel.org
+Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
+In-Reply-To: <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au>
+References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 13 Mar 2013 10:30:16 +1030
+Message-ID: <87ehfkuq27.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312092740.GC30591@iris.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 08:27:40PM +1100, Paul Mackerras wrote:
-> On Tue, Mar 05, 2013 at 09:48:26PM -0800, Sukadev Bhattiprolu wrote:
-> > Michael Ellerman [michael@ellerman.id.au] wrote:
-> > | I suspect Arnaldo was either waiting for an ACK from Ben, or was
-> > | expecting Ben to take it?
-> > 
-> > Arnaldo, here is an updated patch. If it is acked by Paul Mackerras,
-> > Michael Ellerman or Ben, will you add it to your tree so the whole
-> > patchset comes from one place ?
-> > 
-> > Sukadev
-> > 
-> > ---
-> > >From 50c7a46f14083c0ed10d66b7aed66ba76e798550 Mon Sep 17 00:00:00 2001
-> > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> > Date: Tue, 5 Mar 2013 21:20:56 -0800
-> > Subject: [PATCH] [PATCH 5/6][v4]: perf Create a sysfs format entry for Power7 events
-> > 
-> > Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-> > which describes the format of the POWER7 PMU events.
-> > 
-> > This code is based on corresponding code in x86.
-> > 
-> > Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
-> > 		for other POWER cpus. So move the code to POWER7-specific,
-> > 		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
-> > 
-> > Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
-> > 
-> > Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> 
-> Acked-by: Paul Mackerras <paulus@samba.org>
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Tested-by: Michael Ellerman <michael@ellerman.id.au>
+> Hi Rusty,
+>
+> Looks partly better.   You seem to be using
+> CONFIG_SYMBOL_PREFIX_UNDERSCORE but selecting
+> CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX.  One trivial comment below.
+>
+> Maybe this was an unfinished version of the patch?
 
-cheers
+Indeed.  It was crap.... now I've applied James' copious fixes, and
+actually, y'know, proof-read it.
+
+This is what I'll push into my fixes/ branch now, and if it survives a
+day in linux-next, will push to Linus.
+
+Thanks,
+Rusty.
+
+v2: Rename CONFIG_SYMBOL_PREFIX_UNDERSCORE to
+    CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX, which is defined in
+    arch/Kconfig and selected by the 3 archs which need it.
+
+v3: Clean up remnants of v1, s/VMLINUX_SYMBOL_NAME/VMLINUX_SYMBOL_STR/
+    in description, note that Al's commit is in linux-next only,
+    remove whitespace-only hunk.
+
+CONFIG_SYMBOL_PREFIX: cleanup.
+
+We have CONFIG_SYMBOL_PREFIX, which three archs define to the string
+"_".  But Al Viro broke this in "consolidate cond_syscall and
+SYSCALL_ALIAS declarations" (in linux-next), and he's not the first to
+do so.
+
+Using CONFIG_SYMBOL_PREFIX is awkward, since we usually just want to
+prefix it so something.  So various places define helpers which are
+defined to nothing if CONFIG_SYMBOL_PREFIX isn't set:
+
+1) include/asm-generic/unistd.h defines __SYMBOL_PREFIX.
+2) include/asm-generic/vmlinux.lds.h defines VMLINUX_SYMBOL(sym)
+3) include/linux/export.h defines MODULE_SYMBOL_PREFIX.
+4) include/linux/kernel.h defines SYMBOL_PREFIX (which differs from #7)
+5) kernel/modsign_certificate.S defines ASM_SYMBOL(sym)
+6) scripts/modpost.c defines MODULE_SYMBOL_PREFIX
+7) scripts/Makefile.lib defines SYMBOL_PREFIX on the commandline if
+   CONFIG_SYMBOL_PREFIX is set, so that we have a non-string version
+   for pasting.
+
+(arch/h8300/include/asm/linkage.h defines SYMBOL_NAME(), too).
+
+Let's solve this properly:
+1) No more generic prefix, just CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX.
+2) Make linux/export.h usable from asm.
+3) Define VMLINUX_SYMBOL, VMLINUX_SYMBOL_STR and VMLINUX_SYMBOL_PREFIX_STR.
+4) Make everyone use them.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Tested-by: James Hogan <james.hogan@imgtec.com> (on metag)
+
+diff --git a/Makefile b/Makefile
+index a05ea42..10fb6c7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1398,7 +1398,7 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
+ # Run depmod only if we have System.map and depmod is executable
+ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+       cmd_depmod = $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) \
+-                   $(KERNELRELEASE) "$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))"
++                   $(KERNELRELEASE) "$(patsubst y,_,$(CONFIG_HAVE_SYMBOL_PREFIX_UNDERSCORE))"
+ 
+ # Create temporary dir for module support files
+ # clean it up only when building all modules
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 5a1779c..12ba8f9 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -391,6 +391,12 @@ config MODULES_USE_ELF_REL
+ 	  Modules only use ELF REL relocations.  Modules with ELF RELA
+ 	  relocations will give an error.
+ 
++config HAVE_UNDERSCORE_SYMBOL_PREFIX
++	bool
++	help
++	  Some architectures generate an _ in front of C symbols; things like
++	  module loading and assembly files need to know about this.
++
+ #
+ # ABI hall of shame
+ #
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index 600494c..314ee6a 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -1,7 +1,3 @@
+-config SYMBOL_PREFIX
+-	string
+-	default "_"
+-
+ config MMU
+ 	def_bool n
+ 
+@@ -33,6 +29,7 @@ config BLACKFIN
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select HAVE_UID16
++	select HAVE_UNDERSCORE_SYMBOL_PREFIX
+ 	select HAVE_VIRT_TO_BUS
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
+index ae8551e..2333cf6 100644
+--- a/arch/h8300/Kconfig
++++ b/arch/h8300/Kconfig
+@@ -12,10 +12,7 @@ config H8300
+ 	select MODULES_USE_ELF_RELA
+ 	select OLD_SIGSUSPEND3
+ 	select OLD_SIGACTION
+-
+-config SYMBOL_PREFIX
+-	string
+-	default "_"
++	select HAVE_UNDERSCORE_SYMBOL_PREFIX
+ 
+ config MMU
+ 	bool
+diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
+index afc8973..2099617 100644
+--- a/arch/metag/Kconfig
++++ b/arch/metag/Kconfig
+@@ -1,7 +1,3 @@
+-config SYMBOL_PREFIX
+-	string
+-	default "_"
+-
+ config METAG
+ 	def_bool y
+ 	select EMBEDDED
+@@ -27,6 +23,7 @@ config METAG
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_SYSCALL_TRACEPOINTS
++	select HAVE_UNDERSCORE_SYMBOL_PREFIX
+ 	select IRQ_DOMAIN
+ 	select MODULES_USE_ELF_RELA
+ 	select OF
+diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
+index 3b9a284..00d20ad 100644
+--- a/drivers/mtd/chips/gen_probe.c
++++ b/drivers/mtd/chips/gen_probe.c
+@@ -204,14 +204,14 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
+ 	struct cfi_private *cfi = map->fldrv_priv;
+ 	__u16 type = primary?cfi->cfiq->P_ID:cfi->cfiq->A_ID;
+ #ifdef CONFIG_MODULES
+-	char probename[16+sizeof(MODULE_SYMBOL_PREFIX)];
++	char probename[16+sizeof(VMLINUX_SYMBOL_PREFIX_STR)];
+ 	cfi_cmdset_fn_t *probe_function;
+ 
+-	sprintf(probename, MODULE_SYMBOL_PREFIX "cfi_cmdset_%4.4X", type);
++	sprintf(probename, VMLINUX_SYMBOL_PREFIX_STR "cfi_cmdset_%4.4X", type);
+ 
+ 	probe_function = __symbol_get(probename);
+ 	if (!probe_function) {
+-		request_module(probename + sizeof(MODULE_SYMBOL_PREFIX) - 1);
++		request_module(probename + sizeof(VMLINUX_SYMBOL_PREFIX_STR)-1);
+ 		probe_function = __symbol_get(probename);
+ 	}
+ 
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index 4077b5d..15c0598 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -1,4 +1,5 @@
+ #include <uapi/asm-generic/unistd.h>
++#include <linux/export.h>
+ 
+ /*
+  * These are required system calls, we should
+@@ -17,12 +18,7 @@
+  * but it doesn't work on all toolchains, so we just do it by hand
+  */
+ #ifndef cond_syscall
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define __SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+-#else
+-#define __SYMBOL_PREFIX
+-#endif
+-#define cond_syscall(x) asm(".weak\t" __SYMBOL_PREFIX #x "\n\t" \
+-			    ".set\t" __SYMBOL_PREFIX #x "," \
+-			    __SYMBOL_PREFIX "sys_ni_syscall")
++#define cond_syscall(x) asm(".weak\t" VMLINUX_SYMBOL_STR(x) "\n\t"	\
++			    ".set\t" VMLINUX_SYMBOL_STR(x) ","	\
++			    VMLINUX_SYMBOL_STR(sys_ni_syscall))
+ #endif
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index afa12c7..eb58d2d 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -52,13 +52,7 @@
+ #define LOAD_OFFSET 0
+ #endif
+ 
+-#ifndef SYMBOL_PREFIX
+-#define VMLINUX_SYMBOL(sym) sym
+-#else
+-#define PASTE2(x,y) x##y
+-#define PASTE(x,y) PASTE2(x,y)
+-#define VMLINUX_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+-#endif
++#include <linux/export.h>
+ 
+ /* Align . to a 8 byte boundary equals to maximum function alignment. */
+ #define ALIGN_FUNCTION()  . = ALIGN(8)
+diff --git a/include/linux/export.h b/include/linux/export.h
+index 696c0f4..fc83b2a 100644
+--- a/include/linux/export.h
++++ b/include/linux/export.h
+@@ -7,15 +7,27 @@
+  *
+  * If you feel the need to add #include <linux/foo.h> to this file
+  * then you are doing something wrong and should go away silently.
++ *
++ * If you think the above arrogance just encourages more people to add
++ * random crap to this file, you're not alone.
+  */
+ 
+ /* Some toolchains use a `_' prefix for all user symbols. */
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
++#ifdef CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX
++#define __VMLINUX_SYMBOL(x) _##x
++#define __VMLINUX_SYMBOL_STR(x) "_" #x
++#define VMLINUX_SYMBOL_PREFIX_STR "_"
+ #else
+-#define MODULE_SYMBOL_PREFIX ""
++#define __VMLINUX_SYMBOL(x) x
++#define __VMLINUX_SYMBOL_STR(x) #x
++#define VMLINUX_SYMBOL_PREFIX_STR ""
+ #endif
+ 
++/* Indirect, so macros are expanded before pasting. */
++#define VMLINUX_SYMBOL(x) __VMLINUX_SYMBOL(x)
++#define VMLINUX_SYMBOL_STR(x) __VMLINUX_SYMBOL_STR(x)
++
++#ifndef __ASSEMBLY__
+ struct kernel_symbol
+ {
+ 	unsigned long value;
+@@ -51,7 +63,7 @@ extern struct module __this_module;
+ 	__CRC_SYMBOL(sym, sec)					\
+ 	static const char __kstrtab_##sym[]			\
+ 	__attribute__((section("__ksymtab_strings"), aligned(1))) \
+-	= MODULE_SYMBOL_PREFIX #sym;				\
++	= VMLINUX_SYMBOL_STR(sym);				\
+ 	static const struct kernel_symbol __ksymtab_##sym	\
+ 	__used							\
+ 	__attribute__((section("___ksymtab" sec "+" #sym), unused))	\
+@@ -85,5 +97,6 @@ extern struct module __this_module;
+ #define EXPORT_UNUSED_SYMBOL_GPL(sym)
+ 
+ #endif /* CONFIG_MODULES */
++#endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _LINUX_EXPORT_H */
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 80d3687..e13e992 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -723,13 +723,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
+ 
+-/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+-#else
+-#define SYMBOL_PREFIX ""
+-#endif
+-
+ /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
+ #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+diff --git a/include/linux/module.h b/include/linux/module.h
+index ead1b57..46f1ea0 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -190,7 +190,7 @@ extern int modules_disabled; /* for sysctl */
+ /* Get/put a kernel symbol (calls must be symmetric) */
+ void *__symbol_get(const char *symbol);
+ void *__symbol_get_gpl(const char *symbol);
+-#define symbol_get(x) ((typeof(&x))(__symbol_get(MODULE_SYMBOL_PREFIX #x)))
++#define symbol_get(x) ((typeof(&x))(__symbol_get(VMLINUX_SYMBOL_STR(x))))
+ 
+ /* modules using other modules: kdb wants to see this. */
+ struct module_use {
+@@ -453,7 +453,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
+ #ifdef CONFIG_MODULE_UNLOAD
+ unsigned long module_refcount(struct module *mod);
+ void __symbol_put(const char *symbol);
+-#define symbol_put(x) __symbol_put(MODULE_SYMBOL_PREFIX #x)
++#define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
+ void symbol_put_addr(void *addr);
+ 
+ /* Sometimes we know we already have a refcount, and it's easier not
+diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+index 246b4c6..4a9a86d 100644
+--- a/kernel/modsign_certificate.S
++++ b/kernel/modsign_certificate.S
+@@ -1,15 +1,8 @@
+-/* SYMBOL_PREFIX defined on commandline from CONFIG_SYMBOL_PREFIX */
+-#ifndef SYMBOL_PREFIX
+-#define ASM_SYMBOL(sym) sym
+-#else
+-#define PASTE2(x,y) x##y
+-#define PASTE(x,y) PASTE2(x,y)
+-#define ASM_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+-#endif
++#include <linux/export.h>
+ 
+ #define GLOBAL(name)	\
+-	.globl ASM_SYMBOL(name);	\
+-	ASM_SYMBOL(name):
++	.globl VMLINUX_SYMBOL(name);	\
++	VMLINUX_SYMBOL(name):
+ 
+ 	.section ".init.data","aw"
+ 
+diff --git a/kernel/module.c b/kernel/module.c
+index 0925c9a..cfd4a3f 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1209,7 +1209,7 @@ static inline int check_modstruct_version(Elf_Shdr *sechdrs,
+ 
+ 	/* Since this should be found in kernel (which can't be removed),
+ 	 * no locking is necessary. */
+-	if (!find_symbol(MODULE_SYMBOL_PREFIX "module_layout", NULL,
++	if (!find_symbol(VMLINUX_SYMBOL_STR(module_layout), NULL,
+ 			 &crc, true, false))
+ 		BUG();
+ 	return check_version(sechdrs, versindex, "module_layout", mod, crc,
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 07125e6..a373a1f 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -119,13 +119,6 @@ _c_flags += $(if $(patsubst n%,, \
+ 		$(CFLAGS_GCOV))
+ endif
+ 
+-ifdef CONFIG_SYMBOL_PREFIX
+-_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+-_cpp_flags += $(_sym_flags)
+-_a_flags += $(_sym_flags)
+-endif
+-
+-
+ # If building the kernel in a separate objtree expand all occurrences
+ # of -Idir to -I$(srctree)/dir except for absolute paths (starting with '/').
+ 
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 3d569d6..0149949 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -74,9 +74,8 @@ kallsyms()
+ 	info KSYM ${2}
+ 	local kallsymopt;
+ 
+-	if [ -n "${CONFIG_SYMBOL_PREFIX}" ]; then
+-		kallsymopt="${kallsymopt} \
+-			    --symbol-prefix=${CONFIG_SYMBOL_PREFIX}"
++	if [ -n "${CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX}" ]; then
++		kallsymopt="${kallsymopt} --symbol-prefix=_"
+ 	fi
+ 
+ 	if [ -n "${CONFIG_KALLSYMS_ALL}" ]; then
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 78b30c1..6985021 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -18,14 +18,7 @@
+ #include "modpost.h"
+ #include "../../include/generated/autoconf.h"
+ #include "../../include/linux/license.h"
+-
+-/* Some toolchains use a `_' prefix for all user symbols. */
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+-#else
+-#define MODULE_SYMBOL_PREFIX ""
+-#endif
+-
++#include "../../include/linux/export.h"
+ 
+ /* Are we using CONFIG_MODVERSIONS? */
+ int modversions = 0;
+@@ -562,7 +555,7 @@ static void parse_elf_finish(struct elf_info *info)
+ static int ignore_undef_symbol(struct elf_info *info, const char *symname)
+ {
+ 	/* ignore __this_module, it will be resolved shortly */
+-	if (strcmp(symname, MODULE_SYMBOL_PREFIX "__this_module") == 0)
++	if (strcmp(symname, VMLINUX_SYMBOL_STR(__this_module)) == 0)
+ 		return 1;
+ 	/* ignore global offset table */
+ 	if (strcmp(symname, "_GLOBAL_OFFSET_TABLE_") == 0)
+@@ -583,8 +576,8 @@ static int ignore_undef_symbol(struct elf_info *info, const char *symname)
+ 	return 0;
+ }
+ 
+-#define CRC_PFX     MODULE_SYMBOL_PREFIX "__crc_"
+-#define KSYMTAB_PFX MODULE_SYMBOL_PREFIX "__ksymtab_"
++#define CRC_PFX     VMLINUX_SYMBOL_STR(__crc_)
++#define KSYMTAB_PFX VMLINUX_SYMBOL_STR(__ksymtab_)
+ 
+ static void handle_modversions(struct module *mod, struct elf_info *info,
+ 			       Elf_Sym *sym, const char *symname)
+@@ -637,11 +630,11 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
+ 		}
+ #endif
+ 
+-		if (memcmp(symname, MODULE_SYMBOL_PREFIX,
+-			   strlen(MODULE_SYMBOL_PREFIX)) == 0) {
++		if (memcmp(symname, VMLINUX_SYMBOL_PREFIX_STR,
++			   strlen(VMLINUX_SYMBOL_PREFIX_STR)) == 0) {
+ 			mod->unres =
+ 			  alloc_symbol(symname +
+-			               strlen(MODULE_SYMBOL_PREFIX),
++			               strlen(VMLINUX_SYMBOL_PREFIX_STR),
+ 			               ELF_ST_BIND(sym->st_info) == STB_WEAK,
+ 			               mod->unres);
+ 		}
+@@ -652,9 +645,9 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
+ 			sym_add_exported(symname + strlen(KSYMTAB_PFX), mod,
+ 					export);
+ 		}
+-		if (strcmp(symname, MODULE_SYMBOL_PREFIX "init_module") == 0)
++		if (strcmp(symname, VMLINUX_SYMBOL_STR(init_module)) == 0)
+ 			mod->has_init = 1;
+-		if (strcmp(symname, MODULE_SYMBOL_PREFIX "cleanup_module") == 0)
++		if (strcmp(symname, VMLINUX_SYMBOL_STR(cleanup_module)) == 0)
+ 			mod->has_cleanup = 1;
+ 		break;
+ 	}
