@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964775Ab3CMUwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:52:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:44954 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab3CMUwl convert rfc822-to-8bit (ORCPT
+	id S934287Ab3CMU5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:57:38 -0400
+Received: from mail-da0-f44.google.com ([209.85.210.44]:51617 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933178Ab3CMU5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:52:41 -0400
+	Wed, 13 Mar 2013 16:57:37 -0400
+Date: Wed, 13 Mar 2013 13:57:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.9-rc2
+Message-ID: <20130313205733.GA17480@kroah.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130313200542.GN21522@ZenIV.linux.org.uk>
-References: <1363204034-2442-1-git-send-email-sedat.dilek@gmail.com>
-	<20130313200542.GN21522@ZenIV.linux.org.uk>
-Date: Wed, 13 Mar 2013 21:52:39 +0100
-Message-ID: <CA+icZUX3WJYGvd-trCBcOd63CVSnECi5NA5_g_toVms8KNhq-Q@mail.gmail.com>
-Subject: Re: [PATCH] overlayfs: Print info into the logs when loaded
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 9:05 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Wed, Mar 13, 2013 at 08:47:14PM +0100, Sedat Dilek wrote:
->>
->> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->> ---
->>  fs/overlayfs/super.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
->> index 482c26f..e30141f 100644
->> --- a/fs/overlayfs/super.c
->> +++ b/fs/overlayfs/super.c
->> @@ -674,6 +674,8 @@ MODULE_ALIAS_FS("overlayfs");
->>
->>  static int __init ovl_init(void)
->>  {
->> +     printk(KERN_INFO "overlayfs: loaded\n");
->> +
->
-> Could we please create a new maillist for that kind of stuff?  It's seriously
-> overdue, IMO.  linux-bikeshedding@vger.kernel.org, if davem doesn't mind
-> touching that...
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
 
-Dear Mr. Viro,
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
 
-I looked over fs/ especially in concerńs of status-informations - I
-had better not done it.
-This remembered me the crap with drm/kms with all its useless driver info.
+are available in the git repository at:
 
-Here for you:
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.9-rc2
 
-[   10.998890] [drm] Initialized drm 1.1.0 20060810
-[   13.147821] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+for you to fetch changes up to 564c526a1bed5e42b5cd52cfe1752c4296ef17a6:
 
-( On a quick Google search I found [1] (I rememebr there were 4
-patches but break user-space as there exists kernel-drm and libdrm). )
+  staging: comedi: dt9812: use CR_CHAN() for channel number (2013-03-11 10:21:05 -0700)
 
-As an enduser I want some useful help.
+----------------------------------------------------------------
+Staging tree fixes for 3.9-rc2
 
-As a non-native English I had to look up that "bikeshedding" word.
-People asked for review why not test it and give feedback - even
-report on useless stuff seen from your POV.
-This might be a little detail in your eyes - but you are free to have
-a deeper look on overlayfs as an filesystem-expert.
-For me it is important that this drama comes to an end.
-O.O. drama - isn't someone dying in the end :-).
-Take it with British humour :-).
+Here are some drivers/staging and drivers/iio fixes for 3.9 (the two are
+still pretty intertwined, hence them coming both from my tree still.)
+Nothing major, just a few things that have been reported by users, all
+of these have been in linux-next for a while.
 
-- Sedat -
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-[1] https://lkml.org/lkml/2010/12/22/50
+----------------------------------------------------------------
+Denis CIOCCA (1):
+      iio:common:st_sensors fixed all warning messages about uninitialized variables
+
+Geert Uytterhoeven (1):
+      staging/vt6656: Fix too large integer constant warning on 32-bit
+
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.9a' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+Guenter Roeck (2):
+      iio/imu: inv_mpu6050 depends on IIO_BUFFER
+      iio: Fix build error seen if IIO_TRIGGER is defined but IIO_BUFFER is not
+
+Ian Abbott (1):
+      staging: comedi: dt9812: use CR_CHAN() for channel number
+
+Kumar Amit Mehta (3):
+      staging: comedi: drivers: usbdux.c: fix DMA buffers on stack
+      staging: comedi: drivers: usbduxfast.c: fix for DMA buffers on stack
+      staging: comedi: drivers: usbduxsigma.c: fix DMA buffers on stack
+
+Lars-Peter Clausen (3):
+      iio:ad5064: Fix address of the second channel for ad5065/ad5045/ad5025
+      iio:ad5064: Fix off by one in DAC value range check
+      iio:ad5064: Initialize register cache correctly
+
+Malcolm Priestley (1):
+      staging: vt6656: Fix oops on resume from suspend.
+
+Philipp Zabel (1):
+      staging: imx/drm: request irq only after adding the crtc
+
+ drivers/iio/common/st_sensors/st_sensors_core.c |  9 ++++----
+ drivers/iio/dac/ad5064.c                        | 64 +++++++++++++++++++++++++++++++---------------------
+ drivers/iio/imu/inv_mpu6050/Kconfig             |  1 +
+ drivers/staging/comedi/drivers/dt9812.c         | 16 ++++++++-----
+ drivers/staging/comedi/drivers/usbdux.c         | 31 +++++++++++++++----------
+ drivers/staging/comedi/drivers/usbduxfast.c     | 30 ++++++++++++++----------
+ drivers/staging/comedi/drivers/usbduxsigma.c    | 27 ++++++++++++++--------
+ drivers/staging/imx-drm/ipuv3-crtc.c            | 23 ++++++++++---------
+ drivers/staging/vt6656/card.c                   |  2 +-
+ drivers/staging/vt6656/main_usb.c               |  4 ----
+ include/linux/iio/common/st_sensors.h           |  9 +++++---
+ 11 files changed, 126 insertions(+), 90 deletions(-)
