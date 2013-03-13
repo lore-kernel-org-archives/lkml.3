@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab3CMLsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 07:48:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42148 "EHLO bear.ext.ti.com"
+	id S1756354Ab3CMLwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 07:52:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab3CMLsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 07:48:23 -0400
-Message-ID: <5140677B.4030505@ti.com>
-Date: Wed, 13 Mar 2013 13:48:11 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <b-cousson@ti.com>,
-        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 12/12] USB: ehci-omap: Fix detection in HSIC mode
-References: <Pine.LNX.4.44L0.1303121201050.2153-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1303121201050.2153-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755585Ab3CMLwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 07:52:00 -0400
+Date: Wed, 13 Mar 2013 07:51:55 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: Rename cERROR and cifserror to cifs_vfs_err
+Message-ID: <20130313075155.7464a34a@tlielax.poochiereds.net>
+In-Reply-To: <1363174614.2031.9.camel@joe-AO722>
+References: <1363128287.23052.21.camel@joe-AO722>
+	<1363174614.2031.9.camel@joe-AO722>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 06:07 PM, Alan Stern wrote:
-> On Tue, 12 Mar 2013, Roger Quadros wrote:
+On Wed, 13 Mar 2013 04:36:54 -0700
+Joe Perches <joe@perches.com> wrote:
+
+> On Tue, 2013-03-12 at 15:44 -0700, Joe Perches wrote:
+> > The cERROR macro is always used as cERROR(1, and cifserror
+> > is just a printk(KERN_ERR "CIFS VFS: ".
+> > 
+> > Make a cifs_vfs_err function that uses the vsprintf %pV
+> > extension to avoid duplicating the "CIFS VFS: " prefix.
+> > 
+> > Remove the cERROR macro and use cifs_vfs_err directly.
 > 
->> The HSIC devices need to be kept in reset while the EHCI controller
->> is being initialized and only brought out of reset after the
->> initialization is complete, else HSIC devices will not be detected.
+> Perhaps a better idea than this patch is to
+> change both the cERROR and cFYI macros to
+> a new use of cifs_dbg(type, fmt, ...)
 > 
-> This is not a great description of what the patch does.  You should say
-> that it moves PHY initialization until after EHCI initialization is
-> complete, instead of initializing the PHYs first, shutting them down
-> again, and then initializing them a second time.
+> cERROR(set, fmt, ...)   -> cifs_dbg(VFS, fmt, ...)
+> cFYI(set, fmt, ...)     -> cifs_dbg(FYI, fmt, ...)
+> 
+> This conversion would mark both these macros
+> as debug stataments as they are only enabled
+> with CONFIG_CIFS_DEBUG.
+> 
+> Also CONFIG_CIFS_DEBUG2 use of DBG could also
+> be integrated with the same style.
+> 
+> cFYI(DBG2, fmt, ...)    -> cifs_dbg(NOISY, fmt, ...)
+> 
+> The reduced object size would still apply.
+> 
+> This would also enable an easier conversion to
+> dynamic debugging of these debug macros.
+> 
+> I'd prefer to move the newline from the macro
+> to the format as that is more consistent with
+> the rest of the kernel.
+> 
+> Thoughts?
 > 
 
-Okay will update the description.
+I like this change overall, but the size of the patch is pretty
+daunting. If you could change the code that underlies cERROR() and
+cFYI() without needing to touch all of their call sites, it might be
+a simpler initial step.
 
->> Also remove outdated TODO list from header.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> CC: Alan Stern <stern@rowland.harvard.edu>
->> ---
->>  drivers/usb/host/ehci-omap.c |   38 +++++++++++++++-----------------------
->>  1 files changed, 15 insertions(+), 23 deletions(-)
->>
->> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
->> index 1ba1df8..dc2de47 100644
->> --- a/drivers/usb/host/ehci-omap.c
->> +++ b/drivers/usb/host/ehci-omap.c
->> @@ -29,12 +29,6 @@
->>   * along with this program; if not, write to the Free Software
->>   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
->>   *
->> - * TODO (last updated Feb 27, 2010):
->> - *	- add kernel-doc
->> - *	- enable AUTOIDLE
->> - *	- add suspend/resume
->> - *	- add HSIC and TLL support
->> - *	- convert to use hwmod and runtime PM
->>   */
->>  
->>  #include <linux/kernel.h>
->> @@ -90,26 +84,13 @@ static inline u32 ehci_read(void __iomem *base, u32 reg)
->>  static int omap_ehci_init(struct usb_hcd *hcd)
->>  {
->>  	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
->> -	struct omap_hcd	*omap = (struct omap_hcd *)ehci->priv;
->> -	int rc, i;
->> -
->> -	/* Hold PHYs in reset while initializing EHCI controller */
->> -	for (i = 0; i < omap->nports; i++) {
->> -		if (omap->phy[i])
->> -			usb_phy_shutdown(omap->phy[i]);
->> -	}
->> +	int rc;
->>  
->>  	/* we know this is the memory we want, no need to ioremap again */
->>  	ehci->caps = hcd->regs;
->>  
->>  	rc = ehci_setup(hcd);
->>  
->> -	/* Bring PHYs out of reset */
->> -	for (i = 0; i < omap->nports; i++) {
->> -		if (omap->phy[i])
->> -			usb_phy_init(omap->phy[i]);
->> -	}
->> -
->>  	return rc;
->>  }
-> 
-> Now that there's almost nothing left of this function, you can get rid
-> of it completely.  Move the assignment to ehci->caps into
-> ehci_hcd_omap_probe() and remove the init entry in the overrides
-> structure.
+OTOH, I would also prefer to move the newline into the format and
+that's impossible without touching most of these call sites.
 
-Right. Sounds good.
-
-cheers,
--roger
+-- 
+Jeff Layton <jlayton@redhat.com>
