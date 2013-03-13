@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294Ab3CMViU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 17:38:20 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:46756 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab3CMViT (ORCPT
+	id S1756517Ab3CMVmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 17:42:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48550 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab3CMVmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 17:38:19 -0400
-X-Originating-IP: 67.232.160.146
-Date: Wed, 13 Mar 2013 14:38:13 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: Make binfmt support for #! scripts modular and removable
-Message-ID: <20130313213810.GA12653@jtriplet-mobl1>
+	Wed, 13 Mar 2013 17:42:19 -0400
+Date: Wed, 13 Mar 2013 22:42:15 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arjan van de Veen <arjan@infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jason Liu <liu.h.jason@gmail.com>
+Subject: Re: [patch 4/7] tick: Handle broadcast wakeup of multiple cpus
+In-Reply-To: <20130313113623.GA6635@e102568-lin.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.02.1303132239510.22263@ionos>
+References: <20130306111351.883117670@linutronix.de> <20130306111537.492045206@linutronix.de> <20130313113623.GA6635@e102568-lin.cambridge.arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new configuration option CONFIG_BINFMT_SCRIPT to configure support
-for interpreted scripts starting with "#!"; allow compiling out that
-support, or building it as a module.  Embedded systems running
-exclusively compiled binaries could leave this support out, and systems
-that don't need scripts before mounting the root filesystem can build
-this as a module.
+On Wed, 13 Mar 2013, Lorenzo Pieralisi wrote:
+> > +	/* Take care of enforced broadcast requests */
+> > +	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
+> > +	cpumask_clear(tick_broadcast_force_mask);
+> 
+> I tested the set and it works fine on a dual cluster big.LITTLE testchip
+> using broadcast timer to manage deep idle cluster states.
+> 
+> Just asking a question: the force mask is cleared before sending the
+> timer IPI. Would not be better to clear it after the IPI is sent in
+> 
+> tick_do_broadcast(...) ?
+> 
+> Can you spot a regression if we do this ? The idle thread checks that
+> mask with irqs disabled, so it is possible that we clear the mask before
+> the CPU has a chance to get the IPI. If we clear the mask after sending
+> the IPI, we are increasing the chances for the idle thread to get it.
+> 
+> It is just a further optimization, just asking, thanks.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
-
-Note when testing this that many shells implement support for shell
-scripts themselves, so try it with something like #!/bin/cat instead.
-
- fs/Kconfig.binfmt |   14 ++++++++++++++
- fs/Makefile       |    5 +----
- 2 files changed, 15 insertions(+), 4 deletions(-)
-
-diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-index 0efd152..370b24c 100644
---- a/fs/Kconfig.binfmt
-+++ b/fs/Kconfig.binfmt
-@@ -65,6 +65,20 @@ config CORE_DUMP_DEFAULT_ELF_HEADERS
- 	  This config option changes the default setting of coredump_filter
- 	  seen at boot time.  If unsure, say Y.
+Need to think about that.
  
-+config BINFMT_SCRIPT
-+	tristate "Kernel support for scripts starting with #!"
-+	default y
-+	help
-+	  Say Y here if you want to execute interpreted scripts starting with
-+	  #! followed by the path to an interpreter.
-+
-+	  You can build this support as a module; however, until that module
-+	  gets loaded, you cannot run scripts.  Thus, if you want to load this
-+	  module from an initramfs, the portion of the initramfs before loading
-+	  this module must consist of compiled binaries only.
-+
-+	  Most systems will not boot if you say M or N here.  If unsure, say Y.
-+
- config BINFMT_FLAT
- 	bool "Kernel support for flat binaries"
- 	depends on !MMU && (!FRV || BROKEN)
-diff --git a/fs/Makefile b/fs/Makefile
-index 9d53192..2ef3298 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -34,10 +34,7 @@ obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
- obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
- obj-$(CONFIG_BINFMT_EM86)	+= binfmt_em86.o
- obj-$(CONFIG_BINFMT_MISC)	+= binfmt_misc.o
--
--# binfmt_script is always there
--obj-y				+= binfmt_script.o
--
-+obj-$(CONFIG_BINFMT_SCRIPT)	+= binfmt_script.o
- obj-$(CONFIG_BINFMT_ELF)	+= binfmt_elf.o
- obj-$(CONFIG_COMPAT_BINFMT_ELF)	+= compat_binfmt_elf.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC)	+= binfmt_elf_fdpic.o
--- 
-1.7.10.4
+> > @@ -524,7 +530,16 @@ void tick_broadcast_oneshot_control(unsi
+> >  		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
+> >  		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
+> >  			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+> > -			if (dev->next_event.tv64 < bc->next_event.tv64)
+> > +			/*
+> > +			 * We only reprogram the broadcast timer if we
+> > +			 * did not mark ourself in the force mask and
+> > +			 * if the cpu local event is earlier than the
+> > +			 * broadcast event. If the current CPU is in
+> > +			 * the force mask, then we are going to be
+> > +			 * woken by the IPI right away.
+> > +			 */
+> > +			if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
+> Is the test against tick_broadcast_force_mask necessary if we add the check
+> in the idle thread before entering idle ? It does not hurt, agreed, and we'd
+> better leave it there, it is just for my own understanding, thanks a lot.
 
+Well, it's necessary for all archs which do not have the check (yet).
+ 
+> Having said that, on the series:
+> 
+> Tested-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+
+Thanks,
+
+	tglx
