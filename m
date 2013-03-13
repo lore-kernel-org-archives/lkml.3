@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965006Ab3CMXe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:34:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17544 "EHLO
+	id S964883Ab3CMXeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:34:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17543 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964796Ab3CMX2c (ORCPT
+	with ESMTP id S964793Ab3CMX2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Mar 2013 19:28:32 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org
-Subject: [PATCH v3 07/27] PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
-Date: Wed, 13 Mar 2013 16:28:02 -0700
-Message-Id: <1363217302-14383-8-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3 04/27] PCI: Add is_pci_*_resource_idx() helpers
+Date: Wed, 13 Mar 2013 16:27:59 -0700
+Message-Id: <1363217302-14383-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can replace two layer loop with for_each_pci_resource(), and make
-the code more readable.
+According to resource pointer find out if the resource is some type resource
+like bridge, sriov, or std.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
 ---
- arch/x86/pci/i386.c |   55 +++++++++++++++++++--------------------------------
- 1 file changed, 20 insertions(+), 35 deletions(-)
+ include/linux/pci.h |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 7c3395a..ed219c7 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -233,49 +233,34 @@ static void pcibios_allocate_bus_resources(struct pci_bus *bus)
- 		pcibios_allocate_bus_resources(child);
- }
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 127a856..efb348b 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -92,6 +92,29 @@ enum {
+ 	DEVICE_COUNT_RESOURCE = PCI_NUM_RESOURCES,
+ };
  
--struct pci_check_idx_range {
--	int start;
--	int end;
--};
--
- static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- {
--	int idx, disabled, i;
-+	int idx, disabled;
- 	u16 command;
- 	struct resource *r;
++static inline bool is_pci_std_resource_idx(int i)
++{
++	return i >= PCI_STD_RESOURCES && i <= PCI_STD_RESOURCE_END;
++}
++
++static inline bool is_pci_rom_resource_idx(int i)
++{
++	return i == PCI_ROM_RESOURCE;
++}
++
++static inline bool is_pci_iov_resource_idx(int i)
++{
++#ifdef CONFIG_PCI_IOV
++	return i >= PCI_IOV_RESOURCES && i <= PCI_IOV_RESOURCE_END;
++#endif
++	return false;
++}
++
++static inline bool is_pci_bridge_resource_idx(int i)
++{
++	return i >= PCI_BRIDGE_RESOURCES && i <= PCI_BRIDGE_RESOURCE_END;
++}
++
+ typedef int __bitwise pci_power_t;
  
--	struct pci_check_idx_range idx_range[] = {
--		{ PCI_STD_RESOURCES, PCI_STD_RESOURCE_END },
--#ifdef CONFIG_PCI_IOV
--		{ PCI_IOV_RESOURCES, PCI_IOV_RESOURCE_END },
--#endif
--	};
--
- 	pci_read_config_word(dev, PCI_COMMAND, &command);
--	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
--		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
--			r = &dev->resource[idx];
--			if (r->parent)	/* Already allocated */
--				continue;
--			if (!r->start)	/* Address not assigned at all */
--				continue;
--			if (r->flags & IORESOURCE_IO)
--				disabled = !(command & PCI_COMMAND_IO);
--			else
--				disabled = !(command & PCI_COMMAND_MEMORY);
--			if (pass == disabled) {
--				dev_dbg(&dev->dev,
--					"BAR %d: reserving %pr (d=%d, p=%d)\n",
--					idx, r, disabled, pass);
--				if (pci_claim_resource(dev, idx) < 0) {
--					/* We'll assign a new address later */
--					pcibios_save_fw_addr(dev,
--							idx, r->start);
--					r->end -= r->start;
--					r->start = 0;
--				}
-+	for_each_pci_resource(dev, r, idx, PCI_NOROM_RES & ~PCI_BRIDGE_RES) {
-+		if (r->parent)	/* Already allocated */
-+			continue;
-+		if (!r->start)	/* Address not assigned at all */
-+			continue;
-+		if (r->flags & IORESOURCE_IO)
-+			disabled = !(command & PCI_COMMAND_IO);
-+		else
-+			disabled = !(command & PCI_COMMAND_MEMORY);
-+		if (pass == disabled) {
-+			dev_dbg(&dev->dev,
-+				"BAR %d: reserving %pr (d=%d, p=%d)\n",
-+				idx, r, disabled, pass);
-+			if (pci_claim_resource(dev, idx) < 0) {
-+				/* We'll assign a new address later */
-+				pcibios_save_fw_addr(dev, idx, r->start);
-+				r->end -= r->start;
-+				r->start = 0;
- 			}
- 		}
-+	}
- 	if (!pass) {
- 		r = &dev->resource[PCI_ROM_RESOURCE];
- 		if (r->flags & IORESOURCE_ROM_ENABLE) {
+ #define PCI_D0		((pci_power_t __force) 0)
 -- 
 1.7.10.4
 
