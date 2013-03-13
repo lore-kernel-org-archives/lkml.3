@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934443Ab3CMX0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:26:33 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:42955 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933441Ab3CMX0c (ORCPT
+	id S934407Ab3CMX23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:28:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51090 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933370Ab3CMX21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:26:32 -0400
-X-AuditID: cbfee68d-b7f786d000005188-0a-51410b25fc96
-Message-id: <51410B25.907@samsung.com>
-Date: Thu, 14 Mar 2013 08:26:29 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon fixes for 3.9-rc3
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t8zbV1VbsdAg5mf+S2uf3nOatG8eD2b
-	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXFx23am
-	giaeio8vDBsYH3N2MXJySAiYSFxa+ZoRwhaTuHBvPVsXIxeHkMAyRokjW1pYYIo23/7GBJGY
-	zihx6moflPOCUaLn4gZmkCpeATWJfXefgnWwCKhK7L/3mBXEZhPQktj/4gYbiC0qECaxcvoV
-	Foh6QYkfk++B2SICGhIvj94Cs5kFVjFKPD0h08XIwSEsoCPxcJYqRNhM4lHLOmYIW15i85q3
-	zCA3SAhMZ5fYemY7M8ReAYlvkw+xgPRKCMhKbDrADPGApMTBFTdYJjCKzEKyeRaSsbOQjF3A
-	yLyKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIyQ6encw3j5gfYgxGWjlRGYp0eR8YHTllcQb
-	GpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxs2qB1L7g
-	Q4k2T2SKnsc9PB/yfEa9CpvwiYky0Q5CzPtVM8u41kn8u679XnDG3ISQ0r5DK9hm/b3aolFo
-	yxL6VmJP8S775Lrp5Ye2eUw6Nn/CDbWMXZ++WFje8d9q26NXtvmr8tsXUgaMivXMtieXxO/i
-	/efT65Lk4jTxdL2wLN8Svdlnt2kqsRRnJBpqMRcVJwIAYVv+U6QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQV1VbsdAg+vruSyuf3nOatG8eD2b
-	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
-	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
-	BUxjhK5vSBBcj5EBGkhYx5hxcdt2poImnoqPLwwbGB9zdjFyckgImEhsvv2NCcIWk7hwbz1b
-	FyMXh5DAdEaJU1f7mCCcF4wSPRc3MINU8QqoSey7+5QFxGYRUJXYf+8xK4jNJqAlsf/FDTYQ
-	W1QgTGLl9CssEPWCEj8m3wOzRQQ0JF4evQVmMwusYpR4ekKmi5GDQ1hAR+LhLFWIsJnEo5Z1
-	zBC2vMTmNW+ZJzDyzUIyaRaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI69
-	Z9I7GFc1WBxiFOBgVOLhlZjkECjEmlhWXJl7iFGCg1lJhDeExTFQiDclsbIqtSg/vqg0J7X4
-	EGMy0KMTmaVEk/OBaSGvJN7Q2MTMyNLIzNjE3NiYNGElcd6DrdaBQgLpiSWp2ampBalFMFuY
-	ODilGhgLrutu8eSSkq2L2Pf8eulvk/s7RKVaXn/14OtJDc66e5txx6IvSy5stdo+lc3omsyS
-	b9fEFc8bfmx9wj67p2C++h5Jnq1MMVUvrNZGZfkYvzk2u/1+84YW/i4eTokr9mYbW/9/PZuj
-	ZLGksSRcs+P51W+P7uh+sUnUux7M+jzR9fjmnqMSnt1KLMUZiYZazEXFiQD/xACdAQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 13 Mar 2013 19:28:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3 00/27] PCI: Add for_each_pci_resource and addon_res support
+Date: Wed, 13 Mar 2013 16:27:55 -0700
+Message-Id: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+First part is for_each_pci_resource support:
+Now pci device resource iteration is done via "for (i=0...)" open code.
+That make code hard to read esp when only bridge or sriov resources
+are involved.
 
-This is extcon fixes for 3.9-rc3.
-Please pull extcon with following updates.
+We want to replace those open code with for_each_pci_resource() to make
+the code more readable.
+Also will add addon_resource handling, and need to make addon resource
+to be treated as normal PCI resources during iteration, add
+for_each_pci_resource will make that support transition more simple.
 
-Best Regards,
-Chanwoo Choi
+To make for_each_pci_resource more efficient. We will use preset bitmap
+of different type for searching next idx.
 
-The following changes since commit 
-f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+Second parts is addon_res support:
+Now there is some non normal pci resources other than standard,rom,
+sriov, bridges.
+Some could be same as standard reg, but using different position.
+Some could have own way to read/write to them.
+Kernel are using different way to hack those resources like abusing
+pci bridge resource spot on non bridge pci device.
 
-   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+Add addon_resources list in pci_dev for those non-standard resources.
+With this patch, will treat addon-resource like standard resources with
+special ops.
 
-are available in the git repository at:
+At last replace some quirk_io with addon_res.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git 
-tags/extcon-3.9-rc3
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon-v3
+on top of v3.9-rc2
 
-for you to fetch changes up to 0ec83bd2460ed6aed0e7f29f9e0633b054621c02:
+-v3: rebase on of v3.9-rc2
 
-   extcon: max77693: Initialize register of MUIC device to bring up it 
-without platform data (2013-03-13 17:38:57 +0900)
+Thanks
 
-----------------------------------------------------------------
-extcon fixes for 3.9-rc3
+Yinghai Lu
 
-This is small fixes against 3.9-rc2.
+Ram Pai (1):
+  PCI: pci resource iterator
 
-Fix to max77693 extcon driver:
-- Set default value of MUIC register to bring up it.
-Fix to max8997 extcon driver:
-- Fix null pointer error duing probe when platform data
-isn't used.
+Yinghai Lu (26):
+  PCI: Add pci_dev_resource_n()
+  PCI: Add pci_dev_resource_idx() helper
+  PCI: Add is_pci_*_resource_idx() helpers
+  PCI: Update pci_resource_start etc to use pci_dev_resource_n()
+  PCI, x86: Use for_each_pci_resource() with pci_allocate_bridge_resources
+  PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
+  PCI: Use for_each_pci_resource() with IOV releated functions
+  PCI, acpiphp: Use for_each_pci_resource() helper
+  PCI, pciehp: Use for_each_pci_resource() helper
+  PCI: Use for_each_pci_resource() in pci_enable_dev
+  PCI: Use for_each_pci_resource() in pci_reassigndev
+  PCI: Use for_each_pci_resource() with pci bar reassign funcs
+  PCI: Use for_each_pci_resource() in pci_assign_resource
+  PCI, x86: Use for_each_pci_resource() with noassign_bars
+  PCI: Use for_each_pci_resource() in pci_dev_driver()
+  PCI: Use for_each_pci_resource() in pci resource release
+  PCI: Use for_each_pci_resource() in pci bases reading
+  PCI, x86: Use for_each_pci_resource() with mrst
+  PCI, xen: Use for_each_pci_resource() with xen pci
+  PCI: Add addon_resource support for pci devices
+  PCI: Add helpers to add addon_resource
+  PCI: Update pci_resource_bar() to support addon_resource
+  PCI: Assign/update resource to addon_res
+  PCI: Make piix4 quirk to use addon_res
+  PCI: Make quirk_io_region to use addon_res
+  PCI: Use addon_fixed_resource with ati fixed resource
 
-----------------------------------------------------------------
-Chanwoo Choi (3):
-       extcon: max8997: Check the pointer of platform data to protect 
-null pointer error
-       extcon: max77693: Fix bug of wrong pointer when platform data is 
-not used
-       extcon: max77693: Initialize register of MUIC device to bring up 
-it without platform data
+ arch/x86/pci/common.c              |    3 +-
+ arch/x86/pci/i386.c                |   58 +++-----
+ arch/x86/pci/mrst.c                |    7 +-
+ drivers/pci/hotplug/acpiphp_glue.c |    4 +-
+ drivers/pci/hotplug/pciehp_hpc.c   |    5 +-
+ drivers/pci/iov.c                  |   31 +++--
+ drivers/pci/pci-driver.c           |    6 +-
+ drivers/pci/pci.c                  |   27 ++--
+ drivers/pci/probe.c                |  176 ++++++++++++++++++++++++-
+ drivers/pci/quirks.c               |  256 +++++++++++++++++++++---------------
+ drivers/pci/remove.c               |    5 +-
+ drivers/pci/setup-bus.c            |   28 ++--
+ drivers/pci/setup-res.c            |   38 ++++--
+ drivers/pci/xen-pcifront.c         |    4 +-
+ include/linux/pci.h                |   79 ++++++++++-
+ 15 files changed, 508 insertions(+), 219 deletions(-)
 
-  drivers/extcon/extcon-max77693.c     | 103 
-+++++++++++++++++++++++++++--------
-  drivers/extcon/extcon-max8997.c      |  56 +++++++++++--------
-  include/linux/mfd/max77693-private.h |  23 ++++++++
-  3 files changed, 137 insertions(+), 45 deletions(-)
+-- 
+1.7.10.4
+
