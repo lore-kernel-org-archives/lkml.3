@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3CMD3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 23:29:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39981 "EHLO
+	id S1756042Ab3CMD3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 23:29:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39901 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab3CMD33 (ORCPT
+	with ESMTP id S1755857Ab3CMD3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 23:29:29 -0400
+	Tue, 12 Mar 2013 23:29:01 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: Linus Walleij <linus.walleij@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <b-cousson@ti.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>,
         Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv3 08/14] mailbox: add shared memory mailbox type
-Date: Tue, 12 Mar 2013 22:24:22 -0500
-Message-ID: <1363145062-14612-1-git-send-email-s-anna@ti.com>
+        Loic Pallardy <loic.pallardy@st.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCHv3 00/14] drivers: mailbox: framework creation
+Date: Tue, 12 Mar 2013 22:23:41 -0500
+Message-ID: <1363145021-14339-1-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -26,282 +33,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Loic Pallardy <loic.pallardy@st.com>
+Hi,
+Please find the updated mailbox patch series for pulling into linux-next.
+The series is rebased on top of 3.9-rc2, and includes one new patch to
+rename an existing mailbox.h added as part of the highbank cpufreq
+support for 3.9 merge window [1]. 
 
-Some mailboxes are made up of cross interrupts
-and associated shared memory.
-Shared memory mapping is fixed and cross interrupt/shared
-memory relation make impossible the use of virtio.
-Mailbox framework must be enough opened to support
-any kind of mailbox.
+The rest of the patches are mostly unchanged from the previous version,
+other than the required changes as part of rebasing. The main changes
+are:
+- a new patch to rename existing mailbox.h to pl320-ipc.h (patch 1)
+- updated patch to fix cleanup issues in probe & remove of omap2 mailbox
+  file including minor variable name changes in hwmod files (patch 2)
+- includes the updated dbx500 mailbox patch addressing review
+  comments, same as [2] (patch 11)
+- removes the MULTIPLATFORM Kconfig dependencies added to mailbox and
+  remoteproc drivers for 3.9
+- minor rebase changes include whitespace formatting
 
-Signed-off-by: Loic Pallardy <loic.pallardy@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mailbox/mailbox-omap1.c    | 34 +++++++++++++++++++++++++++++-----
- drivers/mailbox/mailbox-omap2.c    | 16 ++++++++++++----
- drivers/mailbox/mailbox.c          | 38 +++++++++++---------------------------
- drivers/mailbox/mailbox_internal.h | 18 +++++++++---------
- 4 files changed, 61 insertions(+), 45 deletions(-)
+I am wondering if Patch 1 can be absorbed into 3.9 itself, since the
+PL320 IPC and associated header file is introduced in 3.9-rc1.
 
-diff --git a/drivers/mailbox/mailbox-omap1.c b/drivers/mailbox/mailbox-omap1.c
-index 9268f98..7b30157 100644
---- a/drivers/mailbox/mailbox-omap1.c
-+++ b/drivers/mailbox/mailbox-omap1.c
-@@ -13,6 +13,7 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
-+#include <linux/delay.h>
- 
- #include "mailbox_internal.h"
- 
-@@ -38,6 +39,7 @@ struct omap_mbox1_priv {
- 	struct omap_mbox1_fifo tx_fifo;
- 	struct omap_mbox1_fifo rx_fifo;
- 	u32 data;
-+	bool empty_flag;
- };
- 
- static inline int mbox_read_reg(size_t ofs)
-@@ -59,6 +61,7 @@ static void omap1_mbox_fifo_read(struct mailbox *mbox, struct mailbox_msg *msg)
- 	priv->data = mbox_read_reg(fifo->data);
- 	priv->data |= ((u32) mbox_read_reg(fifo->cmd)) << 16;
- 	MAILBOX_FILL_MSG((*msg), 0, priv->data, 0);
-+	priv->empty_flag = false;
- }
- 
- static int
-@@ -76,7 +79,11 @@ omap1_mbox_fifo_write(struct mailbox *mbox, struct mailbox_msg *msg)
- 
- static int omap1_mbox_fifo_empty(struct mailbox *mbox)
- {
--	return 0;
-+	struct omap_mbox1_priv *priv = (struct omap_mbox1_priv *)mbox->priv;
-+	if (priv->empty_flag)
-+		return 0;
-+	else
-+		return 1;
- }
- 
- static int omap1_mbox_fifo_full(struct mailbox *mbox)
-@@ -87,6 +94,18 @@ static int omap1_mbox_fifo_full(struct mailbox *mbox)
- 	return mbox_read_reg(fifo->flag);
- }
- 
-+static int omap1_mbox_poll_for_space(struct mailbox *mbox)
-+{
-+	int ret = 0, i = 1000;
-+
-+	while (omap1_mbox_fifo_full(mbox)) {
-+		if (--i == 0)
-+			return -1;
-+		udelay(1);
-+	}
-+	return ret;
-+}
-+
- /* irq */
- static void
- omap1_mbox_enable_irq(struct mailbox *mbox, mailbox_type_t irq)
-@@ -105,17 +124,22 @@ omap1_mbox_disable_irq(struct mailbox *mbox, mailbox_type_t irq)
- static int
- omap1_mbox_is_irq(struct mailbox *mbox, mailbox_type_t irq)
- {
-+	struct omap_mbox1_priv *priv = (struct omap_mbox1_priv *)mbox->priv;
-+
- 	if (irq == IRQ_TX)
- 		return 0;
-+	if (irq == IRQ_RX)
-+		priv->empty_flag = true;
-+
- 	return 1;
- }
- 
- static struct mailbox_ops omap1_mbox_ops = {
- 	.type		= MBOX_HW_FIFO1_TYPE,
--	.fifo_read	= omap1_mbox_fifo_read,
--	.fifo_write	= omap1_mbox_fifo_write,
--	.fifo_empty	= omap1_mbox_fifo_empty,
--	.fifo_full	= omap1_mbox_fifo_full,
-+	.read		= omap1_mbox_fifo_read,
-+	.write		= omap1_mbox_fifo_write,
-+	.empty		= omap1_mbox_fifo_empty,
-+	.poll_for_space	= omap1_mbox_poll_for_space,
- 	.enable_irq	= omap1_mbox_enable_irq,
- 	.disable_irq	= omap1_mbox_disable_irq,
- 	.is_irq		= omap1_mbox_is_irq,
-diff --git a/drivers/mailbox/mailbox-omap2.c b/drivers/mailbox/mailbox-omap2.c
-index 43704fd..72f8368 100644
---- a/drivers/mailbox/mailbox-omap2.c
-+++ b/drivers/mailbox/mailbox-omap2.c
-@@ -129,6 +129,14 @@ static int omap2_mbox_fifo_full(struct mailbox *mbox)
- 	return mbox_read_reg(fifo->fifo_stat);
- }
- 
-+static int omap2_mbox_poll_for_space(struct mailbox *mbox)
-+{
-+	if (omap2_mbox_fifo_full(mbox))
-+		return -1;
-+
-+	return 0;
-+}
-+
- /* Mailbox IRQ handle functions */
- static void omap2_mbox_enable_irq(struct mailbox *mbox,
- 		mailbox_type_t irq)
-@@ -216,10 +224,10 @@ static struct mailbox_ops omap2_mbox_ops = {
- 	.type		= MBOX_HW_FIFO2_TYPE,
- 	.startup	= omap2_mbox_startup,
- 	.shutdown	= omap2_mbox_shutdown,
--	.fifo_read	= omap2_mbox_fifo_read,
--	.fifo_write	= omap2_mbox_fifo_write,
--	.fifo_empty	= omap2_mbox_fifo_empty,
--	.fifo_full	= omap2_mbox_fifo_full,
-+	.read		= omap2_mbox_fifo_read,
-+	.write		= omap2_mbox_fifo_write,
-+	.empty		= omap2_mbox_fifo_empty,
-+	.poll_for_space	= omap2_mbox_poll_for_space,
- 	.enable_irq	= omap2_mbox_enable_irq,
- 	.disable_irq	= omap2_mbox_disable_irq,
- 	.ack_irq	= omap2_mbox_ack_irq,
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-index ff6595a..08da5b0 100644
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -44,21 +44,17 @@ module_param(mbox_kfifo_size, uint, S_IRUGO);
- MODULE_PARM_DESC(mbox_kfifo_size, "Size of mailbox kfifo (bytes)");
- 
- /* Mailbox FIFO handle functions */
--static inline void mbox_fifo_read(struct mailbox *mbox, struct mailbox_msg *msg)
-+static inline void mbox_read(struct mailbox *mbox, struct mailbox_msg *msg)
- {
--	mbox->ops->fifo_read(mbox, msg);
-+	mbox->ops->read(mbox, msg);
- }
--static inline int mbox_fifo_write(struct mailbox *mbox, struct mailbox_msg *msg)
-+static inline int mbox_write(struct mailbox *mbox, struct mailbox_msg *msg)
- {
--	return mbox->ops->fifo_write(mbox, msg);
-+	return mbox->ops->write(mbox, msg);
- }
--static inline int mbox_fifo_empty(struct mailbox *mbox)
-+static inline int mbox_empty(struct mailbox *mbox)
- {
--	return mbox->ops->fifo_empty(mbox);
--}
--static inline int mbox_fifo_full(struct mailbox *mbox)
--{
--	return mbox->ops->fifo_full(mbox);
-+	return mbox->ops->empty(mbox);
- }
- 
- /* Mailbox IRQ handle functions */
-@@ -77,16 +73,7 @@ static inline int is_mbox_irq(struct mailbox *mbox, mailbox_irq_t irq)
-  */
- static int __mbox_poll_for_space(struct mailbox *mbox)
- {
--	int ret = 0, i = 1000;
--
--	while (mbox_fifo_full(mbox)) {
--		if (mbox->ops->type == MBOX_HW_FIFO2_TYPE)
--			return -1;
--		if (--i == 0)
--			return -1;
--		udelay(1);
--	}
--	return ret;
-+	return mbox->ops->poll_for_space(mbox);
- }
- 
- int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg *msg)
-@@ -102,7 +89,7 @@ int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg *msg)
- 	}
- 
- 	if (kfifo_is_empty(&mq->fifo) && !__mbox_poll_for_space(mbox)) {
--		ret = mbox_fifo_write(mbox, msg);
-+		ret = mbox_write(mbox, msg);
- 		goto out;
- 	}
- 
-@@ -181,7 +168,7 @@ static void mbox_tx_tasklet(unsigned long tx_data)
- 			msg.pdata = tx_data_buf;
- 		}
- 
--		ret = mbox_fifo_write(mbox, &msg);
-+		ret = mbox_write(mbox, &msg);
- 		WARN_ON(ret);
- 	}
- }
-@@ -236,7 +223,7 @@ static void __mbox_rx_interrupt(struct mailbox *mbox)
- 	struct mailbox_msg msg;
- 	int len;
- 
--	while (!mbox_fifo_empty(mbox)) {
-+	while (!mbox_empty(mbox)) {
- 		if (unlikely(kfifo_avail(&mq->fifo) <
- 				(sizeof(msg) + CONFIG_MBOX_DATA_SIZE))) {
- 			mailbox_disable_irq(mbox, IRQ_RX);
-@@ -244,7 +231,7 @@ static void __mbox_rx_interrupt(struct mailbox *mbox)
- 			goto nomem;
- 		}
- 
--		mbox_fifo_read(mbox, &msg);
-+		mbox_read(mbox, &msg);
- 
- 		len = kfifo_in(&mq->fifo, (unsigned char *)&msg, sizeof(msg));
- 		WARN_ON(len != sizeof(msg));
-@@ -254,9 +241,6 @@ static void __mbox_rx_interrupt(struct mailbox *mbox)
- 					msg.size);
- 			WARN_ON(len != msg.size);
- 		}
--
--		if (mbox->ops->type == MBOX_HW_FIFO1_TYPE)
--			break;
- 	}
- 
- 	/* no more messages in the fifo. clear IRQ source. */
-diff --git a/drivers/mailbox/mailbox_internal.h b/drivers/mailbox/mailbox_internal.h
-index 7ac8bb8..8aded95 100644
---- a/drivers/mailbox/mailbox_internal.h
-+++ b/drivers/mailbox/mailbox_internal.h
-@@ -17,20 +17,19 @@
- #include <linux/workqueue.h>
- 
- typedef int __bitwise mailbox_type_t;
--#define MBOX_HW_FIFO1_TYPE ((__force mailbox_type_t) 1)
--#define MBOX_HW_FIFO2_TYPE ((__force mailbox_type_t) 2)
-+#define MBOX_HW_FIFO1_TYPE	((__force mailbox_type_t) 1)
-+#define MBOX_HW_FIFO2_TYPE	((__force mailbox_type_t) 2)
-+#define MBOX_SHARED_MEM_TYPE	((__force mailbox_type_t) 3)
- 
- struct mailbox_ops {
- 	mailbox_type_t	type;
- 	int		(*startup)(struct mailbox *mbox);
- 	void		(*shutdown)(struct mailbox *mbox);
--	/* fifo */
--	void		(*fifo_read)(struct mailbox *mbox,
--						struct mailbox_msg *msg);
--	int		(*fifo_write)(struct mailbox *mbox,
--						struct mailbox_msg *msg);
--	int		(*fifo_empty)(struct mailbox *mbox);
--	int		(*fifo_full)(struct mailbox *mbox);
-+	/* mailbox access */
-+	void		(*read)(struct mailbox *mbox, struct mailbox_msg *msg);
-+	int		(*write)(struct mailbox *mbox, struct mailbox_msg *msg);
-+	int		(*empty)(struct mailbox *mbox);
-+	int		(*poll_for_space)(struct mailbox *mbox);
- 	/* irq */
- 	void		(*enable_irq)(struct mailbox *mbox, mailbox_irq_t irq);
- 	void		(*disable_irq)(struct mailbox *mbox, mailbox_irq_t irq);
-@@ -53,6 +52,7 @@ struct mailbox_queue {
- 
- struct mailbox {
- 	const char		*name;
-+	unsigned int		id;
- 	unsigned int		irq;
- 	struct mailbox_queue	*txq, *rxq;
- 	struct mailbox_ops	*ops;
+Stephen,
+I have hosted the series at [3]. Can you pull this into linux-next
+sometime next week?
+
+v2: [4]
+After commit e8d3d47 (ARM: OMAP2+: Drop plat/cpu.h for omap2plus), the
+cpu_is_xxx() checks for OMAP are restricted to arch/arm/mach-omap2. The
+series includes 4 new patches, first patch removes these arch specific
+calls of OMAP mailbox driver code (dependencies with soc.h), and the
+last three patches include minor fixes in mailbox driver code.
+
+This series is based on v3.8-rc7 and includes the necessary updates/fixes
+required for validating remoteproc on OMAP4 and tidspbridge on OMAP3.
+
+Other changes include:
+- adaptations to remoteproc and tidspbridge to use the new mailbox
+  api, and relying on the pdata field in the mailbox_msg structure
+  instead of the previous header field (addressing review comments)
+- ST-Ericsson driver update
+- Kconfig fixes to fix build errors and choose proper ARCH dependencies
+- 3 new patches for minor fixes in mailbox driver code
+- rebased to include the devinit/devexit cleanup changes
+- checkpatch errors/warnings fixes
+
+v1:
+OMAP and ST-Ericsson platforms are both using mailbox to communicate with some coprocessors.
+Based on OMAP existing mailbox framework, this series proposes a generic framework, living under drivers/mailbox.
+
+This series:
+- moves omap-mailbox framework to a newly drivers/mailbox folder
+  (part of plat-omap code cleaning)
+- creates API header file
+- replaces "omap" prefix by "mailbox"
+- opens interface and make framework independent from omap HW
+- adapts existing omap1 and omap2 drivers to new changes
+- creates dbx500 mailbox driver for ST-Ericsson platforms
+
+[1] http://www.spinics.net/lists/cpufreq/msg04031.html
+[2] http://marc.info/?l=linux-omap&m=136079313704751&w=2
+[3] https://github.com/sumananna/mailbox/commits/dbx500-prcmu-mailbox
+[4] http://marc.info/?l=linux-omap&m=136064540007076&w=2
+
+Loic Pallardy (7):
+  mailbox: rename omap_mbox in mailbox
+  mailbox: create opened message type
+  mailbox: change protection mechanisms
+  mailbox: add shared memory mailbox type
+  mailbox: add IRQF_NO_SUSPEND flag
+  mailbox: add no_irq send message
+  mailbox: create dbx500 mailbox driver
+
+Omar Ramirez Luna (2):
+  mailbox: OMAP: introduce mailbox framework
+  mailbox: split internal header from API header
+
+Suman Anna (5):
+  mailbox: rename pl320-ipc specific mailbox.h
+  ARM: OMAP2+: mbox: remove dependencies with soc.h
+  mailbox/omap: check iomem resource before dereferencing it
+  mailbox: check for NULL nb in mailbox_put
+  mailbox: call request_irq after mbox queues are allocated
+
+ .../devicetree/bindings/mailbox/dbx500-mailbox.txt |  27 +
+ arch/arm/configs/omap1_defconfig                   |   3 +-
+ arch/arm/mach-omap1/Makefile                       |   4 -
+ arch/arm/mach-omap1/mailbox.c                      | 199 -------
+ arch/arm/mach-omap2/Makefile                       |   3 -
+ arch/arm/mach-omap2/devices.c                      |  13 +-
+ arch/arm/mach-omap2/mailbox.c                      | 430 --------------
+ arch/arm/mach-omap2/omap_hwmod_2420_data.c         |  12 +
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c         |  11 +
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |  11 +
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |  13 +
+ arch/arm/plat-omap/Kconfig                         |  16 -
+ arch/arm/plat-omap/Makefile                        |   3 -
+ arch/arm/plat-omap/include/plat/mailbox.h          | 105 ----
+ arch/arm/plat-omap/mailbox.c                       | 435 --------------
+ drivers/cpufreq/highbank-cpufreq.c                 |   2 +-
+ drivers/mailbox/Kconfig                            |  41 ++
+ drivers/mailbox/Makefile                           |   5 +
+ drivers/mailbox/mailbox-dbx500.c                   | 648 +++++++++++++++++++++
+ drivers/mailbox/mailbox-omap1.c                    | 229 ++++++++
+ drivers/mailbox/mailbox-omap2.c                    | 370 ++++++++++++
+ drivers/mailbox/mailbox.c                          | 552 ++++++++++++++++++
+ drivers/mailbox/mailbox_internal.h                 |  70 +++
+ drivers/mailbox/pl320-ipc.c                        |   2 +-
+ drivers/remoteproc/Kconfig                         |   3 +-
+ drivers/remoteproc/omap_remoteproc.c               |  36 +-
+ drivers/staging/tidspbridge/Kconfig                |   3 +-
+ drivers/staging/tidspbridge/core/_tiomap.h         |   2 +-
+ drivers/staging/tidspbridge/core/chnl_sm.c         |   8 +-
+ drivers/staging/tidspbridge/core/io_sm.c           |   5 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   6 +-
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |   6 +-
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   9 +-
+ .../tidspbridge/include/dspbridge/host_os.h        |   2 +-
+ include/linux/mailbox.h                            |  52 +-
+ include/linux/pl320-ipc.h                          |  17 +
+ include/linux/platform_data/mailbox-dbx500.h       |  12 +
+ include/linux/platform_data/mailbox-omap.h         |  53 ++
+ 38 files changed, 2170 insertions(+), 1248 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/dbx500-mailbox.txt
+ delete mode 100644 arch/arm/mach-omap1/mailbox.c
+ delete mode 100644 arch/arm/mach-omap2/mailbox.c
+ delete mode 100644 arch/arm/plat-omap/include/plat/mailbox.h
+ delete mode 100644 arch/arm/plat-omap/mailbox.c
+ create mode 100644 drivers/mailbox/mailbox-dbx500.c
+ create mode 100644 drivers/mailbox/mailbox-omap1.c
+ create mode 100644 drivers/mailbox/mailbox-omap2.c
+ create mode 100644 drivers/mailbox/mailbox.c
+ create mode 100644 drivers/mailbox/mailbox_internal.h
+ create mode 100644 include/linux/pl320-ipc.h
+ create mode 100644 include/linux/platform_data/mailbox-dbx500.h
+ create mode 100644 include/linux/platform_data/mailbox-omap.h
+
 -- 
 1.8.1.2
 
