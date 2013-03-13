@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3CMLEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 07:04:45 -0400
-Received: from norkia.v3.sk ([91.210.183.14]:47175 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab3CMLEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 07:04:44 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: linux-bluetooth@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Gustavo Padovan <gustavo@padovan.org>,
-        Marcel Holtmann <marcel@holtmann.org>, Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH RESEND] bluetooth: btmrvl_sdio: look for sd8688 firmware in proper location
-Date: Wed, 13 Mar 2013 12:04:30 +0100
-Message-Id: <1363172670-14596-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
+	id S1756080Ab3CMLNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 07:13:06 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:44409 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754451Ab3CMLND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 07:13:03 -0400
+Message-ID: <51405F3A.3090901@mimc.co.uk>
+Date: Wed, 13 Mar 2013 11:12:58 +0000
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
+Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
+References: <5134CEF9.5070502@mimc.co.uk> <1363087506.3348.62.camel@sauron.fi.intel.com>
+In-Reply-To: <1363087506.3348.62.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The firmware images are shared with libertas_sdio WiFi chip and used to be in
-libertas/ subtree in linux-firmware. As btmrvl_sdio used to look into the
-linux-firmware root, it ended up being unsuccessful. Since the firmware files
-are not specific to the libertas hardware, they're being moved into mrvl/ now.
+On 12/03/13 11:25, Artem Bityutskiy wrote:
+> On Mon, 2013-03-04 at 16:42 +0000, Mark Jackson wrote:
+>> I'm encountering an oops when remounting my ubifs volume as read/write.
+>>
+>> # mount -o remount,rw /
+>> [   89.434974] UBIFS assert failed in ubifs_write_node at 869 (pid 628)
+>> [   89.442122] [<c001b124>] (unwind_backtrace+0x0/0xf0) from [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4)
+>> [   89.451896] [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4) from [<c01b3878>] (ubifs_write_master+0x9c/0x134)
+>> [   89.462018] [<c01b3878>] (ubifs_write_master+0x9c/0x134) from [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8)
+>> [   89.472133] [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8) from [<c010dbf4>] (do_remount_sb+0x98/0x16c)
+>> [   89.481790] [<c010dbf4>] (do_remount_sb+0x98/0x16c) from [<c0128268>] (do_mount+0x830/0x888)
+>> [   89.490708] [<c0128268>] (do_mount+0x830/0x888) from [<c0128344>] (sys_mount+0x84/0xb8)
+>> [   89.499178] [<c0128344>] (sys_mount+0x84/0xb8) from [<c0013800>] (ret_fast_syscall+0x0/0x3c)
+>> [   89.510997] UBIFS assert failed in ubifs_write_node at 869 (pid 628)
+>> [   89.517884] [<c001b124>] (unwind_backtrace+0x0/0xf0) from [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4)
+>> [   89.527641] [<c01ad7d4>] (ubifs_write_node+0x180/0x1c4) from [<c01b38b4>] (ubifs_write_master+0xd8/0x134)
+>> [   89.537760] [<c01b38b4>] (ubifs_write_master+0xd8/0x134) from [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8)
+>> [   89.547869] [<c01a79a4>] (ubifs_remount_fs+0x5d4/0x7f8) from [<c010dbf4>] (do_remount_sb+0x98/0x16c)
+>> [   89.557526] [<c010dbf4>] (do_remount_sb+0x98/0x16c) from [<c0128268>] (do_mount+0x830/0x888)
+>> [   89.566435] [<c0128268>] (do_mount+0x830/0x888) from [<c0128344>] (sys_mount+0x84/0xb8)
+>> [   89.574905] [<c0128344>] (sys_mount+0x84/0xb8) from [<c0013800>] (ret_fast_syscall+0x0/0x3c)
+>> [   89.585939] UBIFS: start fixing up free space
+>> [   89.592237] UBIFS: background thread "ubifs_bgt0_0" started, PID 629
+>> [   91.419951] UBIFS: free space fixup complete
+>> #
+>>
+>> If it's any help, if the remount is put into my inittab, I don't get any oops.
+> 
+> Would you please try this patch (also attached):
+> 
+> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+> index ac838b8..9791b3c 100644
+> --- a/fs/ubifs/super.c
+> +++ b/fs/ubifs/super.c
+> @@ -1568,6 +1568,12 @@ static int ubifs_remount_rw(struct ubifs_info *c)
+>  	c->remounting_rw = 1;
+>  	c->ro_mount = 0;
+>  
+> +	if (c->space_fixup) {
+> +		err = ubifs_fixup_free_space(c);
+> +		if (err)
+> +			goto out;
+> +	}
+> +
+>  	err = check_free_space(c);
+>  	if (err)
+>  		goto out;
+> @@ -1684,12 +1690,6 @@ static int ubifs_remount_rw(struct ubifs_info *c)
+>  		err = dbg_check_space_info(c);
+>  	}
+>  
+> -	if (c->space_fixup) {
+> -		err = ubifs_fixup_free_space(c);
+> -		if (err)
+> -			goto out;
+> -	}
+> -
+>  	mutex_unlock(&c->umount_mutex);
+>  	return err;
+> 
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
----
+Sorry ... this just locks up the unit.
 
-Now that the relevant changes are in linux-firmware it makes sense to merge 
-this to make the driver look for correct firmware files.
-
- drivers/bluetooth/btmrvl_sdio.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-index 9959d4c..1cb5183 100644
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -83,8 +83,8 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_87xx = {
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
--	.helper		= "sd8688_helper.bin",
--	.firmware	= "sd8688.bin",
-+	.helper		= "mrvl/sd8688_helper.bin",
-+	.firmware	= "mrvl/sd8688.bin",
- 	.reg		= &btmrvl_reg_8688,
- 	.sd_blksz_fw_dl	= 64,
- };
-@@ -1185,7 +1185,7 @@ MODULE_AUTHOR("Marvell International Ltd.");
- MODULE_DESCRIPTION("Marvell BT-over-SDIO driver ver " VERSION);
- MODULE_VERSION(VERSION);
- MODULE_LICENSE("GPL v2");
--MODULE_FIRMWARE("sd8688_helper.bin");
--MODULE_FIRMWARE("sd8688.bin");
-+MODULE_FIRMWARE("mrvl/sd8688_helper.bin");
-+MODULE_FIRMWARE("mrvl/sd8688.bin");
- MODULE_FIRMWARE("mrvl/sd8787_uapsta.bin");
- MODULE_FIRMWARE("mrvl/sd8797_uapsta.bin");
--- 
-1.7.1
-
+Mark J.
