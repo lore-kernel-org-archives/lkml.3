@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3CMJsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:48:21 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19520 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab3CMJsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:48:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 02:41:42 -0700
-From: Danny Huang <dahuang@nvidia.com>
-To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <ldewangan@nvidia.com>,
-        <olof@lixom.net>, <hdoyu@nvidia.com>,
-        <thierry.reding@avionic-design.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-CC: Danny Huang <dahuang@nvidia.com>
-Subject: [PATCH v3] ARM: tegra: expose chip ID and revision
-Date: Wed, 13 Mar 2013 17:48:00 +0800
-Message-ID: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	id S1756162Ab3CMJwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:52:01 -0400
+Received: from mail.nanl.de ([217.115.11.12]:52720 "EHLO mail.nanl.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855Ab3CMJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 05:52:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1363165170.3137.182.camel@x61.thuisdomein>
+References: <1363165170.3137.182.camel@x61.thuisdomein>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Wed, 13 Mar 2013 10:51:33 +0100
+Message-ID: <CAOiHx=n4a26z=PS02E2KjD2Y3Pp0P0x-5Ns6WRc-WScNF=EO_Q@mail.gmail.com>
+Subject: Re: rt2x00: Kconfig symbols RALINK_RT288X and RALINK_RT305X
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Crispin <blogic@openwrt.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose Tegra chip ID and revision in /sys/devices/soc for user mode
-usage
+On 13 March 2013 09:59, Paul Bolle <pebolle@tiscali.nl> wrote:
+> 0) Support for rt2800pci (or "the rt2860/rt3090 chipsets") was added in
+> v2.6.33 (three years ago). References to the related Kconfig symbols
+> RALINK_RT288X and RALINK_RT305X were introduced in that release. So were
+> checks for their macros (CONFIG_RALINK_RT288X and CONFIG_RALINK_RT305X).
+>
+> 1) The Kconfig symbols themselves were never added in mainline. So these
+> references and macros appear to be just markers for dead code in
+> mainline, as that code will not be built.
+>
+> 2) This was previously discussed in
+> https://lkml.org/lkml/2010/7/14/110 . The patch submitted in that
+> message (which would remove all the dead code at the time) did not get
+> applied.
+>
+> 3) What is the current status of the (out of tree) code that adds
+> RALINK_RT288X and RALINK_RT305X?
 
-Signed-off-by: Danny Huang <dahuang@nvidia.com>
----
- arch/arm/Kconfig            |  1 +
- arch/arm/mach-tegra/tegra.c | 31 ++++++++++++++++++++++++++++++-
- 2 files changed, 31 insertions(+), 1 deletion(-)
+They are now present in 3.9-rc1, see a0b0197c (more specifically
+85639910..d3d2b420) :)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2363926..12fa4e5 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -675,6 +675,7 @@ config ARCH_TEGRA
- 	select HAVE_CLK
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-+	select SOC_BUS
- 	select SPARSE_IRQ
- 	select USE_OF
- 	help
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index 27232c9..536ed3e 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -33,6 +33,8 @@
- #include <linux/io.h>
- #include <linux/i2c.h>
- #include <linux/i2c-tegra.h>
-+#include <linux/slab.h>
-+#include <linux/sys_soc.h>
- #include <linux/usb/tegra_usb_phy.h>
- 
- #include <asm/mach-types.h>
-@@ -42,6 +44,7 @@
- 
- #include "board.h"
- #include "common.h"
-+#include "fuse.h"
- #include "iomap.h"
- 
- static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
-@@ -80,12 +83,38 @@ static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
- 
- static void __init tegra_dt_init(void)
- {
-+	struct device *parent = NULL;
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		goto out;
-+
-+	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
-+	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
-+	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
-+
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR(soc_dev)) {
-+		kfree(soc_dev_attr->soc_id);
-+		kfree(soc_dev_attr->revision);
-+		kfree(soc_dev_attr->family);
-+		kfree(soc_dev_attr);
-+		goto out;
-+	}
-+
-+	parent = soc_device_to_device(soc_dev);
-+	if (IS_ERR(parent))
-+		parent = NULL;
-+
- 	/*
- 	 * Finished with the static registrations now; fill in the missing
- 	 * devices
- 	 */
-+out:
- 	of_platform_populate(NULL, of_default_bus_match_table,
--				tegra20_auxdata_lookup, NULL);
-+				tegra20_auxdata_lookup, parent);
- }
- 
- static void __init trimslice_init(void)
--- 
-1.8.1.5
+The actual accepted Kconfig symbol names are different though, so they
+should be changed in rt2x00 to match them (SOC_RT288X and SOC_RT305X).
 
+
+Jonas
