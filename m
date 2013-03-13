@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3CMKHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:07:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:7935 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab3CMKHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:07:06 -0400
-X-IronPort-AV: E=Sophos;i="4.84,836,1355068800"; 
-   d="scan'208";a="6865165"
-Message-ID: <51404F67.8040307@cn.fujitsu.com>
-Date: Wed, 13 Mar 2013 18:05:27 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S932561Ab3CMKIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:08:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56827 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753833Ab3CMKIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 06:08:21 -0400
+Date: Wed, 13 Mar 2013 10:08:17 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sunrpc: drop "select NETVM"
+Message-ID: <20130313100817.GB10369@suse.de>
+References: <1362844951.3137.3.camel@x61.thuisdomein>
+ <20130309175118.GJ31448@fieldses.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mmap: find_vma: remove the WARN_ON_ONCE(!mm) check
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/13 18:05:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/13 18:05:47,
-	Serialize complete at 2013/03/13 18:05:47
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130309175118.GJ31448@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the WARN_ON_ONCE(!mm) check as the comment suggested.
-Kernel code calls find_vma only when it is absolutely sure that the
-mm_struct arg to it is non-NULL.
+On Sat, Mar 09, 2013 at 12:51:18PM -0500, J. Bruce Fields wrote:
+> ACK.
+> 
+> On Sat, Mar 09, 2013 at 05:02:31PM +0100, Paul Bolle wrote:
+> > The Kconfig entry for SUNRPC_SWAP selects NETVM. That select statement
+> > was added in commit a564b8f0398636ba30b07c0eaebdef7ff7837249 ("nfs:
+> > enable swap on NFS").
+> 
+> Cc'ing Mel Gorman just in case there was something else going on there.
+> 
+> --b.
+> 
+> > But there's no Kconfig symbol NETVM. It apparently
+> > was only in used in development versions of the swap over nfs
+> > functionality but never entered mainline. Anyhow, it is a nop and can
+> > safely be dropped.
+> > 
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- mm/mmap.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+Correct, the NETVM symbol existed in an early version of swap-over-nfs
+that I failed to clean up properly. Thanks.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2664a47..9da664e 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1933,9 +1933,6 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
- {
- 	struct vm_area_struct *vma = NULL;
- 
--	if (WARN_ON_ONCE(!mm))		/* Remove this in linux-3.6 */
--		return NULL;
--
- 	/* Check the cache first. */
- 	/* (Cache hit rate is typically around 35%.) */
- 	vma = mm->mmap_cache;
 -- 
-1.7.1
+Mel Gorman
+SUSE Labs
