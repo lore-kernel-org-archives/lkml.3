@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934376Ab3CMWlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 18:41:14 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:65007 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932547Ab3CMWlN (ORCPT
+	id S934407Ab3CMWoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 18:44:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52629 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934364Ab3CMWoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 18:41:13 -0400
-Message-ID: <1363214471.1335.19.camel@x61.thuisdomein>
-Subject: Re: [PATCH] mtd: remove ixp2000 driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Mar 2013 23:41:11 +0100
-In-Reply-To: <1363206974.1335.10.camel@x61.thuisdomein>
-References: <1363206974.1335.10.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Wed, 13 Mar 2013 18:44:34 -0400
+Date: Wed, 13 Mar 2013 15:44:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, dhowells@redhat.com,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 1/9] vfs: add i_op->dentry_open()
+Message-Id: <20130313154431.e39aed27efb095f9183bc123@linux-foundation.org>
+In-Reply-To: <1363184193-1796-2-git-send-email-miklos@szeredi.hu>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<1363184193-1796-2-git-send-email-miklos@szeredi.hu>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Mar 2013 22:41:11.0717 (UTC) FILETIME=[DCA34550:01CE203B]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-13 at 21:36 +0100, Paul Bolle wrote:
-> Support for the IXP2000 platform got removed in commit
-> c65f2abf54a6d07260f1fa64773154e1d7047961 ("ARM: remove ixp23xx and
-> ixp2000 platforms"). That commit removed the ARCH_IXP2000 Kconfig
-> symbol. This removes the last driver depending on that symbol.
+On Wed, 13 Mar 2013 15:16:25 +0100 Miklos Szeredi <miklos@szeredi.hu> wrote:
+
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Add a new inode operation i_op->dentry_open().  This is for stacked filesystems
+> that want to return a struct file from a different filesystem.
+> 
+> ...
+>
+> +/**
+> + * vfs_open - open the file at the given path
+> + * @path: path to open
+> + * @filp: newly allocated file with f_flag initialized
+> + * @cred: credentials to use
+> + */
+> +int vfs_open(const struct path *path, struct file *filp,
+> +	     const struct cred *cred)
+> +{
+> +	struct inode *inode = path->dentry->d_inode;
+> +
+> +	if (inode->i_op->dentry_open)
+> +		return inode->i_op->dentry_open(path->dentry, filp, cred);
+> +	else {
+> +		filp->f_path = *path;
+> +		return do_dentry_open(filp, NULL, cred);
+> +	}
+> +}
 
-It turns out that Artem Bityutskiy has published a series of patches
-removing this and similar drivers just yesterday:
-http://lists.infradead.org/pipermail/linux-mtd/2013-March/046170.html 
+This looks like it will add some overhead to dentry_open().  That long
+walk path->dentry->d_inode->i_op->dentry_open, particularly.  Can we do
+anything?  Using filp->f_inode might save a tad.
 
-A quick scan suggest that's all great stuff! Anyhow, my patch can be
-ignored.
+It's unfortunate and a bit ugly that ->dentry_open() and
+do_dentry_open() don't have the same arguments.  One would expect and
+like them to do so, and this difference raises suspicions about design
+warts.
 
+If they _did_ have the same signature then we could perhaps populate
+->dentry_open with do_dentry_open by default and avoid the `if'.
 
-Paul Bolle
+The test of inode->i_op->dentry_open could do with an unlikely(), but
+that won't save us :(
+
+> +EXPORT_SYMBOL(vfs_open);
+
+Did you consider EXPORT_SYMBOL_GPL()?
+
 
