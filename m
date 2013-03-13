@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720Ab3CMORh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 10:17:37 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:52834 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933449Ab3CMORc (ORCPT
+	id S933705Ab3CMOSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 10:18:23 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:39539 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756430Ab3CMORK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 10:17:32 -0400
-X-AuditID: cbfee68d-b7f786d000005188-86-51408a7b36fd
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Dongjin Kim'" <tobetter@gmail.com>
-Cc: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Chris Ball'" <cjb@laptop.org>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Will Newton'" <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
- <1361546283-7479-1-git-send-email-tobetter@gmail.com>
-In-reply-to: <1361546283-7479-1-git-send-email-tobetter@gmail.com>
-Subject: RE: [PATCH v4] mmc: dw_mmc: Add MSHC compatible for Exynos4412
-Date: Wed, 13 Mar 2013 23:17:30 +0900
-Message-id: <002101ce1ff5$7f713fe0$7e53bfa0$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ks_c_5601-1987
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4RD+VURbLeELfvQJ2BVgR5JeDssAO4wDyw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t8zA93qLodAg75jTBZ/Jx1jt9j+eiOb
-	xY1fbawWl3fNYbM48r+f0eLkn15Gi2MzljBa7Hu8htniT99OFgdOj9+/JjF67Jx1l92jZ+cZ
-	Ro9DV9Yyety5tofNo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDKuvXzNWPCNqaLjdDtbA+N2
-	pi5GTg4JAROJpSu/skDYYhIX7q1n62Lk4hASWMYosXHaQ0aYoivLFrBDJKYzSjR8/cIM4fxh
-	lHjfsIcNpIpNQEvi75s3zCC2iICaROPfTlaQImaBtUwS658eBUsICVRKbFzXBraPU8BJYvWB
-	t0ArODiEBdwlPp/zADFZBFQl1hw3BqngFbCVmLJ5CwuELSjxY/I9MJtZwEDi/aw+VghbXmLz
-	mrfMIK0SAuoSj/7qQlxgJHHh+FxGiBIRiX0v3jGCXCMh0MshMa/lPNjJLAICEt8mH2KB6JWV
-	2HSAGeJfSYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSiwz1ihNzi0vz0vWS
-	83M3MUKivHcH4+0D1ocYk4HWT2SWEk3OByaJvJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE
-	0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwmkc8Y/iZrKY+9ZP66dUu3MWTT/y03r5iq5Oa2Bme
-	4ubdZ7f9mGee58vRslLMyW7DuVMTLglwxkak/fpTu/RG66Z/Fqe/z1jedd5zQmfUJ//5K6av
-	2T9n+pyuM4zcLae2qsr6ZgZ+lvkr9WaT4B6tZcJB3kIRb+xU9XJsVslu2mepvEHw0I5VkUos
-	xRmJhlrMRcWJAJKk3rQIAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQd2qLodAg/6fVhZ/Jx1jt9j+eiOb
-	xY1fbawWl3fNYbM48r+f0eLkn15Gi2MzljBa7Hu8htniT99OFgdOj9+/JjF67Jx1l92jZ+cZ
-	Ro9DV9Yyety5tofNo2/LKkaPz5vkAtijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1
-	DS0tzJUU8hJzU22VXHwCdN0yc4BuU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12Nk
-	gAYS1jFmXHv5mrHgG1NFx+l2tgbG7UxdjJwcEgImEleWLWCHsMUkLtxbz9bFyMUhJDCdUaLh
-	6xdmCOcPo8T7hj1sIFVsAloSf9+8YQaxRQTUJBr/drKCFDELrGWSWP/0KFhCSKBSYuO6NhYQ
-	m1PASWL1gbeMXYwcHMIC7hKfz3mAmCwCqhJrjhuDVPAK2EpM2byFBcIWlPgx+R6YzSxgIPF+
-	Vh8rhC0vsXnNW2aQVgkBdYlHf3UhLjCSuHB8LiNEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRl
-	ASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgFPJMagfjygaLQ4wCHIxKPLwCX+0DhVgT
-	y4orcw8xSnAwK4nwLs91CBTiTUmsrEotyo8vKs1JLT7EmAz050RmKdHkfGB6yyuJNzQ2MTOy
-	NDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGRrmNf3leHOnOM+jbc1Py6LSP
-	L/bw/Jpz/lLIRrt6+W8//Cs2c6VGBa7V3f/dKfzO7XcO8svvc/JFW1xgunA8Sj439buktXfD
-	3vZp/PueP1iepdo7i099tfrv03/nCBu/zLSMjEk4XNhSczL+E2dkckZWh/cDj5aczKc9Rw5v
-	F5hcdbd3F9dmNiWW4oxEQy3mouJEAIaXWjNlAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 13 Mar 2013 10:17:10 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: [PATCH 9/9] fs: limit filesystem stacking depth
+Date: Wed, 13 Mar 2013 15:16:33 +0100
+Message-Id: <1363184193-1796-10-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 23, 2013, Dongjin Kim wrote:
-> This patch adds the compatible string for MSHC controller of Exynos4412.
-> And exynos5250_dwmmc_caps is renamed to exynos_dwmmc_caps, since it has the
-> capablities of common feature supported by Exynos4 and Exynos5.
-> 
-> Cc: Seungwon Jeon <tgih.jun@samsung.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+Add a simple read-only counter to super_block that indicates deep this
+is in the stack of filesystems.  Previously ecryptfs was the only
+stackable filesystem and it explicitly disallowed multiple layers of
+itself.
+
+Overlayfs, however, can be stacked recursively and also may be stacked
+on top of ecryptfs or vice versa.
+
+To limit the kernel stack usage we must limit the depth of the
+filesystem stack.  Initially the limit is set to 2.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/ecryptfs/main.c   |    7 +++++++
+ fs/overlayfs/super.c |   10 ++++++++++
+ include/linux/fs.h   |   11 +++++++++++
+ 3 files changed, 28 insertions(+)
+
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index e924cf4..8b0957e 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -567,6 +567,13 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
++	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
++
++	rc = -EINVAL;
++	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		pr_err("eCryptfs: maximum fs stacking depth exceeded\n");
++		goto out_free;
++	}
+ 
+ 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
+ 	rc = PTR_ERR(inode);
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 6e0c0c2..482c26f 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -571,6 +571,16 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 	ufs->lower_namelen = statfs.f_namelen;
+ 
++	sb->s_stack_depth = max(upperpath.mnt->mnt_sb->s_stack_depth,
++				lowerpath.mnt->mnt_sb->s_stack_depth) + 1;
++
++	err = -EINVAL;
++	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		pr_err("overlayfs: maximum fs stacking depth exceeded\n");
++		goto out_put_lowerpath;
++	}
++
++
+ 	ufs->upper_mnt = clone_private_mount(&upperpath);
+ 	err = PTR_ERR(ufs->upper_mnt);
+ 	if (IS_ERR(ufs->upper_mnt)) {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index fd98a86..3353de6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -244,6 +244,12 @@ struct iattr {
+  */
+ #include <linux/quota.h>
+ 
++/*
++ * Maximum number of layers of fs stack.  Needs to be limited to
++ * prevent kernel stack overflow
++ */
++#define FILESYSTEM_MAX_STACK_DEPTH 2
++
+ /** 
+  * enum positive_aop_returns - aop return codes with specific semantics
+  *
+@@ -1320,6 +1326,11 @@ struct super_block {
+ 
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
++
++	/*
++	 * Indicates how deep in a filesystem stack this SB is
++	 */
++	int s_stack_depth;
+ };
+ 
+ /* superblock cache pruning functions */
+-- 
+1.7.10.4
 
