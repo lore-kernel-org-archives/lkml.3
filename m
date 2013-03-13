@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3CMNrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 09:47:03 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36694 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330Ab3CMNrA (ORCPT
+	id S933026Ab3CMNvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 09:51:49 -0400
+Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:42362 "EHLO
+	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3CMNvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 09:47:00 -0400
-Message-ID: <51408349.8080800@hitachi.com>
-Date: Wed, 13 Mar 2013 22:46:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 13 Mar 2013 09:51:48 -0400
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Mar 2013 09:51:48 EDT
+Subject: Re: [PATCH 07/16] TTY: quatech2, remove unneeded is_open
+To: jslaby@suse.cz (Jiri Slaby)
+Date: Wed, 13 Mar 2013 09:46:01 -0400
+Cc: gregkh@linuxfoundation.org, peter@hurleysoftware.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1362658360-26629-7-git-send-email-jslaby@suse.cz>
+X-Mailer: ELM [version 2.5.8.59.gd925]
 MIME-Version: 1.0
-To: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe
- section
-References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522> <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com> <514023AA.4070004@hitachi.com> <847glb8m4i.fsf@sauna.l.org>
-In-Reply-To: <847glb8m4i.fsf@sauna.l.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130313134601.ED7598028B@viridian.itc.virginia.edu>
+From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/13 22:28), Timo Juhani Lindfors wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
->> OK, then I'll update it to just use __always_inline.
+Jiri Slaby writes:
 > 
-> I get a similar case of infinite recursion if I try to kprobe
-> "inat_get_opcode_attribute":
+> tty->ops->break_ctl cannot be called outside the gap between open and
+> close. So there is no need to check whether the port is open in
+> break_ctl in quatech2. Remove the check and also that member
+> completely.
+> 
 
-Oops, right! And this is caused by below callchain
-set_current_kprobes->is_IF_modifier->skip_prefixes
-->inat_get_opcode_attribute
-However, this looks very wired that the copied instruction
-(ainsn->insn) is analyzed at every probe hit.
-I think we should add a bit flag indicating IF modifier
-to the ainsn.
+We can't get rid of is_open.  The devices use 1 read urb for all ports
+and will send various things about ports that haven't actually been
+opened.  So the driver needs to know if a port has actually been
+opened or not.  In fact, I was about to send a patch that fixes a
+warning caused by commit 2e124b4a390ca85325fae75764bef92f0547fa25
+causing the driver to try to write to ttys that weren't actually
+opened.
 
-Thank you for reporting!!
+The guard in qt2_break_ctl() can still be removed.
+
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Bill
