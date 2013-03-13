@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3CMLN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 07:13:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56162 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754451Ab3CMLN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 07:13:28 -0400
-Date: Wed, 13 Mar 2013 11:13:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regmap: Expose total memory consumption in the rbtree
- debugfs entry
-Message-ID: <20130313111326.GM25610@opensource.wolfsonmicro.com>
-References: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
+	id S1756162Ab3CMLQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 07:16:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755167Ab3CMLQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 07:16:18 -0400
+Date: Wed, 13 Mar 2013 12:15:57 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCHv3] perf: Fix vmalloc ring buffer free function
+Message-ID: <20130313111557.GC1064@krava.brq.redhat.com>
+References: <20130311164309.GG13679@krava.brq.redhat.com>
+ <1363023885.14933.16.camel@laptop>
+ <20130311180229.GI13679@krava.brq.redhat.com>
+ <20130312100502.GC1348@krava.brq.redhat.com>
+ <1363084030.14933.23.camel@laptop>
+ <20130312135219.GA32001@krava.brq.redhat.com>
+ <1363101972.24558.3.camel@laptop>
+ <20130312153609.GC32001@krava.brq.redhat.com>
+ <1363105490.24558.12.camel@laptop>
+ <20130312170416.GD32001@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="I4g3zIzscEHdx6fd"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363109209-23170-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Cookie: Your ignorance cramps my conversation.
+In-Reply-To: <20130312170416.GD32001@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 12, 2013 at 06:04:16PM +0100, Jiri Olsa wrote:
+> On Tue, Mar 12, 2013 at 05:24:50PM +0100, Peter Zijlstra wrote:
+> > Right you are..
+> > 
+> > How about something like the below; using that 0 << -1 is still 0.
+> 
+> hum.. we are obviously not on the same page wrt 'confusing' ;-)
+> 
+> looks ok, I'll test it
 
---I4g3zIzscEHdx6fd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+hi, it work's fine..
 
-On Tue, Mar 12, 2013 at 05:26:49PM +0000, Dimitris Papastamos wrote:
-> Provide a feel of how much overhead the rbtree cache adds to
-> the game.
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 
-Applied, with a tweak to the log to say "used X bytes" for clarity (it's
-arguable if the cached data itself is overhead, depends on what you're
-comparing to).
+> 
+> jirka
+> 
+> > 
+> > ---
+> >  kernel/events/ring_buffer.c | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> > index 23cb34f..e72ca70 100644
+> > --- a/kernel/events/ring_buffer.c
+> > +++ b/kernel/events/ring_buffer.c
+> > @@ -316,7 +316,7 @@ void rb_free(struct ring_buffer *rb)
+> >  struct page *
+> >  perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
+> >  {
+> > -	if (pgoff > (1UL << page_order(rb)))
+> > +	if (pgoff > (rb->nr_pages << page_order(rb)))
+> >  		return NULL;
+> >  
+> >  	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
+> > @@ -336,10 +336,10 @@ static void rb_free_work(struct work_struct *work)
+> >  	int i, nr;
+> >  
+> >  	rb = container_of(work, struct ring_buffer, work);
+> > -	nr = 1 << page_order(rb);
+> > +	nr = rb->nr_pages << page_order(rb);
+> >  
+> >  	base = rb->user_page;
+> > -	for (i = 0; i < nr + 1; i++)
+> > +	for (i = 0; i <= nr; i++)
+> >  		perf_mmap_unmark_page(base + (i * PAGE_SIZE));
+> >  
+> >  	vfree(base);
+> > @@ -373,7 +373,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
+> >  	rb->user_page = all_buf;
+> >  	rb->data_pages[0] = all_buf + PAGE_SIZE;
 
---I4g3zIzscEHdx6fd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQF8zAAoJELSic+t+oim99ugP/RJ7C2gY+aFr6nSMtsyGnBKS
-sN0Rf1J+rDOD50C7a4552l4kXR5jeNyF/8ENVaUU3BTkga95sBZuL4VLtFIbhdIZ
-BLH7ymuK2ERKeI3OxH2aaUtO0jCkWSwik0VoZQO4Pjlfo85Mzq/FjtzeKfCOpX8W
-xXuyngIATJXL6gqI1t4EBqO+YJdNzfp3wdvztwzSmMM5fW6NWMD0WipWNFmL0FeB
-f26pkyqelX/0ufJ4diTmbOljSJa89uNJCfZEhBtiETVCim6hyigj90kARe2SIgiD
-Nh3ZBAtD1Iqd6Ob3N6mDXirr+fHL57cl9o4w9krSXvnATEMLiRPrMTfTJ9O+FZH4
-SoOH4lYwaJ/qdLY0FA35tY1tq/ydn/72mVNpGspV0390d/jtJgpXoqv2p0eGTkz7
-1x5POgv2qE0t/AUjx03IJ1WSZmuPDbr8g+jeEYBDFm5AMh6PP4jula3FxqG3MKgH
-MRrC3klBLqrNeH3LBCEFrzKJ2XWXSLL/MEcjg2hBQkH3l4MNTmeQvTx/izicbl++
-PxAMimNLrpbF1yM9I8jHQTG5f1ro/QZg53TlNBcPlENSIWpis4rMW3aQS1CzhnqF
-sOnCtcFxhTwk5uPdmqDhW9q3m1ipeA9bcIbyi5midewUCrXvSz8uN63020fH5cBV
-OOtcjSI66axw1pGvoaNI
-=MeQV
------END PGP SIGNATURE-----
-
---I4g3zIzscEHdx6fd--
+just a nit pick.. in case of having just user page,
+data_pages[0] holds wrong pointer, but it 'should'
+be never touch in this case
