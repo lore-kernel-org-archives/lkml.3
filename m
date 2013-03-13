@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3CMJL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:11:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47416 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab3CMJLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:11:54 -0400
-Message-ID: <514042BF.2090207@ti.com>
-Date: Wed, 13 Mar 2013 14:41:27 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932530Ab3CMJM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:12:26 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:33530 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab3CMJMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 05:12:24 -0400
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <b-cousson@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <tony@atomide.com>, <linux@arm.linux.org.uk>, <balbi@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/7] ARM: dts: omap: Add dts data for USB
-References: <1362663320-23799-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1362663320-23799-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362230724-21017-1-git-send-email-gautam.vivek@samsung.com>
+References: <CAFp+6iGGAY=nMg03-bqHz=XuNP+1t9mQR=M53HGoqCXv=t+f0Q@mail.gmail.com>
+	<1362230724-21017-1-git-send-email-gautam.vivek@samsung.com>
+Date: Wed, 13 Mar 2013 14:42:22 +0530
+Message-ID: <CAFp+6iFjiOPbZhdpWCq0agWBeSC+Vc19Ff++_3vxa6r-MburWg@mail.gmail.com>
+Subject: Re: [PATCH] usb: dwc3: Set DWC3 context's mode based on selected mode.
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        gregkh@linuxfoundation.org, Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit,
+Hi Balbi,
 
-Will you be queuing this patch series?
 
-Thanks
-Kishon
-
-On Thursday 07 March 2013 07:05 PM, Kishon Vijay Abraham I wrote:
-> Hi Benoit,
->
-> Here are the dt data patches to get usb device functional in OMAP platforms.
->
-> All the patches deal with modifying arch/arm/boot except one which modifies
-> Documentation/../usb/omap-usb.txt
->
-> Changes from v2:
-> * squashed the dt data for dwc3-omap with dwc3 core into a single patch.
->
-> Changes from v1:
-> Patch *ARM: dts: omap: Add usb_otg and glue data* has some properties with
-> names that has "_". It's replaced with a "-" here.
->
-> This patch is developed on Linux 3.9-rc1.
->
-> Kishon Vijay Abraham I (7):
->    ARM: dts: omap: Add omap control usb data
->    ARM: dts: omap: Add omap-usb2 dt data
->    ARM: dts: omap: Add usb_otg and glue data
->    ARM: dts: omap5: Add omap control usb data
->    ARM: dts: omap5: Add ocp2scp data
->    ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
->    ARM: dts: omap5: add dwc3 omap and dwc3 core dt data
->
->   Documentation/devicetree/bindings/usb/omap-usb.txt |    1 +
->   arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 +++
->   arch/arm/boot/dts/omap3-evm.dts                    |    6 +++
->   arch/arm/boot/dts/omap3-overo.dtsi                 |    6 +++
->   arch/arm/boot/dts/omap3.dtsi                       |   12 +++++
->   arch/arm/boot/dts/omap4-panda.dts                  |    6 +++
->   arch/arm/boot/dts/omap4-sdp.dts                    |    6 +++
->   arch/arm/boot/dts/omap4.dtsi                       |   26 +++++++++++
->   arch/arm/boot/dts/omap5.dtsi                       |   48 ++++++++++++++++++++
->   arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
->   10 files changed, 118 insertions(+), 1 deletion(-)
+On Sat, Mar 2, 2013 at 6:55 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Now that machines may select the mode of working of DWC3 (HOST only,
+> GADGET only or DUAL_ROLE), lets set DWC3 mode based on that
+> rather than fixing it to whatever DWC3 hardware says.
+> This way we can skip initializing Gadget/Host in case
+> we are using Host-only/Gadget-only mode respectively.
 >
 
+Hope this patch if fine, and mainlinable ?
+
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>
+> Changes from RFC patch "usb: dwc3: Set GCTL.PrtCapDir based on selected mode"
+>  - Setting the mode in dwc3 context structure based on
+>    selected mode in machine, rather than programming PrtCapDir
+>
+>  drivers/usb/dwc3/core.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 79f335f..be0672f 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -478,7 +478,12 @@ static int dwc3_probe(struct platform_device *pdev)
+>                 goto err1;
+>         }
+>
+> -       mode = DWC3_MODE(dwc->hwparams.hwparams0);
+> +       if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
+> +               mode = DWC3_MODE_HOST;
+> +       else if (IS_ENABLED(CONFIG_USB_DWC3_GADGET))
+> +               mode = DWC3_MODE_DEVICE;
+> +       else
+> +               mode = DWC3_MODE_DRD;
+>
+>         switch (mode) {
+>         case DWC3_MODE_DEVICE:
+> --
+> 1.7.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks & Regards
+Vivek
