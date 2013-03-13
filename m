@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3CMK0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:26:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56853 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180Ab3CMK0r (ORCPT
+	id S932854Ab3CMKc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:32:26 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45385 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab3CMKcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:26:47 -0400
-Date: Wed, 13 Mar 2013 12:26:35 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <kgene.kim@samsung.com>, <p.paneri@samsung.com>,
-        <gregkh@linuxfoundation.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH v6 0/2] Adding USB 3.0 DRD-phy support for exynos5250
-Message-ID: <20130313102635.GG6270@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1361976229-16024-1-git-send-email-gautam.vivek@samsung.com>
- <CAFp+6iGon4sD4=qKpAVG-OGm9brwnz1O6sdCKmh8o9Wy1e_6ow@mail.gmail.com>
+	Wed, 13 Mar 2013 06:32:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XRI2XbIfl/05pQwm"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iGon4sD4=qKpAVG-OGm9brwnz1O6sdCKmh8o9Wy1e_6ow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <513F4B58.1000204@mimc.co.uk>
+References: <513F4B58.1000204@mimc.co.uk>
+Date: Wed, 13 Mar 2013 11:32:22 +0100
+Message-ID: <CACTFLAPv=OGaWaz+BdPxr56e56c=cx8QYuc9TUK61Bk4WD5=vg@mail.gmail.com>
+Subject: Re: Excessive ethernet interrupts on AM335x board
+From: Daniel Mack <zonque@gmail.com>
+To: Mark Jackson <mpfj-list@mimc.co.uk>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XRI2XbIfl/05pQwm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 12, 2013 at 4:35 PM, Mark Jackson <mpfj-list@mimc.co.uk> wrote:
+> I'm just fighting an issue with ethernet on our custom AM335x board:-
+>
+> # uname -a
+> Linux nanobone 3.9.0-rc2-00113-gd60f039 #139 Tue Mar 12 15:14:01 GMT 2013 armv7l GNU/Linux
+>
+> Every now and then, the whole unit slows to a crawl.  The only indication of any problem is:-
+>
+> (a) the serial tty port becomes much less responsive
+> (b) normal ping times jump from 1ms to >10sec (sometimes >20sec !!)
+> (c) the ethernet interrupt count rockets (see below)
+>
+> I've tried to force the problem by flood pinging from my PC.
+>
+> # while true
+>> do grep "58:" /proc/interrupts; sleep 10
+>> done
+>  58:       1291      INTC  4a100000.ethernet  <<< normal pinging (about 100 irqs per 10sec)
+>  58:       1333      INTC  4a100000.ethernet
+>  58:       1372      INTC  4a100000.ethernet
+>  58:       3979      INTC  4a100000.ethernet  <<< start flood ping (about 4k irqs per 10sec)
+>  58:       6540      INTC  4a100000.ethernet
+>  58:      17519      INTC  4a100000.ethernet  <<< big jump >>>
+>  58:      20169      INTC  4a100000.ethernet
+>  58:      22775      INTC  4a100000.ethernet
+>  58:      25368      INTC  4a100000.ethernet
+>  58:      34598      INTC  4a100000.ethernet  <<< big jump >>>
+>  58:      37182      INTC  4a100000.ethernet
+>  58:      39730      INTC  4a100000.ethernet
+>  58:     141220      INTC  4a100000.ethernet  <<< whoa !!! >>>
+>  58:     146080      INTC  4a100000.ethernet
+>  58:     149351      INTC  4a100000.ethernet
+>  58:     152922      INTC  4a100000.ethernet
+>  58:     156420      INTC  4a100000.ethernet
+>  58:     159538      INTC  4a100000.ethernet
+>  58:     162711      INTC  4a100000.ethernet
+>  58:     165746      INTC  4a100000.ethernet
+>  58:     168973      INTC  4a100000.ethernet
+>  58:     172128      INTC  4a100000.ethernet
+>  58:     175030      INTC  4a100000.ethernet
+>  58:     177957      INTC  4a100000.ethernet
+>  58:     180782      INTC  4a100000.ethernet
+>  58:     183618      INTC  4a100000.ethernet
+>  58:     186450      INTC  4a100000.ethernet
+>  58:     189242      INTC  4a100000.ethernet
+>  58:     191909      INTC  4a100000.ethernet
+>  58:     194565      INTC  4a100000.ethernet
+>  58:     197153      INTC  4a100000.ethernet
+>  58:     199730      INTC  4a100000.ethernet  <<< another big jump >>>
+>  58:     252629      INTC  4a100000.ethernet
+>  58:     262955      INTC  4a100000.ethernet
+>  58:     265557      INTC  4a100000.ethernet
+>  58:     268131      INTC  4a100000.ethernet
+>  58:     272586      INTC  4a100000.ethernet
+>  58:     275623      INTC  4a100000.ethernet  <<< here I stop flood pings >>>
+> [  631.727758] nfs: server 10.0.0.100 not responding, still trying
+> [  638.738864] nfs: server 10.0.0.100 OK
+>  58:     277694      INTC  4a100000.ethernet
+>  58:     277703      INTC  4a100000.ethernet
+>  58:     277709      INTC  4a100000.ethernet
+>  58:     277719      INTC  4a100000.ethernet
+>  58:     277725      INTC  4a100000.ethernet
+>  58:     277734      INTC  4a100000.ethernet
+>  58:     277745      INTC  4a100000.ethernet
+>
+> As you can see, when I stop the flood pings, the nfs link is now reported
+> as being lost.
 
-On Wed, Mar 13, 2013 at 03:41:15PM +0530, Vivek Gautam wrote:
-> Hi Felipe,
->=20
->=20
-> On Wed, Feb 27, 2013 at 8:13 PM, Vivek Gautam <gautam.vivek@samsung.com> =
-wrote:
-> > Based on 'usb-next'
-> >
-> > Changes from v5:
-> >  - Squashed the following change from Felipe in this patch-set:
-> >    [PATCH] usb: phy: samsung: let it be built as a module
-> >  - Using EXPORT_SYMBOL_GPL() to export symbols in "samsung-usbphy.c"
-> >    to allow module builds of these samsung PHY drivers.
-> >
-> > Vivek Gautam (2):
-> >   usb: phy: samsung: Common out the generic stuff
-> >   usb: phy: samsung: Add PHY support for USB 3.0 controller
-> >
->=20
-> I am rebasing this pach-set on top of your PHY driver changes in
-> 'testing' branch of your tree.
-> I took first 194 patches ;) from top of testing branch (i could find
-> these on top of 3.9 rc2 merge),
-> and applied the same on 'usb-next' branch in my development tree in
-> order to test further.
->=20
-> I shall be posting these rebased patch-set, so that it will be easier
-> for you to merge the changes in.
-> Is there something you want to point out to me while i do this ?
+I had the same problem. Please check this patch, I'm sure it will fix you issue:
 
-nothing to point out as of now :-)
+  https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=d35162f89b8f00537d7b240b76d2d0e8b8d29aa0
 
-Thanks a lot.
 
---=20
-balbi
 
---XRI2XbIfl/05pQwm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQFRbAAoJEIaOsuA1yqREZRkQAI8z6M6Ms30CCHV+3x+cS8d3
-CHcO5lYTl4dwTbAtvjN2RELbtGFdVdsKiOCYqFKQQaMGk2Ui+wSbwf4XhUyRNcF7
-tqgsVAPxEMFaquAdzx7s1etxsRgDcKlyrWlI9re55d043qslkA4kpLlbsY7AjbII
-JFjA1yCAdpqJFcwrt0/14LWo8kheKJhc1intPJ4/XpuagDZdvT5ACJ0RVTMImgEz
-Q9bCyex+IEN1+FaB8CP/Zi9286NK2MzROQZJEr9RyqUjf/iihe6Pq3YhZw9AIoVp
-1/Cjo/HxzLKkLclF3Vgp3lv/qxd/TfSijvJ90Dybv3tpqUCmdPJWtt5O9OsKKM/+
-sBqlhG79OLWjQZ7X9qPurFvasvh8LXRvPqabeQLua2q6K/uC5Ia/K2/QfChQoVrl
-Z+J/D0BdE2RrJM7BK6YyFi6Y4AOc6h/3HNFmf1POujfa/8Cplv5/4FUH7QuJRsl5
-fqC48Kp3/3ka8iL7ZLqrQvOw5siBKD5ZWB6cbEJh1XV0/ACIY/zT6/F7ZQUCVZyY
-1EPN6eTMkD3Bgqys5KeZaR3HebKvTB5hI5YFvCbo6ffsQ3vb7QIyqs6LFpaBRH8i
-517Fx1G+8eqC9aGl8EyKJgHSAkUl1VQYBde5NhtTkfhXS5lXpFgnAaFu4rGrQrii
-SJLMlFd2LGEkojxdEYHt
-=Roi7
------END PGP SIGNATURE-----
-
---XRI2XbIfl/05pQwm--
+Daniel
