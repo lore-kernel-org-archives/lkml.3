@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3CMKQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:16:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34157 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3CMKQP (ORCPT
+	id S1756315Ab3CMKQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:16:24 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37031 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab3CMKQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:16:15 -0400
-Date: Wed, 13 Mar 2013 10:09:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Danny Huang <dahuang@nvidia.com>
-Cc: swarren@wwwdotorg.org, ldewangan@nvidia.com, olof@lixom.net,
-        hdoyu@nvidia.com, thierry.reding@avionic-design.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: tegra: expose chip ID and revision
-Message-ID: <20130313100949.GA4977@n2100.arm.linux.org.uk>
-References: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
+	Wed, 13 Mar 2013 06:16:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVJ8bdA9JFMkMnt6ajU2QrATpz2O6VJwGbTQecJ2UYS1Q@mail.gmail.com>
+References: <20130312152226.c5965a68f57444c8652eb46a@canb.auug.org.au>
+	<CAGXu5jJm2QM-s6DV3e5guQc5i-qEK52uRR6xc=ViqrvCibHEUw@mail.gmail.com>
+	<CA+icZUVJ8bdA9JFMkMnt6ajU2QrATpz2O6VJwGbTQecJ2UYS1Q@mail.gmail.com>
+Date: Wed, 13 Mar 2013 11:16:18 +0100
+Message-ID: <CA+icZUXQ4RgPezXNQ-Zf7p5y0N6Uf176Fdmnk3NMAiKP1LtQDA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (drm-intel tree related)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Kees Cook <keescook@chromium.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 05:48:00PM +0800, Danny Huang wrote:
-> +	soc_dev = soc_device_register(soc_dev_attr);
-> +	if (IS_ERR(soc_dev)) {
-> +		kfree(soc_dev_attr->soc_id);
-> +		kfree(soc_dev_attr->revision);
-> +		kfree(soc_dev_attr->family);
-> +		kfree(soc_dev_attr);
-> +		goto out;
-> +	}
-> +
-> +	parent = soc_device_to_device(soc_dev);
-> +	if (IS_ERR(parent))
-> +		parent = NULL;
+On Tue, Mar 12, 2013 at 10:50 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Mar 12, 2013 at 6:46 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Mon, Mar 11, 2013 at 9:22 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi all,
+>>>
+>>> After merging the final tree, today's linux-next build (i386 defconfig)
+>>> failed like this:
+>>>
+>>> drivers/built-in.o: In function `i915_min_freq_set':
+>>> i915_debugfs.c:(.text+0xb1adc): undefined reference to `__udivdi3'
+>>> drivers/built-in.o: In function `i915_max_freq_set':
+>>> i915_debugfs.c:(.text+0xb1bac): undefined reference to `__udivdi3'
+>>>
+>>> Caused by commit 2389cc500686 ("drm/i915: use simple attribute in debugfs
+>>> routines") from the drm-intel tree.
+>>>
+>>> I have reverted that commit for today.
+>>
+>> Ah-ha, thanks. I've sent a follow-up patch to fix this.
+>>
+>
+> Can you please point to the patch [1] next time?
+> Thanks.
+>
+> - Sedat -
+>
+> [1] https://patchwork.kernel.org/patch/2253231/
+>
 
-I know other places have done this kind of thing but what use is it?
+Hi Kees, Hi Daniel,
 
-struct device *soc_device_to_device(struct soc_device *soc_dev)
-{
-        return &soc_dev->dev;
-}
+was the above patch merged into drm (for me it does not look like it was [1])?
 
-Now, consider that soc_device_register() returns one of two things:
-1. A valid pointer - it must be valid, because soc_device_register()
-   already dereferences it.
-2. An error pointer, trappable with IS_ERR().
+Regards,
+- Sedat -
 
-You are trapping it with IS_ERR() - that's good news.  So, by the time
-we get to soc_device_to_device(), we know that it _is_ a valid pointer.
-So why would soc_device_to_device() return an error pointer?
+[1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/log/?qt=author&q=Kees+Cook
+
+
+
+>> -Kees
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
