@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab3CMQYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:24:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39905 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab3CMQYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:24:38 -0400
-Message-ID: <5140A83A.4030702@redhat.com>
-Date: Wed, 13 Mar 2013 10:24:26 -0600
-From: Eric Blake <eblake@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S964775Ab3CMQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:24:59 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20790 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933149Ab3CMQY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:24:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/RgOi5QClkzYme2+qHzEgC
+Date: Wed, 13 Mar 2013 09:24:54 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, b-cousson@ti.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Message-ID: <20130313162454.GE26093@atomide.com>
+References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
+ <20130312164007.GZ26093@atomide.com>
+ <5140821B.2030902@ti.com>
 MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: Thomas Backlund <tmb@mageia.org>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        libvirt-list@redhat.com, stephen@networkplumber.org,
-        Zhenhua Luo <zhenhua.luo@freescale.com>
-Subject: Re: [libvirt] if_bridge.h: include in6.h for struct in6_addr use
-References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org> <50F49B7E.50906@redhat.com> <81B30F90-5A18-4386-9C30-E336AE212D85@kernel.crashing.org>
-In-Reply-To: <81B30F90-5A18-4386-9C30-E336AE212D85@kernel.crashing.org>
-X-Enigmail-Version: 1.5.1
-OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="----enig2HOMMVEENLIVPILXACAAV"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5140821B.2030902@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HOMMVEENLIVPILXACAAV
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+* Roger Quadros <rogerq@ti.com> [130313 06:46]:
+> On 03/12/2013 06:40 PM, Tony Lindgren wrote:
+> > * Roger Quadros <rogerq@ti.com> [130312 04:47]:
+> >> Hi Tony,
+> >>
+> >> These patches provide the SoC side code required to support
+> >> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+> > ... 
+> > 
+> >>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
+> >>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
+> >>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
+> >>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
+> >>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
+> >>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
+> >>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
+> >>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
+> >>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
+> >>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
+> >>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
+> >>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
+> >>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
+> >>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
+> >>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
+> >>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
+> >>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
+> > 
+> > Can't you have some mach-omap2/ehci-common.c that takes care
+> > of the initializiation to avoid this much addition to the
+> > board-*.c files? You may be able to have just a common function
+> > to do it and pass few parameters?
+> 
+> Since we moved reset and power handling for the USB PHYs from omap-echi
+> driver into the USB PHY driver we need to define the regulator data
+> for RESET and Power line of each PHY. So most of the code added is just
+> regulator data for the PHY rather than omap-ehci.
 
-On 03/13/2013 09:17 AM, Kumar Gala wrote:
+It seems that you're now repeating minor variations of the same PHY
+over and over again though.
+ 
+> Instead of a common function, I can implement some macros that make it
+> easier to define the regulators for the PHY in the board files.
+> Does this sound OK?
+> 
+> Personally I don't like such macros because it hides the implementation
+> and is difficult to read/debug.
 
->>>>
->>>> if_bridge.h uses struct in6_addr ip6; but does not include the in6.h=
+I'd prefer a common function to initialize the PHY though as it sounds
+like using macros would just allocate similar PHY many times which seems
+unnecessary.
 
->>>> header.
->>>>
->>>> Found by trying to build libvirt and connman against 3.8-rc3 headers=
-=2E
->>>>
->>>
+Regards,
 
-> Did this ever get resolved ?
-
-Libvirt has managed to work around the kernel issue in the meantime.
-But just today, I hit the same issue with the latest
-kernel-headers-3.8.2-206.fc18.x86_64 on Fedora 18 when backporting to an
-older libvirt branch that did not have the workaround.  A kernel person
-would have to speak up for certain, but I think it is still a problem.
-
---=20
-Eric Blake   eblake redhat com    +1-919-301-3266
-Libvirt virtualization library http://libvirt.org
-
-
-------enig2HOMMVEENLIVPILXACAAV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBCAAGBQJRQKg6AAoJEKeha0olJ0NqgnAH/jgctWdJVg/2ZMFoDo0Eq3Wl
-OwgKzaeHnGK79QEfoAmw5OrVd9QTSfZscK3yL7Ab5CKqMqRr6gMRzPA67zxm3Dsi
-uRzGt9tyxhBsJMoFbfgxBCZCZbBPW/fPn0xcO4zIjSgsBuUl+YX1qC3TUYi4R1if
-Mfzn7lgXfu7Rp5Bu5KJorzGEUFoBfeu/JLM7S8/ykzODkpLf5K5UxTIeyAptKAaZ
-JB9761Mer2MQ/oKGwsOLAmjuVMrJKv/xAcqZIppwVRscEaPsou2sKcwMpoP3semX
-nOGob8I2L2DlxpnPU9ZbKWrWWfr2yc5Xk9PDEPqR9jzqmcZuXmF+UBXWIxuPLgI=
-=jYZ/
------END PGP SIGNATURE-----
-
-------enig2HOMMVEENLIVPILXACAAV--
+Tony
