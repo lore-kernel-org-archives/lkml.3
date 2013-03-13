@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab3CMFYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 01:24:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36398 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3CMFYr (ORCPT
+	id S1753436Ab3CMFcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 01:32:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55056 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab3CMFcL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 01:24:47 -0400
-Message-ID: <51400D9D.9060305@wwwdotorg.org>
-Date: Tue, 12 Mar 2013 23:24:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
+	Wed, 13 Mar 2013 01:32:11 -0400
+From: "Anna, Suman" <s-anna@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Ohad Ben-Cohen" <ohad@wizery.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [RFC 1/1] clk: Add notifier support in clk_prepare_enable/clk_disable_unprepare
-References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>  <20130312134032.GU4977@n2100.arm.linux.org.uk>  <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org> <1363151317.3311.9.camel@bilhuang-vm1>
-In-Reply-To: <1363151317.3311.9.camel@bilhuang-vm1>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-9
-Content-Transfer-Encoding: 7bit
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: RE: [PATCHv3 01/14] mailbox: rename pl320-ipc specific mailbox.h
+Thread-Topic: [PATCHv3 01/14] mailbox: rename pl320-ipc specific mailbox.h
+Thread-Index: AQHOH5rdpQiXhpN28USwLigRpWbWH5ijURQA//+9t5A=
+Date: Wed, 13 Mar 2013 05:31:53 +0000
+Message-ID: <37C860A02101E749A747FA2D3C1E3C504978B9@DLEE11.ent.ti.com>
+References: <1363145030-14373-1-git-send-email-s-anna@ti.com>
+ <20130313035252.GA1515@kroah.com>
+In-Reply-To: <20130313035252.GA1515@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 11:08 PM, Bill Huang wrote:
-> On Wed, 2013-03-13 at 12:42 +0800, Stephen Warren wrote:
->> On 03/12/2013 07:47 PM, Bill Huang wrote:
->>> On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
->>>> On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
->>>>> Add the below four notifier events so drivers which are interested in
->>>>> knowing the clock status can act accordingly. This is extremely useful
->>>>> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
->>>>>
->>>>> PRE_CLK_ENABLE
->>>>> POST_CLK_ENABLE
->>>>> PRE_CLK_DISABLE
->>>>> POST_CLK_DISABLE
->>>>>
->>>>> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
->>>>
->>>> NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
->>>>
->>>> The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
->>>> *EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
->>>> clk_unprepare().  Those two functions are *merely* helpers for drivers
->>>> who don't wish to make the individual calls.
->>>>
->>>> Drivers are still completely free to call the individual functions, at
->>>> which point your proposal breaks horribly - and they _do_ call the
->>>> individual functions.
->>>
->>> I'm proposing to give device driver a choice when it knows that some
->>> driver might be interested in knowing its clock's enabled/disabled state
->>> change at runtime, this is very important for centralized DVFS core
->>> driver. It is not meant to be covering all cases especially for drivers
->>> which is not part of the DVFS, so we don't care if it is calling
->>> clk_enable/disable directly or not.
->>
->> I believe the point Russell is making is not that the idea behind this
->> patch is wrong, but simply that the function where you put the hooks is
->> wrong. The hooks should at least be in clk_enable/clk_disable and not
->> clk_prepare_enable/clk_disable_unprepare, since any driver is free to
->> call clk_prepare separately from clk_enable. The hooks should be
->> implemented in the lowest-level common function that all
->> driver-accessible paths call through.
+> On Tue, Mar 12, 2013 at 10:23:50PM -0500, Suman Anna wrote:
+> > The patch 30058677 "ARM / highbank: add support for pl320 IPC"
+> > added a pl320 IPC specific header file as a generic mailbox.h.
+> > This file has been renamed appropriately to allow the introduction of
+> > the generic mailbox API framework.
+> >
+> > Signed-off-by: Suman Anna <s-anna@ti.com>
+> > Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> > Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/cpufreq/highbank-cpufreq.c |  2 +-
+> >  drivers/mailbox/pl320-ipc.c        |  2 +-
+> >  include/linux/mailbox.h            | 17 -----------------
+> >  include/linux/pl320-ipc.h          | 17 +++++++++++++++++
+> >  4 files changed, 19 insertions(+), 19 deletions(-)  delete mode
+> > 100644 include/linux/mailbox.h  create mode 100644
+> > include/linux/pl320-ipc.h
 > 
-> Thanks, I know the point, but unfortunately there is no good choice for
-> hooking this since those low level functions clk_enable/clk_disable will
-> be called in interrupt context so it is not possible to send notify. We
-> might need to come out a better approach if we can think of any.
-> Currently I still think this is acceptable (Having all the drivers which
-> are using our interested clocks call these function to enable/disable
-> clock in their runtime_pm calls) though it's not perfect. 
+> Why are you sending these To: me?  I'm not the mailbox maintainer, and have
+> never handled them before that I can remember.  Who is the maintainer?
 
-No, that definitely won't work. Not all drivers use those APIs, nor
-should they.
+Er.. sorry Greg, I have taken the recipient list from the original series posting, but this series should have been directed to the ARM-SoC maintainer. The patches are generalizing the OMAP mailbox driver to add support for ST's mailbox as well,  and moving it to under /drivers/mailbox. The folder is new in 3.9, and the code under this, so far,  has all been for ARM based chips. I guess the maintainer for this folder needs to be sorted out for the long-term.
 
+Regards
+Suman
