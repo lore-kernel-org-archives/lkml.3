@@ -1,99 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965073Ab3CMXal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:30:41 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:35530 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S964822Ab3CMXak (ORCPT
+	id S965038Ab3CMX3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:29:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51499 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965005Ab3CMX3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:30:40 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org
-Subject: [PATCH] TTY: serial, stop accessing potential NULLs
-Date: Thu, 14 Mar 2013 00:30:34 +0100
-Message-Id: <1363217434-29262-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.1.5
+	Wed, 13 Mar 2013 19:29:36 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3 13/27] PCI: Use for_each_pci_resource() with pci bar reassign funcs
+Date: Wed, 13 Mar 2013 16:28:08 -0700
+Message-Id: <1363217302-14383-14-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commits:
-* 6732c8bb8671acbdac6cdc93dd72ddd581dd5e25 (TTY: switch
-  tty_schedule_flip)
-* 2e124b4a390ca85325fae75764bef92f0547fa25 (TTY: switch
-  tty_flip_buffer_push)
-* 05c7cd39907184328f48d3e7899f9cdd653ad336 (TTY: switch
-  tty_insert_flip_string)
-* 92a19f9cec9a80ad93c06e115822deb729e2c6ad (TTY: switch
-  tty_insert_flip_char)
-* 227434f8986c3827a1faedd1feb437acd6285315 (TTY: switch
-  tty_buffer_request_room to tty_port)
+Replace those open code, and make code more readable.
 
-introduced a potential NULL dereference to some drivers. In
-particular, when the device is used as a console, incoming bytes can
-kill the box. This is caused by removed checks for TTY against NULL.
-
-It happened because it was unclear to me why the checks were there. I
-assumed them superfluous because the interrupts were unbound or
-otherwise stopped. But this is not the case for consoles for these
-drivers, as was pointed out by David Miller.
-
-Now, this patch re-introduces the checks (at this point we check
-port->state, not the tty proper, as we do not care about tty pointers
-anymore). For both of the drivers, we place the check below the
-handling of break signal so that sysrq can actually work. (One needs
-to issue a break and then sysrq key within the following 5 seconds.)
-
-We do not change sc26xx, sunhv, and sunsu here because they behave the
-same as before.  People having that hardware should fix the driver
-eventually, however. They always could unconditionally dereference tty
-in receive_chars, port->state in uart_handle_dcd_change, and
-up->port.state->port.tty.
-
-There is perhaps more to fix in all those drivers, but they are at
-least in a state they were before.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: sparclinux@vger.kernel.org
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/tty/serial/sunsab.c   | 2 +-
- drivers/tty/serial/sunzilog.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/setup-bus.c |   28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
-index 8de2213..a422c8b 100644
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -203,7 +203,7 @@ receive_chars(struct uart_sunsab_port *up,
- 				flag = TTY_FRAME;
- 		}
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 7e8739e..b23ef4c 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -106,7 +106,7 @@ static resource_size_t get_res_add_size(struct list_head *head,
  
--		if (uart_handle_sysrq_char(&up->port, ch))
-+		if (uart_handle_sysrq_char(&up->port, ch) || !port)
+ 	list_for_each_entry(dev_res, head, list) {
+ 		if (dev_res->res == res) {
+-			int idx = res - &dev_res->dev->resource[0];
++			int idx = pci_dev_resource_idx(dev_res->dev, res);
+ 
+ 			dev_printk(KERN_DEBUG, &dev_res->dev->dev,
+ 				 "res[%d]=%pR get_res_add_size add_size %llx\n",
+@@ -124,15 +124,13 @@ static resource_size_t get_res_add_size(struct list_head *head,
+ static void pdev_sort_resources(struct pci_dev *dev, struct list_head *head)
+ {
+ 	int i;
++	struct resource *r;
+ 
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-		struct resource *r;
++	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 		struct pci_dev_resource *dev_res, *tmp;
+ 		resource_size_t r_align;
+ 		struct list_head *n;
+ 
+-		r = &dev->resource[i];
+-
+ 		if (r->flags & IORESOURCE_PCI_FIXED)
  			continue;
  
- 		if ((stat->sreg.isr0 & (up->port.ignore_status_mask & 0xff)) == 0 &&
-diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
-index 27669ff..813ef8e 100644
---- a/drivers/tty/serial/sunzilog.c
-+++ b/drivers/tty/serial/sunzilog.c
-@@ -388,7 +388,7 @@ sunzilog_receive_chars(struct uart_sunzilog_port *up,
- 			else if (r1 & CRC_ERR)
- 				flag = TTY_FRAME;
- 		}
--		if (uart_handle_sysrq_char(&up->port, ch))
-+		if (uart_handle_sysrq_char(&up->port, ch) || !port)
+@@ -237,7 +235,7 @@ static void reassign_resources_sorted(struct list_head *realloc_head,
+ 		if (!found_match)/* just skip */
  			continue;
  
- 		if (up->port.ignore_status_mask == 0xff ||
+-		idx = res - &add_res->dev->resource[0];
++		idx = pci_dev_resource_idx(add_res->dev, res);
+ 		add_size = add_res->add_size;
+ 		if (!resource_size(res)) {
+ 			res->start = add_res->start;
+@@ -280,7 +278,7 @@ static void assign_requested_resources_sorted(struct list_head *head,
+ 
+ 	list_for_each_entry(dev_res, head, list) {
+ 		res = dev_res->res;
+-		idx = res - &dev_res->dev->resource[0];
++		idx = pci_dev_resource_idx(dev_res->dev, res);
+ 		if (resource_size(res) &&
+ 		    pci_assign_resource(dev_res->dev, idx)) {
+ 			if (fail_head) {
+@@ -757,9 +755,9 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 	io_align = min_align = window_alignment(bus, IORESOURCE_IO);
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 			unsigned long r_size;
+ 
+ 			if (r->parent || !(r->flags & IORESOURCE_IO))
+@@ -870,9 +868,9 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 			resource_size_t r_size;
+ 
+ 			if (r->parent || (r->flags & mask) != type)
+@@ -1196,9 +1194,7 @@ static void pci_bridge_release_resources(struct pci_bus *bus,
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	dev = bus->self;
+-	for (idx = PCI_BRIDGE_RESOURCES; idx <= PCI_BRIDGE_RESOURCE_END;
+-	     idx++) {
+-		r = &dev->resource[idx];
++	for_each_pci_resource(dev, r, idx, PCI_BRIDGE_RES) {
+ 		if ((r->flags & type_mask) != type)
+ 			continue;
+ 		if (!r->parent)
+@@ -1369,9 +1365,9 @@ static void __init pci_realloc_detect(void)
+ 
+ 	for_each_pci_dev(dev) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_IOV_RES) {
+ 
+ 			/* Not assigned, or rejected by kernel ? */
+ 			if (r->flags && !r->start) {
 -- 
-1.8.1.5
-
+1.7.10.4
 
