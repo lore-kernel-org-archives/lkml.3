@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3CMJo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:44:27 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:58684 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3CMJoY (ORCPT
+	id S1756236Ab3CMJok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:44:40 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:58696 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab3CMJog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:44:24 -0400
+	Wed, 13 Mar 2013 05:44:36 -0400
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 1/8]Perf: Transform thread_map to linked list
-Date: Wed, 13 Mar 2013 17:42:19 +0800
-Message-Id: <1363167740-27735-8-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v3 0/8]Perf: Make the 'perf top -p $pid' can perceive the new forked threads.
+Date: Wed, 13 Mar 2013 17:42:20 +0800
+Message-Id: <1363167740-27735-9-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
 References: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,33 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-The size of thread_map is fixed at initialized phase according to the
-files in /proc/{$pid}. It cannot be expanded and shrinked while we want
-to perceive the thread fork and exit events.
-We transform the thread_map structure to a linked list, and implement some
-interfaces to expend and shrink it. In order to improve compatibility with
-the existing code, we can get a thread by its index in the thread_map also.
-1) thread_map__append()
-   Append a new thread into thread_map according to new thread's pid.
-2) thread_map__remove()
-   Remove a exist thread from thread_map according to the index of the
-   thread in thread_map.
-3) thread_map__init()
-   Alloc a thread_map, and initialize it. But the thread_map is empty after
-   we called this function. We should call thread_map__append() to insert
-   threads.
-4) thread_map__delete()
-   Delete a exist thread_map.
-5) thread_map__set_pid()
-   Set the pid of a thread by its index in the thread_map.
-6) thread_map__get_pid()
-   Got a thread's pid by its index in the thread_map.
-7) thread_map__get_idx_by_pid()
-   Got a thread's index in the thread_map according to its pid.
-   While we got a PERF_RECORD_EXIT event, we only know the pid of the thread.
-8) thread_map__empty_thread_map()
-   Return a empty thread_map, there is only a dumb thread in it.
-   This function is used to instead of the global varible empty_thread_map.
+This patch set base on the 3.8.rc7 kernel.
+
+Here is the version 3, I optimized the performance and structure in this version.
+
+This patch set add a function that make the 'perf top -p $pid' is able to perceive
+the new threads that is forked by target processes. 'perf top{record} -p $pid' can
+perceive the threads are forked before we execute perf, but it cannot perceive the
+new threads are forked after we started perf. This is perf's important defect, because
+the applications who will fork new threads on-the-fly are very much.
+For performance reasons, the event inherit mechanism is forbidden while we use per-task
+counters. Some internal data structures, such as, thread_map, evlist->mmap, evsel->fd,
+evsel->id, evsel->sample_id are implemented as arrays at the initialization phase.
+Their size is fixed, and they cannot be extended easily while we want to expend them
+for new forked threads.
+
+So, we have done the following work:
+1) Transformed thread_map to linked list.
+   Implemented the interfaces to extand and shrink a exist thread_map.
+2) Transformed xyarray to linked list. Implementd the interfaces to extand and shrink
+   a exist xyarray.
+   The xyarray is a 2-dimensional structure.
+   The x-dimension is cpus, and the x-dimension is a array still.
+   The y-dimension is threads of interest, and the y-dimension are linked list.
+3) Implemented evlist->mmap, evsel->fd, evsel->id and evsel->sample_id with the new xyarray.
+   Implemented interfaces to expand and shrink these structures.
+4) Added 2 callback functions to top->perf_tool, they are called while the PERF_RECORD_FORK
+   & PERF_RECORD_EXIT events are got.
+   While a PERF_RECORD_FORK event is got, all related data structures are expanded, a new
+   fd and mmap are opened.
+   While a PERF_RECORD_EXIT event is got, all nodes in the related data structures are
+   removed.
+
+The linked list is flexible, list_add & list_del can be used easily. Additional, performance
+penalty (especially the CPU utilization) is low.
+
+At the last of this coverletter, I attached a test program and its Makefile. After it is 
+executed, we will get its pid. Then, use this command:
+'perf top -p *pid*'
+The perf top will perceive the functions that called by the threads forked on-the-fly.
+We could use 'top' tool to monitor the overhead of 'perf'. The result shows the cpu overhead
+of this patch set is less than 3%. I think this overhead can be accepted.
+
+My test environment is as follows:
+# ========
+# captured on: Wed Mar 13 15:23:55 2013
+# perf version : 3.8.rc7.ga39f52
+# arch : x86_64
+# nrcpus online : 2
+# nrcpus avail : 2
+# cpudesc : Intel(R) Core(TM)2 Duo CPU P8700 @ 2.53GHz
+# cpuid : GenuineIntel,6,23,10
+# total memory : 3034932 kB
+#========
+
+This function has been already implemented for 'perf top -p $pid' in the patch
+[8/8] of this patch set. Next step, the 'perf record -p $pid' should be modified
+with the same method.
+
+Thanks for David Ahern's suggestion.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -71,629 +103,172 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
----
- tools/perf/builtin-stat.c                 |    2 +-
- tools/perf/tests/open-syscall-tp-fields.c |    2 +-
- tools/perf/util/event.c                   |   12 +-
- tools/perf/util/evlist.c                  |    2 +-
- tools/perf/util/evsel.c                   |   16 +-
- tools/perf/util/python.c                  |    2 +-
- tools/perf/util/thread_map.c              |  281 ++++++++++++++++++++++-------
- tools/perf/util/thread_map.h              |   17 +-
- 8 files changed, 244 insertions(+), 90 deletions(-)
+chenggang (8):
+  changed thread_map to list
+  changed xyarray to list
+  hanged mmap to xyarray
+  changed evsel->id to xyarray
+  extend mechanism for evsel->id & evsel->fd
+  add some operations for mmap
+  changed the method to traverse mmap list
+  fork & exit event perceived
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 9984876..293b09c 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -401,7 +401,7 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- 		}
- 
- 		if (perf_target__none(&target))
--			evsel_list->threads->map[0] = child_pid;
-+			thread_map__set_pid(evsel_list->threads, 0, child_pid);
- 
- 		/*
- 		 * Wait for the child to be ready to exec.
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
-index 1c52fdc..39eb770 100644
---- a/tools/perf/tests/open-syscall-tp-fields.c
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -43,7 +43,7 @@ int test__syscall_open_tp_fields(void)
- 
- 	perf_evsel__config(evsel, &opts);
- 
--	evlist->threads->map[0] = getpid();
-+	thread_map__append(evlist->threads, getpid());
- 
- 	err = perf_evlist__open(evlist);
- 	if (err < 0) {
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 5cd13d7..d093460 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -326,9 +326,11 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 
- 	err = 0;
- 	for (thread = 0; thread < threads->nr; ++thread) {
-+		pid_t pid = thread_map__get_pid(threads, thread);
-+
- 		if (__event__synthesize_thread(comm_event, mmap_event,
--					       threads->map[thread], 0,
--					       process, tool, machine)) {
-+					       pid, 0, process, tool, 
-+					       machine)) {
- 			err = -1;
- 			break;
- 		}
-@@ -337,12 +339,14 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 		 * comm.pid is set to thread group id by
- 		 * perf_event__synthesize_comm
- 		 */
--		if ((int) comm_event->comm.pid != threads->map[thread]) {
-+		if ((int) comm_event->comm.pid != pid) {
- 			bool need_leader = true;
- 
- 			/* is thread group leader in thread_map? */
- 			for (j = 0; j < threads->nr; ++j) {
--				if ((int) comm_event->comm.pid == threads->map[j]) {
-+				pid_t pidj = thread_map__get_pid(threads, j);
-+
-+				if ((int) comm_event->comm.pid == pidj) {
- 					need_leader = false;
- 					break;
- 				}
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bc4ad79..d5063d6 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -793,7 +793,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 	}
- 
- 	if (perf_target__none(&opts->target))
--		evlist->threads->map[0] = evlist->workload.pid;
-+		thread_map__append(evlist->threads, evlist->workload.pid);
- 
- 	close(child_ready_pipe[1]);
- 	close(go_pipe[0]);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 9c82f98f..57c569d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -835,7 +835,7 @@ retry_sample_id:
- 			int group_fd;
- 
- 			if (!evsel->cgrp)
--				pid = threads->map[thread];
-+				pid = thread_map__get_pid(threads, thread);
- 
- 			group_fd = get_group_fd(evsel, cpu, thread);
- 
-@@ -894,14 +894,6 @@ static struct {
- 	.cpus	= { -1, },
- };
- 
--static struct {
--	struct thread_map map;
--	int threads[1];
--} empty_thread_map = {
--	.map.nr	 = 1,
--	.threads = { -1, },
--};
--
- int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 		     struct thread_map *threads)
- {
-@@ -911,7 +903,7 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	}
- 
- 	if (threads == NULL)
--		threads = &empty_thread_map.map;
-+		threads = thread_map__empty_thread_map();
- 
- 	return __perf_evsel__open(evsel, cpus, threads);
- }
-@@ -919,7 +911,9 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
- 			     struct cpu_map *cpus)
- {
--	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map);
-+	struct thread_map *empty_thread_map = thread_map__empty_thread_map();
-+
-+	return __perf_evsel__open(evsel, cpus, empty_thread_map);
- }
- 
- int perf_evsel__open_per_thread(struct perf_evsel *evsel,
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 925e0c3..e3f3f1b 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -458,7 +458,7 @@ static PyObject *pyrf_thread_map__item(PyObject *obj, Py_ssize_t i)
- 	if (i >= pthreads->threads->nr)
- 		return NULL;
- 
--	return Py_BuildValue("i", pthreads->threads->map[i]);
-+	return Py_BuildValue("i", thread_map__get_pid(pthreads->threads, i));
- }
- 
- static PySequenceMethods pyrf_thread_map__sequence_methods = {
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 9b5f856..301f4ce 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -19,9 +19,116 @@ static int filter(const struct dirent *dir)
- 		return 1;
- }
- 
--struct thread_map *thread_map__new_by_pid(pid_t pid)
-+/*
-+ * Initialize a thread_map, but the thread_map is empty after calling this
-+ * function. thread_pid should be inserted into it by thread_map__append().
-+ */
-+struct thread_map *thread_map__init(void)
- {
- 	struct thread_map *threads;
-+
-+	threads = malloc(sizeof(*threads));
-+	if (threads == NULL)
-+		return NULL;
-+
-+	threads->nr = 0;
-+	INIT_LIST_HEAD(&threads->head);
-+	return threads;
-+}
-+
-+/*
-+ * Delete @threads, include its all thread_pids.
-+ */
-+void thread_map__delete(struct thread_map *threads)
-+{
-+	struct thread_pid *tp, *tmp;
-+
-+	list_for_each_entry_safe(tp, tmp, &threads->head, next) {
-+		list_del(&tp->next);
-+		free(tp);
-+	}
-+
-+	free(threads);
-+}
-+
-+int thread_map__has_pid(struct thread_map *threads, pid_t pid)
-+{
-+        struct thread_pid *tp;
-+
-+        list_for_each_entry(tp, &threads->head, next) {
-+                if (tp->pid == pid)
-+                        return 1;
-+        }
-+
-+        return 0;
-+}
-+
-+/*
-+ * Append a thread_pid at the last of @threads.
-+ */
-+int thread_map__append(struct thread_map *threads, pid_t pid)
-+{
-+	struct thread_pid *tp;
-+
-+	if (threads == NULL)
-+                return -1;
-+
-+	if (thread_map__has_pid(threads, pid) != 0)
-+		return 1;
-+
-+	tp = malloc(sizeof(*tp));
-+	if (tp == NULL)
-+		return -1;
-+
-+	tp->pid = pid;
-+	list_add_tail(&tp->next, &threads->head);
-+	threads->nr++;
-+
-+	return 0;
-+}
-+
-+static inline int thread_map__remove_last(struct thread_map *threads)
-+{       
-+        struct thread_pid *tp;
-+        
-+        if (!list_empty(&threads->head)) {
-+                tp = list_entry(threads->head.prev, struct thread_pid, next);
-+                list_del(&tp->next);
-+                free(tp);
-+                threads->nr--;
-+                return 0;
-+        }
-+        
-+        return -1;
-+}       
-+
-+/*
-+ * remove a thread_pid from threads, the thread_pid is indexed by @idx.
-+ * if @idx is -1, the last thread_pid is removed.
-+ */
-+int thread_map__remove(struct thread_map *threads, int idx)
-+{
-+	struct thread_pid *tp, *tmp;
-+	int count = 0;
-+
-+	if (idx == -1)
-+		return thread_map__remove_last(threads);
-+
-+	list_for_each_entry_safe(tp, tmp, &threads->head, next) {
-+		if (count++ == idx) {
-+			list_del(&tp->next);
-+			free(tp);
-+			threads->nr--;
-+			return 0;
-+		}
-+	}
-+
-+	return -1;
-+}
-+
-+struct thread_map *thread_map__new_by_pid(pid_t pid)
-+{
-+	struct thread_map *threads = NULL;
- 	char name[256];
- 	int items;
- 	struct dirent **namelist = NULL;
-@@ -32,11 +139,14 @@ struct thread_map *thread_map__new_by_pid(pid_t pid)
- 	if (items <= 0)
- 		return NULL;
- 
--	threads = malloc(sizeof(*threads) + sizeof(pid_t) * items);
-+	threads = thread_map__init();
- 	if (threads != NULL) {
--		for (i = 0; i < items; i++)
--			threads->map[i] = atoi(namelist[i]->d_name);
--		threads->nr = items;
-+		for (i = 0; i < items; i++) {
-+			pid_t pid_num = atoi(namelist[i]->d_name);
-+
-+			if (thread_map__append(threads, pid_num) == -1)
-+				goto out_free_threads;
-+		}
- 	}
- 
- 	for (i=0; i<items; i++)
-@@ -44,28 +154,38 @@ struct thread_map *thread_map__new_by_pid(pid_t pid)
- 	free(namelist);
- 
- 	return threads;
-+
-+out_free_threads:
-+	thread_map__delete(threads);
-+	return NULL;
- }
- 
- struct thread_map *thread_map__new_by_tid(pid_t tid)
- {
--	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
-+	struct thread_map *threads = NULL;
- 
-+	threads = thread_map__init();
- 	if (threads != NULL) {
--		threads->map[0] = tid;
--		threads->nr	= 1;
-+		if (thread_map__append(threads, tid) == -1)
-+			goto out_free_threads;
- 	}
- 
- 	return threads;
-+
-+out_free_threads:
-+	thread_map__delete(threads);
-+	return NULL;
- }
- 
- struct thread_map *thread_map__new_by_uid(uid_t uid)
- {
- 	DIR *proc;
--	int max_threads = 32, items, i;
-+	int items, i;
- 	char path[256];
- 	struct dirent dirent, *next, **namelist = NULL;
--	struct thread_map *threads = malloc(sizeof(*threads) +
--					    max_threads * sizeof(pid_t));
-+	struct thread_map *threads = NULL;
-+
-+	threads = thread_map__init();
- 	if (threads == NULL)
- 		goto out;
- 
-@@ -73,11 +193,8 @@ struct thread_map *thread_map__new_by_uid(uid_t uid)
- 	if (proc == NULL)
- 		goto out_free_threads;
- 
--	threads->nr = 0;
--
- 	while (!readdir_r(proc, &dirent, &next) && next) {
- 		char *end;
--		bool grow = false;
- 		struct stat st;
- 		pid_t pid = strtol(dirent.d_name, &end, 10);
- 
-@@ -97,30 +214,14 @@ struct thread_map *thread_map__new_by_uid(uid_t uid)
- 		if (items <= 0)
- 			goto out_free_closedir;
- 
--		while (threads->nr + items >= max_threads) {
--			max_threads *= 2;
--			grow = true;
--		}
--
--		if (grow) {
--			struct thread_map *tmp;
--
--			tmp = realloc(threads, (sizeof(*threads) +
--						max_threads * sizeof(pid_t)));
--			if (tmp == NULL)
-+		for (i = 0; i < items; i++) {
-+			if (thread_map__append(threads, atoi(namelist[i]->d_name) < 0))
- 				goto out_free_namelist;
--
--			threads = tmp;
- 		}
- 
- 		for (i = 0; i < items; i++)
--			threads->map[threads->nr + i] = atoi(namelist[i]->d_name);
--
--		for (i = 0; i < items; i++)
- 			free(namelist[i]);
- 		free(namelist);
--
--		threads->nr += items;
- 	}
- 
- out_closedir:
-@@ -129,7 +230,7 @@ out:
- 	return threads;
- 
- out_free_threads:
--	free(threads);
-+	thread_map__delete(threads);
- 	return NULL;
- 
- out_free_namelist:
-@@ -138,7 +239,7 @@ out_free_namelist:
- 	free(namelist);
- 
- out_free_closedir:
--	free(threads);
-+	thread_map__delete(threads);
- 	threads = NULL;
- 	goto out_closedir;
- }
-@@ -156,11 +257,11 @@ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid)
- 
- static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
- {
--	struct thread_map *threads = NULL, *nt;
-+	struct thread_map *threads = NULL;
- 	char name[256];
--	int items, total_tasks = 0;
-+	int items;
- 	struct dirent **namelist = NULL;
--	int i, j = 0;
-+	int i;
- 	pid_t pid, prev_pid = INT_MAX;
- 	char *end_ptr;
- 	struct str_node *pos;
-@@ -169,6 +270,10 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
- 	if (!slist)
- 		return NULL;
- 
-+	threads = thread_map__init();
-+	if (threads == NULL)
-+		return NULL;
-+
- 	strlist__for_each(pos, slist) {
- 		pid = strtol(pos->s, &end_ptr, 10);
- 
-@@ -184,19 +289,13 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
- 		if (items <= 0)
- 			goto out_free_threads;
- 
--		total_tasks += items;
--		nt = realloc(threads, (sizeof(*threads) +
--				       sizeof(pid_t) * total_tasks));
--		if (nt == NULL)
--			goto out_free_namelist;
--
--		threads = nt;
--
- 		for (i = 0; i < items; i++) {
--			threads->map[j++] = atoi(namelist[i]->d_name);
--			free(namelist[i]);
-+			if (thread_map__append(threads, atoi(namelist[i]->d_name)) < 0)
-+				goto out_free_namelist;
- 		}
--		threads->nr = total_tasks;
-+
-+		for (i = 0; i < items; i++)
-+			free(namelist[i]);
- 		free(namelist);
- 	}
- 
-@@ -210,15 +309,14 @@ out_free_namelist:
- 	free(namelist);
- 
- out_free_threads:
--	free(threads);
-+	thread_map__delete(threads);
- 	threads = NULL;
- 	goto out;
- }
- 
- static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
- {
--	struct thread_map *threads = NULL, *nt;
--	int ntasks = 0;
-+	struct thread_map *threads = NULL;
- 	pid_t tid, prev_tid = INT_MAX;
- 	char *end_ptr;
- 	struct str_node *pos;
-@@ -226,14 +324,16 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
- 
- 	/* perf-stat expects threads to be generated even if tid not given */
- 	if (!tid_str) {
--		threads = malloc(sizeof(*threads) + sizeof(pid_t));
--		if (threads != NULL) {
--			threads->map[0] = -1;
--			threads->nr	= 1;
--		}
-+		threads = thread_map__init();
-+		if (threads != NULL)
-+			thread_map__append(threads, -1);
- 		return threads;
- 	}
- 
-+	threads = thread_map__init();
-+	if (!threads)
-+		goto out;
-+
- 	slist = strlist__new(false, tid_str);
- 	if (!slist)
- 		return NULL;
-@@ -248,21 +348,14 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
- 		if (tid == prev_tid)
- 			continue;
- 
--		ntasks++;
--		nt = realloc(threads, sizeof(*threads) + sizeof(pid_t) * ntasks);
--
--		if (nt == NULL)
-+		if (thread_map__append(threads, tid) == -1)
- 			goto out_free_threads;
--
--		threads = nt;
--		threads->map[ntasks - 1] = tid;
--		threads->nr		 = ntasks;
- 	}
- out:
- 	return threads;
- 
- out_free_threads:
--	free(threads);
-+	thread_map__delete(threads);
- 	threads = NULL;
- 	goto out;
- }
-@@ -279,18 +372,66 @@ struct thread_map *thread_map__new_str(const char *pid, const char *tid,
- 	return thread_map__new_by_tid_str(tid);
- }
- 
--void thread_map__delete(struct thread_map *threads)
-+int thread_map__get_idx_by_pid(struct thread_map *threads, pid_t pid)
- {
--	free(threads);
-+	struct thread_pid *tp;
-+	int count = 0;
-+
-+	list_for_each_entry(tp, &threads->head, next) {
-+		if (tp->pid == pid)
-+			return count;
-+		count++;
-+	}
-+
-+	return -1; 
-+}
-+
-+struct thread_map *thread_map__empty_thread_map(void)
-+{
-+	struct thread_map *empty_thread_map = NULL;
-+
-+	empty_thread_map = thread_map__init();
-+	if (empty_thread_map)
-+		thread_map__append(empty_thread_map, -1);
-+
-+	return empty_thread_map;
-+}
-+
-+int thread_map__set_pid(struct thread_map *threads, int idx, pid_t pid)
-+{
-+	struct thread_pid *tp;
-+	int count = 0;
-+
-+	list_for_each_entry(tp, &threads->head, next) {
-+		if (count++ == idx) {
-+			tp->pid = pid;
-+			return 0;
-+		}
-+	}
-+	return -1;
-+}
-+
-+int thread_map__get_pid(struct thread_map *threads, int idx)
-+{
-+	struct thread_pid *tp;
-+	int count = 0;                 
-+
-+	list_for_each_entry(tp, &threads->head, next) {
-+		if (count++ == idx)
-+			return tp->pid;
-+	}
-+
-+	return -1;
- }
- 
- size_t thread_map__fprintf(struct thread_map *threads, FILE *fp)
- {
--	int i;
-+	int i = 0;
-+	struct thread_pid *tp;
- 	size_t printed = fprintf(fp, "%d thread%s: ",
- 				 threads->nr, threads->nr > 1 ? "s" : "");
--	for (i = 0; i < threads->nr; ++i)
--		printed += fprintf(fp, "%s%d", i ? ", " : "", threads->map[i]);
-+	list_for_each_entry(tp, &threads->head, next)
-+		printed += fprintf(fp, "%s%d", i++ ? ", " : "", tp->pid);
- 
- 	return printed + fprintf(fp, "\n");
- }
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-index f718df8..f6691ad 100644
---- a/tools/perf/util/thread_map.h
-+++ b/tools/perf/util/thread_map.h
-@@ -3,20 +3,35 @@
- 
- #include <sys/types.h>
- #include <stdio.h>
-+#include <linux/list.h>
-+
-+struct thread_pid {
-+        struct list_head next;
-+        pid_t pid;
-+};
- 
- struct thread_map {
- 	int nr;
--	pid_t map[];
-+	struct list_head head;
- };
- 
-+struct thread_map *thread_map__init(void);
- struct thread_map *thread_map__new_by_pid(pid_t pid);
- struct thread_map *thread_map__new_by_tid(pid_t tid);
- struct thread_map *thread_map__new_by_uid(uid_t uid);
- struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid);
-+struct thread_map *thread_map__empty_thread_map(void);
- 
- struct thread_map *thread_map__new_str(const char *pid,
- 		const char *tid, uid_t uid);
- 
-+int thread_map__append(struct thread_map *threads, pid_t pid);
-+int thread_map__remove(struct thread_map *threads, int idx);
-+int thread_map__set_pid(struct thread_map *threads, int idx, pid_t pid);
-+int thread_map__get_pid(struct thread_map *threads, int index);
-+int thread_map__get_idx_by_pid(struct thread_map *threads, pid_t pid);
-+int thread_map__has_pid(struct thread_map *threadsd, pid_t pid);
-+
- void thread_map__delete(struct thread_map *threads);
- 
- size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
+ tools/perf/Makefile                       |    3 +-
+ tools/perf/builtin-record.c               |    8 +-
+ tools/perf/builtin-stat.c                 |    2 +-
+ tools/perf/builtin-top.c                  |  116 ++++++++++++-
+ tools/perf/tests/mmap-basic.c             |    4 +-
+ tools/perf/tests/open-syscall-tp-fields.c |    9 +-
+ tools/perf/tests/perf-record.c            |    7 +-
+ tools/perf/util/event.c                   |   12 +-
+ tools/perf/util/evlist.c                  |  206 +++++++++++++++++++---
+ tools/perf/util/evlist.h                  |   14 +-
+ tools/perf/util/evsel.c                   |  118 +++++++++++--
+ tools/perf/util/evsel.h                   |   13 +-
+ tools/perf/util/header.c                  |   28 +--
+ tools/perf/util/header.h                  |    3 +-
+ tools/perf/util/python.c                  |    6 +-
+ tools/perf/util/thread_map.c              |  265 +++++++++++++++++++++--------
+ tools/perf/util/thread_map.h              |   16 +-
+ tools/perf/util/xyarray.c                 |  125 +++++++++++++-
+ tools/perf/util/xyarray.h                 |   68 +++++++-
+ 19 files changed, 866 insertions(+), 157 deletions(-)
+
+---
+Here is a program to test the patch set.
+
+---
+#include <time.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <math.h>
+#include <sys/types.h>
+#include <linux/unistd.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#define CHILDREN_NUM 15000
+#define UINT_MAX        (~0U)
+
+unsigned int new_rand(unsigned int min, unsigned int max)
+{
+	int fd;
+	unsigned int n = 0;
+
+	fd = open("/dev/urandom", O_RDONLY);
+
+	if (fd > 0) {
+		read(fd, &n, sizeof (n));
+	}
+	close(fd);
+
+	return (unsigned int)((double)n / UINT_MAX * (max - min) + min);
+}
+
+pid_t gettid(void)
+{
+	return syscall(SYS_gettid);
+}
+
+static inline unsigned long long rdclock(void)
+{
+	struct timespec ts; 
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
+int do_pi(int p){
+	double mypi,h,sum,x;
+	long long  n,i;
+
+	double cost_time;
+	unsigned int exec_time;
+	unsigned long long start, end;
+
+	int ret;
+	pthread_t	new_thread_id;
+
+	printf("new thread[%d]: %d tid: %d ppid: %d\n", getpid(), p, gettid(), getppid());
+
+	exec_time = new_rand(50, 10000000);
+	start = rdclock();
+
+	while(1) {
+		n = 5000;
+		h = 1.0/n;
+		sum=0.0;
+
+		for (i = 1; i <= n; i+=1 ) {
+			x = h * ( i - 0.5 ) ;
+			sum += 4.0 / ( 1.0 + pow(x,2) ) ;
+		}
+
+		mypi = h * sum;
+
+		end = rdclock();
+
+		cost_time = (double)(end-start) / 1e3;
+		if (cost_time > (double) exec_time) //microsecond
+			break;
+	}
+
+	return 0;
+}
+
+int main()
+{
+	int i=0, ret=0;
+	int j;	
+
+	pthread_t id[CHILDREN_NUM];
+	pthread_t id2[CHILDREN_NUM];
+
+	printf("pid: %d\n", getpid());
+
+	sleep(8);
+
+	for(j=0; j<CHILDREN_NUM; j++){
+		ret = pthread_create(id+j, NULL, (void*)do_pi, j);
+		if (ret){
+			printf("Create pthread error!\n");
+			return 1;
+		}
+		usleep(new_rand(500, 1000)); 
+	}	
+
+	for(j=0; j<CHILDREN_NUM; j++)
+		pthread_join(id[j], NULL);
+
+	return 0;
+}
+
+---
+If the filename of the last program file is "thread", follow is the Makefile for it.
+
+---
+EXEC = thread
+
+OBJS = thread.o
+
+HEADERS =
+
+CC = gcc
+
+INC = -I. -I/usr/include
+
+CFLAGS = ${INC} -L/usr/lib/x86_64-linux-gnu -lpthread -g -ldl -lrt
+
+all:${EXEC}
+${EXEC} : ${OBJS}
+	${CC} -o $@ ${OBJS}  ${CFLAGS} ${LDFLAGS}
+
+${OBJS} : ${HEADERS}
+
+.PHONY : clean
+clean :
+	rm -f ${OBJS} ${EXEC}
+
 -- 
 1.7.9.5
-
