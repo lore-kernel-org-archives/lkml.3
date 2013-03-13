@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab3CMPwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 11:52:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48183 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656Ab3CMPwv (ORCPT
+	id S933997Ab3CMPxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 11:53:11 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33397 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933817Ab3CMPxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 11:52:51 -0400
-Message-ID: <5140A0C0.2020400@pengutronix.de>
-Date: Wed, 13 Mar 2013 16:52:32 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 13 Mar 2013 11:53:09 -0400
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, balbi@ti.com, tony@atomide.com,
-        mark.rutland@arm.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
-References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de> <513F3B7E.8000002@ti.com> <513F3EF0.3030609@pengutronix.de> <513F47B4.2060004@ti.com> <514098A0.1030809@ti.com>
-In-Reply-To: <514098A0.1030809@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2VSQWLJGFVQMMDJBGABCI"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
+	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
+	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
+	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
+Date: Wed, 13 Mar 2013 16:53:08 +0100
+Message-ID: <CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
+Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2VSQWLJGFVQMMDJBGABCI
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 13, 2013 at 4:26 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Mar 13, 2013 at 4:18 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>> Looks like this is missing (or intended?):
+>>>
+>>> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+>>> index 482c26f..f23ebfc 100644
+>>> --- a/fs/overlayfs/super.c
+>>> +++ b/fs/overlayfs/super.c
+>>> @@ -684,3 +684,6 @@ static void __exit ovl_exit(void)
+>>>
+>>>  module_init(ovl_init);
+>>>  module_exit(ovl_exit);
+>>> +MODULE_DESCRIPTION("overlayfs v17: provides overlay-filesystem functionality");
+>>> +MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+>>> +MODULE_LICENSE("GPL");
+>>
+>> No, it *is* already in there.
+>>
+>
+> Where is it?
+>
+> Last lines in [1] are:
+>
+> 685 module_init(ovl_init);
+> 686 module_exit(ovl_exit);
+>
 
-On 03/13/2013 04:17 PM, Peter Ujfalusi wrote:
-> On 03/12/2013 04:20 PM, Roger Quadros wrote:
->> Adding Peter to the loop. I faintly remember him mentioning this issue=
- before
->> for beagle. We really need the deferred probe mechanism or we need to =
-resort
->> to device registering order.
->=20
-> Yes, BeagleBoard is a good example. Long story short: we have external
-> dependency and the correct way to handle that is via deferred probe.
+OK, I looked at SquashFS which is not converted to use MODULE_ALIAS_FS.
 
-Sure.
+Hehe, with my patch that looks now funny :-).
 
-> As of now we are not ready to kill the legacy support but over time we =
-should
-> move as much as we can to DT only mode.
-
-I was assuming you're already on DT only :)
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+$ sudo modinfo overlayfs
+filename:
+/lib/modules/3.9.0-rc2-next20130313-4-iniza-small/kernel/fs/overlayfs/overlayfs.ko
+license:        GPL
+author:         Miklos Szeredi <miklos@szeredi.hu>
+description:    overlayfs v17, provides overlay-filesystem functionality
+alias:          fs-overlayfs
+license:        GPL
+description:    Overlay filesystem
+author:         Miklos Szeredi <miklos@szeredi.hu>
+srcversion:     4332BB91603829A85CCEA59
+depends:
+intree:         Y
+vermagic:       3.9.0-rc2-next20130313-4-iniza-small SMP mod_unload modversions
 
 
-------enig2VSQWLJGFVQMMDJBGABCI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+$ sudo modinfo squashfs
+filename:
+/lib/modules/3.9.0-rc2-next20130313-4-iniza-small/kernel/fs/squashfs/squashfs.ko
+license:        GPL
+author:         Phillip Lougher <phillip@squashfs.org.uk>
+description:    squashfs 4.0, a compressed read-only filesystem
+alias:          fs-squashfs
+srcversion:     752DB671D8E8DFB606BFC88
+depends:
+intree:         Y
+vermagic:       3.9.0-rc2-next20130313-4-iniza-small SMP mod_unload modversions
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+- Sedat -
 
-iEYEARECAAYFAlFAoMMACgkQjTAFq1RaXHOvSgCfe/FyruXVcXy6bI4rU8nm5y/a
-TQIAnRWAEC32Ki0ut/3sQ3O86ZidUWch
-=GVDF
------END PGP SIGNATURE-----
-
-------enig2VSQWLJGFVQMMDJBGABCI--
+> - Sedat -
+>
+> [1] http://git.kernel.org/cgit/linux/kernel/git/mszeredi/vfs.git/tree/fs/overlayfs/super.c?h=overlayfs.current
+>
+>> Thanks,
+>> Miklos
