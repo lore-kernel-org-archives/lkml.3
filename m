@@ -1,100 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934276Ab3CMUk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:40:59 -0400
-Received: from mail-ve0-f202.google.com ([209.85.128.202]:57795 "EHLO
-	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510Ab3CMUkP (ORCPT
+	id S934241Ab3CMUl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:41:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59372 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933178Ab3CMUly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:40:15 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Jonathan Cameron <jic23@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] ARM: dts: Add adc and thermistors for exynos5250-snow
-Date: Wed, 13 Mar 2013 13:40:02 -0700
-Message-Id: <1363207202-10858-5-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1363207202-10858-1-git-send-email-dianders@chromium.org>
-References: <1363129994-10438-1-git-send-email-dianders@chromium.org>
- <1363207202-10858-1-git-send-email-dianders@chromium.org>
+	Wed, 13 Mar 2013 16:41:54 -0400
+Message-ID: <5140E48D.60501@wwwdotorg.org>
+Date: Wed, 13 Mar 2013 14:41:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [Patch v3 3/4] power_supply: tps65090-charger: Add binding doc
+References: <1363126089-9071-1-git-send-email-rklein@nvidia.com> <1363126089-9071-4-git-send-email-rklein@nvidia.com> <513FB5D7.5090800@wwwdotorg.org> <5140D2C1.8020507@nvidia.com>
+In-Reply-To: <5140D2C1.8020507@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hook up the exynos5250-snow thermistors via the device tree now that
-there's a driver available to use them.
+On 03/13/2013 01:25 PM, Rhyland Klein wrote:
+> On 3/12/2013 7:10 PM, Stephen Warren wrote:
+>> On 03/12/2013 04:08 PM, Rhyland Klein wrote:
+>>> This change adds the binding documentation for the tps65090-charger.
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/power_supply/tps65090.txt
+>>> b/Documentation/devicetree/bindings/power_supply/tps65090.txt
+>>> +Example:
+>>> +
+>>> +    tps65090@48 {
+>>> +        compatible = "ti,tps65090";
+>>> +        reg = <0x48>;
+>>> +        interrupts = <0 88 0x4>;
+>>> +
+>>> +        ti,enable-low-current-chrg;
+>>> +
+>>> +        regulators {
+>>> +            ...
+>>> +        };
+>> I'm a little confused by this binding.
+>>
+>> What goes in the regulators sub-node; is that specified by another
+>> binding file in bindings/regulator/tps65090.txt?
+>>
+>> I would expect one of the following:
+>>
+>> 1) A single binding file that describes absolutely everything in the
+>> chip. In this case, the main TPS65909 node wouldn't have child nodes for
+>> the MFD components, although the regulators sub-node, which in turn
+>> contains children does still make sense.
+>>
+>> 2) A separate binding for each component block, and perhaps also some
+>> top-level binding that indicates which child bindings can "plug into"
+>> it. In this case, I'd expect each block to be represented as a sub-node
+>> in DT. The overall regulator component might then still have a
+>> regulators child DT node itself, to represent each regulator's
+>> configuration. In this scenario, each binding document describes the
+>> entirety of a single node.
+>>
+>> I think what you've got here is a hybrid; a single top-level node, but
+>> different binding documents defining the various properties that are
+>> relevant to each component block in the device. That seems odd to me.
+> 
+> Yes we started this discussion before and were discussing the proper
+> arrangement of
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Match 'uV' -> 'uv' change in Naveen's bindings.
+(your message was wrapped far over 80 columns, please restrict to
+something like 72-74 or so).
 
- arch/arm/boot/dts/cros5250-common.dtsi |  4 ++++
- arch/arm/boot/dts/exynos5250-snow.dts  | 31 +++++++++++++++++++++++++++++++
- 2 files changed, 35 insertions(+)
+> documentation when dealing with devices like these. This is where the
+> drivers/ directory
+> naming in the binding docs might diverge a bit as it might make less
+> sense to have
+> a binding doc for each child component of an mfd.
 
-diff --git a/arch/arm/boot/dts/cros5250-common.dtsi b/arch/arm/boot/dts/cros5250-common.dtsi
-index 46c0980..f7cc835 100644
---- a/arch/arm/boot/dts/cros5250-common.dtsi
-+++ b/arch/arm/boot/dts/cros5250-common.dtsi
-@@ -167,6 +167,10 @@
- 		status = "disabled";
- 	};
- 
-+	adc@12D10000 {
-+		vdd-supply = <&buck5_reg>;
-+	};
-+
- 	hdmi {
- 		hpd-gpio = <&gpx3 7 0xf 1 3>;
- 	};
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index 17dd951..b78da7c 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -40,4 +40,35 @@
- 				<&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
- 		};
- 	};
-+
-+	adc@12D10000 {
-+		ncp15wb473@3 {
-+			compatible = "ntc,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 3>;
-+		};
-+		ncp15wb473@4 {
-+			compatible = "ntc,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 4>;
-+		};
-+		ncp15wb473@5 {
-+			compatible = "ntc,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 5>;
-+		};
-+		ncp15wb473@6 {
-+			compatible = "ntc,ncp15wb473";
-+			pullup-uv = <1800000>;
-+			pullup-ohm = <47000>;
-+			pulldown-ohm = <0>;
-+			io-channels = <&adc 6>;
-+		};
-+	};
- };
--- 
-1.8.1.3
+I think your discussion swaps #1 and #2 relative to my list above? It
+certainly makes more sense if I read it that way.
+
+> I was thinking about moving this driver towards #1 above, and using a
+> child node for
+> the charger. I would then also move the regulators to a child node, and
+> its structure would
+> be very similar to the Palmas driver/dt representation. My only concern
+> was that, from
+> what I understood, separating out the child node implied that the child
+> functionality
+> could/might be used somewhere else. Say in this case, that the charger
+> functionality might
+> be duplicated in another pmic from ti.
+
+Having separate nodes certainly makes it easy to /allow/ that. I don't
+think it /requires/ that TI release (or plan to release) another chip
+containing that IP block.
+
+> I don't know how much that is the case with the
+> tps65090 and so I am unsure if child nodes are the correct way to go.
+
+Thinking more about this, separate child nodes for separate IP blocks do
+start to make some sense. They definitely do allow easy
+binding/driver/... re-use if future chips come out with the same
+sub-block. Similarly, they neatly isolate each sub-block's binding from
+the others, so (a) avoid any conflicts between what the different IP
+blocks want to put in their nodes, like a list of regulators vs. using
+sub-nodes for other purposes, such as an integrate I2C mux with I2C bus
+child nodes, etc, and (b) the bindings can be defined separately thus
+avoiding the "where do we put the binding file" issue.
+
+It's certainly more work, but now I tend to think separate nodes are the
+way to go.
+
+> As for #2, This would also be fine with me, as logically we are talking
+> about a single chip. I
+> this the only concern here is where to place a single binding document
+> in the bindings
+> directory where it makes sense. Putting regulator documentation under
+> charger or vice
+> versa doesn't make sense. And then for some devices, they might also
+> have an rtc, gpio
+> controller, interrupt controller, etc.. If each of them had a driver and
+> their own dt
+> information, I don't know where a single core place for all that
+> documentation would be
+> right now.
+> 
+> Hence, I was hoping to continue this dicussion and see if we can decide
+> on the most logical
+> choice, whatever that may be.
 
