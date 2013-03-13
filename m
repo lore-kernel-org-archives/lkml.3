@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab3CMJnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:43:45 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:64904 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3CMJnn (ORCPT
+	id S1756196Ab3CMJn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:43:59 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:61663 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506Ab3CMJn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:43:43 -0400
+	Wed, 13 Mar 2013 05:43:56 -0400
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 4/8]perf: Transform evsel->id to xyarray
-Date: Wed, 13 Mar 2013 17:42:16 +0800
-Message-Id: <1363167740-27735-5-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v3 3/8]Perf: Transform evlist->mmap to xyarray
+Date: Wed, 13 Mar 2013 17:42:17 +0800
+Message-Id: <1363167740-27735-6-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
 References: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,8 +30,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-Transform evsel->id to xyarray, so it is transformed to a linked list
-instead an array.
+Transformed evlist->mmap to xyarray. Then the evlist->mmap is transformed
+to a linked list too.
+
+1) perf_evlist__mmap_thread()
+   mmap a new fd for a new thread forked on-the-fly.
+2) void perf_evlist__munmap_thread()
+   munmap a fd for a exited thread on-the-fly.
+3) perf_evlist__get_mmap()
+   get a perf_mmap struct in the evlist->mmap list by its index.
+4) for_each_mmap(md, evlist)
+   traverse all perf_mmap structures in the evlist->mmap list.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -47,190 +56,191 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/util/evlist.c |    4 +++-
- tools/perf/util/evsel.c  |   19 +++++++++++++++++--
- tools/perf/util/evsel.h  |    5 ++++-
- tools/perf/util/header.c |   28 ++++++++++++++++++----------
- tools/perf/util/header.h |    3 ++-
- 5 files changed, 44 insertions(+), 15 deletions(-)
+ tools/perf/Makefile         |    3 ++-
+ tools/perf/builtin-record.c |    8 +++----
+ tools/perf/util/evlist.c    |   49 ++++++++++++++++++++++++++-----------------
+ tools/perf/util/evlist.h    |    8 ++++++-
+ 4 files changed, 43 insertions(+), 25 deletions(-)
 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a2108ca..7f3f066 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -209,7 +209,8 @@ BASIC_CFLAGS = \
+ 	-Iutil \
+ 	-I. \
+ 	-I$(TRACE_EVENT_DIR) \
+-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
++	-std=gnu99
+ 
+ BASIC_LDFLAGS =
+ 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 774c907..3bca0b2 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -363,12 +363,12 @@ static struct perf_event_header finished_round_event = {
+ 
+ static int perf_record__mmap_read_all(struct perf_record *rec)
+ {
+-	int i;
+ 	int rc = 0;
++	struct perf_mmap *pmmap = NULL;
+ 
+-	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
+-		if (rec->evlist->mmap[i].base) {
+-			if (perf_record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
++	for_each_mmap(pmmap, rec->evlist) {
++		if (pmmap->base) {
++			if (perf_record__mmap_read(rec, pmmap) != 0) {
+ 				rc = -1;
+ 				goto out;
+ 			}
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 7515651..c1cd8f9 100644
+index d5063d6..7515651 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -287,8 +287,10 @@ static void perf_evlist__id_hash(struct perf_evlist *evlist,
- void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id)
+@@ -336,7 +336,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
+ 
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
  {
-+	u64* idp = perf_evsel__get_id(evsel, -1);
- 	perf_evlist__id_hash(evlist, evsel, cpu, thread, id);
--	evsel->id[evsel->ids++] = id;
-+	*idp = id;
-+	evsel->ids++;
- }
+-	struct perf_mmap *md = &evlist->mmap[idx];
++	struct perf_mmap *md = perf_evlist__get_mmap(evlist, idx);
+ 	unsigned int head = perf_mmap__read_head(md);
+ 	unsigned int old = md->prev;
+ 	unsigned char *data = md->base + page_size;
+@@ -401,16 +401,16 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
  
- static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 57c569d..015321f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -623,7 +623,7 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
- 	if (evsel->sample_id == NULL)
- 		return -ENOMEM;
- 
--	evsel->id = zalloc(ncpus * nthreads * sizeof(u64));
-+	evsel->id = xyarray__new(1, ncpus * nthreads, sizeof(u64));
- 	if (evsel->id == NULL) {
- 		xyarray__delete(evsel->sample_id);
- 		evsel->sample_id = NULL;
-@@ -633,6 +633,21 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
- 	return 0;
- }
- 
-+void perf_evsel__id_new(struct perf_evsel *evsel, int nr)
-+{
-+	if (evsel->id)
-+		xyarray__delete(evsel->id);
-+
-+	evsel->id = NULL;
-+
-+	evsel->id = xyarray__new(1, nr, sizeof(u64));
-+}
-+
-+u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx)
-+{
-+	return (u64 *)xyarray__entry(evsel->id, 0, idx);
-+}
-+
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
+ void perf_evlist__munmap(struct perf_evlist *evlist)
  {
- 	evsel->counts = zalloc((sizeof(*evsel->counts) +
-@@ -650,7 +665,7 @@ void perf_evsel__free_id(struct perf_evsel *evsel)
- {
- 	xyarray__delete(evsel->sample_id);
- 	evsel->sample_id = NULL;
--	free(evsel->id);
-+	xyarray__delete(evsel->id);
- 	evsel->id = NULL;
- }
+-	int i;
++	struct perf_mmap *pmmap = NULL;
  
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 52021c3..7adb116 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -51,7 +51,7 @@ struct perf_evsel {
- 	char			*filter;
- 	struct xyarray		*fd;
- 	struct xyarray		*sample_id;
--	u64			*id;
-+	struct xyarray		*id;
- 	struct perf_counts	*counts;
- 	struct perf_counts	*prev_raw_counts;
- 	int			idx;
-@@ -125,6 +125,9 @@ void perf_evsel__free_id(struct perf_evsel *evsel);
- void perf_evsel__free_counts(struct perf_evsel *evsel);
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
-+void perf_evsel__id_new(struct perf_evsel *evsel, int nr);
-+u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx);
-+
- void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
- 				  enum perf_event_sample_format bit);
- void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index f4bfd79..d344e61 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1325,19 +1325,18 @@ read_event_desc(struct perf_header *ph, int fd)
- 		if (!nr)
- 			continue;
- 
--		id = calloc(nr, sizeof(*id));
--		if (!id)
--			goto error;
- 		evsel->ids = nr;
--		evsel->id = id;
-+		perf_evsel__id_new(evsel, nr);
-+		if (!evsel->id)
-+			goto error;
- 
- 		for (j = 0 ; j < nr; j++) {
-+			id = perf_evsel__get_id(evsel, j);
- 			ret = readn(fd, id, sizeof(*id));
- 			if (ret != (ssize_t)sizeof(*id))
- 				goto error;
- 			if (ph->needs_swap)
- 				*id = bswap_64(*id);
--			id++;
+-	for (i = 0; i < evlist->nr_mmaps; i++) {
+-		if (evlist->mmap[i].base != NULL) {
+-			munmap(evlist->mmap[i].base, evlist->mmap_len);
+-			evlist->mmap[i].base = NULL;
++	for_each_mmap(pmmap, evlist) {
++		if (pmmap->base != NULL) {
++			munmap(pmmap->base, evlist->mmap_len);
++			pmmap->base = NULL;
  		}
  	}
- out:
-@@ -1384,7 +1383,8 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
  
- 		if (evsel->ids) {
- 			fprintf(fp, ", id = {");
--			for (j = 0, id = evsel->id; j < evsel->ids; j++, id++) {
-+			for (j = 0; j < evsel->ids; j++) {
-+				id = perf_evsel__get_id(evsel, j);
- 				if (j)
- 					fputc(',', fp);
- 				fprintf(fp, " %"PRIu64, *id);
-@@ -2880,12 +2880,15 @@ out_delete_evlist:
+-	free(evlist->mmap);
++	xyarray__delete(evlist->mmap);
+ 	evlist->mmap = NULL;
  }
  
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u32 ids, u64 *id,
-+				struct perf_event_attr *attr,
-+				struct perf_evsel *evsel,
- 				perf_event__handler_t process)
+@@ -419,19 +419,21 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
+ 	if (cpu_map__all(evlist->cpus))
+ 		evlist->nr_mmaps = evlist->threads->nr;
+-	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
++	evlist->mmap = xyarray__new(1, evlist->nr_mmaps, sizeof(struct perf_mmap));
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ }
+ 
+ static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ 			       int idx, int prot, int mask, int fd)
  {
- 	union perf_event *ev;
- 	size_t size;
- 	int err;
-+	u32 ids = evsel->ids;
-+	u32 i;
- 
- 	size = sizeof(struct perf_event_attr);
- 	size = PERF_ALIGN(size, sizeof(u64));
-@@ -2898,7 +2901,12 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- 		return -ENOMEM;
- 
- 	ev->attr.attr = *attr;
--	memcpy(ev->attr.id, id, ids * sizeof(u64));
-+	for (i = 0; i < ids; i++) {
-+		u64 *id;
+-	evlist->mmap[idx].prev = 0;
+-	evlist->mmap[idx].mask = mask;
+-	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
++	struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, idx);
 +
-+		id = perf_evsel__get_id(evsel, i);
-+		ev->attr.id[i] = *id;
-+        }
++	pmmap->prev = 0;
++	pmmap->mask = mask;
++	pmmap->base = mmap(NULL, evlist->mmap_len, prot,
+ 				      MAP_SHARED, fd, 0);
+-	if (evlist->mmap[idx].base == MAP_FAILED) {
+-		evlist->mmap[idx].base = NULL;
++	if (pmmap->base == MAP_FAILED) {
++		pmmap->base = NULL;
+ 		return -1;
+ 	}
  
- 	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
- 	ev->attr.header.size = (u16)size;
-@@ -2921,8 +2929,8 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- 	int err = 0;
+@@ -472,9 +474,11 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
  
- 	list_for_each_entry(evsel, &session->evlist->entries, node) {
--		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
--						  evsel->id, process);
-+		err = perf_event__synthesize_attr(tool, &evsel->attr,
-+						  evsel, process);
- 		if (err) {
- 			pr_debug("failed to create perf header attribute\n");
- 			return err;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index c9fc55c..60f85ca 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -126,7 +126,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+ out_unmap:
+ 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+-		if (evlist->mmap[cpu].base != NULL) {
+-			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
+-			evlist->mmap[cpu].base = NULL;
++		struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, cpu);
++
++		if (pmmap->base != NULL) {
++			munmap(pmmap->base, evlist->mmap_len);
++			pmmap->base = NULL;
+ 		}
+ 	}
+ 	return -1;
+@@ -511,9 +515,11 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
  
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u32 ids, u64 *id,
-+				struct perf_event_attr *attr,
-+				struct perf_evsel *evsel,
- 				perf_event__handler_t process);
- int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				 struct perf_session *session,
+ out_unmap:
+ 	for (thread = 0; thread < evlist->threads->nr; thread++) {
+-		if (evlist->mmap[thread].base != NULL) {
+-			munmap(evlist->mmap[thread].base, evlist->mmap_len);
+-			evlist->mmap[thread].base = NULL;
++		struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, thread);
++
++		if (pmmap->base != NULL) {
++			munmap(pmmap->base, evlist->mmap_len);
++			pmmap->base = NULL;
+ 		}
+ 	}
+ 	return -1;
+@@ -572,6 +578,11 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+ }
+ 
++struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx) 
++{
++	return (struct perf_mmap *)xyarray__entry(evlist->mmap, 0, idx);
++}
++
+ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ 			     struct perf_target *target)
+ {
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 2dd07bd..eb22e49 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -7,6 +7,7 @@
+ #include "event.h"
+ #include "evsel.h"
+ #include "util.h"
++#include "xyarray.h"
+ #include <unistd.h>
+ 
+ struct pollfd;
+@@ -37,7 +38,7 @@ struct perf_evlist {
+ 		pid_t	pid;
+ 	} workload;
+ 	bool		 overwrite;
+-	struct perf_mmap *mmap;
++	struct xyarray	 *mmap;
+ 	struct pollfd	 *pollfd;
+ 	struct thread_map *threads;
+ 	struct cpu_map	  *cpus;
+@@ -131,6 +132,8 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 				   struct list_head *list,
+ 				   int nr_entries);
+ 
++struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx);
++
+ static inline struct perf_evsel *perf_evlist__first(struct perf_evlist *evlist)
+ {
+ 	return list_entry(evlist->entries.next, struct perf_evsel, node);
+@@ -163,4 +166,7 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
+ 	pc->data_tail = tail;
+ }
+ 
++#define for_each_mmap(pmmap, evlist) \
++	xyarray_for_each_content(pmmap, &evlist->mmap->rows[0].head, struct perf_mmap)
++
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.7.9.5
 
