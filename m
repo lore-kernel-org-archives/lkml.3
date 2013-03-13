@@ -1,167 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965010Ab3CMXcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:32:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51230 "EHLO
+	id S964896Ab3CMX2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:28:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51165 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964922Ab3CMX2l (ORCPT
+	with ESMTP id S964854Ab3CMX2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:28:41 -0400
+	Wed, 13 Mar 2013 19:28:35 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 25/27] PCI: Make piix4 quirk to use addon_res
-Date: Wed, 13 Mar 2013 16:28:20 -0700
-Message-Id: <1363217302-14383-26-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 14/27] PCI: Use for_each_pci_resource() in pci_assign_resource
+Date: Wed, 13 Mar 2013 16:28:09 -0700
+Message-Id: <1363217302-14383-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After they are put in add-on resources, they will be safely claimed later.
+Also replace dev->resource[n] with pci_dev_resource_n().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/quirks.c |   93 +++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 77 insertions(+), 16 deletions(-)
+ drivers/pci/setup-res.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 0369fb6..7e5392c 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -383,14 +383,14 @@ static void quirk_ali7101_acpi(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,	PCI_DEVICE_ID_AL_M7101,		quirk_ali7101_acpi);
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 81b88bd..94ef232 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -110,7 +110,7 @@ void pci_update_resource(struct pci_dev *dev, int resno)
  
--static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-+static int piix4_read_io(struct pci_dev *dev, struct resource *res, int port)
+ int pci_claim_resource(struct pci_dev *dev, int resource)
  {
- 	u32 devres;
- 	u32 mask, size, base;
-+	struct pci_bus_region bus_region;
+-	struct resource *res = &dev->resource[resource];
++	struct resource *res = pci_dev_resource_n(dev, resource);
+ 	struct resource *root, *conflict;
  
- 	pci_read_config_dword(dev, port, &devres);
--	if ((devres & enable) != enable)
--		return;
-+
- 	mask = (devres >> 16) & 15;
- 	base = devres & 0xffff;
- 	size = 16;
-@@ -400,23 +400,53 @@ static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int p
- 			break;
- 		size = bit;
- 	}
--	/*
--	 * For now we only print it out. Eventually we'll want to
--	 * reserve it (at least if it's in the 0x1000+ range), but
--	 * let's get enough confirmation reports first. 
--	 */
- 	base &= -size;
--	dev_info(&dev->dev, "%s PIO at %04x-%04x\n", name, base, base + size - 1);
-+
-+	bus_region.start = base;
-+	bus_region.end = base + size - 1;
-+	res->flags |= IORESOURCE_IO;
-+	pcibios_bus_to_resource(dev, res, &bus_region);
-+	dev_info(&dev->dev, "PIO at %pR\n", res);
-+
-+	return 0;
- }
-+static int piix4_write_io(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	struct pci_bus_region bus_region;
-+
-+	pcibios_resource_to_bus(dev, &bus_region, res);
- 
--static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-+	pci_read_config_dword(dev, port, &devres);
-+	devres &= 0xffff0000;
-+	devres |= bus_region.start & 0xffff;
-+	pci_write_config_dword(dev, port, devres);
-+
-+	return 0;
-+}
-+static struct resource_ops piix4_io_ops = {
-+	.read = piix4_read_io,
-+	.write = piix4_write_io,
-+};
-+static void piix4_io_quirk(struct pci_dev *dev, char *name, unsigned int port,
-+				unsigned int enable)
+ 	root = pci_find_parent_resource(dev, res);
+@@ -200,7 +200,7 @@ static int pci_revert_fw_address(struct resource *res, struct pci_dev *dev,
+ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+ 		int resno, resource_size_t size, resource_size_t align)
  {
- 	u32 devres;
--	u32 mask, size, base;
+-	struct resource *res = dev->resource + resno;
++	struct resource *res = pci_dev_resource_n(dev, resno);
+ 	resource_size_t min;
+ 	int ret;
  
- 	pci_read_config_dword(dev, port, &devres);
- 	if ((devres & enable) != enable)
- 		return;
-+
-+	pci_add_dev_addon_resource(dev, port, 0, &piix4_io_ops, name);
-+}
-+
-+static int piix4_read_mem(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	u32 mask, size, base;
-+	struct pci_bus_region bus_region;
-+
-+	pci_read_config_dword(dev, port, &devres);
- 	base = devres & 0xffff0000;
- 	mask = (devres & 0x3f) << 16;
- 	size = 128 << 16;
-@@ -426,12 +456,43 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
- 			break;
- 		size = bit;
- 	}
--	/*
--	 * For now we only print it out. Eventually we'll want to
--	 * reserve it, but let's get enough confirmation reports first. 
--	 */
- 	base &= -size;
--	dev_info(&dev->dev, "%s MMIO at %04x-%04x\n", name, base, base + size - 1);
-+	bus_region.start = base;
-+	bus_region.end = base + size - 1;
-+	res->flags |= IORESOURCE_MEM;
-+	pcibios_bus_to_resource(dev, res, &bus_region);
-+	dev_info(&dev->dev, "MMIO at %pR\n", res);
-+
-+	return 0;
-+}
-+static int piix4_write_mem(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	struct pci_bus_region bus_region;
-+
-+	pcibios_resource_to_bus(dev, &bus_region, res);
-+
-+	pci_read_config_dword(dev, port, &devres);
-+	devres &= 0x0000ffff;
-+	devres |= bus_region.start & 0xffff0000;
-+	pci_write_config_dword(dev, port, devres);
-+
-+	return 0;
-+}
-+static struct resource_ops piix4_mem_ops = {
-+	.read = piix4_read_mem,
-+	.write = piix4_write_mem,
-+};
-+static void piix4_mem_quirk(struct pci_dev *dev, char *name, unsigned int port,
-+				unsigned int enable)
-+{
-+	u32 devres;
-+
-+	pci_read_config_dword(dev, port, &devres);
-+	if ((devres & enable) != enable)
-+		return;
-+
-+	pci_add_dev_addon_resource(dev, port, 0, &piix4_mem_ops, name);
- }
+@@ -227,7 +227,7 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+ static int _pci_assign_resource(struct pci_dev *dev, int resno,
+ 				resource_size_t size, resource_size_t min_align)
+ {
+-	struct resource *res = dev->resource + resno;
++	struct resource *res = pci_dev_resource_n(dev, resno);
+ 	struct pci_bus *bus;
+ 	int ret;
+ 	char *type;
+@@ -259,7 +259,7 @@ static int _pci_assign_resource(struct pci_dev *dev, int resno,
  
- /*
+ int pci_assign_resource(struct pci_dev *dev, int resno)
+ {
+-	struct resource *res = dev->resource + resno;
++	struct resource *res = pci_dev_resource_n(dev, resno);
+ 	resource_size_t align, size;
+ 	struct pci_bus *bus;
+ 	int ret;
+@@ -295,7 +295,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
+ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsize,
+ 			resource_size_t min_align)
+ {
+-	struct resource *res = dev->resource + resno;
++	struct resource *res = pci_dev_resource_n(dev, resno);
+ 	resource_size_t new_size;
+ 	int ret;
+ 
+@@ -326,12 +326,10 @@ int pci_enable_resources(struct pci_dev *dev, int mask)
+ 	pci_read_config_word(dev, PCI_COMMAND, &cmd);
+ 	old_cmd = cmd;
+ 
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
++	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 		if (!(mask & (1 << i)))
+ 			continue;
+ 
+-		r = &dev->resource[i];
+-
+ 		if (!(r->flags & (IORESOURCE_IO | IORESOURCE_MEM)))
+ 			continue;
+ 		if ((i == PCI_ROM_RESOURCE) &&
 -- 
 1.7.10.4
 
