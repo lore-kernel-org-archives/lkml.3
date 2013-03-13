@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925Ab3CMRSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:18:36 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:64552 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322Ab3CMRSf (ORCPT
+	id S933831Ab3CMRUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:20:34 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:52317 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab3CMRUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:18:35 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: add usb 2.0 clock references to exynos5250 device tree
-Date: Wed, 13 Mar 2013 10:18:18 -0700
-Message-Id: <1363195099-15919-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Wed, 13 Mar 2013 13:20:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130305003219.14792.13300.sendpatchset@w520>
+References: <20130305003219.14792.13300.sendpatchset@w520>
+Date: Wed, 13 Mar 2013 18:20:32 +0100
+Message-ID: <CACRpkdbTXoB_zf1axVaM89Uoxa-vXWwgEHv9nWU-jbo_P1pioA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Renesas R-Car GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a fixup to two device tree nodes that have already landed but
-without clock nodes since the transition to common clock happened at
-the same time.
+On Tue, Mar 5, 2013 at 1:32 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/exynos5250.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+> +static int gpio_rcar_irq_set_type(struct irq_data *d, unsigned int type)
+> +{
+> +       struct gpio_rcar_priv *p = irq_data_get_irq_chip_data(d);
+> +       unsigned int hwirq = irqd_to_hwirq(d);
+> +
+> +       pr_debug("gpio: sense irq = %d, type = %d\n", hwirq, type);
+> +
+> +       switch (type & IRQ_TYPE_SENSE_MASK) {
+> +       case IRQ_TYPE_LEVEL_HIGH:
+> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, true, true);
+> +               break;
+> +       case IRQ_TYPE_LEVEL_LOW:
+> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, false, true);
+> +               break;
+> +       case IRQ_TYPE_EDGE_RISING:
+> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, true, false);
+> +               break;
+> +       case IRQ_TYPE_EDGE_FALLING:
+> +               gpio_rcar_config_interrupt_input_mode(p, hwirq, false, false);
+> +               break;
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 24c52e6..59be603 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -402,12 +402,18 @@
- 		compatible = "samsung,exynos4210-ehci";
- 		reg = <0x12110000 0x100>;
- 		interrupts = <0 71 0>;
-+
-+		clocks = <&clock 285>;
-+		clock-names = "usbhost";
- 	};
- 
- 	usb@12120000 {
- 		compatible = "samsung,exynos4210-ohci";
- 		reg = <0x12120000 0x100>;
- 		interrupts = <0 71 0>;
-+
-+		clocks = <&clock 285>;
-+		clock-names = "usbhost";
- 	};
- 
- 	amba {
--- 
-1.8.1.3
+It is quite common to request IRQ on *both* rising and falling edges,
+what happens then?
 
+See <linux/irqs.h>
+        IRQ_TYPE_EDGE_RISING    = 0x00000001,
+        IRQ_TYPE_EDGE_FALLING   = 0x00000002,
+        IRQ_TYPE_EDGE_BOTH      = (IRQ_TYPE_EDGE_FALLING |
+IRQ_TYPE_EDGE_RISING),
+
+I guess then you get just rising edge...
+
+
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +       return 0;
+> +}
+
+(...)
+
+The rest I think is already covered by Laurent's comments.
+
+Yours,
+Linus Walleij
