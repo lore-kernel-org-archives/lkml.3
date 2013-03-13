@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3CMGcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:32:00 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:58139 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3CMGb7 (ORCPT
+	id S1755966Ab3CMGdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:33:19 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52149 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab3CMGdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:31:59 -0400
-Date: Wed, 13 Mar 2013 07:31:57 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Hogan <james.hogan@imgtec.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-next@vger.kernel.org
-Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
-Message-ID: <20130313063157.GB19681@merkur.ravnborg.org>
-References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au> <87ehfkuq27.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehfkuq27.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 13 Mar 2013 02:33:12 -0400
+X-AuditID: 9c93016f-b7bfaae000003db8-11-51401da48510
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Anderson <anderson@redhat.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        Vivek Goyal <vgoyal@redhat.com>, Bob Liu <lliubbo@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, kexec@lists.infradead.org,
+        Joonsoo Kim <js1304@gmail.com>, Eric Biederman <ebiederm@xmission.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 7/8] mm, vmalloc: export vmap_area_list, instead of vmlist
+Date: Wed, 13 Mar 2013 15:32:59 +0900
+Message-Id: <1363156381-2881-8-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> actually, y'know, proof-read it.
-Hmm..
+From: Joonsoo Kim <js1304@gmail.com>
 
+Although our intention is to unexport internal structure entirely,
+but there is one exception for kexec. kexec dumps address of vmlist
+and makedumpfile uses this information.
 
-> +                   $(KERNELRELEASE) "$(patsubst y,_,$(CONFIG_HAVE_SYMBOL_PREFIX_UNDERSCORE))"
->  
-> +config HAVE_UNDERSCORE_SYMBOL_PREFIX
+We are about to remove vmlist, then another way to retrieve information
+of vmalloc layer is needed for makedumpfile. For this purpose,
+we export vmap_area_list, instead of vmlist.
 
-HAVE_UNDERSCORE_... or HAVE_SYMBOL_... confusion.
-I prefer the HAVE_SYMBOL_... variant but no strong feelings..
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: Dave Anderson <anderson@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-> + *
-> + * If you think the above arrogance just encourages more people to add
-> + * random crap to this file, you're not alone.
-Kill this.
-
->  /* Some toolchains use a `_' prefix for all user symbols. */
-> -#ifdef CONFIG_SYMBOL_PREFIX
-> -#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
-> +#ifdef CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX
-> +#define __VMLINUX_SYMBOL(x) _##x
-> +#define __VMLINUX_SYMBOL_STR(x) "_" #x
-> +#define VMLINUX_SYMBOL_PREFIX_STR "_"
->  #else
-> -#define MODULE_SYMBOL_PREFIX ""
-> +#define __VMLINUX_SYMBOL(x) x
-> +#define __VMLINUX_SYMBOL_STR(x) #x
-> +#define VMLINUX_SYMBOL_PREFIX_STR ""
->  #endif
-
-We know the prefix is an underscore. No benefits from defining
-VMLINUX_SYMBOL_PREFIX_STR. The config name even syas so.
-Skipping the above give us only one way to check
-for the prefix - today we mix the two.
-
-	Sam
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 698b1e5..8a25f90 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -130,8 +130,7 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
+ /*
+  *	Internals.  Dont't use..
+  */
+-extern rwlock_t vmlist_lock;
+-extern struct vm_struct *vmlist;
++extern struct list_head vmap_area_list;
+ extern __init void vm_area_add_early(struct vm_struct *vm);
+ extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
+ 
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index bddd3d7..d9bfc6c 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1489,7 +1489,7 @@ static int __init crash_save_vmcoreinfo_init(void)
+ 	VMCOREINFO_SYMBOL(swapper_pg_dir);
+ #endif
+ 	VMCOREINFO_SYMBOL(_stext);
+-	VMCOREINFO_SYMBOL(vmlist);
++	VMCOREINFO_SYMBOL(vmap_area_list);
+ 
+ #ifndef CONFIG_NEED_MULTIPLE_NODES
+ 	VMCOREINFO_SYMBOL(mem_map);
+diff --git a/mm/nommu.c b/mm/nommu.c
+index e193280..ed82358 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -228,8 +228,7 @@ int follow_pfn(struct vm_area_struct *vma, unsigned long address,
+ }
+ EXPORT_SYMBOL(follow_pfn);
+ 
+-DEFINE_RWLOCK(vmlist_lock);
+-struct vm_struct *vmlist;
++LIST_HEAD(vmap_area_list);
+ 
+ void vfree(const void *addr)
+ {
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index bda6cef..7e63984 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -261,7 +261,8 @@ struct vmap_area {
+ };
+ 
+ static DEFINE_SPINLOCK(vmap_area_lock);
+-static LIST_HEAD(vmap_area_list);
++/* Export for kexec only */
++LIST_HEAD(vmap_area_list);
+ static struct rb_root vmap_area_root = RB_ROOT;
+ 
+ /* The vmap cache globals are protected by vmap_area_lock */
+@@ -272,6 +273,10 @@ static unsigned long cached_align;
+ 
+ static unsigned long vmap_area_pcpu_hole;
+ 
++/*** Old vmalloc interfaces ***/
++static DEFINE_RWLOCK(vmlist_lock);
++static struct vm_struct *vmlist;
++
+ static struct vmap_area *__find_vmap_area(unsigned long addr)
+ {
+ 	struct rb_node *n = vmap_area_root.rb_node;
+@@ -1283,10 +1288,6 @@ int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
+ }
+ EXPORT_SYMBOL_GPL(map_vm_area);
+ 
+-/*** Old vmalloc interfaces ***/
+-DEFINE_RWLOCK(vmlist_lock);
+-struct vm_struct *vmlist;
+-
+ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+ 			      unsigned long flags, const void *caller)
+ {
+-- 
+1.7.9.5
 
