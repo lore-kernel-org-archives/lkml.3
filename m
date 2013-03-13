@@ -1,164 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3CMLAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 07:00:41 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:53928 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab3CMLAk (ORCPT
+	id S932528Ab3CMLDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 07:03:42 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:39258 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab3CMLDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 07:00:40 -0400
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, Magnus Damm <magnus.damm@gmail.com>,
-        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
-Date: Wed, 13 Mar 2013 20:06:30 +0900
-Message-Id: <20130313110630.30040.20743.sendpatchset@w520>
-Subject: [PATCH] gpio: em: Make use of devm functions
+	Wed, 13 Mar 2013 07:03:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130313032334.GU21651@dastard>
+References: <1362612111-28673-1-git-send-email-walken@google.com>
+	<1362612111-28673-12-git-send-email-walken@google.com>
+	<20130309003221.GE23616@dastard>
+	<CANN689F9Zy=cTdi3D4d4iw66eeGLTtpudmAJgxYHGgDUsNU2Mg@mail.gmail.com>
+	<20130311001650.GB20565@dastard>
+	<CANN689FF+fjphwNqRz_ixpo4hW-rkXq6fbmJf7xDacBbP48BXw@mail.gmail.com>
+	<20130312023658.GH21651@dastard>
+	<CANN689Hu4S6hQaZ0tytNuToCpwtdJmyisyqyrDrNK+buJXTsKA@mail.gmail.com>
+	<20130313032334.GU21651@dastard>
+Date: Wed, 13 Mar 2013 04:03:40 -0700
+Message-ID: <CANN689Fvc_sETcPx47LEMHbfSQ9n7c4sTgoum_3Kw0T-4+D9RQ@mail.gmail.com>
+Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a reader
+From: Michel Lespinasse <walken@google.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Tue, Mar 12, 2013 at 8:23 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Mar 11, 2013 at 11:43:34PM -0700, Michel Lespinasse wrote:
+>> I find the name 'barrier' actually confusing when used to describe
+>> synchronous operations.  To me a barrier is usualy between
+>> asynchronous operations, and it is well defined which operations
+>> are ahead or behind of the barrier (either because they were
+>> queued by the same thread, or they were queued by different
+>> threads which may have synchronized together some other way).
+>
+> When you have hundreds or thousands of threads doing IO to the one
+> file, it doesn't matter if the IO is issued synchronously or
+> asynchronously by the threads - you simply have a huge amount of
+> data IO concurrency and very, very deep pipelines.
+>
+> Inserting a metadata modification (truncate, preallocation,
+> holepunch, etc) into that pipeline currently causes all new
+> submissions to queue behind the metadata modification, waits for
+> everything submitted before the metadata modification to complete
+> and then runs the metadata modification. Once it completes, it then
+> allows everything queued up to the next metadata modification to
+> run....
+>
+> That matches your definition of a barrier pretty well, I think.
 
-Update the Emma Mobile GPIO driver to make use of devm
-functions. This simplifies the error handling and makes
-the code more compact.
+The difference I see is that with async operations one can easily tell
+when the desired operations made it into the queue:
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+t1()
+async_submit(request X)
+t2()
+..
+..
+..
+(eventually) request X completes
 
- Written on top of:
- [PATCH] gpio: em: Add Device Tree support
+After t2 we know the operation is queued, and thus we can legitimately
+expect that new operations submitted after t2 should logically run
+after request X.
 
- drivers/gpio/gpio-em.c |   53 +++++++++++++++++-------------------------------
- 1 file changed, 19 insertions(+), 34 deletions(-)
 
---- 0002/drivers/gpio/gpio-em.c
-+++ work/drivers/gpio/gpio-em.c	2013-03-13 18:52:14.000000000 +0900
-@@ -245,7 +245,7 @@ static int em_gio_probe(struct platform_
- 	const char *name = dev_name(&pdev->dev);
- 	int ret;
- 
--	p = kzalloc(sizeof(*p), GFP_KERNEL);
-+	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
- 	if (!p) {
- 		dev_err(&pdev->dev, "failed to allocate driver data\n");
- 		ret = -ENOMEM;
-@@ -264,21 +264,23 @@ static int em_gio_probe(struct platform_
- 	if (!io[0] || !io[1] || !irq[0] || !irq[1]) {
- 		dev_err(&pdev->dev, "missing IRQ or IOMEM\n");
- 		ret = -EINVAL;
--		goto err1;
-+		goto err0;
- 	}
- 
--	p->base0 = ioremap_nocache(io[0]->start, resource_size(io[0]));
-+	p->base0 = devm_ioremap_nocache(&pdev->dev, io[0]->start,
-+					resource_size(io[0]));
- 	if (!p->base0) {
- 		dev_err(&pdev->dev, "failed to remap low I/O memory\n");
- 		ret = -ENXIO;
--		goto err1;
-+		goto err0;
- 	}
- 
--	p->base1 = ioremap_nocache(io[1]->start, resource_size(io[1]));
-+	p->base1 = devm_ioremap_nocache(&pdev->dev, io[1]->start,
-+				   resource_size(io[1]));
- 	if (!p->base1) {
- 		dev_err(&pdev->dev, "failed to remap high I/O memory\n");
- 		ret = -ENXIO;
--		goto err2;
-+		goto err0;
- 	}
- 
- 	if (!pdata) {
-@@ -289,13 +291,13 @@ static int em_gio_probe(struct platform_
- 					 &pdata->number_of_pins)) {
- 			dev_err(&pdev->dev, "Missing ngpios OF property\n");
- 			ret = -EINVAL;
--			goto err3;
-+			goto err0;
- 		}
- 
- 		ret = of_alias_get_id(pdev->dev.of_node, "gpio");
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "Couldn't get OF id\n");
--			goto err3;
-+			goto err0;
- 		}
- 		pdata->gpio_base = ret * 32; /* 32 GPIOs per instance */
- 	}
-@@ -327,40 +329,32 @@ static int em_gio_probe(struct platform_
- 	if (!p->irq_domain) {
- 		ret = -ENXIO;
- 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
--		goto err3;
-+		goto err0;
- 	}
- 
--	if (request_irq(irq[0]->start, em_gio_irq_handler, 0, name, p)) {
-+	if (devm_request_irq(&pdev->dev, irq[0]->start,
-+			     em_gio_irq_handler, 0, name, p)) {
- 		dev_err(&pdev->dev, "failed to request low IRQ\n");
- 		ret = -ENOENT;
--		goto err4;
-+		goto err1;
- 	}
- 
--	if (request_irq(irq[1]->start, em_gio_irq_handler, 0, name, p)) {
-+	if (devm_request_irq(&pdev->dev, irq[1]->start,
-+			     em_gio_irq_handler, 0, name, p)) {
- 		dev_err(&pdev->dev, "failed to request high IRQ\n");
- 		ret = -ENOENT;
--		goto err5;
-+		goto err1;
- 	}
- 
- 	ret = gpiochip_add(gpio_chip);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to add GPIO controller\n");
--		goto err6;
-+		goto err1;
- 	}
- 	return 0;
- 
--err6:
--	free_irq(irq[1]->start, pdev);
--err5:
--	free_irq(irq[0]->start, pdev);
--err4:
--	irq_domain_remove(p->irq_domain);
--err3:
--	iounmap(p->base1);
--err2:
--	iounmap(p->base0);
- err1:
--	kfree(p);
-+	irq_domain_remove(p->irq_domain);
- err0:
- 	return ret;
- }
-@@ -368,22 +362,13 @@ err0:
- static int em_gio_remove(struct platform_device *pdev)
- {
- 	struct em_gio_priv *p = platform_get_drvdata(pdev);
--	struct resource *irq[2];
- 	int ret;
- 
- 	ret = gpiochip_remove(&p->gpio_chip);
- 	if (ret)
- 		return ret;
- 
--	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
--
--	free_irq(irq[1]->start, pdev);
--	free_irq(irq[0]->start, pdev);
- 	irq_domain_remove(p->irq_domain);
--	iounmap(p->base1);
--	iounmap(p->base0);
--	kfree(p);
- 	return 0;
- }
- 
+With sync operations we can't make that observation as the caller
+thread is blocked:
+
+t1()
+begin system call
+..
+..
+request X gets queued
+..
+..
+request X completes
+..
+..
+system call completes
+t2()
+
+Userspace can't pinpoint exactly when did the request get onto the queue.
+
+If another request Y gets submitted between t1 and t2, userspace can
+never know for sure if Y was before of after X in the queue, so the
+proposed reordering should be (my claim) not observable by userspace,
+in the sense that it never produces a result that wasn't already
+possible before.
+
+
+
+
+Anyway, I didn't intend for the proposed change to warrant a thread of
+this size. I will abandon patch 10 and propose a different (slightly
+longer, but without reordering) change to replace patch 11.
+
+Thanks,
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
