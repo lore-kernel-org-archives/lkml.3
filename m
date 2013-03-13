@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934247Ab3CMUtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:49:46 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42460 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab3CMUto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:49:44 -0400
-Date: Wed, 6 Mar 2013 20:55:53 -0500
-From: Andrew Shewmaker <agshew@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: Re: [PATCH v5 1/2] mm: limit growth of 3% hardcoded other user
- reserve
-Message-ID: <20130307015553.GA5495@localhost.localdomain>
-References: <20130306235201.GA1421@localhost.localdomain>
- <20130312160136.b0f09ca7b1b4f2efe01f6617@linux-foundation.org>
+	id S934283Ab3CMUup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:50:45 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:45057 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933178Ab3CMUun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 16:50:43 -0400
+Message-ID: <5140E6A1.20107@sgi.com>
+Date: Wed, 13 Mar 2013 15:50:41 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130312160136.b0f09ca7b1b4f2efe01f6617@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
+References: <51265E0F.6090209@sgi.com> <1361550275-5716-1-git-send-email-nzimmer@sgi.com> <3505617.pgqBjPDzlA@vostro.rjw.lan>
+In-Reply-To: <3505617.pgqBjPDzlA@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 04:01:36PM -0700, Andrew Morton wrote:
-> On Wed, 6 Mar 2013 18:52:01 -0500 Andrew Shewmaker <agshew@gmail.com> wrote:
-> 
-> > Add user_reserve_pages knob.
-> > 
-> > Limit the growth of the memory reserved for other user
-> > processes to min(3% current process, user_reserve_pages).
-> > 
-> > user_reserve_pages defaults to min(3% free pages, 128MB)
-> > I arrived at 128MB by taking that max VSZ of sshd, login, 
-> > bash, and top ... then adding the RSS of each.
-> > 
-> > This only affects OVERCOMMIT_NEVER mode.
-> 
-> Can we have a more complete changelog, please?  One which describes, at
-> great length, *why* we're doing this.  Describe the problems you
-> observed, the possible means of addressing them, why this means is
-> considered best, etc.
-> 
-> Also, there has been considerable discussion over this patchset and it
-> is good to update the changelogs to reflect that discussion.  Partly
-> because other people will be asking the same questions when they see
-> the patches and partly so that reviewers can understand how earlier
-> objections/suggestions were addressed.  Assume that your audience
-> has not read this email thread!
-> 
-> From a quick read of the code, it appears that the root-cant-log-in
-> problem was addressed by simply leaving it up to the administrator,
-> yes?  If the administrator sets user_reserve_pages or
-> admin_reserve_pages to zero then they risk hitting the root-cant-log-in
-> problem, yes?  If so then I guess this is an OK approach, but we should
-> clearly describe the risks in the documentation.
-> 
-> Finally, I am allergic to exported interfaces which deal in "pages". 
-> Because PAGE_SIZE can vary by a factor of 16 depending upon config (ie:
-> architecture).  The risk is that a setup script which works nicely on
-> 4k x86_64 will waste memory when executed on a 64k PAGE_SIZE powerpc
-> box.  A smart programmer will recognize this and will adapt the setting
-> using getpagesize(2), but if we define these things in "bytes" rather
-> than "pages" then dumb programmers can use it too.
+On 03/11/2013 06:23 PM, Rafael J. Wysocki wrote:
+> On Friday, February 22, 2013 10:24:33 AM Nathan Zimmer wrote:
+>> I am noticing the cpufreq_driver_lock is quite hot.
+>> On an idle 512 system perf shows me most of the system time is spent on this
+>> lock.  This is quite significant as top shows 5% of time in system time.
+>> My solution was to first convert the lock to a rwlock and then to the rcu.
+>>
+>> v2: Rebase
+>>
+>> v3: Read the RCU documentation instead of skimming it.  Also I based on
+>> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.9-rc1
+>> I assumed that was what you would prefer Rafael.
+>>
+>> v4: Removed an unnecessary syncronize_rcu().
+>>
+>>
+>> Nathan Zimmer (2):
+>>    cpufreq: Convert the cpufreq_driver_lock to a rwlock
+>>    cpufreq: Convert the cpufreq_driver_lock to use the rcu
+>>
+>>   drivers/cpufreq/cpufreq.c | 286 ++++++++++++++++++++++++++++++++++------------
+>>   1 file changed, 211 insertions(+), 75 deletions(-)
+> I'm going to take patch [1/2] for v3.10, but patch [2/2] still needs some
+> work it seems.  Is that correct?  If so, are you going to send an update?
+>
+> Rafael
+>
 
-I'll get right on a version with an interface that uses kbytes, and 
-I'll put a lot more detail in the changelog. I'll also document how 
-I'm testing.
+Viresh pointed out that cpufreq_cpu_data still needs a lock.
+This means placing a vanilla spinlock back into __cpufreq_cpu_get which 
+is what I need to avoid.  I haven't had the time I should to sort that out.
 
-As long as  admin_reserve_pages is set to at least 8MB for 
-OVERCOMMIT_GUESS or above 128MB for OVERCOMMIT_NEVER, I was able to 
-log in as root and kill processes. The root-cant-log-in problem 
-cannot be hit if user_reserve_pages is set to 0 because that 
-reserve only exists in OVERCOMMIT_NEVER mode.
 
-Should I enforce a minimum for the admin reserve? 8MB/128MB for the 
-overcommit guess/never modes? I was hesitant to do that since my 
-numbers are based a full-featured distro's versions of login, bash,
-etc. A more svelte distro based on BusyBox might want different 
-minimums.
+Nate
 
-I have a question concerning the variable names. Might a person 
-looking at the source be confused why admin_reserve_kbytes and 
-user_reserve_kbytes are not included in totalreserve_pages? Should 
-I use a word other than "reserve" in the names, like "safetynet"? 
-I can't think of anything better. Maybe it isn't a concern, but 
-I didn't want to cause confusion.
 
-Thanks for the feedback!
