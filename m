@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab3CMSKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:10:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36925 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab3CMSKx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 14:10:53 -0400
-Message-ID: <5140C12A.4060900@wwwdotorg.org>
-Date: Wed, 13 Mar 2013 12:10:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S934025Ab3CMSM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:12:56 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37067 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932346Ab3CMSMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 14:12:54 -0400
+Date: Wed, 13 Mar 2013 13:12:51 -0500
+From: Robin Holt <holt@sgi.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        dhowells@redhat.com, sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+Message-ID: <20130313181251.GA6023@sgi.com>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
+ <CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
+ <CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
+ <CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
+ <CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
+ <CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
+ <CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
+ <CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com>
 MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [RFC 1/1] clk: Add notifier support in clk_prepare_enable/clk_disable_unprepare
-References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>  <20130312134032.GU4977@n2100.arm.linux.org.uk>  <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>  <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org> <1363153204.3311.14.camel@bilhuang-vm1>
-In-Reply-To: <1363153204.3311.14.camel@bilhuang-vm1>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-9
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2013 11:40 PM, Bill Huang wrote:
-> On Wed, 2013-03-13 at 13:24 +0800, Stephen Warren wrote:
->> On 03/12/2013 11:08 PM, Bill Huang wrote:
->>> On Wed, 2013-03-13 at 12:42 +0800, Stephen Warren wrote:
->>>> On 03/12/2013 07:47 PM, Bill Huang wrote:
->>>>> On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
->>>>>> On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
->>>>>>> Add the below four notifier events so drivers which are interested in
->>>>>>> knowing the clock status can act accordingly. This is extremely useful
->>>>>>> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
->>>>>>>
->>>>>>> PRE_CLK_ENABLE
->>>>>>> POST_CLK_ENABLE
->>>>>>> PRE_CLK_DISABLE
->>>>>>> POST_CLK_DISABLE
-...
->>> Thanks, I know the point, but unfortunately there is no good choice for
->>> hooking this since those low level functions clk_enable/clk_disable will
->>> be called in interrupt context so it is not possible to send notify. We
->>> might need to come out a better approach if we can think of any.
->>> Currently I still think this is acceptable (Having all the drivers which
->>> are using our interested clocks call these function to enable/disable
->>> clock in their runtime_pm calls) though it's not perfect. 
->>
->> No, that definitely won't work. Not all drivers use those APIs, nor
->> should they.
->>
-> That will be too bad, it looks like we deadlock in the mechanism, we
-> cannot change existing drivers behavior (that means some call
-> clk_disable/enable directly, some are not), and we cannot hook notifier
-> in clk_disable/enable either, that means there seems no any chance to
-> get what we want, any idea?
+On Wed, Mar 13, 2013 at 05:51:33PM +0100, Sedat Dilek wrote:
+> On Wed, Mar 13, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> >
+> >> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
+> >> when the kernel-module is loaded.
+> >> So, is this intended?
+> >> SquashFS prints into the logs, so what is it doing differently?
+> >
+> > Some modules do, some don't.  It's not compulsory and not very useful.
+> >
+> 
+> What about...
+> 
+> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+> index 482c26f..92b9ad5 100644
+> --- a/fs/overlayfs/super.c
+> +++ b/fs/overlayfs/super.c
+> @@ -675,11 +675,13 @@ MODULE_ALIAS_FS("overlayfs");
+>  static int __init ovl_init(void)
+>  {
+>         return register_filesystem(&ovl_fs_type);
+> +       printk(KERN_INFO "overlayfs: loaded\n");
 
-I don't know the correct answer.
+How about pr_debug().  That makes things quite for most of us but gives
+you info when looking for things like boot problems.
 
-But I have a question: Why can't we run notifications from the real
-clk_enable? Does the notification mechanism itself inherently block, or
-are we worried that implementations/receivers of these notifications
-might block. Perhaps we can simply define that these notification types
-may be triggered in atomic context and hence implementations have to
-support executing in atomic context. Is possible to make that a
-requirement? Is it possible to implement the code that receives these
-notifications in atomic context?
-
-Is it possible to defer triggering of notifications to some non-atomic
-context, even if they happen in an atomic context?
-
-I also wonder if this is the right conceptual level to be hooking into
-the system. Perhaps DVFS is not something that should be triggered by
-noticing that clocks have changed rates, but rather it should be some
-form of higher layer that controls (calls into) both the regulator and
-clock APIs?
+>  }
+> 
+>  static void __exit ovl_exit(void)
+>  {
+>         unregister_filesystem(&ovl_fs_type);
+> +       printk(KERN_INFO "overlayfs: unloaded\n");
+>  }
+> 
+>  module_init(ovl_init);
+> 
+> Maybe "loaded" is enough.
+> 
+> - Sedat -
+> 
+> > Thanks,
+> > Miklos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
