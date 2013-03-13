@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab3CMTPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:15:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48739 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933082Ab3CMTPH (ORCPT
+	id S934041Ab3CMTRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:17:31 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:47850 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933096Ab3CMTRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:15:07 -0400
-Date: Wed, 13 Mar 2013 14:14:55 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-Message-ID: <20130313191455.GC12157@thinkpad-t410>
-Mail-Followup-To: Matt Fleming <matt.fleming@intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Matthew Garrett <matthew.garrett@nebula.com>,
-	linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-References: <20130307205915.GF24233@thinkpad-t410>
- <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
- <513911F9.8050308@zytor.com>
- <20130311211750.GB8440@thinkpad-t410>
- <1363118073.15011.275.camel@mfleming-mobl1.ger.corp.intel.com>
- <20130312211417.GC16558@thinkpad-t410>
- <1363189770.15011.300.camel@mfleming-mobl1.ger.corp.intel.com>
- <20130313170724.GB12157@thinkpad-t410>
- <5140B674.8070308@zytor.com>
- <1363199617.15011.310.camel@mfleming-mobl1.ger.corp.intel.com>
+	Wed, 13 Mar 2013 15:17:30 -0400
+Message-ID: <5140D0C5.1090000@linaro.org>
+Date: Wed, 13 Mar 2013 12:17:25 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363199617.15011.310.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Feng Tang <feng.tang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH v4 0/4] Add support for S3 non-stop TSC support.
+References: <1363060608-22657-1-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1363060608-22657-1-git-send-email-feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 06:33:37PM +0000, Matt Fleming wrote:
-> On Wed, 2013-03-13 at 10:25 -0700, H. Peter Anvin wrote:
-> > I think there should be two compile-time options (one to compile in the
-> > EFI pstore code at all, and one to set its default.)
-> 
-> OK, sorry Seth, looks like I'm the one that misunderstood. I've picked
-> up your first two patches and pushed them out to the urgent branch.
-> Please check that they look OK - they required minor fixups.
+On 03/11/2013 08:56 PM, Feng Tang wrote:
+> Hi All,
+>
+> On some new Intel Atom processors (Penwell and Cloverview), there is
+> a feature that the TSC won't stop in S3, say the TSC value won't be
+> reset to 0 after resume. This feature makes TSC a more reliable
+> clocksource and could benefit the timekeeping code during system
+> suspend/resume cycles.
+>
+> The enabling efforts include adding new flags for this feature,
+> modifying clocksource.h and timekeeping.c to support and utilizing
+> it.
+>
+> The major change to timekeeping is the way to count suspended time,
+> current way is trying to use the persistent clock first, and then
+> try the rtc if persistent clock can't do it. This patch will change
+> the trying order to:
+> 	suspend-nonstop clocksource -> persistent clock -> rtc
+>
+> Please help to review them, thanks a lot!
+>
 
-A minor nit from the second patch:
+Thanks!
 
-+static bool efivars_pstore_disable = \
-+       IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
+I've gone ahead and queued these, with my minor modifications, for 3.10 
+(pending further testing).
 
-The backslash isn't necessary.
+thanks
+-john
 
-Otherwise everything looks fine afaict.
 
-Thanks,
-Seth
 
