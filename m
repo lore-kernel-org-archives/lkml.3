@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab3CMJn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:43:59 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:61663 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3CMJn4 (ORCPT
+	id S1756206Ab3CMJoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:44:13 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:35644 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3CMJoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:43:56 -0400
+	Wed, 13 Mar 2013 05:44:09 -0400
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 3/8]Perf: Transform evlist->mmap to xyarray
-Date: Wed, 13 Mar 2013 17:42:17 +0800
-Message-Id: <1363167740-27735-6-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v3 2/8]Perf: Transform xyarray to linked list
+Date: Wed, 13 Mar 2013 17:42:18 +0800
+Message-Id: <1363167740-27735-7-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
 References: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,17 +30,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-Transformed evlist->mmap to xyarray. Then the evlist->mmap is transformed
-to a linked list too.
-
-1) perf_evlist__mmap_thread()
-   mmap a new fd for a new thread forked on-the-fly.
-2) void perf_evlist__munmap_thread()
-   munmap a fd for a exited thread on-the-fly.
-3) perf_evlist__get_mmap()
-   get a perf_mmap struct in the evlist->mmap list by its index.
-4) for_each_mmap(md, evlist)
-   traverse all perf_mmap structures in the evlist->mmap list.
+The 2-dimensional array cannot expand and shrink easily while we want to
+perceive the thread's fork and exit events on-the-fly.
+We transform xyarray to a 2-demesional linked list. The x dimension is cpus and
+is still a array. The y dimension is threads of interest and is transformed to
+linked list.
+The interface to append and shrink a exist xyarray is provided.
+1) xyarray__append()
+   append a column for all rows.
+2) xyarray__remove()
+   remove a column for all rows.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -56,191 +55,244 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/Makefile         |    3 ++-
- tools/perf/builtin-record.c |    8 +++----
- tools/perf/util/evlist.c    |   49 ++++++++++++++++++++++++++-----------------
- tools/perf/util/evlist.h    |    8 ++++++-
- 4 files changed, 43 insertions(+), 25 deletions(-)
+ tools/perf/util/xyarray.c |  125 +++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/xyarray.h |   68 ++++++++++++++++++++++--
+ 2 files changed, 185 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a2108ca..7f3f066 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -209,7 +209,8 @@ BASIC_CFLAGS = \
- 	-Iutil \
- 	-I. \
- 	-I$(TRACE_EVENT_DIR) \
--	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-+	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
-+	-std=gnu99
+diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
+index 22afbf6..ddb3bff 100644
+--- a/tools/perf/util/xyarray.c
++++ b/tools/perf/util/xyarray.c
+@@ -1,20 +1,135 @@
+ #include "xyarray.h"
+ #include "util.h"
  
- BASIC_LDFLAGS =
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 774c907..3bca0b2 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -363,12 +363,12 @@ static struct perf_event_header finished_round_event = {
- 
- static int perf_record__mmap_read_all(struct perf_record *rec)
- {
--	int i;
- 	int rc = 0;
-+	struct perf_mmap *pmmap = NULL;
- 
--	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
--		if (rec->evlist->mmap[i].base) {
--			if (perf_record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
-+	for_each_mmap(pmmap, rec->evlist) {
-+		if (pmmap->base) {
-+			if (perf_record__mmap_read(rec, pmmap) != 0) {
- 				rc = -1;
- 				goto out;
- 			}
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d5063d6..7515651 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -336,7 +336,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
- 
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- {
--	struct perf_mmap *md = &evlist->mmap[idx];
-+	struct perf_mmap *md = perf_evlist__get_mmap(evlist, idx);
- 	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
- 	unsigned char *data = md->base + page_size;
-@@ -401,16 +401,16 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 
- void perf_evlist__munmap(struct perf_evlist *evlist)
- {
--	int i;
-+	struct perf_mmap *pmmap = NULL;
- 
--	for (i = 0; i < evlist->nr_mmaps; i++) {
--		if (evlist->mmap[i].base != NULL) {
--			munmap(evlist->mmap[i].base, evlist->mmap_len);
--			evlist->mmap[i].base = NULL;
-+	for_each_mmap(pmmap, evlist) {
-+		if (pmmap->base != NULL) {
-+			munmap(pmmap->base, evlist->mmap_len);
-+			pmmap->base = NULL;
- 		}
- 	}
- 
--	free(evlist->mmap);
-+	xyarray__delete(evlist->mmap);
- 	evlist->mmap = NULL;
- }
- 
-@@ -419,19 +419,21 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
- 	if (cpu_map__all(evlist->cpus))
- 		evlist->nr_mmaps = evlist->threads->nr;
--	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
-+	evlist->mmap = xyarray__new(1, evlist->nr_mmaps, sizeof(struct perf_mmap));
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
- }
- 
- static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 			       int idx, int prot, int mask, int fd)
- {
--	evlist->mmap[idx].prev = 0;
--	evlist->mmap[idx].mask = mask;
--	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
-+	struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, idx);
-+
-+	pmmap->prev = 0;
-+	pmmap->mask = mask;
-+	pmmap->base = mmap(NULL, evlist->mmap_len, prot,
- 				      MAP_SHARED, fd, 0);
--	if (evlist->mmap[idx].base == MAP_FAILED) {
--		evlist->mmap[idx].base = NULL;
-+	if (pmmap->base == MAP_FAILED) {
-+		pmmap->base = NULL;
- 		return -1;
- 	}
- 
-@@ -472,9 +474,11 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 
- out_unmap:
- 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
--		if (evlist->mmap[cpu].base != NULL) {
--			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
--			evlist->mmap[cpu].base = NULL;
-+		struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, cpu);
-+
-+		if (pmmap->base != NULL) {
-+			munmap(pmmap->base, evlist->mmap_len);
-+			pmmap->base = NULL;
- 		}
- 	}
- 	return -1;
-@@ -511,9 +515,11 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 
- out_unmap:
- 	for (thread = 0; thread < evlist->threads->nr; thread++) {
--		if (evlist->mmap[thread].base != NULL) {
--			munmap(evlist->mmap[thread].base, evlist->mmap_len);
--			evlist->mmap[thread].base = NULL;
-+		struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, thread);
-+
-+		if (pmmap->base != NULL) {
-+			munmap(pmmap->base, evlist->mmap_len);
-+			pmmap->base = NULL;
- 		}
- 	}
- 	return -1;
-@@ -572,6 +578,11 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
- }
- 
-+struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx) 
++/*
++ * Add a column for all rows;
++ * @init_cont stores the initialize value for new entries.
++ * The return value is the array of new contents.
++ */
++char** xyarray__append(struct xyarray *xy, char *init_cont)
 +{
-+	return (struct perf_mmap *)xyarray__entry(evlist->mmap, 0, idx);
++	struct xyentry *new_entry;
++	unsigned int x;
++	char **new_conts;
++
++	new_conts = zalloc(sizeof(char *) * xy->row_count);
++	if (new_conts == NULL)
++		return NULL;
++
++	for (x = 0; x < xy->row_count; x++) {
++		new_entry = zalloc(sizeof(*new_entry));
++		if (new_entry == NULL) {
++			free(new_conts);
++			return NULL;
++		}
++
++		new_entry->contents = zalloc(xy->entry_size);
++		if (new_entry->contents == NULL) {
++			free(new_entry);
++			free(new_conts);
++			return NULL;
++		}
++
++		if (init_cont)
++			memcpy(new_entry->contents, init_cont, xy->entry_size);
++
++		new_conts[x] = new_entry->contents;
++
++		list_add_tail(&new_entry->next, &xy->rows[x].head);
++	}
++
++	return new_conts;
 +}
 +
- int perf_evlist__create_maps(struct perf_evlist *evlist,
- 			     struct perf_target *target)
+ struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
  {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 2dd07bd..eb22e49 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -7,6 +7,7 @@
- #include "event.h"
- #include "evsel.h"
- #include "util.h"
-+#include "xyarray.h"
- #include <unistd.h>
- 
- struct pollfd;
-@@ -37,7 +38,7 @@ struct perf_evlist {
- 		pid_t	pid;
- 	} workload;
- 	bool		 overwrite;
--	struct perf_mmap *mmap;
-+	struct xyarray	 *mmap;
- 	struct pollfd	 *pollfd;
- 	struct thread_map *threads;
- 	struct cpu_map	  *cpus;
-@@ -131,6 +132,8 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
- 				   struct list_head *list,
- 				   int nr_entries);
- 
-+struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx);
+-	size_t row_size = ylen * entry_size;
+-	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * row_size);
++	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * sizeof(struct row));
++	int i;
 +
- static inline struct perf_evsel *perf_evlist__first(struct perf_evlist *evlist)
- {
- 	return list_entry(evlist->entries.next, struct perf_evsel, node);
-@@ -163,4 +166,7 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
- 	pc->data_tail = tail;
++	if (xy == NULL)
++		return NULL;
++
++	xy->row_count = xlen;
++	xy->entry_size = entry_size;
+ 
+-	if (xy != NULL) {
+-		xy->entry_size = entry_size;
+-		xy->row_size   = row_size;
++	for (i = 0; i < xlen; i++)
++		INIT_LIST_HEAD(&xy->rows[i].head);
++
++	for (i = 0; i< ylen; i++) {
++		if (xyarray__append(xy, NULL) == NULL) {
++			xyarray__delete(xy);
++			return NULL;
++		}
+ 	}
+ 
+ 	return xy;
  }
  
-+#define for_each_mmap(pmmap, evlist) \
-+	xyarray_for_each_content(pmmap, &evlist->mmap->rows[0].head, struct perf_mmap)
++static inline int xyarray__remove_last(struct xyarray *xy)
++{
++	struct xyentry *entry;
++	unsigned int x;
 +
- #endif /* __PERF_EVLIST_H */
++	if (xy == NULL)
++		return -1; 
++
++	for (x = 0; x < xy->row_count; x++) {
++		if (!list_empty(&xy->rows[x].head)) {
++			entry = list_entry(xy->rows[x].head.prev,
++					   struct xyentry, next);
++			list_del(&entry->next);
++			free(entry);
++		}
++	}
++
++	return 0;
++}
++
++/*              
++ * remove a column for all rows;
++ */
++int xyarray__remove(struct xyarray *xy, int y)
++{
++	struct xyentry *entry, *tmp;
++	unsigned int x;
++	int count;
++
++	if (xy == NULL)
++		return -1;
++
++	if (y == -1)
++		return xyarray__remove_last(xy);
++
++	for (x = 0; x < xy->row_count; x++) {
++		count = 0;
++		list_for_each_entry_safe(entry, tmp, &xy->rows[x].head, next) {
++			if (count++ == y) {
++				list_del(&entry->next);
++				free(entry);
++			}
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * delete @xy and all its nodes.
++ */
+ void xyarray__delete(struct xyarray *xy)
+ {
++	unsigned int i;
++	struct xyentry *entry, *tmp;
++
++	if (!xy)
++		return;
++
++	for (i = 0; i < xy->row_count; i++) {
++		list_for_each_entry_safe(entry, tmp, &xy->rows[i].head, next) {
++			list_del(&entry->next);
++			free(entry);
++		}
++	}
++
+ 	free(xy);
+ }
+diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
+index c488a07..b7a0819 100644
+--- a/tools/perf/util/xyarray.h
++++ b/tools/perf/util/xyarray.h
+@@ -2,19 +2,81 @@
+ #define _PERF_XYARRAY_H_ 1
+ 
+ #include <sys/types.h>
++#include <linux/list.h>
++
++struct row {
++	struct list_head head;
++};
++
++struct xyentry {
++	struct list_head next;
++	char *contents;
++};
+ 
+ struct xyarray {
+-	size_t row_size;
++	size_t row_count;
+ 	size_t entry_size;
+-	char contents[];
++	struct row rows[];
+ };
+ 
+ struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size);
+ void xyarray__delete(struct xyarray *xy);
++char** xyarray__append(struct xyarray *xy, char *init_cont);
++int xyarray__remove(struct xyarray *xy, int y);
++
++/*
++ * Avoid list walk while only the last entry is needed.
++ */
++static inline void *xyarray__last_entry(struct xyarray *xy, int x)
++{
++	struct xyentry *entry;
++
++	if (!list_empty(&xy->rows[x].head)) {
++		entry = list_entry(xy->rows[x].head.prev, struct xyentry, next);
++		return entry->contents;
++	}
++
++	return NULL;
++}
+ 
+ static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
+ {
+-	return &xy->contents[x * xy->row_size + y * xy->entry_size];
++	struct xyentry *entry;
++	int columns = 0;
++
++	if (y == -1)
++		return xyarray__last_entry(xy, x);
++
++	list_for_each_entry(entry, &xy->rows[x].head, next) {
++		if (columns++ == y)
++			return entry->contents;
++	}
++
++	return NULL;
+ }
+ 
++static inline int xyarray__columns(struct xyarray *xy)
++{
++	struct xyentry *entry;
++	int columns = 0;
++
++	list_for_each_entry(entry, &xy->rows[0].head, next)
++		columns ++;
++
++	return columns;
++}
++
++/*
++ * @p points to xyentry->contents
++ * @head points to xyarray->rows[].head
++ * @type is the type of *p
++ */
++#define xyarray_for_each_content(pe, head, type) \
++	for (char **p = &(((struct xyentry*)list_entry((head)->next, struct xyentry, next))->contents); \
++	     &(((struct xyentry *)(container_of(p, struct xyentry, contents)))->next) != (head) \
++	     && (pe = (type *)(*p)); \
++	     p = (char **)container_of(p, struct xyentry, contents), \
++	     p = &(((struct xyentry *)list_entry(((struct xyentry *)p)->next.next, \
++		 struct xyentry, next))->contents))
++
+ #endif /* _PERF_XYARRAY_H_ */
 -- 
 1.7.9.5
 
