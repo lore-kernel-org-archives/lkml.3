@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab3CMNwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 09:52:55 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:65164 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab3CMNwy (ORCPT
+	id S1756433Ab3CMNxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 09:53:12 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:46565 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755585Ab3CMNxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 09:52:54 -0400
-Message-ID: <514084B0.4050906@gmail.com>
-Date: Wed, 13 Mar 2013 09:52:48 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 13 Mar 2013 09:53:08 -0400
+Date: Wed, 13 Mar 2013 09:53:04 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Security Officers <security@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix: compat_rw_copy_check_uvector() misuse in aio,
+	readv, writev, and security keys
+Message-ID: <20130313135304.GC15843@Krystal>
+References: <20130225152036.GA3405@Krystal> <20130311204601.GA22369@kroah.com> <20130311205345.GA9410@Krystal> <CA+55aFxjw0hhDTaCBW-Gy0EW2WjkfmWPC-QS_iQpZ98-kvuJwA@mail.gmail.com> <CA+55aFy3gTpxzghYL6-Z4wYpubokFdQCYYZQ5tsJAr042uwgHw@mail.gmail.com>
 MIME-Version: 1.0
-To: Xufeng Zhang <xufeng.zhang@windriver.com>
-CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
- so as to find the matched transport
-References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
-In-Reply-To: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy3gTpxzghYL6-Z4wYpubokFdQCYYZQ5tsJAr042uwgHw@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 02:39 AM, Xufeng Zhang wrote:
-> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
-> was sent on, if not found in the active_path transport, then go search
-> all the other transports in the peer's transport_addr_list, however, we
-> should continue to the next entry rather than break the loop when meet
-> the active_path transport.
->
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> ---
->   net/sctp/associola.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index 43cd0dd..d2709e2 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
->   			transports) {
->
->   		if (transport == active)
-> -			break;
-> +			continue;
->   		list_for_each_entry(chunk, &transport->transmitted,
->   				transmitted_list) {
->   			if (key == chunk->subh.data_hdr->tsn) {
->
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Tue, Mar 12, 2013 at 11:04 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > That said, the patch definitely looks like the right thing to do. I'll apply it.
+> 
+> Hmm. I applied it, and then pretty much immediately realized what was
+> problematic about it. What about the fs/bio.c one?  This all felt like
+> it was still a work-in-progress, and I'm not sure if you had more
+> comments or patches coming along?
+> 
+> Anyway, this particular patch got applied. Does that obviate the need
+> for the fs/bio.c one? I didn't follow all the call-chains...
 
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+The fs/bio.c issue is unrelated to this patch, so that separate issue
+still stands. I did not get any feedback on that private RFC though.
 
--vlad
+Should I repost it CCing lkml ?
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
