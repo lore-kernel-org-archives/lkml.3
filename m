@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801Ab3CMX2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:28:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51112 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934421Ab3CMX2a (ORCPT
+	id S965006Ab3CMXe1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:34:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17544 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964796Ab3CMX2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:28:30 -0400
+	Wed, 13 Mar 2013 19:28:32 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 05/27] PCI: Update pci_resource_start etc to use pci_dev_resource_n()
-Date: Wed, 13 Mar 2013 16:28:00 -0700
-Message-Id: <1363217302-14383-6-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org
+Subject: [PATCH v3 07/27] PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
+Date: Wed, 13 Mar 2013 16:28:02 -0700
+Message-Id: <1363217302-14383-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
@@ -22,31 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now pci_resource_start is using dev->resource[n] directly.
-Replace it with pci_dev_resource[n] to prepare for addon resource support.
+We can replace two layer loop with for_each_pci_resource(), and make
+the code more readable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
 ---
- include/linux/pci.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/pci/i386.c |   55 +++++++++++++++++++--------------------------------
+ 1 file changed, 20 insertions(+), 35 deletions(-)
 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index efb348b..94935fc 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1488,9 +1488,9 @@ static inline struct pci_dev *pci_dev_get(struct pci_dev *dev)
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 7c3395a..ed219c7 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -233,49 +233,34 @@ static void pcibios_allocate_bus_resources(struct pci_bus *bus)
+ 		pcibios_allocate_bus_resources(child);
+ }
  
- /* these helpers provide future and backwards compatibility
-  * for accessing popular PCI BAR info */
--#define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
--#define pci_resource_end(dev, bar)	((dev)->resource[(bar)].end)
--#define pci_resource_flags(dev, bar)	((dev)->resource[(bar)].flags)
-+#define pci_resource_start(dev, bar)	(pci_dev_resource_n(dev, (bar))->start)
-+#define pci_resource_end(dev, bar)	(pci_dev_resource_n(dev, (bar))->end)
-+#define pci_resource_flags(dev, bar)	(pci_dev_resource_n(dev, (bar))->flags)
- #define pci_resource_len(dev,bar) \
- 	((pci_resource_start((dev), (bar)) == 0 &&	\
- 	  pci_resource_end((dev), (bar)) ==		\
+-struct pci_check_idx_range {
+-	int start;
+-	int end;
+-};
+-
+ static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ {
+-	int idx, disabled, i;
++	int idx, disabled;
+ 	u16 command;
+ 	struct resource *r;
+ 
+-	struct pci_check_idx_range idx_range[] = {
+-		{ PCI_STD_RESOURCES, PCI_STD_RESOURCE_END },
+-#ifdef CONFIG_PCI_IOV
+-		{ PCI_IOV_RESOURCES, PCI_IOV_RESOURCE_END },
+-#endif
+-	};
+-
+ 	pci_read_config_word(dev, PCI_COMMAND, &command);
+-	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
+-		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
+-			r = &dev->resource[idx];
+-			if (r->parent)	/* Already allocated */
+-				continue;
+-			if (!r->start)	/* Address not assigned at all */
+-				continue;
+-			if (r->flags & IORESOURCE_IO)
+-				disabled = !(command & PCI_COMMAND_IO);
+-			else
+-				disabled = !(command & PCI_COMMAND_MEMORY);
+-			if (pass == disabled) {
+-				dev_dbg(&dev->dev,
+-					"BAR %d: reserving %pr (d=%d, p=%d)\n",
+-					idx, r, disabled, pass);
+-				if (pci_claim_resource(dev, idx) < 0) {
+-					/* We'll assign a new address later */
+-					pcibios_save_fw_addr(dev,
+-							idx, r->start);
+-					r->end -= r->start;
+-					r->start = 0;
+-				}
++	for_each_pci_resource(dev, r, idx, PCI_NOROM_RES & ~PCI_BRIDGE_RES) {
++		if (r->parent)	/* Already allocated */
++			continue;
++		if (!r->start)	/* Address not assigned at all */
++			continue;
++		if (r->flags & IORESOURCE_IO)
++			disabled = !(command & PCI_COMMAND_IO);
++		else
++			disabled = !(command & PCI_COMMAND_MEMORY);
++		if (pass == disabled) {
++			dev_dbg(&dev->dev,
++				"BAR %d: reserving %pr (d=%d, p=%d)\n",
++				idx, r, disabled, pass);
++			if (pci_claim_resource(dev, idx) < 0) {
++				/* We'll assign a new address later */
++				pcibios_save_fw_addr(dev, idx, r->start);
++				r->end -= r->start;
++				r->start = 0;
+ 			}
+ 		}
++	}
+ 	if (!pass) {
+ 		r = &dev->resource[PCI_ROM_RESOURCE];
+ 		if (r->flags & IORESOURCE_ROM_ENABLE) {
 -- 
 1.7.10.4
 
