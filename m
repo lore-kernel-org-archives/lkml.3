@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3CMJPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:15:39 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:42443 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab3CMJPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:15:37 -0400
+	id S1755474Ab3CMJVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:21:12 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:36010 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114Ab3CMJVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 05:21:09 -0400
+Message-ID: <514044FD.2040502@imgtec.com>
+Date: Wed, 13 Mar 2013 09:21:01 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130313091453.GE6270@arwen.pp.htv.fi>
-References: <CAFp+6iGGAY=nMg03-bqHz=XuNP+1t9mQR=M53HGoqCXv=t+f0Q@mail.gmail.com>
-	<1362230724-21017-1-git-send-email-gautam.vivek@samsung.com>
-	<CAFp+6iFjiOPbZhdpWCq0agWBeSC+Vc19Ff++_3vxa6r-MburWg@mail.gmail.com>
-	<20130313091453.GE6270@arwen.pp.htv.fi>
-Date: Wed, 13 Mar 2013 14:45:35 +0530
-Message-ID: <CAFp+6iHs6U9YRLn5-x4JwAyzF4rbfQYnBT1i0oCk-Lw6K2dkLQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: dwc3: Set DWC3 context's mode based on selected mode.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        gregkh@linuxfoundation.org, Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-next@vger.kernel.org>
+Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
+References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au> <87ehfkuq27.fsf@rustcorp.com.au> <20130313063157.GB19681@merkur.ravnborg.org>
+In-Reply-To: <20130313063157.GB19681@merkur.ravnborg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_03_13_09_21_03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 2:44 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Mar 13, 2013 at 02:42:22PM +0530, Vivek Gautam wrote:
->> Hi Balbi,
->>
->>
->> On Sat, Mar 2, 2013 at 6:55 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->> > Now that machines may select the mode of working of DWC3 (HOST only,
->> > GADGET only or DUAL_ROLE), lets set DWC3 mode based on that
->> > rather than fixing it to whatever DWC3 hardware says.
->> > This way we can skip initializing Gadget/Host in case
->> > we are using Host-only/Gadget-only mode respectively.
->> >
->>
->> Hope this patch if fine, and mainlinable ?
->
-> yes, it's in my testing branch, you will receive mail soon
->
+Hi Sam,
 
-Sure, thanks.
+On 13/03/13 06:31, Sam Ravnborg wrote:
+>>  /* Some toolchains use a `_' prefix for all user symbols. */
+>> -#ifdef CONFIG_SYMBOL_PREFIX
+>> -#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+>> +#ifdef CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX
+>> +#define __VMLINUX_SYMBOL(x) _##x
+>> +#define __VMLINUX_SYMBOL_STR(x) "_" #x
+>> +#define VMLINUX_SYMBOL_PREFIX_STR "_"
+>>  #else
+>> -#define MODULE_SYMBOL_PREFIX ""
+>> +#define __VMLINUX_SYMBOL(x) x
+>> +#define __VMLINUX_SYMBOL_STR(x) #x
+>> +#define VMLINUX_SYMBOL_PREFIX_STR ""
+>>  #endif
+> 
+> We know the prefix is an underscore. No benefits from defining
+> VMLINUX_SYMBOL_PREFIX_STR.
 
-> --
-> balbi
+scripts/modpost.c uses the actual prefix string though:
 
+>	if (memcmp(symname, MODULE_SYMBOL_PREFIX,
+>		   strlen(MODULE_SYMBOL_PREFIX)) == 0) {
+>		mod->unres =
+>		  alloc_symbol(symname +
+>		               strlen(MODULE_SYMBOL_PREFIX),
+> 		               ELF_ST_BIND(sym->st_info) == STB_WEAK,
+> 		               mod->unres);
 
+See also my "module: fix symbol versioning with symbol prefixes" patch
+for an additional use in modpost.
 
--- 
-Thanks & Regards
-Vivek
+Having a MODULE_SYMBOL_PREFIX/VMLINUX_SYMBOL_PREFIX_STR seems like the
+simplest way to keep this code clean and readable without special cases.
+
+Cheers
+James
+
