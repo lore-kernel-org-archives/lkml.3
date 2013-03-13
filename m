@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012Ab3CMX2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:28:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51276 "EHLO
+	id S965025Ab3CMX3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:29:06 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51334 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964992Ab3CMX2q (ORCPT
+	with ESMTP id S964868Ab3CMX3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:28:46 -0400
+	Wed, 13 Mar 2013 19:29:01 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
-        Huang Ying <ying.huang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH v3 19/27] PCI, x86: Use for_each_pci_resource() with mrst
-Date: Wed, 13 Mar 2013 16:28:14 -0700
-Message-Id: <1363217302-14383-20-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3 11/27] PCI: Use for_each_pci_resource() in pci_enable_dev
+Date: Wed, 13 Mar 2013 16:28:06 -0700
+Message-Id: <1363217302-14383-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
@@ -24,39 +23,59 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
-Cc: Huang Ying <ying.huang@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- arch/x86/pci/mrst.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/pci/pci.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index 6eb18c4..884ea69 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -280,6 +280,7 @@ static void pci_fixed_bar_fixup(struct pci_dev *dev)
- 	unsigned long offset;
- 	u32 size;
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index b099e00..c0473dc 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -440,8 +440,9 @@ static void
+ pci_restore_bars(struct pci_dev *dev)
+ {
  	int i;
 +	struct resource *res;
  
- 	if (!pci_soc_mode)
- 		return;
-@@ -294,10 +295,10 @@ static void pci_fixed_bar_fixup(struct pci_dev *dev)
- 	    PCI_DEVFN(2, 2) == dev->devfn)
- 		return;
- 
--	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
-+	for_each_pci_resource(dev, res, i, PCI_STD_RES) {
- 		pci_read_config_dword(dev, offset + 8 + (i * 4), &size);
--		dev->resource[i].end = dev->resource[i].start + size - 1;
--		dev->resource[i].flags |= IORESOURCE_PCI_FIXED;
-+		res->end = res->start + size - 1;
-+		res->flags |= IORESOURCE_PCI_FIXED;
- 	}
+-	for (i = 0; i < PCI_BRIDGE_RESOURCES; i++)
++	for_each_pci_resource(dev, res, i, PCI_NOBRIDGE_RES)
+ 		pci_update_resource(dev, i);
  }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_fixed_bar_fixup);
+ 
+@@ -1153,6 +1154,7 @@ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+ {
+ 	int err;
+ 	int i, bars = 0;
++	struct resource *res;
+ 
+ 	/*
+ 	 * Power state could be unknown at this point, either due to a fresh
+@@ -1170,12 +1172,11 @@ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+ 		return 0;		/* already enabled */
+ 
+ 	/* only skip sriov related */
+-	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
+-		if (dev->resource[i].flags & flags)
+-			bars |= (1 << i);
+-	for (i = PCI_BRIDGE_RESOURCES; i < DEVICE_COUNT_RESOURCE; i++)
+-		if (dev->resource[i].flags & flags)
++	for_each_pci_resource(dev, res, i, PCI_NOIOV_RES) {
++		/* TODO: check i with bits of bars */
++		if (res->flags & flags)
+ 			bars |= (1 << i);
++	}
+ 
+ 	err = do_pci_enable_device(dev, bars);
+ 	if (err < 0)
+@@ -2557,7 +2558,7 @@ static int __pci_request_region(struct pci_dev *pdev, int bar, const char *res_n
+ 
+ err_out:
+ 	dev_warn(&pdev->dev, "BAR %d: can't reserve %pR\n", bar,
+-		 &pdev->resource[bar]);
++		 pci_dev_resource_n(pdev, bar));
+ 	return -EBUSY;
+ }
+ 
 -- 
 1.7.10.4
 
