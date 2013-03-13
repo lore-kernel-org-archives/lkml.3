@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab3CMJqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:46:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33389 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab3CMJqJ (ORCPT
+	id S1756138Ab3CMJsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:48:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19520 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab3CMJsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:46:09 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, olof@lixom.net, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] irqchip: irq-gic: Fix checkpatch errors
-Date: Wed, 13 Mar 2013 15:05:15 +0530
-Message-Id: <1363167315-12753-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 13 Mar 2013 05:48:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 02:41:42 -0700
+From: Danny Huang <dahuang@nvidia.com>
+To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <ldewangan@nvidia.com>,
+        <olof@lixom.net>, <hdoyu@nvidia.com>,
+        <thierry.reding@avionic-design.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+CC: Danny Huang <dahuang@nvidia.com>
+Subject: [PATCH v3] ARM: tegra: expose chip ID and revision
+Date: Wed, 13 Mar 2013 17:48:00 +0800
+Message-ID: <1363168080-12697-1-git-send-email-dahuang@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following errors:
-ERROR: do not initialise statics to 0 or NULL
-ERROR: space required after that ',' (ctx:VxV)
+Expose Tegra chip ID and revision in /sys/devices/soc for user mode
+usage
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Danny Huang <dahuang@nvidia.com>
 ---
-Compile tested and based on linux-next tree (20130313).
----
- drivers/irqchip/irq-gic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig            |  1 +
+ arch/arm/mach-tegra/tegra.c | 31 ++++++++++++++++++++++++++++++-
+ 2 files changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index a32e0d5..d06d5a4 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -127,7 +127,7 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
- #else
- #define gic_data_dist_base(d)	((d)->dist_base.common_base)
- #define gic_data_cpu_base(d)	((d)->cpu_base.common_base)
--#define gic_set_base_accessor(d,f)
-+#define gic_set_base_accessor(d, f)
- #endif
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2363926..12fa4e5 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -675,6 +675,7 @@ config ARCH_TEGRA
+ 	select HAVE_CLK
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
++	select SOC_BUS
+ 	select SPARSE_IRQ
+ 	select USE_OF
+ 	help
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 27232c9..536ed3e 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -33,6 +33,8 @@
+ #include <linux/io.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-tegra.h>
++#include <linux/slab.h>
++#include <linux/sys_soc.h>
+ #include <linux/usb/tegra_usb_phy.h>
  
- static inline void __iomem *gic_dist_base(struct irq_data *d)
-@@ -807,7 +807,7 @@ void __cpuinit gic_secondary_init(unsigned int gic_nr)
+ #include <asm/mach-types.h>
+@@ -42,6 +44,7 @@
+ 
+ #include "board.h"
+ #include "common.h"
++#include "fuse.h"
+ #include "iomap.h"
+ 
+ static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+@@ -80,12 +83,38 @@ static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+ 
+ static void __init tegra_dt_init(void)
+ {
++	struct device *parent = NULL;
++	struct soc_device *soc_dev;
++	struct soc_device_attribute *soc_dev_attr;
++
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (!soc_dev_attr)
++		goto out;
++
++	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
++	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
++	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
++
++	soc_dev = soc_device_register(soc_dev_attr);
++	if (IS_ERR(soc_dev)) {
++		kfree(soc_dev_attr->soc_id);
++		kfree(soc_dev_attr->revision);
++		kfree(soc_dev_attr->family);
++		kfree(soc_dev_attr);
++		goto out;
++	}
++
++	parent = soc_device_to_device(soc_dev);
++	if (IS_ERR(parent))
++		parent = NULL;
++
+ 	/*
+ 	 * Finished with the static registrations now; fill in the missing
+ 	 * devices
+ 	 */
++out:
+ 	of_platform_populate(NULL, of_default_bus_match_table,
+-				tegra20_auxdata_lookup, NULL);
++				tegra20_auxdata_lookup, parent);
  }
  
- #ifdef CONFIG_OF
--static int gic_cnt __initdata = 0;
-+static int gic_cnt __initdata;
- 
- int __init gic_of_init(struct device_node *node, struct device_node *parent)
- {
+ static void __init trimslice_init(void)
 -- 
-1.7.4.1
+1.8.1.5
 
