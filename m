@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159Ab3CMTUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:20:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48037 "EHLO
+	id S933997Ab3CMTT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:19:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48036 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933047Ab3CMTT6 (ORCPT
+	by vger.kernel.org with ESMTP id S933024Ab3CMTT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Mar 2013 15:19:58 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regmap: core: Make raw write available to regcache
-Date: Wed, 13 Mar 2013 19:19:55 +0000
-Message-Id: <1363202395-4759-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] regmap: core: Warn on invalid operation combinations
+Date: Wed, 13 Mar 2013 19:19:54 +0000
+Message-Id: <1363202395-4759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363202395-4759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1363202395-4759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the cache to sync values directly to the device when stored
-in native format and also allows asynchronous I/O.
+Don't grind to a screaming halt, just generate a warning.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/internal.h |    3 +++
- drivers/base/regmap/regmap.c   |    4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/base/regmap/regmap.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index f0e0ca4..9fc351f0 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -196,6 +196,9 @@ bool regcache_set_val(struct regmap *map, void *base, unsigned int idx,
- 		      unsigned int val);
- int regcache_lookup_reg(struct regmap *map, unsigned int reg);
- 
-+int _regmap_raw_write(struct regmap *map, unsigned int reg,
-+		      const void *val, size_t val_len, bool async);
-+
- void regmap_async_complete_cb(struct regmap_async *async, int ret);
- 
- extern struct regcache_ops regcache_rbtree_ops;
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index e4faed1..29ed823 100644
+index fed91ac..e4faed1 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -937,8 +937,8 @@ static int _regmap_select_page(struct regmap *map, unsigned int *reg,
- 	return 0;
- }
+@@ -950,7 +950,7 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 	size_t len;
+ 	int i;
  
--static int _regmap_raw_write(struct regmap *map, unsigned int reg,
--			     const void *val, size_t val_len, bool async)
-+int _regmap_raw_write(struct regmap *map, unsigned int reg,
-+		      const void *val, size_t val_len, bool async)
- {
+-	BUG_ON(!map->bus);
++	WARN_ON(!map->bus);
+ 
+ 	/* Check for unwritable registers before we start */
+ 	if (map->writeable_reg)
+@@ -1106,7 +1106,7 @@ static int _regmap_bus_formatted_write(void *context, unsigned int reg,
  	struct regmap_range_node *range;
- 	unsigned long flags;
+ 	struct regmap *map = context;
+ 
+-	BUG_ON(!map->bus || !map->format.format_write);
++	WARN_ON(!map->bus || !map->format.format_write);
+ 
+ 	range = _regmap_range_lookup(map, reg);
+ 	if (range) {
+@@ -1132,7 +1132,7 @@ static int _regmap_bus_raw_write(void *context, unsigned int reg,
+ {
+ 	struct regmap *map = context;
+ 
+-	BUG_ON(!map->bus || !map->format.format_val);
++	WARN_ON(!map->bus || !map->format.format_val);
+ 
+ 	map->format.format_val(map->work_buf + map->format.reg_bytes
+ 			       + map->format.pad_bytes, val, 0);
+@@ -1358,7 +1358,7 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	u8 *u8 = map->work_buf;
+ 	int ret;
+ 
+-	BUG_ON(!map->bus);
++	WARN_ON(!map->bus);
+ 
+ 	range = _regmap_range_lookup(map, reg);
+ 	if (range) {
+@@ -1413,7 +1413,7 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 	int ret;
+ 	void *context = _regmap_map_get_context(map);
+ 
+-	BUG_ON(!map->reg_read);
++	WARN_ON(!map->reg_read);
+ 
+ 	if (!map->cache_bypass) {
+ 		ret = regcache_read(map, reg, val);
 -- 
 1.7.10.4
 
