@@ -1,101 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933866Ab3CMQ5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:57:34 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:53567 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932984Ab3CMQ5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:57:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19DuN9qyJbpvnDJWjt21nXS
-Date: Wed, 13 Mar 2013 09:57:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: balbi@ti.com, b-cousson@ti.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
-Message-ID: <20130313165729.GF26093@atomide.com>
-References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
- <20130312164007.GZ26093@atomide.com>
- <5140821B.2030902@ti.com>
- <20130313162454.GE26093@atomide.com>
- <5140AAFD.4080508@ti.com>
+	id S933884Ab3CMQ7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:59:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35418 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933656Ab3CMQ7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:59:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
+   d="scan'208";a="305672340"
+Date: Wed, 13 Mar 2013 09:59:04 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/hugetlb: fix total hugetlbfs pages count when memory
+ overcommit accouting
+Message-ID: <20130313165904.GB19692@tassilo.jf.intel.com>
+References: <1363158511-21272-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <CAJd=RBBVU8uvHZ3AHkBqOWe-hEqFQ5-5Mf5dGXYuGczvM6EpUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5140AAFD.4080508@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJd=RBBVU8uvHZ3AHkBqOWe-hEqFQ5-5Mf5dGXYuGczvM6EpUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130313 09:40]:
-> On 03/13/2013 06:24 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [130313 06:46]:
-> >> On 03/12/2013 06:40 PM, Tony Lindgren wrote:
-> >>> * Roger Quadros <rogerq@ti.com> [130312 04:47]:
-> >>>> Hi Tony,
-> >>>>
-> >>>> These patches provide the SoC side code required to support
-> >>>> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
-> >>> ... 
-> >>>
-> >>>>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
-> >>>>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
-> >>>>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
-> >>>>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
-> >>>>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
-> >>>>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
-> >>>>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
-> >>>>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
-> >>>>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
-> >>>>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
-> >>>>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
-> >>>>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
-> >>>>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
-> >>>>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
-> >>>>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
-> >>>>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
-> >>>>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
-> >>>
-> >>> Can't you have some mach-omap2/ehci-common.c that takes care
-> >>> of the initializiation to avoid this much addition to the
-> >>> board-*.c files? You may be able to have just a common function
-> >>> to do it and pass few parameters?
-> >>
-> >> Since we moved reset and power handling for the USB PHYs from omap-echi
-> >> driver into the USB PHY driver we need to define the regulator data
-> >> for RESET and Power line of each PHY. So most of the code added is just
-> >> regulator data for the PHY rather than omap-ehci.
-> > 
-> > It seems that you're now repeating minor variations of the same PHY
-> > over and over again though.
-> 
-> Yes it is the vcc and reset regulator data for the PHY that
-> is getting repeated with variations in the GPIO number.
-> 
-> >  
-> >> Instead of a common function, I can implement some macros that make it
-> >> easier to define the regulators for the PHY in the board files.
-> >> Does this sound OK?
-> >>
-> >> Personally I don't like such macros because it hides the implementation
-> >> and is difficult to read/debug.
-> > 
-> > I'd prefer a common function to initialize the PHY though as it sounds
-> > like using macros would just allocate similar PHY many times which seems
-> > unnecessary.
-> > 
-> OK, so we want to create the regulator data at runtime to save some memory?
-> I'll come up with something.
+> Can we enrich the output of hugetlb_report_meminfo() ?
 
-Or I guess you can have just one instance that gets filled in by some PHY
-platform init function.
+The data is reported separately in sysfs. It was originally decided
+to not extend meminfo for them.
 
-Regards,
-
-Tony
+-Andi
