@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3CMJnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:43:18 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35383 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab3CMJnP (ORCPT
+	id S1756173Ab3CMJnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:43:32 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:33287 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab3CMJn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:43:15 -0400
+	Wed, 13 Mar 2013 05:43:28 -0400
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 6/8]Perf: Add extend mechanism for mmap & pollfd.
-Date: Wed, 13 Mar 2013 17:42:14 +0800
-Message-Id: <1363167740-27735-3-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v3 5/8]Perf: add extend mechanism for evsel->id & evsel->fd
+Date: Wed, 13 Mar 2013 17:42:15 +0800
+Message-Id: <1363167740-27735-4-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
 References: <1363167740-27735-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,8 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-Add extend mechanism for mmap & pollfd. Then we can adjust them while threads
-are forked or exited.
+Add extend mechanism for evsel->id & evsel->fd.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -47,247 +46,151 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/util/evlist.c |  151 +++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/evlist.h |    3 +
- tools/perf/util/evsel.c  |    7 ++-
- 3 files changed, 156 insertions(+), 5 deletions(-)
+ tools/perf/util/evsel.c      |   76 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h      |    8 +++++
+ tools/perf/util/thread_map.c |    2 +-
+ 3 files changed, 85 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index c1cd8f9..74af9bb 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -85,7 +85,7 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
- 
- void perf_evlist__exit(struct perf_evlist *evlist)
- {
--	free(evlist->mmap);
-+	xyarray__delete(evlist->mmap);
- 	free(evlist->pollfd);
- 	evlist->mmap = NULL;
- 	evlist->pollfd = NULL;
-@@ -256,6 +256,32 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 	}
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 015321f..2eb75f9 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -599,6 +599,16 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 	return evsel->fd != NULL ? 0 : -ENOMEM;
  }
  
 +/*
-+ * If threads->nr > 1, the cpu_map__nr() must be 1.
-+ * If the cpu_map__nr() > 1, we should not append pollfd.
++ * Return the pointer to new fds (fds for the new thread at all cpus).
 + */
-+static int perf_evlist__extend_pollfd(struct perf_evlist *evlist)
++static int** perf_evsel__extend_fd(struct perf_evsel *evsel)
 +{
-+	int new_nfds;
++	int init_fd = -1;
 +
-+	if (cpu_map__all(evlist->cpus)) {
-+		struct pollfd *pfd;
-+
-+		new_nfds = evlist->threads->nr * evlist->nr_entries;
-+		pfd = zalloc(sizeof(struct pollfd) * new_nfds);
-+
-+		if (!pfd)
-+			return -1;
-+
-+		memcpy(pfd, evlist->pollfd, (evlist->threads->nr - 1) * evlist->nr_entries);
-+
-+		evlist->pollfd = pfd;
-+		return 0;
-+	}
-+
-+	return 1;
++	return (int**)xyarray__append(evsel->fd, (char *)&init_fd);
 +}
 +
- static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter)
  {
- 	int nfds = cpu_map__nr(evlist->cpus) * evlist->threads->nr * evlist->nr_entries;
-@@ -416,6 +442,20 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 	evlist->mmap = NULL;
+@@ -617,6 +627,26 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 	return 0;
  }
  
-+static struct perf_mmap * perf_evlist__extend_mmap(struct perf_evlist *evlist)
++int perf_evsel__extend_id(struct perf_evsel *evsel)
 +{
-+	struct perf_mmap **new_mmap = NULL;
-+
-+	new_mmap = (struct perf_mmap **)xyarray__append(evlist->mmap, NULL);
-+
-+	if (new_mmap != NULL) {
-+		evlist->nr_mmaps++;
-+		return *new_mmap;
-+	}
-+
-+	return NULL;
-+}
-+
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- {
- 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
-@@ -433,7 +473,7 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 	pmmap->prev = 0;
- 	pmmap->mask = mask;
- 	pmmap->base = mmap(NULL, evlist->mmap_len, prot,
--				      MAP_SHARED, fd, 0);
-+			   MAP_SHARED, fd, 0);
- 	if (pmmap->base == MAP_FAILED) {
- 		pmmap->base = NULL;
- 		return -1;
-@@ -527,6 +567,111 @@ out_unmap:
- 	return -1;
- }
- 
-+int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite)
-+{
-+	struct perf_evsel *evsel;
-+	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE);
-+	int mask = evlist->mmap_len - page_size -1;
-+	int output = -1;
-+	struct pollfd *old_pollfd = evlist->pollfd;
-+	struct perf_mmap *pmmap;
-+
-+	if (!cpu_map__all(evlist->cpus))
-+		return 1;
-+
-+	if ((pmmap = perf_evlist__extend_mmap(evlist)) == NULL)
++	if (xyarray__append(evsel->sample_id, NULL) == NULL)
 +		return -ENOMEM;
 +
-+	if (perf_evlist__extend_pollfd(evlist) < 0)
-+		goto free_append_mmap;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (evsel->attr.read_format & PERF_FORMAT_ID) {
-+			if (perf_evsel__extend_id(evsel) < 0)
-+				goto free_append_pollfd;
-+		}
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		int fd = FD(evsel, 0, -1);
-+
-+		if (output == -1) {
-+			output = fd;
-+
-+			pmmap->prev = 0;
-+			pmmap->mask = mask;
-+			pmmap->base = mmap(NULL, evlist->mmap_len, prot,
-+					   MAP_SHARED, fd, 0);
-+
-+			if (pmmap->base == MAP_FAILED) {
-+				pmmap->base = NULL;
-+				goto out_unmap;
-+			}
-+			perf_evlist__add_pollfd(evlist, fd);
-+		} else {
-+			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
-+				goto out_unmap;
-+		}
-+		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-+		    perf_evlist__id_add_fd(evlist, evsel, 0, -1, fd) < 0)
-+			goto out_unmap;
-+	}
-+
-+	free(old_pollfd);
-+	return 0;
-+out_unmap:
-+	pmmap = perf_evlist__get_mmap(evlist, -1);
-+
-+	if (pmmap->base != NULL) {
-+		munmap(pmmap->base, evlist->mmap_len);
-+		pmmap->base = NULL;
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		xyarray__remove(evsel->id, -1);
++	if (xyarray__append(evsel->id, NULL) == NULL) {
 +		xyarray__remove(evsel->sample_id, -1);
++		return -ENOMEM;
 +	}
 +
-+free_append_pollfd:
-+	free(evlist->pollfd);
-+	evlist->pollfd = old_pollfd;
-+
-+free_append_mmap:
-+	xyarray__remove(evlist->mmap, -1);
-+	return -1;
++	return 0;
 +}
 +
-+void perf_evlist__munmap_thread(struct perf_evlist *evlist, int tidx)
++void perf_evsel__remove_id(struct perf_evsel *evsel, int tidx)
 +{
-+	struct perf_evsel *evsel;
-+	struct pollfd *pfd;
-+	struct perf_mmap *pmmap = perf_evlist__get_mmap(evlist, tidx);
-+	int old_nfds = evlist->threads->nr * evlist->nr_entries;
-+	int new_nfds = (evlist->threads->nr -1 ) * evlist->nr_entries;
-+
-+	if (pmmap->base != NULL) {
-+		munmap(pmmap->base, evlist->mmap_len);
-+		evlist->nr_mmaps--;
-+		pmmap->base = NULL;
-+		xyarray__remove(evlist->mmap, tidx);
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		perf_evsel__remove_id(evsel, tidx);
-+	}
-+
-+	pfd = zalloc(new_nfds * sizeof(struct pollfd));
-+	memcpy(pfd, evlist->pollfd, tidx * evlist->nr_entries * sizeof(struct pollfd));
-+	memcpy(pfd + (tidx * evlist->nr_entries),
-+	       evlist->pollfd + (tidx + 1) * evlist->nr_entries,
-+	       old_nfds - (tidx + 1) * evlist->nr_entries);
-+
-+	evlist->nr_fds--;
-+
-+	free(evlist->pollfd);
-+	evlist->pollfd = pfd;
++	xyarray__remove(evsel->id, tidx);
++	evsel->ids--;
++	xyarray__remove(evsel->sample_id, tidx);
 +}
 +
- /** perf_evlist__mmap - Create per cpu maps to receive events
-  *
-  * @evlist - list of events
-@@ -580,7 +725,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
- }
- 
--struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx) 
-+struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int idx)
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
  {
- 	return (struct perf_mmap *)xyarray__entry(evlist->mmap, 0, idx);
+ 	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
+@@ -937,6 +967,52 @@ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+ 	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads);
  }
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index eb22e49..8693c11 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -96,6 +96,9 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 		      bool overwrite);
- void perf_evlist__munmap(struct perf_evlist *evlist);
  
-+int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite);
-+void perf_evlist__munmap_thread(struct perf_evlist *evlist, int tidx);
++void perf_evsel__close_single_thread(struct perf_evsel *evsel, int cpu_nr,
++				     int tidx)
++{
++	int cpu;
 +
- void perf_evlist__disable(struct perf_evlist *evlist);
- void perf_evlist__enable(struct perf_evlist *evlist);
++	for (cpu = 0; cpu < cpu_nr; cpu++) {
++		if (FD(evsel, cpu, tidx) >= 0)
++			close(FD(evsel, cpu, tidx));
++	}
++	xyarray__remove(evsel->fd, tidx); 
++}
++
++int perf_evsel__open_single_thread(struct perf_evsel *evsel,
++                                   struct cpu_map *cpus, int tid)
++{
++	int cpu;
++	int pid = -1;
++	unsigned long flags = 0;
++	int **new_fds;
++
++	if ((new_fds = perf_evsel__extend_fd(evsel)) == NULL)
++		return -1;
++
++	if (evsel->cgrp) {
++		flags = PERF_FLAG_PID_CGROUP;
++		pid = evsel->cgrp->fd;
++	}
++
++	for (cpu = 0; cpu < cpus->nr; cpu++) {
++		int group_fd;
++
++		if (!evsel->cgrp)
++			pid = tid;
++
++		group_fd = get_group_fd(evsel, cpu, -1);
++		evsel->attr.disabled = 0;
++		*new_fds[cpu] = sys_perf_event_open(&evsel->attr, pid,
++						    cpus->map[cpu], group_fd,
++						    flags);
++		if (*new_fds[cpu] < 0)
++			return -errno;
++	}
++
++	return 0;
++}
++
+ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 				       const union perf_event *event,
+ 				       struct perf_sample *sample)
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 7adb116..ae391d4 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -128,6 +128,9 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ void perf_evsel__id_new(struct perf_evsel *evsel, int nr);
+ u64 *perf_evsel__get_id(struct perf_evsel *evsel, int idx);
  
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 2eb75f9..5671ee9 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -720,7 +720,7 @@ void perf_evsel__exit(struct perf_evsel *evsel)
- 	assert(list_empty(&evsel->node));
- 	xyarray__delete(evsel->fd);
- 	xyarray__delete(evsel->sample_id);
--	free(evsel->id);
-+	xyarray__delete(evsel->id);
++int perf_evsel__extend_id(struct perf_evsel *evsel);
++void perf_evsel__remove_id(struct perf_evsel *evsel, int tidx);
++
+ void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
+ 				  enum perf_event_sample_format bit);
+ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
+@@ -152,6 +155,11 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		     struct thread_map *threads);
+ void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
++int perf_evsel__open_single_thread(struct perf_evsel *evsel,
++				   struct cpu_map *cpus, int tid);
++void perf_evsel__close_single_thread(struct perf_evsel *evsel, int cpu_nr,
++				     int tidx);
++
+ struct perf_sample;
+ 
+ void *perf_evsel__rawptr(struct perf_evsel *evsel, struct perf_sample *sample,
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 301f4ce..76f3da7 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -64,7 +64,7 @@ int thread_map__has_pid(struct thread_map *threads, pid_t pid)
  }
  
- void perf_evsel__delete(struct perf_evsel *evsel)
-@@ -845,7 +845,10 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
- 	 */
- 	BUG_ON(!leader->fd);
- 
--	fd = FD(leader, cpu, thread);
-+	if (thread == -1)
-+		fd = *(int *)xyarray__entry(leader->fd, cpu, -1);
-+	else
-+		fd = FD(leader, cpu, thread);
- 	BUG_ON(fd == -1);
- 
- 	return fd;
+ /*
+- * Append a thread_pid at the last of @threads.
++ * Append a thread_pid at the tail of @threads.
+  */
+ int thread_map__append(struct thread_map *threads, pid_t pid)
+ {
 -- 
 1.7.9.5
 
