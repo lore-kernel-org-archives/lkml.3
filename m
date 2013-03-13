@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933884Ab3CMRJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:09:37 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:48945 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933740Ab3CMRJf (ORCPT
+	id S933794Ab3CMRPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:15:30 -0400
+Received: from www17.your-server.de ([213.133.104.17]:36867 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab3CMRP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:09:35 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, squashfs-devel@lists.sourceforge.net
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH] squashfs: Simplify info in the logs when loaded
-Date: Wed, 13 Mar 2013 18:09:24 +0100
-Message-Id: <1363194564-5901-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.2.rc3
+	Wed, 13 Mar 2013 13:15:29 -0400
+Message-ID: <1363194921.1218.14.camel@localhost.localdomain>
+Subject: CONFIG_EARLY_PRINTK
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Mar 2013 18:15:21 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- fs/squashfs/super.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ -*- Early printk 
 
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index 260e392..9747764 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -447,8 +447,7 @@ static int __init init_squashfs_fs(void)
- 		return err;
- 	}
- 
--	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
--		"Phillip Lougher\n");
-+	printk(KERN_INFO "squashfs: loaded\n");
- 
- 	return 0;
- }
--- 
-1.8.2.rc3
+help text says:
+"You should normally N here, unless you want to debug such a crash.
+(Depends on: EXPERT [=n])"
+
+How to normally N here?
+
+kind regards
+thomas
+
 
