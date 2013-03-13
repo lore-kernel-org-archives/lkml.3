@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab3CMBTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 21:19:45 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:61890 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab3CMBTn (ORCPT
+	id S1755821Ab3CMB0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 21:26:16 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3419 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3CMB0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 21:19:43 -0400
-Date: Tue, 12 Mar 2013 18:19:39 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] cgroup: consolidate cgroup_attach_task() and
- cgroup_attach_proc()
-Message-ID: <20130313011939.GC2999@htj.dyndns.org>
-References: <513FD395.7000906@huawei.com>
+	Tue, 12 Mar 2013 21:26:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 18:19:31 -0700
+Message-ID: <1363139273.21694.11.camel@bilhuang-vm1>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Date: Tue, 12 Mar 2013 18:47:53 -0700
+In-Reply-To: <20130312134032.GU4977@n2100.arm.linux.org.uk>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513FD395.7000906@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="ISO-8859-9"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 09:17:09AM +0800, Li Zefan wrote:
-> These two functions share most of the code.
+On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
+> On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> > Add the below four notifier events so drivers which are interested in
+> > knowing the clock status can act accordingly. This is extremely useful
+> > in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+> > 
+> > PRE_CLK_ENABLE
+> > POST_CLK_ENABLE
+> > PRE_CLK_DISABLE
+> > POST_CLK_DISABLE
+> > 
+> > Signed-off-by: Bill Huang <bilhuang@nvidia.com>
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
+> NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
 > 
-> v2: Not necessary to move cgroup_attach_task_all().
+> The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
+> *EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
+> clk_unprepare().  Those two functions are *merely* helpers for drivers
+> who don't wish to make the individual calls.
+> 
+> Drivers are still completely free to call the individual functions, at
+> which point your proposal breaks horribly - and they _do_ call the
+> individual functions.
+I'm proposing to give device driver a choice when it knows that some
+driver might be interested in knowing its clock's enabled/disabled state
+change at runtime, this is very important for centralized DVFS core
+driver. It is not meant to be covering all cases especially for drivers
+which is not part of the DVFS, so we don't care if it is calling
+clk_enable/disable directly or not.
 
-I supposed this one is the one to apply?
+One major side effect being that it affects those existing drivers who
+were calling clk_prepare_enable and clk_prepare_disable but it should
+not hurt if they don't care the notifier, or maybe we should define a
+new set of functions for the purpose?
 
--- 
-tejun
+Mike, how do you think? Thanks.
+
+
