@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab3CMD4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 23:56:38 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:59857 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab3CMD4h (ORCPT
+	id S1756106Ab3CMD5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 23:57:05 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:37843 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873Ab3CMD5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 23:56:37 -0400
+	Tue, 12 Mar 2013 23:57:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130312223245.109098379@linuxfoundation.org>
-References: <20130312223245.109098379@linuxfoundation.org>
-Date: Tue, 12 Mar 2013 21:56:35 -0600
-Message-ID: <CAKocOOP0NM2HeRcYApTinrFDRHKC9UsGaB2nYavoXBrWaUPEjw@mail.gmail.com>
-Subject: Re: [ 00/21] 3.0.69-stable review
+In-Reply-To: <20130312223211.492954675@linuxfoundation.org>
+References: <20130312223211.492954675@linuxfoundation.org>
+Date: Tue, 12 Mar 2013 21:57:00 -0600
+Message-ID: <CAKocOOMjSOr5-nxZc-6ajCM-a=ycpm2i8Zowyw-C-oBx53mg7w@mail.gmail.com>
+Subject: Re: [ 00/40] 3.4.36-stable review
 From: Shuah Khan <shuahkhan@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
@@ -22,18 +22,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 4:44 PM, Greg Kroah-Hartman
+On Tue, Mar 12, 2013 at 4:43 PM, Greg Kroah-Hartman
 <gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.0.69 release.
-> There are 21 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.4.36 release.
+> There are 40 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Thu Mar 14 22:32:21 UTC 2013.
+> Responses should be made by Thu Mar 14 22:31:37 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.69-rc1.gz
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.36-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
