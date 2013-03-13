@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370Ab3CMXQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:16:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38785 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932166Ab3CMXQG convert rfc822-to-8bit (ORCPT
+	id S934388Ab3CMXRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:17:47 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:58128 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390Ab3CMXRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:16:06 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeong, Daniel" <Daniel.Jeong@ti.com>
-Subject: RE: [PATCH 2/3] leds: add LED Trigger for camera function
-Thread-Topic: [PATCH 2/3] leds: add LED Trigger for camera function
-Thread-Index: Ac4PRVGs1jaCsF+dQo64EeKjGOQWtwPxIECAAE2KISA=
-Date: Wed, 13 Mar 2013 23:16:01 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E487A0@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F79273676@DQHE02.ent.ti.com>
- <CAK5ve-KT3NEv=MYv2ZQ9YQ8L-TS9KFaL0VNXzO7KoG9gvSRGcg@mail.gmail.com>
-In-Reply-To: <CAK5ve-KT3NEv=MYv2ZQ9YQ8L-TS9KFaL0VNXzO7KoG9gvSRGcg@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Mar 2013 19:17:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130313231413.GA3265@jtriplet-mobl1>
+References: <20130313231413.GA3265@jtriplet-mobl1>
+Date: Wed, 13 Mar 2013 16:17:44 -0700
+X-Google-Sender-Auth: hOmPE58znKfpZjW3mwhbxkdAEn8
+Message-ID: <CAGXu5jJe-XG7jLcx4GCysXQujH2sUdgF-NuLVVeB5TWGUikhxg@mail.gmail.com>
+Subject: Re: [PATCH] fs: Don't compile in drop_caches.c when CONFIG_SYSCTL=n
+From: Kees Cook <keescook@chromium.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +#if defined(CONFIG_LEDS_TRIGGER_CAMERA) ||
-> defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
-> > +extern void ledtrig_flash_ctrl(bool on);
-> > +extern void ledtrig_torch_ctrl(bool on);
-> > +#else
-> > +#define ledtrig_flash_ctrl(x) do {} while(0)
-> > +#define ledtrig_torch_ctrl(x) do {} while(0)
-> 
-> It's better don't use #define macros but use real empty functions like
-> this:
-> static inline void ledtrig_flash_ctrl(bool on)
-> {
->         return;
-> }
+On Wed, Mar 13, 2013 at 4:14 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> drop_caches.c provides code only invokable via sysctl, so don't compile
+> it in when CONFIG_SYSCTL=n.
+>
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
-I agree, but other trigger functions are declared as do-while definition.
-So I would let them unify if it's not critical.
-I'd like to have your opinion, which is better.
+Seems reasonable to me.
 
-Thanks,
-Milo
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-- 
+Kees Cook
+Chrome OS Security
