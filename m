@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab3CMHGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 03:06:13 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57496 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457Ab3CMHGL (ORCPT
+	id S932828Ab3CMHGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 03:06:34 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52538 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3CMHGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 03:06:11 -0400
+	Wed, 13 Mar 2013 03:06:32 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -15,97 +15,43 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] zcache: add pageframes count once compress zero-filled pages twice
-Date: Wed, 13 Mar 2013 15:05:21 +0800
-Message-Id: <1363158321-20790-5-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH] zram: fix zram_bvec_read duplicate dump failure message and stat accumulation
+Date: Wed, 13 Mar 2013 15:06:16 +0800
+Message-Id: <1363158376-20954-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1363158321-20790-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1363158321-20790-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031307-7014-0000-0000-000002B55E1F
+x-cbid: 13031307-5816-0000-0000-0000070F4967
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since zbudpage consist of two zpages, two zero-filled pages compression
-contribute to one [eph|pers]pageframe count accumulated.
+When zram decompress fails, the code unnecessarily dumps failure messages and
+does stat accumulation in function zram_decompress_page(), this work is already 
+done in function zram_decompress_page, the patch skips the redundant work.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/zcache-main.c |   25 +++++++++++++++++++++++--
- 1 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/staging/zram/zram_drv.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index dd52975..7860ff0 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -544,6 +544,8 @@ static struct page *zcache_evict_eph_pageframe(void);
- static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- 					struct tmem_handle *th)
- {
-+	static ssize_t second_eph_zero_page;
-+	static atomic_t second_eph_zero_page_atomic = ATOMIC_INIT(0);
- 	void *pampd = NULL, *cdata = data;
- 	unsigned clen = size;
- 	bool zero_filled = false;
-@@ -561,7 +563,14 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- 		clen = 0;
- 		zero_filled = true;
- 		zcache_pages_zero++;
--		goto got_pampd;
-+		second_eph_zero_page = atomic_inc_return(
-+				&second_eph_zero_page_atomic);
-+		if (second_eph_zero_page % 2 == 1)
-+			goto got_pampd;
-+		else {
-+			atomic_sub(2, &second_eph_zero_page_atomic);
-+			goto count_zero_page;
-+		}
- 	}
- 	kunmap_atomic(user_mem);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5918fd7..e34e3fe 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -207,11 +207,8 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
  
-@@ -597,6 +606,7 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- create_in_new_page:
- 	pampd = (void *)zbud_create_prep(th, true, cdata, clen, newpage);
- 	BUG_ON(pampd == NULL);
-+count_zero_page:
- 	zcache_eph_pageframes =
- 		atomic_inc_return(&zcache_eph_pageframes_atomic);
- 	if (zcache_eph_pageframes > zcache_eph_pageframes_max)
-@@ -621,6 +631,8 @@ out:
- static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- 					struct tmem_handle *th)
- {
-+	static ssize_t second_pers_zero_page;
-+	static atomic_t second_pers_zero_page_atomic = ATOMIC_INIT(0);
- 	void *pampd = NULL, *cdata = data;
- 	unsigned clen = size, zero_filled = 0;
- 	struct page *page = (struct page *)(data), *newpage;
-@@ -644,7 +656,15 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- 		clen = 0;
- 		zero_filled = 1;
- 		zcache_pages_zero++;
--		goto got_pampd;
-+		second_pers_zero_page = atomic_inc_return(
-+				&second_pers_zero_page_atomic);
-+		if (second_pers_zero_page % 2 == 1)
-+			goto got_pampd;
-+		else {
-+			atomic_sub(2, &second_pers_zero_page_atomic);
-+			goto count_zero_page;
-+		}
-+
- 	}
- 	kunmap_atomic(user_mem);
+ 	ret = zram_decompress_page(zram, uncmem, index);
+ 	/* Should NEVER happen. Return bio error if it does. */
+-	if (unlikely(ret != LZO_E_OK)) {
+-		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+-		zram_stat64_inc(zram, &zram->stats.failed_reads);
++	if (unlikely(ret != LZO_E_OK))
+ 		goto out_cleanup;
+-	}
  
-@@ -698,6 +718,7 @@ create_pampd:
- create_in_new_page:
- 	pampd = (void *)zbud_create_prep(th, false, cdata, clen, newpage);
- 	BUG_ON(pampd == NULL);
-+count_zero_page:
- 	zcache_pers_pageframes =
- 		atomic_inc_return(&zcache_pers_pageframes_atomic);
- 	if (zcache_pers_pageframes > zcache_pers_pageframes_max)
+ 	if (is_partial_io(bvec))
+ 		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
 -- 
-1.7.7.6
+1.7.11.7
 
