@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab3CMDDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 23:03:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40113 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3CMDDj (ORCPT
+	id S1755952Ab3CMDIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 23:08:01 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:45028 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3CMDIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 23:03:39 -0400
-Date: Wed, 13 Mar 2013 14:03:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: linux-next: manual merge of the trivial tree with the virtio tree
-Message-Id: <20130313140328.f4cc0a85729db25f014eed39@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Mar_2013_14_03_28_+1100_hIRSd/GOKBxbj80R"
+	Tue, 12 Mar 2013 23:08:00 -0400
+Message-ID: <513FED85.8030603@linux.vnet.ibm.com>
+Date: Wed, 13 Mar 2013 11:07:49 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wakeup buddy
+References: <5136EB06.2050905@linux.vnet.ibm.com> <1362677252.10972.26.camel@laptop> <5139520C.1060109@linux.vnet.ibm.com> <1362998219.14933.9.camel@laptop> <513E9FC6.4060507@linux.vnet.ibm.com> <1363082932.14933.19.camel@laptop>
+In-Reply-To: <1363082932.14933.19.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031303-7014-0000-0000-000002B512DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Mar_2013_14_03_28_+1100_hIRSd/GOKBxbj80R
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/12/2013 06:08 PM, Peter Zijlstra wrote:
+> Does something simple like a per-task throttle of wake_affine() gain
+> similar benefits? Say something like only do wake_affine() once every
+> 10 ms or so (counting on the wakee, not waker).
+> 
+> The rationale being that wake_affine() relies on load-balance
+> statistics that aren't updated that much faster, so calling it more
+> often than that seems pointless.
 
-Hi Jiri,
+That could works, if we do not have any logical to rely on and just want
+to limit the rate of pull, this could be a good solution.
 
-Today's linux-next merge of the trivial tree got a conflict in
-Documentation/virtual/virtio-spec.txt between commit 29266e2e29f1
-("Remove Documentation/virtual/virtio-spec.txt") from the virtio tree and
-commit d097ddaf529f ("doc: virtual: Fix typos in virtio-spec.txt") from
-the trivial tree.
+However, we already figure out the logical that wakeup related task
+could benefit from closely running, this could promise us somewhat
+reliable benefit.
 
-The former removed the file, so I did that and can carry the fix as
-necessary (no action is required).
+It's just like, tell me how many times that two task continuously wakeup
+each other means they related, I will try to pull them together since
+they have a big chance to benefit from cache.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+IMHO, that sounds a little easier for users than to make the decision on
+tell me how long to pull tasks together, they may be confused...
 
---Signature=_Wed__13_Mar_2013_14_03_28_+1100_hIRSd/GOKBxbj80R
-Content-Type: application/pgp-signature
+In summary, I think we have two point here need to be considered:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+1. what about the missed optimize timing, that may benefit
+   some workload (although we haven't found such workload yet).
 
-iQIcBAEBCAAGBQJRP+yAAAoJEECxmPOUX5FET8kP/0DLpYZARUyUygBwOW4gSgi/
-bpA6QIfnMmtZF3wOX/Qpx2l5Vao/nyuhBrQGs6b4DqKuoCSQFZ4NOYM9uGUPcgOl
-VpSWlSJnZOHFgrw2qjVqxYdZgW4yS6PLgpYqyxehPwxequurOg6ZABfZWZWz6Ush
-m7GVim17x47f5Lg338i06LStCl1We1TH/9V2RM4qEMG7I2FHRQAuSJgV5cOSYiv1
-lIIRJb2weu8B4OB9xZxujM4QVbiG2kLmhIZqJy3W/vT7UoZb3kwOq2powuWZ3cQ2
-YUBTmZHdU8XGZWNlHEwclPnSWYcTRu+4Wcu9ePALIUXLb1Q/rin0fS1Dlku3XZU0
-0fk1B1HG517qOUvD7zyHX8V9FGtnjxwd054ACJ2hLOthNyqHQR7nm5Zw9xcgmIJG
-4Yf+kw+YW4EpwPdJu43OgVsK5mgRMGRo8AxpKA7vuU4/+87B2MPESslUSkdsgqQ4
-9Lk5xSAWRy5Drb0+TbCxKqCuzvRRTX3UDodYOZE8FaKvuI/Hnaygbz+Wng+lz4jQ
-ko9Jf8ymUONRCcM6cnEeA0p+Y2dmOkKV8wDlbF1U5e7ltl3ftUKPlyubt88VT2vN
-iAFwp+8Uk2WNWGIPpLb7w05ZJEp7xPWdtKsUFYBN325jwNEcnIU9V+Kj0SAIV3Ae
-4FmkPXYaygQ+OZLuC/3Y
-=Ad5Y
------END PGP SIGNATURE-----
+2. how many benefit could wake_affine() stuff bring to us,
+   if limit rate benefit us, why don't we remove it?
 
---Signature=_Wed__13_Mar_2013_14_03_28_+1100_hIRSd/GOKBxbj80R--
+Point 1 could be solved by disable wakeup buddy with 0 limitation, and
+when users complain about their database performance, we just say "Calm
+down and take a try on this knob ;-)".
+
+Point 2 is about the wake_affine() stuff itself.
+
+Later we could try to make the stuff better, but I have the feeling that
+some key info is not there (may be we need Ingo's work atom idea here,
+just wondering...), whatever, I think we still need a knob finally,
+since it doesn't sounds like a general optimization which benefit all
+the cases.
+
+And I don't agree to remove the stuff since we have many theories that
+this could benefit us, but before it really show the benefit in all the
+cases, provide a way to keep it quiet sounds necessary...
+
+Regards,
+Michael Wang
+
+> 
+> Something like that should take a lot less lines to implement.
+> 
+> Just wondering..
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
