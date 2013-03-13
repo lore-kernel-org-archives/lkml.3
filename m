@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab3CMRod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:44:33 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52415 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933096Ab3CMRob (ORCPT
+	id S934009Ab3CMRof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:44:35 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:47664 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933096Ab3CMRoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:44:31 -0400
+	Wed, 13 Mar 2013 13:44:34 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,39 +15,126 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] sched: Cputime update for 3.10
-Date: Wed, 13 Mar 2013 18:44:21 +0100
-Message-Id: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] math64: New div64_u64_rem helper
+Date: Wed, 13 Mar 2013 18:44:22 +0100
+Message-Id: <1363196663-4258-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
+References: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Provide an extended version of div64_u64() that
+also returns the remainder of the division.
 
-Please pull the latest cputime accounting updates that can be found at:
+We are going to need this to refine the cputime
+scaling code.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	sched/core
-
-HEAD: d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
-
-Some users are complaining that their threadgroup's runtime accounting freezes
-after a week or so of intense cpu-bound workload. This set tries to fix the issue
-by reducing the risk of multiplication overflow in the cputime scaling code.
-
-Thanks.
-
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
-Frederic Weisbecker (2):
-  math64: New div64_u64_rem helper
-  sched: Lower chances of cputime scaling overflow
-
  include/linux/math64.h |   19 ++++++++++++++++++-
- kernel/sched/cputime.c |   46 ++++++++++++++++++++++++++++++++++------------
  lib/div64.c            |   19 +++++++++++++------
- 3 files changed, 65 insertions(+), 19 deletions(-)
+ 2 files changed, 31 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/math64.h b/include/linux/math64.h
+index b8ba855..931a619 100644
+--- a/include/linux/math64.h
++++ b/include/linux/math64.h
+@@ -30,6 +30,15 @@ static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
+ }
+ 
+ /**
++ * div64_u64_rem - unsigned 64bit divide with 64bit divisor
++ */
++static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
++{
++	*remainder = dividend % divisor;
++	return dividend / divisor;
++}
++
++/**
+  * div64_u64 - unsigned 64bit divide with 64bit divisor
+  */
+ static inline u64 div64_u64(u64 dividend, u64 divisor)
+@@ -61,8 +70,16 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+ extern s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder);
+ #endif
+ 
++#ifndef div64_u64_rem
++extern u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder);
++#endif
++
+ #ifndef div64_u64
+-extern u64 div64_u64(u64 dividend, u64 divisor);
++static inline u64 div64_u64(u64 dividend, u64 divisor)
++{
++	u64 remainder;
++	return div64_u64_rem(dividend, divisor, &remainder);
++}
+ #endif
+ 
+ #ifndef div64_s64
+diff --git a/lib/div64.c b/lib/div64.c
+index a163b6c..3af5728 100644
+--- a/lib/div64.c
++++ b/lib/div64.c
+@@ -79,9 +79,10 @@ EXPORT_SYMBOL(div_s64_rem);
+ #endif
+ 
+ /**
+- * div64_u64 - unsigned 64bit divide with 64bit divisor
++ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and 64bit remainder
+  * @dividend:	64bit dividend
+  * @divisor:	64bit divisor
++ * @remainder:  64bit remainder
+  *
+  * This implementation is a modified version of the algorithm proposed
+  * by the book 'Hacker's Delight'.  The original source and full proof
+@@ -89,27 +90,33 @@ EXPORT_SYMBOL(div_s64_rem);
+  *
+  * 'http://www.hackersdelight.org/HDcode/newCode/divDouble.c.txt'
+  */
+-#ifndef div64_u64
+-u64 div64_u64(u64 dividend, u64 divisor)
++#ifndef div64_u64_rem
++u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
+ {
+ 	u32 high = divisor >> 32;
+ 	u64 quot;
+ 
+ 	if (high == 0) {
+-		quot = div_u64(dividend, divisor);
++		u32 rem32;
++		quot = div_u64_rem(dividend, divisor, &rem32);
++		*remainder = rem32;
+ 	} else {
+ 		int n = 1 + fls(high);
+ 		quot = div_u64(dividend >> n, divisor >> n);
+ 
+ 		if (quot != 0)
+ 			quot--;
+-		if ((dividend - quot * divisor) >= divisor)
++
++		*remainder = dividend - quot * divisor;
++		if (*remainder >= divisor) {
+ 			quot++;
++			*remainder -= divisor;
++		}
+ 	}
+ 
+ 	return quot;
+ }
+-EXPORT_SYMBOL(div64_u64);
++EXPORT_SYMBOL(div64_u64_rem);
+ #endif
+ 
+ /**
 -- 
 1.7.5.4
 
