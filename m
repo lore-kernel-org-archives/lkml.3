@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964896Ab3CMX2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:28:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51165 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964854Ab3CMX2f (ORCPT
+	id S964986Ab3CMXch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:32:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17606 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964906Ab3CMX2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:28:35 -0400
+	Wed, 13 Mar 2013 19:28:40 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 14/27] PCI: Use for_each_pci_resource() in pci_assign_resource
-Date: Wed, 13 Mar 2013 16:28:09 -0700
-Message-Id: <1363217302-14383-15-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 22/27] PCI: Add helpers to add addon_resource
+Date: Wed, 13 Mar 2013 16:28:17 -0700
+Message-Id: <1363217302-14383-23-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
@@ -22,76 +22,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also replace dev->resource[n] with pci_dev_resource_n().
+Add helper to put add_on resources into pci devices resource list.
+
+-v2: change one function to static according to Fengguang.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-res.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/pci/probe.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    5 ++++
+ 2 files changed, 73 insertions(+)
 
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 81b88bd..94ef232 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -110,7 +110,7 @@ void pci_update_resource(struct pci_dev *dev, int resno)
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 9e659c7..f3038c2 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -144,6 +144,74 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+ 	return -1;
+ }
  
- int pci_claim_resource(struct pci_dev *dev, int resource)
++static struct pci_dev_addon_resource *pci_alloc_dev_addon_resource(
++		 struct pci_dev *dev, int addr, char *name)
++{
++	struct pci_dev_addon_resource *addon_res;
++
++	addon_res = kzalloc(sizeof(*addon_res), GFP_KERNEL);
++
++	if (!addon_res)
++		return NULL;
++
++	addon_res->reg_addr = addr;
++
++	if (name)
++		addon_res->res.name = name;
++	else
++		addon_res->res.name = pci_name(dev);
++
++	list_add_tail(&addon_res->list, &dev->addon_resources);
++
++	return addon_res;
++}
++
++struct pci_dev_addon_resource *pci_add_dev_addon_fixed_resource(
++		 struct pci_dev *dev, int start, int size, int flags,
++		 int addr, char *name)
++{
++	struct pci_dev_addon_resource *addon_res;
++	struct resource *res;
++
++	addon_res = pci_alloc_dev_addon_resource(dev, addr, name);
++	if (addon_res)
++		return NULL;
++
++	res = &addon_res->res;
++	res->start = start;
++	res->end = start + size - 1;
++	res->flags = flags | IORESOURCE_PCI_FIXED;
++
++	dev_printk(KERN_DEBUG, &dev->dev,
++		   "addon fixed resource %s %pR added\n", res->name, res);
++
++	return addon_res;
++}
++
++struct pci_dev_addon_resource *pci_add_dev_addon_resource(struct pci_dev *dev,
++		 int addr, int size, struct resource_ops *ops, char *name)
++{
++	struct pci_dev_addon_resource *addon_res;
++	struct resource *res;
++
++	addon_res = pci_alloc_dev_addon_resource(dev, addr, name);
++	if (!addon_res)
++		return NULL;
++
++	res = &addon_res->res;
++	if (ops) {
++		addon_res->ops = ops;
++		addon_res->size = size;
++		ops->read(dev, res, addr);
++	} else
++		__pci_read_base(dev, pci_bar_unknown, res, addr);
++
++	dev_printk(KERN_DEBUG, &dev->dev,
++		   "addon resource %s %pR added\n", res->name, res);
++
++	return addon_res;
++}
++
+ static void pci_release_dev_addon_resource(struct pci_dev *dev)
  {
--	struct resource *res = &dev->resource[resource];
-+	struct resource *res = pci_dev_resource_n(dev, resource);
- 	struct resource *root, *conflict;
+ 	struct pci_dev_addon_resource *addon_res, *tmp;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index b73245b..624c62f 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -379,6 +379,11 @@ struct pci_dev_addon_resource {
  
- 	root = pci_find_parent_resource(dev, res);
-@@ -200,7 +200,7 @@ static int pci_revert_fw_address(struct resource *res, struct pci_dev *dev,
- static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
- 		int resno, resource_size_t size, resource_size_t align)
- {
--	struct resource *res = dev->resource + resno;
-+	struct resource *res = pci_dev_resource_n(dev, resno);
- 	resource_size_t min;
- 	int ret;
+ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
++struct pci_dev_addon_resource *pci_add_dev_addon_fixed_resource(
++		 struct pci_dev *dev, int start, int size, int flags,
++		 int addr, char *name);
++struct pci_dev_addon_resource *pci_add_dev_addon_resource(struct pci_dev *dev,
++		 int addr, int size, struct resource_ops *ops, char *name);
  
-@@ -227,7 +227,7 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
- static int _pci_assign_resource(struct pci_dev *dev, int resno,
- 				resource_size_t size, resource_size_t min_align)
- {
--	struct resource *res = dev->resource + resno;
-+	struct resource *res = pci_dev_resource_n(dev, resno);
- 	struct pci_bus *bus;
- 	int ret;
- 	char *type;
-@@ -259,7 +259,7 @@ static int _pci_assign_resource(struct pci_dev *dev, int resno,
- 
- int pci_assign_resource(struct pci_dev *dev, int resno)
- {
--	struct resource *res = dev->resource + resno;
-+	struct resource *res = pci_dev_resource_n(dev, resno);
- 	resource_size_t align, size;
- 	struct pci_bus *bus;
- 	int ret;
-@@ -295,7 +295,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
- int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsize,
- 			resource_size_t min_align)
- {
--	struct resource *res = dev->resource + resno;
-+	struct resource *res = pci_dev_resource_n(dev, resno);
- 	resource_size_t new_size;
- 	int ret;
- 
-@@ -326,12 +326,10 @@ int pci_enable_resources(struct pci_dev *dev, int mask)
- 	pci_read_config_word(dev, PCI_COMMAND, &cmd);
- 	old_cmd = cmd;
- 
--	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-+	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
- 		if (!(mask & (1 << i)))
- 			continue;
- 
--		r = &dev->resource[i];
--
- 		if (!(r->flags & (IORESOURCE_IO | IORESOURCE_MEM)))
- 			continue;
- 		if ((i == PCI_ROM_RESOURCE) &&
+ #define PCI_STD_RES		(1<<0)
+ #define PCI_ROM_RES		(1<<1)
 -- 
 1.7.10.4
 
