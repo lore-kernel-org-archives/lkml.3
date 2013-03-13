@@ -1,43 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab3CMICx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 04:02:53 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:62572 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab3CMICq (ORCPT
+	id S1755454Ab3CMIIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 04:08:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60802 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab3CMIIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 04:02:46 -0400
+	Wed, 13 Mar 2013 04:08:21 -0400
+X-AuditID: 9c93016f-b7bfaae000003db8-3c-514033f168d3
+Date: Wed, 13 Mar 2013 17:08:16 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: page_alloc: remove branch operation in
+ free_pages_prepare()
+Message-ID: <20130313080816.GA4219@lge.com>
+References: <1362644480-18381-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <alpine.LNX.2.00.1303071050080.6087@eggly.anvils>
+ <20130308004550.GA19010@lge.com>
+ <alpine.LNX.2.00.1303071745001.7553@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <20130312223122.884099393@linuxfoundation.org>
-References: <20130312223122.884099393@linuxfoundation.org>
-Date: Wed, 13 Mar 2013 09:02:46 +0100
-Message-ID: <CAHsu+b9O+JG=v6FgAEG4KOVDGScFiZYQm_nqXOQ9NSae3D3hwA@mail.gmail.com>
-Subject: Re: [ 000/100] 3.8.3-stable review
-From: Andre Heider <a.heider@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1303071745001.7553@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 11:30 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.8.3 release.
-> There are 100 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Hello, Hugh.
 
-Hi,
+On Thu, Mar 07, 2013 at 06:01:26PM -0800, Hugh Dickins wrote:
+> On Fri, 8 Mar 2013, Joonsoo Kim wrote:
+> > On Thu, Mar 07, 2013 at 10:54:15AM -0800, Hugh Dickins wrote:
+> > > On Thu, 7 Mar 2013, Joonsoo Kim wrote:
+> > > 
+> > > > When we found that the flag has a bit of PAGE_FLAGS_CHECK_AT_PREP,
+> > > > we reset the flag. If we always reset the flag, we can reduce one
+> > > > branch operation. So remove it.
+> > > > 
+> > > > Cc: Hugh Dickins <hughd@google.com>
+> > > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > > 
+> > > I don't object to this patch.  But certainly I would have written it
+> > > that way in order not to dirty a cacheline unnecessarily.  It may be
+> > > obvious to you that the cacheline in question is almost always already
+> > > dirty, and the branch almost always more expensive.  But I'll leave that
+> > > to you, and to those who know more about these subtle costs than I do.
+> > 
+> > Yes. I already think about that. I thought that even if a cacheline is
+> > not dirty at this time, we always touch the 'struct page' in
+> > set_freepage_migratetype() a little later, so dirtying is not the problem.
+> 
+> I expect that a very high proportion of user pages have
+> PG_uptodate to be cleared here; and there's also the recently added
+> page_nid_reset_last(), which will dirty the flags or a nearby field
+> when CONFIG_NUMA_BALANCING.  Those argue in favour of your patch.
+> 
 
-I'm missing a drivers/net/ethernet/atheros/atl1c patch, namely "atl1c:
-restore buffer state".
-In fact, it seems the whole netdev stable patch queue is missing:
-http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+Ah... I totally missed it.
 
-Unsure what the workflow is here, how are these supposed to make to stable?
+> > 
+> > But, now, I re-think this and decide to drop this patch.
+> > The reason is that 'struct page' of 'compound pages' may not be dirty
+> > at this time and will not be dirty at later time.
+> 
+> Actual compound pages would have PG_head or PG_tail or PG_compound
+> to be cleared there, I believe (check if I'm right on that).  The
+> questionable case is the ordinary order>0 case without __GFP_COMP
+> (and page_nid_reset_last() is applied to each subpage of those).
+>
 
-Thanks,
-Andre
+Yes.
+
+> > So this patch is bad idea.
+> 
+> I'm not so sure.  I doubt your patch will make a giant improvement
+> in kernel performance!  But it might make a little - maybe you just
+> need to give some numbers from perf to justify it (but I'm easily
+> dazzled by numbers - don't expect me to judge the result).
+
+Okay.
+Thanks for enlightening comment.
+Now, I don't have any idea to collect a performance result for this patch.
+When I have more time, I try to think it.
+
+Thanks.
+
+> 
+> Hugh
+> 
+> > 
+> > Is there any comments?
+> > 
+> > Thanks.
+> > 
+> > > Hugh
+> > > 
+> > > > 
+> > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > index 8fcced7..778f2a9 100644
+> > > > --- a/mm/page_alloc.c
+> > > > +++ b/mm/page_alloc.c
+> > > > @@ -614,8 +614,7 @@ static inline int free_pages_check(struct page *page)
+> > > >  		return 1;
+> > > >  	}
+> > > >  	page_nid_reset_last(page);
+> > > > -	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+> > > > -		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+> > > > +	page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+> > > >  	return 0;
+> > > >  }
+> > > >  
+> > > 
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
