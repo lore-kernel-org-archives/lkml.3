@@ -1,245 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3CMGfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:35:51 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52149 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3CMGdI (ORCPT
+	id S932082Ab3CMGnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:43:53 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:60458 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3CMGnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:33:08 -0400
-X-AuditID: 9c93016f-b7bfaae000003db8-dd-51401da211a1
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Anderson <anderson@redhat.com>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Vivek Goyal <vgoyal@redhat.com>, Bob Liu <lliubbo@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, kexec@lists.infradead.org,
-        Joonsoo Kim <js1304@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 2/8] mm, vmalloc: move get_vmalloc_info() to vmalloc.c
-Date: Wed, 13 Mar 2013 15:32:54 +0900
-Message-Id: <1363156381-2881-3-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 13 Mar 2013 02:43:52 -0400
+From: Girish K S <girishks2000@gmail.com>
+To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: grant.likely@secretlab.ca, t.figa@samsung.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: [PATCH V3 0/5] Add polling support for 64xx spi controller
+Date: Wed, 13 Mar 2013 12:13:29 +0530
+Message-Id: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <js1304@gmail.com>
+[PATCH 1/5]: fixes the error handling in the interrupt handler
+[PATCH 2/5]: The existing driver support partial polling mode.
+	     This patch modifies the current driver to support
+	     only polling mode.
+[PATCH 3/5]: provision to support SoC's with dedicated i/o pins
+[PATCH 4/5]: provision to support dedicated cs pin
+[PATCH 5/5]: support exynos5440 SoC in polling mode
 
-Now get_vmalloc_info() is in fs/proc/mmu.c. There is no reason
-that this code must be here and it's implementation needs vmlist_lock
-and it iterate a vmlist which may be internal data structure for vmalloc.
+Tested this patch on exynos5250 in dma mode, and exynos5440 in
+polling mode.
 
-It is preferable that vmlist_lock and vmlist is only used in vmalloc.c
-for maintainability. So move the code to vmalloc.c
+changes in v3: 
+	    Rebase it to the linus's master branch. After rebase
+there was a logical code change due to the merge of generic dma
+patch. resolved the merge conflicts and tested for the functionality
+	
+Girish K S (5):
+  spi: s3c64xx: modified error interrupt handling and init
+  spi: s3c64xx: added support for polling mode
+  spi: s3c64xx: Added provision for non-gpio i/o's
+  spi: s3c64xx: Added provision for dedicated cs pin
+  spi: s3c64xx: Added support for exynos5440 spi
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+ drivers/spi/spi-s3c64xx.c                 | 204 +++++++++++++++++++++---------
+ include/linux/platform_data/spi-s3c64xx.h |   3 +
+ 2 files changed, 148 insertions(+), 59 deletions(-)
 
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index 712f24d..ab30716 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -5,7 +5,7 @@
- obj-y   += proc.o
- 
- proc-y			:= nommu.o task_nommu.o
--proc-$(CONFIG_MMU)	:= mmu.o task_mmu.o
-+proc-$(CONFIG_MMU)	:= task_mmu.o
- 
- proc-y       += inode.o root.o base.o generic.o array.o \
- 		fd.o
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 85ff3a4..7571035 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -30,24 +30,6 @@ extern int proc_net_init(void);
- static inline int proc_net_init(void) { return 0; }
- #endif
- 
--struct vmalloc_info {
--	unsigned long	used;
--	unsigned long	largest_chunk;
--};
--
--#ifdef CONFIG_MMU
--#define VMALLOC_TOTAL (VMALLOC_END - VMALLOC_START)
--extern void get_vmalloc_info(struct vmalloc_info *vmi);
--#else
--
--#define VMALLOC_TOTAL 0UL
--#define get_vmalloc_info(vmi)			\
--do {						\
--	(vmi)->used = 0;			\
--	(vmi)->largest_chunk = 0;		\
--} while(0)
--#endif
--
- extern int proc_tid_stat(struct seq_file *m, struct pid_namespace *ns,
- 				struct pid *pid, struct task_struct *task);
- extern int proc_tgid_stat(struct seq_file *m, struct pid_namespace *ns,
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 1efaaa1..5aa847a 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -11,6 +11,7 @@
- #include <linux/swap.h>
- #include <linux/vmstat.h>
- #include <linux/atomic.h>
-+#include <linux/vmalloc.h>
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include "internal.h"
-diff --git a/fs/proc/mmu.c b/fs/proc/mmu.c
-deleted file mode 100644
-index 8ae221d..0000000
---- a/fs/proc/mmu.c
-+++ /dev/null
-@@ -1,60 +0,0 @@
--/* mmu.c: mmu memory info files
-- *
-- * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
-- * Written by David Howells (dhowells@redhat.com)
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License
-- * as published by the Free Software Foundation; either version
-- * 2 of the License, or (at your option) any later version.
-- */
--#include <linux/spinlock.h>
--#include <linux/vmalloc.h>
--#include <linux/highmem.h>
--#include <asm/pgtable.h>
--#include "internal.h"
--
--void get_vmalloc_info(struct vmalloc_info *vmi)
--{
--	struct vm_struct *vma;
--	unsigned long free_area_size;
--	unsigned long prev_end;
--
--	vmi->used = 0;
--
--	if (!vmlist) {
--		vmi->largest_chunk = VMALLOC_TOTAL;
--	}
--	else {
--		vmi->largest_chunk = 0;
--
--		prev_end = VMALLOC_START;
--
--		read_lock(&vmlist_lock);
--
--		for (vma = vmlist; vma; vma = vma->next) {
--			unsigned long addr = (unsigned long) vma->addr;
--
--			/*
--			 * Some archs keep another range for modules in vmlist
--			 */
--			if (addr < VMALLOC_START)
--				continue;
--			if (addr >= VMALLOC_END)
--				break;
--
--			vmi->used += vma->size;
--
--			free_area_size = addr - prev_end;
--			if (vmi->largest_chunk < free_area_size)
--				vmi->largest_chunk = free_area_size;
--
--			prev_end = vma->size + addr;
--		}
--
--		if (VMALLOC_END - prev_end > vmi->largest_chunk)
--			vmi->largest_chunk = VMALLOC_END - prev_end;
--
--		read_unlock(&vmlist_lock);
--	}
--}
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 6071e91..698b1e5 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -158,4 +158,22 @@ pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
- # endif
- #endif
- 
-+struct vmalloc_info {
-+	unsigned long   used;
-+	unsigned long   largest_chunk;
-+};
-+
-+#ifdef CONFIG_MMU
-+#define VMALLOC_TOTAL (VMALLOC_END - VMALLOC_START)
-+extern void get_vmalloc_info(struct vmalloc_info *vmi);
-+#else
-+
-+#define VMALLOC_TOTAL 0UL
-+#define get_vmalloc_info(vmi)			\
-+do {						\
-+	(vmi)->used = 0;			\
-+	(vmi)->largest_chunk = 0;		\
-+} while (0)
-+#endif
-+
- #endif /* _LINUX_VMALLOC_H */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0f751f2..1d9878b 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2645,5 +2645,49 @@ static int __init proc_vmalloc_init(void)
- 	return 0;
- }
- module_init(proc_vmalloc_init);
-+
-+void get_vmalloc_info(struct vmalloc_info *vmi)
-+{
-+	struct vm_struct *vma;
-+	unsigned long free_area_size;
-+	unsigned long prev_end;
-+
-+	vmi->used = 0;
-+
-+	if (!vmlist) {
-+		vmi->largest_chunk = VMALLOC_TOTAL;
-+	} else {
-+		vmi->largest_chunk = 0;
-+
-+		prev_end = VMALLOC_START;
-+
-+		read_lock(&vmlist_lock);
-+
-+		for (vma = vmlist; vma; vma = vma->next) {
-+			unsigned long addr = (unsigned long) vma->addr;
-+
-+			/*
-+			 * Some archs keep another range for modules in vmlist
-+			 */
-+			if (addr < VMALLOC_START)
-+				continue;
-+			if (addr >= VMALLOC_END)
-+				break;
-+
-+			vmi->used += vma->size;
-+
-+			free_area_size = addr - prev_end;
-+			if (vmi->largest_chunk < free_area_size)
-+				vmi->largest_chunk = free_area_size;
-+
-+			prev_end = vma->size + addr;
-+		}
-+
-+		if (VMALLOC_END - prev_end > vmi->largest_chunk)
-+			vmi->largest_chunk = VMALLOC_END - prev_end;
-+
-+		read_unlock(&vmlist_lock);
-+	}
-+}
- #endif
- 
 -- 
-1.7.9.5
+1.8.0
 
