@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3CMGec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:34:32 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45683 "EHLO
+	id S1755327Ab3CMGdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:33:09 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52149 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab3CMGdM (ORCPT
+	with ESMTP id S1754240Ab3CMGdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:33:12 -0400
-X-AuditID: 9c93016f-b7bfaae000003db8-19-51401da58d96
+	Wed, 13 Mar 2013 02:33:07 -0400
+X-AuditID: 9c93016f-b7bfaae000003db8-b3-51401da040ab
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -15,153 +15,67 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
         Vivek Goyal <vgoyal@redhat.com>, Bob Liu <lliubbo@gmail.com>,
         Pekka Enberg <penberg@kernel.org>, kexec@lists.infradead.org,
-        Joonsoo Kim <js1304@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 8/8] mm, vmalloc: remove list management of vmlist after initializing vmalloc
-Date: Wed, 13 Mar 2013 15:33:00 +0900
-Message-Id: <1363156381-2881-9-git-send-email-iamjoonsoo.kim@lge.com>
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 0/8] remove vm_struct list management
+Date: Wed, 13 Mar 2013 15:32:52 +0900
+Message-Id: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <js1304@gmail.com>
+This patchset remove vm_struct list management after initializing vmalloc.
+Adding and removing an entry to vmlist is linear time complexity, so
+it is inefficient. If we maintain this list, overall time complexity of
+adding and removing area to vmalloc space is O(N), although we use
+rbtree for finding vacant place and it's time complexity is just O(logN).
 
-Now, there is no need to maintain vmlist after initializing vmalloc.
-So remove related code and data structure.
+And vmlist and vmlist_lock is used many places of outside of vmalloc.c.
+It is preferable that we hide this raw data structure and provide
+well-defined function for supporting them, because it makes that they
+cannot mistake when manipulating theses structure and it makes us easily
+maintain vmalloc layer.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+For kexec and makedumpfile, I export vmap_area_list, instead of vmlist.
+This comes from Atsushi's recommendation.
+For more information, please refer below link.
+https://lkml.org/lkml/2012/12/6/184
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 7e63984..151da8a 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -273,10 +273,6 @@ static unsigned long cached_align;
- 
- static unsigned long vmap_area_pcpu_hole;
- 
--/*** Old vmalloc interfaces ***/
--static DEFINE_RWLOCK(vmlist_lock);
--static struct vm_struct *vmlist;
--
- static struct vmap_area *__find_vmap_area(unsigned long addr)
- {
- 	struct rb_node *n = vmap_area_root.rb_node;
-@@ -318,7 +314,7 @@ static void __insert_vmap_area(struct vmap_area *va)
- 	rb_link_node(&va->rb_node, parent, p);
- 	rb_insert_color(&va->rb_node, &vmap_area_root);
- 
--	/* address-sort this list so it is usable like the vmlist */
-+	/* address-sort this list */
- 	tmp = rb_prev(&va->rb_node);
- 	if (tmp) {
- 		struct vmap_area *prev;
-@@ -1130,6 +1126,7 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
- }
- EXPORT_SYMBOL(vm_map_ram);
- 
-+static struct vm_struct *vmlist __initdata;
- /**
-  * vm_area_add_early - add vmap area early during boot
-  * @vm: vm_struct to add
-@@ -1301,10 +1298,8 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 	spin_unlock(&vmap_area_lock);
- }
- 
--static void insert_vmalloc_vmlist(struct vm_struct *vm)
-+static void clear_vm_unlist(struct vm_struct *vm)
- {
--	struct vm_struct *tmp, **p;
--
- 	/*
- 	 * Before removing VM_UNLIST,
- 	 * we should make sure that vm has proper values.
-@@ -1312,22 +1307,13 @@ static void insert_vmalloc_vmlist(struct vm_struct *vm)
- 	 */
- 	smp_wmb();
- 	vm->flags &= ~VM_UNLIST;
--
--	write_lock(&vmlist_lock);
--	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
--		if (tmp->addr >= vm->addr)
--			break;
--	}
--	vm->next = *p;
--	*p = vm;
--	write_unlock(&vmlist_lock);
- }
- 
- static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 			      unsigned long flags, const void *caller)
- {
- 	setup_vmalloc_vm(vm, va, flags, caller);
--	insert_vmalloc_vmlist(vm);
-+	clear_vm_unlist(vm);
- }
- 
- static struct vm_struct *__get_vm_area_node(unsigned long size,
-@@ -1370,10 +1356,9 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
- 
- 	/*
- 	 * When this function is called from __vmalloc_node_range,
--	 * we do not add vm_struct to vmlist here to avoid
--	 * accessing uninitialized members of vm_struct such as
--	 * pages and nr_pages fields. They will be set later.
--	 * To distinguish it from others, we use a VM_UNLIST flag.
-+	 * we add VM_UNLIST flag to avoid accessing uninitialized
-+	 * members of vm_struct such as pages and nr_pages fields.
-+	 * They will be set later.
- 	 */
- 	if (flags & VM_UNLIST)
- 		setup_vmalloc_vm(area, va, flags, caller);
-@@ -1462,20 +1447,6 @@ struct vm_struct *remove_vm_area(const void *addr)
- 		va->flags &= ~VM_VM_AREA;
- 		spin_unlock(&vmap_area_lock);
- 
--		if (!(vm->flags & VM_UNLIST)) {
--			struct vm_struct *tmp, **p;
--			/*
--			 * remove from list and disallow access to
--			 * this vm_struct before unmap. (address range
--			 * confliction is maintained by vmap.)
--			 */
--			write_lock(&vmlist_lock);
--			for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
--				;
--			*p = tmp->next;
--			write_unlock(&vmlist_lock);
--		}
--
- 		vmap_debug_free_range(va->va_start, va->va_end);
- 		free_unmap_vmap_area(va);
- 		vm->size -= PAGE_SIZE;
-@@ -1695,10 +1666,11 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
- 		return NULL;
- 
- 	/*
--	 * In this function, newly allocated vm_struct is not added
--	 * to vmlist at __get_vm_area_node(). so, it is added here.
-+	 * In this function, newly allocated vm_struct has VM_UNLIST flag.
-+	 * It means that vm_struct is not fully initialized.
-+	 * Now, it is fully initialized, so remove this flag here.
- 	 */
--	insert_vmalloc_vmlist(area);
-+	clear_vm_unlist(area);
- 
- 	/*
- 	 * A ref_count = 3 is needed because the vm_struct and vmap_area
-@@ -2594,7 +2566,7 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
- 		if (!counters)
- 			return;
- 
--		/* Pair with smp_wmb() in insert_vmalloc_vmlist() */
-+		/* Pair with smp_wmb() in clear_vm_unlist() */
- 		smp_rmb();
- 		if (v->flags & VM_UNLIST)
- 			return;
+These are based on v3.9-rc2.
+
+Changes from v1
+5/8: skip areas for lazy_free
+6/8: skip areas for lazy_free
+7/8: export vmap_area_list for kexec, instead of vmlist
+
+Joonsoo Kim (8):
+  mm, vmalloc: change iterating a vmlist to find_vm_area()
+  mm, vmalloc: move get_vmalloc_info() to vmalloc.c
+  mm, vmalloc: protect va->vm by vmap_area_lock
+  mm, vmalloc: iterate vmap_area_list, instead of vmlist in
+    vread/vwrite()
+  mm, vmalloc: iterate vmap_area_list in get_vmalloc_info()
+  mm, vmalloc: iterate vmap_area_list, instead of vmlist, in
+    vmallocinfo()
+  mm, vmalloc: export vmap_area_list, instead of vmlist
+  mm, vmalloc: remove list management of vmlist after initializing
+    vmalloc
+
+ arch/tile/mm/pgtable.c      |    7 +-
+ arch/unicore32/mm/ioremap.c |   17 ++--
+ arch/x86/mm/ioremap.c       |    7 +-
+ fs/proc/Makefile            |    2 +-
+ fs/proc/internal.h          |   18 ----
+ fs/proc/meminfo.c           |    1 +
+ fs/proc/mmu.c               |   60 -------------
+ include/linux/vmalloc.h     |   21 ++++-
+ kernel/kexec.c              |    2 +-
+ mm/nommu.c                  |    3 +-
+ mm/vmalloc.c                |  207 +++++++++++++++++++++++++++++--------------
+ 11 files changed, 170 insertions(+), 175 deletions(-)
+ delete mode 100644 fs/proc/mmu.c
+
 -- 
 1.7.9.5
 
