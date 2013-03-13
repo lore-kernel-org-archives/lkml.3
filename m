@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817Ab3CMQyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:54:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50349 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933151Ab3CMQyB (ORCPT
+	id S1756527Ab3CMQy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:54:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29853 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483Ab3CMQyZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:54:01 -0400
-Message-ID: <5140AF22.2030809@wwwdotorg.org>
-Date: Wed, 13 Mar 2013 10:53:54 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 13 Mar 2013 12:54:25 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-doc@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
-        Grant Grundler <grundler@chromium.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
-        bhushan.r@samsung.com,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        sreekumar.c@samsung.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Prashanth G <prashanth.g@samsung.com>
-Subject: Re: [PATCH v4 1/3] i2c: mux: Add i2c-arbitrator-cros-ec 'mux' driver
-References: <1360957573-864-1-git-send-email-dianders@chromium.org> <1363192583-26363-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1363192583-26363-1-git-send-email-dianders@chromium.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <9a45f4be-a80c-434d-ae7f-f8faaea5e4d4@default>
+Date: Wed, 13 Mar 2013 09:53:48 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 2/4] zcache: zero-filled pages awareness
+References: <<1363158321-20790-1-git-send-email-liwanp@linux.vnet.ibm.com>>
+ <<1363158321-20790-3-git-send-email-liwanp@linux.vnet.ibm.com>>
+In-Reply-To: <<1363158321-20790-3-git-send-email-liwanp@linux.vnet.ibm.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2013 10:36 AM, Doug Anderson wrote:
-> The i2c-arbitrator-cros-ec driver implements the arbitration scheme
-> that the Embedded Controller (EC) on the ARM Chromebook expects to use
-> for bus multimastering.  This i2c-arbitrator-cros-ec driver could also
-> be used in other places where standard I2C bus arbitration can't be
-> used and two extra GPIOs are available for arbitration.
+> From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
+> Subject: [PATCH 2/4] zcache: zero-filled pages awareness
 > 
-> This driver is based on code that Simon Glass added to the i2c-s3c2410
-> driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
-> mux driver is as suggested by Grant Likely.  See
-> <https://patchwork.kernel.org/patch/1877311/> for some history.
-...
-> Changes in v4: None
+> Compression of zero-filled pages can unneccessarily cause internal
+> fragmentation, and thus waste memory. This special case can be
+> optimized.
+> 
+> This patch captures zero-filled pages, and marks their corresponding
+> zcache backing page entry as zero-filled. Whenever such zero-filled
+> page is retrieved, we fill the page frame with zero.
+> 
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zcache/tmem.c        |    4 +-
+>  drivers/staging/zcache/tmem.h        |    5 ++
+>  drivers/staging/zcache/zcache-main.c |   87 ++++++++++++++++++++++++++++++----
+>  3 files changed, 85 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
+> index a2b7e03..62468ea 100644
+> --- a/drivers/staging/zcache/tmem.c
+> +++ b/drivers/staging/zcache/tmem.c
+> @@ -597,7 +597,9 @@ int tmem_put(struct tmem_pool *pool, struct tmem_oid *oidp, uint32_t index,
+>  	if (unlikely(ret == -ENOMEM))
+>  		/* may have partially built objnode tree ("stump") */
+>  		goto delete_and_free;
+> -	(*tmem_pamops.create_finish)(pampd, is_ephemeral(pool));
+> +	if (pampd != (void *)ZERO_FILLED)
+> +		(*tmem_pamops.create_finish)(pampd, is_ephemeral(pool));
+> +
+>  	goto out;
+> 
+>  delete_and_free:
+> diff --git a/drivers/staging/zcache/tmem.h b/drivers/staging/zcache/tmem.h
+> index adbe5a8..6719dbd 100644
+> --- a/drivers/staging/zcache/tmem.h
+> +++ b/drivers/staging/zcache/tmem.h
+> @@ -204,6 +204,11 @@ struct tmem_handle {
+>  	uint16_t client_id;
+>  };
+> 
+> +/*
+> + * mark pampd to special vaule in order that later
+> + * retrieve will identify zero-filled pages
+> + */
+> +#define ZERO_FILLED 0x2
 
-Isn't this 'PATCH V3 REPOST' then?
+You can avoid changing tmem.[ch] entirely by moving this
+definition into zcache-main.c and by moving the check
+comparing pampd against ZERO_FILLED into zcache_pampd_create_finish()
+I think that would be cleaner...
+
+If you change this and make the pageframe counter fix for PATCH 4/4,
+please add my ack for the next version:
+
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
