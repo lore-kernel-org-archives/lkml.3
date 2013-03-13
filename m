@@ -1,140 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab3CMQm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:42:57 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22736 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3CMQm4 convert rfc822-to-8bit (ORCPT
+	id S1756568Ab3CMQnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:43:24 -0400
+Received: from mail-qe0-f73.google.com ([209.85.128.73]:38729 "EHLO
+	mail-qe0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab3CMQnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:42:56 -0400
-MIME-Version: 1.0
-Message-ID: <634487ea-fbbd-4eb9-9a18-9206edc4e0d2@default>
-Date: Wed, 13 Mar 2013 09:42:16 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 4/4] zcache: add pageframes count once compress
- zero-filled pages twice
-References: <<1363158321-20790-1-git-send-email-liwanp@linux.vnet.ibm.com>>
- <<1363158321-20790-5-git-send-email-liwanp@linux.vnet.ibm.com>>
-In-Reply-To: <<1363158321-20790-5-git-send-email-liwanp@linux.vnet.ibm.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 13 Mar 2013 12:43:22 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        Prashanth G <prashanth.g@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Stephen Warren <swarren@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: [PATCH v4 1/3] i2c: mux: Add i2c-arbitrator-cros-ec 'mux' driver
+Date: Wed, 13 Mar 2013 09:36:21 -0700
+Message-Id: <1363192583-26363-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1360957573-864-1-git-send-email-dianders@chromium.org>
+References: <1360957573-864-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
-> Sent: Wednesday, March 13, 2013 1:05 AM
-> To: Andrew Morton
-> Cc: Greg Kroah-Hartman; Dan Magenheimer; Seth Jennings; Konrad Rzeszutek Wilk; Minchan Kim; linux-
-> mm@kvack.org; linux-kernel@vger.kernel.org; Wanpeng Li
-> Subject: [PATCH 4/4] zcache: add pageframes count once compress zero-filled pages twice
+The i2c-arbitrator-cros-ec driver implements the arbitration scheme
+that the Embedded Controller (EC) on the ARM Chromebook expects to use
+for bus multimastering.  This i2c-arbitrator-cros-ec driver could also
+be used in other places where standard I2C bus arbitration can't be
+used and two extra GPIOs are available for arbitration.
 
-Hi Wanpeng --
+This driver is based on code that Simon Glass added to the i2c-s3c2410
+driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
+mux driver is as suggested by Grant Likely.  See
+<https://patchwork.kernel.org/patch/1877311/> for some history.
 
-Thanks for taking on this task from the drivers/staging/zcache TODO list!
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+---
+Changes in v4: None
+Changes in v3:
+- Handle of_find_i2c_adapter_by_node() failure more properly by
+  changing init order.
+- Don't warn on -EPROBE_DEFER from calls that could return it.
+- Move to module_platform_driver().  As we pull in parts of the system
+  that rely on devices under this i2c bus we'll need to make sure they
+  can handle the fact that they'll be initted later now.
 
-> Since zbudpage consist of two zpages, two zero-filled pages compression
-> contribute to one [eph|pers]pageframe count accumulated.
+Changes in v2:
+- Renamed to i2c-arbitrator-cros-ec.
+- Documented "microsecond" properties as optional; removed
+  "bus-arbitration" prefix since it was just extra wordy.
+- Split GPIOs into two properties to make it cleaner.
+- Capitalized I2C in freeform text.
+- Get 'active low' from device tree.
 
-I'm not sure why this is necessary.  The [eph|pers]pageframe count
-is supposed to be counting actual pageframes used by zcache.  Since
-your patch eliminates the need to store zero pages, no pageframes
-are needed at all to store zero pages, so it's not necessary
-to increment zcache_[eph|pers]_pageframes when storing zero
-pages.
+ .../bindings/i2c/i2c-arbitrator-cros-ec.txt        |  76 +++++++
+ drivers/i2c/muxes/Kconfig                          |  11 +
+ drivers/i2c/muxes/Makefile                         |   2 +
+ drivers/i2c/muxes/i2c-arbitrator-cros-ec.c         | 222 +++++++++++++++++++++
+ 4 files changed, 311 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-arbitrator-cros-ec.txt
+ create mode 100644 drivers/i2c/muxes/i2c-arbitrator-cros-ec.c
 
-Or am I misunderstanding your intent?
-
-Thanks,
-Dan
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-arbitrator-cros-ec.txt b/Documentation/devicetree/bindings/i2c/i2c-arbitrator-cros-ec.txt
+new file mode 100644
+index 0000000..1f893e7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2c-arbitrator-cros-ec.txt
+@@ -0,0 +1,76 @@
++GPIO-based Arbitration used by the ARM Chromebook (exynos5250-snow)
++===================================================================
++This uses GPIO lines between the AP (Application Processor) and an attached
++EC (Embedded Controller) which both want to talk on the same I2C bus as master.
++
++The AP and EC each have a 'bus claim' line, which is an output that the
++other can see. These are both active low, with pull-ups enabled.
++
++- AP_CLAIM: output from AP, signalling to the EC that the AP wants the bus
++- EC_CLAIM: output from EC, signalling to the AP that the EC wants the bus
++
++This mechanism is used instead of standard I2C multimaster to avoid some of the
++subtle driver and silicon bugs that are often present with I2C multimaster.
++
++
++Algorithm:
++
++The basic algorithm is to assert your line when you want the bus, then make
++sure that the other side doesn't want it also. A detailed explanation is best
++done with an example.
++
++Let's say the AP wants to claim the bus. It:
++1. Asserts AP_CLAIM.
++2. Waits a little bit for the other side to notice (slew time, say 10
++   microseconds).
++3. Checks EC_CLAIM. If this is not asserted then the AP has the bus and we are
++   done.
++4. Otherwise, wait for a few milliseconds and see if EC_CLAIM is released.
++5. If not, back off, release the claim and wait for a few more milliseconds.
++6. Go back to 1 (until retry time has expired).
++
++
++Required properties:
++- compatible: i2c-arbitrator-cros-ec
++- ap-claim-gpio: The GPIO that we (the AP) use to claim the bus.
++- ec-claim-gpio: The GPIO that the other side (the EC) uses the claim the bus.
++- Standard I2C mux properties. See mux.txt in this directory.
++- Single I2C child bus node at reg 0. See mux.txt in this directory.
++
++Optional properties:
++- slew-delay-us: microseconds to wait for a GPIO to go high. Default is 10 us.
++- wait-retry-us: we'll attempt another claim after this many microseconds.
++    Default is 3000 us.
++- wait-free-us: we'll give up after this many microseconds. Default is 50000 us.
++
++
++Example:
++	i2c@12CA0000 {
++		compatible = "acme,some-i2c-device";
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++
++	i2c-arbitrator {
++		compatible = "i2c-arbitrator-cros-ec";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		i2c-parent = <&{/i2c@12CA0000}>;
++
++		ap-claim-gpio = <&gpf0 3 1 0x10000 0>;
++		ec-claim-gpio = <&gpe0 4 0 0x10003 0>;
++		slew-delay-us = <10>;
++		wait-retry-us = <3000>;
++		wait-free-us = <50000>;
++
++		i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			i2c@52 {
++				// Normal I2C device
++			};
++		};
++	};
+diff --git a/drivers/i2c/muxes/Kconfig b/drivers/i2c/muxes/Kconfig
+index 0be5b83..ca19378 100644
+--- a/drivers/i2c/muxes/Kconfig
++++ b/drivers/i2c/muxes/Kconfig
+@@ -5,6 +5,17 @@
+ menu "Multiplexer I2C Chip support"
+ 	depends on I2C_MUX
  
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/zcache-main.c |   25 +++++++++++++++++++++++--
->  1 files changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index dd52975..7860ff0 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -544,6 +544,8 @@ static struct page *zcache_evict_eph_pageframe(void);
->  static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
->  					struct tmem_handle *th)
->  {
-> +	static ssize_t second_eph_zero_page;
-> +	static atomic_t second_eph_zero_page_atomic = ATOMIC_INIT(0);
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size;
->  	bool zero_filled = false;
-> @@ -561,7 +563,14 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
->  		clen = 0;
->  		zero_filled = true;
->  		zcache_pages_zero++;
-> -		goto got_pampd;
-> +		second_eph_zero_page = atomic_inc_return(
-> +				&second_eph_zero_page_atomic);
-> +		if (second_eph_zero_page % 2 == 1)
-> +			goto got_pampd;
-> +		else {
-> +			atomic_sub(2, &second_eph_zero_page_atomic);
-> +			goto count_zero_page;
-> +		}
->  	}
->  	kunmap_atomic(user_mem);
-> 
-> @@ -597,6 +606,7 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
->  create_in_new_page:
->  	pampd = (void *)zbud_create_prep(th, true, cdata, clen, newpage);
->  	BUG_ON(pampd == NULL);
-> +count_zero_page:
->  	zcache_eph_pageframes =
->  		atomic_inc_return(&zcache_eph_pageframes_atomic);
->  	if (zcache_eph_pageframes > zcache_eph_pageframes_max)
-> @@ -621,6 +631,8 @@ out:
->  static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
->  					struct tmem_handle *th)
->  {
-> +	static ssize_t second_pers_zero_page;
-> +	static atomic_t second_pers_zero_page_atomic = ATOMIC_INIT(0);
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size, zero_filled = 0;
->  	struct page *page = (struct page *)(data), *newpage;
-> @@ -644,7 +656,15 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
->  		clen = 0;
->  		zero_filled = 1;
->  		zcache_pages_zero++;
-> -		goto got_pampd;
-> +		second_pers_zero_page = atomic_inc_return(
-> +				&second_pers_zero_page_atomic);
-> +		if (second_pers_zero_page % 2 == 1)
-> +			goto got_pampd;
-> +		else {
-> +			atomic_sub(2, &second_pers_zero_page_atomic);
-> +			goto count_zero_page;
-> +		}
-> +
->  	}
->  	kunmap_atomic(user_mem);
-> 
-> @@ -698,6 +718,7 @@ create_pampd:
->  create_in_new_page:
->  	pampd = (void *)zbud_create_prep(th, false, cdata, clen, newpage);
->  	BUG_ON(pampd == NULL);
-> +count_zero_page:
->  	zcache_pers_pageframes =
->  		atomic_inc_return(&zcache_pers_pageframes_atomic);
->  	if (zcache_pers_pageframes > zcache_pers_pageframes_max)
-> --
-> 1.7.7.6
++config I2C_ARBITRATOR_CROS_EC
++	tristate "GPIO-based I2C arbitrator used on exynos5250-snow"
++	depends on GENERIC_GPIO && OF
++	help
++	  If you say yes to this option, support will be included for an
++	  I2C multimaster arbitration scheme using GPIOs that is used in
++	  the Samsung ARM Chromebook (exynos5250-snow).
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called i2c-arbitrator-cros-ec.
++
+ config I2C_MUX_GPIO
+ 	tristate "GPIO-based I2C multiplexer"
+ 	depends on GENERIC_GPIO
+diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
+index 76da869..e60dcc1 100644
+--- a/drivers/i2c/muxes/Makefile
++++ b/drivers/i2c/muxes/Makefile
+@@ -1,6 +1,8 @@
+ #
+ # Makefile for multiplexer I2C chip drivers.
+ 
++obj-$(CONFIG_I2C_ARBITRATOR_CROS_EC)	+= i2c-arbitrator-cros-ec.o
++
+ obj-$(CONFIG_I2C_MUX_GPIO)	+= i2c-mux-gpio.o
+ obj-$(CONFIG_I2C_MUX_PCA9541)	+= i2c-mux-pca9541.o
+ obj-$(CONFIG_I2C_MUX_PCA954x)	+= i2c-mux-pca954x.o
+diff --git a/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c b/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c
+new file mode 100644
+index 0000000..f95b591
+--- /dev/null
++++ b/drivers/i2c/muxes/i2c-arbitrator-cros-ec.c
+@@ -0,0 +1,222 @@
++/*
++ * I2C arbitrator driver for the ARM Chromebook
++ *
++ * Copyright (C) 2012 Google, Inc
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/kernel.h>
++#include <linux/i2c.h>
++#include <linux/i2c-mux.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/of_i2c.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++
++/**
++ * struct i2c_arbitrator_data - Driver data for I2C arbitrator
++ *
++ * @parent: Parent adapter
++ * @child: Child bus
++ * @ap_gpio: GPIO we'll use to claim.
++ * @ap_gpio_release: 0 if active high; 1 if active low; AKA if the GPIO == this
++ *   then consider it released.
++ * @ec_gpio: GPIO that the other side will use to claim.
++ * @ec_gpio_release: 0 if active high; 1 if active low; AKA if the GPIO == this
++ *   then consider it released.
++ * @slew_delay_us: microseconds to wait for a GPIO to go high.
++ * @wait_retry_us: we'll attempt another claim after this many microseconds.
++ * @wait_free_us: we'll give up after this many microseconds.
++ */
++
++struct i2c_arbitrator_data {
++	struct i2c_adapter *parent;
++	struct i2c_adapter *child;
++
++	int		ap_gpio;
++	int		ap_gpio_release;
++	int		ec_gpio;
++	int		ec_gpio_release;
++	unsigned int	slew_delay_us;
++	unsigned int	wait_retry_us;
++	unsigned int	wait_free_us;
++};
++
++
++/**
++ * i2c_arbitrator_select - claim the I2C bus
++ *
++ * Use the GPIO-based signalling protocol; return -EBUSY if we fail.
++ */
++static int i2c_arbitrator_select(struct i2c_adapter *adap, void *data, u32 chan)
++{
++	const struct i2c_arbitrator_data *arb = data;
++	unsigned long stop_retry, stop_time;
++
++	/* Start a round of trying to claim the bus */
++	stop_time = jiffies + usecs_to_jiffies(arb->wait_free_us) + 1;
++	do {
++		/* Indicate that we want to claim the bus */
++		gpio_set_value(arb->ap_gpio, !arb->ap_gpio_release);
++		udelay(arb->slew_delay_us);
++
++		/* Wait for the EC to release it */
++		stop_retry = jiffies + usecs_to_jiffies(arb->wait_retry_us) + 1;
++		while (time_before(jiffies, stop_retry)) {
++			int gpio_val = !!gpio_get_value(arb->ec_gpio);
++
++			if (gpio_val == arb->ec_gpio_release) {
++				/* We got it, so return */
++				return 0;
++			}
++
++			usleep_range(50, 200);
++		}
++
++		/* It didn't release, so give up, wait, and try again */
++		gpio_set_value(arb->ap_gpio, arb->ap_gpio_release);
++
++		usleep_range(arb->wait_retry_us, arb->wait_retry_us * 2);
++	} while (time_before(jiffies, stop_time));
++
++	/* Give up, release our claim */
++	gpio_set_value(arb->ap_gpio, arb->ap_gpio_release);
++	udelay(arb->slew_delay_us);
++	dev_err(&adap->dev, "Could not claim bus, timeout\n");
++	return -EBUSY;
++}
++
++/**
++ * i2c_arbitrator_deselect - release the I2C bus
++ *
++ * Release the I2C bus using the GPIO-based signalling protocol.
++ */
++static int i2c_arbitrator_deselect(struct i2c_adapter *adap, void *data,
++				   u32 chan)
++{
++	const struct i2c_arbitrator_data *arb = data;
++
++	/* Release the bus and wait for the EC to notice */
++	gpio_set_value(arb->ap_gpio, arb->ap_gpio_release);
++	udelay(arb->slew_delay_us);
++
++	return 0;
++}
++
++static int i2c_arbitrator_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct device_node *parent_np;
++	struct i2c_arbitrator_data *arb;
++	enum of_gpio_flags gpio_flags;
++	unsigned long out_init;
++	int ret;
++
++	/* We only support probing from device tree; no platform_data */
++	if (WARN_ON(!np))
++		return -ENODEV;
++	if (WARN_ON(pdev->dev.platform_data))
++		return -EINVAL;
++
++	arb = devm_kzalloc(&pdev->dev, sizeof(*arb), GFP_KERNEL);
++	if (WARN_ON(!arb))
++		return -ENOMEM;
++	platform_set_drvdata(pdev, arb);
++
++	/* Request GPIOs */
++	ret = of_get_named_gpio_flags(np, "ap-claim-gpio", 0, &gpio_flags);
++	if (ret == -EPROBE_DEFER || WARN_ON(!gpio_is_valid(ret)))
++		return ret;
++	arb->ap_gpio = ret;
++	arb->ap_gpio_release = !!(gpio_flags & OF_GPIO_ACTIVE_LOW);
++	out_init = (gpio_flags & OF_GPIO_ACTIVE_LOW) ?
++		GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
++	ret = devm_gpio_request_one(&pdev->dev, arb->ap_gpio, out_init,
++				    "ap-claim-gpio");
++	if (ret == -EPROBE_DEFER || WARN_ON(ret))
++		return ret;
++
++	ret = of_get_named_gpio_flags(np, "ec-claim-gpio", 0, &gpio_flags);
++	if (ret == -EPROBE_DEFER || WARN_ON(!gpio_is_valid(ret)))
++		return ret;
++	arb->ec_gpio = ret;
++	arb->ec_gpio_release = !!(gpio_flags & OF_GPIO_ACTIVE_LOW);
++	ret = devm_gpio_request_one(&pdev->dev, arb->ec_gpio, GPIOF_IN,
++				    "ec-claim-gpio");
++	if (ret == -EPROBE_DEFER || WARN_ON(ret))
++		return ret;
++
++	/* Arbitration parameters */
++	if (of_property_read_u32(np, "slew-delay-us", &arb->slew_delay_us))
++		arb->slew_delay_us = 10;
++	if (of_property_read_u32(np, "wait-retry-us", &arb->wait_retry_us))
++		arb->wait_retry_us = 3000;
++	if (of_property_read_u32(np, "wait-free-us", &arb->wait_free_us))
++		arb->wait_free_us = 50000;
++
++	/* Find our parent */
++	parent_np = of_parse_phandle(np, "i2c-parent", 0);
++	if (WARN_ON(!parent_np))
++		return -EINVAL;
++	arb->parent = of_find_i2c_adapter_by_node(parent_np);
++	if (WARN_ON(!arb->parent))
++		return -EINVAL;
++
++	/* Actually add the mux adapter */
++	arb->child = i2c_add_mux_adapter(arb->parent, &pdev->dev, arb, 0, 0, 0,
++					 i2c_arbitrator_select,
++					 i2c_arbitrator_deselect);
++	if (WARN_ON(!arb->child)) {
++		ret = -ENODEV;
++		i2c_put_adapter(arb->parent);
++	}
++
++	return ret;
++}
++
++static int i2c_arbitrator_remove(struct platform_device *pdev)
++{
++	struct i2c_arbitrator_data *arb = platform_get_drvdata(pdev);
++
++	i2c_del_mux_adapter(arb->child);
++	i2c_put_adapter(arb->parent);
++
++	return 0;
++}
++
++static const struct of_device_id i2c_arbitrator_of_match[] = {
++	{ .compatible = "i2c-arbitrator-cros-ec", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, i2c_arbitrator_of_match);
++
++static struct platform_driver i2c_arbitrator_driver = {
++	.probe	= i2c_arbitrator_probe,
++	.remove	= i2c_arbitrator_remove,
++	.driver	= {
++		.owner	= THIS_MODULE,
++		.name	= "i2c-arbitrator-cros-ec",
++		.of_match_table = of_match_ptr(i2c_arbitrator_of_match),
++	},
++};
++
++module_platform_driver(i2c_arbitrator_driver);
++
++MODULE_DESCRIPTION("I2C arbitrator driver for the ARM Chromebook");
++MODULE_AUTHOR("Doug Anderson <dianders@chromium.org>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:i2c-arbitrator-cros-ec");
+-- 
+1.8.1.3
+
