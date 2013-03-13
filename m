@@ -1,108 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab3CMFjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 01:39:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38786 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab3CMFjq (ORCPT
+	id S1754925Ab3CMFkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 01:40:40 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10739 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab3CMFkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 01:39:46 -0400
-Date: Wed, 13 Mar 2013 16:39:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20130313163935.ea2f414d3ccc6ed1434d92b8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY"
+	Wed, 13 Mar 2013 01:40:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 12 Mar 2013 22:33:54 -0700
+Message-ID: <1363153204.3311.14.camel@bilhuang-vm1>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Date: Tue, 12 Mar 2013 22:40:04 -0700
+In-Reply-To: <51400D9D.9060305@wwwdotorg.org>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
+	 <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>
+	 <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-9"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-03-13 at 13:24 +0800, Stephen Warren wrote:
+> On 03/12/2013 11:08 PM, Bill Huang wrote:
+> > On Wed, 2013-03-13 at 12:42 +0800, Stephen Warren wrote:
+> >> On 03/12/2013 07:47 PM, Bill Huang wrote:
+> >>> On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
+> >>>> On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> >>>>> Add the below four notifier events so drivers which are interested in
+> >>>>> knowing the clock status can act accordingly. This is extremely useful
+> >>>>> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+> >>>>>
+> >>>>> PRE_CLK_ENABLE
+> >>>>> POST_CLK_ENABLE
+> >>>>> PRE_CLK_DISABLE
+> >>>>> POST_CLK_DISABLE
+> >>>>>
+> >>>>> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+> >>>>
+> >>>> NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
+> >>>>
+> >>>> The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
+> >>>> *EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
+> >>>> clk_unprepare().  Those two functions are *merely* helpers for drivers
+> >>>> who don't wish to make the individual calls.
+> >>>>
+> >>>> Drivers are still completely free to call the individual functions, at
+> >>>> which point your proposal breaks horribly - and they _do_ call the
+> >>>> individual functions.
+> >>>
+> >>> I'm proposing to give device driver a choice when it knows that some
+> >>> driver might be interested in knowing its clock's enabled/disabled state
+> >>> change at runtime, this is very important for centralized DVFS core
+> >>> driver. It is not meant to be covering all cases especially for drivers
+> >>> which is not part of the DVFS, so we don't care if it is calling
+> >>> clk_enable/disable directly or not.
+> >>
+> >> I believe the point Russell is making is not that the idea behind this
+> >> patch is wrong, but simply that the function where you put the hooks is
+> >> wrong. The hooks should at least be in clk_enable/clk_disable and not
+> >> clk_prepare_enable/clk_disable_unprepare, since any driver is free to
+> >> call clk_prepare separately from clk_enable. The hooks should be
+> >> implemented in the lowest-level common function that all
+> >> driver-accessible paths call through.
+> > 
+> > Thanks, I know the point, but unfortunately there is no good choice for
+> > hooking this since those low level functions clk_enable/clk_disable will
+> > be called in interrupt context so it is not possible to send notify. We
+> > might need to come out a better approach if we can think of any.
+> > Currently I still think this is acceptable (Having all the drivers which
+> > are using our interested clocks call these function to enable/disable
+> > clock in their runtime_pm calls) though it's not perfect. 
+> 
+> No, that definitely won't work. Not all drivers use those APIs, nor
+> should they.
+> 
+That will be too bad, it looks like we deadlock in the mechanism, we
+cannot change existing drivers behavior (that means some call
+clk_disable/enable directly, some are not), and we cannot hook notifier
+in clk_disable/enable either, that means there seems no any chance to
+get what we want, any idea?
 
-Hi all,
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/staging/dwc2/hcd.c: In function '_dwc2_hcd_urb_enqueue':
-drivers/staging/dwc2/hcd.c:2387:3: error: implicit declaration of function =
-'bus_to_virt' [-Werror=3Dimplicit-function-declaration]
-drivers/staging/dwc2/hcd.c:2387:7: warning: assignment makes pointer from i=
-nteger without a cast [enabled by default]
-
-Caused by commit 7359d482eb4d ("staging: HCD files for the DWC2 driver").
-
-=46rom Documentation/bus-virt-phys-mapping.txt:
-
-"[ NOTE: The virt_to_bus() and bus_to_virt() functions have been
-        superseded by the functionality provided by the PCI DMA interface
-        (see Documentation/DMA-API-HOWTO.txt).  They continue
-        to be documented below for historical purposes, but new code
-        must not use them. --davidm 00/12/12 ]"
-
-See also Documentation/DMA-API-HOWTO.txt.
-
-I have added this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 13 Mar 2013 16:35:50 +1100
-Subject: [PATCH] staging: the DWC2 driver uses bus_to_virt
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/dwc2/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/dwc2/Kconfig b/drivers/staging/dwc2/Kconfig
-index 610418a..bc4cdfe 100644
---- a/drivers/staging/dwc2/Kconfig
-+++ b/drivers/staging/dwc2/Kconfig
-@@ -1,6 +1,7 @@
- config USB_DWC2
- 	tristate "DesignWare USB2 DRD Core Support"
- 	depends on USB
-+	depends on VIRT_TO_BUS
- 	select USB_OTG_UTILS
- 	help
- 	  Say Y or M here if your system has a Dual Role HighSpeed
---=20
-1.8.1
-
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRQBEXAAoJEECxmPOUX5FE5LAP/0hWxoGreZatMzg5y1YWgbtM
-ZCNglayaoczB8K6h3XDsGP1vI0n3pNxhNmQUP0tHZKxB2wFTBhcy9dOjdtXZ2P97
-v5p6Gk4Y/FjFzV3Nj/c80ApSOs7DIZRalu5+grD4H8SjWkg9xK7/f3CUjX3LGOQV
-Epn0TMJr5J7aCcFOlBLBXalR20sLK0v2XunmxFU3ZWwA+Akl3GyBD4c7gilpfUjD
-+8h9TJW0Y+wrTpQhKYmT/iNNtyiB9aVL7QZOyJWiOheaqc7jJWY0NBvyA1JOqdlD
-UxNVdlFGX0KU/UV/IxWMoZpO6YZjHv96Vv2NzlsdcQiPGPW+JE9b6Eqqvr1Kj1kX
-0ZGVmN1P0iyZDRrgZ3Pn7t6pv818cusAV8DXTttAvVR1h7rUPnlRVF5dsXTppsDW
-PMS3KeuKiSU6DvHMF6c+5SiFTx4W9n/15CPdVBCGTSNxyHB+yg/1CDnW4eHxDz9E
-YceMORHYX0HkXtj5x2OrUKPr9g4Iucq57shrWtpV/KihSt+gww/hm2EDvhqqzmJ9
-a5MHW1YfvIjJJT3p/1kPyXuNLMFbElOJBvJoHhbc9tLm2GTy0RnwYWzADW2WhF+z
-e+8dI/H0nuthX3EMUAtG54ZsTi0N/WP16vmkFptWP9aX8bmlmCtr1n3/qqxc5vh7
-x4DG4PFa889PISYXkkp2
-=8QMp
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY--
