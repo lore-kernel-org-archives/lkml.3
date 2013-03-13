@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933884Ab3CMQ7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:59:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35418 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933656Ab3CMQ7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:59:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
-   d="scan'208";a="305672340"
-Date: Wed, 13 Mar 2013 09:59:04 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/hugetlb: fix total hugetlbfs pages count when memory
- overcommit accouting
-Message-ID: <20130313165904.GB19692@tassilo.jf.intel.com>
-References: <1363158511-21272-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <CAJd=RBBVU8uvHZ3AHkBqOWe-hEqFQ5-5Mf5dGXYuGczvM6EpUw@mail.gmail.com>
+	id S933931Ab3CMQ7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:59:18 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:41035 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933897Ab3CMQ7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:59:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBBVU8uvHZ3AHkBqOWe-hEqFQ5-5Mf5dGXYuGczvM6EpUw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5140AF22.2030809@wwwdotorg.org>
+References: <1360957573-864-1-git-send-email-dianders@chromium.org>
+	<1363192583-26363-1-git-send-email-dianders@chromium.org>
+	<5140AF22.2030809@wwwdotorg.org>
+Date: Wed, 13 Mar 2013 09:59:10 -0700
+X-Google-Sender-Auth: vYbcJHELvuhXse9NMA4i1at9pT0
+Message-ID: <CAD=FV=VOmXW4awSozKaC1GoerEfomVhaJ-j950S1x28Js2oVpg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] i2c: mux: Add i2c-arbitrator-cros-ec 'mux' driver
+From: Doug Anderson <dianders@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-doc@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, u.kleine-koenig@pengutronix.de,
+        Grant Grundler <grundler@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Girish Shivananjappa <girish.shivananjappa@linaro.org>,
+        "bhushan.r" <bhushan.r@samsung.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        "sreekumar.c" <sreekumar.c@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Prashanth G <prashanth.g@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can we enrich the output of hugetlb_report_meminfo() ?
+Stephen,
 
-The data is reported separately in sysfs. It was originally decided
-to not extend meminfo for them.
+On Wed, Mar 13, 2013 at 9:53 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> Changes in v4: None
+>
+> Isn't this 'PATCH V3 REPOST' then?
 
--Andi
+In this case part 2 in the patch series changes but not parts 1 and 3.
+ I could have just reposted part 2 with a higher version, but that
+makes it a little harder to piece together all of the parts of the
+series so I decided to repost all 3.  I can do differently in the
+future if you prefer, but my understanding was that it was a matter of
+preference/judgement call.
+
+Thanks!  :)
+
+-Doug
