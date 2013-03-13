@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933787Ab3CMPR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 11:17:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40306 "EHLO gate.crashing.org"
+	id S933813Ab3CMPSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 11:18:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36171 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab3CMPR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 11:17:57 -0400
-Subject: Re: [libvirt] if_bridge.h: include in6.h for struct in6_addr use
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <50F49B7E.50906@redhat.com>
-Date: Wed, 13 Mar 2013 10:17:40 -0500
-Cc: Thomas Backlund <tmb@mageia.org>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        libvirt-list@redhat.com, stephen@networkplumber.org,
-        Zhenhua Luo <zhenhua.luo@freescale.com>
-Content-Transfer-Encoding: 7bit
-Message-Id: <81B30F90-5A18-4386-9C30-E336AE212D85@kernel.crashing.org>
-References: <50F2FF1B.3020708@mageia.org> <50F313A5.3020707@mageia.org> <50F49B7E.50906@redhat.com>
-To: Eric Blake <eblake@redhat.com>
-X-Mailer: Apple Mail (2.1278)
+	id S932391Ab3CMPSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 11:18:15 -0400
+Message-ID: <514098A0.1030809@ti.com>
+Date: Wed, 13 Mar 2013 16:17:52 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130301 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, <balbi@ti.com>, <tony@atomide.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
+References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de> <513F3B7E.8000002@ti.com> <513F3EF0.3030609@pengutronix.de> <513F47B4.2060004@ti.com>
+In-Reply-To: <513F47B4.2060004@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/12/2013 04:20 PM, Roger Quadros wrote:
+> Adding Peter to the loop. I faintly remember him mentioning this issue before
+> for beagle. We really need the deferred probe mechanism or we need to resort
+> to device registering order.
 
-On Jan 14, 2013, at 5:57 PM, Eric Blake wrote:
+Yes, BeagleBoard is a good example. Long story short: we have external
+dependency and the correct way to handle that is via deferred probe.
 
-> On 01/13/2013 01:05 PM, Thomas Backlund wrote:
->> Thomas Backlund skrev 13.1.2013 20:38:
->>> patch both inline and attached as thunderbird tends to mess up ...
->> 
->>> -----
->>> 
->>> if_bridge.h uses struct in6_addr ip6; but does not include the in6.h
->>> header.
->>> 
->>> Found by trying to build libvirt and connman against 3.8-rc3 headers.
->>> 
->> 
->> Ok,
->> ignore this patch, it's not the correct fix as it introduces
->> redefinitions...
->> 
->> Btw, the error that I hit that made me suggest this fix was libvirt
->> config check bailing out:
->> 
->> config.log:/usr/include/linux/if_bridge.h:173:20: error: field 'ip6' has
->> incomplete type
+As of now we are not ready to kill the legacy support but over time we should
+move as much as we can to DT only mode.
+
+> The first user for needs_vcc flag will be the beagleboard file. I just didn't
+> implement it in this patch [1].
 > 
-> Hmm, just now noticing this thread, after independently hitting and and
-> having to work around the same problem in libvirt:
-> https://www.redhat.com/archives/libvir-list/2013-January/msg00930.html
-> https://bugzilla.redhat.com/show_bug.cgi?id=895141
+> On second thoughts, since [1] does work on beagleboard without requiring the
+> needs_vcc flag, I think we can just live without it.
+
+The BeagleBoard works because the bootloader happen to enable the PWM
+generator which is used as a GPIO for the external HUB enable port. As soon as
+the bootloader stops doing this we are going to be in trouble.
+
 > 
->>> --- linux-3.8-rc3/include/uapi/linux/if_bridge.h        2013-01-13
->>> 20:09:54.257271755 +0200
->>> +++ linux-3.8-rc3.fix/include/uapi/linux/if_bridge.h    2013-01-13
->>> 20:15:04.153676151 +0200
->>> @@ -14,6 +14,7 @@
->>>  #define _UAPI_LINUX_IF_BRIDGE_H
->>> 
->>>  #include <linux/types.h>
->>> +#include <linux/in6.h>
->>> 
+> Felipe, Peter, what do you think?
+> 
+> cheers,
+> -roger
+> 
+> [1] https://lkml.org/lkml/2013/3/12/244
+> 
 
-Did this ever get resolved ?
 
-- k
-
+-- 
+Péter
