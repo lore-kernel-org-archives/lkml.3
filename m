@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897Ab3CMPpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 11:45:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932910Ab3CMPpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 11:45:52 -0400
-Date: Wed, 13 Mar 2013 16:45:35 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Frank Peters <frank.peters@comcast.net>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: USB Mouse Disconnect Kernel-3.7/3.8
-In-Reply-To: <20130311142651.12cc0311887f69db13913986@comcast.net>
-Message-ID: <alpine.LRH.2.00.1303131644570.27467@twin.jikos.cz>
-References: <20130311142651.12cc0311887f69db13913986@comcast.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S933907Ab3CMPrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 11:47:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44215 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab3CMPrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 11:47:15 -0400
+Message-ID: <51409F6F.6000103@ti.com>
+Date: Wed, 13 Mar 2013 17:46:55 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, <balbi@ti.com>, <tony@atomide.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/8] usb: phy: nop: Add some parameters to platform data
+References: <1363087466-32444-1-git-send-email-rogerq@ti.com> <1363087466-32444-2-git-send-email-rogerq@ti.com> <513F177D.40500@pengutronix.de> <513F37DD.9030301@ti.com> <513F38DF.5040404@pengutronix.de> <513F3B7E.8000002@ti.com> <513F3EF0.3030609@pengutronix.de> <513F47B4.2060004@ti.com> <514098A0.1030809@ti.com>
+In-Reply-To: <514098A0.1030809@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013, Frank Peters wrote:
+On 03/13/2013 05:17 PM, Peter Ujfalusi wrote:
+> On 03/12/2013 04:20 PM, Roger Quadros wrote:
+>> Adding Peter to the loop. I faintly remember him mentioning this issue before
+>> for beagle. We really need the deferred probe mechanism or we need to resort
+>> to device registering order.
+> 
+> Yes, BeagleBoard is a good example. Long story short: we have external
+> dependency and the correct way to handle that is via deferred probe.
+> 
+> As of now we are not ready to kill the legacy support but over time we should
+> move as much as we can to DT only mode.
+> 
+>> The first user for needs_vcc flag will be the beagleboard file. I just didn't
+>> implement it in this patch [1].
+>>
+>> On second thoughts, since [1] does work on beagleboard without requiring the
+>> needs_vcc flag, I think we can just live without it.
+> 
+> The BeagleBoard works because the bootloader happen to enable the PWM
+> generator which is used as a GPIO for the external HUB enable port. As soon as
+> the bootloader stops doing this we are going to be in trouble.
+> 
 
-> When I boot my x64 Linux system to the console a continuous series
-> of "USB disconnect/reconnect" messages appears in the kernel log.
-> The disconnect/reconnect messages concern the USB mouse:
-> 
-> usb 1-1.3: USB disconnect, device number N
-> usb 1-1.3: new low-speed USB device number N+1 using ehci-pci
-> input: Microsoft  Microsoft Basic Optical Mouse v2.0  as /devices/pci0000:00/0000:00:1a.0 usb1/1-1/1-1.3/1-1.3:1.0/input/input5
-> hid-generic 0003:045E:00CB.0006: input: USB HID v1.11 Mouse [Microsoft  Microsoft Basic Optical Mouse v2.0 ] on usb-0000:00:1a.0-1.3/input0
-> ....
-> 
-> These "USB disconnect/reconnect" messages will repeat roughly every 40 seconds
-> with the device number "N" increasing to "N+1" each time.
-> 
-> The interesting thing about this behavior is that I can stop the messages,
-> and presumably the disconnects, by starting the General Purpose Mouse (gpm)
-> server:
-> 
-> gpm -m /dev/input/mice -t imps2
-> 
-> If I then terminate the gpm server, the USB disconnect/reconnect messages
-> will start to occur once again.
-> 
-> The USB disconnects also stop when I start the graphical X server.
-> 
-> It would seem that if nothing is "grabbing" the USB mouse (i.e. gpm or X)
-> then the kernel somehow automatically disconnects it.
-> 
-> My system has the USB built in to the kernel (no modules).
-> 
-> The motherboard I use is Intel DP55KG which has the P55 Express
-> chipset to control the USB.
-> 
-> I've seen this behavior on the current kernel-3.8.x and also
-> on the previous kernel-3.7.  I have not tested anything earlier.
-> 
-> Please CC to frank.peters@comcast.net as I am not subscribed to
-> the list.
+Wasn't it the LED A out GPO from PMIC that is used to enable the HUB? Just cross
+checking so I haven't missed anything.
 
-[ adding linux-usb@ to CC ]
+I will resend the board support patch for beagle implementing
+needs_vcc flag for the deferred probe mechanism. Thanks.
 
-Do you have USB autosuspend enabled on that device?
-
--- 
-Jiri Kosina
-SUSE Labs
-
+cheers,
+-roger
