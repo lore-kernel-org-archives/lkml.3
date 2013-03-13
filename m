@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934153Ab3CMTK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:10:29 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:63108 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526Ab3CMTK1 (ORCPT
+	id S934175Ab3CMTKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:10:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55232 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab3CMTKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:10:27 -0400
+	Wed, 13 Mar 2013 15:10:36 -0400
+Date: Wed, 13 Mar 2013 19:10:34 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: s390: mm: Use PTR_RET function
+Message-ID: <20130313191034.GM21522@ZenIV.linux.org.uk>
+References: <1363201557-17715-1-git-send-email-gheorghiuandru@gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <5140C77E.7030206@openwrt.org>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
-	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
-	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
-	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
-	<CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
-	<CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
-	<CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
-	<CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com>
-	<20130313181251.GA6023@sgi.com>
-	<5140C77E.7030206@openwrt.org>
-Date: Wed, 13 Mar 2013 20:10:25 +0100
-Message-ID: <CA+icZUUPTryfL9S2vHopPTcRkhV=Qxd1w_fh0mWbPrUE7Lw=zQ@mail.gmail.com>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Felix Fietkau <nbd@openwrt.org>
-Cc: Robin Holt <holt@sgi.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        dhowells@redhat.com, sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363201557-17715-1-git-send-email-gheorghiuandru@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 7:37 PM, Felix Fietkau <nbd@openwrt.org> wrote:
-> On 2013-03-13 7:12 PM, Robin Holt wrote:
->> On Wed, Mar 13, 2013 at 05:51:33PM +0100, Sedat Dilek wrote:
->>> On Wed, Mar 13, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->>> > On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> >
->>> >> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
->>> >> when the kernel-module is loaded.
->>> >> So, is this intended?
->>> >> SquashFS prints into the logs, so what is it doing differently?
->>> >
->>> > Some modules do, some don't.  It's not compulsory and not very useful.
->>> >
->>>
->>> What about...
->>>
->>> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
->>> index 482c26f..92b9ad5 100644
->>> --- a/fs/overlayfs/super.c
->>> +++ b/fs/overlayfs/super.c
->>> @@ -675,11 +675,13 @@ MODULE_ALIAS_FS("overlayfs");
->>>  static int __init ovl_init(void)
->>>  {
->>>         return register_filesystem(&ovl_fs_type);
->>> +       printk(KERN_INFO "overlayfs: loaded\n");
->>
->> How about pr_debug().  That makes things quite for most of us but gives
->> you info when looking for things like boot problems.
-> How is having a printk/pr_debug useful here at all? The fact that other
-> filesystems do this as well is not a good reason...
-> Also, putting it *after* the return statement doesn't make much sense ;)
->
+On Wed, Mar 13, 2013 at 09:05:57PM +0200, Alexandru Gheorghiu wrote:
+> Used PTR_RET function instead of IS_ERR and PTR_ERR.
+> Patch found using coccinelle.
+> 
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  arch/s390/mm/cmm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/s390/mm/cmm.c b/arch/s390/mm/cmm.c
+> index 479e942..5cf867f 100644
+> --- a/arch/s390/mm/cmm.c
+> +++ b/arch/s390/mm/cmm.c
+> @@ -458,7 +458,7 @@ static int __init cmm_init(void)
+>  	if (rc)
+>  		goto out_pm;
+>  	cmm_thread_ptr = kthread_run(cmm_thread, NULL, "cmmthread");
+> -	rc = IS_ERR(cmm_thread_ptr) ? PTR_ERR(cmm_thread_ptr) : 0;
+> +	rc = PTR_RET(cmm_thread_ptr);
+>  	if (rc)
+>  		goto out_kthread;
+>  	return 0;
 
-Hehe, I just checked my new kernel... that does not work (nothing in the logs).
-But I think it's good to see if the filesystem is registered/loaded.
-
-- Sedat -
-
-> - Felix
->
+Egads...  How about
+	if (!IS_ERR(cmm_thread_ptr))
+		return 0;
+	rc = PTR_ERR(cmm_thread_ptr);
+instead of the entire thing?  out_kthread: is just past that return 0
+and there's nothing else leading to it, so with that change the label
+itself can go as well.
