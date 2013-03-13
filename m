@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965062Ab3CMXaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:30:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51624 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964822Ab3CMXaE (ORCPT
+	id S965073Ab3CMXal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:30:41 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:35530 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S964822Ab3CMXak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:30:04 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 01/27] PCI: Add pci_dev_resource_n()
-Date: Wed, 13 Mar 2013 16:27:56 -0700
-Message-Id: <1363217302-14383-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 13 Mar 2013 19:30:40 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org
+Subject: [PATCH] TTY: serial, stop accessing potential NULLs
+Date: Thu, 14 Mar 2013 00:30:34 +0100
+Message-Id: <1363217434-29262-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now pci device resource iteration is done via "for (i=0...)" open code.
-That make code hard to read esp when only bridge or sriov resources
-are involved.
+The following commits:
+* 6732c8bb8671acbdac6cdc93dd72ddd581dd5e25 (TTY: switch
+  tty_schedule_flip)
+* 2e124b4a390ca85325fae75764bef92f0547fa25 (TTY: switch
+  tty_flip_buffer_push)
+* 05c7cd39907184328f48d3e7899f9cdd653ad336 (TTY: switch
+  tty_insert_flip_string)
+* 92a19f9cec9a80ad93c06e115822deb729e2c6ad (TTY: switch
+  tty_insert_flip_char)
+* 227434f8986c3827a1faedd1feb437acd6285315 (TTY: switch
+  tty_buffer_request_room to tty_port)
 
-We want to replace those open code with for_each_pci_resource().
-Also want to add addon_resource handling, and need to make addon resource
-to be treated as normal PCI resources during iteration.
+introduced a potential NULL dereference to some drivers. In
+particular, when the device is used as a console, incoming bytes can
+kill the box. This is caused by removed checks for TTY against NULL.
 
-Add pci_device_resource_n() instead of using dev->resources[n].
-Use it with for_each_pci_resource macro and addon_resource support.
+It happened because it was unclear to me why the checks were there. I
+assumed them superfluous because the interrupts were unbound or
+otherwise stopped. But this is not the case for consoles for these
+drivers, as was pointed out by David Miller.
 
--v2: Add EXPORT_SYMBOL to find building error found by Gary Hade
+Now, this patch re-introduces the checks (at this point we check
+port->state, not the tty proper, as we do not care about tty pointers
+anymore). For both of the drivers, we place the check below the
+handling of break signal so that sysrq can actually work. (One needs
+to issue a break and then sysrq key within the following 5 seconds.)
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+We do not change sc26xx, sunhv, and sunsu here because they behave the
+same as before.  People having that hardware should fix the driver
+eventually, however. They always could unconditionally dereference tty
+in receive_chars, port->state in uart_handle_dcd_change, and
+up->port.state->port.tty.
+
+There is perhaps more to fix in all those drivers, but they are at
+least in a state they were before.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: sparclinux@vger.kernel.org
 ---
- drivers/pci/probe.c |    9 +++++++++
- include/linux/pci.h |    2 ++
- 2 files changed, 11 insertions(+)
+ drivers/tty/serial/sunsab.c   | 2 +-
+ drivers/tty/serial/sunzilog.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index b494066..9cb3eb3 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -105,6 +105,15 @@ static int __init pcibus_class_init(void)
- }
- postcore_initcall(pcibus_class_init);
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index 8de2213..a422c8b 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -203,7 +203,7 @@ receive_chars(struct uart_sunsab_port *up,
+ 				flag = TTY_FRAME;
+ 		}
  
-+struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
-+{
-+	if (n >= 0 && n < PCI_NUM_RESOURCES)
-+		return &dev->resource[n];
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(pci_dev_resource_n);
-+
- static u64 pci_size(u64 base, u64 maxbase, u64 mask)
- {
- 	u64 size = mask & maxbase;	/* Find the significant bits */
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 2461033a..00d5367 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -338,6 +338,8 @@ struct pci_dev {
- 	size_t romlen; /* Length of ROM if it's not from the BAR */
- };
+-		if (uart_handle_sysrq_char(&up->port, ch))
++		if (uart_handle_sysrq_char(&up->port, ch) || !port)
+ 			continue;
  
-+struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
-+
- static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
- {
- #ifdef CONFIG_PCI_IOV
+ 		if ((stat->sreg.isr0 & (up->port.ignore_status_mask & 0xff)) == 0 &&
+diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
+index 27669ff..813ef8e 100644
+--- a/drivers/tty/serial/sunzilog.c
++++ b/drivers/tty/serial/sunzilog.c
+@@ -388,7 +388,7 @@ sunzilog_receive_chars(struct uart_sunzilog_port *up,
+ 			else if (r1 & CRC_ERR)
+ 				flag = TTY_FRAME;
+ 		}
+-		if (uart_handle_sysrq_char(&up->port, ch))
++		if (uart_handle_sysrq_char(&up->port, ch) || !port)
+ 			continue;
+ 
+ 		if (up->port.ignore_status_mask == 0xff ||
 -- 
-1.7.10.4
+1.8.1.5
+
 
