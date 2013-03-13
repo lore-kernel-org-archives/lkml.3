@@ -1,172 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3CMDXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 23:23:41 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:19257 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755857Ab3CMDXj (ORCPT
+	id S1755990Ab3CMD26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 23:28:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39896 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab3CMD25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 23:23:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswdAGbwP1F5LKiV/2dsb2JhbABDhzC4KYUaAQIBgUsXdIIpAQEEATocIwULCAMOCgklDwUlAyETiA4FwXcVjXcYH0oHg0ADkxGDRJB3gx4o
-Date: Wed, 13 Mar 2013 14:23:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a
- reader
-Message-ID: <20130313032334.GU21651@dastard>
-References: <1362612111-28673-1-git-send-email-walken@google.com>
- <1362612111-28673-12-git-send-email-walken@google.com>
- <20130309003221.GE23616@dastard>
- <CANN689F9Zy=cTdi3D4d4iw66eeGLTtpudmAJgxYHGgDUsNU2Mg@mail.gmail.com>
- <20130311001650.GB20565@dastard>
- <CANN689FF+fjphwNqRz_ixpo4hW-rkXq6fbmJf7xDacBbP48BXw@mail.gmail.com>
- <20130312023658.GH21651@dastard>
- <CANN689Hu4S6hQaZ0tytNuToCpwtdJmyisyqyrDrNK+buJXTsKA@mail.gmail.com>
+	Tue, 12 Mar 2013 23:28:57 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>, Suman Anna <s-anna@ti.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCHv3 01/14] mailbox: rename pl320-ipc specific mailbox.h
+Date: Tue, 12 Mar 2013 22:23:50 -0500
+Message-ID: <1363145030-14373-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689Hu4S6hQaZ0tytNuToCpwtdJmyisyqyrDrNK+buJXTsKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 11:43:34PM -0700, Michel Lespinasse wrote:
-> Hi Dave,
-> 
-> On Mon, Mar 11, 2013 at 7:36 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Sun, Mar 10, 2013 at 10:17:42PM -0700, Michel Lespinasse wrote:
-> >> - since all readers are woken at once, you might see burst of direct
-> >> IO operations followed by bursts of truncate operations, instead of
-> >> having them interleaved in smaller groups as before.
-> >
-> > And this will result in the same application IO pattern giving
-> > vastly different results. e.g. a read IO promoted ahead of a
-> > truncate will now return data instead of -1 (beyond EOF).
-> 
-> I will reply to this part first, as I think this gives a more concrete
-> anchor to the discussion.
-> 
-> The crucial point is that the truncate system call hasn't completed
-> yet - that thread is still queued in the rwsem.
-> 
-> You still have the guarantee that the truncate will complete
-> eventually (even if there is a never-ending stream of IOs), and that
-> all IO system calls that start after the truncate system call
-> completes will see the file as truncated.
+The patch 30058677 "ARM / highbank: add support for pl320 IPC"
+added a pl320 IPC specific header file as a generic mailbox.h.
+This file has been renamed appropriately to allow the
+introduction of the generic mailbox API framework.
 
-Sure, but the problem is not about when the syscall completes - the
-problem is that you are changing where in the pipeline of IO the
-truncate is initially executed.  i.e. ordering is not defined by
-when an operation completes, but by the order ing which the queue is
-processed after a blocking operation completes. That is not when the
-syscall completes, but when the filesystem drops the exclusive lock.
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/cpufreq/highbank-cpufreq.c |  2 +-
+ drivers/mailbox/pl320-ipc.c        |  2 +-
+ include/linux/mailbox.h            | 17 -----------------
+ include/linux/pl320-ipc.h          | 17 +++++++++++++++++
+ 4 files changed, 19 insertions(+), 19 deletions(-)
+ delete mode 100644 include/linux/mailbox.h
+ create mode 100644 include/linux/pl320-ipc.h
 
->From a single threaded userspace application perspective or
-multithreaded apps with their own userspace locking, truncates
-complete when either the syscall completes or some time after when
-the application drops it's lock. Either way, we're looking at
-completion time serialisation, and in that case what XFS or the
-kernel does simply doesn't matter.
-
-However, if we are talking about userspace applications that use
-lockless IO algorithms or kernel side applications (like knfsd) that
-are exposed directly to the filesystem locking semantics,
-serialisation behaviour is actually defined by filesystem's
-submission side locking behaviour. There is no external
-serialisation of IO completion, so serialisation and ordering is
-defined (for XFS) solely by the rwsem behaviour.
-
-> You don't have guarantees about which system call will "appear to run
-> before the other" if the execution times of the two system calls
-> overlap each other, but you actually never had such a guarantee from a
-> correctness perspective (i.e. you could never guarantee which of the
-> two would get queued on the rwsem ahead of the other).
-
-Sure, but as long as the submission side ordering is deterministic,
-it doesn't matter.
-
-> > Ok, so I can see where your latency figure comes from, but it's
-> > still a change of ordering in that W2 is no longer a barrier to the
-> > reads queued after it.
-> 
-> My claim is that it's not a visible change from a correctness
-> perspective
-
-I am not arguing that it is incorrect. I'm arguing that the change
-of ordering semantics breaks assumptions a lot of code makes about
-how these locks work.
-
-> > similar to this:
-> >
-> >         W1R1W2R2W3R3.....WnRm
-> >
-> > By my reading of the algorithm you are proposing, after W1 is
-> > released, we end up with the queue being treated like this:
-> >
-> >         R1R2R3....RmW2W3....Wn
-> >
-> > Right?
-> 
-> Yes, if what you are representing is the state of the queue at a given
-> point of time (which implies R1..Rm must be distinct threads, not just
-> the same thread doing repeated requests).
-
-Yup, that's very typical.
-
-> As new requests come in over time, one important point to remember is
-> that each writer will see at most one batch of readers wake up ahead
-> of it (though this batch may include readers that were originally
-> queued both before and after it).
-
-And that's *exactly* the problem with the changes you are proposing
-- rwsems will no longer provide strongly ordered write vs read
-barrier semantics.
-
-> I find the name 'barrier' actually confusing when used to describe
-> synchronous operations.  To me a barrier is usualy between
-> asynchronous operations, and it is well defined which operations
-> are ahead or behind of the barrier (either because they were
-> queued by the same thread, or they were queued by different
-> threads which may have synchronized together some other way).
-
-When you have hundreds or thousands of threads doing IO to the one
-file, it doesn't matter if the IO is issued synchronously or
-asynchronously by the threads - you simply have a huge amount of
-data IO concurrency and very, very deep pipelines.
-
-Inserting a metadata modification (truncate, preallocation,
-holepunch, etc) into that pipeline currently causes all new
-submissions to queue behind the metadata modification, waits for
-everything submitted before the metadata modification to complete
-and then runs the metadata modification. Once it completes, it then
-allows everything queued up to the next metadata modification to
-run....
-
-That matches your definition of a barrier pretty well, I think.
-
-> But in this case, we have two
-> synchronous operations with overlapping execution times - they don't
-> have a way to know which one is 'supposed to' be ahead of the other.
-> The two threads can't observe their relative ordering since they are
-> blocked during the operation...
-
-We don't care about the ordering between multiple concurrent
-metadata modifications - what matters is whether the ongoing data IO
-around them is ordered correctly.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+index b61b5a3..3118b87 100644
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -19,7 +19,7 @@
+ #include <linux/cpu.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ #include <linux/platform_device.h>
+ 
+ #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+index d873cba..f3755e0 100644
+--- a/drivers/mailbox/pl320-ipc.c
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -26,7 +26,7 @@
+ #include <linux/device.h>
+ #include <linux/amba/bus.h>
+ 
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ 
+ #define IPCMxSOURCE(m)		((m) * 0x40)
+ #define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+deleted file mode 100644
+index 5161f63..0000000
+--- a/include/linux/mailbox.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-/*
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-int pl320_ipc_transmit(u32 *data);
+-int pl320_ipc_register_notifier(struct notifier_block *nb);
+-int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+diff --git a/include/linux/pl320-ipc.h b/include/linux/pl320-ipc.h
+new file mode 100644
+index 0000000..5161f63
+--- /dev/null
++++ b/include/linux/pl320-ipc.h
+@@ -0,0 +1,17 @@
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++int pl320_ipc_transmit(u32 *data);
++int pl320_ipc_register_notifier(struct notifier_block *nb);
++int pl320_ipc_unregister_notifier(struct notifier_block *nb);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.2
+
