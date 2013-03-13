@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092Ab3CMOPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 10:15:20 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:38028 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab3CMOPR (ORCPT
+	id S933044Ab3CMOQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 10:16:54 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:37932 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526Ab3CMOQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 10:15:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1362662276-20792-7-git-send-email-ian@slimlogic.co.uk>
-References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
-	<1362662276-20792-7-git-send-email-ian@slimlogic.co.uk>
-Date: Wed, 13 Mar 2013 15:15:16 +0100
-Message-ID: <CACRpkdaNs+NmAbuwRYzn1xgjHy=7ZknJa-GD1+Q8HBsu53KQqQ@mail.gmail.com>
-Subject: Re: [PATCH v8 07/12] gpio: palmas: add in GPIO support for palmas charger
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ian Lartey <ian@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Mar 2013 10:16:52 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+Date: Wed, 13 Mar 2013 15:16:24 +0100
+Message-Id: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for slow replies :-(
+Here's another version with the comments addressed plus a small bugfix and some
+checkpatch cleanups.
 
-On Thu, Mar 7, 2013 at 2:17 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
+Changes in v17:
 
-> +static int palmas_gpio_read(struct palmas *palmas, unsigned int reg,
-> +               int gpio, unsigned int *dest)
+ - fix wrong return value in a failure path in ovl_link()
+ - fix subjects
+ - use file_inode() and MODULE_ALIAS_FS()
+ - fold bugfix patches
+ - checkpatch cleanups
 
-I don't like "int gpio" here, please use "int offset".
+Git tree is here:
 
-This is not a global GPIO number, it is an offset in the local gpio_chip,
-right?
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.current
 
-> +{
-> +       /* registers for second bank are identical and offset by 0x9 */
-> +       if (gpio > 7)
-> +               reg += PALMAS_GPIO_DATA_IN2;
-> +
-> +       return palmas_read(palmas, PALMAS_GPIO_BASE, reg, dest);
-> +}
-> +
-> +static int palmas_gpio_write(struct palmas *palmas, unsigned int reg,
-> +               int gpio, unsigned int data)
-> +{
-> +       /* registers for second bank are identical and offset by 0x9 */
-> +       if (gpio > 7)
-> +               reg += PALMAS_GPIO_DATA_IN2;
-> +
-> +       return palmas_write(palmas, PALMAS_GPIO_BASE, reg, data);
-> +}
-> +
-> +static int palmas_gpio_update_bits(struct palmas *palmas, unsigned int reg,
-> +               int gpio, unsigned int mask, unsigned int data)
-> +{
-> +       /* registers for second bank are identical and offset by 0x9 */
-> +       if (gpio > 7)
-> +               reg += PALMAS_GPIO_DATA_IN2;
-> +
-> +       return palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg, mask, data);
-> +}
+Thanks,
+Miklos
 
+---
+Andy Whitcroft (1):
+      overlayfs: add statfs support
 
-> -       ret = palmas_read(palmas, PALMAS_GPIO_BASE, PALMAS_GPIO_DATA_IN, &val);
-> +       ret = palmas_gpio_read(palmas, PALMAS_GPIO_DATA_IN, offset, &val);
+Erez Zadok (1):
+      overlayfs: implement show_options
 
-(Obviously you are passing the offset.)
+Miklos Szeredi (6):
+      vfs: add i_op->dentry_open()
+      vfs: export do_splice_direct() to modules
+      vfs: export __inode_permission() to modules
+      vfs: introduce clone_private_mount()
+      overlay filesystem
+      fs: limit filesystem stacking depth
 
-> +               ret = palmas_gpio_write(palmas, PALMAS_GPIO_SET_DATA_OUT,
-> +                               offset, BIT(offset % 8));
-(..)
-> +               ret = palmas_gpio_write(palmas, PALMAS_GPIO_CLEAR_DATA_OUT,
-> +                               offset, BIT(offset % 8));
-(...)
-> +       ret = palmas_gpio_update_bits(palmas, PALMAS_GPIO_DATA_DIR,
-> +                       offset, 1 << (offset % 8), 1 << (offset % 8));
+Neil Brown (1):
+      overlay: overlay filesystem documentation
 
-Why aren't you using the BIT() macro here too?
+---
+ Documentation/filesystems/Locking       |    2 +
+ Documentation/filesystems/overlayfs.txt |  199 +++++++++
+ Documentation/filesystems/vfs.txt       |    7 +
+ MAINTAINERS                             |    7 +
+ fs/Kconfig                              |    1 +
+ fs/Makefile                             |    1 +
+ fs/ecryptfs/main.c                      |    7 +
+ fs/internal.h                           |    5 -
+ fs/namei.c                              |   10 +-
+ fs/namespace.c                          |   18 +
+ fs/open.c                               |   23 +-
+ fs/overlayfs/Kconfig                    |   10 +
+ fs/overlayfs/Makefile                   |    7 +
+ fs/overlayfs/copy_up.c                  |  385 +++++++++++++++++
+ fs/overlayfs/dir.c                      |  605 +++++++++++++++++++++++++++
+ fs/overlayfs/inode.c                    |  372 +++++++++++++++++
+ fs/overlayfs/overlayfs.h                |   70 ++++
+ fs/overlayfs/readdir.c                  |  566 +++++++++++++++++++++++++
+ fs/overlayfs/super.c                    |  686 +++++++++++++++++++++++++++++++
+ fs/splice.c                             |    1 +
+ include/linux/fs.h                      |   14 +
+ include/linux/mount.h                   |    3 +
+ 22 files changed, 2989 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/filesystems/overlayfs.txt
+ create mode 100644 fs/overlayfs/Kconfig
+ create mode 100644 fs/overlayfs/Makefile
+ create mode 100644 fs/overlayfs/copy_up.c
+ create mode 100644 fs/overlayfs/dir.c
+ create mode 100644 fs/overlayfs/inode.c
+ create mode 100644 fs/overlayfs/overlayfs.h
+ create mode 100644 fs/overlayfs/readdir.c
+ create mode 100644 fs/overlayfs/super.c
 
-Further: if these functions are always used like this, with offset
-and some BIT() or (1 << (offset % 8)) why don't you move that
-latter part into the static helper and just pass offset into the
-helper?
-
-Yours,
-Linus Walleij
