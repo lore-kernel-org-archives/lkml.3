@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3CMIr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 04:47:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46121 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755153Ab3CMIrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756030Ab3CMIr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 04:47:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52257 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab3CMIrX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Mar 2013 04:47:23 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <notasas@gmail.com>,
         Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 1/5] usb: musb: omap: remove the check before calling otg_set_vbus
-Date: Wed, 13 Mar 2013 14:17:06 +0530
-Message-ID: <1363164430-19118-2-git-send-email-kishon@ti.com>
+Subject: [PATCH 5/5] usb: otg: twl4030: fix cold plug on OMAP3
+Date: Wed, 13 Mar 2013 14:17:10 +0530
+Message-ID: <1363164430-19118-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363164430-19118-1-git-send-email-kishon@ti.com>
 References: <1363164430-19118-1-git-send-email-kishon@ti.com>
@@ -23,41 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change. otg_set_vbus is already protected so removed the
-check before calling otg_set_vbus.
+Having twl4030_usb_phy_init() (detects if a cable is connected before
+twl4030 is probed) in twl4030 probe makes cable connect events to be
+missed by musb glue, since it gets loaded after twl4030. Having
+twl4030_usb_phy_init as a usb_phy ops lets twl4030_usb_phy_init to be
+called when glue is ready.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/musb/omap2430.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/otg/twl4030-usb.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 558c1d6..78bfc50 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -174,8 +174,7 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
- 				}
- 			}
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 5b20bb4..4040124 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -565,8 +565,9 @@ static void twl4030_id_workaround_work(struct work_struct *work)
+ 	}
+ }
  
--			if (otg->set_vbus)
--				otg_set_vbus(otg, 1);
-+			otg_set_vbus(otg, 1);
- 		} else {
- 			musb->is_active = 1;
- 			otg->default_a = 1;
-@@ -293,10 +292,8 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 		}
+-static void twl4030_usb_phy_init(struct twl4030_usb *twl)
++static int twl4030_usb_phy_init(struct usb_phy *phy)
+ {
++	struct twl4030_usb *twl = phy_to_twl(phy);
+ 	enum omap_musb_vbus_id_status status;
  
- 		omap2430_musb_set_vbus(musb, 0);
--		if (data->interface_type == MUSB_INTERFACE_UTMI) {
--			if (musb->xceiv->otg->set_vbus)
--				otg_set_vbus(musb->xceiv->otg, 0);
--		}
-+		if (data->interface_type == MUSB_INTERFACE_UTMI)
-+			otg_set_vbus(musb->xceiv->otg, 0);
- 		omap_control_usb_set_mode(glue->control_otghs,
- 			USB_MODE_DISCONNECT);
- 		break;
+ 	/*
+@@ -581,6 +582,7 @@ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
+ 		omap_musb_mailbox(twl->linkstat);
+ 
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
++	return 0;
+ }
+ 
+ static int twl4030_set_suspend(struct usb_phy *x, int suspend)
+@@ -657,6 +659,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	twl->phy.otg		= otg;
+ 	twl->phy.type		= USB_PHY_TYPE_USB2;
+ 	twl->phy.set_suspend	= twl4030_set_suspend;
++	twl->phy.init		= twl4030_usb_phy_init;
+ 
+ 	otg->phy		= &twl->phy;
+ 	otg->set_host		= twl4030_set_host;
+@@ -696,8 +699,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 		return status;
+ 	}
+ 
+-	twl4030_usb_phy_init(twl);
+-
+ 	dev_info(&pdev->dev, "Initialized TWL4030 USB module\n");
+ 	return 0;
+ }
 -- 
 1.7.10.4
 
