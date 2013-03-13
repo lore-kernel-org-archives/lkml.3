@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab3CMKIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:08:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56827 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab3CMKIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:08:21 -0400
-Date: Wed, 13 Mar 2013 10:08:17 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sunrpc: drop "select NETVM"
-Message-ID: <20130313100817.GB10369@suse.de>
-References: <1362844951.3137.3.camel@x61.thuisdomein>
- <20130309175118.GJ31448@fieldses.org>
+	id S1756135Ab3CMKJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:09:23 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46955 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3CMKJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 06:09:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130309175118.GJ31448@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
+Date: Wed, 13 Mar 2013 11:09:20 +0100
+Message-ID: <CA+icZUXJn4=uU2M0pQ8B2=UAn2RS0bdY83uWKOS_SiDzZMb0FQ@mail.gmail.com>
+Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 12:51:18PM -0500, J. Bruce Fields wrote:
-> ACK.
-> 
-> On Sat, Mar 09, 2013 at 05:02:31PM +0100, Paul Bolle wrote:
-> > The Kconfig entry for SUNRPC_SWAP selects NETVM. That select statement
-> > was added in commit a564b8f0398636ba30b07c0eaebdef7ff7837249 ("nfs:
-> > enable swap on NFS").
-> 
-> Cc'ing Mel Gorman just in case there was something else going on there.
-> 
-> --b.
-> 
-> > But there's no Kconfig symbol NETVM. It apparently
-> > was only in used in development versions of the swap over nfs
-> > functionality but never entered mainline. Anyhow, it is a nop and can
-> > safely be dropped.
-> > 
+On Tue, Mar 12, 2013 at 4:41 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Al and Linus,
+>
+> Please consider overlayfs for inclusion into 3.10.
+>
+> It's included in Ubuntu and openSUSE, used by OpenWrt and various other
+> projects.  I regularly get emails asking when it will be included in mainline.
+>
+> Git tree is here:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v16
+>
+> Thanks,
+> Miklos
+>
 
-Correct, the NETVM symbol existed in an early version of swap-over-nfs
-that I failed to clean up properly. Thanks.
+Hi Miklos,
 
--- 
-Mel Gorman
-SUSE Labs
+Is it possible to get a backport of OverlayFS-v16 for Linux-stable v3.8.y?
+Thanks in advance.
+
+- Sedat -
