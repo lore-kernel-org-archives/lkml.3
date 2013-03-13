@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934110Ab3CMTBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:01:09 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55676 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab3CMTBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:01:07 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] arch: s390: net: Replaced kmalloc and memset with kzalloc
-Date: Wed, 13 Mar 2013 20:59:17 +0200
-Message-Id: <1363201157-17545-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934150Ab3CMTBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:01:46 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53193 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933043Ab3CMTBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 15:01:45 -0400
+Date: Wed, 13 Mar 2013 15:01:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: NULL pointer dereference in ext4_superblock_csum_set with
+ mounted filesystem
+Message-ID: <20130313190141.GF5604@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Josh Triplett <josh@joshtriplett.org>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>
+References: <20130313185911.GA1446@jtriplet-mobl1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130313185911.GA1446@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used kzalloc instead of kmalloc followed by memset with 0.
-Patch found using coccinelle.
+On Wed, Mar 13, 2013 at 11:59:13AM -0700, Josh Triplett wrote:
+> I frequently test kernel changes by booting them with kvm's -kernel
+> option, with -hda pointing to my host system's root filesystem, and
+> -snapshot to prevent writing to (and likely corrupting) that root
+> filesystem.  I tried this with a kernel built from git commit
+> 7c6baa304b841673d3a55ea4fcf9a5cbf7a1674b, with a stock x86-64 "make
+> defconfig", and got a kernel panic:
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- arch/s390/net/bpf_jit_comp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Can you send me the output of "dumpe2fs -h" on your host system's root
+file system?
 
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index 0972e91..e645528 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -747,10 +747,9 @@ void bpf_jit_compile(struct sk_filter *fp)
- 
- 	if (!bpf_jit_enable)
- 		return;
--	addrs = kmalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
-+	addrs = kzalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
- 	if (addrs == NULL)
- 		return;
--	memset(addrs, 0, fp->len * sizeof(*addrs));
- 	memset(&jit, 0, sizeof(cjit));
- 	memset(&cjit, 0, sizeof(cjit));
- 
--- 
-1.7.9.5
+Thanks,
 
+						- Ted
