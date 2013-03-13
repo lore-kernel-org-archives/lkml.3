@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab3CMI2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 04:28:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34795 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284Ab3CMI2K (ORCPT
+	id S932329Ab3CMIbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 04:31:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22647 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3CMIbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 04:28:10 -0400
-Message-ID: <51403893.8080602@openvz.org>
-Date: Wed, 13 Mar 2013 12:28:03 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [ 069/100] e1000e: fix pci-device enable-counter balance
-References: <20130312223122.884099393@linuxfoundation.org> <20130312223130.360294627@linuxfoundation.org> <51403036.3030702@openvz.org>
-In-Reply-To: <51403036.3030702@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Mar 2013 04:31:42 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-d7-5140396d24ea
+Message-id: <51403973.9080601@samsung.com>
+Date: Wed, 13 Mar 2013 17:31:47 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 1/3] dw_mmc: Don't loop when handling an interrupt
+References: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
+In-reply-to: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zLd1cS4dAg8nTRC22v97IZnHjVxur
+	xeVdc9gsjvzvZ7T4fHs7q8WH+xeZHdg8enaeYfQ4dGUto0ffllWMHp83yQWwRHHZpKTmZJal
+	FunbJXBlvLn+hLXgDF/Fp1UPmBsYt3J3MXJySAiYSHztnswIYYtJXLi3nq2LkYtDSGAZo8S8
+	739YYIp6N1xgB7GFBKYzSjxdBFX0klFi/o1jzCAJXgEtiWVt3UwgNouAqsS5IyfBbDYBHYnt
+	346D2aICYRIrp19hgagXlPgx+R6QzcEhImAgMavDACTMLLCKUWJHdw6ILSzgJtE6YS0zxF4v
+	ifdPd4DZnALeEm3NU9gg6nUk9rdOg7LlJTavecsMcpuEwC52iTefjrBC3CMg8W3yIbBdEgKy
+	EpsOMEP8JSlxcMUNlgmMYrOQXDQLydhZSMYuYGRexSiaWpBcUJyUXmSsV5yYW1yal66XnJ+7
+	iRESYf07GO8esD7EmAy0ciKzlGhyPjBC80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8s
+	Sc1OTS1ILYovKs1JLT7EyMTBKdXA6KpvNGVZ9MeQqFC9jJPFjBKtN6/MSbhs58hd4xG62Y/V
+	2+fpNEtbKUexQP3TBw3PP3dbeeC65UqRd1dMXm9oFxF6yfZ/0pUVG2Q12/6VHt5+ccLOM5Kv
+	DvBU3f9a9uCBj72mhWf8olAb18VX7US/eulxO51ZPHlHuEbAaQMn6cbQuxICH6/xKLEUZyQa
+	ajEXFScCAIMsAxDGAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd1cS4dAg009/BbbX29ks7jxq43V
+	4vKuOWwWR/73M1p8vr2d1eLD/YvMDmwePTvPMHocurKW0aNvyypGj8+b5AJYohoYbTJSE1NS
+	ixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAtisplCXmlAKFAhKL
+	i5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM95cf8JacIav4tOqB8wNjFu5uxg5OSQETCR6
+	N1xgh7DFJC7cW88GYgsJTGeUeLoIyOYCsl8ySsy/cYwZJMEroCWxrK2bCcRmEVCVOHfkJJjN
+	JqAjsf3bcTBbVCBMYuX0KywQ9YISPybfA7I5OEQEDCRmdRiAhJkFVjFK7OjOAbGFBdwkWies
+	ZYbY6yXx/ukOMJtTwFuirXkKG0S9jsT+1mlQtrzE5jVvmScwCsxCsmEWkrJZSMoWMDKvYhRN
+	LUguKE5KzzXSK07MLS7NS9dLzs/dxAiO32fSOxhXNVgcYhTgYFTi4ZVIsw8UYk0sK67MPcQo
+	wcGsJMLbdgkoxJuSWFmVWpQfX1Sak1p8iDEZGAATmaVEk/OBqSWvJN7Q2MTMyNLIzNjE3NiY
+	NGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhjb901P/sS7yjfRb/NC5zpx1f9PJggz/Dfx
+	9WEqfqvZ/T71ZOqWvjl6dZ0PxXZapucsXXD21M7tPWlyjmk6fGaebv6hzy7NT5l+WvBPeuSe
+	oxrcU1aKSX+/cI/V6MqpaT/vvXMwcsw3YF4ht+5g56ni/V7i99czPrghqnJo15JS7vxpwXl9
+	K9yUWIozEg21mIuKEwF8T5kAIwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> Greg Kroah-Hartman wrote:
->> 3.8-stable review patch. If anyone has any objections, please let me know.
->
-> Vivek Goyal reported about problem caused by this improper fix.
->
-> https://lkml.org/lkml/2013/3/12/529
->
-> (this patch also pending to 3.0-stable and 3.4-stable)
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
 
-Sorry, I'm wrong. This patch is correct.
-Problem in pci_device_shutdown(), that was in another patch.
-
->
->>
->> ------------------
->>
->> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>
->> commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
->>
->> This patch removes redundant and unbalanced pci_disable_device() from
->> __e1000_shutdown(). pci_clear_master() is enough, device can go into
->> suspended state with elevated enable_cnt.
->>
->> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
->> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Cc: Bruce Allan<bruce.w.allan@intel.com>
->> Acked-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
->> Tested-by: Borislav Petkov<bp@suse.de>
->> Tested-by: Aaron Brown<aaron.f.brown@intel.com>
->> Signed-off-by: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
->> Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>
->> ---
->> drivers/net/ethernet/intel/e1000e/netdev.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
->> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
->> @@ -5549,7 +5549,7 @@ static int __e1000_shutdown(struct pci_d
->> */
->> e1000e_release_hw_control(adapter);
->>
->> - pci_disable_device(pdev);
->> + pci_clear_master(pdev);
->>
->> return 0;
->> }
->>
->>
->
+On 03/12/2013 07:53 PM, Markos Chandras wrote:
+> There is no reason to loop when handling an interrupt. The "if" clauses
+> will handle all of them sequentially. This also eliminates the extra loop
+> we used to take with no pending interrupts and we ended up breaking out
+> of the while loop.
+> 
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+> Cc: Seungwon Jeon <tgih.jun@samsung.com>
+> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+> Cc: Chris Ball <cjb@laptop.org>
+> ---
+> The patch is based on Chris Ball's mmc-next branch
+> 
+>  drivers/mmc/host/dw_mmc.c |   11 ++++-------
+>  1 files changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 60063cc..78c7251 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -1563,11 +1563,11 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>  {
+>  	struct dw_mci *host = dev_id;
+>  	u32 pending;
+> -	unsigned int pass_count = 0;
+>  	int i;
+>  
+> -	do {
+> -		pending = mci_readl(host, MINTSTS); /* read-only mask reg */
+> +	pending = mci_readl(host, MINTSTS); /* read-only mask reg */
+> +
+> +	if (pending) {
+>  
+>  		/*
+>  		 * DTO fix - version 2.10a and below, and only if internal DMA
+> @@ -1579,9 +1579,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>  				pending |= SDMMC_INT_DATA_OVER;
+>  		}
+>  
+> -		if (!pending)
+> -			break;
+> -
+>  		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
+>  			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
+>  			host->cmd_status = pending;
+> @@ -1642,7 +1639,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>  			}
+>  		}
+>  
+> -	} while (pass_count++ < 5);
+> +	}
+>  
+>  #ifdef CONFIG_MMC_DW_IDMAC
+>  	/* Handle DMA interrupts */
+> 
 
