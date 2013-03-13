@@ -1,168 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933853Ab3CMQ4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 12:56:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12981 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984Ab3CMQ4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 12:56:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
-   d="scan'208";a="301932465"
-Date: Wed, 13 Mar 2013 09:56:22 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf, tools: Make perf stat -I ... CSV output flat
-Message-ID: <20130313165622.GA19692@tassilo.jf.intel.com>
-References: <1362624201-6161-1-git-send-email-andi@firstfloor.org>
- <CABPqkBT06EVjuy1ew1Z+vrGMf0p+mH19-M71xzTGVyZTtcaLUA@mail.gmail.com>
+	id S933866Ab3CMQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 12:57:34 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:53567 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932984Ab3CMQ5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 12:57:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19DuN9qyJbpvnDJWjt21nXS
+Date: Wed, 13 Mar 2013 09:57:30 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, b-cousson@ti.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Message-ID: <20130313165729.GF26093@atomide.com>
+References: <1363088606-2692-1-git-send-email-rogerq@ti.com>
+ <20130312164007.GZ26093@atomide.com>
+ <5140821B.2030902@ti.com>
+ <20130313162454.GE26093@atomide.com>
+ <5140AAFD.4080508@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBT06EVjuy1ew1Z+vrGMf0p+mH19-M71xzTGVyZTtcaLUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5140AAFD.4080508@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 02:19:05PM +0100, Stephane Eranian wrote:
-> On Thu, Mar 7, 2013 at 3:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > The new perf stat interval code is quite useful, especially when the
-> > data is post processed. Unfortunately the default -x, output is not
-> > very friendly to programs when it contains more than one event.
-> >
-> > Each event is printed on its own line, each keyed with the time.
-> >
-> > You cannot directly feed it to gnuplot or into R to
-> > compare different events at a specific point in time.
-> >
-> > This patch normalizes the output so that a single line contains all
-> > the events for a given time period. Each event is an own column.
-> >
-> > With that it's quite easy to do plots and other analysis,
-> > as this is the normalized format many data processing programs expect.
-> >
-> > This is not fully normalized yet, as per cpu counts also
-> > end up on the same line (fixing this would be more intrusive)
-> > But good enough for most purposes.
-> >
-> > The non CSV output is not changed.
-> >
-> > Example:
-> >
-> > $ perf stat -o /tmp/x.csv -I 100 -x, bc  <<< 2^400000 > /dev/null
-> > $ gnuplot
-> > gnuplot> set datafile separator ","
-> > gnuplot> set terminal dumb
-> > gnuplot> plot "/tmp/x.csv" every ::3 using 1:3
-> >
-> >   110 ++--------+---------+---------+--------+---------+---------+--------++
-> >       +         +         +        "/tmp/x.csv" every ::3 using 1:3   A    +
-> >   100 ++   A    A    A    A    A    A    A    A   A    A    A    A        ++
-> >    90 ++                                                                  ++
-> >       |                                                                    |
-> >    80 ++                                                                  ++
-> >       |                                                                    |
-> >    70 ++                                                                  ++
-> >       |                                                                    |
-> >    60 ++                                                                  ++
-> >    50 ++                                                                  ++
-> >       |                                                                    |
-> >    40 ++                                                                  ++
-> >       |                                                                    |
-> >    30 ++                                                                  ++
-> >       |                                                                    |
-> >    20 ++                                                                  ++
-> >    10 ++                                                                  ++
-> >       +         +         +         +        +         +         +A        +
-> >     0 ++--------+---------+---------+--------+---------+---------+--------++
-> >      0.2       0.4       0.6       0.8       1        1.2       1.4       1.6
-> >
-> > Cc: eranian@google.com
-> > ---
-> >  tools/perf/builtin-stat.c |  118 +++++++++++++++++++++++++++++++--------------
-> >  1 files changed, 82 insertions(+), 36 deletions(-)
-> >
-> > diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> > index e6f4d1d..81d704a 100644
-> > --- a/tools/perf/builtin-stat.c
-> > +++ b/tools/perf/builtin-stat.c
-> > @@ -66,8 +66,10 @@
-> >  #define CNTR_NOT_COUNTED       "<not counted>"
-> >
-> >  static void print_stat(int argc, const char **argv);
-> > -static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
-> > -static void print_counter(struct perf_evsel *counter, char *prefix);
-> > +static void print_counter_aggr(struct perf_evsel *counter, char *prefix, int delim,
-> > +                              int name);
-> > +static void print_counter(struct perf_evsel *counter, char *prefix, int delim,
-> > +                         int name);
-> >  static void print_aggr_socket(char *prefix);
-> >
-> >  /* Default events used for perf stat -T */
-> > @@ -343,6 +345,7 @@ static void print_interval(void)
-> >         struct perf_stat *ps;
-> >         struct timespec ts, rs;
-> >         char prefix[64];
-> > +       int delim = '\n';
-> >
-> >         if (no_aggr) {
-> >                 list_for_each_entry(counter, &evsel_list->entries, node) {
-> > @@ -373,15 +376,23 @@ static void print_interval(void)
-> >         if (++num_print_interval == 25)
-> >                 num_print_interval = 0;
-> >
-> > +       if (csv_output) {
-> > +               delim = ',';
-> > +               fprintf(output, "%s,", prefix);
-> > +               prefix[0] = 0;
-> > +       }
-> > +
-> >         if (aggr_socket)
-> >                 print_aggr_socket(prefix);
-> >         else if (no_aggr) {
-> >                 list_for_each_entry(counter, &evsel_list->entries, node)
-> > -                       print_counter(counter, prefix);
-> > +                       print_counter(counter, prefix, delim, !csv_output);
-> >         } else {
-> >                 list_for_each_entry(counter, &evsel_list->entries, node)
-> > -                       print_counter_aggr(counter, prefix);
-> > +                       print_counter_aggr(counter, prefix, delim, !csv_output);
-> >         }
-> > +       if (csv_output)
-> > +               fputc('\n', output);
-> >  }
-> >
-> >  static int __run_perf_stat(int argc __maybe_unused, const char **argv)
-> > @@ -503,6 +514,21 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
-> >         t0 = rdclock();
-> >         clock_gettime(CLOCK_MONOTONIC, &ref_time);
-> >
-> > +       if (interval && csv_output) {
-> > +               fprintf(output, "time,,");
+* Roger Quadros <rogerq@ti.com> [130313 09:40]:
+> On 03/13/2013 06:24 PM, Tony Lindgren wrote:
+> > * Roger Quadros <rogerq@ti.com> [130313 06:46]:
+> >> On 03/12/2013 06:40 PM, Tony Lindgren wrote:
+> >>> * Roger Quadros <rogerq@ti.com> [130312 04:47]:
+> >>>> Hi Tony,
+> >>>>
+> >>>> These patches provide the SoC side code required to support
+> >>>> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+> >>> ... 
+> >>>
+> >>>>  arch/arm/mach-omap2/board-3430sdp.c                |   97 +++++++++++++++-
+> >>>>  arch/arm/mach-omap2/board-3630sdp.c                |  100 +++++++++++++++-
+> >>>>  arch/arm/mach-omap2/board-am3517crane.c            |   95 +++++++++++++--
+> >>>>  arch/arm/mach-omap2/board-am3517evm.c              |   66 ++++++++++-
+> >>>>  arch/arm/mach-omap2/board-cm-t35.c                 |   95 ++++++++++++++-
+> >>>>  arch/arm/mach-omap2/board-cm-t3517.c               |   97 +++++++++++++++-
+> >>>>  arch/arm/mach-omap2/board-devkit8000.c             |   20 ++--
+> >>>>  arch/arm/mach-omap2/board-generic.c                |   67 +++++++++++
+> >>>>  arch/arm/mach-omap2/board-igep0020.c               |  112 ++++++++++++++++---
+> >>>>  arch/arm/mach-omap2/board-omap3beagle.c            |   93 +++++++++++++--
+> >>>>  arch/arm/mach-omap2/board-omap3evm.c               |   62 ++++++++--
+> >>>>  arch/arm/mach-omap2/board-omap3pandora.c           |   52 +++++++--
+> >>>>  arch/arm/mach-omap2/board-omap3stalker.c           |   52 +++++++-
+> >>>>  arch/arm/mach-omap2/board-omap3touchbook.c         |   62 +++++++++-
+> >>>>  arch/arm/mach-omap2/board-omap4panda.c             |  122 ++++++++++++++------
+> >>>>  arch/arm/mach-omap2/board-overo.c                  |   54 ++++++++-
+> >>>>  arch/arm/mach-omap2/board-zoom.c                   |   56 ++++++++-
+> >>>
+> >>> Can't you have some mach-omap2/ehci-common.c that takes care
+> >>> of the initializiation to avoid this much addition to the
+> >>> board-*.c files? You may be able to have just a common function
+> >>> to do it and pass few parameters?
+> >>
+> >> Since we moved reset and power handling for the USB PHYs from omap-echi
+> >> driver into the USB PHY driver we need to define the regulator data
+> >> for RESET and Power line of each PHY. So most of the code added is just
+> >> regulator data for the PHY rather than omap-ehci.
+> > 
+> > It seems that you're now repeating minor variations of the same PHY
+> > over and over again though.
 > 
-> Don't quite understand the point of the ,,. By definition this
-> extension is used for automatic
-
-That was for one of the extra modi, I think cgroups.
-It was easier to have the extra empty column than to special case this.
-
-
-> in system-wide mode:
+> Yes it is the vcc and reset regulator data for the PHY that
+> is getting repeated with variations in the GPIO number.
 > 
-> $ perf stat -I 10000 -x, -a -A -e cycles,instructions sleep 5
-> 
-> Don't you want events also grouped by CPU?
+> >  
+> >> Instead of a common function, I can implement some macros that make it
+> >> easier to define the regulators for the PHY in the board files.
+> >> Does this sound OK?
+> >>
+> >> Personally I don't like such macros because it hides the implementation
+> >> and is difficult to read/debug.
+> > 
+> > I'd prefer a common function to initialize the PHY though as it sounds
+> > like using macros would just allocate similar PHY many times which seems
+> > unnecessary.
+> > 
+> OK, so we want to create the regulator data at runtime to save some memory?
+> I'll come up with something.
 
-I mentioned that as an open. It would be good to have separate lines
-per cpu, but that would have complicated the patch somewhat.
-Could be done as a next step I suppose.
+Or I guess you can have just one instance that gets filled in by some PHY
+platform init function.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+Regards,
+
+Tony
