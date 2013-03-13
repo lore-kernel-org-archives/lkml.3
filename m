@@ -1,145 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab3CMVCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 17:02:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60602 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab3CMVCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 17:02:21 -0400
-Date: Wed, 13 Mar 2013 22:02:16 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Shuge <shugelinux@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        Kevin <kevin@allwinneretch.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] bounce:fix bug, avoid to flush dcache on slab page
- from jbd2.
-Message-ID: <20130313210216.GA7754@quack.suse.cz>
-References: <5139DB90.5090302@gmail.com>
- <20130312153221.0d26fe5599d4885e51bb0c7c@linux-foundation.org>
- <20130313011020.GA5313@blackbox.djwong.org>
- <20130313085021.GA29730@quack.suse.cz>
- <20130313194429.GE5313@blackbox.djwong.org>
+	id S934306Ab3CMVDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 17:03:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61348 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933178Ab3CMVDA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 17:03:00 -0400
+Date: Wed, 13 Mar 2013 17:03:07 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, <linux-rt-users@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Threaded irqs + 100% CPU RT task = RCU stall
+Message-ID: <20130313210307.GA22448@windriver.com>
+References: <20130306154917.GA15249@windriver.com>
+ <alpine.LFD.2.02.1303061651360.22263@ionos>
+ <20130306171648.GO3268@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1303062010060.22263@ionos>
+ <20130306214502.GC3268@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20130313194429.GE5313@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130306214502.GC3268@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-03-13 12:44:29, Darrick J. Wong wrote:
-> On Wed, Mar 13, 2013 at 09:50:21AM +0100, Jan Kara wrote:
-> > On Tue 12-03-13 18:10:20, Darrick J. Wong wrote:
-> > > On Tue, Mar 12, 2013 at 03:32:21PM -0700, Andrew Morton wrote:
-> > > > On Fri, 08 Mar 2013 20:37:36 +0800 Shuge <shugelinux@gmail.com> wrote:
-> > > > 
-> > > > > The bounce accept slab pages from jbd2, and flush dcache on them.
-> > > > > When enabling VM_DEBUG, it will tigger VM_BUG_ON in page_mapping().
-> > > > > So, check PageSlab to avoid it in __blk_queue_bounce().
-> > > > > 
-> > > > > Bug URL: http://lkml.org/lkml/2013/3/7/56
-> > > > > 
-> > > > > ...
-> > > > >
-> > > > > --- a/mm/bounce.c
-> > > > > +++ b/mm/bounce.c
-> > > > > @@ -214,7 +214,8 @@ static void __blk_queue_bounce(struct request_queue 
-> > > > > *q, struct bio **bio_orig,
-> > > > >   		if (rw == WRITE) {
-> > > > >   			char *vto, *vfrom;
-> > > > >   -			flush_dcache_page(from->bv_page);
-> > > > > +			if (unlikely(!PageSlab(from->bv_page)))
-> > > > > +				flush_dcache_page(from->bv_page);
-> > > > >   			vto = page_address(to->bv_page) + to->bv_offset;
-> > > > >   			vfrom = kmap(from->bv_page) + from->bv_offset;
-> > > > >   			memcpy(vto, vfrom, to->bv_len);
-> > > > 
-> > > > I guess this is triggered by Catalin's f1a0c4aa0937975b ("arm64: Cache
-> > > > maintenance routines"), which added a page_mapping() call to arm64's
-> > > > arch/arm64/mm/flush.c:flush_dcache_page().
-> > > > 
-> > > > What's happening is that jbd2 is using kmalloc() to allocate buffer_head
-> > > > data.  That gets submitted down the BIO layer and __blk_queue_bounce()
-> > > > calls flush_dcache_page() which in the arm64 case calls page_mapping()
-> > > > and page_mapping() does VM_BUG_ON(PageSlab) and splat.
-> > > > 
-> > > > The unusual thing about all of this is that the payload for some disk
-> > > > IO is coming from kmalloc, rather than being a user page.  It's oddball
-> > > > but we've done this for ages and should continue to support it.
-> > > > 
-> > > > 
-> > > > Now, the page from kmalloc() cannot be in highmem, so why did the
-> > > > bounce code decide to bounce it?
-> > > > 
-> > > > __blk_queue_bounce() does
-> > > > 
-> > > > 		/*
-> > > > 		 * is destination page below bounce pfn?
-> > > > 		 */
-> > > > 		if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
-> > > > 			continue;
-> > > > 
-> > > > and `force' comes from must_snapshot_stable_pages().  But
-> > > > must_snapshot_stable_pages() must have returned false, because if it
-> > > > had returned true then it would have been must_snapshot_stable_pages()
-> > > > which went BUG, because must_snapshot_stable_pages() calls page_mapping().
-> > > > 
-> > > > So my tentative diagosis is that arm64 is fishy.  A page which was
-> > > > allocated via jbd2_alloc(GFP_NOFS)->kmem_cache_alloc() ended up being
-> > > > above arm64's queue_bounce_pfn().  Can you please do a bit of
-> > > > investigation to work out if this is what is happening?  Find out why
-> > > > __blk_queue_bounce() decided to bounce a page which shouldn't have been
-> > > > bounced?
-> > > 
-> > > That sure is strange.  I didn't see any obvious reasons why we'd end up with a
-> > > kmalloc above queue_bounce_pfn().  But then I don't have any arm64s either.
-> > > 
-> > > > This is all terribly fragile :( afaict if someone sets
-> > > > bdi_cap_stable_pages_required() against that jbd2 queue, we're going to
-> > > > hit that BUG_ON() again, via must_snapshot_stable_pages()'s
-> > > > page_mapping() call.  (Darrick, this means you ;))
-> > > 
-> > > Wheeee.  You're right, we shouldn't be calling page_mapping on slab pages.
-> > > We can keep walking the bio segments to find a non-slab page that can tell us
-> > > MS_SNAP_STABLE is set, since we probably won't need the bounce buffer anyway.
-> > > 
-> > > How does something like this look?  (+ the patch above)
-> >   Umm, this won't quite work. We can have a bio which has just PageSlab
-> > page attached and so you won't be able to get to the superblock. Heh, isn't
-> > the whole page_mapping() thing in must_snapshot_stable_pages() wrong? When we
-> > do direct IO, these pages come directly from userspace and hell knows where
-> > they come from. Definitely their page_mapping() doesn't give us anything
-> > useful... Sorry for not realizing this earlier when reviewing the patch.
-> > 
-> > ... remembering why we need to get to sb and why ext3 needs this ... So
-> > maybe a better solution would be to have a bio flag meaning that pages need
-> > bouncing? And we would set it from filesystems that need it - in case of
-> > ext3 only writeback of data from kjournald actually needs to bounce the
-> > pages. Thoughts?
+[Re: Threaded irqs + 100% CPU RT task = RCU stall] On 06/03/2013 (Wed 13:45) Paul E. McKenney wrote:
+
+[...]
+
 > 
-> What about dirty pages that don't result in journal transactions?  I think
-> ext3_sync_file() eventually calls ext3_ordered_writepage, which then calls
-> __block_write_full_page, which in turn calls submit_bh().
-  So here we have two options:
-Either we let ext3 wait the same way as other filesystems when stable pages
-are required. Then only data IO from kjournald needs to be bounced (all
-other IO is properly protected by PageWriteback bit).
+> Is this behavior OK?  If so, the following (untested) patch might do
+> what you want.  ;-)
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Add softirq-stall indications to stall-warning messages
 
-Or we won't let ext3 wait (as it is now), keep the superblock flag that fs
-needs bouncing, and set the bio flag in __block_write_full_page() and
-kjournald based on the sb flag.
+[...]
 
-I think the first option is slightly better but I don't feel strongly
-about that.
+> 
+> +The "softirq=" portion of the message tracks the number of RCU softirq
+> +handlers that the stalled CPU has executed.  The number before the "/"
+> +is the number that had executed since boot at the time that this CPU
+> +last noted the beginning of a grace period, which might be the current
+> +(stalled) grace period, or it might be some earlier grace period (for
+> +example, if the CPU might have been in dyntick-idle mode for an extended
+> +time period.  The number after the "/" is the number that have executed
+> +since boot until the current time.  If this latter number stays constant
+> +across repeated stall-warning messages, it is possible that RCU's softirq
+> +handlers are no longer able to execute on this CPU.  This can happen if
+> +the stalled CPU is spinning with interrupts are disabled, or, in -rt
+> +kernels, if a high-priority process is starving RCU's softirq handler.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Here is the output of two consecutive stalls (triggered exactly as I'd
+described before) after applying the commit and enabling the new config
+option for RCU_CPU_STALL_INFO (btw, do we need this?  we already have
+the RCU_CPU_STALL_VERBOSE option, and the distinction isn't clear.)
+
+Looking at the output, it doesn't necessarily scream out "you are an
+idiot" in a way that Joe Average can immediately parse and understand,
+but I guess it does at least arm us with more information so that we
+can tell Joe Average that he is an idiot (assuming he posts more than
+just a single stall instance).
+
+Also note right after the <EOI> below, it looks like two stall
+messages got interleavedi, or a carriage return got dropped...
+(not suggesting that this patch caused that.).
+
+Paul.
+--
+
+INFO: rcu_preempt self-detected stall on CPU
+INFO: rcu_preempt detected stalls on CPUs/tasks:
+	1: (1 GPs behind) idle=f4f/140000000000001/0 softirq=2256/2257 
+	(detected by 5, t=60002 jiffies, g=324, c=323, q=1368)
+Task dump for CPU 1:
+eatme-simple    R  running task        0  1487   1433 0x00000000
+ ffff88042ef47f60 ffffffff81316de1 ffff88042e5f5810 ffff88042ef47fd8
+ 0000000000010c00 ffff88042ef47fd8 ffff88042f994210 ffff88042e5f5810
+ 0000000000000000 ffff88043f4fe980 ffffffff810a56e4 0000000000000203
+Call Trace:
+ [<ffffffff81316de1>] ? __schedule+0x62a/0x75e
+ [<ffffffff810a56e4>] ? dput+0x20/0x15c
+ [<ffffffff81096070>] ? __fput+0x1a1/0x1c8
+ [<ffffffff810ab833>] ? mntput_no_expire+0x13/0x11f
+ [<ffffffff8101c55c>] ? do_page_fault+0x1f/0x3b
+
+	1: (1 GPs behind) idle=f4f/140000000000001/0 softirq=2256/2257 
+	 (t=60082 jiffies g=324 c=323 q=1368)
+Pid: 1487, comm: eatme-simple Not tainted 3.9.0-rc2+ #2
+Call Trace:
+ <IRQ>  [<ffffffff8105cac6>] ? rcu_check_callbacks+0x215/0x61a
+ [<ffffffff8102cffc>] ? update_process_times+0x31/0x5c
+ [<ffffffff8104bb5b>] ? tick_handle_periodic+0x18/0x52
+ [<ffffffff81016328>] ? smp_apic_timer_interrupt+0x7d/0x8f
+ [<ffffffff8131944a>] ? apic_timer_interrupt+0x6a/0x70
+ <EOI> 
+INFO: rcu_preempt self-detected stall on CPUINFO: rcu_preempt detected stalls on CPUs/tasks:
+	1: (1 GPs behind) idle=f4f/140000000000001/0 softirq=2256/2257 
+	(detected by 5, t=240007 jiffies, g=324, c=323, q=9386)
+Task dump for CPU 1:
+eatme-simple    R  running task        0  1487   1433 0x00000000
+ ffff88042ef47f60 ffffffff81316dfd ffff88042e5f5810 ffff88042ef47fd8
+ 0000000000010c00 ffff88042ef47fd8 ffff88042e5f5810 ffff88042e5f5810
+ 0000000000000000 ffff88043f4fe980 ffffffff810a56e4 0000000000000203
+Call Trace:
+ [<ffffffff81316dfd>] ? __schedule+0x646/0x75e
+ [<ffffffff810a56e4>] ? dput+0x20/0x15c
+ [<ffffffff81096070>] ? __fput+0x1a1/0x1c8
+ [<ffffffff810ab833>] ? mntput_no_expire+0x13/0x11f
+ [<ffffffff8101c55c>] ? do_page_fault+0x1f/0x3b
+
+	1: (1 GPs behind) idle=f4f/140000000000001/0 softirq=2256/2257 
+	 (t=240087 jiffies g=324 c=323 q=9386)
+Pid: 1487, comm: eatme-simple Not tainted 3.9.0-rc2+ #2
+Call Trace:
+ <IRQ>  [<ffffffff8105cac6>] ? rcu_check_callbacks+0x215/0x61a
+ [<ffffffff8102cffc>] ? update_process_times+0x31/0x5c
+ [<ffffffff8104bb5b>] ? tick_handle_periodic+0x18/0x52
+ [<ffffffff81016328>] ? smp_apic_timer_interrupt+0x7d/0x8f
+ [<ffffffff8131944a>] ? apic_timer_interrupt+0x6a/0x70
