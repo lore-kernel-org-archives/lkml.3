@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934390Ab3CMX0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:26:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39259 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab3CMX0H convert rfc822-to-8bit (ORCPT
+	id S934443Ab3CMX0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:26:33 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:42955 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933441Ab3CMX0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:26:07 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeong, Daniel" <Daniel.Jeong@ti.com>
-Subject: RE: [PATCH 2/3] leds: add LED Trigger for camera function
-Thread-Topic: [PATCH 2/3] leds: add LED Trigger for camera function
-Thread-Index: Ac4PRVGs1jaCsF+dQo64EeKjGOQWtwPxIECAAE2KISD//3xBgP//eOmA
-Date: Wed, 13 Mar 2013 23:26:02 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E487C0@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F79273676@DQHE02.ent.ti.com>
- <CAK5ve-KT3NEv=MYv2ZQ9YQ8L-TS9KFaL0VNXzO7KoG9gvSRGcg@mail.gmail.com>
- <A874F61F95741C4A9BA573A70FE3998F82E487A0@DQHE02.ent.ti.com>
- <CAK5ve-+XCqrp8gkh4FE0Up0y+jDU7knowG1kXjpaf1+zuAhYhg@mail.gmail.com>
-In-Reply-To: <CAK5ve-+XCqrp8gkh4FE0Up0y+jDU7knowG1kXjpaf1+zuAhYhg@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 13 Mar 2013 19:26:32 -0400
+X-AuditID: cbfee68d-b7f786d000005188-0a-51410b25fc96
+Message-id: <51410B25.907@samsung.com>
+Date: Thu, 14 Mar 2013 08:26:29 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
+Subject: [GIT PULL] extcon fixes for 3.9-rc3
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t8zbV1VbsdAg5mf+S2uf3nOatG8eD2b
+	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXFx23am
+	giaeio8vDBsYH3N2MXJySAiYSFxa+ZoRwhaTuHBvPVsXIxeHkMAyRokjW1pYYIo23/7GBJGY
+	zihx6moflPOCUaLn4gZmkCpeATWJfXefgnWwCKhK7L/3mBXEZhPQktj/4gYbiC0qECaxcvoV
+	Foh6QYkfk++B2SICGhIvj94Cs5kFVjFKPD0h08XIwSEsoCPxcJYqRNhM4lHLOmYIW15i85q3
+	zCA3SAhMZ5fYemY7M8ReAYlvkw+xgPRKCMhKbDrADPGApMTBFTdYJjCKzEKyeRaSsbOQjF3A
+	yLyKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIyQ6encw3j5gfYgxGWjlRGYp0eR8YHTllcQb
+	GpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxs2qB1L7g
+	Q4k2T2SKnsc9PB/yfEa9CpvwiYky0Q5CzPtVM8u41kn8u679XnDG3ISQ0r5DK9hm/b3aolFo
+	yxL6VmJP8S775Lrp5Ye2eUw6Nn/CDbWMXZ++WFje8d9q26NXtvmr8tsXUgaMivXMtieXxO/i
+	/efT65Lk4jTxdL2wLN8Svdlnt2kqsRRnJBpqMRcVJwIAYVv+U6QCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQV1VbsdAg+vruSyuf3nOatG8eD2b
+	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
+	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
+	BUxjhK5vSBBcj5EBGkhYx5hxcdt2poImnoqPLwwbGB9zdjFyckgImEhsvv2NCcIWk7hwbz1b
+	FyMXh5DAdEaJU1f7mCCcF4wSPRc3MINU8QqoSey7+5QFxGYRUJXYf+8xK4jNJqAlsf/FDTYQ
+	W1QgTGLl9CssEPWCEj8m3wOzRQQ0JF4evQVmMwusYpR4ekKmi5GDQ1hAR+LhLFWIsJnEo5Z1
+	zBC2vMTmNW+ZJzDyzUIyaRaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI69
+	Z9I7GFc1WBxiFOBgVOLhlZjkECjEmlhWXJl7iFGCg1lJhDeExTFQiDclsbIqtSg/vqg0J7X4
+	EGMy0KMTmaVEk/OBaSGvJN7Q2MTMyNLIzNjE3NiYNGElcd6DrdaBQgLpiSWp2ampBalFMFuY
+	ODilGhgLrutu8eSSkq2L2Pf8eulvk/s7RKVaXn/14OtJDc66e5txx6IvSy5stdo+lc3omsyS
+	b9fEFc8bfmx9wj67p2C++h5Jnq1MMVUvrNZGZfkYvzk2u/1+84YW/i4eTokr9mYbW/9/PZuj
+	ZLGksSRcs+P51W+P7uh+sUnUux7M+jzR9fjmnqMSnt1KLMUZiYZazEXFiQD/xACdAQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Bryan Wu [mailto:cooloney@gmail.com]
-> Sent: Thursday, March 14, 2013 8:19 AM
-> To: Kim, Milo
-> Cc: linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org; Jeong,
-> Daniel
-> Subject: Re: [PATCH 2/3] leds: add LED Trigger for camera function
-> 
-> On Wed, Mar 13, 2013 at 4:16 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> >> > +#if defined(CONFIG_LEDS_TRIGGER_CAMERA) ||
-> >> defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
-> >> > +extern void ledtrig_flash_ctrl(bool on);
-> >> > +extern void ledtrig_torch_ctrl(bool on);
-> >> > +#else
-> >> > +#define ledtrig_flash_ctrl(x) do {} while(0)
-> >> > +#define ledtrig_torch_ctrl(x) do {} while(0)
-> >>
-> >> It's better don't use #define macros but use real empty functions
-> like
-> >> this:
-> >> static inline void ledtrig_flash_ctrl(bool on)
-> >> {
-> >>         return;
-> >> }
-> >
-> > I agree, but other trigger functions are declared as do-while
-> definition.
-> > So I would let them unify if it's not critical.
-> > I'd like to have your opinion, which is better.
-> >
-> > Thanks,
-> > Milo
-> 
-> I did same thing before, Andrew Morton corrected me like this. Please
-> feel free to submit patch to move other macros to empty functions.
-> 
-> Thanks,
-> -Bryan
+Hi Greg,
 
-OK, it's clear now. I'll send the patch-set with previous one,
-'[PATCH 3/3] leds: lm355x, lm3642: support Camera LED triggers for flash/torch'.
+This is extcon fixes for 3.9-rc3.
+Please pull extcon with following updates.
 
-Thanks!
--Milo
+Best Regards,
+Chanwoo Choi
 
+The following changes since commit 
+f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+
+   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git 
+tags/extcon-3.9-rc3
+
+for you to fetch changes up to 0ec83bd2460ed6aed0e7f29f9e0633b054621c02:
+
+   extcon: max77693: Initialize register of MUIC device to bring up it 
+without platform data (2013-03-13 17:38:57 +0900)
+
+----------------------------------------------------------------
+extcon fixes for 3.9-rc3
+
+This is small fixes against 3.9-rc2.
+
+Fix to max77693 extcon driver:
+- Set default value of MUIC register to bring up it.
+Fix to max8997 extcon driver:
+- Fix null pointer error duing probe when platform data
+isn't used.
+
+----------------------------------------------------------------
+Chanwoo Choi (3):
+       extcon: max8997: Check the pointer of platform data to protect 
+null pointer error
+       extcon: max77693: Fix bug of wrong pointer when platform data is 
+not used
+       extcon: max77693: Initialize register of MUIC device to bring up 
+it without platform data
+
+  drivers/extcon/extcon-max77693.c     | 103 
++++++++++++++++++++++++++++--------
+  drivers/extcon/extcon-max8997.c      |  56 +++++++++++--------
+  include/linux/mfd/max77693-private.h |  23 ++++++++
+  3 files changed, 137 insertions(+), 45 deletions(-)
