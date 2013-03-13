@@ -1,111 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934407Ab3CMX23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 19:28:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51090 "EHLO
+	id S964832Ab3CMX2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 19:28:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51108 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab3CMX21 (ORCPT
+	with ESMTP id S933370Ab3CMX23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 19:28:27 -0400
+	Wed, 13 Mar 2013 19:28:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 00/27] PCI: Add for_each_pci_resource and addon_res support
-Date: Wed, 13 Mar 2013 16:27:55 -0700
-Message-Id: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 03/27] PCI: pci resource iterator
+Date: Wed, 13 Mar 2013 16:27:58 -0700
+Message-Id: <1363217302-14383-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First part is for_each_pci_resource support:
-Now pci device resource iteration is done via "for (i=0...)" open code.
-That make code hard to read esp when only bridge or sriov resources
-are involved.
+From: Ram Pai <linuxram@us.ibm.com>
 
-We want to replace those open code with for_each_pci_resource() to make
-the code more readable.
-Also will add addon_resource handling, and need to make addon resource
-to be treated as normal PCI resources during iteration, add
-for_each_pci_resource will make that support transition more simple.
+Currently pci_dev structure holds an array of 17 PCI resources; six base
+BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+A bridge device just needs the 4 bridge resources. A non-bridge device
+just needs the six base resources and one ROM resource. The sriov
+resources are needed only if the device has SRIOV capability.
 
-To make for_each_pci_resource more efficient. We will use preset bitmap
-of different type for searching next idx.
+The pci_dev structure needs to be re-organized to avoid unnecessary
+bloating.  However too much code outside the pci-bus driver, assumes the
+internal details of the pci_dev structure, thus making it hard to
+re-organize the datastructure.
 
-Second parts is addon_res support:
-Now there is some non normal pci resources other than standard,rom,
-sriov, bridges.
-Some could be same as standard reg, but using different position.
-Some could have own way to read/write to them.
-Kernel are using different way to hack those resources like abusing
-pci bridge resource spot on non bridge pci device.
+As a first step this patch provides generic methods to access the
+resource structure of the pci_dev.
 
-Add addon_resources list in pci_dev for those non-standard resources.
-With this patch, will treat addon-resource like standard resources with
-special ops.
+Finally we can re-organize the resource structure in the pci_dev
+structure and correspondingly update the methods.
 
-At last replace some quirk_io with addon_res.
+-v2: Consolidated iterator interface as per Bjorn's suggestion.
+-v3: Add the idx back - Yinghai Lu
+-v7: Change to use bitmap for searching - Yinghai Lu
+-v8: Fix acpiphp module compiling error that is found by
+	Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
 
-could get from
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon-v3
-on top of v3.9-rc2
+Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |   24 ++++++++++++++++++++++++
+ 2 files changed, 72 insertions(+)
 
--v3: rebase on of v3.9-rc2
-
-Thanks
-
-Yinghai Lu
-
-Ram Pai (1):
-  PCI: pci resource iterator
-
-Yinghai Lu (26):
-  PCI: Add pci_dev_resource_n()
-  PCI: Add pci_dev_resource_idx() helper
-  PCI: Add is_pci_*_resource_idx() helpers
-  PCI: Update pci_resource_start etc to use pci_dev_resource_n()
-  PCI, x86: Use for_each_pci_resource() with pci_allocate_bridge_resources
-  PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
-  PCI: Use for_each_pci_resource() with IOV releated functions
-  PCI, acpiphp: Use for_each_pci_resource() helper
-  PCI, pciehp: Use for_each_pci_resource() helper
-  PCI: Use for_each_pci_resource() in pci_enable_dev
-  PCI: Use for_each_pci_resource() in pci_reassigndev
-  PCI: Use for_each_pci_resource() with pci bar reassign funcs
-  PCI: Use for_each_pci_resource() in pci_assign_resource
-  PCI, x86: Use for_each_pci_resource() with noassign_bars
-  PCI: Use for_each_pci_resource() in pci_dev_driver()
-  PCI: Use for_each_pci_resource() in pci resource release
-  PCI: Use for_each_pci_resource() in pci bases reading
-  PCI, x86: Use for_each_pci_resource() with mrst
-  PCI, xen: Use for_each_pci_resource() with xen pci
-  PCI: Add addon_resource support for pci devices
-  PCI: Add helpers to add addon_resource
-  PCI: Update pci_resource_bar() to support addon_resource
-  PCI: Assign/update resource to addon_res
-  PCI: Make piix4 quirk to use addon_res
-  PCI: Make quirk_io_region to use addon_res
-  PCI: Use addon_fixed_resource with ati fixed resource
-
- arch/x86/pci/common.c              |    3 +-
- arch/x86/pci/i386.c                |   58 +++-----
- arch/x86/pci/mrst.c                |    7 +-
- drivers/pci/hotplug/acpiphp_glue.c |    4 +-
- drivers/pci/hotplug/pciehp_hpc.c   |    5 +-
- drivers/pci/iov.c                  |   31 +++--
- drivers/pci/pci-driver.c           |    6 +-
- drivers/pci/pci.c                  |   27 ++--
- drivers/pci/probe.c                |  176 ++++++++++++++++++++++++-
- drivers/pci/quirks.c               |  256 +++++++++++++++++++++---------------
- drivers/pci/remove.c               |    5 +-
- drivers/pci/setup-bus.c            |   28 ++--
- drivers/pci/setup-res.c            |   38 ++++--
- drivers/pci/xen-pcifront.c         |    4 +-
- include/linux/pci.h                |   79 ++++++++++-
- 15 files changed, 508 insertions(+), 219 deletions(-)
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 1df75f7..ac751a6 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+ 	return -1;
+ }
+ 
++static void __init_res_idx_mask(unsigned long *mask, int flag)
++{
++	bitmap_zero(mask, PCI_NUM_RESOURCES);
++	if (flag & PCI_STD_RES)
++		bitmap_set(mask, PCI_STD_RESOURCES,
++			PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
++	if (flag & PCI_ROM_RES)
++		bitmap_set(mask, PCI_ROM_RESOURCE, 1);
++#ifdef CONFIG_PCI_IOV
++	if (flag & PCI_IOV_RES)
++		bitmap_set(mask, PCI_IOV_RESOURCES,
++			PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
++#endif
++	if (flag & PCI_BRIDGE_RES)
++		bitmap_set(mask, PCI_BRIDGE_RESOURCES,
++			PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
++}
++
++static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
++static int __init pci_res_idx_mask_init(void)
++{
++	int i;
++
++	for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
++		__init_res_idx_mask(res_idx_mask[i], i);
++
++	return 0;
++}
++postcore_initcall(pci_res_idx_mask_init);
++
++static inline unsigned long *get_res_idx_mask(int flag)
++{
++	return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
++}
++
++int pci_next_resource_idx(int i, int flag)
++{
++	i++;
++	if (i < PCI_NUM_RESOURCES)
++		i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
++
++	if (i < PCI_NUM_RESOURCES)
++		return i;
++
++	return -1;
++}
++EXPORT_SYMBOL(pci_next_resource_idx);
++
+ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+ {
+ 	u64 size = mask & maxbase;	/* Find the significant bits */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index aefff8b..127a856 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -341,6 +341,30 @@ struct pci_dev {
+ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+ 
++#define PCI_STD_RES		(1<<0)
++#define PCI_ROM_RES		(1<<1)
++#define PCI_IOV_RES		(1<<2)
++#define PCI_BRIDGE_RES		(1<<3)
++#define PCI_RES_BLOCK_NUM	4
++
++#define PCI_ALL_RES		(PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
++#define PCI_NOSTD_RES		(PCI_ALL_RES & ~PCI_STD_RES)
++#define PCI_NOIOV_RES		(PCI_ALL_RES & ~PCI_IOV_RES)
++#define PCI_NOROM_RES		(PCI_ALL_RES & ~PCI_ROM_RES)
++#define PCI_NOBRIDGE_RES	(PCI_ALL_RES & ~PCI_BRIDGE_RES)
++#define PCI_STD_ROM_RES		(PCI_STD_RES | PCI_ROM_RES)
++#define PCI_STD_IOV_RES		(PCI_STD_RES | PCI_IOV_RES)
++#define PCI_STD_ROM_IOV_RES	(PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
++
++int pci_next_resource_idx(int i, int flag);
++
++#define for_each_pci_resource(dev, res, i, flag)	\
++	for (i = pci_next_resource_idx(-1, flag),	\
++		res = pci_dev_resource_n(dev, i);	\
++	     res;					\
++	     i = pci_next_resource_idx(i, flag),	\
++		res = pci_dev_resource_n(dev, i))
++
+ static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+ {
+ #ifdef CONFIG_PCI_IOV
 -- 
 1.7.10.4
 
