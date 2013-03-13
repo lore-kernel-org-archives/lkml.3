@@ -1,153 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab3CMGoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 02:44:38 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:46942 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932893Ab3CMGoe (ORCPT
+	id S1755267Ab3CMGpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 02:45:07 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43319 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932961Ab3CMGpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 02:44:34 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Anderson <anderson@redhat.com>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        Vivek Goyal <vgoyal@redhat.com>, Bob Liu <lliubbo@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, kexec@lists.infradead.org,
-        Joonsoo Kim <js1304@gmail.com>
-References: <1363156381-2881-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1363156381-2881-8-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Tue, 12 Mar 2013 23:43:48 -0700
-In-Reply-To: <1363156381-2881-8-git-send-email-iamjoonsoo.kim@lge.com>
-	(Joonsoo Kim's message of "Wed, 13 Mar 2013 15:32:59 +0900")
-Message-ID: <87k3pbsst7.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 13 Mar 2013 02:45:02 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-f7-5140206b0d95
+Date: Wed, 13 Mar 2013 15:44:59 +0900
+From: Minchan Kim <minchan.kim@lge.com>
+To: Paul Turner <pjt@google.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jason Evans <je@fb.com>, Sanjay Ghemawat <sanjay@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
+Message-ID: <20130313064459.GC13815@blaptop>
+References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+ <CAPM31RJ1tzd7yWQEgL0u-PjK7mV=wY57OPDJ76ijJAC2YnDuHw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/S0tGA4zgkteZOWlHl4o1fz4P06RTG29A=
-X-SA-Exim-Connect-IP: 208.54.5.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Joonsoo Kim <iamjoonsoo.kim@lge.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2 7/8] mm, vmalloc: export vmap_area_list, instead of vmlist
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RJ1tzd7yWQEgL0u-PjK7mV=wY57OPDJ76ijJAC2YnDuHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Tue, Mar 12, 2013 at 04:16:57PM -0700, Paul Turner wrote:
+> On Tue, Mar 12, 2013 at 12:38 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > First of all, let's define the term.
+> > From now on, I'd like to call it as vrange(a.k.a volatile range)
+> > for anonymous page. If you have a better name in mind, please suggest.
+> >
+> > This version is still *RFC* because it's just quick prototype so
+> > it doesn't support THP/HugeTLB/KSM and even couldn't build on !x86.
+> > Before further sorting out issues, I'd like to post current direction
+> > and discuss it. Of course, I'd like to extend this discussion in
+> > comming LSF/MM.
+> >
+> > In this version, I changed lots of thing, expecially removed vma-based
+> > approach because it needs write-side lock for mmap_sem, which will drop
+> > performance in mutli-threaded big SMP system, KOSAKI pointed out.
+> > And vma-based approach is hard to meet requirement of new system call by
+> > John Stultz's suggested semantic for consistent purged handling.
+> > (http://linux-kernel.2935.n7.nabble.com/RFC-v5-0-8-Support-volatile-for-anonymous-range-tt575773.html#none)
+> >
+> > I tested this patchset with modified jemalloc allocator which was
+> > leaded by Jason Evans(jemalloc author) who was interest in this feature
+> > and was happy to port his allocator to use new system call.
+> > Super Thanks Jason!
+> >
+> > The benchmark for test is ebizzy. It have been used for testing the
+> > allocator performance so it's good for me. Again, thanks for recommending
+> > the benchmark, Jason.
+> > (http://people.freebsd.org/~kris/scaling/ebizzy.html)
+> >
+> > The result is good on my machine (12 CPU, 1.2GHz, DRAM 2G)
+> >
+> >         ebizzy -S 20
+> >
+> > jemalloc-vanilla: 52389 records/sec
+> > jemalloc-vrange: 203414 records/sec
+> >
+> >         ebizzy -S 20 with background memory pressure
+> >
+> > jemalloc-vanilla: 40746 records/sec
+> > jemalloc-vrange: 174910 records/sec
+> >
+> > And it's much improved on KVM virtual machine.
+> >
+> > This patchset is based on v3.9-rc2
+> >
+> > - What's the sys_vrange(addr, length, mode, behavior)?
+> >
+> >   It's a hint that user deliver to kernel so kernel can *discard*
+> >   pages in a range anytime. mode is one of VRANGE_VOLATILE and
+> >   VRANGE_NOVOLATILE. VRANGE_NOVOLATILE is memory pin operation so
+> >   kernel coudn't discard any pages any more while VRANGE_VOLATILE
+> >   is memory unpin opeartion so kernel can discard pages in vrange
+> >   anytime. At a moment, behavior is one of VRANGE_FULL and VRANGE
+> >   PARTIAL. VRANGE_FULL tell kernel that once kernel decide to
+> >   discard page in a vrange, please, discard all of pages in a
+> >   vrange selected by victim vrange. VRANGE_PARTIAL tell kernel
+> >   that please discard of some pages in a vrange. But now I didn't
+> >   implemented VRANGE_PARTIAL handling yet.
+> >
+> > - What happens if user access page(ie, virtual address) discarded
+> >   by kernel?
+> >
+> >   The user can encounter SIGBUS.
+> >
+> > - What should user do for avoding SIGBUS?
+> >   He should call vrange(addr, length, VRANGE_NOVOLATILE, mode) before
+> >   accessing the range which was called
+> >   vrange(addr, length, VRANGE_VOLATILE, mode)
+> >
+> > - What happens if user access page(ie, virtual address) doesn't
+> >   discarded by kernel?
+> >
+> >   The user can see vaild data which was there before calling
+> > vrange(., VRANGE_VOLATILE) without page fault.
+> >
+> > - What's different with madvise(DONTNEED)?
+> >
+> >   System call semantic
+> >
+> >   DONTNEED makes sure user always can see zero-fill pages after
+> >   he calls madvise while vrange can see data or encounter SIGBUS.
+> >
+> >   Internal implementation
+> >
+> >   The madvise(DONTNEED) should zap all mapped pages in range so
+> >   overhead is increased linearly with the number of mapped pages.
+> >   Even, if user access zapped pages as write mode, page fault +
+> >   page allocation + memset should be happened.
+> >
+> >   The vrange just register a address range instead of zapping all of pte
+> >   n the vma so it doesn't touch ptes any more.
+> >
+> > - What's the benefit compared to DONTNEED?
+> >
+> >   1. The system call overhead is smaller because vrange just registers
+> >      a range using interval tree instead of zapping all the page in a range
+> >      so overhead should be really cheap.
+> >
+> >   2. It has a chance to eliminate overheads (ex, zapping pte + page fault
+> >      + page allocation + memset(PAGE_SIZE)) if memory pressure isn't
+> >      severe.
+> >
+> >   3. It has a potential to zap all ptes and free the pages if memory
+> >      pressure is severe so discard scanning overhead could be smaller - TODO
+> >
+> > - What's for targetting?
+> >
+> >   Firstly, user-space allocator like ptmalloc, jemalloc or heap management
+> >   of virtual machine like Dalvik. Also, it comes in handy for embedded
+> >   which doesn't have swap device so they can't reclaim anonymous pages.
+> >   By discarding instead of swapout, it could be used in the non-swap system.
+> 
+> I think that another potentially useful use-case would be using this
+> -- or a similar API -- to opportunistically return deep user stack
+> frames.
+> 
+> This is another place where we strongly care about the time-to-free as
+> well as the time-to-reallocate in the case of relatively immediate
+> re-use.
 
-> From: Joonsoo Kim <js1304@gmail.com>
->
-> Although our intention is to unexport internal structure entirely,
-> but there is one exception for kexec. kexec dumps address of vmlist
-> and makedumpfile uses this information.
->
-> We are about to remove vmlist, then another way to retrieve information
-> of vmalloc layer is needed for makedumpfile. For this purpose,
-> we export vmap_area_list, instead of vmlist.
+Indeed. Great idea!
+Thanks, Paul.
 
-That seems entirely reasonable to me.  Usage by kexec should not limit
-the evoluion of the kernel especially usage by makedumpfile.
-
-Atsushi Kumagai can you make makedumpfile work with this change?
-
-Eric
-
-> Cc: Eric Biederman <ebiederm@xmission.com>
-> Cc: Dave Anderson <anderson@redhat.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-> index 698b1e5..8a25f90 100644
-> --- a/include/linux/vmalloc.h
-> +++ b/include/linux/vmalloc.h
-> @@ -130,8 +130,7 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
->  /*
->   *	Internals.  Dont't use..
->   */
-> -extern rwlock_t vmlist_lock;
-> -extern struct vm_struct *vmlist;
-> +extern struct list_head vmap_area_list;
->  extern __init void vm_area_add_early(struct vm_struct *vm);
->  extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
->  
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index bddd3d7..d9bfc6c 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1489,7 +1489,7 @@ static int __init crash_save_vmcoreinfo_init(void)
->  	VMCOREINFO_SYMBOL(swapper_pg_dir);
->  #endif
->  	VMCOREINFO_SYMBOL(_stext);
-> -	VMCOREINFO_SYMBOL(vmlist);
-> +	VMCOREINFO_SYMBOL(vmap_area_list);
->  
->  #ifndef CONFIG_NEED_MULTIPLE_NODES
->  	VMCOREINFO_SYMBOL(mem_map);
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index e193280..ed82358 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -228,8 +228,7 @@ int follow_pfn(struct vm_area_struct *vma, unsigned long address,
->  }
->  EXPORT_SYMBOL(follow_pfn);
->  
-> -DEFINE_RWLOCK(vmlist_lock);
-> -struct vm_struct *vmlist;
-> +LIST_HEAD(vmap_area_list);
->  
->  void vfree(const void *addr)
->  {
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index bda6cef..7e63984 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -261,7 +261,8 @@ struct vmap_area {
->  };
->  
->  static DEFINE_SPINLOCK(vmap_area_lock);
-> -static LIST_HEAD(vmap_area_list);
-> +/* Export for kexec only */
-> +LIST_HEAD(vmap_area_list);
->  static struct rb_root vmap_area_root = RB_ROOT;
->  
->  /* The vmap cache globals are protected by vmap_area_lock */
-> @@ -272,6 +273,10 @@ static unsigned long cached_align;
->  
->  static unsigned long vmap_area_pcpu_hole;
->  
-> +/*** Old vmalloc interfaces ***/
-> +static DEFINE_RWLOCK(vmlist_lock);
-> +static struct vm_struct *vmlist;
-> +
->  static struct vmap_area *__find_vmap_area(unsigned long addr)
->  {
->  	struct rb_node *n = vmap_area_root.rb_node;
-> @@ -1283,10 +1288,6 @@ int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
->  }
->  EXPORT_SYMBOL_GPL(map_vm_area);
->  
-> -/*** Old vmalloc interfaces ***/
-> -DEFINE_RWLOCK(vmlist_lock);
-> -struct vm_struct *vmlist;
-> -
->  static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
->  			      unsigned long flags, const void *caller)
->  {
+-- 
+Kind regards,
+Minchan Kim
