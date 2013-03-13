@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab3CMBOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Mar 2013 21:14:50 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37960 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab3CMBOs (ORCPT
+	id S932708Ab3CMBRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Mar 2013 21:17:15 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:44996 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754198Ab3CMBRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Mar 2013 21:14:48 -0400
-Message-ID: <513FD302.4030504@huawei.com>
-Date: Wed, 13 Mar 2013 09:14:42 +0800
+	Tue, 12 Mar 2013 21:17:14 -0400
+Message-ID: <513FD395.7000906@huawei.com>
+Date: Wed, 13 Mar 2013 09:17:09 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -28,13 +28,13 @@ These two functions share most of the code.
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
 
-v2: not necessary to move cgroup_attach_task_all()
+v2: Not necessary to move cgroup_attach_task_all().
 
 ---
  include/linux/cgroup.h |   3 +-
- kernel/cgroup.c        | 107 +++++++++----------------------------------------
+ kernel/cgroup.c        | 109 +++++++++----------------------------------------
  kernel/cpuset.c        |   2 +-
- 3 files changed, 22 insertions(+), 90 deletions(-)
+ 3 files changed, 23 insertions(+), 91 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
 index 1f75a59..013c6ce 100644
@@ -51,7 +51,7 @@ index 1f75a59..013c6ce 100644
  
  /*
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4b92b9a..134d3c5 100644
+index 4b92b9a..c157f88 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
 @@ -59,7 +59,7 @@
@@ -167,7 +167,8 @@ index 4b92b9a..134d3c5 100644
 + * @threadgroup: attach the whole threadgroup?
   *
   * Call holding cgroup_mutex and the group_rwsem of the leader. Will take
-  * task_lock of each thread in leader's threadgroup individually in turn.
+- * task_lock of each thread in leader's threadgroup individually in turn.
++ * task_lock of @tsk or each thread in the threadgroup individually in turn.
   */
 -static int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
 +int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
