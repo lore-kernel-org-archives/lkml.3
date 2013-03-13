@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab3CMSiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:38:05 -0400
-Received: from nbd.name ([46.4.11.11]:49701 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755178Ab3CMSiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 14:38:04 -0400
-Message-ID: <5140C77E.7030206@openwrt.org>
-Date: Wed, 13 Mar 2013 19:37:50 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S933965Ab3CMSic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:38:32 -0400
+Received: from smtp-out-064.synserver.de ([212.40.185.64]:1074 "EHLO
+	smtp-out-064.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933184Ab3CMSia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 14:38:30 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9338
+Message-ID: <5140C816.3090008@metafoo.de>
+Date: Wed, 13 Mar 2013 19:40:22 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: Sedat Dilek <sedat.dilek@gmail.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        dhowells@redhat.com, sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp,
-        mszeredi@suse.cz
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com> <CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com> <CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com> <CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com> <CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com> <CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com> <CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com> <CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com> <20130313181251.GA6023@sgi.com>
-In-Reply-To: <20130313181251.GA6023@sgi.com>
-X-Enigmail-Version: 1.5.1
+To: Doug Anderson <dianders@chromium.org>
+CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio <linux-iio@vger.kernel.org>, dan.carpenter@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>
+Subject: Re: [PATCH v3] iio: adc: exynos5_adc: fix compilation warnings
+References: <1362625743-10401-1-git-send-email-ch.naveen@samsung.com> <1363150138-20819-1-git-send-email-ch.naveen@samsung.com> <CAD=FV=XoE6NCruDUv2UajaP+LWDCp+pgaZJsEKpkoxy3tZNeAw@mail.gmail.com> <5140C155.2070507@metafoo.de> <CAD=FV=XZMDrhQm+tZKL1RW35ZiT-JuDpmdGUXB9A6e9fG+54Fw@mail.gmail.com> <5140C6EE.9080802@metafoo.de>
+In-Reply-To: <5140C6EE.9080802@metafoo.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-13 7:12 PM, Robin Holt wrote:
-> On Wed, Mar 13, 2013 at 05:51:33PM +0100, Sedat Dilek wrote:
->> On Wed, Mar 13, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> > On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >
->> >> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
->> >> when the kernel-module is loaded.
->> >> So, is this intended?
->> >> SquashFS prints into the logs, so what is it doing differently?
->> >
->> > Some modules do, some don't.  It's not compulsory and not very useful.
->> >
->> 
->> What about...
->> 
->> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
->> index 482c26f..92b9ad5 100644
->> --- a/fs/overlayfs/super.c
->> +++ b/fs/overlayfs/super.c
->> @@ -675,11 +675,13 @@ MODULE_ALIAS_FS("overlayfs");
->>  static int __init ovl_init(void)
->>  {
->>         return register_filesystem(&ovl_fs_type);
->> +       printk(KERN_INFO "overlayfs: loaded\n");
+On 03/13/2013 07:35 PM, Lars-Peter Clausen wrote:
+> On 03/13/2013 07:23 PM, Doug Anderson wrote:
+>> Lars,
+>>
+>> On Wed, Mar 13, 2013 at 11:11 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>> Agreed. Adding the dependency on OF in Kconfig should be all that is needed.
+>>
+>> I think changing the timeout from 'unsigned long' to 'long' is also
+>> legit (to match the actual type returned) and a good idea.
+>>
+>> -Doug
 > 
-> How about pr_debug().  That makes things quite for most of us but gives
-> you info when looking for things like boot problems.
-How is having a printk/pr_debug useful here at all? The fact that other
-filesystems do this as well is not a good reason...
-Also, putting it *after* the return statement doesn't make much sense ;)
+> Yes, but that's a different issue and to be honest I didn't even realize
+> that the patch was trying to fix this as well. In my opinion it's best to
+> split this up into two patches one which fixes the OF dependency. The other
+> fixing the timeout issue. Cause there is more to it than just changing the type.
+> 
+> wait_for_completion_interruptible_timeout() may return
+> 	1) 0, if there was a timeout, waiting for the completion
+> 	2) > 0, if the completion was completeted, the returned value
+> 	   the  remaining time.
+> 	3) < 0, If it was interrupt while waiting for the completion
+> 
+> The code currently only handles 1) and 2), but it also needs to handle 3).
+> Since the completion has not been completed in case 3.
+> 
+> E.g. something like this should work:
+> 
+> 	if (timeout == 0)
+> 		return -ETIMEDOUT;
+> 	else if(timeout < 0)
+> 		return timeout;
+> 	return 0;
+> 
 
-- Felix
+I just saw, there is another issue related to this. The driver should call
+INIT_COMPLETION(&info->completion) before starting the conversion. Otherwise
+there may be a problem if we got interrupted while waiting for the
+interrupt. E.g. imagine the following sequence.
 
+1) Start conversion
+2) Wait for completion
+3) Abort waiting
+4) Interrupt kicks in and marks the completion as done
+
+Now if another conversion is started the completion will already be
+completed and wait_for_completion_interruptible_timeout() will return right
+away without waiting for the conversion to be finished.
+
+- Lars
