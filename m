@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897Ab3CMRR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:17:58 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:40935 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984Ab3CMRR4 (ORCPT
+	id S933925Ab3CMRSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:18:36 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:64552 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab3CMRSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:17:56 -0400
+	Wed, 13 Mar 2013 13:18:35 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
 Cc: Thomas Abraham <thomas.abraham@linaro.org>,
@@ -17,9 +17,9 @@ Cc: Thomas Abraham <thomas.abraham@linaro.org>,
         Jingoo Han <jg1.han@samsung.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: add usb 2.0 clock references to device tree
-Date: Wed, 13 Mar 2013 10:17:24 -0700
-Message-Id: <1363195044-15715-1-git-send-email-dianders@chromium.org>
+Subject: [PATCH] ARM: dts: add usb 2.0 clock references to exynos5250 device tree
+Date: Wed, 13 Mar 2013 10:18:18 -0700
+Message-Id: <1363195099-15919-1-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
