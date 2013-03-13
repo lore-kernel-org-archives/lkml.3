@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab3CMMgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 08:36:01 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11468 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933010Ab3CMMf4 (ORCPT
+	id S933679Ab3CMMiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 08:38:10 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4283 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029Ab3CMMf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 08:35:56 -0400
+	Wed, 13 Mar 2013 08:35:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 05:29:12 -0700
+	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 05:29:08 -0700
 From: Terje Bergstrom <tbergstrom@nvidia.com>
 To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
         <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-CC: <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCHv7 07/10] gpu: host1x: drm: Rename host1x to host1x_drm
-Date: Wed, 13 Mar 2013 14:36:23 +0200
-Message-ID: <1363178186-2017-8-git-send-email-tbergstrom@nvidia.com>
+CC: <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>
+Subject: [PATCHv7 01/10] gpu: drm: Support CMA object preallocation
+Date: Wed, 13 Mar 2013 14:36:17 +0200
+Message-ID: <1363178186-2017-2-git-send-email-tbergstrom@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363178186-2017-1-git-send-email-tbergstrom@nvidia.com>
 References: <1363178186-2017-1-git-send-email-tbergstrom@nvidia.com>
@@ -29,260 +28,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arto Merilainen <amerilainen@nvidia.com>
 
-Both host1x and drm drivers have host1x structures. This patch
-renames the host1x structure under drm to follow name host1x_drm.
+This patch adds helper functions drm_gem_cma_init() and
+drm_gem_cma_deinit() for handling CMA structures that already have
+been allocated. This allows embedding the CMA structure inside other
+structures.
 
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
-Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
- drivers/gpu/host1x/drm/dc.c     |    4 ++--
- drivers/gpu/host1x/drm/drm.c    |    4 ++--
- drivers/gpu/host1x/drm/drm.h    |   14 +++++++-------
- drivers/gpu/host1x/drm/fb.c     |    6 +++---
- drivers/gpu/host1x/drm/hdmi.c   |    4 ++--
- drivers/gpu/host1x/drm/host1x.c |   22 ++++++++++++----------
- 6 files changed, 28 insertions(+), 26 deletions(-)
+ drivers/gpu/drm/drm_gem_cma_helper.c |   78 ++++++++++++++++++++++++----------
+ include/drm/drm_gem_cma_helper.h     |    9 ++++
+ 2 files changed, 64 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/gpu/host1x/drm/dc.c b/drivers/gpu/host1x/drm/dc.c
-index de94707..d1f6609 100644
---- a/drivers/gpu/host1x/drm/dc.c
-+++ b/drivers/gpu/host1x/drm/dc.c
-@@ -1097,7 +1097,7 @@ static const struct host1x_client_ops dc_client_ops = {
- 
- static int tegra_dc_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct resource *regs;
- 	struct tegra_dc *dc;
- 	int err;
-@@ -1160,7 +1160,7 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 
- static int tegra_dc_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_dc *dc = platform_get_drvdata(pdev);
- 	int err;
- 
-diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
-index 9d452df..6c59bcd 100644
---- a/drivers/gpu/host1x/drm/drm.c
-+++ b/drivers/gpu/host1x/drm/drm.c
-@@ -26,7 +26,7 @@
- static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
- {
- 	struct device *dev = drm->dev;
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	int err;
- 
- 	host1x = dev_get_drvdata(dev);
-@@ -69,7 +69,7 @@ static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
- 
- static void tegra_drm_lastclose(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 
- 	drm_fbdev_cma_restore_mode(host1x->fbdev);
- }
-diff --git a/drivers/gpu/host1x/drm/drm.h b/drivers/gpu/host1x/drm/drm.h
-index a6c011d..7fedb6c 100644
---- a/drivers/gpu/host1x/drm/drm.h
-+++ b/drivers/gpu/host1x/drm/drm.h
-@@ -18,7 +18,7 @@
- #include <drm/drm_fb_cma_helper.h>
- #include <drm/drm_fixed.h>
- 
--struct host1x {
-+struct host1x_drm {
- 	struct drm_device *drm;
- 	struct device *dev;
- 	void __iomem *regs;
-@@ -44,7 +44,7 @@ struct host1x_client_ops {
- };
- 
- struct host1x_client {
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct device *dev;
- 
- 	const struct host1x_client_ops *ops;
-@@ -52,12 +52,12 @@ struct host1x_client {
- 	struct list_head list;
- };
- 
--extern int host1x_drm_init(struct host1x *host1x, struct drm_device *drm);
--extern int host1x_drm_exit(struct host1x *host1x);
-+extern int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm);
-+extern int host1x_drm_exit(struct host1x_drm *host1x);
- 
--extern int host1x_register_client(struct host1x *host1x,
-+extern int host1x_register_client(struct host1x_drm *host1x,
- 				  struct host1x_client *client);
--extern int host1x_unregister_client(struct host1x *host1x,
-+extern int host1x_unregister_client(struct host1x_drm *host1x,
- 				    struct host1x_client *client);
- 
- struct tegra_output;
-@@ -66,7 +66,7 @@ struct tegra_dc {
- 	struct host1x_client client;
- 	spinlock_t lock;
- 
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct device *dev;
- 
- 	struct drm_crtc base;
-diff --git a/drivers/gpu/host1x/drm/fb.c b/drivers/gpu/host1x/drm/fb.c
-index 0391495..6ed885a 100644
---- a/drivers/gpu/host1x/drm/fb.c
-+++ b/drivers/gpu/host1x/drm/fb.c
-@@ -11,7 +11,7 @@
- 
- static void tegra_drm_fb_output_poll_changed(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 
- 	drm_fbdev_cma_hotplug_event(host1x->fbdev);
- }
-@@ -23,7 +23,7 @@ static const struct drm_mode_config_funcs tegra_drm_mode_funcs = {
- 
- int tegra_drm_fb_init(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 	struct drm_fbdev_cma *fbdev;
- 
- 	drm->mode_config.min_width = 0;
-@@ -46,7 +46,7 @@ int tegra_drm_fb_init(struct drm_device *drm)
- 
- void tegra_drm_fb_exit(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 
- 	drm_fbdev_cma_fini(host1x->fbdev);
- }
-diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
-index bb747f6..f438f80 100644
---- a/drivers/gpu/host1x/drm/hdmi.c
-+++ b/drivers/gpu/host1x/drm/hdmi.c
-@@ -1189,7 +1189,7 @@ static const struct host1x_client_ops hdmi_client_ops = {
- 
- static int tegra_hdmi_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_hdmi *hdmi;
- 	struct resource *regs;
- 	int err;
-@@ -1278,7 +1278,7 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
- 
- static int tegra_hdmi_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_hdmi *hdmi = platform_get_drvdata(pdev);
- 	int err;
- 
-diff --git a/drivers/gpu/host1x/drm/host1x.c b/drivers/gpu/host1x/drm/host1x.c
-index 92e25a7..c3d8ee5 100644
---- a/drivers/gpu/host1x/drm/host1x.c
-+++ b/drivers/gpu/host1x/drm/host1x.c
-@@ -21,7 +21,8 @@ struct host1x_drm_client {
- 	struct list_head list;
- };
- 
--static int host1x_add_drm_client(struct host1x *host1x, struct device_node *np)
-+static int host1x_add_drm_client(struct host1x_drm *host1x,
-+				 struct device_node *np)
- {
- 	struct host1x_drm_client *client;
- 
-@@ -37,7 +38,7 @@ static int host1x_add_drm_client(struct host1x *host1x, struct device_node *np)
- 	return 0;
+diff --git a/drivers/gpu/drm/drm_gem_cma_helper.c b/drivers/gpu/drm/drm_gem_cma_helper.c
+index 0a7e011..3b14280 100644
+--- a/drivers/gpu/drm/drm_gem_cma_helper.c
++++ b/drivers/gpu/drm/drm_gem_cma_helper.c
+@@ -2,6 +2,7 @@
+  * drm gem CMA (contiguous memory allocator) helper functions
+  *
+  * Copyright (C) 2012 Sascha Hauer, Pengutronix
++ * Copyright (C) 2013 NVIDIA CORPORATION, All rights reserved.
+  *
+  * Based on Samsung Exynos code
+  *
+@@ -40,30 +41,25 @@ static void drm_gem_cma_buf_destroy(struct drm_device *drm,
  }
  
--static int host1x_activate_drm_client(struct host1x *host1x,
-+static int host1x_activate_drm_client(struct host1x_drm *host1x,
- 				      struct host1x_drm_client *drm,
- 				      struct host1x_client *client)
+ /*
+- * drm_gem_cma_create - allocate an object with the given size
++ * drm_gem_cma_object_init - allocate buffer and initialize given cma object
+  *
+- * returns a struct drm_gem_cma_object* on success or ERR_PTR values
+- * on failure.
++ * this function allocates memory for a cma buffer and initializes the given
++ * cma object to use the allocated buffer.
+  */
+-struct drm_gem_cma_object *drm_gem_cma_create(struct drm_device *drm,
+-		unsigned int size)
++
++int drm_gem_cma_object_init(struct drm_device *drm,
++		struct drm_gem_cma_object *cma_obj, unsigned int size)
  {
-@@ -50,7 +51,7 @@ static int host1x_activate_drm_client(struct host1x *host1x,
- 	return 0;
+-	struct drm_gem_cma_object *cma_obj;
+ 	struct drm_gem_object *gem_obj;
+ 	int ret;
+ 
+ 	size = round_up(size, PAGE_SIZE);
+ 
+-	cma_obj = kzalloc(sizeof(*cma_obj), GFP_KERNEL);
+-	if (!cma_obj)
+-		return ERR_PTR(-ENOMEM);
+-
+ 	cma_obj->vaddr = dma_alloc_writecombine(drm->dev, size,
+ 			&cma_obj->paddr, GFP_KERNEL | __GFP_NOWARN);
+ 	if (!cma_obj->vaddr) {
+ 		dev_err(drm->dev, "failed to allocate buffer with size %d\n", size);
+-		ret = -ENOMEM;
+-		goto err_dma_alloc;
++		return -ENOMEM;
+ 	}
+ 
+ 	gem_obj = &cma_obj->base;
+@@ -76,7 +72,7 @@ struct drm_gem_cma_object *drm_gem_cma_create(struct drm_device *drm,
+ 	if (ret)
+ 		goto err_create_mmap_offset;
+ 
+-	return cma_obj;
++	return 0;
+ 
+ err_create_mmap_offset:
+ 	drm_gem_object_release(gem_obj);
+@@ -84,10 +80,36 @@ err_create_mmap_offset:
+ err_obj_init:
+ 	drm_gem_cma_buf_destroy(drm, cma_obj);
+ 
+-err_dma_alloc:
+-	kfree(cma_obj);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(drm_gem_cma_object_init);
++
++/*
++ * drm_gem_cma_create - allocate an object with the given size
++ *
++ * returns a struct drm_gem_cma_object* on success or ERR_PTR values
++ * on failure.
++ */
++struct drm_gem_cma_object *drm_gem_cma_create(struct drm_device *drm,
++		unsigned int size)
++{
++	struct drm_gem_cma_object *cma_obj;
++	int ret;
++
++	size = round_up(size, PAGE_SIZE);
++
++	cma_obj = kzalloc(sizeof(*cma_obj), GFP_KERNEL);
++	if (!cma_obj)
++		return ERR_PTR(-ENOMEM);
++
++	ret = drm_gem_cma_object_init(drm, cma_obj, size);
++	if (ret) {
++		kfree(cma_obj);
++		return ERR_PTR(ret);
++	}
++
++	return cma_obj;
+ 
+-	return ERR_PTR(ret);
+ }
+ EXPORT_SYMBOL_GPL(drm_gem_cma_create);
+ 
+@@ -133,22 +155,32 @@ err_handle_create:
  }
  
--static int host1x_remove_drm_client(struct host1x *host1x,
-+static int host1x_remove_drm_client(struct host1x_drm *host1x,
- 				    struct host1x_drm_client *client)
+ /*
+- * drm_gem_cma_free_object - (struct drm_driver)->gem_free_object callback
+- * function
++ * drm_gem_cma_deinit_object - deinitialize cma object
++ *
++ * this function deinitializes the given cma object without releasing the
++ * object memory. this function is a counterpart for the function
++ * drm_gem_cma_object_init().
+  */
+-void drm_gem_cma_free_object(struct drm_gem_object *gem_obj)
++void drm_gem_cma_object_deinit(struct drm_gem_object *gem_obj)
  {
- 	mutex_lock(&host1x->drm_clients_lock);
-@@ -63,7 +64,7 @@ static int host1x_remove_drm_client(struct host1x *host1x,
- 	return 0;
+-	struct drm_gem_cma_object *cma_obj;
++	struct drm_gem_cma_object *cma_obj = to_drm_gem_cma_obj(gem_obj);
+ 
+ 	if (gem_obj->map_list.map)
+ 		drm_gem_free_mmap_offset(gem_obj);
+ 
+ 	drm_gem_object_release(gem_obj);
+-
+-	cma_obj = to_drm_gem_cma_obj(gem_obj);
+-
+ 	drm_gem_cma_buf_destroy(gem_obj->dev, cma_obj);
++}
++EXPORT_SYMBOL_GPL(drm_gem_cma_object_deinit);
+ 
++/*
++ * drm_gem_cma_free_object - (struct drm_driver)->gem_free_object callback
++ * function
++ */
++void drm_gem_cma_free_object(struct drm_gem_object *gem_obj)
++{
++	struct drm_gem_cma_object *cma_obj = to_drm_gem_cma_obj(gem_obj);
++	drm_gem_cma_object_deinit(gem_obj);
+ 	kfree(cma_obj);
+ }
+ EXPORT_SYMBOL_GPL(drm_gem_cma_free_object);
+diff --git a/include/drm/drm_gem_cma_helper.h b/include/drm/drm_gem_cma_helper.h
+index 63397ce..5fdccb3 100644
+--- a/include/drm/drm_gem_cma_helper.h
++++ b/include/drm/drm_gem_cma_helper.h
+@@ -13,6 +13,10 @@ to_drm_gem_cma_obj(struct drm_gem_object *gem_obj)
+ 	return container_of(gem_obj, struct drm_gem_cma_object, base);
  }
  
--static int host1x_parse_dt(struct host1x *host1x)
-+static int host1x_parse_dt(struct host1x_drm *host1x)
- {
- 	static const char * const compat[] = {
- 		"nvidia,tegra20-dc",
-@@ -92,7 +93,7 @@ static int host1x_parse_dt(struct host1x *host1x)
++/* deinitialize gem object and release the buffer. this variant does not
++ * release the cma object memory */
++void drm_gem_cma_object_deinit(struct drm_gem_object *gem_obj);
++
+ /* free gem object. */
+ void drm_gem_cma_free_object(struct drm_gem_object *gem_obj);
  
- static int tegra_host1x_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct resource *regs;
- 	int err;
+@@ -35,6 +39,11 @@ int drm_gem_cma_mmap(struct file *filp, struct vm_area_struct *vma);
+ int drm_gem_cma_dumb_destroy(struct drm_file *file_priv,
+ 		struct drm_device *drm, unsigned int handle);
  
-@@ -156,14 +157,14 @@ err:
- 
- static int tegra_host1x_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = platform_get_drvdata(pdev);
-+	struct host1x_drm *host1x = platform_get_drvdata(pdev);
- 
- 	clk_disable_unprepare(host1x->clk);
- 
- 	return 0;
- }
- 
--int host1x_drm_init(struct host1x *host1x, struct drm_device *drm)
-+int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm)
- {
- 	struct host1x_client *client;
- 
-@@ -186,7 +187,7 @@ int host1x_drm_init(struct host1x *host1x, struct drm_device *drm)
- 	return 0;
- }
- 
--int host1x_drm_exit(struct host1x *host1x)
-+int host1x_drm_exit(struct host1x_drm *host1x)
- {
- 	struct platform_device *pdev = to_platform_device(host1x->dev);
- 	struct host1x_client *client;
-@@ -216,7 +217,8 @@ int host1x_drm_exit(struct host1x *host1x)
- 	return 0;
- }
- 
--int host1x_register_client(struct host1x *host1x, struct host1x_client *client)
-+int host1x_register_client(struct host1x_drm *host1x,
-+			   struct host1x_client *client)
- {
- 	struct host1x_drm_client *drm, *tmp;
- 	int err;
-@@ -244,7 +246,7 @@ int host1x_register_client(struct host1x *host1x, struct host1x_client *client)
- 	return 0;
- }
- 
--int host1x_unregister_client(struct host1x *host1x,
-+int host1x_unregister_client(struct host1x_drm *host1x,
- 			     struct host1x_client *client)
- {
- 	struct host1x_drm_client *drm, *tmp;
++/* allocate physical memory for a buffer and initialize already allocated
++ * to use the buffer */
++int drm_gem_cma_object_init(struct drm_device *drm,
++		struct drm_gem_cma_object *cma_obj, unsigned int size);
++
+ /* allocate physical memory. */
+ struct drm_gem_cma_object *drm_gem_cma_create(struct drm_device *drm,
+ 		unsigned int size);
 -- 
 1.7.9.5
 
