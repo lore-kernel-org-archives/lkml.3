@@ -1,196 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab3CMMkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 08:40:24 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49990 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755526Ab3CMMkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 08:40:22 -0400
-Message-ID: <1363178421.2031.29.camel@joe-AO722>
-Subject: Re: [PATCH] cifs: Rename cERROR and cifserror to cifs_vfs_err
-From: Joe Perches <joe@perches.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Mar 2013 05:40:21 -0700
-In-Reply-To: <20130313075155.7464a34a@tlielax.poochiereds.net>
-References: <1363128287.23052.21.camel@joe-AO722>
-	 <1363174614.2031.9.camel@joe-AO722>
-	 <20130313075155.7464a34a@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933318Ab3CMMky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 08:40:54 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50998 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932672Ab3CMMkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 08:40:52 -0400
+Date: Wed, 13 Mar 2013 05:40:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ming Lei <tom.leiming@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Shaohua Li <shli@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] atomic: improve
+ atomic_inc_unless_negative/atomic_dec_unless_positive
+Message-ID: <20130313124042.GN3725@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1362843501-31159-1-git-send-email-tom.leiming@gmail.com>
+ <CAFTL4hyO7HxGYOL=Fvq-g3LY37PY2f+xR6+stA7-wNkh3wkV=Q@mail.gmail.com>
+ <CACVXFVMu9FNTghOQjNryY59S6xkRqg9DR5=OshngUDEZ5Fb=4w@mail.gmail.com>
+ <20130312033906.GA3725@linux.vnet.ibm.com>
+ <CACVXFVMuhFoPat7FAznr4ji5vXeeVBNCWya=JdYGLYqBv5SFUQ@mail.gmail.com>
+ <20130312143853.GD3725@linux.vnet.ibm.com>
+ <CAFTL4hxHV+htjCsk1w-78kAg3WopfJ=CYH_kx-k7uFNiEC=pzw@mail.gmail.com>
+ <20130312175557.GF3725@linux.vnet.ibm.com>
+ <CAK7N6vr4dfWRWV1y4xPe770CjZPLscwBh9igLSYGCku_gVA0dw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK7N6vr4dfWRWV1y4xPe770CjZPLscwBh9igLSYGCku_gVA0dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031312-5518-0000-0000-00000C7EC5C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-13 at 07:51 -0400, Jeff Layton wrote:
-> On Wed, 13 Mar 2013 04:36:54 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > Perhaps a better idea than this patch is to
-> > change both the cERROR and cFYI macros to
-> > a new use of cifs_dbg(type, fmt, ...)
-> > 
-> > cERROR(set, fmt, ...)   -> cifs_dbg(VFS, fmt, ...)
-> > cFYI(set, fmt, ...)     -> cifs_dbg(FYI, fmt, ...)
-> > 
-> > This conversion would mark both these macros
-> > as debug stataments as they are only enabled
-> > with CONFIG_CIFS_DEBUG.
-[]
-> > This would also enable an easier conversion to
-> > dynamic debugging of these debug macros.
-> > 
-> > I'd prefer to move the newline from the macro
-> > to the format as that is more consistent with
-> > the rest of the kernel.
-[]
-> I like this change overall, but the size of the patch is pretty
-> daunting.
+On Wed, Mar 13, 2013 at 03:03:10PM +0530, anish singh wrote:
+> On Tue, Mar 12, 2013 at 11:25 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, Mar 12, 2013 at 04:02:47PM +0100, Frederic Weisbecker wrote:
+> >> 2013/3/12 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> >> > On Tue, Mar 12, 2013 at 12:03:23PM +0800, Ming Lei wrote:
+> >> >> On Tue, Mar 12, 2013 at 11:39 AM, Paul E. McKenney
+> >> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >> >
+> >> >> > Atomic operations that return a value are required to act as full
+> >> >> > memory
+> >> >> > barriers.  This means that code relying on ordering provided by
+> >> >> > these
+> >> >> > atomic operations must also do ordering, either by using an explicit
+> >> >> > memory barrier or by relying on guarantees from atomic operations.
+> >> >> >
+> >> >> > For example:
+> >> >> >
+> >> >> >         CPU 0                                   CPU 1
+> >> >> >
+> >> >> >         X = 1;                                  r1 = Z;
+> >> >> >         if (atomic_inc_unless_negative(&Y)      smp_mb();
+> >> >> >                 do_something();
+> >> >> >         Z = 1;                                  r2 = X;
+> >> >> >
+> >> >> > Assuming X and Z are initially zero, if r1==1, we are guaranteed
+> >> >> > that r2==1.  However, CPU 1 needs its smp_mb() in order to pair with
+> >> >> > the barrier implicit in atomic_inc_unless_negative().
+> >> >> >
+> >> >> > Make sense?
+> >> >>
+> >> >> Yes, it does, and thanks for the explanation.
+> >> >>
+> >> >> But looks the above example is not what Frederic described:
+> >> >>
+> >> >> "the above atomic_read() might return -1 because there is no
+> >> >> guarantee it's seeing the recent update on the remote CPU."
+> >> >>
+> >> >> Even I am not sure if adding one smp_mb() around atomic_read()
+> >> >> can guarantee that too.
+> >> >
+> >> > Frederic was likely thinking of some other scenario that would be
+> >> > broken by atomic_inc_unless_negative() failing to act as a full
+> >> > memory barrier.  Here is another example:
+> >> >
+> >> >
+> >> >         CPU 0                                   CPU 1
+> >> >
+> >> >                                                 X = 1;
+> >> >         if (atomic_inc_unless_negative(&Y)      r1 = atomic_xchg(&Y,
+> >> > -1);
+> >> >                 r2 = X;
+> >> >
+> >> > If atomic_inc_unless_negative() acts as a full memory barrier, then
+> >> > if CPU 0 reaches the assignment from X, the results will be guaranteed
+> >> > to be 1.  Otherwise, there is no guarantee.
+> >>
+> >> Your scenarios show an interesting guarantee I did not think about.
+> >> But my concern was on such a situation:
+> >>
+> >>   CPU 0                            CPU 1
+> >>
+> >>   atomic_set(&X, -1)
+> >>                                        atomic_inc(&X)
+> >>   atomic_add_unless_negative(&X, 5)
+> >>
+> >> On the above situation, CPU 0 may still see X == -1 and thus not add
+> >> the 5. Of course all that only make sense with datas coming along.
+> >
+> > That could happen, but you would need CPU 1 to carry out some other
+> > reference for it to be a bug.  Otherwise, CPU 1's atomic_inc() just
+> 
+>   CPU 0                            CPU 1
+> 
+>   atomic_set(&X, -1)
+>                                         A =5
+>                                        &X = A
+>   atomic_add_unless_negative(&X, 5)
+> 
+> Do you mean this when you referred "carry out some other reference
+> for it to be a bug"?
 
-I'd characterize it as more mechanically dull than
-daunting, but it is awfully large (~300 KB).
+Not exactly.  I was thinking more of something like this, with X and
+Y both initially zero:
 
-> If you could change the code that underlies cERROR() and
-> cFYI() without needing to touch all of their call sites, it might be
-> a simpler initial step.
+	CPU 0					CPU 1
 
-I think that would not help.
+						Y = 1;
+						smp_mb__before_atomic_dec();
+	if (atomic_inc_unless_negative(&X))	atomic_dec(&X);
+		r1 = 1;
+	else
+		r1 = Y;
 
-> OTOH, I would also prefer to move the newline into the format and
-> that's impossible without touching most of these call sites.
+If atomic_inc_unless_negative() does not imply a full memory barrier,
+r1 could be equal to zero.  (Not sure where atomic_add_unless_negative()
+came from, by the way, not seeing it in mainline.)
 
-Well, all but the ones that already have a defective
-newline.  I think there are 4 or 5.
+							Thanx, Paul
 
-The .ko size increases a few hundred bytes when the
-newlines are moved to the format, though it's still
-about a 1% overall size reduction.
-
-There would be:
-
-264 uses of cifs_dbg(VFS, ...)
-622 uses of cifs_dbg(FYI, ...)
- 15 uses of cifs_dbg(NOISY, ...)
-
-to verify. Using strings on the .ko simplifies that.
-
-$ size fs/cifs/cifs.ko*
-   text	   data	    bss	    dec	    hex	filename
- 265891	   2525	    132	 268548	  41904	fs/cifs/cifs.ko.new
- 268359	   2525	    132	 271016	  422a8	fs/cifs/cifs.ko.old
-
-The core of it is to cifs_debug.h
----
- fs/cifs/cifs_debug.h | 70 +++++++++++++++++-----------------------------------
- 1 file changed, 23 insertions(+), 47 deletions(-)
-
-diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
-index 69ae3d3..c99b40f 100644
---- a/fs/cifs/cifs_debug.h
-+++ b/fs/cifs/cifs_debug.h
-@@ -25,18 +25,20 @@
- void cifs_dump_mem(char *label, void *data, int length);
- void cifs_dump_detail(void *);
- void cifs_dump_mids(struct TCP_Server_Info *);
--#ifdef CONFIG_CIFS_DEBUG2
--#define DBG2 2
--#else
--#define DBG2 0
--#endif
- extern int traceSMB;		/* flag which enables the function below */
- void dump_smb(void *, int);
- #define CIFS_INFO	0x01
- #define CIFS_RC		0x02
- #define CIFS_TIMER	0x04
- 
-+#define VFS 1
-+#define FYI 2
- extern int cifsFYI;
-+#ifdef CONFIG_CIFS_DEBUG2
-+#define NOISY 4
-+#else
-+#define NOISY 0
-+#endif
- 
- /*
-  *	debug ON
-@@ -44,31 +46,21 @@ extern int cifsFYI;
-  */
- #ifdef CONFIG_CIFS_DEBUG
- 
--/* information message: e.g., configuration, major event */
--#define cifsfyi(fmt, ...)						\
--do {									\
--	if (cifsFYI & CIFS_INFO)					\
--		printk(KERN_DEBUG "%s: " fmt "\n",			\
--		       __FILE__, ##__VA_ARGS__);			\
--} while (0)
--
--#define cFYI(set, fmt, ...)						\
--do {									\
--	if (set)							\
--		cifsfyi(fmt, ##__VA_ARGS__);				\
--} while (0)
-+__printf(1, 2) void cifs_vfs_err(const char *fmt, ...);
- 
--#define cifswarn(fmt, ...)						\
--	printk(KERN_WARNING fmt "\n", ##__VA_ARGS__)
--
--/* error event message: e.g., i/o error */
--#define cifserror(fmt, ...)						\
--	printk(KERN_ERR "CIFS VFS: " fmt "\n", ##__VA_ARGS__);		\
--
--#define cERROR(set, fmt, ...)						\
-+/* information message: e.g., configuration, major event */
-+#define cifs_dbg(type, fmt, ...)					\
- do {									\
--	if (set)							\
--		cifserror(fmt, ##__VA_ARGS__);				\
-+	if (type == FYI) {						\
-+		if (cifsFYI & CIFS_INFO) {				\
-+			printk(KERN_DEBUG "%s: " fmt,			\
-+			       __FILE__, ##__VA_ARGS__);		\
-+		}							\
-+	} else if (type == VFS) {					\
-+		cifs_vfs_err(fmt, ##__VA_ARGS__);			\
-+	} else if (type == NOISY && type != 0) {			\
-+		printk(KERN_DEBUG fmt, ##__VA_ARGS__);			\
-+	}								\
- } while (0)
- 
- /*
-@@ -76,27 +68,11 @@ do {									\
-  *	---------
-  */
- #else		/* _CIFS_DEBUG */
--#define cifsfyi(fmt, ...)						\
-+#define cifs_dbg(type, fmt, ...)					\
- do {									\
- 	if (0)								\
--		printk(KERN_DEBUG "%s: " fmt "\n",			\
--		       __FILE__, ##__VA_ARGS__);			\
-+		printk(KERN_DEBUG fmt, ##__VA_ARGS__);			\
- } while (0)
--#define cFYI(set, fmt, ...)						\
--do {									\
--	if (0 && set)							\
--		cifsfyi(fmt, ##__VA_ARGS__);				\
--} while (0)
--#define cifserror(fmt, ...)						\
--do {									\
--	if (0)								\
--		printk(KERN_ERR "CIFS VFS: " fmt "\n", ##__VA_ARGS__);	\
--} while (0)
--#define cERROR(set, fmt, ...)						\
--do {									\
--	if (0 && set)							\
--		cifserror(fmt, ##__VA_ARGS__);				\
--} while (0)
--#endif		/* _CIFS_DEBUG */
-+#endif
- 
- #endif				/* _H_CIFS_DEBUG */
-
+> > happened after all of CPU 0's code.  But yes, it would be possible
+> > to misorder with some larger scenario starting with this example.
+> > Especially given that atomic_inc() does not make any ordering guarantees.
+> >
+> >                                                         Thanx, Paul
+> >
+> >                                                         Thanx, Paul
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
