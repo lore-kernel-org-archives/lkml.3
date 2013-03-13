@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3CMFi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 01:38:56 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60735 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab3CMFiz (ORCPT
+	id S1754416Ab3CMFjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 01:39:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38786 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab3CMFjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 01:38:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <514010B8.2030304@jp.fujitsu.com>
-Date: Wed, 13 Mar 2013 14:38:00 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v2, part1 25/29] mm/x86: use common help functions to
- free reserved pages
-References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com> <1362896833-21104-26-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1362896833-21104-26-git-send-email-jiang.liu@huawei.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Mar 2013 01:39:46 -0400
+Date: Wed, 13 Mar 2013 16:39:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Subject: linux-next: build failure after merge of the final tree (staging
+ tree related)
+Message-Id: <20130313163935.ea2f414d3ccc6ed1434d92b8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
+--Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2013/03/10 15:27, Jiang Liu wrote:
-> Use common help functions to free reserved pages.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> ---
->   arch/x86/mm/init.c    |    5 +----
->   arch/x86/mm/init_64.c |    5 ++---
->   2 files changed, 3 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 4903a03..4a705e6 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -516,11 +516,8 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+Hi all,
 
->   	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
->   
->   	for (; addr < end; addr += PAGE_SIZE) {
-> -		ClearPageReserved(virt_to_page(addr));
-> -		init_page_count(virt_to_page(addr));
->   		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
-> -		free_page(addr);
-> -		totalram_pages++;
-> +		free_reserved_page(virt_to_page(addr));
->   	}
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-If I don't misread your code, avobe codes can replace to free_reserved_area()
-as follow:
+drivers/staging/dwc2/hcd.c: In function '_dwc2_hcd_urb_enqueue':
+drivers/staging/dwc2/hcd.c:2387:3: error: implicit declaration of function =
+'bus_to_virt' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/dwc2/hcd.c:2387:7: warning: assignment makes pointer from i=
+nteger without a cast [enabled by default]
 
-	free_reserved_area(addr, end, POISON_FREE_INITMEM, what)
+Caused by commit 7359d482eb4d ("staging: HCD files for the DWC2 driver").
 
-Am I wrong?
+=46rom Documentation/bus-virt-phys-mapping.txt:
 
-Thanks,
-Yasuaki Ishimatsu
+"[ NOTE: The virt_to_bus() and bus_to_virt() functions have been
+        superseded by the functionality provided by the PCI DMA interface
+        (see Documentation/DMA-API-HOWTO.txt).  They continue
+        to be documented below for historical purposes, but new code
+        must not use them. --davidm 00/12/12 ]"
 
->   #endif
->   }
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 474e28f..2ef81f1 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -1067,10 +1067,9 @@ void __init mem_init(void)
->   
->   	/* clear_bss() already clear the empty_zero_page */
->   
-> -	reservedpages = 0;
-> -
-> -	/* this will put all low memory onto the freelists */
->   	register_page_bootmem_info();
-> +
-> +	/* this will put all memory onto the freelists */
->   	totalram_pages = free_all_bootmem();
->   
->   	absent_pages = absent_pages_in_range(0, max_pfn);
-> 
+See also Documentation/DMA-API-HOWTO.txt.
+
+I have added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 13 Mar 2013 16:35:50 +1100
+Subject: [PATCH] staging: the DWC2 driver uses bus_to_virt
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/dwc2/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/dwc2/Kconfig b/drivers/staging/dwc2/Kconfig
+index 610418a..bc4cdfe 100644
+--- a/drivers/staging/dwc2/Kconfig
++++ b/drivers/staging/dwc2/Kconfig
+@@ -1,6 +1,7 @@
+ config USB_DWC2
+ 	tristate "DesignWare USB2 DRD Core Support"
+ 	depends on USB
++	depends on VIRT_TO_BUS
+ 	select USB_OTG_UTILS
+ 	help
+ 	  Say Y or M here if your system has a Dual Role HighSpeed
+--=20
+1.8.1
 
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRQBEXAAoJEECxmPOUX5FE5LAP/0hWxoGreZatMzg5y1YWgbtM
+ZCNglayaoczB8K6h3XDsGP1vI0n3pNxhNmQUP0tHZKxB2wFTBhcy9dOjdtXZ2P97
+v5p6Gk4Y/FjFzV3Nj/c80ApSOs7DIZRalu5+grD4H8SjWkg9xK7/f3CUjX3LGOQV
+Epn0TMJr5J7aCcFOlBLBXalR20sLK0v2XunmxFU3ZWwA+Akl3GyBD4c7gilpfUjD
++8h9TJW0Y+wrTpQhKYmT/iNNtyiB9aVL7QZOyJWiOheaqc7jJWY0NBvyA1JOqdlD
+UxNVdlFGX0KU/UV/IxWMoZpO6YZjHv96Vv2NzlsdcQiPGPW+JE9b6Eqqvr1Kj1kX
+0ZGVmN1P0iyZDRrgZ3Pn7t6pv818cusAV8DXTttAvVR1h7rUPnlRVF5dsXTppsDW
+PMS3KeuKiSU6DvHMF6c+5SiFTx4W9n/15CPdVBCGTSNxyHB+yg/1CDnW4eHxDz9E
+YceMORHYX0HkXtj5x2OrUKPr9g4Iucq57shrWtpV/KihSt+gww/hm2EDvhqqzmJ9
+a5MHW1YfvIjJJT3p/1kPyXuNLMFbElOJBvJoHhbc9tLm2GTy0RnwYWzADW2WhF+z
+e+8dI/H0nuthX3EMUAtG54ZsTi0N/WP16vmkFptWP9aX8bmlmCtr1n3/qqxc5vh7
+x4DG4PFa889PISYXkkp2
+=8QMp
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__13_Mar_2013_16_39_35_+1100_.0pMb7Ui3yRz3xKY--
