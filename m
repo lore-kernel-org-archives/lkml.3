@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab3CMTKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:10:23 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38902 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526Ab3CMTKW (ORCPT
+	id S934153Ab3CMTK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:10:29 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:63108 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab3CMTK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:10:22 -0400
-X-Originating-IP: 67.232.160.146
-Date: Wed, 13 Mar 2013 12:10:16 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: Re: NULL pointer dereference in ext4_superblock_csum_set with
- mounted filesystem
-Message-ID: <20130313191016.GA1793@jtriplet-mobl1>
-References: <20130313185911.GA1446@jtriplet-mobl1>
- <20130313190141.GF5604@thunk.org>
+	Wed, 13 Mar 2013 15:10:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="tThc/1wpZn/ma/RB"
-Content-Disposition: inline
-In-Reply-To: <20130313190141.GF5604@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <5140C77E.7030206@openwrt.org>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<CA+icZUVLsqXNEc4UTQp0dDG21sQb0xtFMDF9Lyq5Jy7Px0pPBQ@mail.gmail.com>
+	<CA+icZUVn=3qcEDchYqUf2JqDBfPsN6Zxh+cJCDbUaOrkjg7uJg@mail.gmail.com>
+	<CAJfpegu40UMTfofY0L20T69sqmPrvpCP53N-xzumgX5MrAZuJw@mail.gmail.com>
+	<CA+icZUV=XoN=uUn7npU9Djnkr5DEuA0D42=HV_1n6WN4v2rQMA@mail.gmail.com>
+	<CA+icZUXXrarmm3hYSxt7T2_sw+pmZycdmop5z4QCJ6=vMny9EQ@mail.gmail.com>
+	<CA+icZUXzYGRU7deUyzgNBEfSkZf+-w6VLOewd+7R=RmZ21mTUg@mail.gmail.com>
+	<CAJfpegu3cHatcoWYyYeA-w0+mtQUgiAVkqUOjLGrq9oxk7CcrQ@mail.gmail.com>
+	<CA+icZUWqd4OfjxBKeOjqaPiVXOvBk9kLu1u1X_hiG9sbz1Eneg@mail.gmail.com>
+	<20130313181251.GA6023@sgi.com>
+	<5140C77E.7030206@openwrt.org>
+Date: Wed, 13 Mar 2013 20:10:25 +0100
+Message-ID: <CA+icZUUPTryfL9S2vHopPTcRkhV=Qxd1w_fh0mWbPrUE7Lw=zQ@mail.gmail.com>
+Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Felix Fietkau <nbd@openwrt.org>
+Cc: Robin Holt <holt@sgi.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        dhowells@redhat.com, sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp,
+        mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 13, 2013 at 7:37 PM, Felix Fietkau <nbd@openwrt.org> wrote:
+> On 2013-03-13 7:12 PM, Robin Holt wrote:
+>> On Wed, Mar 13, 2013 at 05:51:33PM +0100, Sedat Dilek wrote:
+>>> On Wed, Mar 13, 2013 at 5:21 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>> > On Wed, Mar 13, 2013 at 5:10 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> >
+>>> >> Anyway, with CONFIG_OVERLAYFS_FS=m I do not see any related messages
+>>> >> when the kernel-module is loaded.
+>>> >> So, is this intended?
+>>> >> SquashFS prints into the logs, so what is it doing differently?
+>>> >
+>>> > Some modules do, some don't.  It's not compulsory and not very useful.
+>>> >
+>>>
+>>> What about...
+>>>
+>>> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+>>> index 482c26f..92b9ad5 100644
+>>> --- a/fs/overlayfs/super.c
+>>> +++ b/fs/overlayfs/super.c
+>>> @@ -675,11 +675,13 @@ MODULE_ALIAS_FS("overlayfs");
+>>>  static int __init ovl_init(void)
+>>>  {
+>>>         return register_filesystem(&ovl_fs_type);
+>>> +       printk(KERN_INFO "overlayfs: loaded\n");
+>>
+>> How about pr_debug().  That makes things quite for most of us but gives
+>> you info when looking for things like boot problems.
+> How is having a printk/pr_debug useful here at all? The fact that other
+> filesystems do this as well is not a good reason...
+> Also, putting it *after* the return statement doesn't make much sense ;)
+>
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hehe, I just checked my new kernel... that does not work (nothing in the logs).
+But I think it's good to see if the filesystem is registered/loaded.
 
-On Wed, Mar 13, 2013 at 03:01:41PM -0400, Theodore Ts'o wrote:
-> On Wed, Mar 13, 2013 at 11:59:13AM -0700, Josh Triplett wrote:
-> > I frequently test kernel changes by booting them with kvm's -kernel
-> > option, with -hda pointing to my host system's root filesystem, and
-> > -snapshot to prevent writing to (and likely corrupting) that root
-> > filesystem.  I tried this with a kernel built from git commit
-> > 7c6baa304b841673d3a55ea4fcf9a5cbf7a1674b, with a stock x86-64 "make
-> > defconfig", and got a kernel panic:
-> 
-> Can you send me the output of "dumpe2fs -h" on your host system's root
-> file system?
+- Sedat -
 
-Attached.
-
-- Josh Triplett
-
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="dumpe2fs.log"
-
-dumpe2fs 1.42.5 (29-Jul-2012)
-Filesystem volume name:   <none>
-Last mounted on:          /
-Filesystem UUID:          e23a62e0-8a4a-48d0-b781-e11ae069ab06
-Filesystem magic number:  0xEF53
-Filesystem revision #:    1 (dynamic)
-Filesystem features:      has_journal ext_attr resize_inode dir_index filetype needs_recovery extent flex_bg sparse_super large_file huge_file uninit_bg dir_nlink extra_isize
-Filesystem flags:         signed_directory_hash 
-Default mount options:    (none)
-Filesystem state:         clean
-Errors behavior:          Continue
-Filesystem OS type:       Linux
-Inode count:              17711104
-Block count:              70817792
-Reserved block count:     708177
-Free blocks:              50350508
-Free inodes:              17149541
-First block:              0
-Block size:               4096
-Fragment size:            4096
-Reserved GDT blocks:      1007
-Blocks per group:         32768
-Fragments per group:      32768
-Inodes per group:         8192
-Inode blocks per group:   512
-Flex block group size:    16
-Filesystem created:       Tue Jul 10 22:09:47 2012
-Last mount time:          Wed Mar 13 10:19:40 2013
-Last write time:          Wed Mar 13 10:19:40 2013
-Mount count:              6
-Maximum mount count:      27
-Last checked:             Mon Mar 11 21:27:56 2013
-Check interval:           15552000 (6 months)
-Next check after:         Sat Sep  7 21:27:56 2013
-Lifetime writes:          776 GB
-Reserved blocks uid:      0 (user root)
-Reserved blocks gid:      0 (group root)
-First inode:              11
-Inode size:	          256
-Required extra isize:     28
-Desired extra isize:      28
-Journal inode:            8
-First orphan inode:       12845162
-Default directory hash:   half_md4
-Directory Hash Seed:      22edf7ec-c22c-43aa-a7ea-c3349da9a00c
-Journal backup:           inode blocks
-Journal features:         journal_incompat_revoke
-Journal size:             128M
-Journal length:           32768
-Journal sequence:         0x0023bba0
-Journal start:            10041
-
-
---tThc/1wpZn/ma/RB--
+> - Felix
+>
