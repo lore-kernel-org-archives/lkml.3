@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933922Ab3CMRZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:25:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41978 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270Ab3CMRZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:25:25 -0400
-Message-ID: <5140B674.8070308@zytor.com>
-Date: Wed, 13 Mar 2013 10:25:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S933132Ab3CMR1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:27:33 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:47363
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756411Ab3CMR1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 13:27:31 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: 1
+X-BigFish: PS1(z551biz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah17ej9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH RESEND 5/6] Drivers: hv: balloon: Implement hot-add
+ functionality
+Thread-Topic: [PATCH RESEND 5/6] Drivers: hv: balloon: Implement hot-add
+ functionality
+Thread-Index: AQHOH0fSRgPPQZcXJkuyI21Iwo4J9Zij1x0AgAAI8vA=
+Date: Wed, 13 Mar 2013 17:25:07 +0000
+Message-ID: <7f6d3d717791402f8aad39238f0a5329@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363111313-30201-1-git-send-email-kys@microsoft.com>
+ <1363111342-30242-1-git-send-email-kys@microsoft.com>
+ <1363111342-30242-5-git-send-email-kys@microsoft.com>
+ <20130313165015.GC23945@aepfle.de>
+In-Reply-To: <20130313165015.GC23945@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:e0:2027:146b:e7d3:de93:2cc1]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com> <5138FAD9.7050504@zytor.com> <20130307205915.GF24233@thinkpad-t410> <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com> <513911F9.8050308@zytor.com> <20130311211750.GB8440@thinkpad-t410> <1363118073.15011.275.camel@mfleming-mobl1.ger.corp.intel.com> <20130312211417.GC16558@thinkpad-t410> <1363189770.15011.300.camel@mfleming-mobl1.ger.corp.intel.com> <20130313170724.GB12157@thinkpad-t410>
-In-Reply-To: <20130313170724.GB12157@thinkpad-t410>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(199002)(189002)(377454001)(24454001)(13464002)(51704002)(79102001)(50986001)(47776003)(20776003)(16676001)(54356001)(69226001)(4396001)(5343635001)(50466001)(47446002)(80022001)(63696002)(76482001)(47736001)(54316002)(46102001)(56776001)(6806001)(49866001)(74662001)(56816002)(44976002)(33646001)(23676001)(77982001)(51856001)(65816001)(53806001)(47976001)(59766001)(74502001)(31966008)(3826001)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB018;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0784C803FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2DHRXWR024548
 
-On 03/13/2013 10:07 AM, Seth Forshee wrote:
->>
->> Granted, this change does mean that your decision at compile time may be
->> final, and you can't enable the pstore code at runtime if you built your
->> kernel/efivars module with CONFIG_EFI_VARS_PSTORE=n. Arguably, I think
->> that's a feature that some people will want, e.g. "Don't allow enabling
->> the efivars pstore backend at all... no, srsly!".
+
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Wednesday, March 13, 2013 12:50 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH RESEND 5/6] Drivers: hv: balloon: Implement hot-add
+> functionality
 > 
-> Hmm. Since my original patch was to compile pstore support out
-> completely, I interpreted Peter's suggestion to be allowing the user
-> override the default even if the default is disabled. That's the
-> assumption my implementation was based off of, but maybe I
-> misunderstood.
+> On Tue, Mar 12, K. Y. Srinivasan wrote:
 > 
-> But if Peter agrees with your changes then I'm fine with them too.
+> > Implement the memory hot-add functionality. With this, Linux guests can fully
+> > participate in the Dynamic Memory protocol implemented in the Windows
+> hosts.
+> 
+> > +++ b/drivers/hv/Kconfig
+> > @@ -15,7 +15,7 @@ config HYPERV_UTILS
+> >
+> >  config HYPERV_BALLOON
+> >  	tristate "Microsoft Hyper-V Balloon driver"
+> > -	depends on HYPERV
+> > +	depends on HYPERV && MEMORY_HOTPLUG
+> >  	help
+> >  	  Select this option to enable Hyper-V Balloon driver.
+> 
+> This driver now depends on CONFIG_MEMORY_HOTPLUG, which is disabled in
+> openSuSE i386 kernel. As a result, the hv_balloon driver disappears for
+> 32bit kernels.
+> 
+> Any chance that the Kconfig dependency can be moved inside the code so
+> that a 32bit guest can still do balloon operations?
+
+I can preserve the old behavior by getting rid of the config dependency and adding in
+the MEMORY_HOTPLUG dependency around the affected code. Greg, shall I just re-send
+this one patch.
+
+Regards,
+
+K. Y
+> 
+> 
+> Olaf
 > 
 
-I think there should be two compile-time options (one to compile in the
-EFI pstore code at all, and one to set its default.)
-
-	-hpa
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
