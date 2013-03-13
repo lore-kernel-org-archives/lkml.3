@@ -1,73 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab3CMMiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 08:38:07 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:46107 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932623Ab3CMMiF (ORCPT
+	id S933671Ab3CMMiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 08:38:55 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11460 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932398Ab3CMMfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 08:38:05 -0400
+	Wed, 13 Mar 2013 08:35:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Mar 2013 05:29:11 -0700
+From: Terje Bergstrom <tbergstrom@nvidia.com>
+To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
+        <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
+CC: <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>
+Subject: [PATCHv7 06/10] drm: tegra: Move drm to live under host1x
+Date: Wed, 13 Mar 2013 14:36:22 +0200
+Message-ID: <1363178186-2017-7-git-send-email-tbergstrom@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363178186-2017-1-git-send-email-tbergstrom@nvidia.com>
+References: <1363178186-2017-1-git-send-email-tbergstrom@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <36693.1363044515@turing-police.cc.vt.edu>
-References: <1362902990-25137-1-git-send-email-akinobu.mita@gmail.com>
-	<36693.1363044515@turing-police.cc.vt.edu>
-Date: Wed, 13 Mar 2013 21:38:04 +0900
-Message-ID: <CAC5umyhija4=87uQ_Aom7Ypj7DysFSLR21k3sZTVux+fvxMLJw@mail.gmail.com>
-Subject: Re: [PATCH -mmotm] scsi: fix the wrong position of the comment
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/12  <Valdis.Kletnieks@vt.edu>:
-> On Sun, 10 Mar 2013 17:09:50 +0900, Akinobu Mita said:
->> This fixes the wrong position of the comment introduced by
->> scsi-rename-random32-to-prandom_u32.patch in the -mm tree.
->>
->> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
->> Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
->> ---
->>  drivers/scsi/qla2xxx/qla_attr.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
->> index 04bf7b8..e44d47e 100644
->> --- a/drivers/scsi/qla2xxx/qla_attr.c
->> +++ b/drivers/scsi/qla2xxx/qla_attr.c
->> @@ -1939,13 +1939,13 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
->>       }
->>
->>       /* No pending activities shall be there on the vha now */
->> -     if (ql2xextended_error_logging & ql_dbg_user)
->> -             msleep(prandom_u32() % 10);
->> +     if (ql2xextended_error_logging & ql_dbg_user) {
->>               /*
->>                * Just to see if something falls on the net we have placed
->>                * below
->>                */
->> -
->> +             msleep(prandom_u32() % 10);
->> +     }
->>       BUG_ON(atomic_read(&vha->vref_count));
->
-> As others have noted, the msleep is potentially a crock.  However,
-> this particular patch is also incorrect - the *real* problem is
-> that the 4 line comment connected to the BUG_ON is mis-indented.
+Make drm part of host1x driver.
 
-In the original code (quoted below), the comment actually connected
-to the msleep(), but the word "below" in the comment points to BUG_ON.
-So the comment should also be updated in this patch...
+Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
+Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
+---
+ drivers/gpu/drm/Kconfig                        |    2 --
+ drivers/gpu/drm/Makefile                       |    1 -
+ drivers/gpu/drm/tegra/Makefile                 |    7 -------
+ drivers/gpu/host1x/Kconfig                     |    2 ++
+ drivers/gpu/host1x/Makefile                    |    5 +++++
+ drivers/gpu/{drm/tegra => host1x/drm}/Kconfig  |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/dc.c     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/dc.h     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/drm.c    |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/drm.h    |    6 +++---
+ drivers/gpu/{drm/tegra => host1x/drm}/fb.c     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/hdmi.c   |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/hdmi.h   |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/host1x.c |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/output.c |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/rgb.c    |    0
+ 16 files changed, 10 insertions(+), 13 deletions(-)
+ delete mode 100644 drivers/gpu/drm/tegra/Makefile
+ rename drivers/gpu/{drm/tegra => host1x/drm}/Kconfig (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/dc.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/dc.h (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/drm.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/drm.h (98%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/fb.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/hdmi.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/hdmi.h (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/host1x.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/output.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/rgb.c (100%)
 
-        /* No pending activities shall be there on the vha now */
-        if (ql2xextended_error_logging & ql_dbg_user)
-                msleep(random32()%10);  /* Just to see if something falls on
-                                        * the net we have placed below */
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 1e82882..9031bb7 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -215,8 +215,6 @@ source "drivers/gpu/drm/cirrus/Kconfig"
+ 
+ source "drivers/gpu/drm/shmobile/Kconfig"
+ 
+-source "drivers/gpu/drm/tegra/Kconfig"
+-
+ source "drivers/gpu/drm/omapdrm/Kconfig"
+ 
+ source "drivers/gpu/drm/tilcdc/Kconfig"
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index 0d59b24..847b830 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -49,7 +49,6 @@ obj-$(CONFIG_DRM_GMA500) += gma500/
+ obj-$(CONFIG_DRM_UDL) += udl/
+ obj-$(CONFIG_DRM_AST) += ast/
+ obj-$(CONFIG_DRM_SHMOBILE) +=shmobile/
+-obj-$(CONFIG_DRM_TEGRA) += tegra/
+ obj-$(CONFIG_DRM_OMAP)	+= omapdrm/
+ obj-$(CONFIG_DRM_TILCDC)	+= tilcdc/
+ obj-y			+= i2c/
+diff --git a/drivers/gpu/drm/tegra/Makefile b/drivers/gpu/drm/tegra/Makefile
+deleted file mode 100644
+index 80f73d1..0000000
+--- a/drivers/gpu/drm/tegra/Makefile
++++ /dev/null
+@@ -1,7 +0,0 @@
+-ccflags-y := -Iinclude/drm
+-ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
+-
+-tegra-drm-y := drm.o fb.o dc.o host1x.o
+-tegra-drm-y += output.o rgb.o hdmi.o
+-
+-obj-$(CONFIG_DRM_TEGRA) += tegra-drm.o
+diff --git a/drivers/gpu/host1x/Kconfig b/drivers/gpu/host1x/Kconfig
+index 00f0859..ee3af1e 100644
+--- a/drivers/gpu/host1x/Kconfig
++++ b/drivers/gpu/host1x/Kconfig
+@@ -18,4 +18,6 @@ config TEGRA_HOST1X_FIREWALL
+ 
+ 	  If unsure, choose Y.
+ 
++source "drivers/gpu/host1x/drm/Kconfig"
++
+ endif
+diff --git a/drivers/gpu/host1x/Makefile b/drivers/gpu/host1x/Makefile
+index 49fd580..4761e8a 100644
+--- a/drivers/gpu/host1x/Makefile
++++ b/drivers/gpu/host1x/Makefile
+@@ -10,4 +10,9 @@ host1x-y = \
+ 	debug.o \
+ 	hw/host1x01.o
+ 
++ccflags-y += -Iinclude/drm
++ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
++
++host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o drm/host1x.o
++host1x-$(CONFIG_DRM_TEGRA) += drm/output.o drm/rgb.o drm/hdmi.o
+ obj-$(CONFIG_TEGRA_HOST1X) += host1x.o
+diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/host1x/drm/Kconfig
+similarity index 100%
+rename from drivers/gpu/drm/tegra/Kconfig
+rename to drivers/gpu/host1x/drm/Kconfig
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/host1x/drm/dc.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/dc.c
+rename to drivers/gpu/host1x/drm/dc.c
+diff --git a/drivers/gpu/drm/tegra/dc.h b/drivers/gpu/host1x/drm/dc.h
+similarity index 100%
+rename from drivers/gpu/drm/tegra/dc.h
+rename to drivers/gpu/host1x/drm/dc.h
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/host1x/drm/drm.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/drm.c
+rename to drivers/gpu/host1x/drm/drm.c
+diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/host1x/drm/drm.h
+similarity index 98%
+rename from drivers/gpu/drm/tegra/drm.h
+rename to drivers/gpu/host1x/drm/drm.h
+index 6dd75a2..a6c011d 100644
+--- a/drivers/gpu/drm/tegra/drm.h
++++ b/drivers/gpu/host1x/drm/drm.h
+@@ -7,8 +7,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#ifndef TEGRA_DRM_H
+-#define TEGRA_DRM_H 1
++#ifndef HOST1X_DRM_H
++#define HOST1X_DRM_H 1
+ 
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+@@ -234,4 +234,4 @@ extern struct platform_driver tegra_hdmi_driver;
+ extern struct platform_driver tegra_dc_driver;
+ extern struct drm_driver tegra_drm_driver;
+ 
+-#endif /* TEGRA_DRM_H */
++#endif /* HOST1X_DRM_H */
+diff --git a/drivers/gpu/drm/tegra/fb.c b/drivers/gpu/host1x/drm/fb.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/fb.c
+rename to drivers/gpu/host1x/drm/fb.c
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/hdmi.c
+rename to drivers/gpu/host1x/drm/hdmi.c
+diff --git a/drivers/gpu/drm/tegra/hdmi.h b/drivers/gpu/host1x/drm/hdmi.h
+similarity index 100%
+rename from drivers/gpu/drm/tegra/hdmi.h
+rename to drivers/gpu/host1x/drm/hdmi.h
+diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/host1x/drm/host1x.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/host1x.c
+rename to drivers/gpu/host1x/drm/host1x.c
+diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/host1x/drm/output.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/output.c
+rename to drivers/gpu/host1x/drm/output.c
+diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/host1x/drm/rgb.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/rgb.c
+rename to drivers/gpu/host1x/drm/rgb.c
+-- 
+1.7.9.5
 
-        BUG_ON(atomic_read(&vha->vref_count));
