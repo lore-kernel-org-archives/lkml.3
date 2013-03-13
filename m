@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053Ab3CMRo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:44:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59972 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933096Ab3CMRox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:44:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
-   d="scan'208";a="305704595"
-Message-ID: <5140BB13.10806@linux.intel.com>
-Date: Wed, 13 Mar 2013 10:44:51 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S934050Ab3CMRpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:45:35 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51209 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933096Ab3CMRpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 13:45:33 -0400
+Date: Wed, 13 Mar 2013 13:30:36 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2013-03-11
+Message-ID: <20130313173035.GA19917@tuxdriver.com>
+References: <20130311212033.GA17372@joana>
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [3.9-rc1] Bug in bootup code or debug code?
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp><201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303132224.BEC60922.JStQOFMVFFOHLO@I-love.SAKURA.ne.jp> <3E5A0FA7E9CA944F9D5414FEC6C71220528C2DFF@ORSMSX105.amr.corp.intel.com>
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220528C2DFF@ORSMSX105.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311212033.GA17372@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2013 08:22 AM, Yu, Fenghua wrote:
->>
->> I found the location of "hardware reset" trigger.
->>
->> It is __pa_symbol(&boot_params) call, for I don't encounter "hardware
->> reset" if
->> I remove the "//" from below debug patch.
->>
->> This bug is not yet fixed as of 3.9.0-rc2-00188-g6c23cbb .
->>
->> --- a/arch/x86/kernel/microcode_intel_early.c
->> +++ b/arch/x86/kernel/microcode_intel_early.c
->> @@ -741,7 +741,9 @@ load_ucode_intel_bsp(void)
->>  #ifdef CONFIG_X86_32
->>         struct boot_params *boot_params_p;
->>
->> +       //while (1);
->>         boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
->> +       while (1);
->>         ramdisk_image = boot_params_p->hdr.ramdisk_image;
->>         ramdisk_size  = boot_params_p->hdr.ramdisk_size;
->>         initrd_start_early = ramdisk_image;
+On Mon, Mar 11, 2013 at 06:20:33PM -0300, Gustavo Padovan wrote:
+> Hi John,
 > 
-> Tetsuo and Dave,
+> I have these two patches for 3.9, these add support for two more devices to
+> the bluetooth drivers. Please pull. Thanks.
 > 
-> That's the place where we suspected to cause the problem.
+> 	Gustavo
+> --
+> The following changes since commit d786f67e5c587a4de8245336cb64cf4dd06871a7:
 > 
-> My question is: how to access global variable in linear mode in virtualization? __pa_symbol() is not a problem for native.
+>   mwl8k: fix band for supported channels (2013-02-11 14:31:36 -0500)
 > 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth for-upstream 
+> 
+> for you to fetch changes up to 94a32d10f47b637ae24b78b1ddc7ef0e8396fda4:
+> 
+>   Bluetooth: Device 0cf3:3008 should map AR 3012 (2013-03-11 18:04:54 -0300)
 
-What kind of virtualization are we talking about here?  We should not be
-running this code under any paravirtualized code path -- this is the
-hypervisor's job to take care of this.  For HVM, this should just work
-the same way.
+Pulling now...
 
-	-hpa
-
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
