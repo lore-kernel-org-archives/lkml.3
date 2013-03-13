@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab3CMSPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 14:15:43 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:20890 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933043Ab3CMSPl (ORCPT
+	id S934095Ab3CMSSD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 14:18:03 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51999 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933938Ab3CMSR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 14:15:41 -0400
-Date: Wed, 13 Mar 2013 19:15:38 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-next@vger.kernel.org
-Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
-Message-ID: <20130313181538.GA20097@merkur.ravnborg.org>
-References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au> <87ehfkuq27.fsf@rustcorp.com.au> <20130313063157.GB19681@merkur.ravnborg.org> <514044FD.2040502@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514044FD.2040502@imgtec.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 13 Mar 2013 14:17:59 -0400
+X-IronPort-AV: E=Sophos;i="4.84,838,1355126400"; 
+   d="scan'208";a="29169505"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv3 00/10] Remove ARM local timer API
+Date: Wed, 13 Mar 2013 11:17:46 -0700
+Message-Id: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 09:21:01AM +0000, James Hogan wrote:
-> Hi Sam,
-> 
-> On 13/03/13 06:31, Sam Ravnborg wrote:
-> >>  /* Some toolchains use a `_' prefix for all user symbols. */
-> >> -#ifdef CONFIG_SYMBOL_PREFIX
-> >> -#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
-> >> +#ifdef CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX
-> >> +#define __VMLINUX_SYMBOL(x) _##x
-> >> +#define __VMLINUX_SYMBOL_STR(x) "_" #x
-> >> +#define VMLINUX_SYMBOL_PREFIX_STR "_"
-> >>  #else
-> >> -#define MODULE_SYMBOL_PREFIX ""
-> >> +#define __VMLINUX_SYMBOL(x) x
-> >> +#define __VMLINUX_SYMBOL_STR(x) #x
-> >> +#define VMLINUX_SYMBOL_PREFIX_STR ""
-> >>  #endif
-> > 
-> > We know the prefix is an underscore. No benefits from defining
-> > VMLINUX_SYMBOL_PREFIX_STR.
-> 
-> scripts/modpost.c uses the actual prefix string though:
-> 
-> >	if (memcmp(symname, MODULE_SYMBOL_PREFIX,
-> >		   strlen(MODULE_SYMBOL_PREFIX)) == 0) {
-> >		mod->unres =
-> >		  alloc_symbol(symname +
-> >		               strlen(MODULE_SYMBOL_PREFIX),
-> > 		               ELF_ST_BIND(sym->st_info) == STB_WEAK,
-> > 		               mod->unres);
-> 
+In light of Mark Rutland's recent work on divorcing the ARM architected
+timers from the ARM local timer API and introducing a generic arch hook for
+broadcast it seems that we should remove the local timer API entirely.
+Doing so will reduce the architecture dependencies of our timer drivers,
+reduce code in ARM core, and simplify timer drivers because they no longer
+go through an architecture layer that is essentially a hotplug notifier.
 
-Allowing ourself to know this is "_" then we could make the above code look
-something like:
+Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+be accepted now so that we can clean up the timer drivers that are
+used in both UP and SMP situations. Right now these drivers have to ignore
+the timer setup callback on the boot CPU to avoid registering clockevents
+twice. This is not very symmetric and causes convuluted code that does
+the same thing in two places.
 
-	if (have_symbol_prefix_underscore) {
-		if (symname[0] == '_') {
-			mod->unres =
-			...
+Patches based on v3.9-rc2. I'm still looking for Acks/Tested-by
+on EXYNOS and PRIMA2.
 
-But I do not feel strong about this part.
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
 
-It is much more important to clean up so we use the
-same definition all over the kernel.
+Note: A hotplug notifier is used by both x86 for the apb_timer (see 
+apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+metag_generic.c) so this is not new.
 
-	Sam
+Changes since v2:
+ * Bug fixes in smp_twd from Tony Lindgren's testing
+ * Move smp_twd to use late_time_init hook
+ * Collected Acks
+
+Changes since v1:
+ * Picked up Mark's generic dummy timer driver
+ * Split out omap changes into new patch
+
+Mark Rutland (1):
+  clocksource: add generic dummy timer driver
+
+Stephen Boyd (9):
+  ARM: smp: Remove duplicate dummy timer implementation
+  ARM: smp_twd: Divorce smp_twd from local timer API
+  ARM: OMAP2+: Divorce from local timer API
+  ARM: EXYNOS4: Divorce mct from local timer API
+  ARM: PRIMA2: Divorce timer-marco from local timer API
+  ARM: msm: Divorce msm_timer from local timer API
+  clocksource: time-armada-370-xp: Fix sparse warning
+  clocksource: time-armada-370-xp: Divorce from local timer API
+  ARM: smp: Remove local timer API
+
+ arch/arm/Kconfig                         |  12 +--
+ arch/arm/include/asm/localtimer.h        |  34 ---------
+ arch/arm/kernel/smp.c                    |  87 ---------------------
+ arch/arm/kernel/smp_twd.c                |  64 ++++++++++------
+ arch/arm/mach-exynos/mct.c               |  53 +++++++++----
+ arch/arm/mach-msm/timer.c                | 125 +++++++++++++++++--------------
+ arch/arm/mach-omap2/Kconfig              |   1 -
+ arch/arm/mach-omap2/timer.c              |   7 --
+ arch/arm/mach-prima2/timer-marco.c       |  98 ++++++++++++------------
+ drivers/clocksource/Makefile             |   1 +
+ drivers/clocksource/dummy_timer.c        |  67 +++++++++++++++++
+ drivers/clocksource/time-armada-370-xp.c |  88 ++++++++++------------
+ include/linux/time-armada-370-xp.h       |   4 +-
+ 13 files changed, 309 insertions(+), 332 deletions(-)
+ delete mode 100644 arch/arm/include/asm/localtimer.h
+ create mode 100644 drivers/clocksource/dummy_timer.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
