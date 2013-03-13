@@ -1,142 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241Ab3CMUl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 16:41:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59372 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab3CMUly (ORCPT
+	id S934237Ab3CMUqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 16:46:09 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:49644 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933178Ab3CMUqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 16:41:54 -0400
-Message-ID: <5140E48D.60501@wwwdotorg.org>
-Date: Wed, 13 Mar 2013 14:41:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [Patch v3 3/4] power_supply: tps65090-charger: Add binding doc
-References: <1363126089-9071-1-git-send-email-rklein@nvidia.com> <1363126089-9071-4-git-send-email-rklein@nvidia.com> <513FB5D7.5090800@wwwdotorg.org> <5140D2C1.8020507@nvidia.com>
-In-Reply-To: <5140D2C1.8020507@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Mar 2013 16:46:07 -0400
+X-Nat-Received: from [202.181.97.72]:50365 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1363207559.20351
+To: hpa@linux.intel.com
+Cc: fenghua.yu@intel.com, dave@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.9-rc1] Bug in bootup code or debug code?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp>
+	<201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp>
+	<201303132224.BEC60922.JStQOFMVFFOHLO@I-love.SAKURA.ne.jp>
+	<3E5A0FA7E9CA944F9D5414FEC6C71220528C2DFF@ORSMSX105.amr.corp.intel.com>
+	<5140BB13.10806@linux.intel.com>
+In-Reply-To: <5140BB13.10806@linux.intel.com>
+Message-Id: <201303140545.DAC69253.FtSJOOFMHVFOLQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 14 Mar 2013 05:45:55 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 13032013 #9704858, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2013 01:25 PM, Rhyland Klein wrote:
-> On 3/12/2013 7:10 PM, Stephen Warren wrote:
->> On 03/12/2013 04:08 PM, Rhyland Klein wrote:
->>> This change adds the binding documentation for the tps65090-charger.
->>> diff --git
->>> a/Documentation/devicetree/bindings/power_supply/tps65090.txt
->>> b/Documentation/devicetree/bindings/power_supply/tps65090.txt
->>> +Example:
->>> +
->>> +    tps65090@48 {
->>> +        compatible = "ti,tps65090";
->>> +        reg = <0x48>;
->>> +        interrupts = <0 88 0x4>;
->>> +
->>> +        ti,enable-low-current-chrg;
->>> +
->>> +        regulators {
->>> +            ...
->>> +        };
->> I'm a little confused by this binding.
->>
->> What goes in the regulators sub-node; is that specified by another
->> binding file in bindings/regulator/tps65090.txt?
->>
->> I would expect one of the following:
->>
->> 1) A single binding file that describes absolutely everything in the
->> chip. In this case, the main TPS65909 node wouldn't have child nodes for
->> the MFD components, although the regulators sub-node, which in turn
->> contains children does still make sense.
->>
->> 2) A separate binding for each component block, and perhaps also some
->> top-level binding that indicates which child bindings can "plug into"
->> it. In this case, I'd expect each block to be represented as a sub-node
->> in DT. The overall regulator component might then still have a
->> regulators child DT node itself, to represent each regulator's
->> configuration. In this scenario, each binding document describes the
->> entirety of a single node.
->>
->> I think what you've got here is a hybrid; a single top-level node, but
->> different binding documents defining the various properties that are
->> relevant to each component block in the device. That seems odd to me.
+H. Peter Anvin wrote:
+> On 03/13/2013 08:22 AM, Yu, Fenghua wrote:
+> >>
+> >> I found the location of "hardware reset" trigger.
+> >>
+> >> It is __pa_symbol(&boot_params) call, for I don't encounter "hardware
+> >> reset" if
+> >> I remove the "//" from below debug patch.
+> >>
+> >> This bug is not yet fixed as of 3.9.0-rc2-00188-g6c23cbb .
+> >>
+> >> --- a/arch/x86/kernel/microcode_intel_early.c
+> >> +++ b/arch/x86/kernel/microcode_intel_early.c
+> >> @@ -741,7 +741,9 @@ load_ucode_intel_bsp(void)
+> >>  #ifdef CONFIG_X86_32
+> >>         struct boot_params *boot_params_p;
+> >>
+> >> +       //while (1);
+> >>         boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
+> >> +       while (1);
+> >>         ramdisk_image = boot_params_p->hdr.ramdisk_image;
+> >>         ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+> >>         initrd_start_early = ramdisk_image;
+> > 
+> > Tetsuo and Dave,
+> > 
+> > That's the place where we suspected to cause the problem.
+> > 
+> > My question is: how to access global variable in linear mode in virtualization? __pa_symbol() is not a problem for native.
+> > 
 > 
-> Yes we started this discussion before and were discussing the proper
-> arrangement of
-
-(your message was wrapped far over 80 columns, please restrict to
-something like 72-74 or so).
-
-> documentation when dealing with devices like these. This is where the
-> drivers/ directory
-> naming in the binding docs might diverge a bit as it might make less
-> sense to have
-> a binding doc for each child component of an mfd.
-
-I think your discussion swaps #1 and #2 relative to my list above? It
-certainly makes more sense if I read it that way.
-
-> I was thinking about moving this driver towards #1 above, and using a
-> child node for
-> the charger. I would then also move the regulators to a child node, and
-> its structure would
-> be very similar to the Palmas driver/dt representation. My only concern
-> was that, from
-> what I understood, separating out the child node implied that the child
-> functionality
-> could/might be used somewhere else. Say in this case, that the charger
-> functionality might
-> be duplicated in another pmic from ti.
-
-Having separate nodes certainly makes it easy to /allow/ that. I don't
-think it /requires/ that TI release (or plan to release) another chip
-containing that IP block.
-
-> I don't know how much that is the case with the
-> tps65090 and so I am unsure if child nodes are the correct way to go.
-
-Thinking more about this, separate child nodes for separate IP blocks do
-start to make some sense. They definitely do allow easy
-binding/driver/... re-use if future chips come out with the same
-sub-block. Similarly, they neatly isolate each sub-block's binding from
-the others, so (a) avoid any conflicts between what the different IP
-blocks want to put in their nodes, like a list of regulators vs. using
-sub-nodes for other purposes, such as an integrate I2C mux with I2C bus
-child nodes, etc, and (b) the bindings can be defined separately thus
-avoiding the "where do we put the binding file" issue.
-
-It's certainly more work, but now I tend to think separate nodes are the
-way to go.
-
-> As for #2, This would also be fine with me, as logically we are talking
-> about a single chip. I
-> this the only concern here is where to place a single binding document
-> in the bindings
-> directory where it makes sense. Putting regulator documentation under
-> charger or vice
-> versa doesn't make sense. And then for some devices, they might also
-> have an rtc, gpio
-> controller, interrupt controller, etc.. If each of them had a driver and
-> their own dt
-> information, I don't know where a single core place for all that
-> documentation would be
-> right now.
+> What kind of virtualization are we talking about here?  We should not be
+> running this code under any paravirtualized code path -- this is the
+> hypervisor's job to take care of this.  For HVM, this should just work
+> the same way.
 > 
-> Hence, I was hoping to continue this dicussion and see if we can decide
-> on the most logical
-> choice, whatever that may be.
+> 	-hpa
+> 
+H. Peter Anvin wrote:
+> This is a CONFIG_DEBUG_VIRTUAL configuration, isn't it?
 
+Yes. CONFIG_MICROCODE_INTEL_EARLY=y && CONFIG_64BIT=n && CONFIG_DEBUG_VIRTUAL=y
+on VMware Workstation/Player environment.
