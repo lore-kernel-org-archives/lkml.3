@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab3CMJVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 05:21:12 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:36010 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab3CMJVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 05:21:09 -0400
-Message-ID: <514044FD.2040502@imgtec.com>
-Date: Wed, 13 Mar 2013 09:21:01 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-next@vger.kernel.org>
-Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
-References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au> <87ehfkuq27.fsf@rustcorp.com.au> <20130313063157.GB19681@merkur.ravnborg.org>
-In-Reply-To: <20130313063157.GB19681@merkur.ravnborg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_03_13_09_21_03
+	id S1755409Ab3CMJXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 05:23:16 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:39067 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3CMJXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 05:23:15 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, sachin.kamat@linaro.org, patches@linaro.org,
+        chanho61.park@samsung.com, kgene.kim@samsung.com
+Subject: [PATCH 1/1] irqchip: exynos-combiner: Fix checkpatch warnings
+Date: Wed, 13 Mar 2013 14:42:24 +0530
+Message-Id: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+Fixes the following warnings:
+WARNING: line over 80 characters
+WARNING: Prefer pr_warn(... to pr_warning(...
 
-On 13/03/13 06:31, Sam Ravnborg wrote:
->>  /* Some toolchains use a `_' prefix for all user symbols. */
->> -#ifdef CONFIG_SYMBOL_PREFIX
->> -#define MODULE_SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
->> +#ifdef CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX
->> +#define __VMLINUX_SYMBOL(x) _##x
->> +#define __VMLINUX_SYMBOL_STR(x) "_" #x
->> +#define VMLINUX_SYMBOL_PREFIX_STR "_"
->>  #else
->> -#define MODULE_SYMBOL_PREFIX ""
->> +#define __VMLINUX_SYMBOL(x) x
->> +#define __VMLINUX_SYMBOL_STR(x) #x
->> +#define VMLINUX_SYMBOL_PREFIX_STR ""
->>  #endif
-> 
-> We know the prefix is an underscore. No benefits from defining
-> VMLINUX_SYMBOL_PREFIX_STR.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/irqchip/exynos-combiner.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-scripts/modpost.c uses the actual prefix string though:
-
->	if (memcmp(symname, MODULE_SYMBOL_PREFIX,
->		   strlen(MODULE_SYMBOL_PREFIX)) == 0) {
->		mod->unres =
->		  alloc_symbol(symname +
->		               strlen(MODULE_SYMBOL_PREFIX),
-> 		               ELF_ST_BIND(sym->st_info) == STB_WEAK,
-> 		               mod->unres);
-
-See also my "module: fix symbol versioning with symbol prefixes" patch
-for an additional use in modpost.
-
-Having a MODULE_SYMBOL_PREFIX/VMLINUX_SYMBOL_PREFIX_STR seems like the
-simplest way to keep this code clean and readable without special cases.
-
-Cheers
-James
+diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
+index e8501db..66b1bf5 100644
+--- a/drivers/irqchip/exynos-combiner.c
++++ b/drivers/irqchip/exynos-combiner.c
+@@ -229,13 +229,15 @@ void __init combiner_init(void __iomem *combiner_base,
+ 	irq_base = irq_alloc_descs(COMBINER_IRQ(0, 0), 1, nr_irq, 0);
+ 	if (IS_ERR_VALUE(irq_base)) {
+ 		irq_base = COMBINER_IRQ(0, 0);
+-		pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
++		pr_warn("%s: irq desc alloc failed. "
++			"Continuing with %d as linux irq base\n",
++			__func__, irq_base);
+ 	}
+ 
+ 	combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
+ 				&combiner_irq_domain_ops, &combiner_data);
+ 	if (WARN_ON(!combiner_irq_domain)) {
+-		pr_warning("%s: irq domain init failed\n", __func__);
++		pr_warn("%s: irq domain init failed\n", __func__);
+ 		return;
+ 	}
+ 
+-- 
+1.7.4.1
 
