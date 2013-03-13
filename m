@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175Ab3CMTKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 15:10:39 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55232 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526Ab3CMTKg (ORCPT
+	id S933265Ab3CMTNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 15:13:21 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:48736 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932346Ab3CMTNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 15:10:36 -0400
-Date: Wed, 13 Mar 2013 19:10:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: s390: mm: Use PTR_RET function
-Message-ID: <20130313191034.GM21522@ZenIV.linux.org.uk>
-References: <1363201557-17715-1-git-send-email-gheorghiuandru@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363201557-17715-1-git-send-email-gheorghiuandru@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Mar 2013 15:13:20 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] arch: s390: hypfs: Use PTR_RET function
+Date: Wed, 13 Mar 2013 21:12:38 +0200
+Message-Id: <1363201958-17855-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 09:05:57PM +0200, Alexandru Gheorghiu wrote:
-> Used PTR_RET function instead of IS_ERR and PTR_ERR.
-> Patch found using coccinelle.
-> 
-> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-> ---
->  arch/s390/mm/cmm.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/s390/mm/cmm.c b/arch/s390/mm/cmm.c
-> index 479e942..5cf867f 100644
-> --- a/arch/s390/mm/cmm.c
-> +++ b/arch/s390/mm/cmm.c
-> @@ -458,7 +458,7 @@ static int __init cmm_init(void)
->  	if (rc)
->  		goto out_pm;
->  	cmm_thread_ptr = kthread_run(cmm_thread, NULL, "cmmthread");
-> -	rc = IS_ERR(cmm_thread_ptr) ? PTR_ERR(cmm_thread_ptr) : 0;
-> +	rc = PTR_RET(cmm_thread_ptr);
->  	if (rc)
->  		goto out_kthread;
->  	return 0;
+Used PTR_RET function instead of IS_ERR and PTR_ERR.
+Patch found using coccinelle.
 
-Egads...  How about
-	if (!IS_ERR(cmm_thread_ptr))
-		return 0;
-	rc = PTR_ERR(cmm_thread_ptr);
-instead of the entire thing?  out_kthread: is just past that return 0
-and there's nothing else leading to it, so with that change the label
-itself can go as well.
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ arch/s390/hypfs/hypfs_dbfs.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/s390/hypfs/hypfs_dbfs.c b/arch/s390/hypfs/hypfs_dbfs.c
+index 9fd4a40..bb5dd49 100644
+--- a/arch/s390/hypfs/hypfs_dbfs.c
++++ b/arch/s390/hypfs/hypfs_dbfs.c
+@@ -105,9 +105,7 @@ void hypfs_dbfs_remove_file(struct hypfs_dbfs_file *df)
+ int hypfs_dbfs_init(void)
+ {
+ 	dbfs_dir = debugfs_create_dir("s390_hypfs", NULL);
+-	if (IS_ERR(dbfs_dir))
+-		return PTR_ERR(dbfs_dir);
+-	return 0;
++	return PTR_RET(dbfs_dir);
+ }
+ 
+ void hypfs_dbfs_exit(void)
+-- 
+1.7.9.5
+
