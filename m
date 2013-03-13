@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab3CMRUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 13:20:39 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:43939 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322Ab3CMRUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 13:20:36 -0400
+	id S933922Ab3CMRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 13:25:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41978 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932270Ab3CMRZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 13:25:25 -0400
+Message-ID: <5140B674.8070308@zytor.com>
+Date: Wed, 13 Mar 2013 10:25:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <1363195044-15715-1-git-send-email-dianders@chromium.org>
-References: <1363195044-15715-1-git-send-email-dianders@chromium.org>
-Date: Wed, 13 Mar 2013 10:20:34 -0700
-X-Google-Sender-Auth: yyc6g1NabzUqlqvKznbthMHjuRI
-Message-ID: <CAD=FV=W9KF4OM9VzMse4rRnKsph2h2izLKHptvffz4gRkFmBNw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: add usb 2.0 clock references to device tree
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
+References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com> <5138FAD9.7050504@zytor.com> <20130307205915.GF24233@thinkpad-t410> <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com> <513911F9.8050308@zytor.com> <20130311211750.GB8440@thinkpad-t410> <1363118073.15011.275.camel@mfleming-mobl1.ger.corp.intel.com> <20130312211417.GC16558@thinkpad-t410> <1363189770.15011.300.camel@mfleming-mobl1.ger.corp.intel.com> <20130313170724.GB12157@thinkpad-t410>
+In-Reply-To: <20130313170724.GB12157@thinkpad-t410>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh...
+On 03/13/2013 10:07 AM, Seth Forshee wrote:
+>>
+>> Granted, this change does mean that your decision at compile time may be
+>> final, and you can't enable the pstore code at runtime if you built your
+>> kernel/efivars module with CONFIG_EFI_VARS_PSTORE=n. Arguably, I think
+>> that's a feature that some people will want, e.g. "Don't allow enabling
+>> the efivars pstore backend at all... no, srsly!".
+> 
+> Hmm. Since my original patch was to compile pstore support out
+> completely, I interpreted Peter's suggestion to be allowing the user
+> override the default even if the default is disabled. That's the
+> assumption my implementation was based off of, but maybe I
+> misunderstood.
+> 
+> But if Peter agrees with your changes then I'm fine with them too.
+> 
 
-On Wed, Mar 13, 2013 at 10:17 AM, Doug Anderson <dianders@chromium.org> wrote:
-> This is a fixup to two device tree nodes that have already landed but
-> without clock nodes since the transition to common clock happened at
-> the same time.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+I think there should be two compile-time options (one to compile in the
+EFI pstore code at all, and one to set its default.)
 
-Please forgive my fat finger and see the version with the updated
-description: "[PATCH] ARM: dts: add usb 2.0 clock references to
-exynos5250 device tree".  There is no difference other than the title.
+	-hpa
 
--Doug
