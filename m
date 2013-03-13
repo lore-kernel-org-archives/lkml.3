@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3CMKg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 06:36:26 -0400
-Received: from mail.nanl.de ([217.115.11.12]:52734 "EHLO mail.nanl.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027Ab3CMKgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 06:36:25 -0400
+	id S932957Ab3CMKhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 06:37:08 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:44248 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756308Ab3CMKhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 06:37:01 -0400
+Message-ID: <514056CB.6070808@mimc.co.uk>
+Date: Wed, 13 Mar 2013 10:36:59 +0000
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <1363169039.3137.186.camel@x61.thuisdomein>
-References: <1363165170.3137.182.camel@x61.thuisdomein> <CAOiHx=n4a26z=PS02E2KjD2Y3Pp0P0x-5Ns6WRc-WScNF=EO_Q@mail.gmail.com>
- <1363169039.3137.186.camel@x61.thuisdomein>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Wed, 13 Mar 2013 11:35:31 +0100
-Message-ID: <CAOiHx=keYYoCGgHfrSKXOHQQvG1mrt60ems3dcXki1K06MHg2g@mail.gmail.com>
-Subject: Re: rt2x00: Kconfig symbols RALINK_RT288X and RALINK_RT305X
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Crispin <blogic@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
+To: Daniel Mack <zonque@gmail.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Excessive ethernet interrupts on AM335x board
+References: <513F4B58.1000204@mimc.co.uk> <CACTFLAPv=OGaWaz+BdPxr56e56c=cx8QYuc9TUK61Bk4WD5=vg@mail.gmail.com>
+In-Reply-To: <CACTFLAPv=OGaWaz+BdPxr56e56c=cx8QYuc9TUK61Bk4WD5=vg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 March 2013 11:03, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Wed, 2013-03-13 at 10:51 +0100, Jonas Gorski wrote:
->> The actual accepted Kconfig symbol names are different though, so they
->> should be changed in rt2x00 to match them (SOC_RT288X and SOC_RT305X).
->
-> Thanks. Note that I could not find an actual Kconfig symbol SOC_RT288X!
+On 13/03/13 10:32, Daniel Mack wrote:
+> On Tue, Mar 12, 2013 at 4:35 PM, Mark Jackson <mpfj-list@mimc.co.uk> wrote:
+>> I'm just fighting an issue with ethernet on our custom AM335x board:-
+>>
+>> # uname -a
+>> Linux nanobone 3.9.0-rc2-00113-gd60f039 #139 Tue Mar 12 15:14:01 GMT 2013 armv7l GNU/Linux
+>>
+>> Every now and then, the whole unit slows to a crawl.  The only indication of any problem is:-
+>>
+>> (a) the serial tty port becomes much less responsive
+>> (b) normal ping times jump from 1ms to >10sec (sometimes >20sec !!)
+>> (c) the ethernet interrupt count rockets (see below)
+>>
+>> I've tried to force the problem by flood pinging from my PC.
 
-Ah, yes, the inital submission only included RT305X support, not
-RT288X (and neither of the newer chips). These will come later.
+<snip>
 
-> Anyhow, I guess somebody has the (trivial) patch to convert
-> RALINK_RT...X and CONFIG_RALINK_RT...X to their SOC_* equivalents queued
-> for inclusion in v3.9-rcX. Is that correct?
+>> As you can see, when I stop the flood pings, the nfs link is now reported
+>> as being lost.
+> 
+> I had the same problem. Please check this patch, I'm sure it will fix you issue:
+> 
+>   https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=d35162f89b8f00537d7b240b76d2d0e8b8d29aa0
 
-Yes, that should be everything. John Crispin, anything missing from that?
+Brilliant ... that's the one !!  
 
-
-Jonas
+Cheers
+Mark J.
