@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925Ab3CNMXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:23:49 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56867
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757660Ab3CNMXr (ORCPT
+	id S932745Ab3CNMXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:23:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41938 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab3CNMX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:23:47 -0400
+	Thu, 14 Mar 2013 08:23:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Vinson Lee <vlee@twitter.com>,
+        Ingo Molnar <mingo@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 7/8] perf/POWER7: Create a sysfs format entry for Power7 events
-Date: Thu, 14 Mar 2013 09:23:14 -0300
-Message-Id: <1363263795-31485-8-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 8/8] perf tools: Fix LIBNUMA build with glibc 2.12 and older.
+Date: Thu, 14 Mar 2013 09:23:15 -0300
+Message-Id: <1363263795-31485-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363263795-31485-1-git-send-email-acme@infradead.org>
 References: <1363263795-31485-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+From: Vinson Lee <vlee@twitter.com>
 
-Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-which describes the format of the POWER7 PMU events.
+The tokens MADV_HUGEPAGE and MADV_NOHUGEPAGE are not available with
+glibc 2.12 and older. Define these tokens if they are not already
+defined.
 
-This code is based on corresponding code in x86.
+This patch fixes these build errors with older versions of glibc.
 
-Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
-		for other POWER cpus. So move the code to POWER7-specific,
-		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
+    CC bench/numa.o
+bench/numa.c: In function ‘alloc_data’:
+bench/numa.c:334: error: ‘MADV_HUGEPAGE’ undeclared (first use in this function)
+bench/numa.c:334: error: (Each undeclared identifier is reported only once
+bench/numa.c:334: error: for each function it appears in.)
+bench/numa.c:341: error: ‘MADV_NOHUGEPAGE’ undeclared (first use in this function)
+make: *** [bench/numa.o] Error 1
 
-Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Paul Mackerras <paulus@samba.org>
-Tested-by: Michael Ellerman <michael@ellerman.id.au>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: benh@kernel.crashing.org
-Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130306054826.GA14627@us.ibm.com
+Link: http://lkml.kernel.org/r/1363214064-4671-2-git-send-email-vlee@twitter.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/powerpc/perf/power7-pmu.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ tools/perf/bench/bench.h |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index b554879..3c475d6 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -420,7 +420,20 @@ static struct attribute_group power7_pmu_events_group = {
- 	.attrs = power7_events_attr,
- };
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index a5223e6..0fdc852 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -1,6 +1,30 @@
+ #ifndef BENCH_H
+ #define BENCH_H
  
-+PMU_FORMAT_ATTR(event, "config:0-19");
++/*
++ * The madvise transparent hugepage constants were added in glibc
++ * 2.13. For compatibility with older versions of glibc, define these
++ * tokens if they are not already defined.
++ *
++ * PA-RISC uses different madvise values from other architectures and
++ * needs to be special-cased.
++ */
++#ifdef __hppa__
++# ifndef MADV_HUGEPAGE
++#  define MADV_HUGEPAGE		67
++# endif
++# ifndef MADV_NOHUGEPAGE
++#  define MADV_NOHUGEPAGE	68
++# endif
++#else
++# ifndef MADV_HUGEPAGE
++#  define MADV_HUGEPAGE		14
++# endif
++# ifndef MADV_NOHUGEPAGE
++#  define MADV_NOHUGEPAGE	15
++# endif
++#endif
 +
-+static struct attribute *power7_pmu_format_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+struct attribute_group power7_pmu_format_group = {
-+	.name = "format",
-+	.attrs = power7_pmu_format_attr,
-+};
-+
- static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power7_pmu_format_group,
- 	&power7_pmu_events_group,
- 	NULL,
- };
+ extern int bench_numa(int argc, const char **argv, const char *prefix);
+ extern int bench_sched_messaging(int argc, const char **argv, const char *prefix);
+ extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
 -- 
 1.7.1
 
