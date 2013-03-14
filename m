@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab3CNJyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:54:07 -0400
-Received: from mercuryimc.plus.com ([80.229.200.144]:48824 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755812Ab3CNJyF (ORCPT
+	id S1756624Ab3CNKJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:09:06 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60559 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab3CNKJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:54:05 -0400
-Message-ID: <51419E3A.8030007@mimc.co.uk>
-Date: Thu, 14 Mar 2013 09:54:02 +0000
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
-Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
-References: <5134CEF9.5070502@mimc.co.uk>  <1363087506.3348.62.camel@sauron.fi.intel.com>  <51405F3A.3090901@mimc.co.uk> <1363252425.11441.94.camel@sauron.fi.intel.com>
-In-Reply-To: <1363252425.11441.94.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 06:09:04 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/4] zcache: Support zero-filled pages more efficiently
+Date: Thu, 14 Mar 2013 18:08:13 +0800
+Message-Id: <1363255697-19674-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031410-3568-0000-0000-0000034A0199
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/13 09:13, Artem Bityutskiy wrote:
-> On Wed, 2013-03-13 at 11:12 +0000, Mark Jackson wrote:
->> Sorry ... this just locks up the unit.
-> 
-> OK, I've reproduced the issue with 3.9-rc2 in nandsim, see the details
-> below. The patch I proposed did not get the error path correctly, but it
-> does fix the issue.
-> 
-> I think what you treat as "lockup" is the fixup process. UBIFS basically
-> reads the entire UBI volume and writes it back. And it uses the atomic
-> change UBI service, which means it also calculates CRC of everything it
-> writes. And this all just takes a lot of time. This has to be done only
-> once on the first mount.
+Changelog:
+ v1 -> v2:
+  * avoid changing tmem.[ch] entirely, spotted by Dan.
+  * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for 
+    zero-filled pages, spotted by Dan
+  * cleanup TODO list
+  * add Dan Acked-by.
 
-Okay ... I've retried, but how long is "a lot of time" ?
+Motivation:
 
-I've waited 15 minutes and still nothing.
+- Seth Jennings points out compress zero-filled pages with LZO(a lossless 
+  data compression algorithm) will waste memory and result in fragmentation.
+  https://lkml.org/lkml/2012/8/14/347
+- Dan Magenheimer add "Support zero-filled pages more efficiently" feature 
+  in zcache TODO list https://lkml.org/lkml/2013/2/13/503
 
-And I can see that there's no activity on the NAND chip select !?!
+Design:
 
-I'll put some debug info into the fixup routines to see if I can trace what's going on.
+- For store page, capture zero-filled pages(evicted clean page cache pages and 
+  swap pages), but don't compress them, set pampd which store zpage address to
+  0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
+  case and take advantage of tmem infrastructure to transform handle-tuple(pool
+  id, object id, and an index) to a pampd. Twice compress zero-filled pages will
+  contribute to one zcache_[eph|pers]_pageframes count accumulated.
+- For load page, traverse tmem hierachical to transform handle-tuple to pampd 
+  and identify zero-filled case by pampd equal to 0x2 when filesystem reads
+  file pages or a page needs to be swapped in, then refill the page to zero
+  and return.
 
-Regards
-Mark J.
+Test:
+
+dd if=/dev/zero of=zerofile bs=1MB count=500
+vmtouch -t zerofile
+vmtouch -e zerofile
+
+formula:
+- fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes) 
+  * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
+- memory zcache occupy = zcache_[eph|pers]_zbytes 
+
+Result:
+
+without zero-filled awareness:
+- fragmentation level: 98%
+- memory zcache occupy: 238MB
+with zero-filled awareness:
+- fragmentation level: 0%
+- memory zcache occupy: 0MB
+
+Wanpeng Li (4):
+  introduce zero-filled pages handler
+  zero-filled pages awareness
+  introduce zero-filled pages stat count
+  clean TODO list
+
+ drivers/staging/zcache/TODO          |    3 +-
+ drivers/staging/zcache/zcache-main.c |  119 ++++++++++++++++++++++++++++++++--
+ 2 files changed, 114 insertions(+), 8 deletions(-)
+
+-- 
+1.7.7.6
 
