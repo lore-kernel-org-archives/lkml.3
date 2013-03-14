@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab3CNL3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:29:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36122 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab3CNL3e convert rfc822-to-8bit (ORCPT
+	id S1756933Ab3CNLbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:31:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:51396 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab3CNLbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:29:34 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/3] leds: lm355x, lm3642: support camera LED triggers
- for flash and torch
-Thread-Topic: [PATCH v2 3/3] leds: lm355x, lm3642: support camera LED
- triggers for flash and torch
-Thread-Index: Ac4gpy820UiaPl1/Tb6L/JGFDLzrEg==
-Date: Thu, 14 Mar 2013 11:29:26 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E48913@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.62]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 14 Mar 2013 07:31:03 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3] mm/hugetlb: fix total hugetlbfs pages count when memory overcommit accouting
+Date: Thu, 14 Mar 2013 19:30:46 +0800
+Message-Id: <1363260646-26896-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031411-8256-0000-0000-0000069D3100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LM355x and LM3642 support flash and torch functionality.
+Changelog:
+ v2 -> v3:
+  * update patch description, spotted by Michal
+ v1 -> v2:
+  * update patch description, spotted by Michal
 
- (Camera driver)          (LED trigger for camera)       (LED driver)
- Turn on the flash  ...>  ledtrig_flash_ctrl(true) ...>  LM355x or LM3642
-                                                         brightness ctrl
-                                                       <actual driving here>
+"hugetlb_total_pages is used for overcommit calculations but the
+current implementation considers only default hugetlb page size (which
+is either the first defined hugepage size or the one specified by
+default_hugepagesz kernel boot parameter).
 
-Flash/torch LEDs are controlled by other driver using LED camera trigger
-APIs, ledtrig_flash_ctrl()/ledtrig_torch_ctrl().
-Then, actual device control is activated by each LED driver such like
-LM355x or LM3642.
+If the system is configured for more than one hugepage size (which is
+possible since a137e1cc hugetlbfs: per mount huge page sizes) then
+the overcommit estimation done by __vm_enough_memory (resp. shown by
+meminfo_proc_show) is not precise - there is an impression of more
+available/allowed memory. This can lead to an unexpected ENOMEM/EFAULT
+resp. SIGSEGV when memory is accounted."
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+The patch should also push to 2.6.27 stable tree.
+
+Testcase:
+boot: hugepagesz=1G hugepages=1
+the default overcommit ratio is 50
+before patch:
+egrep 'CommitLimit' /proc/meminfo
+CommitLimit:     55434168 kB
+after patch:
+egrep 'CommitLimit' /proc/meminfo
+CommitLimit:     54909880 kB
+
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/leds/leds-lm355x.c |    2 ++
- drivers/leds/leds-lm3642.c |    2 ++
- 2 files changed, 4 insertions(+)
+ mm/hugetlb.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/leds/leds-lm355x.c b/drivers/leds/leds-lm355x.c
-index 4117235..d81a8e7 100644
---- a/drivers/leds/leds-lm355x.c
-+++ b/drivers/leds/leds-lm355x.c
-@@ -477,6 +477,7 @@ static int lm355x_probe(struct i2c_client *client,
- 	chip->cdev_flash.name = "flash";
- 	chip->cdev_flash.max_brightness = 16;
- 	chip->cdev_flash.brightness_set = lm355x_strobe_brightness_set;
-+	chip->cdev_flash.default_trigger = "flash";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_flash);
- 	if (err < 0)
-@@ -486,6 +487,7 @@ static int lm355x_probe(struct i2c_client *client,
- 	chip->cdev_torch.name = "torch";
- 	chip->cdev_torch.max_brightness = 8;
- 	chip->cdev_torch.brightness_set = lm355x_torch_brightness_set;
-+	chip->cdev_torch.default_trigger = "torch";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_torch);
- 	if (err < 0)
-diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
-index 9f428d9..f361bbe 100644
---- a/drivers/leds/leds-lm3642.c
-+++ b/drivers/leds/leds-lm3642.c
-@@ -363,6 +363,7 @@ static int lm3642_probe(struct i2c_client *client,
- 	chip->cdev_flash.name = "flash";
- 	chip->cdev_flash.max_brightness = 16;
- 	chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
-+	chip->cdev_flash.default_trigger = "flash";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_flash);
- 	if (err < 0) {
-@@ -380,6 +381,7 @@ static int lm3642_probe(struct i2c_client *client,
- 	chip->cdev_torch.name = "torch";
- 	chip->cdev_torch.max_brightness = 8;
- 	chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
-+	chip->cdev_torch.default_trigger = "torch";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_torch);
- 	if (err < 0) {
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index cdb64e4..9e25040 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2124,8 +2124,11 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
+ }
+ 
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 -- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
+1.7.11.7
 
