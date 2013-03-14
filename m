@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab3CNMKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:10:17 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:39679 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3CNMKP (ORCPT
+	id S932487Ab3CNMNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:13:09 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34976 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3CNMNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:10:15 -0400
+	Thu, 14 Mar 2013 08:13:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130314105155.GG32369@arwen.pp.htv.fi>
-References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
-	<1363257898-17504-2-git-send-email-gautam.vivek@samsung.com>
-	<20130314105155.GG32369@arwen.pp.htv.fi>
-Date: Thu, 14 Mar 2013 17:40:12 +0530
-Message-ID: <CAFp+6iHZRfiSAXnbwhFNs4Rm7fzFx=v83pcWFJHsOo+JPya6VQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] usb: dwc3: exynos: Use of_platform API to create dwc3
- core pdev
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        gregkh@linuxfoundation.org, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        dianders@chromium.org, Kishon Vijay Abraham I <kishon@ti.com>
+In-Reply-To: <1363261359.25976.224.camel@thor.lan>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+	<1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+	<CANN689HvZK3gHyxRBPZyXwz2cJfheiEoQMA23oRARMCp=7GUCQ@mail.gmail.com>
+	<1363106846.27803.174.camel@thor.lan>
+	<CANN689HX1VAURYZL4=ixOSwim2LdYDgZyORtfUffrc4JCqK4xQ@mail.gmail.com>
+	<1363223574.25976.135.camel@thor.lan>
+	<CANN689Fe7K-+Mf1is9GaS0bjDuYaTd8AtBMjLvAVAkNy+QLmuw@mail.gmail.com>
+	<1363261359.25976.224.camel@thor.lan>
+Date: Thu, 14 Mar 2013 05:13:05 -0700
+Message-ID: <CANN689F_+TuMKhFQHLQko9Yr7H_Z-AscKzvaPjbnTa6STDNRNA@mail.gmail.com>
+Subject: Re: [PATCH v5 00/44] ldisc patchset
+From: Michel Lespinasse <walken@google.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 4:21 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
+On Thu, Mar 14, 2013 at 4:42 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On Thu, 2013-03-14 at 00:25 -0700, Michel Lespinasse wrote:
+>> Its not too late to run away from it and preserve your sanity (as well
+>> as that of the next person working on the tty layer :)
 >
-> On Thu, Mar 14, 2013 at 04:14:57PM +0530, Vivek Gautam wrote:
->> @@ -170,7 +155,6 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
->>  {
->>       struct dwc3_exynos      *exynos = platform_get_drvdata(pdev);
->>
->> -     platform_device_unregister(exynos->dwc3);
->
-> don't you want to do what Kishon did here and have:
->
-> static int dwc3_exynos_remove_child(struct device *dev, void *unused)
-> {
->         struct platform_device  *pdev = to_platform_device(dev);
->
->         platform_device_unregister(pdev);
->
->         return 0;
-> }
->
-> device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
->
-> ???
+> The long-term plan is to migrate it to lib so it won't be a maintenance
+> burden to tty.
 
-Hmm, right. We need to do that. :-)
-
->
-> --
-> balbi
-
-
+That only moves the problem though, and makes sense only if we know of
+another place where an unfair rwsem is desired...
 
 -- 
-Thanks & Regards
-Vivek
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
