@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab3CNIoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 04:44:20 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:35852 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3CNIoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 04:44:18 -0400
-Message-ID: <51418DDC.8030901@atmel.com>
-Date: Thu, 14 Mar 2013 09:44:12 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1752477Ab3CNIvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 04:51:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751706Ab3CNIvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 04:51:41 -0400
+Date: Thu, 14 Mar 2013 09:51:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
+        wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: no zeroing of hugetlbfs pages at boot
+Message-ID: <20130314085138.GA11636@dhcp22.suse.cz>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [GIT PULL] at91: fixes for 3.9-rc #1
-References: <51404ABF.7080405@atmel.com>
-In-Reply-To: <51404ABF.7080405@atmel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Updated to include Linus' acknowledgement on pinctrl-related patch)
+On Wed 06-03-13 15:50:20, Cliff Wickman wrote:
+[...]
+> I propose passing a flag to the early allocator to indicate that no zeroing
+> of a page should be done.  The 'no zeroing' flag would have to be passed
+> down this code path:
+> 
+>   hugetlb_hstate_alloc_pages
+>     alloc_bootmem_huge_page
+>       __alloc_bootmem_node_nopanic NO_ZERO  (nobootmem.c)
+>         __alloc_memory_core_early  NO_ZERO
+> 	  if (!(flags & NO_ZERO))
+>             memset(ptr, 0, size);
+> 
+> Or this path if CONFIG_NO_BOOTMEM is not set:
+> 
+>   hugetlb_hstate_alloc_pages
+>     alloc_bootmem_huge_page
+>       __alloc_bootmem_node_nopanic  NO_ZERO  (bootmem.c)
+>         alloc_bootmem_core          NO_ZERO
+> 	  if (!(flags & NO_ZERO))
+>             memset(region, 0, size);
+>         __alloc_bootmem_nopanic     NO_ZERO
+>           ___alloc_bootmem_nopanic  NO_ZERO
+>             alloc_bootmem_core      NO_ZERO
+> 	      if (!(flags & NO_ZERO))
+>                 memset(region, 0, size);
 
-Arnd, Olof,
+Yes, the patch makes sense. I just think it make unnecessary churn.
+Can we just add __alloc_bootmem_node_nopanic_nozero and hide the flag
+downwards the call chain so that we do not have to touch all
+__alloc_bootmem_node_nopanic callers?
 
-Here is a little pull-request for 3.9-rc (I guess it if -rc4 now that
-you've just sent the one for -rc3).
+Thanks
 
-I have other material but it is related to the AT91 framebuffer and we are
-currently discussing it so I hold them back for now.
-
-Thanks, best regards,
-
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 0ed66befaae893e82c9f016238282d73ef9fd6c7:
-
-  ARM: at91: fix infinite loop in at91_irq_suspend/resume (2013-03-14 09:37:55 +0100)
-
-----------------------------------------------------------------
-Two patches for Device Tree on at91sam9x5/NAND.
-Two more for fixing PM suspend/resume IRQ on AIC5 and
-GPIO used with pinctrl.
-
-----------------------------------------------------------------
-Ludovic Desroches (2):
-      ARM: at91: add gpio suspend/resume support when using pinctrl
-      ARM: at91: fix infinite loop in at91_irq_suspend/resume
-
-Richard Genoud (2):
-      ARM: at91: dt: at91sam9x5: correct NAND pins comments
-      ARM: at91: dt: at91sam9x5: complete NAND pinctrl
-
- arch/arm/boot/dts/at91sam9x5.dtsi      | 28 ++++++++++++++--
- arch/arm/mach-at91/include/mach/gpio.h |  8 +++++
- arch/arm/mach-at91/irq.c               | 20 +++++-------
- arch/arm/mach-at91/pm.c                | 10 ++++--
- drivers/pinctrl/pinctrl-at91.c         | 61 ++++++++++++++++++++++++++++++++++-
- 5 files changed, 110 insertions(+), 17 deletions(-)
-
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> 
+> ---
+>  arch/x86/kernel/setup_percpu.c |    4 ++--
+>  include/linux/bootmem.h        |   23 ++++++++++++++++-------
+>  mm/bootmem.c                   |   12 +++++++-----
+>  mm/hugetlb.c                   |    3 ++-
+>  mm/nobootmem.c                 |   41 +++++++++++++++++++++++------------------
+>  mm/page_cgroup.c               |    2 +-
+>  mm/sparse.c                    |    2 +-
+>  7 files changed, 52 insertions(+), 35 deletions(-)
+> 
+[...]
 -- 
-Nicolas Ferre
+Michal Hocko
+SUSE Labs
