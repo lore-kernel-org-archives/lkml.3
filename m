@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab3CNKiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:38:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52066 "EHLO
+	id S1757461Ab3CNKif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:38:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52128 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757156Ab3CNKiL (ORCPT
+	with ESMTP id S1757216Ab3CNKi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:11 -0400
+	Thu, 14 Mar 2013 06:38:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 74/88] ftrace: Update the kconfig for DYNAMIC_FTRACE
-Date: Thu, 14 Mar 2013 10:36:07 +0000
-Message-Id: <1363257381-15900-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 87/88] USB: Rip out recursive call on warm port reset.
+Date: Thu, 14 Mar 2013 10:36:20 +0000
+Message-Id: <1363257381-15900-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +27,282 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit db05021d49a994ee40a9735d9c3cb0060c9babb8 upstream.
+commit a24a6078754f28528bc91e7e7b3e6ae86bd936d8 upstream.
 
-The prompt to enable DYNAMIC_FTRACE (the ability to nop and
-enable function tracing at run time) had a confusing statement:
+[This is upstream commit 24a6078754f28528bc91e7e7b3e6ae86bd936d8.
+It needs to be backported to kernels as old as 3.2, because it fixes the
+buggy commit 9dbcaec830cd97f44a0b91b315844e0d7144746b "USB: Handle warm
+reset failure on empty port."]
 
- "enable/disable ftrace tracepoints dynamically"
+When a hot reset fails on a USB 3.0 port, the current port reset code
+recursively calls hub_port_reset inside hub_port_wait_reset.  This isn't
+ideal, since we should avoid recursive calls in the kernel, and it also
+doesn't allow us to issue multiple warm resets on reset failures.
 
-This was written before tracepoints were added to the kernel,
-but now that tracepoints have been added, this is very confusing
-and has confused people enough to give wrong information during
-presentations.
+Rip out the recursive call.  Instead, add code to hub_port_reset to
+issue a warm reset if the hot reset fails, and try multiple warm resets
+before giving up on the port.
 
-Not only that, I looked at the help text, and it still references
-that dreaded daemon that use to wake up once a second to update
-the nop locations and brick NICs, that hasn't been around for over
-five years.
+In hub_port_wait_reset, remove the recursive call and re-indent.  The
+code is basically the same, except:
 
-Time to bring the text up to the current decade.
+1. It bails out early if the port has transitioned to Inactive or
+Compliance Mode after the reset completed.
 
-Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ rostedt: adjust context for stable ]
+2. It doesn't consider a connect status change to be a failed reset.  If
+multiple warm resets needed to be issued, the connect status may have
+changed, so we need to ignore that and look at the port link state
+instead.  hub_port_reset will now do that.
+
+3. It unconditionally sets udev->speed on all types of successful
+resets.  The old recursive code would set the port speed when the second
+hub_port_reset returned.
+
+The old code did not handle connected devices needing a warm reset well.
+There were only two situations that the old code handled correctly: an
+empty port needing a warm reset, and a hot reset that migrated to a warm
+reset.
+
+When an empty port needed a warm reset, hub_port_reset was called with
+the warm variable set.  The code in hub_port_finish_reset would skip
+telling the USB core and the xHC host that the device was reset, because
+otherwise that would result in a NULL pointer dereference.
+
+When a USB 3.0 device reset migrated to a warm reset, the recursive call
+made the call stack look like this:
+
+hub_port_reset(warm = false)
+        hub_wait_port_reset(warm = false)
+                hub_port_reset(warm = true)
+                        hub_wait_port_reset(warm = true)
+                        hub_port_finish_reset(warm = true)
+                        (return up the call stack to the first wait)
+
+        hub_port_finish_reset(warm = false)
+
+The old code didn't want to notify the USB core or the xHC host of device reset
+twice, so it only did it in the second call to hub_port_finish_reset,
+when warm was set to false.  This was necessary because
+before patch two ("USB: Ignore xHCI Reset Device status."), the USB core
+would pay attention to the xHC Reset Device command error status, and
+the second call would always fail.
+
+Now that we no longer have the recursive call, and warm can change from
+false to true in hub_port_reset, we need to have hub_port_finish_reset
+unconditionally notify the USB core and the xHC of the device reset.
+
+In hub_port_finish_reset, unconditionally clear the connect status
+change (CSC) bit for USB 3.0 hubs when the port reset is done.  If we
+had to issue multiple warm resets for a device, that bit may have been
+set if the device went into SS.Inactive and then was successfully warm
+reset.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/Kconfig | 24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/usb/core/hub.c | 150 ++++++++++++++++++++++---------------------------
+ 1 file changed, 68 insertions(+), 82 deletions(-)
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8c4c070..e222233 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -405,24 +405,28 @@ config PROBE_EVENTS
- 	def_bool n
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 15b6be0..fc9788f 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2429,73 +2429,35 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
+ 		if ((portstatus & USB_PORT_STAT_RESET))
+ 			goto delay;
  
- config DYNAMIC_FTRACE
--	bool "enable/disable ftrace tracepoints dynamically"
-+	bool "enable/disable function tracing dynamically"
- 	depends on FUNCTION_TRACER
- 	depends on HAVE_DYNAMIC_FTRACE
- 	default y
- 	help
--          This option will modify all the calls to ftrace dynamically
--	  (will patch them out of the binary image and replace them
--	  with a No-Op instruction) as they are called. A table is
--	  created to dynamically enable them again.
-+	  This option will modify all the calls to function tracing
-+	  dynamically (will patch them out of the binary image and
-+	  replace them with a No-Op instruction) on boot up. During
-+	  compile time, a table is made of all the locations that ftrace
-+	  can function trace, and this table is linked into the kernel
-+	  image. When this is enabled, functions can be individually
-+	  enabled, and the functions not enabled will not affect
-+	  performance of the system.
+-		/*
+-		 * Some buggy devices require a warm reset to be issued even
+-		 * when the port appears not to be connected.
++		if (hub_port_warm_reset_required(hub, portstatus))
++			return -ENOTCONN;
 +
-+	  See the files in /sys/kernel/debug/tracing:
-+	    available_filter_functions
-+	    set_ftrace_filter
-+	    set_ftrace_notrace
- 
- 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
- 	  otherwise has native performance as long as no tracing is active.
- 
--	  The changes to the code are done by a kernel thread that
--	  wakes up once a second and checks to see if any ftrace calls
--	  were made. If so, it runs stop_machine (stops all CPUS)
--	  and modifies the code to jump over the call to ftrace.
++		/* Device went away? */
++		if (!(portstatus & USB_PORT_STAT_CONNECTION))
++			return -ENOTCONN;
++
++		/* bomb out completely if the connection bounced.  A USB 3.0
++		 * connection may bounce if multiple warm resets were issued,
++		 * but the device may have successfully re-connected. Ignore it.
+ 		 */
+-		if (!warm) {
+-			/*
+-			 * Some buggy devices can cause an NEC host controller
+-			 * to transition to the "Error" state after a hot port
+-			 * reset.  This will show up as the port state in
+-			 * "Inactive", and the port may also report a
+-			 * disconnect.  Forcing a warm port reset seems to make
+-			 * the device work.
+-			 *
+-			 * See https://bugzilla.kernel.org/show_bug.cgi?id=41752
+-			 */
+-			if (hub_port_warm_reset_required(hub, portstatus)) {
+-				int ret;
 -
- config FUNCTION_PROFILER
- 	bool "Kernel function profiler"
- 	depends on FUNCTION_TRACER
+-				if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_CONNECTION);
+-				if (portchange & USB_PORT_STAT_C_LINK_STATE)
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_PORT_LINK_STATE);
+-				if (portchange & USB_PORT_STAT_C_RESET)
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_RESET);
+-				dev_dbg(hub->intfdev, "hot reset failed, warm reset port %d\n",
+-						port1);
+-				ret = hub_port_reset(hub, port1,
+-						udev, HUB_BH_RESET_TIME,
+-						true);
+-				if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_CONNECTION);
+-				return ret;
+-			}
+-			/* Device went away? */
+-			if (!(portstatus & USB_PORT_STAT_CONNECTION))
+-				return -ENOTCONN;
+-
+-			/* bomb out completely if the connection bounced */
+-			if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-				return -ENOTCONN;
+-
+-			if ((portstatus & USB_PORT_STAT_ENABLE)) {
+-				if (!udev)
+-					return 0;
+-
+-				if (hub_is_wusb(hub))
+-					udev->speed = USB_SPEED_WIRELESS;
+-				else if (hub_is_superspeed(hub->hdev))
+-					udev->speed = USB_SPEED_SUPER;
+-				else if (portstatus & USB_PORT_STAT_HIGH_SPEED)
+-					udev->speed = USB_SPEED_HIGH;
+-				else if (portstatus & USB_PORT_STAT_LOW_SPEED)
+-					udev->speed = USB_SPEED_LOW;
+-				else
+-					udev->speed = USB_SPEED_FULL;
++		if (!hub_is_superspeed(hub->hdev) &&
++				(portchange & USB_PORT_STAT_C_CONNECTION))
++			return -ENOTCONN;
++
++		if ((portstatus & USB_PORT_STAT_ENABLE)) {
++			if (!udev)
+ 				return 0;
+-			}
+-		} else {
+-			if (!(portstatus & USB_PORT_STAT_CONNECTION) ||
+-					hub_port_warm_reset_required(hub,
+-						portstatus))
+-				return -ENOTCONN;
+ 
++			if (hub_is_wusb(hub))
++				udev->speed = USB_SPEED_WIRELESS;
++			else if (hub_is_superspeed(hub->hdev))
++				udev->speed = USB_SPEED_SUPER;
++			else if (portstatus & USB_PORT_STAT_HIGH_SPEED)
++				udev->speed = USB_SPEED_HIGH;
++			else if (portstatus & USB_PORT_STAT_LOW_SPEED)
++				udev->speed = USB_SPEED_LOW;
++			else
++				udev->speed = USB_SPEED_FULL;
+ 			return 0;
+ 		}
+ 
+@@ -2513,23 +2475,21 @@ delay:
+ }
+ 
+ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+-			struct usb_device *udev, int *status, bool warm)
++			struct usb_device *udev, int *status)
+ {
+ 	switch (*status) {
+ 	case 0:
+-		if (!warm) {
+-			struct usb_hcd *hcd;
+-			/* TRSTRCY = 10 ms; plus some extra */
+-			msleep(10 + 40);
+-			if (udev) {
+-				update_devnum(udev, 0);
+-				hcd = bus_to_hcd(udev->bus);
+-				/* The xHC may think the device is already
+-				 * reset, so ignore the status.
+-				 */
+-				if (hcd->driver->reset_device)
+-					hcd->driver->reset_device(hcd, udev);
+-			}
++		/* TRSTRCY = 10 ms; plus some extra */
++		msleep(10 + 40);
++		if (udev) {
++			struct usb_hcd *hcd = bus_to_hcd(udev->bus);
++
++			update_devnum(udev, 0);
++			/* The xHC may think the device is already reset,
++			 * so ignore the status.
++			 */
++			if (hcd->driver->reset_device)
++				hcd->driver->reset_device(hcd, udev);
+ 		}
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
+@@ -2542,8 +2502,10 @@ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+ 					USB_PORT_FEAT_C_BH_PORT_RESET);
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
++			clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_CONNECTION);
+ 		}
+-		if (!warm && udev)
++		if (udev)
+ 			usb_set_device_state(udev, *status
+ 					? USB_STATE_NOTATTACHED
+ 					: USB_STATE_DEFAULT);
+@@ -2556,6 +2518,7 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
+ 			struct usb_device *udev, unsigned int delay, bool warm)
+ {
+ 	int i, status;
++	u16 portchange, portstatus;
+ 
+ 	if (!hub_is_superspeed(hub->hdev)) {
+ 		if (warm) {
+@@ -2587,10 +2550,33 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
+ 						status);
+ 		}
+ 
+-		/* return on disconnect or reset */
++		/* Check for disconnect or reset */
+ 		if (status == 0 || status == -ENOTCONN || status == -ENODEV) {
+-			hub_port_finish_reset(hub, port1, udev, &status, warm);
+-			goto done;
++			hub_port_finish_reset(hub, port1, udev, &status);
++
++			if (!hub_is_superspeed(hub->hdev))
++				goto done;
++
++			/*
++			 * If a USB 3.0 device migrates from reset to an error
++			 * state, re-issue the warm reset.
++			 */
++			if (hub_port_status(hub, port1,
++					&portstatus, &portchange) < 0)
++				goto done;
++
++			if (!hub_port_warm_reset_required(hub, portstatus))
++				goto done;
++
++			/*
++			 * If the port is in SS.Inactive or Compliance Mode, the
++			 * hot or warm reset failed.  Try another warm reset.
++			 */
++			if (!warm) {
++				dev_dbg(hub->intfdev, "hot reset failed, warm reset port %d\n",
++						port1);
++				warm = true;
++			}
+ 		}
+ 
+ 		dev_dbg (hub->intfdev,
 -- 
 1.8.1.2
 
