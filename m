@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3CNKyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:54:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52896 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757111Ab3CNKhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757110Ab3CNKhd (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Mar 2013 06:37:33 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
-Date: Thu, 14 Mar 2013 16:07:32 +0530
-Message-ID: <1363257453-24747-3-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363257453-24747-1-git-send-email-avinashphilip@ti.com>
-References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+Received: from youngberry.canonical.com ([91.189.89.112]:51885 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab3CNKh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:37:29 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 38/88] asus-laptop: Do not call HWRS on init
+Date: Thu, 14 Mar 2013 10:35:31 +0000
+Message-Id: <1363257381-15900-39-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
-TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
-DT node status is set to "okay" DT blob.
-Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
-DA8XX_CFGCHIP1_REG.
+3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+------------------
+
+From: Ben Hutchings <ben@decadent.org.uk>
+
+commit cb7da022450cdaaebd33078b6b32fb7dd2aaf6db upstream.
+
+Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
+initialisation is very slow on the Asus UL30A.  The HWRS method takes
+about 12 seconds to run, and subsequent initialisation also seems to
+be delayed.  Since we don't really need the result, don't bother
+calling it on init.  Those who are curious can still get the result
+through the 'infos' device attribute.
+
+Update the comment about HWRS in show_infos().
+
+Reported-by: ryan <draziw+deb@gmail.com>
+References: http://bugs.debian.org/692436
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
-:100644 100644 6b7a0a2... 72466ab... M	arch/arm/mach-davinci/da8xx-dt.c
-:100644 100644 de439b7... be77ce2... M	arch/arm/mach-davinci/include/mach/da8xx.h
- arch/arm/mach-davinci/da8xx-dt.c           |   15 +++++++++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
- 2 files changed, 16 insertions(+)
+ drivers/platform/x86/asus-laptop.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index 6b7a0a2..72466ab 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -19,6 +19,7 @@
- #include <mach/da8xx.h>
- 
- #define DA8XX_NUM_UARTS	3
-+#define DA8XX_EHRPWM_TBCLKSYNC	BIT(12)
- 
- void __init da8xx_uart_clk_enable(void)
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 110c777..12da810 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -860,8 +860,10 @@ static ssize_t show_infos(struct device *dev,
+ 	/*
+ 	 * The HWRS method return informations about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
++	 * 0x40 for WWAN, 0x10 for WIMAX.
+ 	 * The significance of others is yet to be found.
+-	 * If we don't find the method, we assume the device are present.
++	 * We don't currently use this for device detection, and it
++	 * takes several seconds to run on some systems.
+ 	 */
+ 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+@@ -1682,7 +1684,7 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
  {
-@@ -47,10 +48,24 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *model = NULL;
+-	unsigned long long bsts_result, hwrs_result;
++	unsigned long long bsts_result;
+ 	char *string = NULL;
+ 	acpi_status status;
  
- static void __init da850_init_machine(void)
- {
-+	struct device_node *ehrpwm_np;
-+	const char *ehrpwm_compat = "ti,da850-ehrpwm";
-+	void __iomem *cfg_chip1_base;
-+
-+	cfg_chip1_base = DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP1_REG);
-+
- 	of_platform_populate(NULL, of_default_bus_match_table,
- 			     da850_auxdata_lookup, NULL);
+@@ -1744,17 +1746,6 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
+ 	if (*string)
+ 		pr_notice("  %s model detected\n", string);
  
- 	da8xx_uart_clk_enable();
-+
-+	for_each_compatible_node(ehrpwm_np, NULL, ehrpwm_compat)
-+		if (of_device_is_available(ehrpwm_np)) {
-+			/* Enable TBCLK synchronization for EHRWPM modules */
-+			writel(readl(cfg_chip1_base) | DA8XX_EHRPWM_TBCLKSYNC,
-+					cfg_chip1_base);
-+			break;
-+		}
- }
- 
- static const char *da850_boards_compat[] __initdata = {
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index de439b7..be77ce2 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -55,6 +55,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_SYSCFG0_VIRT(x)	(da8xx_syscfg0_base + (x))
- #define DA8XX_JTAG_ID_REG	0x18
- #define DA8XX_CFGCHIP0_REG	0x17c
-+#define DA8XX_CFGCHIP1_REG	0x180
- #define DA8XX_CFGCHIP2_REG	0x184
- #define DA8XX_CFGCHIP3_REG	0x188
+-	/*
+-	 * The HWRS method return informations about the hardware.
+-	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
+-	 * 0x40 for WWAN, 0x10 for WIMAX.
+-	 * The significance of others is yet to be found.
+-	 */
+-	status =
+-	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+-	if (!ACPI_FAILURE(status))
+-		pr_notice("  HWRS returned %x", (int)hwrs_result);
+-
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
  
 -- 
-1.7.9.5
+1.8.1.2
 
