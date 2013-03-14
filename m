@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934678Ab3CNRuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:50:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52041 "EHLO mga02.intel.com"
+	id S934663Ab3CNRuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:50:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52055 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934611Ab3CNRtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934613Ab3CNRtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 13:49:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="279559804"
+   d="scan'208";a="279559805"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 21/30] x86-64, mm: proper alignment mappings with hugepages
-Date: Thu, 14 Mar 2013 19:50:26 +0200
-Message-Id: <1363283435-7666-22-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 24/30] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
+Date: Thu, 14 Mar 2013 19:50:29 +0200
+Message-Id: <1363283435-7666-25-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,52 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Make arch_get_unmapped_area() return unmapped area aligned to HPAGE_MASK
-if the file mapping can have huge pages.
+It's confusing that mk_huge_pmd() has sematics different from mk_pte()
+or mk_pmd().
+
+Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
+prototype to match mk_pte().
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/kernel/sys_x86_64.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index dbded5a..4e20cd5 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -15,6 +15,7 @@
- #include <linux/random.h>
- #include <linux/uaccess.h>
- #include <linux/elf.h>
-+#include <linux/pagemap.h>
- 
- #include <asm/ia32.h>
- #include <asm/syscalls.h>
-@@ -135,7 +136,11 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	info.length = len;
- 	info.low_limit = begin;
- 	info.high_limit = end;
--	info.align_mask = filp ? get_align_mask() : 0;
-+	if (filp)
-+		info.align_mask = mapping_can_have_hugepages(filp->f_mapping) ?
-+			PAGE_MASK & ~HPAGE_MASK : get_align_mask();
-+	else
-+		info.align_mask = 0;
- 	info.align_offset = pgoff << PAGE_SHIFT;
- 	return vm_unmapped_area(&info);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 34e0385..be7b7e1 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -691,11 +691,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 	return pmd;
  }
-@@ -174,7 +179,11 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	info.length = len;
- 	info.low_limit = PAGE_SIZE;
- 	info.high_limit = mm->mmap_base;
--	info.align_mask = filp ? get_align_mask() : 0;
-+	if (filp)
-+		info.align_mask = mapping_can_have_hugepages(filp->f_mapping) ?
-+			PAGE_MASK & ~HPAGE_MASK : get_align_mask();
-+	else
-+		info.align_mask = 0;
- 	info.align_offset = pgoff << PAGE_SHIFT;
- 	addr = vm_unmapped_area(&info);
- 	if (!(addr & ~PAGE_MASK))
+ 
+-static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
++static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
+ {
+ 	pmd_t entry;
+-	entry = mk_pmd(page, vma->vm_page_prot);
+-	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
++	entry = mk_pmd(page, prot);
+ 	entry = pmd_mkhuge(entry);
+ 	return entry;
+ }
+@@ -723,7 +722,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pte_free(mm, pgtable);
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(page, vma);
++		entry = mk_huge_pmd(page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		/*
+ 		 * The spinlocking to take the lru_lock inside
+ 		 * page_add_new_anon_rmap() acts as a full memory
+@@ -1212,7 +1212,8 @@ alloc:
+ 		goto out_mn;
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(new_page, vma);
++		entry = mk_huge_pmd(new_page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		pmdp_clear_flush(vma, haddr, pmd);
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -2382,7 +2383,8 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	__SetPageUptodate(new_page);
+ 	pgtable = pmd_pgtable(_pmd);
+ 
+-	_pmd = mk_huge_pmd(new_page, vma);
++	_pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
++	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
+ 
+ 	/*
+ 	 * spin_lock() below is not the equivalent of smp_wmb(), so
 -- 
 1.7.10.4
 
