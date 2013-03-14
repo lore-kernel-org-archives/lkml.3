@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3CNIOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 04:14:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42659 "EHLO
+	id S1752766Ab3CNIPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 04:15:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:42742 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3CNIOm (ORCPT
+	with ESMTP id S1751694Ab3CNIPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 04:14:42 -0400
-X-AuditID: cbfee68d-b7f786d000005188-8a-514186f1a1e6
+	Thu, 14 Mar 2013 04:15:03 -0400
+X-AuditID: cbfee68d-b7f786d000005188-df-51418706febc
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <008401ce208b$5c9dc6f0$15d954d0$%han@samsung.com>
 In-reply-to: <008401ce208b$5c9dc6f0$15d954d0$%han@samsung.com>
-Subject: [PATCH 10/30] rtc: rtc-generic: use devm_rtc_device_register()
-Date: Thu, 14 Mar 2013 17:14:40 +0900
-Message-id: <008d01ce208b$fa30fae0$ee92f0a0$%han@samsung.com>
+Subject: [PATCH 11/30] rtc: hid-sensor-time: use devm_rtc_device_register()
+Date: Thu, 14 Mar 2013 17:15:02 +0900
+Message-id: <008e01ce208c$06e1ba90$14a52fb0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4gi1x0RMHvEnZmRRqxNJmQP3DTwgAAJCjg
+Thread-index: Ac4gi1x0RMHvEnZmRRqxNJmQP3DTwgAAJ5Rw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zI92PbY6BBkuvCVhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MyUs3shXM4KhY03SavYHxCVsXIyeHhICJxKoNp5ggbDGJC/fW
-	g8WFBJYxSlw+4gxTs3frJHaI+CJGiZbtlV2MXED2bCaJoxfPMIMk2ATUJL58OQxUxMEhIqAv
-	0daiAVLDLNDLKHGmdzdYXEjAVuL6fzsQk1PATmLDejGQTmEBd4m1Zx6AncAioCrxeepesFW8
-	QNXvt39gg7AFJX5MvscCYjMLaEms33mcCcKWl9i85i0zyEgJAXWJR391QcIiAkYSj75BfMgs
-	ICKx78U7RohPlrFLnL/jALFKQOLb5EMsEK2yEpsOMEOUSEocXHGDZQKjxCwki2chWTwLyeJZ
-	SDYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRESUb07GG8fsD7EmAy0fiKzlGhyPjAi
-	80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAmM21
-	9YkVh4nge/W5P+bLHZJS/yPdbqR+afKVYKvMgs1zRNqyNa+ErNz301bqDN83lYrjR+2t5i7l
-	PzF5xzaDS5FsRls+hXxl25DmxBkRrTq/U3mJ9vqOF7NeN5yKZ7dboeU5ff9azo+XTn4NvvYu
-	3HnJpZQSuZ2bjryScpTLOt903qQz/s+kdiWW4oxEQy3mouJEAK/TvWq+AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgO7HNsdAg8nTuCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxuSlG9kKZnBUrGk6zd7A
-	+ISti5GTQ0LARGLv1knsELaYxIV768HiQgKLGCVatld2MXIB2bOZJI5ePMMMkmATUJP48uUw
-	UAMHh4iAvkRbiwZIDbNAL6PEmd7dYHEhAVuJ6//tQExOATuJDevFQDqFBdwl1p55wARiswio
-	SnyeuhdsLS9Q9fvtH9ggbEGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywwyUkJAXeLRX12QsIiA
-	kcSjbxCfMAuISOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
-	10vOz93ECI7ZZ9I7GFc1WBxiFOBgVOLhjRB1DBRiTSwrrsw9xCjBwawkwuvpBRTiTUmsrEot
-	yo8vKs1JLT7EmAz06ERmKdHkfGA6ySuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2
-	ampBahHMFiYOTqkGxvRWJXEP5qsFM9N4vRfdnes/+W+6cvj+jexSZxyWCOyb/sdmlvfWLyzH
-	95QrhJpzrAlrWrbu1Blhw4O25383ftDp3/rV3lBiZ7WEckfmRFb7hGkL97xVlDxbfXy5cXSy
-	10n9swzhig4aN1JeZX/aGLLtza+Hv17dffmrYvem66cevFN5sPe7hpwSS3FGoqEWc1FxIgBt
-	KkOnHQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI122dsdAg5XrVSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGjGlfWQuauCqaLt5ha2A8xNHFyMkhIWAi0fJrAyuELSZx4d56
+	ti5GLg4hgWWMEqu+nWOFKVrQuhkqsYhR4uGeA2AJIYHZTBIvNuqD2GwCahJfvhxm72Lk4BAR
+	0Jdoa9EAqWcW6GWUONO7GywuJGArcf2/HYjJKWAnsWG9GEinsIC3xPw3q8AmsgioSmzfcY4R
+	xOYFqj757AkbhC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5lBRkoIqEs8+qsLEhYRMJJYu+ox
+	G0SJiMS+F+8YQa6REFjGLjHx4nU2iF0CEt8mH2KB6JWV2HSAGeJbSYmDK26wTGCUmIVk8ywk
+	m2ch2TwLyYoFjCyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MUKiqncH4+0D1ocYk4HWT2SW
+	Ek3OB0ZlXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
+	pRoYhWadC2pd6Zi9f6FdzeXH3SdvG2YGsfbUmqls2rmjUFKQbZlwwxnJ32Gv7i8KaZzWoBoQ
+	+2fjHeP5f2YocuQGN3/k0apj7UjlOpvHHCiz3+/t1pqdDO3hiWcPPpXd6hm6SDiSb4r8nh2c
+	pdYnC841TGNJrxUWFZ46Yc+0x4dVf9oImB5nTONRYinOSDTUYi4qTgQAd1Rj38ACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgC5bu2OgwabbshaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY8a0r6wFTVwVTRfvsDUw
+	HuLoYuTkkBAwkVjQupkNwhaTuHBvPZDNxSEksIhR4uGeA6wgCSGB2UwSLzbqg9hsAmoSX74c
+	Zu9i5OAQEdCXaGvRAKlnFuhllDjTuxssLiRgK3H9vx2IySlgJ7FhvRhIp7CAt8T8N6vAJrII
+	qEps33GOEcTmBao++ewJG4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW+ZQUZKCKhLPPqrCxIW
+	ETCSWLvqMRtEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLS
+	vHS95PzcTYzgmH0mvYNxVYPFIUYBDkYlHt4IUcdAIdbEsuLK3EOMEhzMSiK8nl5AId6UxMqq
+	1KL8+KLSnNTiQ4zJQI9OZJYSTc4HppO8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5ak
+	ZqemFqQWwWxh4uCUamDk65x9W+5FQ8Smlq2tegKM86axRyixljNKfrwxcYoFZ9WjLcuCDwvs
+	fPaVf5/Zi3Oz5syq31N5+P0xF/FEzuubdvMG1dyotsluD56/saM0bKY6x5eN25dPOX3dyP3W
+	6/nfrr//pPjF+k0/1wNhzcR7pydYfn8q9YV1xj+2Lwv8F5ezmswo2HS5UomlOCPRUIu5qDgR
+	ADp8xpodAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,35 +59,35 @@ paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-generic.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-hid-sensor-time.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-generic.c b/drivers/rtc/rtc-generic.c
-index 0bf4530..06279ce 100644
---- a/drivers/rtc/rtc-generic.c
-+++ b/drivers/rtc/rtc-generic.c
-@@ -38,8 +38,8 @@ static int __init generic_rtc_probe(struct platform_device *dev)
+diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
+index 31c5728..6302450 100644
+--- a/drivers/rtc/rtc-hid-sensor-time.c
++++ b/drivers/rtc/rtc-hid-sensor-time.c
+@@ -255,8 +255,9 @@ static int hid_time_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	time_state->rtc = rtc_device_register("hid-sensor-time",
+-				&pdev->dev, &hid_time_rtc_ops, THIS_MODULE);
++	time_state->rtc = devm_rtc_device_register(&pdev->dev,
++					"hid-sensor-time", &hid_time_rtc_ops,
++					THIS_MODULE);
+ 
+ 	if (IS_ERR(time_state->rtc)) {
+ 		dev_err(&pdev->dev, "rtc device register failed!\n");
+@@ -269,9 +270,7 @@ static int hid_time_probe(struct platform_device *pdev)
+ static int hid_time_remove(struct platform_device *pdev)
  {
- 	struct rtc_device *rtc;
+ 	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+-	struct hid_time_state *time_state = platform_get_drvdata(pdev);
  
--	rtc = rtc_device_register("rtc-generic", &dev->dev, &generic_rtc_ops,
--				  THIS_MODULE);
-+	rtc = devm_rtc_device_register(&dev->dev, "rtc-generic",
-+					&generic_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc))
- 		return PTR_ERR(rtc);
+-	rtc_device_unregister(time_state->rtc);
+ 	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
  
-@@ -50,10 +50,6 @@ static int __init generic_rtc_probe(struct platform_device *dev)
- 
- static int __exit generic_rtc_remove(struct platform_device *dev)
- {
--	struct rtc_device *rtc = platform_get_drvdata(dev);
--
--	rtc_device_unregister(rtc);
--
  	return 0;
- }
- 
 -- 
 1.7.2.5
 
