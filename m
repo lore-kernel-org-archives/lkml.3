@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3CNN7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:59:24 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57139 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3CNN7X (ORCPT
+	id S1756950Ab3CNN7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:59:41 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:51219 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3CNN7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:59:23 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 14 Mar 2013 06:59:27 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (pmbus) Fix krealloc() misuse in
- pmbus_add_attribute()
-Message-ID: <20130314135927.GA16825@roeck-us.net>
-References: <1363267820.4853.41.camel@i7.infradead.org>
+	Thu, 14 Mar 2013 09:59:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363267820.4853.41.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 14 Mar 2013 21:59:38 +0800
+Message-ID: <CAPgLHd8yrZbidfvavg2nrO77zpx_NvKS7QDk=oDWD4T6Vb5+zQ@mail.gmail.com>
+Subject: [PATCH] pinctrl: exynos5440: fix invalid use of sizeof in exynos5440_pinctrl_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 01:30:20PM +0000, David Woodhouse wrote:
-> If krealloc() returns NULL, it *doesn't* free the original. So any code
-> of the form 'foo = krealloc(foo, …);' is almost certainly a bug.
-> 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Good catch. Thanks a lot for the fix!
+sizeof() when applied to a pointer typed expression gives the
+size of the pointer, not that of the pointed data.
 
-Guenter
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/pinctrl/pinctrl-exynos5440.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
+index 1376eb7..fe65739 100644
+--- a/drivers/pinctrl/pinctrl-exynos5440.c
++++ b/drivers/pinctrl/pinctrl-exynos5440.c
+@@ -854,7 +854,7 @@ static int exynos5440_pinctrl_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	priv = devm_kzalloc(dev, sizeof(priv), GFP_KERNEL);
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv) {
+ 		dev_err(dev, "could not allocate memory for private data\n");
+ 		return -ENOMEM;
+
+
