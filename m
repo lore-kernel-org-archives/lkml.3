@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab3CNIlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 04:41:21 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62858 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3CNIlT (ORCPT
+	id S1752045Ab3CNIoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 04:44:20 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:35852 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3CNIoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 04:41:19 -0400
-X-AuditID: 9c930197-b7cc2ae000000eb7-d6-51418d2c1679
-From: Namhyung Kim <namhyung@kernel.org>
-To: chenggang <chenggang.qin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, chenggang <chenggang.qcg@taobao.com>,
-        David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH]Perf: Fix Makefile to remove all "*.o" files while "make clean"
-References: <1363240565-25687-1-git-send-email-chenggang.qin@gmail.com>
-Date: Thu, 14 Mar 2013 17:41:16 +0900
-In-Reply-To: <1363240565-25687-1-git-send-email-chenggang.qin@gmail.com>
-	(chenggang's message of "Thu, 14 Mar 2013 13:56:05 +0800")
-Message-ID: <87wqtajrv7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 14 Mar 2013 04:44:18 -0400
+Message-ID: <51418DDC.8030901@atmel.com>
+Date: Thu, 14 Mar 2013 09:44:12 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Richard Genoud <richard.genoud@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [GIT PULL] at91: fixes for 3.9-rc #1
+References: <51404ABF.7080405@atmel.com>
+In-Reply-To: <51404ABF.7080405@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi chenggang,
+(Updated to include Linus' acknowledgement on pinctrl-related patch)
 
-On Thu, 14 Mar 2013 13:56:05 +0800, chenggang wrote:
-> From: chenggang <chenggang.qcg@taobao.com>
->
-> While we run "make clean" in perf's directory, and run the command:
-> "fine ./ -name *.o"
-> we will get:
-> ------------------------------------
-> ./arch/x86/util/unwind.o
-> ./arch/x86/util/header.o
-> ./arch/x86/util/dwarf-regs.o
-> ./util/scripting-engines/trace-event-python.o
-> ./util/scripting-engines/trace-event-perl.o
-> ./util/probe-finder.o
-> ./util/dwarf-aux.o
-> ./util/unwind.o
-> ./lib/rbtree.o
-> ./ui/browser.o
-> ./ui/browsers/map.o
-> ./ui/browsers/annotate.o
-> ./ui/browsers/scripts.o
-> ./ui/browsers/hists.o
-> ./ui/tui/setup.o
-> ./ui/tui/util.o
-> ./ui/tui/helpline.o
-> ./ui/tui/progress.o
-> ./ui/gtk/browser.o
-> ./ui/gtk/setup.o
-> ./ui/gtk/util.o
-> ./ui/gtk/helpline.o
-> ./ui/gtk/annotate.o
-> ./ui/gtk/progress.o
-> ./ui/gtk/hists.o
-> ./scripts/perl/Perf-Trace-Util/Context.o
-> ./scripts/python/Perf-Trace-Util/Context.o
-> ------------------------------------
-> These ".o" files are not cleaned.
->
-> This patch fixed this problem.
+Arnd, Olof,
 
-Hmm... They should be in $LIB_OBJS which already included in the recipe.
-I guess it's missed because we skip the feature tests for "clean" (and
-"tags" too) target now.  Sigh.
+Here is a little pull-request for 3.9-rc (I guess it if -rc4 now that
+you've just sent the one for -rc3).
 
-Thanks,
-Namhyung
+I have other material but it is related to the AT91 framebuffer and we are
+currently discussing it so I hold them back for now.
+
+Thanks, best regards,
+
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 0ed66befaae893e82c9f016238282d73ef9fd6c7:
+
+  ARM: at91: fix infinite loop in at91_irq_suspend/resume (2013-03-14 09:37:55 +0100)
+
+----------------------------------------------------------------
+Two patches for Device Tree on at91sam9x5/NAND.
+Two more for fixing PM suspend/resume IRQ on AIC5 and
+GPIO used with pinctrl.
+
+----------------------------------------------------------------
+Ludovic Desroches (2):
+      ARM: at91: add gpio suspend/resume support when using pinctrl
+      ARM: at91: fix infinite loop in at91_irq_suspend/resume
+
+Richard Genoud (2):
+      ARM: at91: dt: at91sam9x5: correct NAND pins comments
+      ARM: at91: dt: at91sam9x5: complete NAND pinctrl
+
+ arch/arm/boot/dts/at91sam9x5.dtsi      | 28 ++++++++++++++--
+ arch/arm/mach-at91/include/mach/gpio.h |  8 +++++
+ arch/arm/mach-at91/irq.c               | 20 +++++-------
+ arch/arm/mach-at91/pm.c                | 10 ++++--
+ drivers/pinctrl/pinctrl-at91.c         | 61 ++++++++++++++++++++++++++++++++++-
+ 5 files changed, 110 insertions(+), 17 deletions(-)
+
+-- 
+Nicolas Ferre
