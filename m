@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3CNWVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:21:42 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:43331 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3CNWVk (ORCPT
+	id S1753421Ab3CNWYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:24:55 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:64685 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab3CNWYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:21:40 -0400
+	Thu, 14 Mar 2013 18:24:54 -0400
 MIME-Version: 1.0
 In-Reply-To: <20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
 References: <1363271189-6631-1-git-send-email-fweisbec@gmail.com>
-	<1363271189-6631-3-git-send-email-fweisbec@gmail.com>
-	<20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
-Date: Thu, 14 Mar 2013 23:21:39 +0100
-Message-ID: <CAFTL4hya7CdLMDRfASBycsB6w92AaffePK5xewi6P=0dm3wiSA@mail.gmail.com>
+ <1363271189-6631-3-git-send-email-fweisbec@gmail.com> <20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 14 Mar 2013 18:24:22 -0400
+X-Google-Sender-Auth: xnL_gtZm5tE9Jb31408hN3vsZAw
+Message-ID: <CAP=VYLqJuQqFpTkb0BvbNfwyzLLaX9_AfOioP_jOBp0Tvu15HA@mail.gmail.com>
 Subject: Re: [PATCH 2/2] printk: Provide a wake_up_klogd() off-case
-From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         James Hogan <james.hogan@imgtec.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>
@@ -26,7 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/14 Andrew Morton <akpm@linux-foundation.org>:
+On Thu, Mar 14, 2013 at 4:39 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
 > On Thu, 14 Mar 2013 15:26:29 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
 >
 >> wake_up_klogd() is useless when CONFIG_PRINTK=n because
@@ -76,6 +78,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >
 > (I pity anyone who tries to remove that include from kernel.h ;))
 
-Right, I doubt this will ever happen ;-)
+Why did you have to say that?  Now I'm inclined to poke at it and
+just see how bad it really is when I pull on that loose thread...
 
-Still, thanks for the fix!
+P.
+--
+
+>
+> --- a/lib/bust_spinlocks.c~printk-provide-a-wake_up_klogd-off-case-fix
+> +++ a/lib/bust_spinlocks.c
+> @@ -8,6 +8,7 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> +#include <linux/printk.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/tty.h>
+>  #include <linux/wait.h>
+> @@ -28,5 +29,3 @@ void __attribute__((weak)) bust_spinlock
+>                         wake_up_klogd();
+>         }
+>  }
+> -
+> -
+> _
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
