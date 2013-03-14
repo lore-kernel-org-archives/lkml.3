@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab3CNOD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:03:29 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:60743 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3CNOD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:03:27 -0400
+	id S932487Ab3CNODj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:03:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39568 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756884Ab3CNODg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:03:36 -0400
+Date: Thu, 14 Mar 2013 16:03:24 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <sameo@linux.intel.com>, <balbi@ti.com>, <b-cousson@ti.com>,
+        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 3/6] mfd: omap-usb-host: Actually update hostconfig
+Message-ID: <20130314140324.GG26080@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363083940-20050-1-git-send-email-rogerq@ti.com>
+ <1363083940-20050-4-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1358762191-13839-1-git-send-email-matthieu.castet@parrot.com>
-References: <1358762191-13839-1-git-send-email-matthieu.castet@parrot.com>
-Date: Thu, 14 Mar 2013 15:03:26 +0100
-X-Google-Sender-Auth: JByxg3M5RnL18ctQmCljGhUHJxU
-Message-ID: <CANnE-qdjPOikHTkU9OPJOJWzm=96COwg4EaCGg3iNLiDaLW6mQ@mail.gmail.com>
-Subject: Re: [PATCH] slab : allow SLAB_RED_ZONE and SLAB_STORE_USER to work on arm
-From: Castet Matthieu <matthieu.castet@parrot.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4eRLI4hEmsdu6Npr"
+Content-Disposition: inline
+In-Reply-To: <1363083940-20050-4-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 10:56 AM, Matthieu CASTET
-<matthieu.castet@parrot.com> wrote:
-> The current slab code only allow to put redzone( and user store) info if "buffer
-> alignment(ralign) <= __alignof__(unsigned long long)". This was done because we
-> want to keep the buffer aligned for user even after adding redzone at the
-> beginning of the buffer (the user store is stored after user buffer) [1]
->
-> But instead of disabling this feature when "ralign > __alignof__(unsigned long
-> long)", we can force the alignment by allocating ralign before user buffer.
->
-> This is done by setting ralign in obj_offset when "ralign > __alignof__(unsigned
-> long long)" and keeping the old behavior when  "ralign <= __alignof__(unsigned
-> long long)" (we set sizeof(unsigned long long)).
->
-> The 5c5e3b33b7cb959a401f823707bee006caadd76e commit wasn't handling "ralign <=
-> __alignof__(unsigned long long)", that's why it broked some configuration.
->
-> This was tested on omap3 (ralign is 64 and __alignof__(unsigned long long) is 8)
->
-> [1]
-> /*
->  * memory layout of objects:
->  * 0        : objp
->  * 0 .. cachep->obj_offset - BYTES_PER_WORD - 1: padding. This ensures that
->  *      the end of an object is aligned with the end of the real
->  *      allocation. Catches writes behind the end of the allocation.
->  * cachep->obj_offset - BYTES_PER_WORD .. cachep->obj_offset - 1:
->  *      redzone word.
->  * cachep->obj_offset: The real object.
->  * cachep->buffer_size - 2* BYTES_PER_WORD: redzone word [BYTES_PER_WORD long]
->  * cachep->buffer_size - 1* BYTES_PER_WORD: last caller address
->  *                  [BYTES_PER_WORD long]
->  */
+--4eRLI4hEmsdu6Npr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ping,
+On Tue, Mar 12, 2013 at 12:25:37PM +0200, Roger Quadros wrote:
+> The helper functions omap_usbhs_rev1_hostconfig()
+> and omap_usbhs_rev2_hostconfig() don't write into
+> the hostconfig register. Make sure that we write
+> the return value into the hostconfig register.
+>=20
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Thanks,
+makes sense :-)
 
-Matthieu
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+--=20
+balbi
 
->
-> Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-> CC: Russell King <rmk@arm.linux.org.uk>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> ---
->  mm/slab.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index e7667a3..d2380d9 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2392,9 +2392,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
->         if (ralign < cachep->align) {
->                 ralign = cachep->align;
->         }
-> -       /* disable debug if necessary */
-> -       if (ralign > __alignof__(unsigned long long))
-> -               flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
->         /*
->          * 4) Store it.
->          */
-> @@ -2414,8 +2411,9 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
->          */
->         if (flags & SLAB_RED_ZONE) {
->                 /* add space for red zone words */
-> -               cachep->obj_offset += sizeof(unsigned long long);
-> -               size += 2 * sizeof(unsigned long long);
-> +               int offset = max(ralign, sizeof(unsigned long long));
-> +               cachep->obj_offset += offset;
-> +               size += offset + sizeof(unsigned long long);
->         }
->         if (flags & SLAB_STORE_USER) {
->                 /* user store requires one word storage behind the end of
-> --
-> 1.7.10.4
->
+--4eRLI4hEmsdu6Npr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQdisAAoJEIaOsuA1yqREZywP/jBK6J4O1fM75PGTPvrgENvr
+OrSFM/YWc+pD/drAA1JavyCFTf5rxMP7lOSlynTE9qctXy9fyMbhvfnrGUo+FZmH
+ei6ihNPTRYenSO5ugtc2ml9JT7GIToFH47Qi/ch2jst8wrCx9v0JmHJzk4/DhcwY
+X2sLRT6Wl+M+EMDZAyTWuPwSiW0lcM1rLe9oXUbpgiVg1PMQRItJ+1DUGKjl2Gn/
+AAacInWPJJwrZsTrnMSY+u+IFpHkQGMNuMNh0gpfrbvDnb2mXpZ30CiD5+2k37PP
+neq3wQxruKc4ZhvCQ1BwF+AeHqop0Mx1RYr4/S8hyViWnaF2uOtAcvapB/aOdh54
+bGqbtb2IAE/w0iaVx/ydWqrCmrO+C8dodtligviEd+ZkZn8VdT1aG8hBr4bfB81/
+pwz/1xy7camkJdqlqO7M1So6zyexdtkb6NT5QHEKeE4nVsQp6mD5MoxrejhmovOA
+hbb5ChEso7VPpvxoHR/YivjqAHzttcF3859h7Vg2V1uWUxfYjwBa0MVo+bMO1VFD
+1w5RywWP3bV1+/WiuVvJk0xiqRM8vIxwwLh7Kki3WZFN1lWdjd8VcaXVvnAzAXje
+Syyi+cm7yWibNduNNCANEgfHyy7kr8jfe2mq2rSF/HSi6L+tMQhEsXtBtDSeoCeI
+6h1bSWi62twLm1TxW4V2
+=uCzX
+-----END PGP SIGNATURE-----
+
+--4eRLI4hEmsdu6Npr--
