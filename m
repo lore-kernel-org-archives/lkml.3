@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3CNWqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:46:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36781 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab3CNWqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:46:53 -0400
-Date: Thu, 14 Mar 2013 15:46:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, Shuge <shugelinux@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org, Kevin <kevin@allwinneretch.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] bounce:fix bug, avoid to flush dcache on slab page from
- jbd2.
-Message-Id: <20130314154651.b454fc7c6de6222c6c3a1a4a@linux-foundation.org>
-In-Reply-To: <20130313210216.GA7754@quack.suse.cz>
-References: <5139DB90.5090302@gmail.com>
-	<20130312153221.0d26fe5599d4885e51bb0c7c@linux-foundation.org>
-	<20130313011020.GA5313@blackbox.djwong.org>
-	<20130313085021.GA29730@quack.suse.cz>
-	<20130313194429.GE5313@blackbox.djwong.org>
-	<20130313210216.GA7754@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753520Ab3CNWrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:47:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35752 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753068Ab3CNWrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 18:47:31 -0400
+Date: Thu, 14 Mar 2013 23:47:24 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, bp@alien.de,
+        chegger@amazon.de, xen-devel@lists.xen.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] x86/mce: Replace shared_bank array with
+ is_shared_bank() helper
+Message-ID: <20130314224724.GG10190@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Boris Ostrovsky <boris.ostrovsky@oracle.com>, bp@alien.de,
+	chegger@amazon.de, xen-devel@lists.xen.org,
+	linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+	JBeulich@suse.com, stable@vger.kernel.org
+References: <1363295441-1859-1-git-send-email-boris.ostrovsky@oracle.com>
+ <1363295441-1859-2-git-send-email-boris.ostrovsky@oracle.com>
+ <20130314222005.GB28339@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130314222005.GB28339@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Mar 2013 22:02:16 +0100 Jan Kara <jack@suse.cz> wrote:
-
-> > > ... remembering why we need to get to sb and why ext3 needs this ... So
-> > > maybe a better solution would be to have a bio flag meaning that pages need
-> > > bouncing? And we would set it from filesystems that need it - in case of
-> > > ext3 only writeback of data from kjournald actually needs to bounce the
-> > > pages. Thoughts?
+On Thu, Mar 14, 2013 at 03:20:05PM -0700, Greg KH wrote:
+> On Thu, Mar 14, 2013 at 05:10:40PM -0400, Boris Ostrovsky wrote:
+> > Use helper function instead of an array to report whether register
+> > bank is shared. Currently only bank 4 (northbridge) is shared.
 > > 
-> > What about dirty pages that don't result in journal transactions?  I think
-> > ext3_sync_file() eventually calls ext3_ordered_writepage, which then calls
-> > __block_write_full_page, which in turn calls submit_bh().
->   So here we have two options:
-> Either we let ext3 wait the same way as other filesystems when stable pages
-> are required. Then only data IO from kjournald needs to be bounced (all
-> other IO is properly protected by PageWriteback bit).
+> > Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> > ---
+> >  arch/x86/kernel/cpu/mcheck/mce_amd.c | 17 +++++++++--------
+> >  1 file changed, 9 insertions(+), 8 deletions(-)
 > 
-> Or we won't let ext3 wait (as it is now), keep the superblock flag that fs
-> needs bouncing, and set the bio flag in __block_write_full_page() and
-> kjournald based on the sb flag.
+> <formletter>
 > 
-> I think the first option is slightly better but I don't feel strongly
-> about that.
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
 
-It seems Just Wrong that we're dicking around with filesystem
-superblocks at this level.  It's the bounce code, for heavens sake!
+Yeah,
 
+stable@ was obviously wrongly CCed. This patch is clearly not stable
+material.
 
-What the heck's going on here and why wasn't I able to work that out
-from reading the code :( The need to stabilise these pages is driven by
-the characteristics of the underlying device and driver stack, isn't
-it?  Things like checksumming?  What else drives this requirement? 
-</rant>
+Thanks.
 
-Because I *think* it should be sufficient to maintain this boolean in
-the backing_dev.  My *guess* is that this is all here because we want
-to enable stable-snapshotting on a per-fs basis rather than on a
-per-device basis?  If so, why?  If not, what?
+-- 
+Regards/Gruss,
+    Boris.
 
-
-
-btw, local variable `bdi' in must_snapshot_stable_pages() doesn't do
-anything.
-
-
-None of this will stop Shuge's kernel from going splat either.
+Sent from a fat crate under my desk. Formatting is fine.
+--
