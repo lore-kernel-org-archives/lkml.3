@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934594Ab3CNRzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:55:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49929 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934537Ab3CNRtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934545Ab3CNRtS (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Mar 2013 13:49:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20168 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934495Ab3CNRtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="302267346"
+   d="scan'208";a="302267278"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 16/30] thp: handle file pages in split_huge_page()
-Date: Thu, 14 Mar 2013 19:50:21 +0200
-Message-Id: <1363283435-7666-17-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 09/30] thp, mm: rewrite delete_from_page_cache() to support huge pages
+Date: Thu, 14 Mar 2013 19:50:14 +0200
+Message-Id: <1363283435-7666-10-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,135 +33,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-The base scheme is the same as for anonymous pages, but we walk by
-mapping->i_mmap rather then anon_vma->rb_root.
-
-__split_huge_page_refcount() has been tunned a bit: we need to transfer
-PG_swapbacked to tail pages.
-
-Splitting mapped pages haven't tested at all, since we cannot mmap()
-file-backed huge pages yet.
+As with add_to_page_cache_locked() we handle HPAGE_CACHE_NR pages a
+time.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 54 insertions(+), 9 deletions(-)
+ mm/filemap.c |   27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e2f7f5aa..eb777d3 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1613,7 +1613,8 @@ static void __split_huge_page_refcount(struct page *page)
- 				     ((1L << PG_referenced) |
- 				      (1L << PG_swapbacked) |
- 				      (1L << PG_mlocked) |
--				      (1L << PG_uptodate)));
-+				      (1L << PG_uptodate) |
-+				      (1L << PG_swapbacked)));
- 		page_tail->flags |= (1L << PG_dirty);
- 
- 		/* clear PageTail before overwriting first_page */
-@@ -1641,10 +1642,8 @@ static void __split_huge_page_refcount(struct page *page)
- 		page_tail->index = page->index + i;
- 		page_nid_xchg_last(page_tail, page_nid_last(page));
- 
--		BUG_ON(!PageAnon(page_tail));
- 		BUG_ON(!PageUptodate(page_tail));
- 		BUG_ON(!PageDirty(page_tail));
--		BUG_ON(!PageSwapBacked(page_tail));
- 
- 		lru_add_page_tail(page, page_tail, lruvec);
- 	}
-@@ -1752,7 +1751,7 @@ static int __split_huge_page_map(struct page *page,
- }
- 
- /* must be called with anon_vma->root->rwsem held */
--static void __split_huge_page(struct page *page,
-+static void __split_anon_huge_page(struct page *page,
- 			      struct anon_vma *anon_vma)
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 6bac9e2..0ff3403 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -115,6 +115,7 @@
+ void __delete_from_page_cache(struct page *page)
  {
- 	int mapcount, mapcount2;
-@@ -1799,14 +1798,11 @@ static void __split_huge_page(struct page *page,
- 	BUG_ON(mapcount != mapcount2);
- }
+ 	struct address_space *mapping = page->mapping;
++	int nr = 1;
  
--int split_huge_page(struct page *page)
-+static int split_anon_huge_page(struct page *page)
- {
- 	struct anon_vma *anon_vma;
- 	int ret = 1;
- 
--	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
--	BUG_ON(!PageAnon(page));
--
+ 	trace_mm_filemap_delete_from_page_cache(page);
  	/*
- 	 * The caller does not necessarily hold an mmap_sem that would prevent
- 	 * the anon_vma disappearing so we first we take a reference to it
-@@ -1824,7 +1820,7 @@ int split_huge_page(struct page *page)
- 		goto out_unlock;
+@@ -127,13 +128,23 @@ void __delete_from_page_cache(struct page *page)
+ 	else
+ 		cleancache_invalidate_page(mapping, page);
  
- 	BUG_ON(!PageSwapBacked(page));
--	__split_huge_page(page, anon_vma);
-+	__split_anon_huge_page(page, anon_vma);
- 	count_vm_event(THP_SPLIT);
+-	radix_tree_delete(&mapping->page_tree, page->index);
++	if (PageTransHuge(page)) {
++		int i;
++
++		for (i = 0; i < HPAGE_CACHE_NR; i++)
++			radix_tree_delete(&mapping->page_tree, page->index + i);
++		nr = HPAGE_CACHE_NR;
++	} else {
++		radix_tree_delete(&mapping->page_tree, page->index);
++	}
++
+ 	page->mapping = NULL;
+ 	/* Leave page->index set: truncation lookup relies upon it */
+-	mapping->nrpages--;
+-	__dec_zone_page_state(page, NR_FILE_PAGES);
++
++	mapping->nrpages -= nr;
++	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, -nr);
+ 	if (PageSwapBacked(page))
+-		__dec_zone_page_state(page, NR_SHMEM);
++		__mod_zone_page_state(page_zone(page), NR_SHMEM, -nr);
+ 	BUG_ON(page_mapped(page));
  
- 	BUG_ON(PageCompound(page));
-@@ -1835,6 +1831,55 @@ out:
- 	return ret;
+ 	/*
+@@ -144,8 +155,8 @@ void __delete_from_page_cache(struct page *page)
+ 	 * having removed the page entirely.
+ 	 */
+ 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+-		dec_zone_page_state(page, NR_FILE_DIRTY);
+-		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
++		mod_zone_page_state(page_zone(page), NR_FILE_DIRTY, -nr);
++		add_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE, -nr);
+ 	}
  }
  
-+static int split_file_huge_page(struct page *page)
-+{
-+	struct address_space *mapping = page->mapping;
-+	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	struct vm_area_struct *vma;
-+	int mapcount, mapcount2;
-+
-+	BUG_ON(!PageHead(page));
-+	BUG_ON(PageTail(page));
-+
-+	mutex_lock(&mapping->i_mmap_mutex);
-+	mapcount = 0;
-+	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long addr = vma_address(page, vma);
-+		mapcount += __split_huge_page_splitting(page, vma, addr);
-+	}
-+
-+	if (mapcount != page_mapcount(page))
-+		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
-+		       mapcount, page_mapcount(page));
-+	BUG_ON(mapcount != page_mapcount(page));
-+
-+	__split_huge_page_refcount(page);
-+
-+	mapcount2 = 0;
-+	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long addr = vma_address(page, vma);
-+		mapcount2 += __split_huge_page_map(page, vma, addr);
-+	}
-+
-+	if (mapcount != mapcount2)
-+		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
-+		       mapcount, mapcount2, page_mapcount(page));
-+	BUG_ON(mapcount != mapcount2);
-+	count_vm_event(THP_SPLIT);
-+	mutex_unlock(&mapping->i_mmap_mutex);
-+	return 0;
-+}
-+
-+int split_huge_page(struct page *page)
-+{
-+	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
-+
-+	if (PageAnon(page))
-+		return split_anon_huge_page(page);
-+	else
-+		return split_file_huge_page(page);
-+}
-+
- #define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
+@@ -161,6 +172,7 @@ void delete_from_page_cache(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 	void (*freepage)(struct page *);
++	int i;
  
- int hugepage_madvise(struct vm_area_struct *vma,
+ 	BUG_ON(!PageLocked(page));
+ 
+@@ -172,6 +184,9 @@ void delete_from_page_cache(struct page *page)
+ 
+ 	if (freepage)
+ 		freepage(page);
++	if (PageTransHuge(page))
++		for (i = 1; i < HPAGE_CACHE_NR; i++)
++			page_cache_release(page + i);
+ 	page_cache_release(page);
+ }
+ EXPORT_SYMBOL(delete_from_page_cache);
 -- 
 1.7.10.4
 
