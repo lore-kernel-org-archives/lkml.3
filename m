@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab3CNKwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:52:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34618 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756930Ab3CNKwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:52:11 -0400
-Date: Thu, 14 Mar 2013 12:51:55 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
-        <thomas.abraham@linaro.org>, <dianders@chromium.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 1/2] usb: dwc3: exynos: Use of_platform API to create
- dwc3 core pdev
-Message-ID: <20130314105155.GG32369@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
- <1363257898-17504-2-git-send-email-gautam.vivek@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YH9Qf6Fh2G5kB/85"
-Content-Disposition: inline
-In-Reply-To: <1363257898-17504-2-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757471Ab3CNKwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:52:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51920 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab3CNKhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:37:38 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: James Ralston <james.d.ralston@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 41/88] ata_piix: Add Device IDs for Intel Lynx Point-LP PCH
+Date: Thu, 14 Mar 2013 10:35:34 +0000
+Message-Id: <1363257381-15900-42-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---YH9Qf6Fh2G5kB/85
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-On Thu, Mar 14, 2013 at 04:14:57PM +0530, Vivek Gautam wrote:
-> @@ -170,7 +155,6 @@ static int dwc3_exynos_remove(struct platform_device =
-*pdev)
->  {
->  	struct dwc3_exynos	*exynos =3D platform_get_drvdata(pdev);
-> =20
-> -	platform_device_unregister(exynos->dwc3);
+From: James Ralston <james.d.ralston@intel.com>
 
-don't you want to do what Kishon did here and have:
+commit 389cd784969e9148fedcde0608f15bd74d6b769e upstream.
 
-static int dwc3_exynos_remove_child(struct device *dev, void *unused)
-{
-	struct platform_device	*pdev =3D to_platform_device(dev);
+This patch adds the IDE-mode SATA Device IDs for the Intel Lynx Point-LP PCH
 
-	platform_device_unregister(pdev);
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/ata/ata_piix.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-	return 0;
-}
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 47bd6ab..fe5973f 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -329,6 +329,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Lynx Point) */
+ 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Lynx Point-LP) */
++	{ 0x8086, 0x9c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Lynx Point-LP) */
++	{ 0x8086, 0x9c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Lynx Point-LP) */
++	{ 0x8086, 0x9c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Lynx Point-LP) */
++	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (DH89xxCC) */
+ 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Avoton) */
+-- 
+1.8.1.2
 
-device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
-
-???
-
---=20
-balbi
-
---YH9Qf6Fh2G5kB/85
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQavLAAoJEIaOsuA1yqREcP0P/RW25dtnA4FyuLaD6Q7QMHPa
-771znPkwXxH4bdlt6u8FLLHMYTmG9ZQNXEGvKjHn3yCqBl4XEwpSVcOmAVcJgJfA
-KZvDnPbSjXLWVGdqn94YieiZQ/xaTm+Lam1LjokOnLJlgmZwbuNpX8baVSFfxWrP
-/GCjJl0Wh1Ps0Yldr+TpGH9XhMCHkuhe/4mtnUaTcM4Hdr3cpw4Y47oESxJHPgWh
-6+BiZ8G69vtEMpoMYpX/rybkI28LFseLEacbRe1aGPbP13MSqpY6Dy6z39s0y9Kc
-rU96hM9BJNxFI8i+6jNTd1WCf6YdzkQprc8v/k36Jatq7+CHn4I/Q7hnAt2bY+8X
-rAHpiSMN5peL1jMn/xW7zy2LIOO/bFpbPwCCOzD8XiffK4XxR690ZUcVPFL82eb4
-Oac7iXFxuoXqT2+ydi1vi60OSrqtK0bmk50NFpkPXMCjfpvfm0Z4AhtsCiVEUA+w
-+1SjOPhGsCwtFwwfPvV2jKDnPs/peBpCP0sjrf3TSMsFmwwa6180KyumuLNih6xj
-Syj/AoMPrqzhoQFGHhU/qnshOMYW1xGslPgy0kRn0w9UEE1YbapZAZImyWOzzwdS
-0zaTd/JFg82WEYyD08vXsr8XM5yAR+bhsJaPHq265TCSEFnDbtnmNb96uVEXWC7I
-I+3/2UAdHQ5gOg/79IqA
-=6nix
------END PGP SIGNATURE-----
-
---YH9Qf6Fh2G5kB/85--
