@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3CNKnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:43:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52058 "EHLO
+	id S1757379Ab3CNKnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:43:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52056 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757325Ab3CNKiJ (ORCPT
+	with ESMTP id S1756852Ab3CNKiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:09 -0400
+	Thu, 14 Mar 2013 06:38:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Josef Bacik <jbacik@fusionio.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 71/88] dmi_scan: fix missing check for _DMI_ signature in smbios_present()
-Date: Thu, 14 Mar 2013 10:36:04 +0000
-Message-Id: <1363257381-15900-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 72/88] Btrfs: account for orphan inodes properly during cleanup
+Date: Thu, 14 Mar 2013 10:36:05 +0000
+Message-Id: <1363257381-15900-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -30,55 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit a40e7cf8f06b4e322ba902e4e9f6a6b0c2daa907 upstream.
+commit 925396ecf251432d6d0f703a6cfd0cb9e651d936 upstream.
 
-Commit 9f9c9cbb6057 ("drivers/firmware/dmi_scan.c: fetch dmi version
-from SMBIOS if it exists") hoisted the check for "_DMI_" into
-dmi_scan_machine(), which means that we don't bother to check for
-"_DMI_" at offset 16 in an SMBIOS entry.  smbios_present() may also call
-dmi_present() for an address where we found "_SM_", if it failed further
-validation.
+Dave sent me a panic where we were doing the orphan cleanup and panic'ed
+trying to release our reservation from the orphan block rsv.  The reason for
+this is because our orphan block rsv had been free'd out from underneath us
+because the transaction commit found that there were no orphan inodes
+according to its count and decided to free it.  This is incorrect so make
+sure we inc the orphan inodes count so the accounting is all done properly.
+This would also cause the warning in the orphan commit code normally if you
+had any orphans to cleanup as they would only decrement the orphan count so
+you'd get a negative orphan count which could cause problems during runtime.
+Thanks,
 
-Check for "_DMI_" in smbios_present() before calling dmi_present().
-
-[akpm@linux-foundation.org: fix build]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Reported-by: Tim McGrath <tmhikaru@gmail.com>
-Tested-by: Tim Mcgrath <tmhikaru@gmail.com>
-Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firmware/dmi_scan.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/btrfs/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 982f1f5..4cd392d 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -442,7 +442,6 @@ static int __init dmi_present(const char __iomem *p)
- static int __init smbios_present(const char __iomem *p)
- {
- 	u8 buf[32];
--	int offset = 0;
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index a7d1921..fadf1c3 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -2433,6 +2433,7 @@ int btrfs_orphan_cleanup(struct btrfs_root *root)
+ 		 */
+ 		set_bit(BTRFS_INODE_HAS_ORPHAN_ITEM,
+ 			&BTRFS_I(inode)->runtime_flags);
++		atomic_inc(&root->orphan_inodes);
  
- 	memcpy_fromio(buf, p, 32);
- 	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-@@ -461,9 +460,9 @@ static int __init smbios_present(const char __iomem *p)
- 			dmi_ver = 0x0206;
- 			break;
- 		}
--		offset = 16;
-+		return memcmp(p + 16, "_DMI_", 5) || dmi_present(p + 16);
- 	}
--	return dmi_present(buf + offset);
-+	return 1;
- }
- 
- void __init dmi_scan_machine(void)
+ 		/* if we have links, this was a truncate, lets do that */
+ 		if (inode->i_nlink) {
 -- 
 1.8.1.2
 
