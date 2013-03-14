@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab3CNKrq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:47:46 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:11116 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756828Ab3CNKrm (ORCPT
+	id S1757474Ab3CNKrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:47:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51992 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006Ab3CNKhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:47:42 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-9d-5141aacd4b3c
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        dianders@chromium.org
-Subject: [PATCH 2/2] usb: dwc3: exynos: use clk_prepare_enable and
- clk_disable_unprepare
-Date: Thu, 14 Mar 2013 16:14:58 +0530
-Message-id: <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
-References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsWyRsSkTvfsKsdAgw3HtSwO3q+3ODD7IavF
-	2WUH2SyaF69ns+hdcJXN4vKuOWwWs5f0s1jMOL+PyWLRslZmi8MrDjBZHJuxhNGB22PB5yvs
-	HrMbLrJ43Lm2h81j/9w17B7nZyxk9OjbsorR4/iN7UwenzfJBXBEcdmkpOZklqUW6dslcGWc
-	3jCZreAPZ8XZLwfYGhi3cHQxcnJICJhILPm0mAnCFpO4cG89G4gtJLCUUWLjVzeYmkcbDzBB
-	xKczStyep9HFyAVkT2GS2LfyGiNIgk1AV6Lp7S4wW0QgXeL/3X4wm1ngDKPEyxexILawQJTE
-	9z2HwQaxCKhKnJlzHszmFfCQuL+4ix1imYLEm9vPmLsYOTg4BTwlLm/PhdjrIXFq/SZGkL0S
-	AufYJZ78OMwOMUdA4tvkQywg9RICshKbDjBDjJGUOLjiBssERuEFjAyrGEVTC5ILipPSi4z0
-	ihNzi0vz0vWS83M3MQLj5PS/Z307GG8esD7EmAw0biKzlGhyPjDO8kriDY3NjCxMTUyNjcwt
-	zUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAGJKX3nb6f8GTPp2F867+fXX9
-	r/TKpk2sT01ns1ifm8V/cNqkh8fZJlzdEN53/oBeer7Gs1n/Et2UTq+TlmM4U2YVe6/v1eXp
-	1suWPppzpHB+lundK6E3t+td15yYF3I/bnWbQ4l1Bq+zztLvMtvCvv09rtEX989L0cbky2fD
-	gjcab9wz2rpeZymxFGckGmoxFxUnAgDmW+dnqQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jQd2zqxwDDf7OUbQ4eL/e4sDsh6wW
-	Z5cdZLNoXryezaJ3wVU2i8u75rBZzF7Sz2Ix4/w+JotFy1qZLQ6vOMBkcWzGEkYHbo8Fn6+w
-	e8xuuMjicefaHjaP/XPXsHucn7GQ0aNvyypGj+M3tjN5fN4kF8AR1cBok5GamJJapJCal5yf
-	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsIYx4/SGyWwFfzgrzn45wNbAuIWji5GTQ0LAROLRxgNMELaY
-	xIV769lAbCGB6YwSt+dpdDFyAdlTmCT2rbzGCJJgE9CVaHq7C8wWEUiX+H+3H8xmFjjDKPHy
-	RSyILSwQJfF9z2GwoSwCqhJn5pwHs3kFPCTuL+5ih1imIPHm9jPmLkYODk4BT4nL23Mh9npI
-	nFq/iXECI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFx+ExqB+PKBotDjAIcjEo8
-	vAf6HQKFWBPLiitzDzFKcDArifB6ejkGCvGmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MEXk
-	lcQbGpuYmxqbWppYmJhZkiasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAPjmYf/+t4ueye4
-	nTuD78Qf/fAwpsVHH+yQevpq33vVjV3MS7V3xSst+iIT/dswhb3prLb0tMqva2Y2H41b8TZH
-	0NVn8l/RL6Yy/97bTtXR/VHBkF9WnTWp5lhMpU+WdKvLu83nBKYEnj7qvr8iSXDChGVLnOIM
-	vF/tK95yeEsr97a3tot2rhGYp8RSnJFoqMVcVJwIAHYZLRMHAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 14 Mar 2013 06:37:53 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Christoph Hellwig <hch@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
+        NeilBrown <neilb@suse.de>,
+        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 51/88] md: protect against crash upon fsync on ro array
+Date: Thu, 14 Mar 2013 10:35:44 +0000
+Message-Id: <1363257381-15900-52-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert clk_enable/clk_disable to clk_prepare_enable/clk_disable_unprepare
-calls as required by common clock framework.
+3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>
+------------------
+
+From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+
+commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
+
+If an fsync occurs on a read-only array, we need to send a
+completion for the IO and may not increment the active IO count.
+Otherwise, we hit a bug trace and can't stop the MD array anymore.
+
+By advice of Christoph Hellwig we return success upon a flush
+request but we return -EROFS for other writes.
+We detect flush requests by checking if the bio has zero sectors.
+
+This patch is suitable to any -stable kernel to which it applies.
+
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: NeilBrown <neilb@suse.de>
+Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/dwc3/dwc3-exynos.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/md.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 66ca9ac..b03f609 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -129,7 +129,7 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 	exynos->dev	= dev;
- 	exynos->clk	= clk;
- 
--	clk_enable(exynos->clk);
-+	clk_prepare_enable(exynos->clk);
- 
- 	if (node) {
- 		ret = of_platform_populate(node, NULL, NULL, dev);
-@@ -146,7 +146,7 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 	return 0;
- 
- err2:
--	clk_disable(clk);
-+	clk_disable_unprepare(clk);
- err1:
- 	return ret;
- }
-@@ -158,7 +158,7 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- 	platform_device_unregister(exynos->usb2_phy);
- 	platform_device_unregister(exynos->usb3_phy);
- 
--	clk_disable(exynos->clk);
-+	clk_disable_unprepare(exynos->clk);
- 
- 	return 0;
- }
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 97edf9e..b7a551d 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -344,6 +344,10 @@ static void md_make_request(struct request_queue *q, struct bio *bio)
+ 		bio_io_error(bio);
+ 		return;
+ 	}
++	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
++		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
++		return;
++	}
+ 	smp_rmb(); /* Ensure implications of  'active' are visible */
+ 	rcu_read_lock();
+ 	if (mddev->suspended) {
 -- 
-1.7.6.5
+1.8.1.2
 
