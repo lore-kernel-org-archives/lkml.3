@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab3CNM6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:58:03 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:44126 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab3CNM6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:58:02 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: DT_WHT (Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16))
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, David Howells <dhowells@redhat.com>,
-        Sedat Dilek <sedat.dilek@googlemail.com>
-In-Reply-To: <CAJfpegsCirmYYimr6Nn4Q4Kdc7rMYaxWhk+fsmp+BLp6mjb_MQ@mail.gmail.com>
-References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu> <CA+55aFzRzwJs1qwjhBstAQzXC0rqn5COM6-7cgD3UsygSvTQ-Q@mail.gmail.com> <20130312222350.GK21522@ZenIV.linux.org.uk> <20130313185249.GL21522@ZenIV.linux.org.uk> <CAJfpeguViuL52fYw922KU1YxRs2YyD=T6tdFVg+buJPw7YUV_Q@mail.gmail.com> <20130313231918.GP21522@ZenIV.linux.org.uk> <CAJfpegsCirmYYimr6Nn4Q4Kdc7rMYaxWhk+fsmp+BLp6mjb_MQ@mail.gmail.com>
-Date: Thu, 14 Mar 2013 21:57:46 +0900
-Message-ID: <1402.1363265866@jrobl>
+	id S1757714Ab3CNM6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:58:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38295 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755882Ab3CNM6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 08:58:30 -0400
+Date: Thu, 14 Mar 2013 13:58:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm/hugetlb: fix total hugetlbfs pages count when
+ memory overcommit accouting
+Message-ID: <20130314125827.GD11631@dhcp22.suse.cz>
+References: <1363258189-24945-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130314110927.GC11631@dhcp22.suse.cz>
+ <20130314112411.GA26630@hacker.(null)>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314112411.GA26630@hacker.(null)>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 14-03-13 19:24:11, Wanpeng Li wrote:
+> On Thu, Mar 14, 2013 at 12:09:27PM +0100, Michal Hocko wrote:
+> >On Thu 14-03-13 18:49:49, Wanpeng Li wrote:
+> >> Changelog:
+> >>  v1 -> v2:
+> >>   * update patch description, spotted by Michal
+> >> 
+> >> hugetlb_total_pages() does not account for all the supported hugepage
+> >> sizes.
+> >
+> >> This can lead to incorrect calculation of the total number of
+> >> page frames used by hugetlb. This patch corrects the issue.
+> >
+> 
+> Hi Michal,
+> 
+> >Sorry to be so picky but this doesn't tell us much. Why do we need to
+> >have the total number of hugetlb pages?
+> >
+> >What about the following:
+> >"hugetlb_total_pages is used for overcommit calculations but the
+> >current implementation considers only default hugetlb page size (which
+> >is either the first defined hugepage size or the one specified by
+> >default_hugepagesz kernel boot parameter).
+> >
+> >If the system is configured for more than one hugepage size (which is
+> >possible since a137e1cc hugetlbfs: per mount huge page sizes) then
+> >the overcommit estimation done by __vm_enough_memory (resp. shown by
+> >meminfo_proc_show) is not precise - there is an impression of more
+> >available/allowed memory. This can lead to an unexpected ENOMEM/EFAULT
+> >resp. SIGSEGV when memory is accounted."
+> >
+> 
+> Fair enough, thanks. :-)
+> 
+> >I think this is also worth pushing to the stable tree (it goes back to
+> >2.6.27)
+> >
+> 
+> Yup, I will Cc Greg in next version. 
 
-Miklos Szeredi:
-> On Thu, Mar 14, 2013 at 12:19 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-	:::
-> > As for whiteouts... I think we ought to pull these bits of unionmoun
-> > queue into the common stem and add the missing filesystems to them;
-> > ext* and ufs are trivial (keep in mind that FFS derivatives, including
-> > ext*, have d_type in directory entry and type 14 (DT_WHT) is there
-> > precisely for that purpose).  btrfs also has "dir_type" thing - 8bit
-> > field...
->
-> What about userspace interfaces?  Are we allowed to extend d_type and
-> st_mode without breaking things?
+Ccing Greg doesn't help. All that is required is:
+Cc: stable@vger.kernel.org # 2.6.27+
 
-Introducing a new d_type value can be a headache for other filesystems
-or other OSs. Whiteout and opaque by xattr is an idea, but I prefer more
-primitive way (special hidden filename) since xattr may force users to
-change their configuration and it consumes disk space a little.
-Filesystems may have a limit for the consumed size by xattr. If xattr
-reaches the limit, then several operation in overlayfs will be unusable.
+> >> Testcase:
+> >> boot: hugepagesz=1G hugepages=1
+> >> before patch:
+> >> egrep 'CommitLimit' /proc/meminfo
+> >> CommitLimit:     55434168 kB
+> >> after patch:
+> >> egrep 'CommitLimit' /proc/meminfo
+> >> CommitLimit:     54909880 kB
+> >
+> >This gives some more confusion to a reader because there is only
+> >something like 500M difference here without any explanation.
+> >
+> 
+> the default overcommit ratio is 50.
 
-
-J. R. Okajima
+And that part was missing in the description...
+[...]
+-- 
+Michal Hocko
+SUSE Labs
