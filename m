@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab3CNKhC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:37:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51734 "EHLO
+	id S1756877Ab3CNLEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:04:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51749 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab3CNKg5 (ORCPT
+	with ESMTP id S1756864Ab3CNKg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:57 -0400
+	Thu, 14 Mar 2013 06:36:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 12/88] ALSA: bt87x: Make load_all parameter working again
-Date: Thu, 14 Mar 2013 10:35:05 +0000
-Message-Id: <1363257381-15900-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 14/88] ARM: fix scheduling while atomic warning in alignment handling code
+Date: Thu, 14 Mar 2013 10:35:07 +0000
+Message-Id: <1363257381-15900-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit aacfddfdadb3540651d263245069631f341e953a upstream.
+commit b255188f90e2bade1bd11a986dd1ca4861869f4d upstream.
 
-Along with a clean up commit [e9f66d9b9: ALSA: pci: clean up using
-module_pci_driver()], bt87x driver lost the functionality of load_all
-parameter.  This patch does a partial revert of the commit only for
-bt87x.c to recover it.
+Paolo Pisati reports that IPv6 triggers this warning:
 
-Reported-by: Clemens Ladisch <cladisch@googlemail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: adjust context ]
+BUG: scheduling while atomic: swapper/0/0/0x40000100
+Modules linked in:
+[<c001b1c4>] (unwind_backtrace+0x0/0xf0) from [<c0503c5c>] (__schedule_bug+0x48/0x5c)
+[<c0503c5c>] (__schedule_bug+0x48/0x5c) from [<c0508608>] (__schedule+0x700/0x740)
+[<c0508608>] (__schedule+0x700/0x740) from [<c007007c>] (__cond_resched+0x24/0x34)
+[<c007007c>] (__cond_resched+0x24/0x34) from [<c05086dc>] (_cond_resched+0x3c/0x44)
+[<c05086dc>] (_cond_resched+0x3c/0x44) from [<c0021f6c>] (do_alignment+0x178/0x78c)
+[<c0021f6c>] (do_alignment+0x178/0x78c) from [<c00083e0>] (do_DataAbort+0x34/0x98)
+[<c00083e0>] (do_DataAbort+0x34/0x98) from [<c0509a60>] (__dabt_svc+0x40/0x60)
+Exception stack(0xc0763d70 to 0xc0763db8)
+3d60:                                     e97e805e e97e806e 2c000000 11000000
+3d80: ea86bb00 0000002c 00000011 e97e807e c076d2a8 e97e805e e97e806e 0000002c
+3da0: 3d000000 c0763dbc c04b98fc c02a8490 00000113 ffffffff
+[<c0509a60>] (__dabt_svc+0x40/0x60) from [<c02a8490>] (__csum_ipv6_magic+0x8/0xc8)
+
+Fix this by using probe_kernel_address() stead of __get_user().
+
+Reported-by: Paolo Pisati <p.pisati@gmail.com>
+Tested-by: Paolo Pisati <p.pisati@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/bt87x.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ arch/arm/mm/alignment.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/sound/pci/bt87x.c b/sound/pci/bt87x.c
-index b6a95ee..62d6163 100644
---- a/sound/pci/bt87x.c
-+++ b/sound/pci/bt87x.c
-@@ -836,6 +836,8 @@ static struct {
- 	{0x7063, 0x2000}, /* pcHDTV HD-2000 TV */
- };
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index 9107231..fc000e3 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -750,7 +750,6 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	unsigned long instr = 0, instrptr;
+ 	int (*handler)(unsigned long addr, unsigned long instr, struct pt_regs *regs);
+ 	unsigned int type;
+-	mm_segment_t fs;
+ 	unsigned int fault;
+ 	u16 tinstr = 0;
+ 	int isize = 4;
+@@ -761,16 +760,15 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
  
-+static struct pci_driver driver;
-+
- /* return the id of the card, or a negative value if it's blacklisted */
- static int __devinit snd_bt87x_detect_card(struct pci_dev *pci)
- {
-@@ -962,11 +964,24 @@ static DEFINE_PCI_DEVICE_TABLE(snd_bt87x_default_ids) = {
- 	{ }
- };
+ 	instrptr = instruction_pointer(regs);
  
--static struct pci_driver bt87x_driver = {
-+static struct pci_driver driver = {
- 	.name = KBUILD_MODNAME,
- 	.id_table = snd_bt87x_ids,
- 	.probe = snd_bt87x_probe,
- 	.remove = __devexit_p(snd_bt87x_remove),
- };
+-	fs = get_fs();
+-	set_fs(KERNEL_DS);
+ 	if (thumb_mode(regs)) {
+-		fault = __get_user(tinstr, (u16 *)(instrptr & ~1));
++		u16 *ptr = (u16 *)(instrptr & ~1);
++		fault = probe_kernel_address(ptr, tinstr);
+ 		if (!fault) {
+ 			if (cpu_architecture() >= CPU_ARCH_ARMv7 &&
+ 			    IS_T32(tinstr)) {
+ 				/* Thumb-2 32-bit */
+ 				u16 tinst2 = 0;
+-				fault = __get_user(tinst2, (u16 *)(instrptr+2));
++				fault = probe_kernel_address(ptr + 1, tinst2);
+ 				instr = (tinstr << 16) | tinst2;
+ 				thumb2_32b = 1;
+ 			} else {
+@@ -779,8 +777,7 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 			}
+ 		}
+ 	} else
+-		fault = __get_user(instr, (u32 *)instrptr);
+-	set_fs(fs);
++		fault = probe_kernel_address(instrptr, instr);
  
--module_pci_driver(bt87x_driver);
-+static int __init alsa_card_bt87x_init(void)
-+{
-+	if (load_all)
-+		driver.id_table = snd_bt87x_default_ids;
-+	return pci_register_driver(&driver);
-+}
-+
-+static void __exit alsa_card_bt87x_exit(void)
-+{
-+	pci_unregister_driver(&driver);
-+}
-+
-+module_init(alsa_card_bt87x_init)
-+module_exit(alsa_card_bt87x_exit)
+ 	if (fault) {
+ 		type = TYPE_FAULT;
 -- 
 1.8.1.2
 
