@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3CNOpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:45:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755972Ab3CNOpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:45:05 -0400
-Date: Thu, 14 Mar 2013 15:43:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: viro@zeniv.linux.org.uk, edumazet@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] task_work: check callback if it's NULL
-Message-ID: <20130314144307.GB16136@redhat.com>
-References: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com> <1363247865-3531-2-git-send-email-lig.fnst@cn.fujitsu.com>
+	id S1757510Ab3CNOpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:45:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56195 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3CNOpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:45:10 -0400
+Message-ID: <5141E26C.10700@ti.com>
+Date: Thu, 14 Mar 2013 20:15:00 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363247865-3531-2-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <notasas@gmail.com>
+Subject: Re: [PATCH v2 0/4] usb: musb/otg: cleanup and fixes
+References: <1363242239-1061-1-git-send-email-kishon@ti.com> <20130314133313.GB26080@arwen.pp.htv.fi>
+In-Reply-To: <20130314133313.GB26080@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14, liguang wrote:
->
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  kernel/task_work.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/task_work.c b/kernel/task_work.c
-> index 0bf4258..f458b08 100644
-> --- a/kernel/task_work.c
-> +++ b/kernel/task_work.c
-> @@ -75,7 +75,8 @@ void task_work_run(void)
->
->  		do {
->  			next = work->next;
-> -			work->func(work);
-> +			if (unlikely(work->func))
-> +				work->func(work);
+On Thursday 14 March 2013 07:03 PM, Felipe Balbi wrote:
+> On Thu, Mar 14, 2013 at 11:53:55AM +0530, Kishon Vijay Abraham I wrote:
+>> This series has some misc cleanup and fixes. The fix solves the cold
+>> plug issue in omap3 which some have reported. Developed these patches on
+>> fixes-for-v3.9-rc3 after applying
+>> http://www.spinics.net/lists/linux-usb/msg81563.html
+>> (Grazvydas Ignotas patch series)
+>>
+>> Tested for g_zero enumeration in pandaboard and beagleboard in both
+>> cold plug and hot plug case. Any kind of testing for this series is welcome.
+>>
+>> Changes from v1:
+>> * removed *usb: musb: omap: remove the check before calling otg_set_vbus*
 
-Why?
+er.. removed *usb: musb: omap: always glue have the correct vbus/id 
+status* since a patch similar to it is already merged.
+>
+> it's still on your list of patches :-p
+>
+>> a similar patch is already merged.
+>>
+>> Kishon Vijay Abraham I (4):
+>>    usb: musb: omap: remove the check before calling otg_set_vbus
+>
+> see ^^
+>
+> please fix it up and when resending add Grazvydas' Tested-by since he
+> has tested this patchset
 
-Oleg.
+Ok.
 
+Thanks
+Kishon
