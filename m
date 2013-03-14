@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3CNJNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:13:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585Ab3CNJNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:13:20 -0400
-Date: Thu, 14 Mar 2013 10:13:43 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+	id S1754249Ab3CNJO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:14:56 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:61465 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab3CNJOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 05:14:54 -0400
+From: chenggang <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] sched: Cputime update for 3.10
-Message-ID: <20130314091342.GB1377@redhat.com>
-References: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
- <20130314071427.GB7869@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130314071427.GB7869@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v3]Perf: Fix Makefile to clean all object files
+Date: Thu, 14 Mar 2013 17:14:28 +0800
+Message-Id: <1363252468-10170-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 08:14:27AM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Ingo,
-> > 
-> > Please pull the latest cputime accounting updates that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	sched/core
-> > 
-> > HEAD: d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
-> > 
-> > Some users are complaining that their threadgroup's runtime accounting 
-> > freezes after a week or so of intense cpu-bound workload. This set tries 
-> > to fix the issue by reducing the risk of multiplication overflow in the 
-> > cputime scaling code.
-> 
-> Hm, is this a new bug? When was it introduced and is upstream affected as 
-> well?
+From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-Commit 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239 start to use scalling
-for whole thread group, so increase chances of hitting multiplication
-overflow, depending on how many CPUs are on the system.
+If we execute "make clean" in perf's directory, many object files cannot be
+cleaned in the current version.
+For example:
+While we run "make clean" in perf's directory, and run the command:
+"fine ./ -name "*.o""
+we will get:
+------------------------------------
+./arch/x86/util/unwind.o
+./arch/x86/util/header.o
+./arch/x86/util/dwarf-regs.o
+./util/scripting-engines/trace-event-python.o
+./util/scripting-engines/trace-event-perl.o
+./util/probe-finder.o
+./util/dwarf-aux.o
+./util/unwind.o
+... ...
+------------------------------------
+These ".o" files are not cleaned.
 
-We have multiplication utime * rtime for one thread since commit
-b27f03d4bdc145a09fb7b0c0e004b29f1ee555fa. 
+The reason is:
+These object files are added into "BUILTIN_OBJS" while "make" process check the environment.
+If the make command is "clean", the environment check process is not executed. So,
+these object files will not be added into "BUILTIN_OBJS" while we execute "make clean".
 
-Overflow will happen after:
+This patch fixed this problem.
+We only add a command:
+"find . -name "*.o" -exec rm -f {} \;"
 
-rtime * utime > 0xffffffffffffffff jiffies
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
-if thread utilize 100% of CPU time, that gives:
+---
+ tools/perf/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-rtime > sqrt(0xffffffffffffffff) jiffies
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a2108ca..dec08ba 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1174,6 +1174,7 @@ clean: $(LIBTRACEEVENT)-clean
+ 	$(RM) $(OUTPUT)util/*-bison*
+ 	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
++	$(FIND) . -name "*.o" -exec rm -f {} \;
+ 
+ .PHONY: all install clean strip $(LIBTRACEEVENT)
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+-- 
+1.7.8.rc2.5.g815b
 
-ritme > sqrt(0xffffffffffffffff) / (24 * 60 * 60 * HZ) days
-
-For HZ 100 it will be 497 days for HZ 1000 it will be 49 days.
-
-Bug affect only users, who run CPU intensive application for that
-long period. Also they have to be interested on utime,stime values,
-as bug has no other visible effect as making those values incorrect.
-
-Stanislaw
