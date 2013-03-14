@@ -1,156 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964931Ab3CNR6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:58:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1936 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758115Ab3CNRtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:49:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="302978999"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 04/30] radix-tree: implement preload for multiple contiguous elements
-Date: Thu, 14 Mar 2013 19:50:09 +0200
-Message-Id: <1363283435-7666-5-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S934534Ab3CNSCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 14:02:16 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53455 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755864Ab3CNSCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 14:02:14 -0400
+Date: Thu, 14 Mar 2013 14:02:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: NULL pointer dereference in ext4_superblock_csum_set with
+ mounted filesystem
+Message-ID: <20130314180210.GA7784@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Josh Triplett <josh@joshtriplett.org>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>
+References: <20130313185911.GA1446@jtriplet-mobl1>
+ <20130313190141.GF5604@thunk.org>
+ <20130313191016.GA1793@jtriplet-mobl1>
+ <20130314040835.GB11821@thunk.org>
+ <20130314174216.GA2981@jtriplet-mobl1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314174216.GA2981@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Thu, Mar 14, 2013 at 10:42:16AM -0700, Josh Triplett wrote:
+> On Thu, Mar 14, 2013 at 12:08:35AM -0400, Theodore Ts'o wrote:
+> > Huh.  This is very, very weird.  Is this a repeatable crash?
+> 
+> I could reliably replicate it for that particular session, but now that
+> I've rebooted the host, no.
 
-Currently radix_tree_preload() only guarantees enough nodes to insert
-one element. It's a hard limit. You cannot batch a number insert under
-one tree_lock.
+Well, I can tell you that from the stack trace, it looks like when the
+file system was first being mounted, and the journal was being
+replayed (which makes sense since you snapshotted a live file system),
+when the journal inode was read in, it appeared to be corrupt.  While
+trying to print an message declaring that the file system was corrupt
+(via ext4_error()), we somehow dereferenced a NULL pointer.
 
-This patch introduces radix_tree_preload_count(). It allows to
-preallocate nodes enough to insert a number of *contiguous* elements.
+I can't quite see how this could have happened; I can't understand how
+the journal inode would have looked corrupt in the first place, and if
+it was corrupt, how it could have triggered a NULL dereference.  So I
+must be missing something....
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/radix-tree.h |    3 +++
- lib/radix-tree.c           |   32 +++++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index ffc444c..81318cb 100644
---- a/include/linux/radix-tree.h
-+++ b/include/linux/radix-tree.h
-@@ -83,6 +83,8 @@ do {									\
- 	(root)->rnode = NULL;						\
- } while (0)
- 
-+#define RADIX_TREE_PRELOAD_NR		512 /* For THP's benefit */
-+
- /**
-  * Radix-tree synchronization
-  *
-@@ -231,6 +233,7 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
- unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
- 				unsigned long index, unsigned long max_scan);
- int radix_tree_preload(gfp_t gfp_mask);
-+int radix_tree_preload_count(unsigned size, gfp_t gfp_mask);
- void radix_tree_init(void);
- void *radix_tree_tag_set(struct radix_tree_root *root,
- 			unsigned long index, unsigned int tag);
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e796429..9bef0ac 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -81,16 +81,24 @@ static struct kmem_cache *radix_tree_node_cachep;
-  * The worst case is a zero height tree with just a single item at index 0,
-  * and then inserting an item at index ULONG_MAX. This requires 2 new branches
-  * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-+ *
-+ * Worst case for adding N contiguous items is adding entries at indexes
-+ * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-+ * item plus extra nodes if you cross the boundary from one node to the next.
-+ *
-  * Hence:
-  */
--#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-+#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-+#define RADIX_TREE_PRELOAD_MAX \
-+	(RADIX_TREE_PRELOAD_MIN + \
-+	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
- 
- /*
-  * Per-cpu pool of preloaded nodes
-  */
- struct radix_tree_preload {
- 	int nr;
--	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
-+	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
- };
- static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
- 
-@@ -257,29 +265,34 @@ radix_tree_node_free(struct radix_tree_node *node)
- 
- /*
-  * Load up this CPU's radix_tree_node buffer with sufficient objects to
-- * ensure that the addition of a single element in the tree cannot fail.  On
-- * success, return zero, with preemption disabled.  On error, return -ENOMEM
-+ * ensure that the addition of *contiguous* elements in the tree cannot fail.
-+ * On success, return zero, with preemption disabled.  On error, return -ENOMEM
-  * with preemption not disabled.
-  *
-  * To make use of this facility, the radix tree must be initialised without
-  * __GFP_WAIT being passed to INIT_RADIX_TREE().
-  */
--int radix_tree_preload(gfp_t gfp_mask)
-+int radix_tree_preload_count(unsigned size, gfp_t gfp_mask)
- {
- 	struct radix_tree_preload *rtp;
- 	struct radix_tree_node *node;
- 	int ret = -ENOMEM;
-+	int alloc = RADIX_TREE_PRELOAD_MIN +
-+		DIV_ROUND_UP(size - 1, RADIX_TREE_MAP_SIZE);
-+
-+	if (size > RADIX_TREE_PRELOAD_NR)
-+		return -ENOMEM;
- 
- 	preempt_disable();
- 	rtp = &__get_cpu_var(radix_tree_preloads);
--	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
-+	while (rtp->nr < alloc) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
- 		rtp = &__get_cpu_var(radix_tree_preloads);
--		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
-+		if (rtp->nr < alloc)
- 			rtp->nodes[rtp->nr++] = node;
- 		else
- 			kmem_cache_free(radix_tree_node_cachep, node);
-@@ -288,6 +301,11 @@ int radix_tree_preload(gfp_t gfp_mask)
- out:
- 	return ret;
- }
-+
-+int radix_tree_preload(gfp_t gfp_mask)
-+{
-+	return radix_tree_preload_count(1, gfp_mask);
-+}
- EXPORT_SYMBOL(radix_tree_preload);
- 
- /*
--- 
-1.7.10.4
-
+						- Ted
