@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3CNK7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:59:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51809 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab3CNKhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756962Ab3CNKhO (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Mar 2013 06:37:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51745 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756863Ab3CNKg7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:36:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 25/88] block: fix synchronization and limit check in blk_alloc_devt()
-Date: Thu, 14 Mar 2013 10:35:18 +0000
-Message-Id: <1363257381-15900-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 10/88] storvsc: Initialize the sglist
+Date: Thu, 14 Mar 2013 10:35:03 +0000
+Message-Id: <1363257381-15900-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit ce23bba842aee98092225d9576dba47c82352521 upstream.
+commit 9d2696e658ef4f209955ddaa987d43f1a1bd81a1 upstream.
 
-idr allocation in blk_alloc_devt() wasn't synchronized against lookup
-and removal, and its limit check was off by one - 1 << MINORBITS is
-the number of minors allowed, not the maximum allowed minor.
+Properly initialize scatterlist before using it.
 
-Add locking and rename MAX_EXT_DEVT to NR_EXT_DEVT and fix limit
-checking.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/genhd.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/scsi/storvsc_drv.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 9433636..60108d9 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -25,7 +25,7 @@ static DEFINE_MUTEX(block_class_lock);
- struct kobject *block_depr;
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 0144078..9f4e560 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -467,6 +467,7 @@ static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
+ 	if (!bounce_sgl)
+ 		return NULL;
  
- /* for extended dynamic devt allocation, currently only one major is used */
--#define MAX_EXT_DEVT		(1 << MINORBITS)
-+#define NR_EXT_DEVT		(1 << MINORBITS)
- 
- /* For extended devt allocation.  ext_devt_mutex prevents look up
-  * results from going away underneath its user.
-@@ -422,19 +422,16 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
- 			return -ENOMEM;
- 		mutex_lock(&ext_devt_mutex);
- 		rc = idr_get_new(&ext_devt_idr, part, &idx);
-+		if (!rc && idx >= NR_EXT_DEVT) {
-+			idr_remove(&ext_devt_idr, idx);
-+			rc = -EBUSY;
-+		}
- 		mutex_unlock(&ext_devt_mutex);
- 	} while (rc == -EAGAIN);
- 
- 	if (rc)
- 		return rc;
- 
--	if (idx > MAX_EXT_DEVT) {
--		mutex_lock(&ext_devt_mutex);
--		idr_remove(&ext_devt_idr, idx);
--		mutex_unlock(&ext_devt_mutex);
--		return -EBUSY;
--	}
--
- 	*devt = MKDEV(BLOCK_EXT_MAJOR, blk_mangle_minor(idx));
- 	return 0;
- }
++	sg_init_table(bounce_sgl, num_pages);
+ 	for (i = 0; i < num_pages; i++) {
+ 		page_buf = alloc_page(GFP_ATOMIC);
+ 		if (!page_buf)
 -- 
 1.8.1.2
 
