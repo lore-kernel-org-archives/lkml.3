@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab3CNKic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:38:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52120 "EHLO
+	id S1757429Ab3CNKi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:38:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52124 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757407Ab3CNKiY (ORCPT
+	with ESMTP id S1757156Ab3CNKiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:24 -0400
+	Thu, 14 Mar 2013 06:38:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 85/88] USB: Don't use EHCI port sempahore for USB 3.0 hubs.
-Date: Thu, 14 Mar 2013 10:36:18 +0000
-Message-Id: <1363257381-15900-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 86/88] USB: Prepare for refactoring by adding extra udev checks.
+Date: Thu, 14 Mar 2013 10:36:19 +0000
+Message-Id: <1363257381-15900-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -29,65 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 0fe51aa5eee51db7c7ecd201d42a977ad79c58b6 upstream.
+commit 2d4fa940f99663c82ba55b2244638833b388e4e2 upstream.
 
-[This is upstream commit 0fe51aa5eee51db7c7ecd201d42a977ad79c58b6.
+[This is upstream commit 2d4fa940f99663c82ba55b2244638833b388e4e2.
 It needs to be backported to kernels as old as 3.2, because it fixes the
 buggy commit 9dbcaec830cd97f44a0b91b315844e0d7144746b "USB: Handle warm
 reset failure on empty port."]
 
-The EHCI host controller needs to prevent EHCI initialization when the
-UHCI or OHCI companion controller is in the middle of a port reset.  It
-uses ehci_cf_port_reset_rwsem to do this.  USB 3.0 hubs can't be under
-an EHCI host controller, so it makes no sense to down the semaphore for
-USB 3.0 hubs.  It also makes the warm port reset code more complex.
+The next patch will refactor the hub port code to rip out the recursive
+call to hub_port_reset on a failed hot reset.  In preparation for that,
+make sure all code paths can deal with being called with a NULL udev.
+The usb_device will not be valid if warm reset was issued because a port
+transitioned to the Inactive or Compliance Mode on a device connect.
 
-Don't down ehci_cf_port_reset_rwsem for USB 3.0 hubs.
+This patch should have no effect on current behavior.
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hub.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/usb/core/hub.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index c9590c6..1a2cd0e 100644
+index 1a2cd0e..15b6be0 100644
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2552,17 +2552,16 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
- {
- 	int i, status;
+@@ -2475,6 +2475,9 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
+ 				return -ENOTCONN;
  
--	if (!warm) {
--		/* Block EHCI CF initialization during the port reset.
--		 * Some companion controllers don't like it when they mix.
--		 */
--		down_read(&ehci_cf_port_reset_rwsem);
--	} else {
--		if (!hub_is_superspeed(hub->hdev)) {
-+	if (!hub_is_superspeed(hub->hdev)) {
-+		if (warm) {
- 			dev_err(hub->intfdev, "only USB3 hub support "
- 						"warm reset\n");
- 			return -EINVAL;
+ 			if ((portstatus & USB_PORT_STAT_ENABLE)) {
++				if (!udev)
++					return 0;
++
+ 				if (hub_is_wusb(hub))
+ 					udev->speed = USB_SPEED_WIRELESS;
+ 				else if (hub_is_superspeed(hub->hdev))
+@@ -2518,13 +2521,15 @@ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+ 			struct usb_hcd *hcd;
+ 			/* TRSTRCY = 10 ms; plus some extra */
+ 			msleep(10 + 40);
+-			update_devnum(udev, 0);
+-			hcd = bus_to_hcd(udev->bus);
+-			/* The xHC may think the device is already reset,
+-			 * so ignore the status.
+-			 */
+-			if (hcd->driver->reset_device)
+-				hcd->driver->reset_device(hcd, udev);
++			if (udev) {
++				update_devnum(udev, 0);
++				hcd = bus_to_hcd(udev->bus);
++				/* The xHC may think the device is already
++				 * reset, so ignore the status.
++				 */
++				if (hcd->driver->reset_device)
++					hcd->driver->reset_device(hcd, udev);
++			}
  		}
-+		/* Block EHCI CF initialization during the port reset.
-+		 * Some companion controllers don't like it when they mix.
-+		 */
-+		down_read(&ehci_cf_port_reset_rwsem);
- 	}
- 
- 	/* Reset the port */
-@@ -2600,7 +2599,7 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
- 		port1);
- 
- done:
--	if (!warm)
-+	if (!hub_is_superspeed(hub->hdev))
- 		up_read(&ehci_cf_port_reset_rwsem);
- 
- 	return status;
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
+@@ -2538,7 +2543,7 @@ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
+ 		}
+-		if (!warm)
++		if (!warm && udev)
+ 			usb_set_device_state(udev, *status
+ 					? USB_STATE_NOTATTACHED
+ 					: USB_STATE_DEFAULT);
 -- 
 1.8.1.2
 
