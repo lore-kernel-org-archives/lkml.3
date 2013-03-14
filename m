@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3CNOXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:23:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33589 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089Ab3CNOXP (ORCPT
+	id S1756950Ab3CNOXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:23:41 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:34901 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3CNOXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:23:15 -0400
-Message-ID: <1363270983.3937.134.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 031/100] iwlwifi: always copy first 16 bytes of commands
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Berg, Johannes" <johannes.berg@intel.com>
-Cc: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 14 Mar 2013 14:23:03 +0000
-In-Reply-To: <1DC40B07CD6EC041A66726C271A73AE61966F227@IRSMSX102.ger.corp.intel.com>
-References: <20130312223122.884099393@linuxfoundation.org>
-	 <20130312223126.381565711@linuxfoundation.org>
-	 <1363225816.3937.119.camel@deadeye.wl.decadent.org.uk>
-	 <1363226724.3937.123.camel@deadeye.wl.decadent.org.uk>
-	 <1DC40B07CD6EC041A66726C271A73AE61966F227@IRSMSX102.ger.corp.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2u0L73X3Nu6b4e0ZElYM"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 14 Mar 2013 10:23:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdYs0MG3L4ti8tmVpwynVMMWKEVYdiOr+EG2ad2Z9D7x7A@mail.gmail.com>
+References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdbozpAVNb+7QLhiiinC+MMERvA=vNFP5kZiWLnsiv7dpg@mail.gmail.com>
+ <CACxGe6shiqqACd6S1VTEkno993xB+E7y2cLi3HOw6yUH+Mbn7A@mail.gmail.com>
+ <CACRpkdbXhV_4PwOzAaTKtRB4-vjBB5hp007EWdz_DiDjtBgv4g@mail.gmail.com>
+ <CAAVeFuJQ_QFaKRv=_POR=8MAv07=C9bSfQN6dn5AcRROx4m9xw@mail.gmail.com> <CACRpkdYs0MG3L4ti8tmVpwynVMMWKEVYdiOr+EG2ad2Z9D7x7A@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 14 Mar 2013 23:23:18 +0900
+Message-ID: <CAAVeFuKsMVnof8pO_M1ju3TezpzTF+0c4419ks5GrEsWmusNTA@mail.gmail.com>
+Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
+        Max Filippov <jcmvbkbc@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 14, 2013 at 11:14 PM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> For submitting the pull request to Torvalds in the end you will need
+> to create a signed tag. Do you have a signed GPG key? Else it's
+> about time to create a key and start collecting signatures... then you
+> can also get a repo at kernel.org in the future.
 
---=-2u0L73X3Nu6b4e0ZElYM
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I have one or two signatures of kernel devs on my GPG key, but I
+thought that maybe this set could be pulled by you or Grant once it
+has undergone enough testing - it's not like I intend to push
+regularly on this branch.
 
-On Thu, 2013-03-14 at 06:31 +0000, Berg, Johannes wrote:
-> > > >  	/* and copy the data that needs to be copied */
-> > > >  	cmd_pos =3D offsetof(struct iwl_device_cmd, payload);
-> > > > +	copy_size =3D sizeof(out_cmd->hdr);
-> > > >  	for (i =3D 0; i < IWL_MAX_CMD_TFDS; i++) {
-> > > > -		if (!cmd->len[i])
-> > > > +		int copy =3D 0;
-> > > > +
-> > > > +		if (!cmd->len)
-> > > >  			continue;
-> > >
-> > > cmd->len is an array, so the new condition is always false.  Shouldn'=
-t
-> > > it be 'if (!cmdlen[i])'?
-> >=20
-> > To answer myself: no, it should still be 'if (!cmd->len[i])' as this lo=
-op needs to
-> > include input fragments that will be completely copied into the header
-> > fragment.
->=20
-> Ick, good catch. It luckily doesn't matter as if cmd->len[i] is 0 (in
-> which case we'd continue) the "if (copy)" below saves us in all the
-> different code paths inside the loop. This is still clearly a mistake
-> in the patch though.
->=20
-> I will fix this upstream, I guess you'll want to wait for that for
-> stable? I'll Cc:stable that patch as well.
+If I understand correctly the reason for having this in its own branch
+is to be able remove it quickly would it attempt to screw the dog.
 
-I agree with your analysis that this is actually harmless, so no
-objections to including the patch in stable as it is.
+>> (sorry for being clueless) what's the procedure to add a new branch to
+>> linux-next? Shall I write to Stephen Rothwell directly?
+>
+> Yes. Join the linux-next mailing list too.
 
-Ben.
+Will do that, thanks. First of all let me send the relevant patches
+again to blackfin and m68k and get some feedback from them, since they
+are the most affected.
 
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-
---=-2u0L73X3Nu6b4e0ZElYM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUUHdR+e/yOyVhhEJAQqVZxAAjjx+ELupJDx5OizGTBWBGxzYfxq8Iz/W
-4FxZ3I1wWY7DJWHpwMaNOTM6CFSM36Fei7RucI+H7Xs3OHco+yhPUDJjcGoDEhXz
-k9nwm7NG0qoKpZmXA5lNswtLun2w6PRImd+nUE/KZeigFVDRymPfxltV8LaGE76y
-NnxldbcfmOfHem8qe9EGqwloZcnBfbQW0VZ0+d0P/L9B7S3lJGTpGdXOJAWxQVDx
-XjJdftU46qp7Z5dx5JoffKIeSwRYF+4/YwGNmMJlwcmmiVq2xGLKZ2ldeo80aLdP
-VdUUU4ULLJXc5iSCO0LLSO/CpefQXcRlg7ccYrmPgNydAq5MXpvuy17jj1eiUfis
-9kxbfhRBtdk55coiUNI9JIxHTHOFqmaZrjPp1q5/Z7gUs9fullqN4yphfrCIGqw1
-k4QxsQw8A6zEQWI7/l17jkPMnHYgrOVC3tEIuNG1dMoImgqywzPJFtcp0usaeufk
-RM1AcMgGTV4LGbykOEjJ5ZVsuABPcbVI1NyXkuPvyWcOxtgZSzgsnX8Ev+ZTyEih
-eWoHtQgHLhREWHzHwfhS0u/UxTXrrG/YKFifFXKHIsdDBBNaCYiEntgi4g6iihwM
-mQ66MOsRVojRo2NZOM2EWlVQEHlQ+Pdvw97bRqKIzKuWP8HzGs0B/d8fWRgGu3N2
-mC86Yo5Qdjk=
-=dz8X
------END PGP SIGNATURE-----
-
---=-2u0L73X3Nu6b4e0ZElYM--
+Alex.
