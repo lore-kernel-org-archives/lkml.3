@@ -1,107 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3CNLJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:09:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33161 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756200Ab3CNLJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:09:31 -0400
-Date: Thu, 14 Mar 2013 12:09:27 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/hugetlb: fix total hugetlbfs pages count when
- memory overcommit accouting
-Message-ID: <20130314110927.GC11631@dhcp22.suse.cz>
-References: <1363258189-24945-1-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363258189-24945-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757082Ab3CNLJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:09:58 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59581 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756200Ab3CNLJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 07:09:57 -0400
+Message-ID: <1363259393.1335.55.camel@x61.thuisdomein>
+Subject: Re: [PATCH] staging: ccg: remove two outdated dependencies
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Mar 2013 12:09:53 +0100
+In-Reply-To: <20130314105953.GJ9138@mwanda>
+References: <1363256224.1335.46.camel@x61.thuisdomein>
+	 <20130314105953.GJ9138@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Mar 2013 11:09:53.0851 (UTC) FILETIME=[7450F0B0:01CE20A4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 14-03-13 18:49:49, Wanpeng Li wrote:
-> Changelog:
->  v1 -> v2:
->   * update patch description, spotted by Michal
-> 
-> hugetlb_total_pages() does not account for all the supported hugepage
-> sizes.
+On Thu, 2013-03-14 at 13:59 +0300, Dan Carpenter wrote:
+> Your patch is fine as is, but if you wanted to send a follow on
+> patch to break the depend mess into separate lines, that would also
+> be welcome.  :)
 
-> This can lead to incorrect calculation of the total number of
-> page frames used by hugetlb. This patch corrects the issue.
+Well, now that you somehow managed to review this patch the urge to
+clean this line up has suddenly diminished. But maybe you're lucky and
+this will not pass Greg. 
 
-Sorry to be so picky but this doesn't tell us much. Why do we need to
-have the total number of hugetlb pages?
+> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-What about the following:
-"hugetlb_total_pages is used for overcommit calculations but the
-current implementation considers only default hugetlb page size (which
-is either the first defined hugepage size or the one specified by
-default_hugepagesz kernel boot parameter).
+Thanks.
 
-If the system is configured for more than one hugepage size (which is
-possible since a137e1cc hugetlbfs: per mount huge page sizes) then
-the overcommit estimation done by __vm_enough_memory (resp. shown by
-meminfo_proc_show) is not precise - there is an impression of more
-available/allowed memory. This can lead to an unexpected ENOMEM/EFAULT
-resp. SIGSEGV when memory is accounted."
 
-I think this is also worth pushing to the stable tree (it goes back to
-2.6.27)
+Paul Bolle
 
-> Testcase:
-> boot: hugepagesz=1G hugepages=1
-> before patch:
-> egrep 'CommitLimit' /proc/meminfo
-> CommitLimit:     55434168 kB
-> after patch:
-> egrep 'CommitLimit' /proc/meminfo
-> CommitLimit:     54909880 kB
-
-This gives some more confusion to a reader because there is only
-something like 500M difference here without any explanation.
-
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  mm/hugetlb.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index cdb64e4..9e25040 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2124,8 +2124,11 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
->  /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
->  unsigned long hugetlb_total_pages(void)
->  {
-> -	struct hstate *h = &default_hstate;
-> -	return h->nr_huge_pages * pages_per_huge_page(h);
-> +	struct hstate *h;
-> +	unsigned long nr_total_pages = 0;
-> +	for_each_hstate(h)
-> +		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
-> +	return nr_total_pages;
->  }
->  
->  static int hugetlb_acct_memory(struct hstate *h, long delta)
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
