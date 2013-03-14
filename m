@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab3CNU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:29:25 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:42582 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab3CNU3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:29:24 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kees Cook <keescook@chromium.org>, containers@lists.linux-foundation.org,
-        Sebastian Krahmer <krahmer@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-References: <20130313175729.GH12501@outflux.net> <87r4jjkv18.fsf@xmission.com>
-	<51412C67.30908@mit.edu>
-Date: Thu, 14 Mar 2013 13:29:10 -0700
-In-Reply-To: <51412C67.30908@mit.edu> (Andy Lutomirski's message of "Wed, 13
-	Mar 2013 18:48:23 -0700")
-Message-ID: <87hakdrai1.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752129Ab3CNUat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:30:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33971 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363Ab3CNUaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 16:30:46 -0400
+Date: Thu, 14 Mar 2013 16:30:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
+Message-ID: <20130314203028.GE24238@redhat.com>
+References: <20130314182815.GB24238@redhat.com>
+ <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+wUn5/TpXEB8C7gcw0VvVz2R8nYcxa2lo=
-X-SA-Exim-Connect-IP: 208.54.5.196
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: CLONE_NEWUSER|CLONE_FS root exploit
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+On Thu, Mar 14, 2013 at 10:05:59PM +0200, Kasatkin, Dmitry wrote:
+> On Thu, Mar 14, 2013 at 8:28 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > Hi Dmitry/Mimi,
+> >
+> > Here is an RFC patch. I am playing with exporting some functions from
+> > ima/integrity and make reuse of IMA signature format and reuse of some
+> > of IMA verification code.
+> >
+> > One of the things required is that caller wants trusts only certain
+> > type of signatures. For example, it might not trust DIGEST or HMAC
+> > but might trust only digital signatures. So caller needs to know what
+> > kind of signature are stored in IMA security attribute (if any) and
+> > decide what to do.
+> >
+> > Currently there seem to be two types of digital signatures. Old one and
+> > that is RSA and new one which is being called asymmetric. Right now they
+> > both fall in the categorty of EVM_IMA_XATTR_DIGSIG and one differentiates
+> > between two using signature version. Version 1 is old type and version 2
+> > is new type.
+> >
+> > How about asymmetric signature using a new type say
+> > EVM_IMA_XATTR_DIGSIG_ASYMMETRIC. And version numbering can be used for
+> > structure variation with-in signature type.
+> >
+> 
+> Hello Vivek,
+> 
+> This was exactly the way how I initially implemented asymmetric key support.
+> But then thought that we might have new versions of signature formats
+> in the future and there is
+> not point to create new xattr type for every signature format.
+> 
+> What prevents just using of signature version?
 
-> On 03/13/2013 11:35 AM, Eric W. Biederman wrote:
->> Kees Cook <keescook-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org> writes:
->> 
->>> Hi,
->>>
->>> It seem like we should block (at least) this combination. On 3.9, this
->>> exploit works once uidmapping is added.
->>>
->>> http://www.openwall.com/lists/oss-security/2013/03/13/10
->> 
->> Yes.  That is a bad combination.  It let's chroot confuse privileged
->> processes.
->> 
->> Now to figure out if this is easier to squash by adding a user_namespace
->> to fs_struct or by just forbidding this combination.
->
-> It's worth making sure that setns(2) doesn't have similar issues.
+I thought explicitly using signature format is more intutive. Exporting
+signature version is not. I personally associate versioning with minor
+changes like addition of some fields etc. Exporting that to caller sounds
+odd to me.
 
-setns(2) and unshare(2) are done and merged.  See commit.
+If I export signature version separately, then it becomes two calls. First
+call for signature type and second call for signature version. As not all
+formats have versions, caller also needs to be aware of that. This is like
+exposing too much internal detail to caller.
 
-commit e66eded8309ebf679d3d3c1f5820d1f2ca332c71
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Wed Mar 13 11:51:49 2013 -0700
+Hence I felt exposing seprate signature format as separate type becomes
+easy for the caller of the API. Even in user space we don't ask user the
+version of signature to be generated. What is more intutive is what kind
+of signature one wants to generate. Versioning info sounds more like an
+internal detail to the subsystem.
 
-    userns: Don't allow CLONE_NEWUSER | CLONE_FS
+Having said that, I am not very sure what's the fundamental difference
+between two digital signature formats. (Exising RSA one and new one 
+which is being called ASYMMETRIC). And how many possible formats are
+there. What's wrong with keep on increasing the enum value as new
+signature formats show up. 
 
-
-> Looking through other shared-but-not-a-namespace things, there are:
->
-> fs_struct: Buggy as noted.
->
-> files_struct: Probably harmless -- SCM_RIGHTS can emulate it
->
-> signal_struct: This interacts with the tty code.  Is it okay?
-
-It should be.  The tty code is heavily pid based, and CLONE_NEWPID
-requires !CLONE_VM (which implies !CLONE_SIGHAND and !CLONE_VM).
-
-> sighand_struct: Looks safe.  Famous last words.
->
-> FWIW, I've been alarmed in the past that struct path (e.g. the root
-> directory) implies an mnt_namespace (hidden in struct mount), and it's
-> entirely possible for the root directory's mnt_namespace not to match
-> nsproxy->mnt_namespace.  I'm not sure what the implications are, but
-> this doesn't seem healthy.
-
-The calls to check_mnt prevent abuse of the files found with fs_struct
-not matching the current mount namespace.
-
-static inline int check_mnt(struct mount *mnt)
-{
-	return mnt->mnt_ns == current->nsproxy->mnt_ns;
-}
-
-Thanks for looking I know I did the same double take and wondered if I
-had missed anything else by accident when this bug showed up.
-
-So far even just looking it all over again I can't see anything.  But I
-have clearly been blind before.
-
-Eric
-
-
+Thanks
+Vivek
