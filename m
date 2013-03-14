@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab3CNUat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:30:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33971 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab3CNUaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:30:46 -0400
-Date: Thu, 14 Mar 2013 16:30:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
-Message-ID: <20130314203028.GE24238@redhat.com>
-References: <20130314182815.GB24238@redhat.com>
- <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
+	id S1752142Ab3CNUcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:32:32 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:42067 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab3CNUcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 16:32:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130226070247.GA14094@gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+Date: Thu, 14 Mar 2013 13:32:30 -0700
+X-Google-Sender-Auth: mhUWgIxRhQ4R53leWY40jfEaEAs
+Message-ID: <CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 10:05:59PM +0200, Kasatkin, Dmitry wrote:
-> On Thu, Mar 14, 2013 at 8:28 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > Hi Dmitry/Mimi,
-> >
-> > Here is an RFC patch. I am playing with exporting some functions from
-> > ima/integrity and make reuse of IMA signature format and reuse of some
-> > of IMA verification code.
-> >
-> > One of the things required is that caller wants trusts only certain
-> > type of signatures. For example, it might not trust DIGEST or HMAC
-> > but might trust only digital signatures. So caller needs to know what
-> > kind of signature are stored in IMA security attribute (if any) and
-> > decide what to do.
-> >
-> > Currently there seem to be two types of digital signatures. Old one and
-> > that is RSA and new one which is being called asymmetric. Right now they
-> > both fall in the categorty of EVM_IMA_XATTR_DIGSIG and one differentiates
-> > between two using signature version. Version 1 is old type and version 2
-> > is new type.
-> >
-> > How about asymmetric signature using a new type say
-> > EVM_IMA_XATTR_DIGSIG_ASYMMETRIC. And version numbering can be used for
-> > structure variation with-in signature type.
-> >
-> 
-> Hello Vivek,
-> 
-> This was exactly the way how I initially implemented asymmetric key support.
-> But then thought that we might have new versions of signature formats
-> in the future and there is
-> not point to create new xattr type for every signature format.
-> 
-> What prevents just using of signature version?
+On Mon, Feb 25, 2013 at 11:02 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Stephane Eranian (1):
+>       perf/x86: Add Intel IvyBridge event scheduling constraints
 
-I thought explicitly using signature format is more intutive. Exporting
-signature version is not. I personally associate versioning with minor
-changes like addition of some fields etc. Exporting that to caller sounds
-odd to me.
+So thanks to my new Chromebook, I'm trying to do perf stuff on
+IvyBridge. I was hoping the whole exact cycle counting would work
+better, since the last machine it was reliable for me was my old
+Westmere desktop, and my previous laptop (Sandybridge MacBook Air)
+didn't work very well due to CPU errata.
 
-If I export signature version separately, then it becomes two calls. First
-call for signature type and second call for signature version. As not all
-formats have versions, caller also needs to be aware of that. This is like
-exposing too much internal detail to caller.
+Sadly, my new Ivybridge laptop doesn't seem to do very well either,
+but I suspect it's the kernel, not the hardware this time. A simple
 
-Hence I felt exposing seprate signature format as separate type becomes
-easy for the caller of the API. Even in user space we don't ask user the
-version of signature to be generated. What is more intutive is what kind
-of signature one wants to generate. Versioning info sounds more like an
-internal detail to the subsystem.
+    perf record -f -e cycles:pp make -j
 
-Having said that, I am not very sure what's the fundamental difference
-between two digital signature formats. (Exising RSA one and new one 
-which is being called ASYMMETRIC). And how many possible formats are
-there. What's wrong with keep on increasing the enum value as new
-signature formats show up. 
+in the kernel directory (fully built kernel, so the load doesn't
+actually go crazy despite the "-j") will *sometimes* totally hang the
+machine with current git.
 
-Thanks
-Vivek
+I get a NULL pointer dereference in intel_pmu_enable_all, so I don't
+think it's a hardware bug.
+
+And to make things interesting, I seem to be able to only reproduce
+this *after* a suspend cycle. That may be just happenstance, since it
+seemed to be hard to replicate and most of the time it has happened
+under X with no messages visible at all, but that *seems* to be the
+pattern.
+
+And the one time I got it to happen on the text console, things
+scrolled off (watchdog warnings due to lockups), but I did get a NULL
+pointer dereference in intel_pmu_enable_all().
+
+I'll try to reproduce it and get a picture, but thought I'd send out
+the email with just this, since maybe the "suspend cycle" plus "NULL
+pointer in intel_pmu_enable_all()" makes somebody go "Duh!", or at
+least replicate it...
+
+                  Linus
