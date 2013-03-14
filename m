@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab3CNTbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 15:31:00 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:34411 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3CNTa6 (ORCPT
+	id S1751391Ab3CNTcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 15:32:04 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:50542 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab3CNTcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 15:30:58 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org, linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] m68k: Add missing cmpxchg64() if CONFIG_RMW_INSNS=y
-Date: Thu, 14 Mar 2013 20:30:49 +0100
-Message-Id: <1363289449-16116-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 14 Mar 2013 15:32:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKMK7uEDjtECnAO1v38KMDuB7kd=DthiZRvQdto7+HJ19tWkEw@mail.gmail.com>
+References: <20130312003145.GA28993@www.outflux.net>
+	<20130312090746.GD31324@cantiga.alporthouse.com>
+	<20130313202858.GD1896@bremse>
+	<CAKMK7uEDjtECnAO1v38KMDuB7kd=DthiZRvQdto7+HJ19tWkEw@mail.gmail.com>
+Date: Thu, 14 Mar 2013 12:32:00 -0700
+X-Google-Sender-Auth: ykAhwkprpXJ8HfR2U_2EoBB7v-c
+Message-ID: <CAGXu5j+Y9Onie1bC5aW-GUqYKCbLe=Zxx3e+74FmKCE237_mig@mail.gmail.com>
+Subject: Re: [PATCH v3] drm/i915: bounds check execbuffer relocation count
+From: Kees Cook <keescook@chromium.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+        Julien Tinnes <jln@google.com>, marcheu@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_RMW_INSNS=y:
+On Thu, Mar 14, 2013 at 9:57 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Wed, Mar 13, 2013 at 9:28 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> On Tue, Mar 12, 2013 at 09:07:46AM +0000, Chris Wilson wrote:
+>>> On Mon, Mar 11, 2013 at 05:31:45PM -0700, Kees Cook wrote:
+>>> > It is possible to wrap the counter used to allocate the buffer for
+>>> > relocation copies. This could lead to heap writing overflows.
+>>> >
+>>> > CVE-2013-0913
+>>> >
+>>> > v3: collapse test, improve comment
+>>> > v2: move check into validate_exec_list
+>>> >
+>>> > Signed-off-by: Kees Cook <keescook@chromium.org>
+>>> > Reported-by: Pinkie Pie
+>>> > Cc: stable@vger.kernel.org
+>>>
+>>> Looks good to me. The only bikeshed that remains is whether we should
+>>> just collapse the two variables into one, but the current 'max - count'
+>>> is more idiomatic and so preferrable.
+>>> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+>>
+>> Picked up for -fixes, thanks for the patch.
+>
+> I've forgotten to dump my wishlist: Can I have an i-g-t for this? For
+> this bug here specifically an execbuf with just one buffer with too
+> many relocs plus another execbuf with two buffers with relocation so
+> that the 2nd relocation list will overflow should be sufficient.
 
-drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
-drivers/block/blockconsole.c:164: error: implicit declaration of function ‘cmpxchg64’
+Sure thing. Where do these live? (Or what docs should I read for
+this?) I'm assuming i-g-t means "intel graphics test"? :)
 
-Map cmpxchg64 to cmpxchg64_local, which is already mapped to
-__cmpxchg64_local_generic, just like for the CONFIG_RMW_INSNS=n case.
+-Kees
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-http://kisskb.ellerman.id.au/kisskb/buildresult/8398995/
-
- arch/m68k/include/asm/cmpxchg.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/m68k/include/asm/cmpxchg.h b/arch/m68k/include/asm/cmpxchg.h
-index 5c81d0e..bc755bc 100644
---- a/arch/m68k/include/asm/cmpxchg.h
-+++ b/arch/m68k/include/asm/cmpxchg.h
-@@ -124,6 +124,9 @@ static inline unsigned long __cmpxchg(volatile void *p, unsigned long old,
- #define cmpxchg_local(ptr, o, n)					    \
- 	((__typeof__(*(ptr)))__cmpxchg((ptr), (unsigned long)(o),	    \
- 			(unsigned long)(n), sizeof(*(ptr))))
-+
-+#define cmpxchg64(ptr, o, n)	cmpxchg64_local((ptr), (o), (n))
-+
- #else
- 
- /*
 -- 
-1.7.0.4
-
+Kees Cook
+Chrome OS Security
