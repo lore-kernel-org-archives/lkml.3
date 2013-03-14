@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab3CNKiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:38:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52079 "EHLO
+	id S932325Ab3CNKjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:39:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52111 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab3CNKiO (ORCPT
+	with ESMTP id S1757390Ab3CNKiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:14 -0400
+	Thu, 14 Mar 2013 06:38:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fusionio.com>,
+Cc: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 77/88] Btrfs: fix panic when recovering tree log
-Date: Thu, 14 Mar 2013 10:36:10 +0000
-Message-Id: <1363257381-15900-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 83/88] drm/i915: Increase the RC6p threshold.
+Date: Thu, 14 Mar 2013 10:36:16 +0000
+Message-Id: <1363257381-15900-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,81 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
 
-commit b0175117b9376a69978bbe80af26fb95dddbd53e upstream.
+commit 0920a48719f1ceefc909387a64f97563848c7854 upstream.
 
-A user reported a BUG_ON(ret) that occured during tree log replay.  Ret was
--EAGAIN, so what I think happened is that we removed an extent that covered
-a bitmap entry and an extent entry.  We remove the part from the bitmap and
-return -EAGAIN and then search for the next piece we want to remove, which
-happens to be an entire extent entry, so we just free the sucker and return.
-The problem is ret is still set to -EAGAIN so we trip the BUG_ON().  The
-user used btrfs-zero-log so I'm not 100% sure this is what happened so I've
-added a WARN_ON() to catch the other possibility.  Thanks,
+This increases GEN6_RC6p_THRESHOLD from 100000 to 150000. For some
+reason this avoids the gen6_gt_check_fifodbg.isra warnings and
+associated GPU lockups, which makes my ivy bridge machine stable.
 
-Reported-by: Jan Steffens <jan.steffens@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/free-space-cache.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-index 6c4e2ba..c6ae3f4 100644
---- a/fs/btrfs/free-space-cache.c
-+++ b/fs/btrfs/free-space-cache.c
-@@ -1876,11 +1876,13 @@ int btrfs_remove_free_space(struct btrfs_block_group_cache *block_group,
- {
- 	struct btrfs_free_space_ctl *ctl = block_group->free_space_ctl;
- 	struct btrfs_free_space *info;
--	int ret = 0;
-+	int ret;
-+	bool re_search = false;
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+index b40ce63..b4cc672 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -2397,7 +2397,7 @@ void gen6_enable_rps(struct drm_i915_private *dev_priv)
+ 	I915_WRITE(GEN6_RC_SLEEP, 0);
+ 	I915_WRITE(GEN6_RC1e_THRESHOLD, 1000);
+ 	I915_WRITE(GEN6_RC6_THRESHOLD, 50000);
+-	I915_WRITE(GEN6_RC6p_THRESHOLD, 100000);
++	I915_WRITE(GEN6_RC6p_THRESHOLD, 150000);
+ 	I915_WRITE(GEN6_RC6pp_THRESHOLD, 64000); /* unused */
  
- 	spin_lock(&ctl->tree_lock);
- 
- again:
-+	ret = 0;
- 	if (!bytes)
- 		goto out_lock;
- 
-@@ -1893,17 +1895,17 @@ again:
- 		info = tree_search_offset(ctl, offset_to_bitmap(ctl, offset),
- 					  1, 0);
- 		if (!info) {
--			/* the tree logging code might be calling us before we
--			 * have fully loaded the free space rbtree for this
--			 * block group.  So it is possible the entry won't
--			 * be in the rbtree yet at all.  The caching code
--			 * will make sure not to put it in the rbtree if
--			 * the logging code has pinned it.
-+			/*
-+			 * If we found a partial bit of our free space in a
-+			 * bitmap but then couldn't find the other part this may
-+			 * be a problem, so WARN about it.
- 			 */
-+			WARN_ON(re_search);
- 			goto out_lock;
- 		}
- 	}
- 
-+	re_search = false;
- 	if (!info->bitmap) {
- 		unlink_free_space(ctl, info);
- 		if (offset == info->offset) {
-@@ -1949,8 +1951,10 @@ again:
- 	}
- 
- 	ret = remove_from_bitmap(ctl, info, &offset, &bytes);
--	if (ret == -EAGAIN)
-+	if (ret == -EAGAIN) {
-+		re_search = true;
- 		goto again;
-+	}
- 	BUG_ON(ret); /* logic error */
- out_lock:
- 	spin_unlock(&ctl->tree_lock);
+ 	rc6_mode = intel_enable_rc6(dev_priv->dev);
 -- 
 1.8.1.2
 
