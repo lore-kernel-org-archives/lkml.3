@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab3CNKJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:09:56 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60622 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab3CNKJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:09:54 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/4] introduce zero filled pages handler
-Date: Thu, 14 Mar 2013 18:08:14 +0800
-Message-Id: <1363255697-19674-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1363255697-19674-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1363255697-19674-1-git-send-email-liwanp@linux.vnet.ibm.com>
-x-cbid: 13031410-3568-0000-0000-0000034A01D3
+	id S1756635Ab3CNKOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:14:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57568 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755566Ab3CNKOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:14:06 -0400
+Date: Thu, 14 Mar 2013 11:14:03 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Lenky Gao <lenky.gao@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Inactive memory keep growing and how to release it?
+Message-ID: <20130314101403.GB11636@dhcp22.suse.cz>
+References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce zero-filled pages handler to capture and handle zero pages.
+On Mon 04-03-13 17:52:22, Lenky Gao wrote:
+> Hi,
+> 
+> When i just run a test on Centos 6.2 as follows:
+> 
+> #!/bin/bash
+> 
+> while true
+> do
+> 
+> 	file="/tmp/filetest"
+> 
+> 	echo $file
+> 
+> 	dd if=/dev/zero of=${file} bs=512 count=204800 &> /dev/null
+> 
+> 	sleep 5
+> done
+> 
+> the inactive memory keep growing:
+> 
+> #cat /proc/meminfo | grep Inactive\(fi
+> Inactive(file):   420144 kB
+> ...
+> #cat /proc/meminfo | grep Inactive\(fi
+> Inactive(file):   911912 kB
+> ...
+> #cat /proc/meminfo | grep Inactive\(fi
+> Inactive(file):  1547484 kB
+> ...
+> 
+> and i cannot reclaim it:
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+How did you try to reclaim the memory? How much memory is still free?
+Are you above watermaks (/proc/zoneinfo will tell you more)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 328898e..b71e033 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -460,6 +460,32 @@ static void zcache_obj_free(struct tmem_obj *obj, struct tmem_pool *pool)
- 	kmem_cache_free(zcache_obj_cache, obj);
- }
+> # cat /proc/meminfo | grep Inactive\(fi
+> Inactive(file):  1557684 kB
+> # echo 3 > /proc/sys/vm/drop_caches
+> # cat /proc/meminfo | grep Inactive\(fi
+> Inactive(file):  1520832 kB
+> 
+> I have tested on other version kernel, such as 2.6.30 and .6.11, the
+> problom also exists.
+> 
+> When in the final situation, i cannot kmalloc a larger contiguous
+> memory, especially in interrupt context.
+
+This could be related to the memory fragmentation and your kernel seem
+to be too large to have memory compaction which helps a lot in that
+area.
+
+> Can you give some tips to avoid this?
+
+One way would be to increase /proc/sys/vm/min_free_kbytes which will
+enlarge watermaks so the reclaim starts sooner.
  
-+static bool page_zero_filled(void *ptr)
-+{
-+	unsigned int pos;
-+	unsigned long *page;
-+
-+	page = (unsigned long *)ptr;
-+
-+	for (pos = 0; pos < PAGE_SIZE / sizeof(*page); pos++) {
-+		if (page[pos])
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
-+static void handle_zero_page(void *page)
-+{
-+	void *user_mem;
-+
-+	user_mem = kmap_atomic(page);
-+	memset(user_mem, 0, PAGE_SIZE);
-+	kunmap_atomic(user_mem);
-+
-+	flush_dcache_page(page);
-+}
-+
- static struct tmem_hostops zcache_hostops = {
- 	.obj_alloc = zcache_obj_alloc,
- 	.obj_free = zcache_obj_free,
--- 
-1.7.7.6
+> PS:
+> # uname -a
+> Linux localhost.localdomain 2.6.32-220.el6.x86_64 #1 SMP Tue Dec 6
+> 19:48:22 GMT 2011 x86_64 x86_64 x86_64 GNU/Linux
 
+This is really an old kernel and also a distribution one which might
+contain a lot of patches on top of the core kernel. I would suggest to
+contact Redhat or try to reproduce the issue with the vanilla and
+up-to-date kernel and report here.
+-- 
+Michal Hocko
+SUSE Labs
