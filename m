@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab3CNKgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:36:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51717 "EHLO
+	id S1757225Ab3CNKhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:37:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab3CNKgw (ORCPT
+	with ESMTP id S1757184Ab3CNKhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:52 -0400
+	Thu, 14 Mar 2013 06:37:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 06/88] xen-blkback: do not leak mode property
-Date: Thu, 14 Mar 2013 10:34:59 +0000
-Message-Id: <1363257381-15900-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 50/88] zram: Fix deadlock bug in partial read/write
+Date: Thu, 14 Mar 2013 10:35:43 +0000
+Message-Id: <1363257381-15900-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,115 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 9d092603cc306ee6edfe917bf9ab8beb5f32d7bc upstream.
+commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
 
-"be->mode" is obtained from xenbus_read(), which does a kmalloc() for
-the message body. The short string is never released, so do it along
-with freeing "be" itself, and make sure the string isn't kept when
-backend_changed() doesn't complete successfully (which made it
-desirable to slightly re-structure that function, so that the error
-cleanup can be done in one place).
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
 
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
+
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
+
+Acked-by: Jerome Marchand <jmarchand@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/xen-blkback/xenbus.c | 49 +++++++++++++++++++-------------------
- 1 file changed, 24 insertions(+), 25 deletions(-)
+ drivers/staging/zram/zram_drv.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 4f66171..a155254 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -367,6 +367,7 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
- 		be->blkif = NULL;
- 	}
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 685d612..fb7f9fb 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -235,7 +235,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
  
-+	kfree(be->mode);
- 	kfree(be);
- 	dev_set_drvdata(&dev->dev, NULL);
- 	return 0;
-@@ -502,6 +503,7 @@ static void backend_changed(struct xenbus_watch *watch,
- 		= container_of(watch, struct backend_info, backend_watch);
- 	struct xenbus_device *dev = be->dev;
- 	int cdrom = 0;
-+	unsigned long handle;
- 	char *device_type;
- 
- 	DPRINTK("");
-@@ -521,10 +523,10 @@ static void backend_changed(struct xenbus_watch *watch,
- 		return;
- 	}
- 
--	if ((be->major || be->minor) &&
--	    ((be->major != major) || (be->minor != minor))) {
--		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
--			be->major, be->minor, major, minor);
-+	if (be->major | be->minor) {
-+		if (be->major != major || be->minor != minor)
-+			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
-+				be->major, be->minor, major, minor);
- 		return;
- 	}
- 
-@@ -542,36 +544,33 @@ static void backend_changed(struct xenbus_watch *watch,
- 		kfree(device_type);
- 	}
- 
--	if (be->major == 0 && be->minor == 0) {
--		/* Front end dir is a number, which is used as the handle. */
--
--		char *p = strrchr(dev->otherend, '/') + 1;
--		long handle;
--		err = strict_strtoul(p, 0, &handle);
--		if (err)
--			return;
-+	/* Front end dir is a number, which is used as the handle. */
-+	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
-+	if (err)
-+		return;
- 
--		be->major = major;
--		be->minor = minor;
-+	be->major = major;
-+	be->minor = minor;
- 
--		err = xen_vbd_create(be->blkif, handle, major, minor,
--				 (NULL == strchr(be->mode, 'w')), cdrom);
--		if (err) {
--			be->major = 0;
--			be->minor = 0;
--			xenbus_dev_fatal(dev, err, "creating vbd structure");
--			return;
--		}
-+	err = xen_vbd_create(be->blkif, handle, major, minor,
-+			     !strchr(be->mode, 'w'), cdrom);
- 
-+	if (err)
-+		xenbus_dev_fatal(dev, err, "creating vbd structure");
-+	else {
- 		err = xenvbd_sysfs_addif(dev);
- 		if (err) {
- 			xen_vbd_free(&be->blkif->vbd);
--			be->major = 0;
--			be->minor = 0;
- 			xenbus_dev_fatal(dev, err, "creating sysfs entries");
--			return;
- 		}
-+	}
- 
-+	if (err) {
-+		kfree(be->mode);
-+		be->mode = NULL;
-+		be->major = 0;
-+		be->minor = 0;
-+	} else {
- 		/* We're potentially connected now */
- 		xen_update_blkif_status(be->blkif);
- 	}
+ 	if (is_partial_io(bvec)) {
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			return -ENOMEM;
+@@ -330,7 +330,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
 -- 
 1.8.1.2
 
