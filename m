@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3CNOMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:12:52 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56880 "EHLO
+	id S1757621Ab3CNOMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:12:50 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56883 "EHLO
 	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756801Ab3CNOKv (ORCPT
+	with ESMTP id S1757066Ab3CNOKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 10:10:51 -0400
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Mar 2013 10:10:50 EDT
 From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
 To: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, hverkuil@xs4all.nl, elezegarcia@gmail.com,
         =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: [RFC V1 1/8] smi2021: Add the header file
-Date: Thu, 14 Mar 2013 15:06:57 +0100
-Message-Id: <1363270024-12127-2-git-send-email-jonarne@jonarne.no>
+Subject: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
+Date: Thu, 14 Mar 2013 15:06:59 +0100
+Message-Id: <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
 References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
@@ -25,24 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the header file for the smi2021 module.
+This file is responsible for registering the device
+with the kernel i2c subsystem.
+v4l2 talks to the saa7113 chip of the device via i2c.
 
 Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
 ---
- drivers/media/usb/smi2021/smi2021.h | 228 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 228 insertions(+)
- create mode 100644 drivers/media/usb/smi2021/smi2021.h
+ drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
+ 1 file changed, 160 insertions(+)
+ create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
 
-diff --git a/drivers/media/usb/smi2021/smi2021.h b/drivers/media/usb/smi2021/smi2021.h
+diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
 new file mode 100644
-index 0000000..eba0fef
+index 0000000..5b6f3f5
 --- /dev/null
-+++ b/drivers/media/usb/smi2021/smi2021.h
-@@ -0,0 +1,228 @@
++++ b/drivers/media/usb/smi2021/smi2021_i2c.c
+@@ -0,0 +1,160 @@
 +/*******************************************************************************
-+ * smi2021.h                                                                   *
++ * smi2021_i2c.c                                                               *
 + *                                                                             *
-+ * USB Driver for SMI2021 - EasyCap                                            *
++ * USB Driver for SMI2021 - EasyCAP                                            *
 + * USB ID 1c88:003c                                                            *
 + *                                                                             *
 + * *****************************************************************************
@@ -74,199 +75,131 @@ index 0000000..eba0fef
 + *
 + */
 +
-+#ifndef SMI2021_H
-+#define SMI2021_H
++#include "smi2021.h"
 +
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+#include <linux/types.h>
-+#include <linux/spinlock_types.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
++/* The device will not return the chip_name on address 0x00.
++ * But the saa7115 i2c driver needs the chip id to match "f7113"
++ * if we want to use it,
++ * so we have to fake the return of this value
++ */
 +
-+#include <media/v4l2-event.h>
-+#include <media/v4l2-device.h>
-+#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-chip-ident.h>
-+#include <media/videobuf2-core.h>
-+#include <media/videobuf2-vmalloc.h>
-+#include <media/saa7115.h>
++static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
++static int id_ptr;
 +
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/initval.h>
++static unsigned int i2c_debug;
++module_param(i2c_debug, int, 0644);
++MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
 +
-+#define SMI2021_DRIVER_VERSION "0.1"
++#define dprint_i2c(fmt, args...)					\
++do {									\
++	if (i2c_debug)							\
++		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
++} while (0)
 +
-+/* For ISOC */
-+#define SMI2021_MAX_PKT_SIZE	3072
-+#define SMI2021_ISOC_PACKETS	10	/* 64 */
-+#define SMI2021_ISOC_BUFS	4	/* 16 */
-+#define SMI2021_ISOC_EP		0x82
 +
-+/* The structure of the array we use to send i2c settings to the device */
-+#define SMI2021_CTRL_HEAD 0x00
-+#define	SMI2021_CTRL_ADDR 0x01
-+#define SMI2021_CTRL_BM_DATA_TYPE 0x02
-+#define	SMI2021_CTRL_BM_DATA_OFFSET 0x03
-+#define	SMI2021_CTRL_DATA_SIZE 0x04
++static int i2c_xfer(struct i2c_adapter *i2c_adap,
++				struct i2c_msg msgs[], int num)
++{
++	struct smi2021_dev *dev = i2c_adap->algo_data;
 +
-+#define SMI2021_CTRL_REG_HI 0x05
-+#define SMI2021_CTRL_REG_LO 0x06
-+#define SMI2021_CTRL_REG_VAL 0x07
++	switch (num) {
++	case 2: { /* Read reg */
++		if (msgs[0].len != 1 || msgs[1].len != 1) {
++			dprint_i2c("both messages must be 1 byte\n");
++			goto err_out;
 +
-+#define SMI2021_CTRL_I2C_REG 0x05
-+#define SMI2021_CTRL_I2C_VAL 0x06
-+#define SMI2021_CTRL_I2C_RCV_VAL 0x05
++		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
++			dprint_i2c("last message should have rd flag\n");
++			goto err_out;
++		}
 +
-+/* General video constants */
-+#define SMI2021_BYTES_PER_LINE	1440
-+#define SMI2021_PAL_LINES	576
-+#define SMI2021_NTSC_LINES	486
++		if (msgs[0].buf[0] == 0) {
++			msgs[1].buf[0] = chip_id[id_ptr];
++			if (chip_id[id_ptr] != 0)
++				id_ptr += 1;
++		} else {
++			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
++						msgs[1].buf);
++		}
++		break;
++	}
++	case 1: { /* Write reg */
++		if (msgs[0].len == 0) {
++			break;
++		} else if (msgs[0].len != 2) {
++			dprint_i2c("unsupported len\n");
++			goto err_out;
++		}
++		if (msgs[0].buf[0] == 0) {
++			/* We don't handle writing to addr 0x00 */
++			break;
++		}
 +
-+/* Timing Referance Codes, see saa7113 datasheet */
-+#define SMI2021_TRC_EAV		0x10
-+#define SMI2021_TRC_VBI		0x20
-+#define SMI2021_TRC_FIELD_2	0x40
-+#define SMI2021_TRC		0x80
++		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
++						msgs[0].buf[1]);
++		break;
++	}
++	default: {
++		dprint_i2c("driver can only handle 1 or 2 messages\n");
++		goto err_out;
++	}
++	}
++	return num;
 +
-+#define DEBUG
-+#ifdef DEBUG
-+#define smi2021_dbg(fmt, args...)		\
-+	pr_debug("smi2021::%s: " fmt, __func__, \
-+			##args)
-+#else
-+#define smi2021_dbg(fmt, args...)
-+#endif
++err_out:
++	return -EOPNOTSUPP;
++}
 +
-+#define smi2021_info(fmt, args...)		\
-+	pr_info("smi2021::%s: " fmt,		\
-+		__func__, ##args)
++static u32 functionality(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_SMBUS_EMUL;
++}
 +
-+#define smi2021_warn(fmt, args...)		\
-+	pr_warn("smi2021::%s: " fmt,		\
-+		__func__, ##args)
-+
-+#define smi2021_err(fmt, args...)		\
-+	pr_err("smi2021::%s: " fmt,		\
-+		__func__, ##args)
-+
-+enum smi2021_sync {
-+	HSYNC,
-+	SYNCZ1,
-+	SYNCZ2,
-+	TRC
++static struct i2c_algorithm algo = {
++	.master_xfer = i2c_xfer,
++	.functionality = functionality,
 +};
 +
-+/* Buffer for one video frame */
-+struct smi2021_buffer {
-+	/* Common vb2 stuff, must be first */
-+	struct vb2_buffer		vb;
-+	struct list_head		list;
-+
-+	void				*mem;
-+	unsigned int			length;
-+
-+	bool				second_field;
-+	bool				in_blank;
-+	unsigned int			pos;
-+
-+	/* ActiveVideo - Line counter */
-+	u16				trc_av;
++static struct i2c_adapter adap_template = {
++	.owner = THIS_MODULE,
++	.name = "smi2021_easycap_dc60",
++	.algo = &algo,
 +};
 +
-+struct smi2021_isoc_ctl {
-+	int max_pkt_size;
-+	int num_bufs;
-+	struct urb **urb;
-+	char **transfer_buffer;
-+	struct smi2021_buffer *buf;
++static struct i2c_client client_template = {
++	.name = "smi2021 internal",
 +};
 +
++int smi2021_i2c_register(struct smi2021_dev *dev)
++{
++	int rc;
 +
-+struct smi2021_fmt {
-+	char				*name;
-+	u32				fourcc;
-+	int				depth;
-+};
++	id_ptr = 0;
 +
-+struct smi2021_input {
-+	char				*name;
-+	int				type;
-+};
++	dev->i2c_adap = adap_template;
++	dev->i2c_adap.dev.parent = dev->dev;
++	strcpy(dev->i2c_adap.name, "smi2021");
++	dev->i2c_adap.algo_data = dev;
 +
-+struct smi2021_dev {
-+	struct v4l2_device		v4l2_dev;
-+	struct video_device		vdev;
-+	struct v4l2_ctrl_handler	ctrl_handler;
++	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
 +
-+	struct v4l2_subdev		*sd_saa7113;
++	rc = i2c_add_adapter(&dev->i2c_adap);
++	if (rc < 0) {
++		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
++		return rc;
++	}
 +
-+	struct usb_device		*udev;
-+	struct device			*dev;
++	dev->i2c_client = client_template;
++	dev->i2c_client.adapter = &dev->i2c_adap;
 +
-+	/* Capture buffer queue */
-+	struct vb2_queue		vb_vidq;
++	return 0;
++}
 +
-+	/* ISOC control struct */
-+	struct list_head		avail_bufs;
-+	struct smi2021_isoc_ctl		isoc_ctl;
-+
-+	int				width;		/* frame width */
-+	int				height;		/* frame height */
-+	unsigned int			ctl_input;	/* selected input */
-+	v4l2_std_id			norm;		/* current norm */
-+	struct smi2021_fmt		*fmt;		/* selected format */
-+	unsigned int			buf_count;	/* for video buffers */
-+
-+	/* i2c i/o */
-+	struct i2c_adapter		i2c_adap;
-+	struct i2c_client		i2c_client;
-+
-+	struct mutex			v4l2_lock;
-+	struct mutex			vb_queue_lock;
-+	spinlock_t			buf_lock;
-+
-+	enum smi2021_sync		sync_state;
-+
-+	/* audio */
-+	struct snd_card			*snd_card;
-+	struct snd_pcm_substream	*pcm_substream;
-+
-+	unsigned int			pcm_write_ptr;
-+	unsigned int			pcm_complete_samples;
-+
-+	u8				pcm_read_offset;
-+	struct work_struct		adev_capture_trigger;
-+	atomic_t			adev_capturing;
-+};
-+
-+/* Provided by smi2021_main.c */
-+int smi2021_write_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 val);
-+int smi2021_read_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 *val);
-+
-+/* Provided by smi2021_v4l2.c */
-+int smi2021_vb2_setup(struct smi2021_dev *dev);
-+int smi2021_video_register(struct smi2021_dev *dev);
-+void smi2021_clear_queue(struct smi2021_dev *dev);
-+
-+/* Provided by smi2021_video.c */
-+int smi2021_alloc_isoc(struct smi2021_dev *dev);
-+void smi2021_free_isoc(struct smi2021_dev *dev);
-+void smi2021_cancel_isoc(struct smi2021_dev *dev);
-+void smi2021_uninit_isoc(struct smi2021_dev *dev);
-+
-+/* Provided by smi2021_i2c.c */
-+int smi2021_i2c_register(struct smi2021_dev *dev);
-+int smi2021_i2c_unregister(struct smi2021_dev *dev);
-+
-+/* Provided by smi2021_audio.c */
-+int smi2021_snd_register(struct smi2021_dev *dev);
-+void smi2021_snd_unregister(struct smi2021_dev *dev);
-+void smi2021_audio(struct smi2021_dev *dev, u8 *data, int len);
-+#endif /* SMI2021_H */
++int smi2021_i2c_unregister(struct smi2021_dev *dev)
++{
++	i2c_del_adapter(&dev->i2c_adap);
++	return 0;
++}
 -- 
 1.8.1.1
 
