@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab3CNOtB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:49:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39422 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab3CNOtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:49:00 -0400
-Message-ID: <5141E351.1060005@ti.com>
-Date: Thu, 14 Mar 2013 20:18:49 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757453Ab3CNOtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:49:43 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:45513 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab3CNOtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:49:41 -0400
+Subject: [PATCH bugfix 3.9] PCI: Don't try to disable Bus Master on
+ disconnected PCI devices
+To: linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Date: Thu, 14 Mar 2013 18:49:37 +0400
+Message-ID: <20130314144936.10073.2403.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <notasas@gmail.com>
-Subject: Re: [PATCH v2 0/4] usb: musb/otg: cleanup and fixes
-References: <1363242239-1061-1-git-send-email-kishon@ti.com> <20130314133313.GB26080@arwen.pp.htv.fi> <5141E26C.10700@ti.com> <20130314144744.GM26080@arwen.pp.htv.fi>
-In-Reply-To: <20130314144744.GM26080@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 March 2013 08:17 PM, Felipe Balbi wrote:
-> On Thu, Mar 14, 2013 at 08:15:00PM +0530, kishon wrote:
->> On Thursday 14 March 2013 07:03 PM, Felipe Balbi wrote:
->>> On Thu, Mar 14, 2013 at 11:53:55AM +0530, Kishon Vijay Abraham I wrote:
->>>> This series has some misc cleanup and fixes. The fix solves the cold
->>>> plug issue in omap3 which some have reported. Developed these patches on
->>>> fixes-for-v3.9-rc3 after applying
->>>> http://www.spinics.net/lists/linux-usb/msg81563.html
->>>> (Grazvydas Ignotas patch series)
->>>>
->>>> Tested for g_zero enumeration in pandaboard and beagleboard in both
->>>> cold plug and hot plug case. Any kind of testing for this series is welcome.
->>>>
->>>> Changes from v1:
->>>> * removed *usb: musb: omap: remove the check before calling otg_set_vbus*
->>
->> er.. removed *usb: musb: omap: always glue have the correct vbus/id
->> status* since a patch similar to it is already merged.
->
-> alright, I'll apply this series soonish.
->
-Ok.
+This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from v3.9-rc1
+("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
+in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from v3.5-rc1
+("PCI: disable Bus Master on PCI device shutdown")
 
-Thanks
-Kishon
+Unfortunately fixing one bug uncovers another:
+->shutdown() callback might switch device to deep sleep state.
+PCI config space no longer available after that.
+
+Link: https://lkml.org/lkml/2013/3/12/529
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Reported-and-Tested-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/pci-driver.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 1fa1e48..79277fb 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
+ 
+ 	/*
+ 	 * Turn off Bus Master bit on the device to tell it to not
+-	 * continue to do DMA
++	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
+ 	 */
+-	pci_clear_master(pci_dev);
++	if (pci_dev->current_state <= PCI_D3hot)
++		pci_clear_master(pci_dev);
+ }
+ 
+ #ifdef CONFIG_PM
+
