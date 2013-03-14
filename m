@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab3CNN6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:58:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36456 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab3CNN6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:58:00 -0400
-Date: Thu, 14 Mar 2013 15:57:42 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <s-guiriec@ti.com>,
-        <gg@slimlogic.co.uk>, <sameo@linux.intel.com>,
-        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <ruchika@ti.com>
-Subject: Re: [PATCH v2 4/4] usb: musb: omap2430: replace *_* with *-* in
- property names
-Message-ID: <20130314135742.GF26080@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1362662506-14823-1-git-send-email-kishon@ti.com>
- <1362662506-14823-5-git-send-email-kishon@ti.com>
+	id S1756873Ab3CNN63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:58:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53837 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3CNN60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 09:58:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+Date: Thu, 14 Mar 2013 13:58:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-ide@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
+        linux-fbdev@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "H Hartley Sweeten" <hsweeten@visionengravers.com>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <1363266691-15757-12-git-send-email-fabio.porcedda@gmail.com>
+In-Reply-To: <1363266691-15757-12-git-send-email-fabio.porcedda@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4VrXvz3cwkc87Wze"
-Content-Disposition: inline
-In-Reply-To: <1362662506-14823-5-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303141358.05616.arnd@arndb.de>
+X-Provags-ID: V02:K0:ia+TMb//7or+/Gxj3TmTnBKbWymqKqM7vKjIGV+zqbW
+ my39Z4V10GWGv3V+WWytq/RyMZdaMM3qXH2GySVg9+UKGSsAER
+ jf+XYKdoOPtlHgAo8z5Kyi+Cfe6Km7UhUfIfEPD0RJvdPVaC4N
+ IvvAUcuyf/F2Ngs7+tf2LnyYKNCxmavWrW+dQuY66dj5k4Gg/o
+ lZBaW+tDPTkKY+HQck4O2YRe3/wSVs71+mYgawxFV/g3647mCx
+ 4bbAkLzFmREFQql8HHeB0T5sfNQVj5x7G4Rtc1A80OK9RX4exe
+ Y9McIjr7GTf/d2ImHhMVMpaCW5V6UaRvYOeZZDmbOWN1LLoi9i
+ te+94cnov5CVlVtaiwYE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---4VrXvz3cwkc87Wze
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 14 March 2013, Fabio Porcedda wrote:
+> This patch converts the drivers to use the
+> module_platform_driver_probe() macro which makes the code smaller and
+> a bit simpler.
+> 
+> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/misc/atmel_pwm.c  | 12 +-----------
+>  drivers/misc/ep93xx_pwm.c | 13 +------------
+>  2 files changed, 2 insertions(+), 23 deletions(-)
 
-On Thu, Mar 07, 2013 at 06:51:46PM +0530, Kishon Vijay Abraham I wrote:
-> No functional change. Replace *_* with *-* in property names of otg to
-> follow the general convention.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+The patch itself seems fine, but there are two issues around it:
 
-this has been pending for quite a while, since nobody complained, I'm
-taking it for v3.10.
+* The PWM drivers should really get moved to drivers/pwm and converted to the new
+  PWM subsystem. I don't know if Hartley or Hans-Christian have plans to do
+  that already.
 
---=20
-balbi
+* Regarding the use of module_platform_driver_probe, I'm a little worried about
+  the interactions with deferred probing. I don't think there are any regressions,
+  but we should probably make people aware that one cannot return -EPROBE_DEFER
+  from a platform_driver_probe function.
 
---4VrXvz3cwkc87Wze
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQddWAAoJEIaOsuA1yqREUx4P/jiUDagiitaJugX66ZENCc/6
-MFRz3US0AGr4hzlIwPnxqET3+a90K5c1vZhBODnKHKVEs7qzt4acirzDgxEAwQl6
-ER1UievNA6Rc+63GUQb0Mt7DUE0dfcGQcPA4ryM6MNUoSqLKS54Knev66bt2meIH
-lcQP1TTB+bgPn7PmBhqSMGiScQiVT0TzTIH3o72imNZQ2CmmIa8brjXtG+VEjE53
-7WWhImoWmsm1ye2uKhFm6V05yyzQIYjgD3wz/NeDJN6BkxaoBYr6KABku76T+4G7
-BoLgmSPvCQHe4L+V3G8BgbkuJ3ZLkP+htCQSnowO+jMl1XwmlYSR1VhTUjpNZqgE
-XG1Kf9SOb/13v1yo+3e/Rt7n1JBk5Gce8qyIuTYL8FYX8IXLat0OA8KeFNZntAPJ
-2693mLjNK6a1iRhyiZivtNu6ZntzgySbvWlKv+BIazY8BwMmdW6CVKeZu0AiLZfd
-WqMd9QeKldJTQQtCu3h/9NFfgprt/jzivIB37bHxkVmEBQE6YMYD9HQkAzhjjRsJ
-FQHX1I+gmjjuRzc/DsOpTZN5ssbxx9QkaDVh5RUWx+XDCRQT03T1DUDOvxoV5s9b
-hxMLdSQPDSSIrsNr8JTrPpp0N0EAAB6mOJe4ZUla1sqA4RMDDpZhmZGgL60i8749
-eJ2fSjdNZCrAJp23p+D6
-=rpAI
------END PGP SIGNATURE-----
-
---4VrXvz3cwkc87Wze--
+	Arnd
