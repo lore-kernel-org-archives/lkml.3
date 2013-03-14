@@ -1,87 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab3CNSsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 14:48:09 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:35020 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab3CNSsG (ORCPT
+	id S1752123Ab3CNSsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 14:48:21 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:59798 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3CNSsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 14:48:06 -0400
+	Thu, 14 Mar 2013 14:48:17 -0400
+Date: Thu, 14 Mar 2013 11:48:14 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.69
+Message-ID: <20130314184814.GA22849@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1303132233080.27467@twin.jikos.cz>
-References: <Pine.LNX.4.44L0.1303082116310.28403-100000@netrider.rowland.org>
-	<1362819234.1220.1.camel@localhost.localdomain>
-	<1362834476.7755.33.camel@thor.lan>
-	<alpine.LRH.2.00.1303132233080.27467@twin.jikos.cz>
-Date: Thu, 14 Mar 2013 11:48:05 -0700
-X-Google-Sender-Auth: uKe4BR-8aQleTPc70isfBMLwWHQ
-Message-ID: <CAE9FiQXM5qTasq38CoroJk8uzCt5GLFBL9jxN5SDBQreqA7pFw@mail.gmail.com>
-Subject: Re: [3.9-rc1] irq 16: nobody cared (was [3.9-rc1] very poor interrupt responses)
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 2:35 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> OK, this is a "me too", on Thinkpad x200s.
->
-> [    4.116847] irq 16: nobody cared (try booting with the "irqpoll" option)
-> [    4.116849] Pid: 1, comm: systemd Not tainted 3.9.0-rc2-00188-g6c23cbb #186
-> [    4.116850] Call Trace:
-> [    4.116860]  <IRQ>  [<ffffffff810db0f8>] __report_bad_irq+0x38/0xf0
-> [    4.116862]  [<ffffffff810db3a3>] note_interrupt+0x1f3/0x240
-> [    4.116865]  [<ffffffff810d8977>] handle_irq_event_percpu+0x147/0x230
-> [    4.116867]  [<ffffffff810d8aa9>] handle_irq_event+0x49/0x70
-> [    4.116869]  [<ffffffff810dbbc1>] handle_fasteoi_irq+0x61/0x100
-> [    4.116873]  [<ffffffff81004689>] handle_irq+0x59/0x150
-> [    4.116877]  [<ffffffff8104e916>] ? irq_enter+0x16/0x80
-> [    4.116879]  [<ffffffff81003d4b>] do_IRQ+0x5b/0xe0
-> [    4.116883]  [<ffffffff815563ad>] common_interrupt+0x6d/0x6d
-> [    4.116888]  <EOI>  [<ffffffff81320dc1>] ? cfb_imageblit+0x581/0x5b0
-> [    4.116891]  [<ffffffff8131e019>] bit_putcs+0x329/0x560
-> [    4.116893]  [<ffffffff8131dc8f>] ? bit_cursor+0x5cf/0x630
-> [    4.116896]  [<ffffffff81317a28>] fbcon_putcs+0xf8/0x130
-> [    4.116898]  [<ffffffff8131dcf0>] ? bit_cursor+0x630/0x630
-> [    4.116900]  [<ffffffff8131a27e>] fbcon_redraw+0x16e/0x1e0
-> [    4.116902]  [<ffffffff8131a554>] fbcon_scroll+0x264/0xe40
-> [    4.116905]  [<ffffffff8138a263>] scrup+0x113/0x120
-> [    4.116907]  [<ffffffff8138a4d0>] lf+0x80/0x90
-> [    4.116910]  [<ffffffff8138e1dd>] do_con_trol+0xcd/0x1360
-> [    4.116912]  [<ffffffff8138f725>] do_con_write+0x2b5/0xa10
-> [    4.116915]  [<ffffffff81552bb7>] ? __mutex_lock_slowpath+0x237/0x2e0
-> [    4.116917]  [<ffffffff8138fed9>] con_write+0x19/0x30
-> [    4.116920]  [<ffffffff8137823b>] do_output_char+0x1eb/0x220
-> [    4.116922]  [<ffffffff813782b6>] process_output+0x46/0x70
-> [    4.116924]  [<ffffffff81378b0f>] n_tty_write+0x13f/0x2f0
-> [    4.116928]  [<ffffffff8107a900>] ? try_to_wake_up+0x2b0/0x2b0
-> [    4.116930]  [<ffffffff8137553c>] tty_write+0x1cc/0x280
-> [    4.116932]  [<ffffffff813789d0>] ? n_tty_ioctl+0x110/0x110
-> [    4.116934]  [<ffffffff8137569d>] redirected_tty_write+0xad/0xc0
-> [    4.116937]  [<ffffffff811733ab>] vfs_write+0xcb/0x130
-> [    4.116939]  [<ffffffff81173bac>] sys_write+0x5c/0xa0
-> [    4.116943]  [<ffffffff8155e4a9>] system_call_fastpath+0x16/0x1b
-> [    4.116943] handlers:
-> [    4.116959] [<ffffffffa0048450>] usb_hcd_irq [usbcore]
-> [    4.116960] Disabling IRQ #16
->
-> I don't think I have seen this message on rc1+ (8343bce, to be precise),
-> but I have definitely seen sluggish system response on that kernel as
-> well.
->
-> Attaching lspci, /proc/interrupts and dmesg.
 
-can you post dmesg with "debug ignore_loglevel pci=routeirq" with
-current linus tree and v3.8 or previous working kernel?
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks
+I'm announcing the release of the 3.0.69 kernel.
 
-Yinghai
+All users of the 3.0 kernel series must upgrade.
+
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                |    2 +-
+ arch/arm/mm/alignment.c                 |   11 ++++-------
+ arch/arm/vfp/vfpmodule.c                |    2 +-
+ drivers/char/hw_random/core.c           |   19 ++++++++++++++++---
+ drivers/cpufreq/cpufreq_stats.c         |    1 +
+ drivers/firmware/dmi_scan.c             |    5 ++---
+ drivers/gpu/drm/radeon/radeon_combios.c |    9 +++++++++
+ drivers/hwmon/sht15.c                   |    8 +++++++-
+ drivers/md/raid0.c                      |    2 +-
+ drivers/net/e1000e/netdev.c             |    2 +-
+ drivers/net/wireless/ath/ath9k/common.h |    2 +-
+ drivers/scsi/dc395x.c                   |    2 +-
+ drivers/target/target_core_pscsi.c      |    1 -
+ fs/btrfs/volumes.c                      |    1 +
+ fs/cifs/cifsfs.c                        |    5 +++++
+ fs/pipe.c                               |    3 +++
+ kernel/trace/Kconfig                    |   24 ++++++++++++++----------
+ net/decnet/af_decnet.c                  |    4 ++++
+ net/decnet/sysctl_net_decnet.c          |   28 ++++++++++++++++++++++++++++
+ net/sunrpc/xprt.c                       |    6 +++++-
+ security/keys/process_keys.c            |    2 +-
+ sound/core/vmaster.c                    |    5 ++++-
+ sound/pci/ice1712/ice1712.c             |    2 ++
+ 23 files changed, 112 insertions(+), 34 deletions(-)
+
+Al Viro (1):
+      vfs: fix pipe counter breakage
+
+Alex Deucher (1):
+      drm/radeon: add primary dac adj quirk for R200 board
+
+Asias He (1):
+      target/pscsi: Fix page increment
+
+Ben Hutchings (1):
+      dmi_scan: fix missing check for _DMI_ signature in smbios_present()
+
+Dan Carpenter (1):
+      SCSI: dc395x: uninitialized variable in device_alloc()
+
+David Howells (1):
+      keys: fix race with concurrent install_user_keyrings()
+
+Eric W. Biederman (1):
+      decnet: Fix disappearing sysctl entries
+
+Felix Fietkau (1):
+      ath9k: fix RSSI dummy marker value
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.69
+
+Jeff Layton (1):
+      cifs: ensure that cifs_get_root() only traverses directories
+
+Konstantin Khlebnikov (1):
+      e1000e: fix pci-device enable-counter balance
+
+Mark Brown (1):
+      hwmon: (sht15) Check return value of regulator_enable()
+
+NeilBrown (1):
+      md: raid0: fix error return from create_stripe_zones.
+
+Russell King (2):
+      ARM: VFP: fix emulation of second VFP instruction
+      ARM: fix scheduling while atomic warning in alignment handling code
+
+Rusty Russell (1):
+      hw_random: make buffer usable in scatterlist.
+
+Sean Connor (1):
+      ALSA: ice1712: Initialize card->private_data properly
+
+Steven Rostedt (1):
+      ftrace: Update the kconfig for DYNAMIC_FTRACE
+
+Takashi Iwai (1):
+      ALSA: vmaster: Fix slave change notification
+
+Thomas Gleixner (1):
+      btrfs: Init io_lock after cloning btrfs device struct
+
+Trond Myklebust (1):
+      SUNRPC: Don't start the retransmission timer when out of socket space
+
+Tu, Xiaobing (1):
+      Fix memory leak in cpufreq stats.
+
+
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQhtuAAoJEDjbvchgkmk+xQYQAMEbhxvms3a8zP5CES6CDu9J
+VaNSnEjpL2hUlmsPJxSO8WT+KmHJL1+HFYZvEmjA0c5DuMvcK4ai8zQnPd7Du650
+NjM9WjEzl7rgHp/24U8Uc5wNO3PehGXg2WXPWcicBhwfzZT9oRWUZhgd6ct3pC2m
+7QWXVPB5VQp6zpM5WMx0XhGh8xj0s+g+y65lmQPVsl0ZtuVIvNlq3qc/xXffBGeB
+HH2GOBwkQrAxfdTHRbh3FL2aHRGsGiRM80YjkormV+9TEvdiIra/C9DPKeVkkIz3
+r7+LHN61q6KLxsdlg5x2enP2FHy3VkawZ/HbYOXMKAwC4LNxa+Ud0+VHntezjZGy
+FLjLpSJmhuJXd+hrqmOstzSK6pZG2NQLMiScZVWHtDcXDB7Ry6U6kEx9tz+eToyM
+QTvNUZa8wODzBOpaoQ5Pv/gPvpjizcWl4hKcHwg44ZiUjC3SGW0G9/7i94L4NTGA
+tBaqfee7n2QPe+g4RvInYIyJvCY9wf4k/dvg8bueAu82bMB/ce8FuM4fRdQsHGv4
+bqNdBLeVULwTNJs3QEoZ9UpYuLksWhjk2NFEsYUBubpw45fIoiPbNbIOcCp2pn4Z
+361BKhu7UUsoWF/p5vULvWUg4GThBHQWiukN25n8X0MBBTkjLob80YOeZIqMajHQ
+Hls0P0SZUaasao89VqPY
+=32Tn
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
