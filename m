@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3CNKiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:38:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52025 "EHLO
+	id S1757315Ab3CNKoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:44:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52038 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3CNKiA (ORCPT
+	with ESMTP id S1757295Ab3CNKiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:00 -0400
+	Thu, 14 Mar 2013 06:38:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 65/88] hwmon: (pmbus/ltc2978) Use detected chip ID to select supported functionality
-Date: Thu, 14 Mar 2013 10:35:58 +0000
-Message-Id: <1363257381-15900-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 68/88] ALSA: vmaster: Fix slave change notification
+Date: Thu, 14 Mar 2013 10:36:01 +0000
+Message-Id: <1363257381-15900-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f366fccd0809f13ba20d64cae3c83f7338c88af7 upstream.
+commit 2069d483b39a603a5f3428a19d3b4ac89aa97f48 upstream.
 
-We read the chip ID from the chip, use it to determine if the chip ID provided
-to the driver is correct, and report it if wrong. We should also use the
-correct chip ID to select supported functionality.
+When a value of a vmaster slave control is changed, the ctl change
+notification is sometimes ignored.  This happens when the master
+control overrides, e.g. when the corresponding master control is
+muted.  The reason is that slave_put() returns the value of the actual
+slave put callback, and it doesn't reflect the virtual slave value
+change.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+This patch fixes the function just to return 1 whenever a slave value
+is changed.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/pmbus/ltc2978.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/core/vmaster.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/pmbus/ltc2978.c b/drivers/hwmon/pmbus/ltc2978.c
-index cc29a7e..a58de38 100644
---- a/drivers/hwmon/pmbus/ltc2978.c
-+++ b/drivers/hwmon/pmbus/ltc2978.c
-@@ -326,7 +326,7 @@ static int ltc2978_probe(struct i2c_client *client,
- 	data->temp_max = 0x7c00;
- 	data->temp2_max = 0x7c00;
+diff --git a/sound/core/vmaster.c b/sound/core/vmaster.c
+index 8575861..0097f36 100644
+--- a/sound/core/vmaster.c
++++ b/sound/core/vmaster.c
+@@ -213,7 +213,10 @@ static int slave_put(struct snd_kcontrol *kcontrol,
+ 	}
+ 	if (!changed)
+ 		return 0;
+-	return slave_put_val(slave, ucontrol);
++	err = slave_put_val(slave, ucontrol);
++	if (err < 0)
++		return err;
++	return 1;
+ }
  
--	switch (id->driver_data) {
-+	switch (data->id) {
- 	case ltc2978:
- 		info->read_word_data = ltc2978_read_word_data;
- 		info->pages = 8;
+ static int slave_tlv_cmd(struct snd_kcontrol *kcontrol,
 -- 
 1.8.1.2
 
