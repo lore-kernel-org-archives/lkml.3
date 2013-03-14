@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab3CNLFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:05:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51706 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab3CNKgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756802Ab3CNKgu (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Mar 2013 06:36:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51701 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3CNKgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:36:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Engelhardt <jengelh@inai.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Joerg Roedel <joro@8bytes.org>, Shuah Khan <shuah.khan@hp.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 05/88] target: Add missing mapped_lun bounds checking during make_mappedlun setup
-Date: Thu, 14 Mar 2013 10:34:58 +0000
-Message-Id: <1363257381-15900-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 03/88] iommu/amd: Initialize device table after dma_ops
+Date: Thu, 14 Mar 2013 10:34:56 +0000
+Message-Id: <1363257381-15900-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
+commit f528d980c17b8714aedc918ba86e058af914d66b upstream.
 
-This patch adds missing bounds checking for the configfs provided
-mapped_lun value during target_fabric_make_mappedlun() setup ahead
-of se_lun_acl initialization.
+When dma_ops are initialized the unity mappings are
+created. The init_device_table_dma() function makes sure DMA
+from all devices is blocked by default. This opens a short
+window in time where DMA to unity mapped regions is blocked
+by the IOMMU. Make sure this does not happen by initializing
+the device table after dma_ops.
 
-This addresses a potential OOPs when using a mapped_lun value that
-exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
-se_node_acl->device_list[].
-
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Cc: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/target_core_fabric_configfs.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/iommu/amd_iommu_init.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
-index c42143b..8b07a88 100644
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -358,6 +358,14 @@ static struct config_group *target_fabric_make_mappedlun(
- 		ret = -EINVAL;
- 		goto out;
- 	}
-+	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
-+		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
-+			"-1: %u for Target Portal Group: %u\n", mapped_lun,
-+			TRANSPORT_MAX_LUNS_PER_TPG-1,
-+			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
-+		ret = -EINVAL;
-+		goto out;
-+	}
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index eadc6b5..9e5096a 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1572,9 +1572,6 @@ int __init amd_iommu_init_hardware(void)
+ 	if (amd_iommu_pd_alloc_bitmap == NULL)
+ 		goto free;
  
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
- 			mapped_lun, &ret);
+-	/* init the device table */
+-	init_device_table();
+-
+ 	/*
+ 	 * let all alias entries point to itself
+ 	 */
+@@ -1655,6 +1652,7 @@ out:
+  */
+ static int __init amd_iommu_init(void)
+ {
++	struct amd_iommu *iommu;
+ 	int ret = 0;
+ 
+ 	ret = amd_iommu_init_hardware();
+@@ -1673,6 +1671,12 @@ static int __init amd_iommu_init(void)
+ 	if (ret)
+ 		goto free;
+ 
++	/* init the device table */
++	init_device_table();
++
++	for_each_iommu(iommu)
++		iommu_flush_all_caches(iommu);
++
+ 	amd_iommu_init_api();
+ 
+ 	x86_platform.iommu_shutdown = disable_iommus;
 -- 
 1.8.1.2
 
