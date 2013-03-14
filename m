@@ -1,161 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab3CNEQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 00:16:09 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:48549 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab3CNEQH (ORCPT
+	id S1751652Ab3CNETP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 00:19:15 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:52366 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3CNETM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 00:16:07 -0400
-Message-ID: <51414F02.3020209@gmail.com>
-Date: Wed, 13 Mar 2013 22:16:02 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Thu, 14 Mar 2013 00:19:12 -0400
 MIME-Version: 1.0
-To: Myron Stowe <myron.stowe@gmail.com>
-CC: Xiangliang Yu <yuxiangl@marvell.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        yxlraid <yxlraid@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host controller
-References: <1362666556-10036-1-git-send-email-yxlraid@gmail.com> <CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com> <F766E4F80769BD478052FB6533FA745D25F436856A@SC-VEXCH4.marvell.com> <CAErSpo6RDC+QyyN4kwt7-kU5d8b1iu+zCQZTGZPxCJU2UicTCA@mail.gmail.com> <F766E4F80769BD478052FB6533FA745D25F436861C@SC-VEXCH4.marvell.com> <CAL-B5D05V124xbG7z6UK9UWJ5PqmAVkqShdrMjWSGHDpTYZLQQ@mail.gmail.com>
-In-Reply-To: <CAL-B5D05V124xbG7z6UK9UWJ5PqmAVkqShdrMjWSGHDpTYZLQQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1363219179-14900-1-git-send-email-agraf@suse.de>
+References: <1363219179-14900-1-git-send-email-agraf@suse.de>
+Date: Thu, 14 Mar 2013 09:49:11 +0530
+Message-ID: <CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
+Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dmueller@suse.de,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Anderson <dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 09:18 PM, Myron Stowe wrote:
-> On Thu, Mar 7, 2013 at 11:51 PM, Xiangliang Yu <yuxiangl@marvell.com> wrote:
->> Hi, Bjorn
->>
->>>>>> Fix system hang issue: if first accessed resource file of BAR0 ~
->>>>>> BAR4, system will hang after executing lspci command
->>>>>
->>>>> This needs more explanation.  We've already read the BARs by the time
->>>>> header quirks are run, so apparently it's not just the mere act of
->>>>> accessing a BAR that causes a hang.
->>>>>
->>>>> We need to know exactly what's going on here.  For example, do BARs
->>>>> 0-4 exist?  Does the device decode accesses to the regions described
->>>>> by the BARs?  The PCI core has to know what resources the device uses,
->>>>> so if the device decodes accesses, we can't just throw away the
->>>>> start/end information.
->>>> The BARs 0-4 is exist and the PCI device is enable IO space, but user access
->>> the regions file by udevadm command with info parameter, the system will hang.
->>>> Like this: udevadmin info --attribut-walk
->>> --path=/sys/device/pci-device/000:*.
->>>> Because the device is just AHCI host controller, don't need the BAR0 ~ 4 region
->>> file.
->>>> Is my explanation ok for the patch?
->>>
->>> No, I still don't know what causes the hang; I only know that udevadm
->>> can trigger it.  I don't want to just paper over the problem until we
->>> know what the root cause is.
->>>
->>> Does "lspci -H1 -vv" also cause a hang?  What about "setpci -s<dev>
->>> BASE_ADDRESS_0"?  "setpci -H1 -s<dev> BASE_ADDRESS_0"?
->> The commands are ok because the commands can't find the device after accessing IO port.
+On 14 March 2013 05:29, Alexander Graf <agraf@suse.de> wrote:
+> On my Exynos 5 based Arndale system, I need to pull the reset line down
+> and then let it go up again to actually perform a reset. Without that
+> reset, I can't find any USB hubs on my bus, rendering the USB controller
+> useless.
 >
-> Xiangliang:
+> We also only need to reset the line after the phy node has been found.
+> This way we don't accidently reserve the vbus GPIO pin, but later on
+> defer the creation of our controller, because the phy device tree node
+> hasn't been probed yet.
 >
-> Sorry but I didn't understand your response above, could you elaborate
-> a little more?
+> This patch implements the above logic, making EHCI and OHCI work on
+> Arndale systems for me.
 >
+> Signed-off-by: Alexander Graf <agraf@suse.de>
+> CC: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> CC: Kukjin Kim <kgene.kim@samsung.com>
+> CC: Felipe Balbi <balbi@ti.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Doug Anderson <dianders@chromium.org>
 >
-> Are the first five BARs of the suspect device all mapping to I/O port
-> space - i.e. similar to something like this (a capture and inclusion
-> of an 'lspci' of the suspect device would be nice to see):
->    00:1f.2 SATA controller:
->      Region 0: I/O ports at 1860 [size=8]
->      Region 1: I/O ports at 1814 [size=4]
->      Region 2: I/O ports at 1818 [size=8]
->      Region 3: I/O ports at 1810 [size=4]
->      Region 4: I/O ports at 1840 [size=32]
->      Region 5: Memory at f2827000 (32-bit, non-prefetchable) [size=2K]
+> ---
 >
-> You have done a good job isolating the issue so far.  As Bjorn noted;
-> it's looking as if the problem is with accessing the I/O port space
-> mapped by the suspect device's BAR(s), not with accessing the BAR(s)
-> in the device's configuration space.
+> v1 -> v2:
+>
+>   - remove gpio_free call
+>   - move reset logic after phy node search
+>
+> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+> index 20ebf6a..b29b2b8 100644
+> --- a/drivers/usb/host/ehci-s5p.c
+> +++ b/drivers/usb/host/ehci-s5p.c
+> @@ -103,9 +103,14 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
+>         if (!gpio_is_valid(gpio))
+>                 return;
+>
+> -       err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
+> -       if (err)
+> +       /* reset pulls the line down, then up again */
+> +       err = gpio_request_one(gpio, GPIOF_OUT_INIT_LOW, "ehci_vbus_gpio");
+> +       if (err) {
+>                 dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
+> +               return;
+> +       }
+> +       mdelay(1);
+> +       __gpio_set_value(gpio, 1);
+>  }
+>
+>  static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
+> @@ -131,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>         if (!pdev->dev.coherent_dma_mask)
+>                 pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>
+> -       s5p_setup_vbus_gpio(pdev);
+> -
+>         s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
+>                                 GFP_KERNEL);
+>         if (!s5p_ehci)
+> @@ -152,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>                 s5p_ehci->otg = phy->otg;
+>         }
+>
+> +       s5p_setup_vbus_gpio(pdev);
+> +
+>         s5p_ehci->dev = &pdev->dev;
+>
+>         hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
 
-It would seem so. My question is what is accessing the IO port space in 
-the first place. BAR5 is the MMIO region used by the AHCI driver. BARs 
-0-4 are the legacy SFF-compatible ATA ports. Nothing should be messing 
-with those IO ports while AHCI is enabled. It's expected that doing that 
-will break things.
+Hi Alexander,
 
-If something in udev is randomly groveling around inside the resource 
-files for those BARs in sysfs, that seems like a really bad thing.
+This change, though it works for Exynos5250 based Arndale board, does
+not actually seem correct. On Arndale board, the on-board 4-port usb
+hub is self powered and hence the vbus 'enable' gpio line from
+Exynos5250 SoC is instead used as a "reset" signal for the on-board
+usb hub (and not as the vbus enable signal).
 
->
-> As you responded positively to earlier, as proposed the suspect device
-> will still actively be decoding accesses to the regions described by
-> the BARs.  Because the device is actively decoding the PCI core can't
-> just throw away the BAR's corresponding resource regions, as the patch
-> is currently doing, due to the possibility of another device being
-> added at a later time.
->
-> If a subsequent device were added later, the core may need to try and
-> allocate resources for it and, in the worst case scenario, the core
-> could end up allocating resources that conflict with this suspect
-> device as a consequence of the suspect device's original resource
-> allocations having been silently thrown away.  The result would be
-> both devices believing they each exclusively own the same set (or
-> subset) of I/O port mappings and thus both actively decoding accesses
-> to such which.  A situation that would obviously be disastrous.
->
-> There is still something going on here that we still do not
-> understand.  Could you please capture the following information to
-> help further isolate the issue:
->    A 'dmesg' log from the system which was booted using both the
-> "debug" and "ignore_loglevel" boot parameters, a 'lspci -xxx -s<dev>'
-> capture, and a 'lspci -vv' capture.
->
-> Thanks,
->   Myron
->
->> The root cause is that accessing of IO port will make the chip go bad. So, the point of the patch is don't export capability of the IO accessing.
->>
->>>
->>>>>
->>>>>> ---
->>>>>>   drivers/pci/quirks.c |   15 +++++++++++++++
->>>>>>   1 files changed, 15 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->>>>>> index 0369fb6..d49f8dc 100644
->>>>>> --- a/drivers/pci/quirks.c
->>>>>> +++ b/drivers/pci/quirks.c
->>>>>> @@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
->>>>>>   DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
->>>>>>                                  PCI_CLASS_BRIDGE_HOST, 8,
->>>>> quirk_mmio_always_on);
->>>>>>
->>>>>> +/* The BAR0 ~ BAR4 of Marvell 9125 device can't be accessed
->>>>>> +*  by IO resource file, and need to skip the files
->>>>>> +*/
->>>>>> +static void quirk_marvell_mask_bar(struct pci_dev *dev)
->>>>>> +{
->>>>>> +       int i;
->>>>>> +
->>>>>> +       for (i = 0; i < 5; i++)
->>>>>> +               if (dev->resource[i].start)
->>>>>> +                       dev->resource[i].start =
->>>>>> +                               dev->resource[i].end = 0;
->>>>>> +}
->>>>>> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9125,
->>>>>> +                               quirk_marvell_mask_bar);
->>>>>> +
->>>>>>   /* The Mellanox Tavor device gives false positive parity errors
->>>>>>    * Mark this device with a broken_parity_status, to allow
->>>>>>    * PCI scanning code to "skip" this now blacklisted device.
->>>>>> --
->>>>>> 1.7.5.4
->>>>>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Whereas, the driver uses the gpio used in 's5p_setup_vbus_gpio'
+function as just a mechanism to enable vbus for downstream devices. So
+the driver should not be modified as above to handle the board
+specific behavior.
 
+Instead, what needs to be done is, remove the "samsung,vbus-gpio"
+property from the usb2.0 node in dts files (this property is optional)
+for Arndale board. Then, during the machine_init, perform the reset
+sequencing as required.
+
+Ideally, the reset sequencing for the on-board AX88760 usb hub should
+have been handled in the driver for this device. I have not checked if
+there is a driver for this in the kernel.
+
+Thanks,
+Thomas.
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
