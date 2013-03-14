@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3CNKYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:24:09 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:22817 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab3CNKYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:24:07 -0400
-Date: Thu, 14 Mar 2013 11:23:54 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: lineage-pem: Add missing terminating entry for 
- pem_[input|fan]_attributes
-Message-ID: <20130314112354.31396c51@endymion.delvare>
-In-Reply-To: <1363249638.15861.1.camel@phoenix>
-References: <1363249638.15861.1.camel@phoenix>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1756704Ab3CNK3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:29:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19890 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756205Ab3CNK3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:29:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,843,1355126400"; 
+   d="scan'208";a="270649736"
+Message-ID: <1363257009.11441.97.camel@sauron.fi.intel.com>
+Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Mark Jackson <mpfj-list@mimc.co.uk>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
+Date: Thu, 14 Mar 2013 12:30:09 +0200
+In-Reply-To: <51419E3A.8030007@mimc.co.uk>
+References: <5134CEF9.5070502@mimc.co.uk>
+	  <1363087506.3348.62.camel@sauron.fi.intel.com>
+	  <51405F3A.3090901@mimc.co.uk>
+	 <1363252425.11441.94.camel@sauron.fi.intel.com>
+	 <51419E3A.8030007@mimc.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Thu, 14 Mar 2013 16:27:18 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/hwmon/lineage-pem.c |    2 ++
->  1 file changed, 2 insertions(+)
+On Thu, 2013-03-14 at 09:54 +0000, Mark Jackson wrote:
+> On 14/03/13 09:13, Artem Bityutskiy wrote:
+> > On Wed, 2013-03-13 at 11:12 +0000, Mark Jackson wrote:
+> >> Sorry ... this just locks up the unit.
+> > 
+> > OK, I've reproduced the issue with 3.9-rc2 in nandsim, see the details
+> > below. The patch I proposed did not get the error path correctly, but it
+> > does fix the issue.
+> > 
+> > I think what you treat as "lockup" is the fixup process. UBIFS basically
+> > reads the entire UBI volume and writes it back. And it uses the atomic
+> > change UBI service, which means it also calculates CRC of everything it
+> > writes. And this all just takes a lot of time. This has to be done only
+> > once on the first mount.
 > 
-> diff --git a/drivers/hwmon/lineage-pem.c b/drivers/hwmon/lineage-pem.c
-> index 41df29f..ebbb9f4 100644
-> --- a/drivers/hwmon/lineage-pem.c
-> +++ b/drivers/hwmon/lineage-pem.c
-> @@ -422,6 +422,7 @@ static struct attribute *pem_input_attributes[] = {
->  	&sensor_dev_attr_in2_input.dev_attr.attr,
->  	&sensor_dev_attr_curr1_input.dev_attr.attr,
->  	&sensor_dev_attr_power1_input.dev_attr.attr,
-> +	NULL
->  };
->  
->  static const struct attribute_group pem_input_group = {
-> @@ -432,6 +433,7 @@ static struct attribute *pem_fan_attributes[] = {
->  	&sensor_dev_attr_fan1_input.dev_attr.attr,
->  	&sensor_dev_attr_fan2_input.dev_attr.attr,
->  	&sensor_dev_attr_fan3_input.dev_attr.attr,
-> +	NULL
->  };
->  
->  static const struct attribute_group pem_fan_group = {
+> Okay ... I've retried, but how long is "a lot of time" ?
+> 
+> I've waited 15 minutes and still nothing.
+> 
+> And I can see that there's no activity on the NAND chip select !?!
+> 
+> I'll put some debug info into the fixup routines to see if I can trace what's going on.
 
-Good catch.
+Just to make sure - try this last patch I sent. I did test it with
+nandsim at least, and I am sure it works. I did not test at all the
+first one.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+And yes, debug messages would be useful, just do not forget to add the
+'ignore_loglevel' kernel boot option, otherwise you won't see the
+messages on your console, since they are of KERN_DEBUG level.
 
-I'll let Guenter pick the fix as this is his driver. This should go to
-stable too.
+You may have other issues which cause lockup, e.g., in driver level. It
+makes sense to validate your flash with MTD test modules.
 
 -- 
-Jean Delvare
+Best Regards,
+Artem Bityutskiy
+
