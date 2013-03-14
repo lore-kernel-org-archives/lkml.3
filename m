@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3CNXCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 19:02:38 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:46544 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3CNXBm (ORCPT
+	id S1753774Ab3CNXCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 19:02:52 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:63890 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762Ab3CNXBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 19:01:42 -0400
+	Thu, 14 Mar 2013 19:01:41 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: laijs@cn.fujitsu.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/5] workqueue: relocate rebind_workers()
-Date: Thu, 14 Mar 2013 16:01:28 -0700
-Message-Id: <1363302090-16117-4-git-send-email-tj@kernel.org>
+Subject: [PATCH REVIEW_ONLY 1/5] sched: replace PF_THREAD_BOUND with PF_NO_SETAFFINITY
+Date: Thu, 14 Mar 2013 16:01:26 -0700
+Message-Id: <1363302090-16117-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1363302090-16117-1-git-send-email-tj@kernel.org>
 References: <1363302090-16117-1-git-send-email-tj@kernel.org>
@@ -20,177 +20,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rebind_workers() will be reimplemented in a way which makes it mostly
-decoupled from the rest of worker management.  Move rebind_workers()
-so that it's located with other CPU hotplug related functions.
+PF_THREAD_BOUND was originally used to mark kernel threads which were
+bound to a specific CPU using kthread_bind() and a task with the flag
+set allows cpus_allowed modifications only to itself.  Workqueue is
+currently abusing it to prevent userland from meddling with
+cpus_allowed of workqueue workers.
 
-This patch is pure function relocation.
+What we need is a flag to prevent userland from messing with
+cpus_allowed of certain kernel tasks.  In kernel, anyone can
+(incorrectly) squash the flag, and, for worker-type usages,
+restricting cpus_allowed modification to the task itself doesn't
+provide meaningful extra proection as other tasks can inject work
+items to the task anyway.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This patch replaces PF_THREAD_BOUND with PF_NO_SETAFFINITY.
+sched_setaffinity() checks the flag and return -EINVAL if set.
+set_cpus_allowed_ptr() is no longer affected by the flag.
+
+This will allow simplifying workqueue worker CPU affinity management.
+
+FOR-REVIEW-ONLY
 ---
- kernel/workqueue.c | 142 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 71 insertions(+), 71 deletions(-)
+This patch doesn't belong in this series.  It's posted separately and
+should be routed through -tip.  Included here only to help review.
 
+Thanks.
+
+ include/linux/sched.h |  2 +-
+ kernel/cgroup.c       |  4 ++--
+ kernel/cpuset.c       | 16 ++++++++--------
+ kernel/kthread.c      |  2 +-
+ kernel/sched/core.c   |  9 ++++-----
+ kernel/workqueue.c    | 10 +++-------
+ 6 files changed, 19 insertions(+), 24 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..e5c64f7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1793,7 +1793,7 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+ #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+ #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+-#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
++#define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
+ #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+ #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+ #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a32f943..3852d92 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2224,11 +2224,11 @@ retry_find_task:
+ 		tsk = tsk->group_leader;
+ 
+ 	/*
+-	 * Workqueue threads may acquire PF_THREAD_BOUND and become
++	 * Workqueue threads may acquire PF_NO_SETAFFINITY and become
+ 	 * trapped in a cpuset, or RT worker may be born in a cgroup
+ 	 * with no rt_runtime allocated.  Just say no.
+ 	 */
+-	if (tsk == kthreadd_task || (tsk->flags & PF_THREAD_BOUND)) {
++	if (tsk == kthreadd_task || (tsk->flags & PF_NO_SETAFFINITY)) {
+ 		ret = -EINVAL;
+ 		rcu_read_unlock();
+ 		goto out_unlock_cgroup;
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 4f9dfe4..f22e947 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1388,16 +1388,16 @@ static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ 
+ 	cgroup_taskset_for_each(task, cgrp, tset) {
+ 		/*
+-		 * Kthreads bound to specific cpus cannot be moved to a new
+-		 * cpuset; we cannot change their cpu affinity and
+-		 * isolating such threads by their set of allowed nodes is
+-		 * unnecessary.  Thus, cpusets are not applicable for such
+-		 * threads.  This prevents checking for success of
+-		 * set_cpus_allowed_ptr() on all attached tasks before
+-		 * cpus_allowed may be changed.
++		 * Kthreads which disallow setaffinity shouldn't be moved
++		 * to a new cpuset; we don't want to change their cpu
++		 * affinity and isolating such threads by their set of
++		 * allowed nodes is unnecessary.  Thus, cpusets are not
++		 * applicable for such threads.  This prevents checking for
++		 * success of set_cpus_allowed_ptr() on all attached tasks
++		 * before cpus_allowed may be changed.
+ 		 */
+ 		ret = -EINVAL;
+-		if (task->flags & PF_THREAD_BOUND)
++		if (task->flags & PF_NO_SETAFFINITY)
+ 			goto out_unlock;
+ 		ret = security_task_setscheduler(task);
+ 		if (ret)
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 691dc2e..a2fbbb7 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -260,7 +260,7 @@ static void __kthread_bind(struct task_struct *p, unsigned int cpu)
+ {
+ 	/* It's safe because the task is inactive. */
+ 	do_set_cpus_allowed(p, cpumask_of(cpu));
+-	p->flags |= PF_THREAD_BOUND;
++	p->flags |= PF_NO_SETAFFINITY;
+ }
+ 
+ /**
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f12624..23606ee 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4126,6 +4126,10 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 	get_task_struct(p);
+ 	rcu_read_unlock();
+ 
++	if (p->flags & PF_NO_SETAFFINITY) {
++		retval = -EINVAL;
++		goto out_put_task;
++	}
+ 	if (!alloc_cpumask_var(&cpus_allowed, GFP_KERNEL)) {
+ 		retval = -ENOMEM;
+ 		goto out_put_task;
+@@ -4773,11 +4777,6 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+ 		goto out;
+ 	}
+ 
+-	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current)) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+ 	do_set_cpus_allowed(p, new_mask);
+ 
+ 	/* Can the task run on the task's current CPU? If so, we're done */
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 384ff34..3e297c5 100644
+index 969be0b..39a591f 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1643,77 +1643,6 @@ static void busy_worker_rebind_fn(struct work_struct *work)
- 	spin_unlock_irq(&worker->pool->lock);
- }
+@@ -1757,12 +1757,8 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	set_user_nice(worker->task, pool->attrs->nice);
+ 	set_cpus_allowed_ptr(worker->task, pool->attrs->cpumask);
  
--/**
-- * rebind_workers - rebind all workers of a pool to the associated CPU
-- * @pool: pool of interest
-- *
-- * @pool->cpu is coming online.  Rebind all workers to the CPU.  Rebinding
-- * is different for idle and busy ones.
-- *
-- * Idle ones will be removed from the idle_list and woken up.  They will
-- * add themselves back after completing rebind.  This ensures that the
-- * idle_list doesn't contain any unbound workers when re-bound busy workers
-- * try to perform local wake-ups for concurrency management.
-- *
-- * Busy workers can rebind after they finish their current work items.
-- * Queueing the rebind work item at the head of the scheduled list is
-- * enough.  Note that nr_running will be properly bumped as busy workers
-- * rebind.
-- *
-- * On return, all non-manager workers are scheduled for rebind - see
-- * manage_workers() for the manager special case.  Any idle worker
-- * including the manager will not appear on @idle_list until rebind is
-- * complete, making local wake-ups safe.
-- */
--static void rebind_workers(struct worker_pool *pool)
--{
--	struct worker *worker, *n;
--	int i;
--
--	lockdep_assert_held(&pool->manager_mutex);
--	lockdep_assert_held(&pool->lock);
--
--	/* dequeue and kick idle ones */
--	list_for_each_entry_safe(worker, n, &pool->idle_list, entry) {
--		/*
--		 * idle workers should be off @pool->idle_list until rebind
--		 * is complete to avoid receiving premature local wake-ups.
--		 */
--		list_del_init(&worker->entry);
--
--		/*
--		 * worker_thread() will see the above dequeuing and call
--		 * idle_worker_rebind().
--		 */
--		wake_up_process(worker->task);
--	}
--
--	/* rebind busy workers */
--	for_each_busy_worker(worker, i, pool) {
--		struct work_struct *rebind_work = &worker->rebind_work;
--		struct workqueue_struct *wq;
--
--		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
--				     work_data_bits(rebind_work)))
--			continue;
--
--		debug_work_activate(rebind_work);
--
--		/*
--		 * wq doesn't really matter but let's keep @worker->pool
--		 * and @pwq->pool consistent for sanity.
--		 */
--		if (worker->pool->attrs->nice < 0)
--			wq = system_highpri_wq;
--		else
--			wq = system_wq;
--
--		insert_work(per_cpu_ptr(wq->cpu_pwqs, pool->cpu), rebind_work,
--			    worker->scheduled.next,
--			    work_color_to_flags(WORK_NO_COLOR));
--	}
--}
--
- static struct worker *alloc_worker(void)
- {
- 	struct worker *worker;
-@@ -4196,6 +4125,77 @@ static void wq_unbind_fn(struct work_struct *work)
- 		atomic_set(&pool->nr_running, 0);
- }
+-	/*
+-	 * %PF_THREAD_BOUND is used to prevent userland from meddling with
+-	 * cpumask of workqueue workers.  This is an abuse.  We need
+-	 * %PF_NO_SETAFFINITY.
+-	 */
+-	worker->task->flags |= PF_THREAD_BOUND;
++	/* prevent userland from meddling with cpumask of workqueue workers */
++	worker->task->flags |= PF_NO_SETAFFINITY;
  
-+/**
-+ * rebind_workers - rebind all workers of a pool to the associated CPU
-+ * @pool: pool of interest
-+ *
-+ * @pool->cpu is coming online.  Rebind all workers to the CPU.  Rebinding
-+ * is different for idle and busy ones.
-+ *
-+ * Idle ones will be removed from the idle_list and woken up.  They will
-+ * add themselves back after completing rebind.  This ensures that the
-+ * idle_list doesn't contain any unbound workers when re-bound busy workers
-+ * try to perform local wake-ups for concurrency management.
-+ *
-+ * Busy workers can rebind after they finish their current work items.
-+ * Queueing the rebind work item at the head of the scheduled list is
-+ * enough.  Note that nr_running will be properly bumped as busy workers
-+ * rebind.
-+ *
-+ * On return, all non-manager workers are scheduled for rebind - see
-+ * manage_workers() for the manager special case.  Any idle worker
-+ * including the manager will not appear on @idle_list until rebind is
-+ * complete, making local wake-ups safe.
-+ */
-+static void rebind_workers(struct worker_pool *pool)
-+{
-+	struct worker *worker, *n;
-+	int i;
-+
-+	lockdep_assert_held(&pool->manager_mutex);
-+	lockdep_assert_held(&pool->lock);
-+
-+	/* dequeue and kick idle ones */
-+	list_for_each_entry_safe(worker, n, &pool->idle_list, entry) {
-+		/*
-+		 * idle workers should be off @pool->idle_list until rebind
-+		 * is complete to avoid receiving premature local wake-ups.
-+		 */
-+		list_del_init(&worker->entry);
-+
-+		/*
-+		 * worker_thread() will see the above dequeuing and call
-+		 * idle_worker_rebind().
-+		 */
-+		wake_up_process(worker->task);
-+	}
-+
-+	/* rebind busy workers */
-+	for_each_busy_worker(worker, i, pool) {
-+		struct work_struct *rebind_work = &worker->rebind_work;
-+		struct workqueue_struct *wq;
-+
-+		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
-+				     work_data_bits(rebind_work)))
-+			continue;
-+
-+		debug_work_activate(rebind_work);
-+
-+		/*
-+		 * wq doesn't really matter but let's keep @worker->pool
-+		 * and @pwq->pool consistent for sanity.
-+		 */
-+		if (worker->pool->attrs->nice < 0)
-+			wq = system_highpri_wq;
-+		else
-+			wq = system_wq;
-+
-+		insert_work(per_cpu_ptr(wq->cpu_pwqs, pool->cpu), rebind_work,
-+			    worker->scheduled.next,
-+			    work_color_to_flags(WORK_NO_COLOR));
-+	}
-+}
-+
- /*
-  * Workqueues should be brought up before normal priority CPU notifiers.
-  * This will be registered high priority CPU notifier.
+ 	/*
+ 	 * The caller is responsible for ensuring %POOL_DISASSOCIATED
+@@ -3876,7 +3872,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 		}
+ 
+ 		wq->rescuer = rescuer;
+-		rescuer->task->flags |= PF_THREAD_BOUND;
++		rescuer->task->flags |= PF_NO_SETAFFINITY;
+ 		wake_up_process(rescuer->task);
+ 	}
+ 
 -- 
 1.8.1.4
 
