@@ -1,118 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3CNGYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 02:24:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42314 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab3CNGYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 02:24:10 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <notasas@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH v2 2/4] usb: otg: twl4030: use devres API for regulator get and request irq
-Date: Thu, 14 Mar 2013 11:53:57 +0530
-Message-ID: <1363242239-1061-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363242239-1061-1-git-send-email-kishon@ti.com>
-References: <1363242239-1061-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754617Ab3CNG1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 02:27:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60487 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab3CNG1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 02:27:49 -0400
+Date: Thu, 14 Mar 2013 17:27:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the signal tree with the modules tree
+Message-Id: <20130314172737.2856af8a9b368bc395d977be@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__14_Mar_2013_17_27_37_+1100_fkMoaHdxBLqLloNv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used devres APIs devm_request_threaded_irq and devm_regulator_get for
-requesting irq and for getting regulator respectively.
+--Signature=_Thu__14_Mar_2013_17_27_37_+1100_fkMoaHdxBLqLloNv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Hi Al,
+
+Today's linux-next merge of the signal tree got a conflict in
+include/asm-generic/unistd.h between commit 837718bfd28b
+("CONFIG_SYMBOL_PREFIX: cleanup") from the modules tree and commit
+e1b5bb6d1236 ("consolidate cond_syscall and SYSCALL_ALIAS declarations")
+from the signal tree.
+
+The latter moved the cond_syscall stuff to linkage.h, so I applied the
+following patch as a merge fixup and can carry the fix as necessary (no
+action is required).  I am not sure if this is completely correct or all
+that is needed.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 14 Mar 2013 17:14:41 +1100
+Subject: [PATCH] cond_syscall and SYSCALL_ALIAS merge fixup
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/usb/otg/twl4030-usb.c |   28 ++++++++--------------------
- 1 file changed, 8 insertions(+), 20 deletions(-)
+ include/linux/linkage.h | 20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index 04b732e2..5b20bb4 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -470,7 +470,7 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- 	/* Initialize 3.1V regulator */
- 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
- 
--	twl->usb3v1 = regulator_get(twl->dev, "usb3v1");
-+	twl->usb3v1 = devm_regulator_get(twl->dev, "usb3v1");
- 	if (IS_ERR(twl->usb3v1))
- 		return -ENODEV;
- 
-@@ -479,18 +479,18 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- 	/* Initialize 1.5V regulator */
- 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
- 
--	twl->usb1v5 = regulator_get(twl->dev, "usb1v5");
-+	twl->usb1v5 = devm_regulator_get(twl->dev, "usb1v5");
- 	if (IS_ERR(twl->usb1v5))
--		goto fail1;
-+		return -ENODEV;
- 
- 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
- 
- 	/* Initialize 1.8V regulator */
- 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
- 
--	twl->usb1v8 = regulator_get(twl->dev, "usb1v8");
-+	twl->usb1v8 = devm_regulator_get(twl->dev, "usb1v8");
- 	if (IS_ERR(twl->usb1v8))
--		goto fail2;
-+		return -ENODEV;
- 
- 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
- 
-@@ -499,14 +499,6 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- 			 TWL4030_PM_MASTER_PROTECT_KEY);
- 
- 	return 0;
+diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+index 829d66c..bedcddf 100644
+--- a/include/linux/linkage.h
++++ b/include/linux/linkage.h
+@@ -2,7 +2,7 @@
+ #define _LINUX_LINKAGE_H
+=20
+ #include <linux/compiler.h>
+-#include <linux/stringify.h>
++#include <linux/export.h>
+ #include <asm/linkage.h>
+=20
+ #ifdef __cplusplus
+@@ -15,24 +15,16 @@
+ #define asmlinkage CPP_ASMLINKAGE
+ #endif
+=20
+-#ifndef SYMBOL_NAME
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
+-#else
+-#define SYMBOL_NAME(x) x
+-#endif
+-#endif
+-#define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
 -
--fail2:
--	regulator_put(twl->usb1v5);
--	twl->usb1v5 = NULL;
--fail1:
--	regulator_put(twl->usb3v1);
--	twl->usb3v1 = NULL;
--	return -ENODEV;
- }
- 
- static ssize_t twl4030_usb_vbus_show(struct device *dev,
-@@ -695,9 +687,9 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	 * need both handles, otherwise just one suffices.
- 	 */
- 	twl->irq_enabled = true;
--	status = request_threaded_irq(twl->irq, NULL, twl4030_usb_irq,
--			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
--			IRQF_ONESHOT, "twl4030_usb", twl);
-+	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
-+			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
-+			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
- 	if (status < 0) {
- 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
- 			twl->irq, status);
-@@ -716,7 +708,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
- 	int val;
- 
- 	cancel_delayed_work(&twl->id_workaround_work);
--	free_irq(twl->irq, twl);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 
- 	/* set transceiver mode to power on defaults */
-@@ -738,9 +729,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
- 
- 	if (!twl->asleep)
- 		twl4030_phy_power(twl, 0);
--	regulator_put(twl->usb1v5);
--	regulator_put(twl->usb1v8);
--	regulator_put(twl->usb3v1);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+ #ifndef cond_syscall
+-#define cond_syscall(x) asm(".weak\t" __SYMBOL_NAME(x) \
+-	"\n\t.set\t" __SYMBOL_NAME(x) "," __SYMBOL_NAME(sys_ni_syscall));
++#define cond_syscall(x) asm(".weak\t" VMLINUX_SYMBOL_STR(x) "\n\t"	\
++			    ".set\t" VMLINUX_SYMBOL_STR(x) ","	\
++			    VMLINUX_SYMBOL_STR(sys_ni_syscall))
+ #endif
+=20
+ #ifndef SYSCALL_ALIAS
+ #define SYSCALL_ALIAS(alias, name)				\
+-	asm ("\t.globl " __SYMBOL_NAME(alias)			\
+-	"\n\t.set\t" __SYMBOL_NAME(alias) "," __SYMBOL_NAME(name))
++	asm ("\t.globl " VMLINUX_SYMBOL_STR(alias)			\
++	"\n\t.set\t" VMLINUX_SYMBOL_STR(alias) "," VMLINUX_SYMBOL_STR(name))
+ #endif
+=20
+ #define __page_aligned_data	__section(.data..page_aligned) __aligned(PAGE_=
+SIZE)
+--=20
+1.8.1
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__14_Mar_2013_17_27_37_+1100_fkMoaHdxBLqLloNv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRQW3ZAAoJEECxmPOUX5FEsJQQAJd4C7iRw0zbxBLz2lINql8s
+PEg2jIXOk7f7oFjUnbDNGetPv+NKZDyv+Ou9RjlyM3Zac0bLCPIcZsCRQOy33Rnx
+1W79kEbhAXnkw9nLChOB7TVLMkr3h6gEOSpWfTU9JHkvxx+PoP8FBHJ7yq64ffa7
+peOa9+1nKbHgz0JgPe+V0G+4kwF3n4EOQf0+e9s8ftmH6kl99jsvz/lyEW2cEN9U
+vi0KbzPXXPokPaW3Y8WrBLDLREKJ/oN9TyYyta4tJw0uDv98bhRIXdMiIVUGN3n+
+9XHxRKkQYtlrLrIkc6sbg3IZX/EYZEsjmCX+ZNiskrlDsEhG2/fIUOBI9vUmvHpH
+q8EnHz5g/+dh0FVsTzPZ0CBR7TA7xX6T4OC/6IRTSCIEYD8PKq8L3WwS7b594e6n
+8vpxLYWrt4LrhWcaW4fsWWSQy/kyGk/190HYG/GNHN4J6m/0Yt187/CsefBjKx7x
+DANudg/jLlk2ZwEWB1oNlJluDGFJlAtqDQ59/NUySbfLRSEfF4hij2wUSa00fCow
+DQ8dgndKh3EtIJqnY2lwxsX/r42z+qNZVzPCH6AnCuzzxq6pgqjkOZGpzbB1lfpG
+vbDaUVd7L8q6ut8oERLpRFmTy/8bWGjU7ygcPlMR3GSx0s1wWeQv5P1lCscFWUq3
+Ky0oe+k3XzAKC1gERzbI
+=S4y5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__14_Mar_2013_17_27_37_+1100_fkMoaHdxBLqLloNv--
