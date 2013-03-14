@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3CNXDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 19:03:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3CNXDt (ORCPT
+	id S1753702Ab3CNXFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 19:05:46 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27953 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab3CNXFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 19:03:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
-Date: Thu, 14 Mar 2013 23:03:42 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Johan Hovold <jhovold@gmail.com>, Olof Johansson <olof@lixom.net>,
-        FlorianSchandinat@gmx.de,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, jacmet@sunsite.dk
-References: <cover.1360340791.git.nicolas.ferre@atmel.com> <5139B169.7050807@atmel.com> <51405126.3090009@atmel.com>
-In-Reply-To: <51405126.3090009@atmel.com>
+	Thu, 14 Mar 2013 19:05:45 -0400
+X-IronPort-AV: E=Sophos;i="4.84,848,1355126400"; 
+   d="scan'208";a="29828381"
+Message-ID: <514257B7.5080206@codeaurora.org>
+Date: Thu, 14 Mar 2013 16:05:27 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: gen_pool_add broken with LPAE based systems
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303142303.42283.arnd@arndb.de>
-X-Provags-ID: V02:K0:7M89Opq5mmkzvKfKzNyYaBjN5OvseRbgXkiCuzRvQr0
- NU2CmbtndbFeGBxRn7CaxgCGHruNAdzEjW18Amcccg9JncsvVP
- QY9nU/vppKTLpUObLuOL+DD1z8LGDGZC0ARJq7wV1V3/TrLHLq
- 2Lz2Z+sY7FZIfCZg0YrmmmjaI44JfC0Yec/WI9S+Cva7u/idgQ
- bBYAUHocQo+uS89NoFV/2JSy/23Vv50hm40Jxod1HY3b43BLCs
- SJO9O1XJ0pTbCkYF6MNFI2cG9FpmMdbdtO2/BHt0Ut1a4A5eVo
- AChL3JApLF6FX2a3ynbv1StNnX13gAW82ZMjAhgeNpgxHrsTSp
- mXLR7u4piktAU1pSuRiA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 March 2013, Nicolas Ferre wrote:
-> In case we end-up with an agreement on the path those fixes should
-> follow, here is the location of my updated material rebased on top of 3.9-rc2:
-> 
-> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-> 
->   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git at91-3.9-fixesLCD
-> 
-> for you to fetch changes up to bbd44f6bd9d1aa735b180b29b5719d63a8e87b55:
-> 
->   ARM: at91/avr32/atmel_lcdfb: add platform device-id table (2013-03-13 11:05:12 +0100)
-> 
-> ----------------------------------------------------------------
-> Johan Hovold (5):
->       atmel_lcdfb: fix 16-bpp modes on older SOCs
->       ARM: at91: fix LCD-wiring mode
->       ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
->       atmel_lcdfb: move lcdcon2 register access to compute_hozval
->       ARM: at91/avr32/atmel_lcdfb: add platform device-id table
-> 
+Hi,
 
-I have merged the first two patches into the fixes branch now, from up to commit
-67cf9c0a. Please resubmit the remaining ones on top of this commit for 3.10, either
-through arm-soc or through the framebuffer tree.
+We use genalloc for managing certain pools of physical memory. genalloc 
+currently uses unsigned long for virtual addresses and phys_addr_t for 
+physical addresses. Our ARM LPAE systems have 64-bit physical addresses 
+but unsigned long is still 32 bits.  Using gen_pool_add breaks with 
+addresses > 4G because gen_pool_add treats the address passed in as the 
+virtual address. gen_pool allocates internally based on the 32 bit 
+virtual address as well so everything is broken if we want to be able to 
+manage the full address space after 4G. I see a couple of options:
 
-	Arnd
+1) Change gen_pool_add to use physical addresses and allocate based on 
+physical addresses instead of virtual addresses
+2) Change the virtual address to be a 64 bit type or something 
+selectable to a 64 bit type.
+3) Allow a flag per pool to select whether the allocator is virtual or 
+physical and switch between those.
+4) Split the APIs into virtual <-> physical and physical only and have 
+separate types for each.
+
+Any of these suggestions seem reasonable or is there another option to 
+consider?
+
+Thanks,
+Laura
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
