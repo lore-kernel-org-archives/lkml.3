@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934451Ab3CNA0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 20:26:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18511 "EHLO mga11.intel.com"
+	id S934461Ab3CNAaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 20:30:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39593 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932357Ab3CNA0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 20:26:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,840,1355126400"; 
-   d="scan'208";a="302206316"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] genirq: Do not consider the irqs with
- IRQF_NO_SUSPEND in check_wakeup_irqs()
-Thread-Topic: [PATCH 2/3] genirq: Do not consider the irqs with
- IRQF_NO_SUSPEND in check_wakeup_irqs()
-Thread-Index: AQHOHrs9zBjWcDkk/EuSrmtq0bC7upikVznw
-Date: Thu, 14 Mar 2013 00:26:32 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A258027@SHSMSX101.ccr.corp.intel.com>
-References: <1363024396.31506.60.camel@cliu38-desktop-build>
-	 <1363024631.31506.64.camel@cliu38-desktop-build>
- <1363082294.7518.4.camel@cliu38-desktop-build>
-In-Reply-To: <1363082294.7518.4.camel@cliu38-desktop-build>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932609Ab3CNAaQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 20:30:16 -0400
+Subject: Re: [PATCH] USB: ehci-s5p: Fix phy reset
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <CAD=FV=W331nkdJJhXrXe739o+-iBSzGAS6anu+C_mmix0MbAUg@mail.gmail.com>
+Date: Thu, 14 Mar 2013 01:30:09 +0100
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dmueller@suse.de, Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <D288652A-C975-46D5-92D8-048463C15AAB@suse.de>
+References: <1363136988-3704-1-git-send-email-agraf@suse.de> <CAD=FV=UXaZvZJOZwAguwi=iyYO1iMSvt8fdEsDhr96pgMXDYSg@mail.gmail.com> <A763CC55-549D-4CCD-8EE8-2BCE17F84606@suse.de> <CAD=FV=W331nkdJJhXrXe739o+-iBSzGAS6anu+C_mmix0MbAUg@mail.gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2E0Qdnx027031
 
-Hello Thomas,
 
-Sorry to miss the V2 in the subject.
-I have updated the comments in this new patch, could you consider to take it into upstream?
+On 13.03.2013, at 18:59, Doug Anderson wrote:
 
-Thanks.
+> Alexander,
+> 
+> On Wed, Mar 13, 2013 at 10:45 AM, Alexander Graf <agraf@suse.de> wrote:
+>> 
+>>>> +       gpio_free(gpio);
+>>> 
+>>> Freeing the gpio is a little on the iffy side since you actually care
+>>> about keeping the value.  Perhaps you can change this to
+>>> devm_gpio_request_one() and avoid the free?  I was about to submit a
+>>> patch to do just that (since otherwise you run into trouble if you
+>>> ever defer the probe) but then ran across your patch.
+>> 
+>> I could also just return it when the function exits and only free it when we exit the probe function with a negative value. The reason I put it in here was that on probe deferral, the pin simply gets blocked.
+>> 
+>> However, I could probably also just completely take the gpio_free() out of this patch and resubmit, as it should be pretty much unrelated. Then you can patch it properly.
+> 
+> Sure, if you want to resubmit without the gpio_free() I'll submit a
+> new patch atop yours with the change to devm and people can see if
+> they like it...
 
-Best Regards
-Liu chuansheng
+Hrm. So when I remove the gpio_free() again, I can't find the USB hub anymore. If I however postpone the whole reset procedure until after the potential deferral, it works (see patch below).
 
-> -----Original Message-----
-> From: Liu, Chuansheng
-> Sent: Tuesday, March 12, 2013 5:58 PM
-> To: tglx@linutronix.de
-> Cc: mingo@redhat.com; linux-kernel@vger.kernel.org; Liu, Chuansheng
-> Subject: [PATCH 2/3] genirq: Do not consider the irqs with IRQF_NO_SUSPEND
-> in check_wakeup_irqs()
-> 
-> 
-> According to commit 9c6079aa1bf(genirq: Do not consider disabled
-> wakeup irqs), we should not break the suspend when one interrupt has
-> been disabled before suspending and is pending there.
-> 
-> But there is another case missed:
-> If an interrupt which is marked IRQF_NO_SUSPEND has been disabled
-> before suspend invocation then desc->depth is 1 and therefor it should
-> not be checked for IRQS_PENDING in check_wakeup_irqs().
-> 
-> Here also checking if the desc->istate & IRQS_SUSPENDED is true to avoid
-> this case.
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  kernel/irq/pm.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-> index cb228bf..f02a03d 100644
-> --- a/kernel/irq/pm.c
-> +++ b/kernel/irq/pm.c
-> @@ -107,9 +107,16 @@ int check_wakeup_irqs(void)
->  		 * Only interrupts which are marked as wakeup source
->  		 * and have not been disabled before the suspend check
->  		 * can abort suspend.
-> +		 *
-> +		 * Meanwhile, if an interrupt which is marked IRQF_NO_SUSPEND
-> +		 * has been disabled before suspend invocation then
-> +		 * desc->depth is 1 and therefor it should not be checked
-> +		 * for IRQS_PENDING, so also adding the checking of
-> +		 * desc->istate & IRQS_SUSPENDED for this case.
->  		 */
->  		if (irqd_is_wakeup_set(&desc->irq_data)) {
-> -			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
-> +			if (desc->depth == 1 && (desc->istate & IRQS_PENDING)
-> +				&& (desc->istate & IRQS_SUSPENDED))
->  				return -EBUSY;
->  			continue;
->  		}
-> --
-> 1.7.0.4
-> 
-> 
+Any idea what is going on here?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Alex
+
+
+diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+index f692f70..b29b2b8 100644
+--- a/drivers/usb/host/ehci-s5p.c
++++ b/drivers/usb/host/ehci-s5p.c
+@@ -136,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+        if (!pdev->dev.coherent_dma_mask)
+                pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+ 
+-       s5p_setup_vbus_gpio(pdev);
+-
+        s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
+                                GFP_KERNEL);
+        if (!s5p_ehci)
+@@ -157,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+                s5p_ehci->otg = phy->otg;
+        }
+ 
++       s5p_setup_vbus_gpio(pdev);
++
+        s5p_ehci->dev = &pdev->dev;
+ 
+        hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
