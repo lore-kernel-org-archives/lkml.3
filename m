@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab3CNQjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 12:39:04 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62637 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3CNQjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 12:39:02 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 14 Mar 2013 09:39:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Joe Perches <joe@perches.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Add check for reuse of krealloc arg
-Message-ID: <20130314163904.GA11384@roeck-us.net>
-References: <1363267820.4853.41.camel@i7.infradead.org>
- <1363277885.2146.3.camel@joe-AO722>
+	id S934440Ab3CNQjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:39:12 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42588 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932487Ab3CNQjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 12:39:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Meyer <thomas@m3y3r.de>, Shawn Starr <shawn.starr@rogers.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt responses)
+Date: Thu, 14 Mar 2013 17:46:10 +0100
+Message-ID: <1460519.ejNFI1DrGk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <alpine.LNX.2.00.1303141709000.30118@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1303141555090.30118@pobox.suse.cz> <alpine.LNX.2.00.1303141709000.30118@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363277885.2146.3.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 09:18:05AM -0700, Joe Perches wrote:
-> On Thu, 2013-03-14 at 13:30 +0000, David Woodhouse wrote:
-> > If krealloc() returns NULL, it *doesn't* free the original. So any code
-> > of the form 'foo = krealloc(foo, …);' is almost certainly a bug.
+On Thursday, March 14, 2013 05:09:59 PM Jiri Kosina wrote:
+> On Thu, 14 Mar 2013, Jiri Kosina wrote:
 > 
-> So add a check for it to checkpatch.
+> > > > I don't think I have seen this message on rc1+ (8343bce, to be precise), 
+> > > > but I have definitely seen sluggish system response on that kernel as 
+> > > > well.
+> > > > 
+> > > > Attaching lspci, /proc/interrupts and dmesg. 
+> > > 
+> > > Can you try to do a git bisect for this?  Is the sluggish system 
+> > > response clear enough that you can tell reliably when it is present and 
+> > > when it isn't?
+> > 
+> > That was my first thought, but unfortunately I am afraid there will be 
+> > point at which I will easily make a bisection mistake, as the 
+> > responsiveness of the system varies over time, so it's not really a 
+> > 100% objective measure.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> So I will try a bisect, but it'll take some time so that I could claim it 
+> to be trustworthy.
+> 
+> Therefore in case anyone has any idea in parallel, I am all ears.
 
-Excellent idea.
+This one is a candidate to focus on I think:
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+commit 181380b702eee1a9aca51354d7b87c7b08541fcf
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Sat Feb 16 11:58:34 2013 -0700
 
-> ---
->  scripts/checkpatch.pl | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index b28cc38..7ef2b4b 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3476,6 +3476,13 @@ sub process {
->  			     "unnecessary cast may hide bugs, see http://c-faq.com/malloc/mallocnocast.html\n" . $herecurr);
->  		}
->  
-> +# check for krealloc arg reuse
-> +		if ($^V && $^V ge 5.10.0 &&
-> +		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
-> +			WARN("KREALLOC_ARG_REUSE",
-> +			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
-> +		}
-> +
->  # check for alloc argument mismatch
->  		if ($line =~ /\b(kcalloc|kmalloc_array)\s*\(\s*sizeof\b/) {
->  			WARN("ALLOC_ARRAY_ARGS",
-> 
-> 
-> 
+    PCI/ACPI: Don't cache _PRT, and don't associate them with bus numbers
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
