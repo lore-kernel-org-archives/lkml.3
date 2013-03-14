@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992Ab3CNNdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:33:01 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50433 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab3CNNdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:33:00 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 14 Mar 2013 06:33:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Axel Lin <axel.lin@ingics.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: lineage-pem: Add missing terminating entry for
- pem_[input|fan]_attributes
-Message-ID: <20130314133304.GA24678@roeck-us.net>
-References: <1363249638.15861.1.camel@phoenix>
- <20130314112354.31396c51@endymion.delvare>
+	id S1758017Ab3CNNdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:33:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43267 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757916Ab3CNNdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 09:33:20 -0400
+Date: Thu, 14 Mar 2013 15:33:13 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <notasas@gmail.com>
+Subject: Re: [PATCH v2 0/4] usb: musb/otg: cleanup and fixes
+Message-ID: <20130314133313.GB26080@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363242239-1061-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uQr8t48UFsdbeI+V"
 Content-Disposition: inline
-In-Reply-To: <20130314112354.31396c51@endymion.delvare>
+In-Reply-To: <1363242239-1061-1-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 11:23:54AM +0100, Jean Delvare wrote:
-> Hi Axel,
-> 
-> On Thu, 14 Mar 2013 16:27:18 +0800, Axel Lin wrote:
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > ---
-> >  drivers/hwmon/lineage-pem.c |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/drivers/hwmon/lineage-pem.c b/drivers/hwmon/lineage-pem.c
-> > index 41df29f..ebbb9f4 100644
-> > --- a/drivers/hwmon/lineage-pem.c
-> > +++ b/drivers/hwmon/lineage-pem.c
-> > @@ -422,6 +422,7 @@ static struct attribute *pem_input_attributes[] = {
-> >  	&sensor_dev_attr_in2_input.dev_attr.attr,
-> >  	&sensor_dev_attr_curr1_input.dev_attr.attr,
-> >  	&sensor_dev_attr_power1_input.dev_attr.attr,
-> > +	NULL
-> >  };
-> >  
-> >  static const struct attribute_group pem_input_group = {
-> > @@ -432,6 +433,7 @@ static struct attribute *pem_fan_attributes[] = {
-> >  	&sensor_dev_attr_fan1_input.dev_attr.attr,
-> >  	&sensor_dev_attr_fan2_input.dev_attr.attr,
-> >  	&sensor_dev_attr_fan3_input.dev_attr.attr,
-> > +	NULL
-> >  };
-> >  
-> >  static const struct attribute_group pem_fan_group = {
-> 
-> Good catch.
-> 
-> Acked-by: Jean Delvare <khali@linux-fr.org>
-> 
-> I'll let Guenter pick the fix as this is his driver. This should go to
-> stable too.
-> 
-Will do. Just wonder why this never blew up in my face, as we use that driver
-in my previous company :).
+--uQr8t48UFsdbeI+V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Guenter
+On Thu, Mar 14, 2013 at 11:53:55AM +0530, Kishon Vijay Abraham I wrote:
+> This series has some misc cleanup and fixes. The fix solves the cold
+> plug issue in omap3 which some have reported. Developed these patches on
+> fixes-for-v3.9-rc3 after applying=20
+> http://www.spinics.net/lists/linux-usb/msg81563.html
+> (Grazvydas Ignotas patch series)
+>=20
+> Tested for g_zero enumeration in pandaboard and beagleboard in both
+> cold plug and hot plug case. Any kind of testing for this series is welco=
+me.
+>=20
+> Changes from v1:
+> * removed *usb: musb: omap: remove the check before calling otg_set_vbus*
+
+it's still on your list of patches :-p
+
+> a similar patch is already merged.
+>=20
+> Kishon Vijay Abraham I (4):
+>   usb: musb: omap: remove the check before calling otg_set_vbus
+
+see ^^
+
+please fix it up and when resending add Grazvydas' Tested-by since he
+has tested this patchset
+
+--=20
+balbi
+
+--uQr8t48UFsdbeI+V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQdGZAAoJEIaOsuA1yqREtKwP/jV1+GZGRfTYgDo5dNayf3Wl
+OPCsDHGCb44DO2xXX/VAAc2kXXljV3eM3Fb3esKSb2zvKMeWHzNhpnQCq6cBu41l
+yeZALqfYb5B0Dz9lngaDFL8UC7WiPdiZLNva6nLNUmpv6d8Kqa+vB4rpNyO3OPGM
+LsqJMOEV7cPFYO7cmtTd+yTmE8XWvdqFvBSMup7wZaeiglv2k4t8AvhaYLWjcViU
+T4kPgtR60TJ2G8QTYCI8UDFxv8FimHTTc6G5dN1fwclUSjwiZNwNFTL39USsZPd/
+1cv+1ZNGTfduEVDCX5CeMxcniq3eXDUktmSj4xP1GI8kEWsgvTfVlhvLnRTwXhBy
+dCNLWUB42euzUKKJ5siySTNFEnn0cHue4k/JNZiGmp3aG9QgFIaFt+MgrG5hkILW
+gBZ6nxH8G3nFACYJpkMFRIMrAhPNgn3XwsFu9sBSuAfUX4no5T2qpmOOfsiarjcH
+I5jlAInQSUMMMiYWag5hWlUBEJdPYJJqoLZckq03r+oZ9cU8u/Oxu0qHgtQ2V+c5
+401qOcjTV7S15YfqG7HT6Hry3q1Tf70buduBFN2vHGx4CwjIclNhi4Gu/7mu2YMY
+oqZVUpX7l7qnY+Mr/wa2nYDAhW2nm0HDa6ZoQeh2j+bEEN/JIaKi35Y9Ywaf0HDv
+Jb2k7s8gXlKHeT9m1LaI
+=HRL4
+-----END PGP SIGNATURE-----
+
+--uQr8t48UFsdbeI+V--
