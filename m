@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934349Ab3CNDiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 23:38:51 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36385 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab3CNDit (ORCPT
+	id S934386Ab3CNDpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 23:45:00 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:43567 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682Ab3CNDo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 23:38:49 -0400
+	Wed, 13 Mar 2013 23:44:59 -0400
+X-Spam-Score: -100.8
+Message-ID: <514147A0.2060002@asianux.com>
+Date: Thu, 14 Mar 2013 11:44:32 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1363219179-14900-1-git-send-email-agraf@suse.de>
-References: <1363219179-14900-1-git-send-email-agraf@suse.de>
-Date: Wed, 13 Mar 2013 20:38:47 -0700
-X-Google-Sender-Auth: taW999RHok6g84cxG1R2N_GoK8U
-Message-ID: <CAD=FV=UyCUMZss36Fw3VZSGgi56CToewEaOjUo95z6=vJreysg@mail.gmail.com>
-Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
-From: Doug Anderson <dianders@chromium.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dmueller@suse.de, Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lorenzo.pieralisi@arm.com,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, nico@linaro.org,
+        catalin.marinas@arm.com
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] Latest randconfig build errors for CONFIG_MMU=no
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander,
+Hello Maintainers:
 
-On Wed, Mar 13, 2013 at 4:59 PM, Alexander Graf <agraf@suse.de> wrote:
-> On my Exynos 5 based Arndale system, I need to pull the reset line down
-> and then let it go up again to actually perform a reset. Without that
-> reset, I can't find any USB hubs on my bus, rendering the USB controller
-> useless.
->
-> We also only need to reset the line after the phy node has been found.
-> This way we don't accidently reserve the vbus GPIO pin, but later on
-> defer the creation of our controller, because the phy device tree node
-> hasn't been probed yet.
->
-> This patch implements the above logic, making EHCI and OHCI work on
-> Arndale systems for me.
->
-> Signed-off-by: Alexander Graf <agraf@suse.de>
-> CC: Vivek Gautam <gautam.vivek@samsung.com>
-> CC: Jingoo Han <jg1.han@samsung.com>
-> CC: Alan Stern <stern@rowland.harvard.edu>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> CC: Felipe Balbi <balbi@ti.com>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Doug Anderson <dianders@chromium.org>
->
-> ---
->
-> v1 -> v2:
->
->   - remove gpio_free call
->   - move reset logic after phy node search
+  when use randconfig:
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm randconfig
+      (and "grep CONFIG_MMU .config" outputs "# CONFIG_MMU is not set")
 
-Seems fine to me.  I guess the earlier problem you wrote about was the
-probe failure, then?  I think that the reason I don't tend to get the
-probe failure is that I've got my device tree ordered differently so
-that the phy gets initted in a different order.
+  the error information:
+    arch/arm/kernel/suspend.c: 在函数‘cpu_suspend’中:
+    arch/arm/kernel/suspend.c:56:32: 错误：提领指向不完全类型的指针
+    arch/arm/kernel/suspend.c:70:3: 错误：隐式声明函数‘cpu_switch_mm’ [-Werror=implicit-function-declaration]
+    arch/arm/kernel/suspend.c:71:3: 错误：隐式声明函数‘local_flush_bp_all’ [-Werror=implicit-function-declaration]
+    arch/arm/kernel/suspend.c:72:3: 错误：隐式声明函数‘local_flush_tlb_all’ [-Werror=implicit-function-declaration]
 
-I'll send up the devm_ patch atop this.
+  I want to be sure whether we can bear it ?
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+  thanks.
 
-Thanks!  :)
+-- 
+Chen Gang
 
--Doug
+Asianux Corporation
