@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3CNKpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:45:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52017 "EHLO
+	id S1757266Ab3CNKh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:37:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51981 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab3CNKh6 (ORCPT
+	with ESMTP id S1756955Ab3CNKhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:58 -0400
+	Thu, 14 Mar 2013 06:37:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 62/88] ARM: 7663/1: perf: fix ARMv7 EVTYPE_MASK to include NSH bit
-Date: Thu, 14 Mar 2013 10:35:55 +0000
-Message-Id: <1363257381-15900-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 56/88] ath9k_hw: improve reset reliability after errors
+Date: Thu, 14 Mar 2013 10:35:49 +0000
+Message-Id: <1363257381-15900-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit f2fe09b055e2549de41fb107b34c60bac4a1b0cf upstream.
+commit 3412f2f086ea7531378fabe756bd4a1109994ae6 upstream.
 
-Masked out PMXEVTYPER.NSH means that we can't enable profiling at PL2,
-regardless of the settings in the HDCR.
+On many different chips, important aspects of the MAC state are not
+fully cleared by a warm reset. This can show up as tx/rx hangs, those
+annoying "DMA failed to stop in 10 ms..." messages or other quirks.
 
-This patch fixes the broken mask.
+On AR933x, the chip can occasionally get stuck in a way that only a
+driver unload/reload or a reboot would bring it back to life.
 
-Reported-by: Christoffer Dall <cdall@cs.columbia.edu>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+With this patch, a full reset is issued when bringing the chip out of
+FULL-SLEEP state (after idle), or if either Rx or Tx was not shut down
+properly. This makes the DMA related error messages disappear completely
+in my tests on AR933x, and the chip does not get stuck anymore.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event_v7.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/hw.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index d3c5360..eff4c68 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -775,7 +775,7 @@ static const unsigned armv7_a7_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- /*
-  * PMXEVTYPER: Event selection reg
-  */
--#define	ARMV7_EVTYPE_MASK	0xc00000ff	/* Mask for writable bits */
-+#define	ARMV7_EVTYPE_MASK	0xc80000ff	/* Mask for writable bits */
- #define	ARMV7_EVTYPE_EVENT	0xff		/* Mask for EVENT bits */
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index 988b1f3..6333166 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1472,7 +1472,9 @@ static bool ath9k_hw_chip_reset(struct ath_hw *ah,
+ 			reset_type = ATH9K_RESET_POWER_ON;
+ 		else
+ 			reset_type = ATH9K_RESET_COLD;
+-	}
++	} else if (ah->chip_fullsleep || REG_READ(ah, AR_Q_TXE) ||
++		   (REG_READ(ah, AR_CR) & AR_CR_RXE))
++		reset_type = ATH9K_RESET_COLD;
  
- /*
+ 	if (!ath9k_hw_set_reset_reg(ah, reset_type))
+ 		return false;
 -- 
 1.8.1.2
 
