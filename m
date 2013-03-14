@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440Ab3CNDJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 23:09:58 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:40593 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933532Ab3CNDJ4 (ORCPT
+	id S934349Ab3CNDiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 23:38:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36385 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756572Ab3CNDit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 23:09:56 -0400
+	Wed, 13 Mar 2013 23:38:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <3174774.7AKCbYrzc6@vostro.rjw.lan>
-References: <cover.1362381470.git.viresh.kumar@linaro.org>
-	<1687194.MelaMkNoiM@vostro.rjw.lan>
-	<CAKohpompsA5bR6TauM7Wa6ciLxYYc7GdpN1NXdHF_WbP2ki=qA@mail.gmail.com>
-	<3174774.7AKCbYrzc6@vostro.rjw.lan>
-Date: Thu, 14 Mar 2013 08:39:55 +0530
-Message-ID: <CAKohpokwdtSwQmcK=gb2mpzjzp0vpbS7Sra-EhM3QsiQwpog1w@mail.gmail.com>
-Subject: Re: [PATCH V3 4/4] cpufreq: Add Kconfig option to enable/disable have_multiple_policies
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com
+In-Reply-To: <1363219179-14900-1-git-send-email-agraf@suse.de>
+References: <1363219179-14900-1-git-send-email-agraf@suse.de>
+Date: Wed, 13 Mar 2013 20:38:47 -0700
+X-Google-Sender-Auth: taW999RHok6g84cxG1R2N_GoK8U
+Message-ID: <CAD=FV=UyCUMZss36Fw3VZSGgi56CToewEaOjUo95z6=vJreysg@mail.gmail.com>
+Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
+From: Doug Anderson <dianders@chromium.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dmueller@suse.de, Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2013 03:11, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, March 12, 2013 08:55:12 AM Viresh Kumar wrote:
->> On 12 March 2013 07:38, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > One more question before I apply it.
->> >
->> > Is there any architecture/platform that will set
->> > CONFIG_CPU_FREQ_HAVE_MULTIPLE_POLICIES and keep have_multiple_policies unset
->> > at the same time?
->>
->> No, they are redundant. That's why i have been forcing to drop this patch.
->
-> I see.
->
-> What about having the Kconfig option alone, however?
+Alexander,
 
-Even that is not enough. We build multiplatform kernels and so need a
-variable to be set by platform.
+On Wed, Mar 13, 2013 at 4:59 PM, Alexander Graf <agraf@suse.de> wrote:
+> On my Exynos 5 based Arndale system, I need to pull the reset line down
+> and then let it go up again to actually perform a reset. Without that
+> reset, I can't find any USB hubs on my bus, rendering the USB controller
+> useless.
+>
+> We also only need to reset the line after the phy node has been found.
+> This way we don't accidently reserve the vbus GPIO pin, but later on
+> defer the creation of our controller, because the phy device tree node
+> hasn't been probed yet.
+>
+> This patch implements the above logic, making EHCI and OHCI work on
+> Arndale systems for me.
+>
+> Signed-off-by: Alexander Graf <agraf@suse.de>
+> CC: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> CC: Kukjin Kim <kgene.kim@samsung.com>
+> CC: Felipe Balbi <balbi@ti.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Doug Anderson <dianders@chromium.org>
+>
+> ---
+>
+> v1 -> v2:
+>
+>   - remove gpio_free call
+>   - move reset logic after phy node search
+
+Seems fine to me.  I guess the earlier problem you wrote about was the
+probe failure, then?  I think that the reason I don't tend to get the
+probe failure is that I've got my device tree ordered differently so
+that the phy gets initted in a different order.
+
+I'll send up the devm_ patch atop this.
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+
+Thanks!  :)
+
+-Doug
