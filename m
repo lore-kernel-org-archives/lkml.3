@@ -1,171 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab3CNO6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:58:49 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:41674 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757614Ab3CNO6q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:58:46 -0400
+	id S1757821Ab3CNPBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:01:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755847Ab3CNPBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 11:01:20 -0400
+Date: Thu, 14 Mar 2013 16:01:12 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 1/1] mm/hugetlb: add more arch-defined huge_pte_xxx
+ functions
+Message-ID: <20130314150112.GD11636@dhcp22.suse.cz>
+References: <1363114106-30251-1-git-send-email-gerald.schaefer@de.ibm.com>
+ <1363114106-30251-2-git-send-email-gerald.schaefer@de.ibm.com>
+ <20130314131404.GH11631@dhcp22.suse.cz>
+ <20130314151109.5b6927ce@thinkpad>
 MIME-Version: 1.0
-In-Reply-To: <6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
-References: <1363219179-14900-1-git-send-email-agraf@suse.de>
-	<CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
-	<6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
-Date: Thu, 14 Mar 2013 20:28:46 +0530
-Message-ID: <CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
-Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, dmueller@suse.de,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Doug Anderson <dianders@chromium.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314151109.5b6927ce@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2013 17:31, Alexander Graf <agraf@suse.de> wrote:
->
-> On 14.03.2013, at 05:19, Thomas Abraham wrote:
->
->> On 14 March 2013 05:29, Alexander Graf <agraf@suse.de> wrote:
->>> On my Exynos 5 based Arndale system, I need to pull the reset line down
->>> and then let it go up again to actually perform a reset. Without that
->>> reset, I can't find any USB hubs on my bus, rendering the USB controller
->>> useless.
->>>
->>> We also only need to reset the line after the phy node has been found.
->>> This way we don't accidently reserve the vbus GPIO pin, but later on
->>> defer the creation of our controller, because the phy device tree node
->>> hasn't been probed yet.
->>>
->>> This patch implements the above logic, making EHCI and OHCI work on
->>> Arndale systems for me.
->>>
->>> Signed-off-by: Alexander Graf <agraf@suse.de>
->>> CC: Vivek Gautam <gautam.vivek@samsung.com>
->>> CC: Jingoo Han <jg1.han@samsung.com>
->>> CC: Alan Stern <stern@rowland.harvard.edu>
->>> CC: Kukjin Kim <kgene.kim@samsung.com>
->>> CC: Felipe Balbi <balbi@ti.com>
->>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> CC: Doug Anderson <dianders@chromium.org>
->>>
->>> ---
->>>
->>> v1 -> v2:
->>>
->>>  - remove gpio_free call
->>>  - move reset logic after phy node search
->>>
->>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
->>> index 20ebf6a..b29b2b8 100644
->>> --- a/drivers/usb/host/ehci-s5p.c
->>> +++ b/drivers/usb/host/ehci-s5p.c
->>> @@ -103,9 +103,14 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
->>>        if (!gpio_is_valid(gpio))
->>>                return;
->>>
->>> -       err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
->>> -       if (err)
->>> +       /* reset pulls the line down, then up again */
->>> +       err = gpio_request_one(gpio, GPIOF_OUT_INIT_LOW, "ehci_vbus_gpio");
->>> +       if (err) {
->>>                dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
->>> +               return;
->>> +       }
->>> +       mdelay(1);
->>> +       __gpio_set_value(gpio, 1);
->>> }
->>>
->>> static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
->>> @@ -131,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->>>        if (!pdev->dev.coherent_dma_mask)
->>>                pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->>>
->>> -       s5p_setup_vbus_gpio(pdev);
->>> -
->>>        s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
->>>                                GFP_KERNEL);
->>>        if (!s5p_ehci)
->>> @@ -152,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->>>                s5p_ehci->otg = phy->otg;
->>>        }
->>>
->>> +       s5p_setup_vbus_gpio(pdev);
->>> +
->>>        s5p_ehci->dev = &pdev->dev;
->>>
->>>        hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
->>
->> Hi Alexander,
->>
->> This change, though it works for Exynos5250 based Arndale board, does
->> not actually seem correct. On Arndale board, the on-board 4-port usb
->> hub is self powered and hence the vbus 'enable' gpio line from
->> Exynos5250 SoC is instead used as a "reset" signal for the on-board
->> usb hub (and not as the vbus enable signal).
->>
->> Whereas, the driver uses the gpio used in 's5p_setup_vbus_gpio'
->> function as just a mechanism to enable vbus for downstream devices. So
->> the driver should not be modified as above to handle the board
->> specific behavior.
->>
->> Instead, what needs to be done is, remove the "samsung,vbus-gpio"
->> property from the usb2.0 node in dts files (this property is optional)
->> for Arndale board. Then, during the machine_init, perform the reset
->> sequencing as required.
->>
->> Ideally, the reset sequencing for the on-board AX88760 usb hub should
->> have been handled in the driver for this device. I have not checked if
->> there is a driver for this in the kernel.
->
-> I can see your point, but as I mentioned earlier there seems to be some timing issue here. By simply doing the reset a few ms earlier (in the first probe, before the driver detects that it needs to defer probing), I already can't find the hub on the bus later.
->
-> So I'm assuming that the same thing would also happen if I put it even earlier in machine init.
+On Thu 14-03-13 15:11:09, Gerald Schaefer wrote:
+> On Thu, 14 Mar 2013 14:14:04 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Tue 12-03-13 19:48:26, Gerald Schaefer wrote:
+> > > Commit abf09bed3c "s390/mm: implement software dirty bits" introduced
+> > > another difference in the pte layout vs. the pmd layout on s390,
+> > > thoroughly breaking the s390 support for hugetlbfs. This requires
+> > > replacing some more pte_xxx functions in mm/hugetlbfs.c with a
+> > > huge_pte_xxx version.
+> > > 
+> > > This patch introduces those huge_pte_xxx functions and their
+> > > implementation on all architectures supporting hugetlbfs. This change
+> > > will be a no-op for all architectures other than s390.
+> > > 
+> > > Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> > > ---
+> > >  arch/ia64/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+> > >  arch/mips/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+> > >  arch/powerpc/include/asm/hugetlb.h | 36 ++++++++++++++++++++++++
+> > >  arch/s390/include/asm/hugetlb.h    | 56 +++++++++++++++++++++++++++++++++++++-
+> > >  arch/s390/include/asm/pgtable.h    | 20 --------------
+> > >  arch/s390/mm/hugetlbpage.c         |  2 +-
+> > >  arch/sh/include/asm/hugetlb.h      | 36 ++++++++++++++++++++++++
+> > >  arch/sparc/include/asm/hugetlb.h   | 36 ++++++++++++++++++++++++
+> > >  arch/tile/include/asm/hugetlb.h    | 36 ++++++++++++++++++++++++
+> > >  arch/x86/include/asm/hugetlb.h     | 36 ++++++++++++++++++++++++
+> > >  mm/hugetlb.c                       | 23 ++++++++--------
+> > >  11 files changed, 320 insertions(+), 33 deletions(-)
+> > 
+> > Ouch, this adds a lot of code that is almost same for all archs except
+> > for some. Can we just make one common definition and define only those
+> > that differ, please?
+> > [...]
+> 
+> Ok, seems like I misinterpreted the ugliness of HAVE_ARCH_xxx vs. code
+> duplication. Paul Mundt also suggested going for an asm-generic/hugetlb.h
+> approach. I'll send a new patch soon.
 
-True, I missed that point. The usb hub connected over hsic interface,
-after power-on-reset, might have initiated the 'connect' state on
-seeing the idle condition on the bus and since the host/phy controller
-is not ready yet, the connect might have failed.
+Oh, I have missed that answer so sorry for duplication. Anyway, having
+asm-generic and HAVE_ARCH_xxx sounds much better to me for this case as
+the duplication is really big.
 
-So the correct sequence would be, after the usb host controller and
-the phy controllers are initialized, the 'reset' pin on the on-board
-usb hub should be asserted. Upon releasing that reset, the usb hub
-would initiate the 'connect' state on the HSIC bus.
-
->
-> The change in this patch actually does a reset even on non-Arndale boards. By taking away power and returning power to the line, the chip will most likely have reset :). So even on non-Arndale boards, this should get the USB phy into a clean state regardless of where the bootloader left it, right?
->
-
-No, the toggling of the vbus cannot ensure hardware-reset on self
-powered devices. On Arndale board, since the usb hub is self powered
-and being on HSIC interface, the dedicated vbus control gpio line is
-instead used to assert the 'reset' pin of the on-board usb hub.
-
-Using the dedicated vbus control line of Exynos5250 (XuhostPWREN) for
-hardware resetting the usb hub is a board specific design of Arndale
-board. The function ''s5p_setup_vbus_gpio' is meant to turn on the
-vbus for downstream ports. Utilizing this function to hardware-reset
-the usb hub is not right.
-
-In fact, for Arndale board, there should not be a 'samsung,vbus-gpio'
-property for usb2.0 host controller node. Because, there is no such
-vbus control line on Arndale board which is using HSIC interface to
-connect to USB devices. So this change is not correct. The assertion
-of the hardware-reset for the on board usb hub should be handled
-elsewhere.
-
-Thanks,
-Thomas.
-
->
-> Alex
->
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
