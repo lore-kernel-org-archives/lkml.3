@@ -1,206 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3CNHnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 03:43:05 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4104 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3CNHnD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 03:43:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 14 Mar 2013 00:43:02 -0700
-From: Danny Huang <dahuang@nvidia.com>
-To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <josephl@nvidia.com>,
-        <pgaikwad@nvidia.com>, <ldewangan@nvidia.com>, <dahuang@nvidia.com>,
-        <hdoyu@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: tegra114: add speedo-based process identification
-Date: Thu, 14 Mar 2013 15:40:22 +0800
-Message-ID: <1363246822-14597-1-git-send-email-dahuang@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751549Ab3CNH7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 03:59:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:4885 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab3CNH7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 03:59:18 -0400
+X-IronPort-AV: E=Sophos;i="4.84,843,1355068800"; 
+   d="scan'208";a="6870985"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: viro@zeniv.linux.org.uk, oleg@redhat.com, edumazet@google.com,
+        linux-kernel@vger.kernel.org
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH 2/2] task_work: check callback if it's NULL
+Date: Thu, 14 Mar 2013 15:57:45 +0800
+Message-Id: <1363247865-3531-2-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/14 15:57:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/14 15:57:56,
+	Serialize complete at 2013/03/14 15:57:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add speedo-based process identifictaion for Tegra114.
-
-Based on the work by:
-Alex Frid <afrid@nvidia.com>
-
-Signed-off-by: Danny Huang <dahuang@nvidia.com>
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 ---
- arch/arm/mach-tegra/Makefile          |   1 +
- arch/arm/mach-tegra/fuse.c            |   4 ++
- arch/arm/mach-tegra/fuse.h            |   7 +++
- arch/arm/mach-tegra/tegra114_speedo.c | 100 ++++++++++++++++++++++++++++++++++
- 4 files changed, 112 insertions(+)
- create mode 100644 arch/arm/mach-tegra/tegra114_speedo.c
+ kernel/task_work.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 92703f9..e40326d 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
- obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
- obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index 0bf4258..f458b08 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -75,7 +75,8 @@ void task_work_run(void)
  
-+obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= tegra114_speedo.o
- ifeq ($(CONFIG_CPU_IDLE),y)
- obj-$(CONFIG_ARCH_TEGRA_114_SOC)	+= cpuidle-tegra114.o
- endif
-diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
-index f7db078..e035cd2 100644
---- a/arch/arm/mach-tegra/fuse.c
-+++ b/arch/arm/mach-tegra/fuse.c
-@@ -2,6 +2,7 @@
-  * arch/arm/mach-tegra/fuse.c
-  *
-  * Copyright (C) 2010 Google, Inc.
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * Author:
-  *	Colin Cross <ccross@android.com>
-@@ -137,6 +138,9 @@ void tegra_init_fuse(void)
- 		tegra_fuse_spare_bit = TEGRA30_FUSE_SPARE_BIT;
- 		tegra_init_speedo_data = &tegra30_init_speedo_data;
- 		break;
-+	case TEGRA114:
-+		tegra_init_speedo_data = &tegra114_init_speedo_data;
-+		break;
- 	default:
- 		pr_warn("Tegra: unknown chip id %d\n", tegra_chip_id);
- 		tegra_fuse_spare_bit = TEGRA20_FUSE_SPARE_BIT;
-diff --git a/arch/arm/mach-tegra/fuse.h b/arch/arm/mach-tegra/fuse.h
-index da78434..aacc00d 100644
---- a/arch/arm/mach-tegra/fuse.h
-+++ b/arch/arm/mach-tegra/fuse.h
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (C) 2010 Google, Inc.
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * Author:
-  *	Colin Cross <ccross@android.com>
-@@ -66,4 +67,10 @@ void tegra30_init_speedo_data(void);
- static inline void tegra30_init_speedo_data(void) {}
- #endif
- 
-+#ifdef CONFIG_ARCH_TEGRA_114_SOC
-+void tegra114_init_speedo_data(void);
-+#else
-+static inline void tegra114_init_speedo_data(void) {}
-+#endif
-+
- #endif
-diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
-new file mode 100644
-index 0000000..1188e7b
---- /dev/null
-+++ b/arch/arm/mach-tegra/tegra114_speedo.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/kernel.h>
-+
-+#include "fuse.h"
-+
-+#define CORE_PROCESS_CORNERS_NUM	2
-+#define CPU_PROCESS_CORNERS_NUM		2
-+
-+enum {
-+	THRESHOLD_INDEX_0,
-+	THRESHOLD_INDEX_1,
-+	THRESHOLD_INDEX_COUNT,
-+};
-+
-+static const u32 core_process_speedos[THRESHOLD_INDEX_COUNT]
-+	[CORE_PROCESS_CORNERS_NUM] = {
-+	{1123,     UINT_MAX},
-+	{0,        UINT_MAX},
-+};
-+
-+static const u32 cpu_process_speedos[THRESHOLD_INDEX_COUNT]
-+	[CPU_PROCESS_CORNERS_NUM] = {
-+	{1695,     UINT_MAX},
-+	{0,        UINT_MAX},
-+};
-+
-+static void rev_sku_to_speedo_ids(int rev, int sku, int *threshold)
-+{
-+	u32 tmp;
-+
-+	switch (sku) {
-+	case 0x00:
-+	case 0x10:
-+	case 0x05:
-+	case 0x06:
-+		tegra_cpu_speedo_id = 1;
-+		tegra_soc_speedo_id = 0;
-+		*threshold = THRESHOLD_INDEX_0;
-+		break;
-+
-+	case 0x03:
-+	case 0x04:
-+		tegra_cpu_speedo_id = 2;
-+		tegra_soc_speedo_id = 1;
-+		*threshold = THRESHOLD_INDEX_1;
-+		break;
-+
-+	default:
-+		pr_err("Tegra114 Unknown SKU %d\n", sku);
-+		tegra_cpu_speedo_id = 0;
-+		tegra_soc_speedo_id = 0;
-+		*threshold = THRESHOLD_INDEX_0;
-+		break;
-+	}
-+
-+	if (rev == TEGRA_REVISION_A01) {
-+		tmp = tegra_fuse_readl(0x270) << 1;
-+		tmp |= tegra_fuse_readl(0x26c);
-+		if (!tmp)
-+			tegra_cpu_speedo_id = 0;
-+	}
-+}
-+
-+void tegra114_init_speedo_data(void)
-+{
-+	u32 cpu_speedo_val;
-+	u32 core_speedo_val;
-+	int threshold;
-+	int i;
-+
-+	rev_sku_to_speedo_ids(tegra_revision, tegra_sku_id, &threshold);
-+
-+	cpu_speedo_val = tegra_fuse_readl(0x12c) + 1024;
-+	core_speedo_val = tegra_fuse_readl(0x134);
-+
-+	for (i = 0; i < CPU_PROCESS_CORNERS_NUM; i++)
-+		if (cpu_speedo_val < cpu_process_speedos[threshold][i])
-+			break;
-+	tegra_cpu_process_id = i;
-+
-+	for (i = 0; i < CORE_PROCESS_CORNERS_NUM; i++)
-+		if (core_speedo_val < core_process_speedos[threshold][i])
-+			break;
-+	tegra_core_process_id = i;
-+}
+ 		do {
+ 			next = work->next;
+-			work->func(work);
++			if (unlikely(work->func))
++				work->func(work);
+ 			work = next;
+ 			cond_resched();
+ 		} while (work);
 -- 
-1.8.1.5
+1.7.2.5
 
