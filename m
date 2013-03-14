@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab3CNKhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:37:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51726 "EHLO
+	id S1757291Ab3CNK7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:59:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51820 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830Ab3CNKgy (ORCPT
+	with ESMTP id S1756974Ab3CNKhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:54 -0400
+	Thu, 14 Mar 2013 06:37:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 08/88] NFS: Don't allow NFS silly-renamed files to be deleted, no signal
-Date: Thu, 14 Mar 2013 10:35:01 +0000
-Message-Id: <1363257381-15900-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 24/88] idr: fix a subtle bug in idr_get_next()
+Date: Thu, 14 Mar 2013 10:35:17 +0000
+Message-Id: <1363257381-15900-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,92 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5a7a613a47a715711b3f2d3322a0eac21d459166 upstream.
+commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
 
-Commit 73ca100 broke the code that prevents the client from deleting
-a silly renamed dentry.  This affected "delete on last close"
-semantics as after that commit, nothing prevented removal of
-silly-renamed files.  As a result, a process holding a file open
-could easily get an ESTALE on the file in a directory where some
-other process issued 'rm -rf some_dir_containing_the_file' twice.
-Before the commit, any attempt at unlinking silly renamed files would
-fail inside may_delete() with -EBUSY because of the
-DCACHE_NFSFS_RENAMED flag.  The following testcase demonstrates
-the problem:
-  tail -f /nfsmnt/dir/file &
-  rm -rf /nfsmnt/dir
-  rm -rf /nfsmnt/dir
-  # second removal does not fail, 'tail' process receives ESTALE
+The iteration logic of idr_get_next() is borrowed mostly verbatim from
+idr_for_each().  It walks down the tree looking for the slot matching
+the current ID.  If the matching slot is not found, the ID is
+incremented by the distance of single slot at the given level and
+repeats.
 
-The problem with the above commit is that it unhashes the old and
-new dentries from the lookup path, even in the normal case when
-a signal is not encountered and it would have been safe to call
-d_move.  Unfortunately the old dentry has the special
-DCACHE_NFSFS_RENAMED flag set on it.  Unhashing has the
-side-effect that future lookups call d_alloc(), allocating a new
-dentry without the special flag for any silly-renamed files.  As a
-result, subsequent calls to unlink silly renamed files do not fail
-but allow the removal to go through.  This will result in ESTALE
-errors for any other process doing operations on the file.
+The implementation assumes that during the whole iteration id is aligned
+to the layer boundaries of the level closest to the leaf, which is true
+for all iterations starting from zero or an existing element and thus is
+fine for idr_for_each().
 
-To fix this, go back to using d_move on success.
-For the signal case, it's unclear what we may safely do beyond d_drop.
+However, idr_get_next() may be given any point and if the starting id
+hits in the middle of a non-existent layer, increment to the next layer
+will end up skipping the same offset into it.  For example, an IDR with
+IDs filled between [64, 127] would look like the following.
 
-Reported-by: Dave Wysochanski <dwysocha@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
+          [  0  64 ... ]
+       /----/   |
+       |        |
+      NULL    [ 64 ... 127 ]
+
+If idr_get_next() is called with 63 as the starting point, it will try
+to follow down the pointer from 0.  As it is NULL, it will then try to
+proceed to the next slot in the same level by adding the slot distance
+at that level which is 64 - making the next try 127.  It goes around the
+loop and finds and returns 127 skipping [64, 126].
+
+Note that this bug also triggers in idr_for_each_entry() loop which
+deletes during iteration as deletions can make layers go away leaving
+the iteration with unaligned ID into missing layers.
+
+Fix it by ensuring proceeding to the next slot doesn't carry over the
+unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
+id += slot_distance.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: David Teigland <teigland@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/unlink.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ lib/idr.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfs/unlink.c b/fs/nfs/unlink.c
-index 3210a03..2781563 100644
---- a/fs/nfs/unlink.c
-+++ b/fs/nfs/unlink.c
-@@ -336,20 +336,14 @@ static void nfs_async_rename_done(struct rpc_task *task, void *calldata)
- 	struct inode *old_dir = data->old_dir;
- 	struct inode *new_dir = data->new_dir;
- 	struct dentry *old_dentry = data->old_dentry;
--	struct dentry *new_dentry = data->new_dentry;
+diff --git a/lib/idr.c b/lib/idr.c
+index 4046e29..e90d2d0 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -625,7 +625,14 @@ void *idr_get_next(struct idr *idp, int *nextidp)
+ 			return p;
+ 		}
  
- 	if (!NFS_PROTO(old_dir)->rename_done(task, old_dir, new_dir)) {
- 		rpc_restart_call_prepare(task);
- 		return;
- 	}
- 
--	if (task->tk_status != 0) {
-+	if (task->tk_status != 0)
- 		nfs_cancel_async_unlink(old_dentry);
--		return;
--	}
--
--	d_drop(old_dentry);
--	d_drop(new_dentry);
- }
- 
- /**
-@@ -550,6 +544,18 @@ nfs_sillyrename(struct inode *dir, struct dentry *dentry)
- 	error = rpc_wait_for_completion_task(task);
- 	if (error == 0)
- 		error = task->tk_status;
-+	switch (error) {
-+	case 0:
-+		/* The rename succeeded */
-+		nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
-+		d_move(dentry, sdentry);
-+		break;
-+	case -ERESTARTSYS:
-+		/* The result of the rename is unknown. Play it safe by
-+		 * forcing a new lookup */
-+		d_drop(dentry);
-+		d_drop(sdentry);
-+	}
- 	rpc_put_task(task);
- out_dput:
- 	dput(sdentry);
+-		id += 1 << n;
++		/*
++		 * Proceed to the next layer at the current level.  Unlike
++		 * idr_for_each(), @id isn't guaranteed to be aligned to
++		 * layer boundary at this point and adding 1 << n may
++		 * incorrectly skip IDs.  Make sure we jump to the
++		 * beginning of the next layer using round_up().
++		 */
++		id = round_up(id + 1, 1 << n);
+ 		while (n < fls(id)) {
+ 			n += IDR_BITS;
+ 			p = *--paa;
 -- 
 1.8.1.2
 
