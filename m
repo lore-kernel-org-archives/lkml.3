@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab3CNUcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:32:32 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:42067 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3CNUcb (ORCPT
+	id S1752027Ab3CNUcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:32:48 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35431 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752288Ab3CNUcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:32:31 -0400
+	Thu, 14 Mar 2013 16:32:47 -0400
+Date: Thu, 14 Mar 2013 16:32:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Soeren Moch <smoch@web.de>
+cc: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        <linux-mm@kvack.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+In-Reply-To: <51421B89.6020308@web.de>
+Message-ID: <Pine.LNX.4.44L0.1303141630550.1194-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130226070247.GA14094@gmail.com>
-References: <20130226070247.GA14094@gmail.com>
-Date: Thu, 14 Mar 2013 13:32:30 -0700
-X-Google-Sender-Auth: mhUWgIxRhQ4R53leWY40jfEaEAs
-Message-ID: <CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
-Subject: Re: [GIT PULL] perf fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:02 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Stephane Eranian (1):
->       perf/x86: Add Intel IvyBridge event scheduling constraints
+On Thu, 14 Mar 2013, Soeren Moch wrote:
 
-So thanks to my new Chromebook, I'm trying to do perf stuff on
-IvyBridge. I was hoping the whole exact cycle counting would work
-better, since the last machine it was reliable for me was my old
-Westmere desktop, and my previous laptop (Sandybridge MacBook Air)
-didn't work very well due to CPU errata.
+> >> I added a debug message to
+> >> drivers/usb/host/ehci-sched.c:itd_urb_transaction() to log the
+> >> allocation flags, see log below.
+> >
+> > But it looks like you didn't add a message to end_free_itds(), so we
+> > don't know when the memory gets deallocated.  And you didn't print out
+> > the values of urb, num_itds, and i, or the value of itd (so we can
+> > match up allocations against deallocations).
+> 
+> OK, I will implement this more detailed logging. But with several 
+> allocations per second and runtime of several hours this will result in 
+> a very long logfile.
 
-Sadly, my new Ivybridge laptop doesn't seem to do very well either,
-but I suspect it's the kernel, not the hardware this time. A simple
+If the memory really is being leaked here in some sort of systematic
+way, we may be able to see it in your debugging output after a few
+seconds.
 
-    perf record -f -e cycles:pp make -j
+Alan Stern
 
-in the kernel directory (fully built kernel, so the load doesn't
-actually go crazy despite the "-j") will *sometimes* totally hang the
-machine with current git.
-
-I get a NULL pointer dereference in intel_pmu_enable_all, so I don't
-think it's a hardware bug.
-
-And to make things interesting, I seem to be able to only reproduce
-this *after* a suspend cycle. That may be just happenstance, since it
-seemed to be hard to replicate and most of the time it has happened
-under X with no messages visible at all, but that *seems* to be the
-pattern.
-
-And the one time I got it to happen on the text console, things
-scrolled off (watchdog warnings due to lockups), but I did get a NULL
-pointer dereference in intel_pmu_enable_all().
-
-I'll try to reproduce it and get a picture, but thought I'd send out
-the email with just this, since maybe the "suspend cycle" plus "NULL
-pointer in intel_pmu_enable_all()" makes somebody go "Duh!", or at
-least replicate it...
-
-                  Linus
