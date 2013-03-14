@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3CNW7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:59:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50246 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3CNW7s (ORCPT
+	id S1753631Ab3CNXAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 19:00:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63733 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab3CNXAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:59:48 -0400
-Date: Thu, 14 Mar 2013 22:59:40 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, David Howells <dhowells@redhat.com>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
-Message-ID: <20130314225940.GQ21522@ZenIV.linux.org.uk>
-References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
- <CA+55aFzRzwJs1qwjhBstAQzXC0rqn5COM6-7cgD3UsygSvTQ-Q@mail.gmail.com>
- <20130312222350.GK21522@ZenIV.linux.org.uk>
- <20130313185249.GL21522@ZenIV.linux.org.uk>
- <CAJfpeguViuL52fYw922KU1YxRs2YyD=T6tdFVg+buJPw7YUV_Q@mail.gmail.com>
- <20130313231918.GP21522@ZenIV.linux.org.uk>
- <CAJfpegsCirmYYimr6Nn4Q4Kdc7rMYaxWhk+fsmp+BLp6mjb_MQ@mail.gmail.com>
+	Thu, 14 Mar 2013 19:00:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.9-rc #1
+Date: Thu, 14 Mar 2013 22:57:22 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, Richard Genoud <richard.genoud@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <51404ABF.7080405@atmel.com> <51418DDC.8030901@atmel.com>
+In-Reply-To: <51418DDC.8030901@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegsCirmYYimr6Nn4Q4Kdc7rMYaxWhk+fsmp+BLp6mjb_MQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303142257.22786.arnd@arndb.de>
+X-Provags-ID: V02:K0:iF3+iWSZtmSC8AqStF22LBYjX+sAWD3vnvdj4Xq3HF3
+ uSeuydTGtUEazQw0dtDzsvoOSsMUHxvUNH/5xs455/+2ErXXZi
+ WbpOISXZhKGQ8+SlBBPANxNc+xKiA7FqnegYPHapmLYqRAYQRB
+ pAvutoJuKg5JQykipWW++xB71Ki9UZhZGL+MxZtGqPVfJT98cQ
+ 85LewVM/oDYo2eUcvUhz+GlNJLuq2swQgHKyZfomVmV8rjkMTT
+ YN+T9TQWwRMC2abSP5ahuKi73ZZEUUGTW4s77Q/MmhgzH9g933
+ KOWrQuGryx13Z5Dmv6JJInfvaTF27TaYveHHSX8CC6ap5EqHm7
+ r1g7OeBKVnl3Dn6Xxpwo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 11:37:50AM +0100, Miklos Szeredi wrote:
-
-> > As for whiteouts... I think we ought to pull these bits of unionmoun
-> > queue into the common stem and add the missing filesystems to them;
-> > ext* and ufs are trivial (keep in mind that FFS derivatives, including
-> > ext*, have d_type in directory entry and type 14 (DT_WHT) is there
-> > precisely for that purpose).  btrfs also has "dir_type" thing - 8bit
-> > field...
+On Thursday 14 March 2013, Nicolas Ferre wrote:
+> Here is a little pull-request for 3.9-rc (I guess it if -rc4 now that
+> you've just sent the one for -rc3).
 > 
-> What about userspace interfaces?  Are we allowed to extend d_type and
-> st_mode without breaking things?
+> I have other material but it is related to the AT91 framebuffer and we are
+> currently discussing it so I hold them back for now.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+> 
+>   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
 
-Huh?
-	* from st_mode point of view, it's not going to conflict with
-anything; FFS "entry type" matches bits 12..15 of mode_t, and the value
-picked by whoever had first implemented whiteouts had been chosen so
-that it would not clash with any existing values.  We have
-#define S_IFMT  00170000
-#define S_IFSOCK 0140000
-#define S_IFLNK  0120000
-#define S_IFREG  0100000
-#define S_IFBLK  0060000
-#define S_IFDIR  0040000
-#define S_IFCHR  0020000
-#define S_IFIFO  0010000
-and this sucker would've been 0160000; new filesystem object types are not
-frequently introduced, to put it mildly, so I wouldn't expect clashes.
-Especially since any such clash would hit Solaris and *BSD (including
-MacOS X) as well - all of them use that value for whiteouts.
-	* for practically all syscalls these guys are treated as file not
-being there; e.g. mkdir() on such name results in whiteout silently
-replaced with references to newly created subdirectory, etc.
-	* BSDs have one major exposure of those guys to userland - their
-getdents(2) shows whiteouts (with d_type equal to DT_WHT and d_fileno - to 1).
-Other than that (and we obviously do _not_ want that as default behaviour;
-maybe a new O_<something> to produce that), there's practically nothing -
-undelete(2) removes a whiteout in attempt to expose the object masked by
-it, mknod(2) with S_IFWHT as type does create one.  That's it.
+Pulled into the fixes branch now
 
-IOW, I don't see how we'd get any kind of userland problems with those.  And
-this is not a new API - a bunch of BSD-derived Unices starting with, IIRC,
-SunOS 3 and 4.3BSD, as well as their bastard progeny (Solaris, MacOS X)
-had that since mid-80s...
+	Arnd
