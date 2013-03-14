@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab3CNPTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:19:48 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:51822 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757998Ab3CNPTq (ORCPT
+	id S1757686Ab3CNPUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:20:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58239 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab3CNPUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:19:46 -0400
+	Thu, 14 Mar 2013 11:20:32 -0400
 MIME-Version: 1.0
-Date: Thu, 14 Mar 2013 23:19:45 +0800
-Message-ID: <CAPgLHd-8dxVHPbeZgcSu3XcyJozuws5YUftDO3W9W1OQVGy1Kw@mail.gmail.com>
-Subject: [PATCH] cciss: fix invalid use of sizeof in cciss_find_cfgtables()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: mike.miller@hp.com, scameron@beardog.cce.hp.com, axboe@kernel.dk,
-        akpm@linux-foundation.org
-Cc: yongjun_wei@trendmicro.com.cn, iss_storagedev@hp.com,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1363261167.25976.221.camel@thor.lan>
+References: <1362612111-28673-1-git-send-email-walken@google.com>
+	<1362612111-28673-12-git-send-email-walken@google.com>
+	<1363034207.27803.8.camel@thor.lan>
+	<20130314070303.GA10956@google.com>
+	<1363261167.25976.221.camel@thor.lan>
+Date: Thu, 14 Mar 2013 08:20:31 -0700
+Message-ID: <CANN689HSaiMz=TRLFr6dXk0ndvaHJECL_XCHsV7Xh1+80U9K+Q@mail.gmail.com>
+Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a reader
+From: Michel Lespinasse <walken@google.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Thu, Mar 14, 2013 at 4:39 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On Thu, 2013-03-14 at 00:03 -0700, Michel Lespinasse wrote:
+>> >   CPU 0                               |  CPU 1
+>> >                                       |
+>> >                                       | down_write()
+>> >
+>> > ... CPU 1 has the write lock for the semaphore.
+>> >     Meanwhile, 1 or more down_read(s) are attempted and fail;
+>> >     these are put on the wait list.
+>>
+>> I'm not sure of the relevance of these other down_read() calls -
+>> please note that as these extra readers are put on the wait list,
+>> their +read_bias adjustments are canceled so that the count value
+>> ends up at write_bias + waiting_bias (for a total active count of 1)
+>
+> The relevance of the waiting readers is that when CPU 1 drops the writer
+> ___and grabs the spin lock___, it then wakes up these already-waiting
+> readers (CPU 0 is still parked in down_read_failed() waiting to acquire
+> the spin lock).
+>
+> When CPU 1 wakes up these readers, the sem count goes > 0 and the
+> waiting list is emptied. CPU 1 then drops the spin lock and leaves
+> up_write().
 
-sizeof() when applied to a pointer typed expression gives the
-size of the pointer, not that of the pointed data.
+Ah, correct. So the race you noticed is real, and the one I found is
+just a more complicated way to hit it.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/block/cciss.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'll add a fix in v2 of this patch series (probably later today).
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index ade58bc..1c1b8e5 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4206,7 +4206,7 @@ static int cciss_find_cfgtables(ctlr_info_t *h)
- 	if (rc)
- 		return rc;
- 	h->cfgtable = remap_pci_mem(pci_resource_start(h->pdev,
--		cfg_base_addr_index) + cfg_offset, sizeof(h->cfgtable));
-+		cfg_base_addr_index) + cfg_offset, sizeof(*h->cfgtable));
- 	if (!h->cfgtable)
- 		return -ENOMEM;
- 	rc = write_driver_ver_to_cfgtable(h->cfgtable);
-
-
+BTW, you seem to have been paying pretty close attention, would you
+mind giving appropriate Reviewed-by tags when I send v2 ?
