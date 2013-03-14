@@ -1,76 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934028Ab3CNPvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:51:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3CNPvi (ORCPT
+	id S933940Ab3CNQAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:00:46 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:53205 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394Ab3CNQAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:51:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
-Date: Thu, 14 Mar 2013 15:50:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com> <CACRpkdYs0MG3L4ti8tmVpwynVMMWKEVYdiOr+EG2ad2Z9D7x7A@mail.gmail.com> <CAAVeFuKsMVnof8pO_M1ju3TezpzTF+0c4419ks5GrEsWmusNTA@mail.gmail.com>
-In-Reply-To: <CAAVeFuKsMVnof8pO_M1ju3TezpzTF+0c4419ks5GrEsWmusNTA@mail.gmail.com>
+	Thu, 14 Mar 2013 12:00:44 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303141550.49592.arnd@arndb.de>
-X-Provags-ID: V02:K0:iantx2MKG6Al2cZ1Lhb1hoUuVGERQOuubEQAC4oN2RP
- /RDDHcGD+s39yhs1KOSshBxEAFrJUdzoVLtX2LTJcB9tPJXgB7
- fHphugB80KflmCrIQ4xy8RD4fpJ8vGtDAgTxTrq3RM4rMgpndR
- kx8QKiHVVcirmMNd7klWU33R3qcAd7fRGyTzu/r5SnfWUtNtp9
- L5Mkl0EnYrQpw+m2eEZDE4H0WM4aACHOO/+/t66r0P3/yDnEMI
- k9GSc0C14q/3BNOBhvi0uD9HH7fmYwHx9izF8nnOfkmdCKd3Bf
- R8vcsEHCrD1AcaRAtyG/PuMIoyMHbRMcNJV5XLAlFJIwlznwna
- sVBwf5qOKwf/g+ShaUVU=
+In-Reply-To: <1363229845-6831-2-git-send-email-tj@kernel.org>
+References: <1363229845-6831-1-git-send-email-tj@kernel.org>
+	<1363229845-6831-2-git-send-email-tj@kernel.org>
+Date: Fri, 15 Mar 2013 00:00:44 +0800
+Message-ID: <CACvQF51pwb=63j3Q_U8=Kr2f4-6NE8+1qckMeo95Dws4iwPTVA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] workqueue: rename worker_pool->assoc_mutex to ->manager_mutex
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 March 2013, Alexandre Courbot wrote:
-> 
-> On Thu, Mar 14, 2013 at 11:14 PM, Linus Walleij
-> <linus.walleij@linaro.org> wrote:
-> > For submitting the pull request to Torvalds in the end you will need
-> > to create a signed tag. Do you have a signed GPG key? Else it's
-> > about time to create a key and start collecting signatures... then you
-> > can also get a repo at kernel.org in the future.
-> 
-> I have one or two signatures of kernel devs on my GPG key, but I
-> thought that maybe this set could be pulled by you or Grant once it
-> has undergone enough testing - it's not like I intend to push
-> regularly on this branch.
-> 
-> If I understand correctly the reason for having this in its own branch
-> is to be able remove it quickly would it attempt to screw the dog.
+On Thu, Mar 14, 2013 at 10:57 AM, Tejun Heo <tj@kernel.org> wrote:
+> Manager operations are currently governed by two mutexes -
+> pool->manager_arb and ->assoc_mutex.  The former is used to decide who
+> gets to be the manager and the latter to exclude the actual manager
+> operations including creation and destruction of workers.  Anyone who
+> grabs ->manager_arb must perform manager role; otherwise, the pool
+> might stall.
+>
+> Grabbing ->assoc_mutex blocks everyone else from performing manager
+> operations but doesn't require the holder to perform manager duties as
+> it's merely blocking manager operations without becoming the manager.
+>
+> Because the blocking was necessary when [dis]associating per-cpu
+> workqueues during CPU hotplug events, the latter was named
+> assoc_mutex.  The mutex is scheduled to be used for other purposes, so
+> this patch gives it a more fitting generic name - manager_mutex - and
+> updates / adds comments to explain synchronization around the manager
+> role and operations.
+>
+> This patch is pure rename / doc update.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  kernel/workqueue.c | 62 +++++++++++++++++++++++++++++++++---------------------
+>  1 file changed, 38 insertions(+), 24 deletions(-)
+>
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index f37421f..bc25bdf 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -60,8 +60,8 @@ enum {
+>          * %WORKER_UNBOUND set and concurrency management disabled, and may
+>          * be executing on any CPU.  The pool behaves as an unbound one.
+>          *
+> -        * Note that DISASSOCIATED can be flipped only while holding
+> -        * assoc_mutex to avoid changing binding state while
+> +        * Note that DISASSOCIATED should be flipped only while holding
+> +        * manager_mutex to avoid changing binding state while
+>          * create_worker() is in progress.
+>          */
+>         POOL_MANAGE_WORKERS     = 1 << 0,       /* need to manage workers */
+> @@ -149,8 +149,9 @@ struct worker_pool {
+>         DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
+>                                                 /* L: hash of busy workers */
+>
+> +       /* see manage_workers() for details on the two manager mutexes */
+>         struct mutex            manager_arb;    /* manager arbitration */
+> -       struct mutex            assoc_mutex;    /* protect POOL_DISASSOCIATED */
+> +       struct mutex            manager_mutex;  /* manager exclusion */
+>         struct ida              worker_ida;     /* L: for worker IDs */
+>
+>         struct workqueue_attrs  *attrs;         /* I: worker attributes */
+> @@ -1635,7 +1636,7 @@ static void rebind_workers(struct worker_pool *pool)
+>         struct worker *worker, *n;
+>         int i;
+>
+> -       lockdep_assert_held(&pool->assoc_mutex);
+> +       lockdep_assert_held(&pool->manager_mutex);
+>         lockdep_assert_held(&pool->lock);
+>
+>         /* dequeue and kick idle ones */
+> @@ -2022,31 +2023,44 @@ static bool manage_workers(struct worker *worker)
+>         struct worker_pool *pool = worker->pool;
+>         bool ret = false;
+>
+> +       /*
+> +        * Managership is governed by two mutexes - manager_arb and
+> +        * manager_mutex.  manager_arb handles arbitration of manager role.
+> +        * Anyone who successfully grabs manager_arb wins the arbitration
+> +        * and becomes the manager.  mutex_trylock() on pool->manager_arb
+> +        * failure while holding pool->lock reliably indicates that someone
+> +        * else is managing the pool and the worker which failed trylock
+> +        * can proceed to executing work items.  This means that anyone
+> +        * grabbing manager_arb is responsible for actually performing
+> +        * manager duties.  If manager_arb is grabbed and released without
+> +        * actual management, the pool may stall indefinitely.
+> +        *
+> +        * manager_mutex is used for exclusion of actual management
+> +        * operations.  The holder of manager_mutex can be sure that none
+> +        * of management operations, including creation and destruction of
+> +        * workers, won't take place until the mutex is released.  Because
+> +        * manager_mutex doesn't interfere with manager role arbitration,
+> +        * it is guaranteed that the pool's management, while may be
+> +        * delayed, won't be disturbed by someone else grabbing
+> +        * manager_mutex.
+> +        */
+>         if (!mutex_trylock(&pool->manager_arb))
+>                 return ret;
+>
+>         /*
+> -        * To simplify both worker management and CPU hotplug, hold off
+> -        * management while hotplug is in progress.  CPU hotplug path can't
+> -        * grab @pool->manager_arb to achieve this because that can lead to
+> -        * idle worker depletion (all become busy thinking someone else is
+> -        * managing) which in turn can result in deadlock under extreme
+> -        * circumstances.  Use @pool->assoc_mutex to synchronize manager
+> -        * against CPU hotplug.
+> -        *
+> -        * assoc_mutex would always be free unless CPU hotplug is in
+> -        * progress.  trylock first without dropping @pool->lock.
+> +        * With manager arbitration won, manager_mutex would be free in
+> +        * most cases.  trylock first without dropping @pool->lock.
+>          */
+> -       if (unlikely(!mutex_trylock(&pool->assoc_mutex))) {
+> +       if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
+>                 spin_unlock_irq(&pool->lock);
+> -               mutex_lock(&pool->assoc_mutex);
+> +               mutex_lock(&pool->manager_mutex);
+>                 /*
+>                  * CPU hotplug could have happened while we were waiting
+>                  * for assoc_mutex.  Hotplug itself can't handle us
+>                  * because manager isn't either on idle or busy list, and
+>                  * @pool's state and ours could have deviated.
+>                  *
+> -                * As hotplug is now excluded via assoc_mutex, we can
+> +                * As hotplug is now excluded via manager_mutex, we can
+>                  * simply try to bind.  It will succeed or fail depending
+>                  * on @pool's current state.  Try it and adjust
+>                  * %WORKER_UNBOUND accordingly.
+> @@ -2068,7 +2082,7 @@ static bool manage_workers(struct worker *worker)
+>         ret |= maybe_destroy_workers(pool);
+>         ret |= maybe_create_worker(pool);
+>
+> -       mutex_unlock(&pool->assoc_mutex);
+> +       mutex_unlock(&pool->manager_mutex);
+>         mutex_unlock(&pool->manager_arb);
+>         return ret;
+>  }
+> @@ -3436,7 +3450,7 @@ static int init_worker_pool(struct worker_pool *pool)
+>                     (unsigned long)pool);
+>
+>         mutex_init(&pool->manager_arb);
+> -       mutex_init(&pool->assoc_mutex);
+> +       mutex_init(&pool->manager_mutex);
+>         ida_init(&pool->worker_ida);
+>
+>         INIT_HLIST_NODE(&pool->hash_node);
+> @@ -4076,11 +4090,11 @@ static void wq_unbind_fn(struct work_struct *work)
+>         for_each_cpu_worker_pool(pool, cpu) {
+>                 WARN_ON_ONCE(cpu != smp_processor_id());
+>
+> -               mutex_lock(&pool->assoc_mutex);
+> +               mutex_lock(&pool->manager_mutex);
+>                 spin_lock_irq(&pool->lock);
+>
+>                 /*
+> -                * We've claimed all manager positions.  Make all workers
+> +                * We've blocked all manager operations.  Make all workers
+>                  * unbound and set DISASSOCIATED.  Before this, all workers
+>                  * except for the ones which are still executing works from
+>                  * before the last CPU down must be on the cpu.  After
+> @@ -4095,7 +4109,7 @@ static void wq_unbind_fn(struct work_struct *work)
+>                 pool->flags |= POOL_DISASSOCIATED;
+>
+>                 spin_unlock_irq(&pool->lock);
+> -               mutex_unlock(&pool->assoc_mutex);
+> +               mutex_unlock(&pool->manager_mutex);
 
-The main reason I think is so that branch can be pulled by other
-people that don't want to pull in all of the other gpio changes.
+Hi, Tejun
 
-It could still just be another branch in the existing gpio tree,
-at least once everyone is happy with the state of the patches.
+It must conflicts with wq/for-3.9-fixes.
 
-	Arnd
+Thanks,
+Lai
+
+>         }
+>
+>         /*
+> @@ -4152,14 +4166,14 @@ static int __cpuinit workqueue_cpu_up_callback(struct notifier_block *nfb,
+>         case CPU_DOWN_FAILED:
+>         case CPU_ONLINE:
+>                 for_each_cpu_worker_pool(pool, cpu) {
+> -                       mutex_lock(&pool->assoc_mutex);
+> +                       mutex_lock(&pool->manager_mutex);
+>                         spin_lock_irq(&pool->lock);
+>
+>                         pool->flags &= ~POOL_DISASSOCIATED;
+>                         rebind_workers(pool);
+>
+>                         spin_unlock_irq(&pool->lock);
+> -                       mutex_unlock(&pool->assoc_mutex);
+> +                       mutex_unlock(&pool->manager_mutex);
+>                 }
+>                 break;
+>         }
+> --
+> 1.8.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
