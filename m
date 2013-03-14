@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3CNUga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:36:30 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:43958 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab3CNUg2 convert rfc822-to-8bit (ORCPT
+	id S1752676Ab3CNUgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:36:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52109 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751671Ab3CNUgy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:36:28 -0400
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: 3.8.2->3.8.3 i915 regression: GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
-Date: Thu, 14 Mar 2013 21:36:24 +0100
-User-Agent: KMail/1.13.7 (Linux/3.8.2-00054-g2a98104-dirty; KDE/4.10.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+	Thu, 14 Mar 2013 16:36:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+yK5xbHE0CvGms0yKFwl5gSsOtrMc2oyQ=
+Date: Thu, 14 Mar 2013 16:36:37 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: davem@davemloft.net,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH] mv643xx_eth: convert to use the Marvell Orion MDIO
+ driver
+Message-ID: <20130314203637.GX12700@titan.lakedaemon.net>
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
+ <1363284515-9865-1-git-send-email-florian@openwrt.org>
+ <1363284515-9865-2-git-send-email-florian@openwrt.org>
+ <20130314190235.GW12700@titan.lakedaemon.net>
+ <514225E9.9060902@openwrt.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <514225E9.9060902@openwrt.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201303142136.24917.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 14, 2013 at 08:32:57PM +0100, Florian Fainelli wrote:
+> Hello Jason,
+> 
+> Le 14/03/2013 20:02, Jason Cooper a Ècrit :
+> >Florian,
+> >
+> >On Thu, Mar 14, 2013 at 07:08:32PM +0100, Florian Fainelli wrote:
+> >>This patch converts the Marvell MV643XX ethernet driver to use the
+> >>Marvell Orion MDIO driver. As a result, PowerPC and ARM platforms
+> >>registering the Marvell MV643XX ethernet driver are also updated to
+> >>register a Marvell Orion MDIO driver. This driver voluntarily overlaps
+> >>with the Marvell Ethernet shared registers because it will use a subset
+> >>of this shared register (shared_base + 0x4 - shared_base + 0x84). The
+> >>Ethernet driver is also updated to look up for a PHY device using the
+> >>Orion MDIO bus driver.
+> >>
+> >>Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> >>---
+> >>  arch/arm/plat-orion/common.c               |   97 +++++++++++----
+> >>  arch/powerpc/platforms/chrp/pegasos_eth.c  |   20 +++
+> >>  arch/powerpc/sysdev/mv64x60_dev.c          |   14 ++-
+> >>  drivers/net/ethernet/marvell/Kconfig       |    1 +
+> >>  drivers/net/ethernet/marvell/mv643xx_eth.c |  186 ++--------------------------
+> >>  include/linux/mv643xx_eth.h                |    1 -
+> >>  6 files changed, 117 insertions(+), 202 deletions(-)
+> >
+> >Isn't this the old version of 4/4 ?
+> 
+> No this really is v2, but I reformatted just that one and sent it
+> without the v2 changelog, you should have received the proper
+> version a couple minutes later once I realized my mistake.
 
-Hello.
+Yes, I received both, just making sure.
 
-After upgrading from 3.8.2 to 3.8.3 I'm getting regression :
+thx,
 
-diff:
-  [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-  [drm] Driver supports precise vblank timestamp query.
-  vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-+ [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
-  fbcon: inteldrmfb (fb0) is primary device
-- Console: switching to colour frame buffer device 180x56
-+ Console: switching to colour frame buffer device 128x48
-  i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
-  i915 0000:00:02.0: registered panic notifier
-  acpi device:01: registered as cooling_device0
-
-console becomes weird, ends up in 2/3 of screen, X when starts gets tiny fonts etc.
-
-Machine is Thinkpad T400 with gm45 GPU
-00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller [8086:2a42] (rev 07) (prog-if 00 [VGA controller])
-        Subsystem: Lenovo Device [17aa:2112]
-
-Reverting bisected commit from 3.8.3 fixes the problem
-
-2a9810441fcc26cf3f006f015f8a62094fe57a90 is the first bad commit
-commit 2a9810441fcc26cf3f006f015f8a62094fe57a90
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sat Dec 1 21:03:22 2012 +0100
-
-    drm/i915: reorder setup sequence to have irqs for output setup
-    
-    commit 52d7ecedac3f96fb562cb482c139015372728638 upstream.
-    
-    Otherwise the new&shiny irq-driven gmbus and dp aux code won't work that
-    well. Noticed since the dp aux code doesn't have an automatic fallback
-    with a timeout (since the hw provides for that already).
-    
-    v2: Simple move drm_irq_install before intel_modeset_gem_init, as
-    suggested by Ben Widawsky.
-    
-    v3: Now that interrupts are enabled before all connectors are fully
-    set up, we might fall over serving a HPD interrupt while things are
-    still being set up. Instead of jumping through massive hoops and
-    complicating the code with a separate hpd irq enable step, simply
-    block out the hotplug work item from doing anything until things are
-    in place.
-    
-    v4: Actually, we can enable hotplug processing only after the fbdev is
-    fully set up, since we call down into the fbdev from the hotplug work
-    functions. So stick the hpd enabling right next to the poll helper
-    initialization.
-    
-    v5: We need to enable irqs before intel_modeset_init, since that
-    function sets up the outputs.
-    
-    v6: Fixup cleanup sequence, too.
-    
-    Reviewed-by: Imre Deak <imre.deak@intel.com>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-:040000 040000 26e83b14e8d49da8c451dc2c837646a337a79085 fa2cbfcf159808ce188675115888242245e4e69d M      drivers
-
-
-relevant dmesg:
-
- [drm] Initialized drm 1.1.0 20060810
- [drm] radeon defaulting to userspace modesetting.
- i915 0000:00:02.0: setting latency timer to 64
- i915 0000:00:02.0: irq 47 for MSI/MSI-X
- [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
- [drm] Driver supports precise vblank timestamp query.
- [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
- fbcon: inteldrmfb (fb0) is primary device
- i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
- i915 0000:00:02.0: registered panic notifier
- [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-
--- 
-Arkadiusz Mi≈õkiewicz, arekm / maven.pl
+Jason.
