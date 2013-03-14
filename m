@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab3CNL3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:29:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58384 "EHLO comal.ext.ti.com"
+	id S1757066Ab3CNL3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:29:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36122 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756969Ab3CNL33 convert rfc822-to-8bit (ORCPT
+	id S1757016Ab3CNL3e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:29:29 -0400
+	Thu, 14 Mar 2013 07:29:34 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <cooloney@gmail.com>
 CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/3] leds: add camera LED triggers
-Thread-Topic: [PATCH v2 2/3] leds: add camera LED triggers
-Thread-Index: Ac4gpy3hYBMpsnVNSkaRaPvrcjdoKw==
-Date: Thu, 14 Mar 2013 11:29:24 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E4890B@DQHE02.ent.ti.com>
+Subject: [PATCH v2 3/3] leds: lm355x, lm3642: support camera LED triggers
+ for flash and torch
+Thread-Topic: [PATCH v2 3/3] leds: lm355x, lm3642: support camera LED
+ triggers for flash and torch
+Thread-Index: Ac4gpy820UiaPl1/Tb6L/JGFDLzrEg==
+Date: Thu, 14 Mar 2013 11:29:26 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E48913@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,128 +30,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LED devices support flash/torch functionality through the LED subsystem.
-This patch enables direct LED trigger controls by the driver.
-Flash on/off and torch on/off can be done simply by other driver space.
-Two trigger APIs are added, ledtrig_flash_ctrl() and ledtrig_torch_ctrl().
+LM355x and LM3642 support flash and torch functionality.
+
+ (Camera driver)          (LED trigger for camera)       (LED driver)
+ Turn on the flash  ...>  ledtrig_flash_ctrl(true) ...>  LM355x or LM3642
+                                                         brightness ctrl
+                                                       <actual driving here>
+
+Flash/torch LEDs are controlled by other driver using LED camera trigger
+APIs, ledtrig_flash_ctrl()/ledtrig_torch_ctrl().
+Then, actual device control is activated by each LED driver such like
+LM355x or LM3642.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/trigger/Kconfig          |    8 +++++
- drivers/leds/trigger/Makefile         |    1 +
- drivers/leds/trigger/ledtrig-camera.c |   57 +++++++++++++++++++++++++++++++++
- include/linux/leds.h                  |    8 +++++
- 4 files changed, 74 insertions(+)
- create mode 100644 drivers/leds/trigger/ledtrig-camera.c
+ drivers/leds/leds-lm355x.c |    2 ++
+ drivers/leds/leds-lm3642.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
-index eaa286d..49794b4 100644
---- a/drivers/leds/trigger/Kconfig
-+++ b/drivers/leds/trigger/Kconfig
-@@ -100,4 +100,12 @@ config LEDS_TRIGGER_TRANSIENT
- 	  GPIO/PWM based hardware.
- 	  If unsure, say Y.
- 
-+config LEDS_TRIGGER_CAMERA
-+	tristate "LED Camera Flash/Torch Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows LEDs to be controlled as a camera flash/torch device.
-+	  This enables direct flash/torch on/off by the driver, kernel space.
-+	  If unsure, say Y.
-+
- endif # LEDS_TRIGGERS
-diff --git a/drivers/leds/trigger/Makefile b/drivers/leds/trigger/Makefile
-index 554e46e..1abf48d 100644
---- a/drivers/leds/trigger/Makefile
-+++ b/drivers/leds/trigger/Makefile
-@@ -7,3 +7,4 @@ obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
- obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
- obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+= ledtrig-transient.o
-+obj-$(CONFIG_LEDS_TRIGGER_CAMERA)	+= ledtrig-camera.o
-diff --git a/drivers/leds/trigger/ledtrig-camera.c b/drivers/leds/trigger/ledtrig-camera.c
-new file mode 100644
-index 0000000..9bd73a8
---- /dev/null
-+++ b/drivers/leds/trigger/ledtrig-camera.c
-@@ -0,0 +1,57 @@
-+/*
-+ * Camera Flash and Torch On/Off Trigger
-+ *
-+ * based on ledtrig-ide-disk.c
-+ *
-+ * Copyright 2013 Texas Instruments
-+ *
-+ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/leds.h>
-+
-+DEFINE_LED_TRIGGER(ledtrig_flash);
-+DEFINE_LED_TRIGGER(ledtrig_torch);
-+
-+void ledtrig_flash_ctrl(bool on)
-+{
-+	enum led_brightness brt = on ? LED_FULL : LED_OFF;
-+
-+	led_trigger_event(ledtrig_flash, brt);
-+}
-+EXPORT_SYMBOL_GPL(ledtrig_flash_ctrl);
-+
-+void ledtrig_torch_ctrl(bool on)
-+{
-+	enum led_brightness brt = on ? LED_FULL : LED_OFF;
-+
-+	led_trigger_event(ledtrig_torch, brt);
-+}
-+EXPORT_SYMBOL_GPL(ledtrig_torch_ctrl);
-+
-+static int __init ledtrig_camera_init(void)
-+{
-+	led_trigger_register_simple("flash", &ledtrig_flash);
-+	led_trigger_register_simple("torch", &ledtrig_torch);
-+	return 0;
-+}
-+module_init(ledtrig_camera_init);
-+
-+static void __exit ledtrig_camera_exit(void)
-+{
-+	led_trigger_unregister_simple(ledtrig_torch);
-+	led_trigger_unregister_simple(ledtrig_flash);
-+}
-+module_exit(ledtrig_camera_exit);
-+
-+MODULE_DESCRIPTION("LED Trigger for Camera Flash/Torch Control");
-+MODULE_AUTHOR("Milo Kim");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 2d8c0b4..0287ab2 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -218,6 +218,14 @@ extern void ledtrig_ide_activity(void);
- static inline void ledtrig_ide_activity(void) {}
- #endif
- 
-+#if defined(CONFIG_LEDS_TRIGGER_CAMERA) || defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
-+extern void ledtrig_flash_ctrl(bool on);
-+extern void ledtrig_torch_ctrl(bool on);
-+#else
-+static inline void ledtrig_flash_ctrl(bool on) {}
-+static inline void ledtrig_torch_ctrl(bool on) {}
-+#endif
-+
- /*
-  * Generic LED platform data for describing LED names and default triggers.
-  */
+diff --git a/drivers/leds/leds-lm355x.c b/drivers/leds/leds-lm355x.c
+index 4117235..d81a8e7 100644
+--- a/drivers/leds/leds-lm355x.c
++++ b/drivers/leds/leds-lm355x.c
+@@ -477,6 +477,7 @@ static int lm355x_probe(struct i2c_client *client,
+ 	chip->cdev_flash.name = "flash";
+ 	chip->cdev_flash.max_brightness = 16;
+ 	chip->cdev_flash.brightness_set = lm355x_strobe_brightness_set;
++	chip->cdev_flash.default_trigger = "flash";
+ 	err = led_classdev_register((struct device *)
+ 				    &client->dev, &chip->cdev_flash);
+ 	if (err < 0)
+@@ -486,6 +487,7 @@ static int lm355x_probe(struct i2c_client *client,
+ 	chip->cdev_torch.name = "torch";
+ 	chip->cdev_torch.max_brightness = 8;
+ 	chip->cdev_torch.brightness_set = lm355x_torch_brightness_set;
++	chip->cdev_torch.default_trigger = "torch";
+ 	err = led_classdev_register((struct device *)
+ 				    &client->dev, &chip->cdev_torch);
+ 	if (err < 0)
+diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
+index 9f428d9..f361bbe 100644
+--- a/drivers/leds/leds-lm3642.c
++++ b/drivers/leds/leds-lm3642.c
+@@ -363,6 +363,7 @@ static int lm3642_probe(struct i2c_client *client,
+ 	chip->cdev_flash.name = "flash";
+ 	chip->cdev_flash.max_brightness = 16;
+ 	chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
++	chip->cdev_flash.default_trigger = "flash";
+ 	err = led_classdev_register((struct device *)
+ 				    &client->dev, &chip->cdev_flash);
+ 	if (err < 0) {
+@@ -380,6 +381,7 @@ static int lm3642_probe(struct i2c_client *client,
+ 	chip->cdev_torch.name = "torch";
+ 	chip->cdev_torch.max_brightness = 8;
+ 	chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
++	chip->cdev_torch.default_trigger = "torch";
+ 	err = led_classdev_register((struct device *)
+ 				    &client->dev, &chip->cdev_torch);
+ 	if (err < 0) {
 -- 
 1.7.9.5
 
