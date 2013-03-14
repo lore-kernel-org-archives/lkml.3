@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab3CNKw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:52:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51918 "EHLO
+	id S1757263Ab3CNKxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:53:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51916 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab3CNKhh (ORCPT
+	with ESMTP id S1757080Ab3CNKhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 06:37:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexey Klimov <klimov.linux@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
+Cc: Justin Lecher <jlec@gentoo.org>, Suresh Jayaraman <sjayaraman@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 45/88] usb hid quirks for Masterkit MA901 usb radio
-Date: Thu, 14 Mar 2013 10:35:38 +0000
-Message-Id: <1363257381-15900-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 43/88] fs: cachefiles: add support for large files in filesystem caching
+Date: Thu, 14 Mar 2013 10:35:36 +0000
+Message-Id: <1363257381-15900-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Klimov <klimov.linux@gmail.com>
+From: Justin Lecher <jlec@gentoo.org>
 
-commit 0322bd3980b3ebf7dde8474e22614cb443d6479a upstream.
+commit 98c350cda2c14a343d34ea01a3d9c24fea5ec66d upstream.
 
-Don't let Masterkit MA901 USB radio be handled by usb hid drivers.
-This device will be handled by radio-ma901.c driver.
+Support the caching of large files.
 
-Signed-off-by: Alexey Klimov <klimov.linux@gmail.com>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=31182
+
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.com>
+Tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-core.c | 1 +
- drivers/hid/hid-ids.h  | 3 +++
- 2 files changed, 4 insertions(+)
+ fs/cachefiles/rdwr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 3cb5c99..52bc936 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -2012,6 +2012,7 @@ static const struct hid_device_id hid_ignore_list[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MASTERKIT, USB_DEVICE_ID_MASTERKIT_MA901RADIO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index dc48cd1..de39a12 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -532,6 +532,9 @@
- #define USB_VENDOR_ID_MADCATZ		0x0738
- #define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
- 
-+#define USB_VENDOR_ID_MASTERKIT			0x16c0
-+#define USB_DEVICE_ID_MASTERKIT_MA901RADIO	0x05df
-+
- #define USB_VENDOR_ID_MCC		0x09db
- #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
- #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 0e3c092..b4d2438 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -918,7 +918,7 @@ int cachefiles_write_page(struct fscache_storage *op, struct page *page)
+ 	 * own time */
+ 	dget(object->backer);
+ 	mntget(cache->mnt);
+-	file = dentry_open(object->backer, cache->mnt, O_RDWR,
++	file = dentry_open(object->backer, cache->mnt, O_RDWR | O_LARGEFILE,
+ 			   cache->cache_cred);
+ 	if (IS_ERR(file)) {
+ 		ret = PTR_ERR(file);
 -- 
 1.8.1.2
 
