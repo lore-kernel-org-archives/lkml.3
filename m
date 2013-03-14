@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab3CNKvm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:51:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51935 "EHLO
+	id S1757151Ab3CNKhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:37:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51910 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab3CNKhm (ORCPT
+	with ESMTP id S1757129Ab3CNKhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:42 -0400
+	Thu, 14 Mar 2013 06:37:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 49/88] workqueue: consider work function when searching for busy work items
-Date: Thu, 14 Mar 2013 10:35:42 +0000
-Message-Id: <1363257381-15900-50-git-send-email-luis.henriques@canonical.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 44/88] fuse: don't WARN when nlink is zero
+Date: Thu, 14 Mar 2013 10:35:37 +0000
+Message-Id: <1363257381-15900-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -26,144 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
+commit dfca7cebc2679f3d129f8e680a8f199a7ad16e38 upstream.
 
-To avoid executing the same work item concurrenlty, workqueue hashes
-currently busy workers according to their current work items and looks
-up the the table when it wants to execute a new work item.  If there
-already is a worker which is executing the new work item, the new item
-is queued to the found worker so that it gets executed only after the
-current execution finishes.
+drop_nlink() warns if nlink is already zero.  This is triggerable by a buggy
+userspace filesystem.  The cure, I think, is worse than the disease so disable
+the warning.
 
-Unfortunately, a work item may be freed while being executed and thus
-recycled for different purposes.  If it gets recycled for a different
-work item and queued while the previous execution is still in
-progress, workqueue may make the new work item wait for the old one
-although the two aren't really related in any way.
-
-In extreme cases, this false dependency may lead to deadlock although
-it's extremely unlikely given that there aren't too many self-freeing
-work item users and they usually don't wait for other work items.
-
-To alleviate the problem, record the current work function in each
-busy worker and match it together with the work item address in
-find_worker_executing_work().  While this isn't complete, it ensures
-that unrelated work items don't interact with each other and in the
-very unlikely case where a twisted wq user triggers it, it's always
-onto itself making the culprit easy to spot.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andrey Isakov <andy51@gmx.ru>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
+Reported-by: Tero Roponen <tero.roponen@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/workqueue.c | 42 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 31 insertions(+), 11 deletions(-)
+ fs/fuse/dir.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a6a4c90..dd488af 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -128,6 +128,7 @@ struct worker {
- 	};
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 334e0b1..f6e4bc8 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -645,7 +645,14 @@ static int fuse_unlink(struct inode *dir, struct dentry *entry)
  
- 	struct work_struct	*current_work;	/* L: work being processed */
-+	work_func_t		current_func;	/* L: current_work's fn */
- 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
- 	struct list_head	scheduled;	/* L: scheduled works */
- 	struct task_struct	*task;		/* I: worker task */
-@@ -838,7 +839,8 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
- 	struct hlist_node *tmp;
- 
- 	hlist_for_each_entry(worker, tmp, bwh, hentry)
--		if (worker->current_work == work)
-+		if (worker->current_work == work &&
-+		    worker->current_func == work->func)
- 			return worker;
- 	return NULL;
- }
-@@ -848,9 +850,27 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
-  * @gcwq: gcwq of interest
-  * @work: work to find worker for
-  *
-- * Find a worker which is executing @work on @gcwq.  This function is
-- * identical to __find_worker_executing_work() except that this
-- * function calculates @bwh itself.
-+ * Find a worker which is executing @work on @gcwq by searching
-+ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
-+ * to match, its current execution should match the address of @work and
-+ * its work function.  This is to avoid unwanted dependency between
-+ * unrelated work executions through a work item being recycled while still
-+ * being executed.
-+ *
-+ * This is a bit tricky.  A work item may be freed once its execution
-+ * starts and nothing prevents the freed area from being recycled for
-+ * another work item.  If the same work item address ends up being reused
-+ * before the original execution finishes, workqueue will identify the
-+ * recycled work item as currently executing and make it wait until the
-+ * current execution finishes, introducing an unwanted dependency.
-+ *
-+ * This function checks the work item address, work function and workqueue
-+ * to avoid false positives.  Note that this isn't complete as one may
-+ * construct a work function which can introduce dependency onto itself
-+ * through a recycled work item.  Well, if somebody wants to shoot oneself
-+ * in the foot that badly, there's only so much we can do, and if such
-+ * deadlock actually occurs, it should be easy to locate the culprit work
-+ * function.
-  *
-  * CONTEXT:
-  * spin_lock_irq(gcwq->lock).
-@@ -1807,7 +1827,6 @@ __acquires(&gcwq->lock)
- 	struct global_cwq *gcwq = cwq->gcwq;
- 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
--	work_func_t f = work->func;
- 	int work_color;
- 	struct worker *collision;
- #ifdef CONFIG_LOCKDEP
-@@ -1838,6 +1857,7 @@ __acquires(&gcwq->lock)
- 	debug_work_deactivate(work);
- 	hlist_add_head(&worker->hentry, bwh);
- 	worker->current_work = work;
-+	worker->current_func = work->func;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
- 
-@@ -1875,7 +1895,7 @@ __acquires(&gcwq->lock)
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
--	f(work);
-+	worker->current_func(work);
- 	/*
- 	 * While we must be careful to not use "work" after this, the trace
- 	 * point will only record its address.
-@@ -1885,11 +1905,10 @@ __acquires(&gcwq->lock)
- 	lock_map_release(&cwq->wq->lockdep_map);
- 
- 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
--		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
--		       "%s/0x%08x/%d\n",
--		       current->comm, preempt_count(), task_pid_nr(current));
--		printk(KERN_ERR "    last function: ");
--		print_symbol("%s\n", (unsigned long)f);
-+		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
-+		       "     last function: %pf\n",
-+		       current->comm, preempt_count(), task_pid_nr(current),
-+		       worker->current_func);
- 		debug_show_held_locks(current);
- 		dump_stack();
- 	}
-@@ -1903,6 +1922,7 @@ __acquires(&gcwq->lock)
- 	/* we're done with it, release */
- 	hlist_del_init(&worker->hentry);
- 	worker->current_work = NULL;
-+	worker->current_func = NULL;
- 	worker->current_cwq = NULL;
- 	cwq_dec_nr_in_flight(cwq, work_color, false);
- }
+ 		spin_lock(&fc->lock);
+ 		fi->attr_version = ++fc->attr_version;
+-		drop_nlink(inode);
++		/*
++		 * If i_nlink == 0 then unlink doesn't make sense, yet this can
++		 * happen if userspace filesystem is careless.  It would be
++		 * difficult to enforce correct nlink usage so just ignore this
++		 * condition here
++		 */
++		if (inode->i_nlink > 0)
++			drop_nlink(inode);
+ 		spin_unlock(&fc->lock);
+ 		fuse_invalidate_attr(inode);
+ 		fuse_invalidate_attr(dir);
 -- 
 1.8.1.2
 
