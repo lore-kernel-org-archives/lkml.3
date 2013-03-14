@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3CNWPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:15:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58938 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273Ab3CNWPD (ORCPT
+	id S1753353Ab3CNWRV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:17:21 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:51828 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab3CNWRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:15:03 -0400
-X-Sasl-enc: l891YlDm52nqoZGitaBHY3HoDOFdPJ09ucVFW1oEsoYK 1363299302
-Date: Thu, 14 Mar 2013 15:15:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tony Jones <tonyj@suse.de>, Andrew Vagin <avagin@openvz.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [stable revert request] ... of doubled commit
-Message-ID: <20130314221501.GA30053@kroah.com>
-References: <513A5FC7.8040409@suse.cz>
- <513A663B.3090506@suse.cz>
+	Thu, 14 Mar 2013 18:17:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A663B.3090506@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+	<CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+Date: Thu, 14 Mar 2013 15:17:19 -0700
+X-Google-Sender-Auth: LjU9jUBrfrTvcz7olCXqR5zZbdc
+Message-ID: <CA+55aFzDMwHyPxqxNKRz0Y3vFhZOqtHMvPbvNXAD6C+-_=UAhg@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 11:29:15PM +0100, Jiri Slaby wrote:
-> On 03/08/2013 11:01 PM, Jiri Slaby wrote:
-> > Hi,
-> > 
-> > Tony Jones found that the following commit:
-> >   perf: Fix parsing of __print_flags() in TP_printk()
-> > is applied to 3.0 twice.
-> > 
-> > Once as:
-> > commit 248f3235861683bb1ffc7316b56bf783b162666f
-> > Author: Steven Rostedt <srostedt@redhat.com>
-> > Date:   Fri Nov 4 16:32:25 2011 -0400
-> > 
-> >     perf: Fix parsing of __print_flags() in TP_printk()
-> > 
-> >     commit d06c27b22aa66e48e32f03f9387328a9af9b0625 upstream.
-> > 
-> > ===== and =====
-> > The second one is this:
-> > commit 2431496fbdd142ccc83138d94f3f510a36ce9270
-> > Author: Steven Rostedt <srostedt@redhat.com>
-> > Date:   Fri Nov 4 16:32:25 2011 -0400
-> > 
-> >     perf: Fix parsing of __print_flags() in TP_printk()
-> > 
-> >     commit 49908a1b25d448d68fd26faca260e1850201575f upstream.
-> > 
-> > =====
-> > 
-> > The latter is not an upstream commit, it is from pm-fixes, hence the
-> > difference in commit SHAs.
-> 
-> git command I used was not perfect. It is an upstream commit (git is
-> kind of confused with these two commit. So am I.). However the rest of
-> the email is correct.
+On Thu, Mar 14, 2013 at 3:09 PM, Stephane Eranian <eranian@google.com> wrote:
+>
+> Could be related to suspend/resume. But were you running perf across
+> that resume/suspend cycle?
 
-Thanks for pointing this out, now reverted.
+No.
 
-greg k-h
+In most cases I was running a perf record before and after (but not
+*while* suspending)
+
+In at least one other crash, I didn't run perf before at all, so the
+first time I used perf was after the resume.
+
+So in no cases did I actually have any perf stuff active over the
+suspend itself.
+
+> Let's see if we can reproduce the problem on the same ChromeBook you
+> have. Don't have one myself.
+
+I don't imagine it should be about chromebook per se, because afaik
+all of pmu suspend/resume is done by the kernel, no firmware involved.
+
+So I'd assume it should happen with any IvyBridge.
+
+            Linus
