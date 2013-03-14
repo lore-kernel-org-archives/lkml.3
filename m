@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab3CNSbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 14:31:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59682 "EHLO arroyo.ext.ti.com"
+	id S1752009Ab3CNSjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 14:39:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab3CNSbI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 14:31:08 -0400
-From: "Anna, Suman" <s-anna@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: RE: [PATCHv3 03/14] mailbox: OMAP: introduce mailbox framework
-Thread-Topic: [PATCHv3 03/14] mailbox: OMAP: introduce mailbox framework
-Thread-Index: AQHOH5rnfMcntSyh8kCsyEL56+3TdpikPcYA///mG1CAAQidAIAAV30w
-Date: Thu, 14 Mar 2013 18:30:45 +0000
-Message-ID: <37C860A02101E749A747FA2D3C1E3C50499EBA@DLEE11.ent.ti.com>
-References: <1363145044-14442-1-git-send-email-s-anna@ti.com>
-	<CACRpkdY8ZWNUVHJorbhN7XvOys9KJH8hKeCBYARih=1FiNk-CQ@mail.gmail.com>
-	<37C860A02101E749A747FA2D3C1E3C50498B8E@DLEE11.ent.ti.com>
- <CACRpkdbUBkhkQ-ZiqkLUmsDBp3hw4k3Z1s4i4SD3C2ZfuGUF+w@mail.gmail.com>
-In-Reply-To: <CACRpkdbUBkhkQ-ZiqkLUmsDBp3hw4k3Z1s4i4SD3C2ZfuGUF+w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751321Ab3CNSjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 14:39:08 -0400
+Date: Thu, 14 Mar 2013 15:38:44 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: linux-edac@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "Mark A. Grondona" <mgrondona@llnl.gov>
+Subject: [ANNOUNCE] rasdaemon userspace tool v.0.1
+Message-ID: <20130314153844.158d817c@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Mar 13, 2013 at 10:34 PM, Anna, Suman <s-anna@ti.com> wrote:
-> >> On Wed, Mar 13, 2013 at 4:24 AM, Suman Anna <s-anna@ti.com> wrote:
-> >>
-> >> > From: Omar Ramirez Luna <omar.luna@linaro.org>
-> >> (...)
-> >> >
-> >> > Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
-> >> > [s-anna@ti.com: Kconfig fixes for build errors]
-> >> > Signed-off-by: Suman Anna <s-anna@ti.com>
-> >> > Acked-by: Tony Lindgren <tony@atomide.com>
-> >> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> >>
-> >> It's not like I care super-much, but I think your SoB should be at the bottom.
-> >>
-> >> It's a simple git rebase -i anyway...
-> >
-> > Sure, will do. Only this patch, right? I have my SoB only on one another original
-> patch, will adjust on that as well, but all the remaining ones will have yours at the
-> bottom.
-> 
-> No I mean that the SoB-order should reflect the code flow path, and yours should
-> be at the bottom of all of them, but as noted I don't care much. In my case the
-> only thing I did was to pass the code :-)
+In Kernel 3.5 we've started to address the long-discussed need of having a
+better way to handle platform Reliability, Availability and Serviceability
+(RAS).
 
-Thanks for the clarification. I have updated the branch accordingly.
+Basically, a tracepoint event that handles memory errors called ras:mc_event
+was added there, together with HERM/EDAC version 3.0 patches.
 
-Regards,
-Suman
+In Kernel 3.8, a new event was added, to handle PCIe AER events (ras:aer_event)
+[1].
+
+On kernel 3.9, a new driver was added to report hardware memory errors that
+comes from the BIOS via ras:mc_event (the new ghes_edac driver).
+
+It is still on my TODO list to add a RAS trace event for non-memory related
+errors that come via the MCA machine check handler (mcelog).
+
+While progress made was made at Kernel infrastructure, the needed userspace
+tools were still lacking. So, I decided to start materializing the userspace
+counterpart for what it was informally named as rasdaemon on some discussions.
+
+The rasdaemon tool is available	at: 
+	http://git.infradead.org/users/mchehab/rasdaemon.git
+
+The current version is on very early stages, and it has a copy on it of
+the library that Steven Rostedt's is writing for trace-cmd tool. The plan
+is to use the trace-cmd library, when it starts to packaged as a separate
+library. I'd like to thanks Steven for the help he gave me to write this 
+initial version.
+
+The current version of the tool enables the ras:mc_event log, and reads
+it via the raw trace debugfs node:
+	/sys/kernel/debug/tracing/per_cpu/cpu*/trace_pipe_raw
+
+It also has a code that allows recording the errors via an sqlite3 database.
+
+The long term plan is to provide a tool that will catch and handle all
+ras:* error events that comes from the Kernel tracing infrastructure,
+logging them and providing tools to report it, being able to detect burst
+errors (like the ones caused by a solar storm at memories) or sparsed errors,
+in a way that would provide a glue to the users about the root cause of the
+error.
+
+Of course, there are much to do there.
+
+It is a natural evolution of the tool to add support there for the 
+ras:aer_event traces that can come from PCIe AER.
+
+While it currently works with current Kernels since kernel 3.5, there are a
+number of interesting changes at tracing that are planned to be merged for
+Kernel 3.10:
+	- poll() support for per_cpu trace_pipe_raw;
+	- a timestamp that could more easily associated with machine's
+	  uptime;
+	- support for a separate ringbuffer for RAS.
+
+So, it is planned the minimal requirement for the final version (v1.0)
+would be kernel 3.10.
+
+This is currently on very early staging. Help is needed ;)
+
+So, please send us suggestions, patches etc to the EDAC mailing list:
+	linux-edac@vger.kernel.org
+
+Thanks!
+Mauro
+
+-
+
+[1] Currently, ras:mc_event is at include/ras/. It is on my todo list
+to move it to be together with ras:aer_event, at include/trace/events/ras.h.
