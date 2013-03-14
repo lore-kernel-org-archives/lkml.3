@@ -1,93 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab3CNUEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:04:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55509 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab3CNUEf (ORCPT
+	id S1751889Ab3CNUGC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:06:02 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:58864 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab3CNUGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:04:35 -0400
-Date: Thu, 14 Mar 2013 21:04:31 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] amba: tegra-ahb: Fix build error w/ PM_SLEEP w/o
- PM_RUNTIME
-Message-ID: <20130314200431.GA4252@avionic-0098.mockup.avionic-design.de>
-References: <1363252089-4120-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 14 Mar 2013 16:06:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <1363252089-4120-1-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:5JeeKzcRDx/fsY5+5AFFhWaGRBNS5/8DWex2BpPI8YS
- QETRc1GKKXAHYh2i1p3n7tk6MGROWL9XGr1uaBTkEvt2xwpHwq
- oqM2TOF7Q18tcxLPz4ntLoR5fx7i+OlGHAMCferOnMXRyKRdjs
- srhZ2oOipA2uju+1mA+qF9WCotfYnGzSe2ImE9+AQxKBQbSQ1a
- 29ySvjcyrfuZv4FyL9O7gNMv/S9cRk3r2i1d5nJKOguK3xRbFP
- BDRbQ61FqeeSCwOVne9IX7/zj6COQk1uUA7bqwrEpttLwdU7A7
- SUk3ZgMZYzdd1OJKC2Gzx/1EB6O70RIYZ7dbvV/sgFKFl9EyrB
- DmT6ENvREk9KCdMWvSZCVM6aDHjE7fRWGLj1I8NBds08tuBzPU
- 8MHzGpjn4LI2FbpCkEp0s4KrqLWgL1cM2I=
+In-Reply-To: <20130314182815.GB24238@redhat.com>
+References: <20130314182815.GB24238@redhat.com>
+Date: Thu, 14 Mar 2013 22:05:59 +0200
+Message-ID: <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
+Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 14, 2013 at 8:28 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Hi Dmitry/Mimi,
+>
+> Here is an RFC patch. I am playing with exporting some functions from
+> ima/integrity and make reuse of IMA signature format and reuse of some
+> of IMA verification code.
+>
+> One of the things required is that caller wants trusts only certain
+> type of signatures. For example, it might not trust DIGEST or HMAC
+> but might trust only digital signatures. So caller needs to know what
+> kind of signature are stored in IMA security attribute (if any) and
+> decide what to do.
+>
+> Currently there seem to be two types of digital signatures. Old one and
+> that is RSA and new one which is being called asymmetric. Right now they
+> both fall in the categorty of EVM_IMA_XATTR_DIGSIG and one differentiates
+> between two using signature version. Version 1 is old type and version 2
+> is new type.
+>
+> How about asymmetric signature using a new type say
+> EVM_IMA_XATTR_DIGSIG_ASYMMETRIC. And version numbering can be used for
+> structure variation with-in signature type.
+>
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Vivek,
 
-On Thu, Mar 14, 2013 at 11:08:09AM +0200, Hiroshi Doyu wrote:
-> Make this depend on CONFIG_PM. This protection is necessary to not
-> cause any build errors with any combination of PM features especially
-> when supporting a new SoC where each PM features are being enabled
-> one-by-one during its depelopment.
->=20
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> Reported-by: Joseph Lo <josephl@nvidia.com>
+This was exactly the way how I initially implemented asymmetric key support.
+But then thought that we might have new versions of signature formats
+in the future and there is
+not point to create new xattr type for every signature format.
+
+What prevents just using of signature version?
+
+Thanks,
+
+Dmitry
+
+> This can allow caller to differentiate between two kinds of digital
+> signatures as understood by IMA.  And calling subsystems will call into
+> ima/integrity for verification only if digital signatures are of certain
+> type.
+>
+> asymmetric support has gone in just now. Before it becomes an ABI, it
+> might be worth to discuss it.
+>
+> Yet-to-by-signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 > ---
->  drivers/amba/tegra-ahb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
-> index 093c435..1f44e56 100644
-> --- a/drivers/amba/tegra-ahb.c
-> +++ b/drivers/amba/tegra-ahb.c
-> @@ -158,7 +158,7 @@ int tegra_ahb_enable_smmu(struct device_node *dn)
->  EXPORT_SYMBOL(tegra_ahb_enable_smmu);
->  #endif
-> =20
-> -#ifdef CONFIG_PM_SLEEP
-> +#ifdef CONFIG_PM
->  static int tegra_ahb_suspend(struct device *dev)
+>  security/integrity/digsig.c           |   11 +++++++----
+>  security/integrity/evm/evm_main.c     |    4 +++-
+>  security/integrity/ima/ima_appraise.c |    7 +++++--
+>  security/integrity/integrity.h        |    9 ++++++---
+>  4 files changed, 21 insertions(+), 10 deletions(-)
+>
+> Index: linux-2.6/security/integrity/integrity.h
+> ===================================================================
+> --- linux-2.6.orig/security/integrity/integrity.h       2013-03-14 13:44:30.000000000 -0400
+> +++ linux-2.6/security/integrity/integrity.h    2013-03-14 14:02:43.404474646 -0400
+> @@ -63,6 +63,7 @@ enum evm_ima_xattr_type {
+>         IMA_XATTR_DIGEST = 0x01,
+>         EVM_XATTR_HMAC,
+>         EVM_IMA_XATTR_DIGSIG,
+> +       EVM_IMA_XATTR_DIGSIG_ASYMMETRIC,
+>  };
+>
+>  struct evm_ima_xattr_data {
+> @@ -98,12 +99,14 @@ struct integrity_iint_cache *integrity_i
+>
+>  #ifdef CONFIG_INTEGRITY_SIGNATURE
+>
+> -int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> -                                       const char *digest, int digestlen);
+> +int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
+> +       const unsigned int id, const char *sig, int siglen,
+> +       const char *digest, int digestlen);
+>
+>  #else
+>
+> -static inline int integrity_digsig_verify(const unsigned int id,
+> +static inline int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
+> +                                         const unsigned int id,
+>                                           const char *sig, int siglen,
+>                                           const char *digest, int digestlen)
 >  {
->  	int i;
-
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQi1PAAoJEN0jrNd/PrOhzSwP/0Bu6vkT3+bMYMYAA+UJb5pp
-17Gy+fjaFVt/H9lTLOqjGSw2DSKylu8DyT9parMh7g7QQu5rqJbcvrybyV+noISc
-TBnNiV5bHs8T/hs3E4xZec4sAs++H7c7nU0q9bWHPl6CX8+8rbC2OTmnvjW3CrIE
-VRWAnQmKCgWF+LYBFZ+7OJCBKYrTPDZ/l6p9Wn8Fi7Et8KyFRZvgBnG8XDSrWBgp
-nVWaLg7tDeEuwKyDCazPXDjfmUAnyKrYvAgtcZALNR6w2mAwBlF1nToeKGkJ9h0J
-IfGaJBaYvtBcdvYS5in+MGUdkglX5NRQG03ntSD/jVcBagP1rOFZrNSQrpFIB8ep
-6TLN+4E+MRVZjcnxILHLl6zfFC0/+ZnYVsTbBb6ZWZElYPH5e+MveXMfThpWjmrG
-gSBnR7GSCXuBhP3f3dW8EQnbshIWjL2nKWfZWIXARGfhJ5nCbTEAfbtwwUUY08RU
-DHiED384N73tQjcNZZqIk1NZGph6uxBBhLcd5NFp1ybkTjg5Zv1n0uOskIR1YVKV
-IO/4PAF7iArJl+5WcQtyzM64Qw0JqzHIKjOlNvilyYkkGVtQGDiAzLjLPFtiKJXC
-ywsP6u+dZwawWVJ3b7rDo8Dib2aBBRx3HXao1a1ezbRRLHDGb/LXhc5mPTKRIvHQ
-XasHBlXeVd/P60NWeRnS
-=ilpT
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+> Index: linux-2.6/security/integrity/ima/ima_appraise.c
+> ===================================================================
+> --- linux-2.6.orig/security/integrity/ima/ima_appraise.c        2013-03-14 13:44:30.000000000 -0400
+> +++ linux-2.6/security/integrity/ima/ima_appraise.c     2013-03-14 14:00:06.027469811 -0400
+> @@ -188,8 +188,10 @@ int ima_appraise_measurement(int func, s
+>                 status = INTEGRITY_PASS;
+>                 break;
+>         case EVM_IMA_XATTR_DIGSIG:
+> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+>                 iint->flags |= IMA_DIGSIG;
+> -               rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
+> +               rc = integrity_digsig_verify(xattr_value->type,
+> +                                            INTEGRITY_KEYRING_IMA,
+>                                              xattr_value->digest, rc - 1,
+>                                              iint->ima_xattr.digest,
+>                                              IMA_DIGEST_SIZE);
+> @@ -210,7 +212,8 @@ out:
+>         if (status != INTEGRITY_PASS) {
+>                 if ((ima_appraise & IMA_APPRAISE_FIX) &&
+>                     (!xattr_value ||
+> -                    xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
+> +                    (xattr_value->type != EVM_IMA_XATTR_DIGSIG &&
+> +                     xattr_value->type != EVM_IMA_XATTR_DIGSIG_ASYMMETRIC))) {
+>                         if (!ima_fix_xattr(dentry, iint))
+>                                 status = INTEGRITY_PASS;
+>                 }
+> Index: linux-2.6/security/integrity/evm/evm_main.c
+> ===================================================================
+> --- linux-2.6.orig/security/integrity/evm/evm_main.c    2013-03-14 09:51:46.000000000 -0400
+> +++ linux-2.6/security/integrity/evm/evm_main.c 2013-03-14 14:00:52.265471232 -0400
+> @@ -134,11 +134,13 @@ static enum integrity_status evm_verify_
+>                         rc = -EINVAL;
+>                 break;
+>         case EVM_IMA_XATTR_DIGSIG:
+> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+>                 rc = evm_calc_hash(dentry, xattr_name, xattr_value,
+>                                 xattr_value_len, calc.digest);
+>                 if (rc)
+>                         break;
+> -               rc = integrity_digsig_verify(INTEGRITY_KEYRING_EVM,
+> +               rc = integrity_digsig_verify(xattr_data->type,
+> +                                       INTEGRITY_KEYRING_EVM,
+>                                         xattr_data->digest, xattr_len,
+>                                         calc.digest, sizeof(calc.digest));
+>                 if (!rc) {
+> Index: linux-2.6/security/integrity/digsig.c
+> ===================================================================
+> --- linux-2.6.orig/security/integrity/digsig.c  2013-03-12 15:06:54.000000000 -0400
+> +++ linux-2.6/security/integrity/digsig.c       2013-03-14 14:06:53.721482335 -0400
+> @@ -27,7 +27,8 @@ static const char *keyring_name[INTEGRIT
+>         "_ima",
+>  };
+>
+> -int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> +int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
+> +                       const unsigned int id, const char *sig, int siglen,
+>                                         const char *digest, int digestlen)
+>  {
+>         if (id >= INTEGRITY_KEYRING_MAX)
+> @@ -44,13 +45,15 @@ int integrity_digsig_verify(const unsign
+>                 }
+>         }
+>
+> -       switch (sig[0]) {
+> -       case 1:
+> +       switch (sig_type) {
+> +       case EVM_IMA_XATTR_DIGSIG:
+>                 return digsig_verify(keyring[id], sig, siglen,
+>                                      digest, digestlen);
+> -       case 2:
+> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+>                 return asymmetric_verify(keyring[id], sig, siglen,
+>                                          digest, digestlen);
+> +       default:
+> +               break;
+>         }
+>
+>         return -EOPNOTSUPP;
