@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3CNNng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:43:36 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:53843 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840Ab3CNNne (ORCPT
+	id S1757791Ab3CNNrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:47:52 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54986 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755858Ab3CNNrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:43:34 -0400
-MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130313160854.54ac0491044371b4db214698@linux-foundation.org>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<20130313160854.54ac0491044371b4db214698@linux-foundation.org>
-Date: Thu, 14 Mar 2013 14:43:32 +0100
-Message-ID: <CAJfpeguvhJaoSBDKEXoJFn_C=52aXbC9L2ALJvp6ekwEGyQX_g@mail.gmail.com>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, dhowells@redhat.com,
-        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Mar 2013 09:47:51 -0400
+Message-ID: <1363268870.1335.75.camel@x61.thuisdomein>
+Subject: [PATCH] powerpc/40x: remove unused "config 405GPR"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Josh Boyer <jwboyer@gmail.com>, Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Mar 2013 14:47:50 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Mar 2013 13:47:50.0461 (UTC) FILETIME=[84D0DED0:01CE20BA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 12:08 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 13 Mar 2013 15:16:24 +0100 Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->> Here's another version with the comments addressed plus a small bugfix and some
->> checkpatch cleanups.
->
-> It all looks nice to my rusty eye.  But then, I like anything which has
-> comments and passes checkpatch ;)
->
-> I see that quite a few people have contributed - have you need getting
-> enough review and testing feedback?
+The last user of Kconfig symbol 405GPR got removed in release v3.2.
+Remove this symbol too.
 
-Well, testing feedback I got plenty when it was all new and full of
-bugs. Now I don't get much.  All I usually get nowdays is people
-asking why is it not in mainline yet.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ arch/powerpc/platforms/40x/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
 
-> Either way, I suggest the next step is to ask Stephen to line this up
-> in linux-next.
+diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
+index a392d12..7b7a77c 100644
+--- a/arch/powerpc/platforms/40x/Kconfig
++++ b/arch/powerpc/platforms/40x/Kconfig
+@@ -119,9 +119,6 @@ config 405EZ
+ 	select IBM_EMAC_MAL_CLR_ICINTSTAT
+ 	select IBM_EMAC_MAL_COMMON_ERR
+ 
+-config 405GPR
+-	bool
+-
+ config XILINX_VIRTEX
+ 	bool
+ 	select DEFAULT_UIMAGE
+-- 
+1.7.11.7
 
-Al, are you okay with that?  Or do you want it to go though -vfs?
 
-Thanks,
-Miklos
+
