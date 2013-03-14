@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3CNOOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:14:41 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:50338 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab3CNOOj (ORCPT
+	id S1757342Ab3CNORn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:17:43 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:49945 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab3CNORm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:14:39 -0400
+	Thu, 14 Mar 2013 10:17:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJQ_QFaKRv=_POR=8MAv07=C9bSfQN6dn5AcRROx4m9xw@mail.gmail.com>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdbozpAVNb+7QLhiiinC+MMERvA=vNFP5kZiWLnsiv7dpg@mail.gmail.com>
-	<CACxGe6shiqqACd6S1VTEkno993xB+E7y2cLi3HOw6yUH+Mbn7A@mail.gmail.com>
-	<CACRpkdbXhV_4PwOzAaTKtRB4-vjBB5hp007EWdz_DiDjtBgv4g@mail.gmail.com>
-	<CAAVeFuJQ_QFaKRv=_POR=8MAv07=C9bSfQN6dn5AcRROx4m9xw@mail.gmail.com>
-Date: Thu, 14 Mar 2013 15:14:39 +0100
-Message-ID: <CACRpkdYs0MG3L4ti8tmVpwynVMMWKEVYdiOr+EG2ad2Z9D7x7A@mail.gmail.com>
-Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
+In-Reply-To: <1363268870.1335.75.camel@x61.thuisdomein>
+References: <1363268870.1335.75.camel@x61.thuisdomein>
+Date: Thu, 14 Mar 2013 10:17:41 -0400
+Message-ID: <CA+5PVA6CzVZVDyQNzChddo7NV05EMgtqZw1xxBeA5oJzdqTLpA@mail.gmail.com>
+Subject: Re: [PATCH] powerpc/40x: remove unused "config 405GPR"
+From: Josh Boyer <jwboyer@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Matt Porter <mporter@kernel.crashing.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 3:08 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+On Thu, Mar 14, 2013 at 9:47 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> The last user of Kconfig symbol 405GPR got removed in release v3.2.
+> Remove this symbol too.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-> Would be reasonable indeed. I can publish the branch on Github,
+Acked-by: Josh Boyer <jwboyer@gmail.com>
 
-That'll work.
-
-For submitting the pull request to Torvalds in the end you will need
-to create a signed tag. Do you have a signed GPG key? Else it's
-about time to create a key and start collecting signatures... then you
-can also get a repo at kernel.org in the future.
-
-> but
-> (sorry for being clueless) what's the procedure to add a new branch to
-> linux-next? Shall I write to Stephen Rothwell directly?
-
-Yes. Join the linux-next mailing list too.
-
-Yours,
-Linus Walleij
+> ---
+>  arch/powerpc/platforms/40x/Kconfig | 3 ---
+>  1 file changed, 3 deletions(-)
+>
+> diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
+> index a392d12..7b7a77c 100644
+> --- a/arch/powerpc/platforms/40x/Kconfig
+> +++ b/arch/powerpc/platforms/40x/Kconfig
+> @@ -119,9 +119,6 @@ config 405EZ
+>         select IBM_EMAC_MAL_CLR_ICINTSTAT
+>         select IBM_EMAC_MAL_COMMON_ERR
+>
+> -config 405GPR
+> -       bool
+> -
+>  config XILINX_VIRTEX
+>         bool
+>         select DEFAULT_UIMAGE
+> --
+> 1.7.11.7
+>
+>
+>
