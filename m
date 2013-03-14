@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934492Ab3CNC7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 22:59:06 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:64613 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964793Ab3CNC5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S964818Ab3CNC5i (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 13 Mar 2013 22:57:38 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:32924 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934357Ab3CNC5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 22:57:36 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: laijs@cn.fujitsu.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] workqueue: better define locking rules around worker creation / destruction
-Date: Wed, 13 Mar 2013 19:57:21 -0700
-Message-Id: <1363229845-6831-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/7] workqueue: factor out initial worker creation into create_and_start_worker()
+Date: Wed, 13 Mar 2013 19:57:20 -0700
+Message-Id: <1363229845-6831-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1363229845-6831-1-git-send-email-tj@kernel.org>
 References: <1363229845-6831-1-git-send-email-tj@kernel.org>
@@ -20,91 +20,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a manager creates or destroys workers, the operations are always
-done with the manager_mutex held; however, initial worker creation or
-worker destruction during pool release don't grab the mutex.  They are
-still correct as initial worker creation doesn't require
-synchronization and grabbing manager_arb provides enough exclusion for
-pool release path.
+get_unbound_pool(), workqueue_cpu_up_callback() and init_workqueues()
+have similar code pieces to create and start the initial worker factor
+those out into create_and_start_worker().
 
-Still, let's make everyone follow the same rules for consistency and
-such that lockdep annotations can be added.
-
-Update create_and_start_worker() and put_unbound_pool() to grab
-manager_mutex around thread creation and destruction respectively and
-add lockdep assertions to create_worker() and destroy_worker().
-
-This patch doesn't introduce any visible behavior changes.
+This patch doesn't introduce any functional changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ kernel/workqueue.c | 47 +++++++++++++++++++++++------------------------
+ 1 file changed, 23 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index cac7106..ce1ab06 100644
+index bc25bdf..cac7106 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1715,6 +1715,8 @@ static struct worker *create_worker(struct worker_pool *pool)
- 	struct worker *worker = NULL;
- 	int id = -1;
- 
-+	lockdep_assert_held(&pool->manager_mutex);
-+
- 	spin_lock_irq(&pool->lock);
- 	while (ida_get_new(&pool->worker_ida, &id)) {
- 		spin_unlock_irq(&pool->lock);
-@@ -1796,12 +1798,14 @@ static void start_worker(struct worker *worker)
-  * create_and_start_worker - create and start a worker for a pool
-  * @pool: the target pool
-  *
-- * Create and start a new worker for @pool.
-+ * Grab the managership of @pool and create and start a new worker for it.
-  */
- static int create_and_start_worker(struct worker_pool *pool)
- {
- 	struct worker *worker;
- 
-+	mutex_lock(&pool->manager_mutex);
-+
- 	worker = create_worker(pool);
- 	if (worker) {
- 		spin_lock_irq(&pool->lock);
-@@ -1809,6 +1813,8 @@ static int create_and_start_worker(struct worker_pool *pool)
- 		spin_unlock_irq(&pool->lock);
- 	}
- 
-+	mutex_unlock(&pool->manager_mutex);
-+
- 	return worker ? 0 : -ENOMEM;
+@@ -1793,6 +1793,26 @@ static void start_worker(struct worker *worker)
  }
  
-@@ -1826,6 +1832,9 @@ static void destroy_worker(struct worker *worker)
- 	struct worker_pool *pool = worker->pool;
- 	int id = worker->id;
- 
-+	lockdep_assert_held(&pool->manager_mutex);
-+	lockdep_assert_held(&pool->lock);
+ /**
++ * create_and_start_worker - create and start a worker for a pool
++ * @pool: the target pool
++ *
++ * Create and start a new worker for @pool.
++ */
++static int create_and_start_worker(struct worker_pool *pool)
++{
++	struct worker *worker;
 +
- 	/* sanity check frenzy */
- 	if (WARN_ON(worker->current_work) ||
- 	    WARN_ON(!list_empty(&worker->scheduled)))
-@@ -3531,6 +3540,7 @@ static void put_unbound_pool(struct worker_pool *pool)
- 	 * manager_mutex.
- 	 */
- 	mutex_lock(&pool->manager_arb);
-+	mutex_lock(&pool->manager_mutex);
- 	spin_lock_irq(&pool->lock);
++	worker = create_worker(pool);
++	if (worker) {
++		spin_lock_irq(&pool->lock);
++		start_worker(worker);
++		spin_unlock_irq(&pool->lock);
++	}
++
++	return worker ? 0 : -ENOMEM;
++}
++
++/**
+  * destroy_worker - destroy a workqueue worker
+  * @worker: worker to be destroyed
+  *
+@@ -3542,7 +3562,6 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	static DEFINE_MUTEX(create_mutex);
+ 	u32 hash = wqattrs_hash(attrs);
+ 	struct worker_pool *pool;
+-	struct worker *worker;
  
- 	while ((worker = first_worker(pool)))
-@@ -3538,6 +3548,7 @@ static void put_unbound_pool(struct worker_pool *pool)
- 	WARN_ON(pool->nr_workers || pool->nr_idle);
+ 	mutex_lock(&create_mutex);
  
- 	spin_unlock_irq(&pool->lock);
-+	mutex_unlock(&pool->manager_mutex);
- 	mutex_unlock(&pool->manager_arb);
+@@ -3568,14 +3587,9 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 		goto fail;
  
- 	/* shut down the timers */
+ 	/* create and start the initial worker */
+-	worker = create_worker(pool);
+-	if (!worker)
++	if (create_and_start_worker(pool) < 0)
+ 		goto fail;
+ 
+-	spin_lock_irq(&pool->lock);
+-	start_worker(worker);
+-	spin_unlock_irq(&pool->lock);
+-
+ 	/* install */
+ 	spin_lock_irq(&workqueue_lock);
+ 	hash_add(unbound_pool_hash, &pool->hash_node, hash);
+@@ -4148,18 +4162,10 @@ static int __cpuinit workqueue_cpu_up_callback(struct notifier_block *nfb,
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+ 		for_each_cpu_worker_pool(pool, cpu) {
+-			struct worker *worker;
+-
+ 			if (pool->nr_workers)
+ 				continue;
+-
+-			worker = create_worker(pool);
+-			if (!worker)
++			if (create_and_start_worker(pool) < 0)
+ 				return NOTIFY_BAD;
+-
+-			spin_lock_irq(&pool->lock);
+-			start_worker(worker);
+-			spin_unlock_irq(&pool->lock);
+ 		}
+ 		break;
+ 
+@@ -4409,15 +4415,8 @@ static int __init init_workqueues(void)
+ 		struct worker_pool *pool;
+ 
+ 		for_each_cpu_worker_pool(pool, cpu) {
+-			struct worker *worker;
+-
+ 			pool->flags &= ~POOL_DISASSOCIATED;
+-
+-			worker = create_worker(pool);
+-			BUG_ON(!worker);
+-			spin_lock_irq(&pool->lock);
+-			start_worker(worker);
+-			spin_unlock_irq(&pool->lock);
++			BUG_ON(create_and_start_worker(pool) < 0);
+ 		}
+ 	}
+ 
 -- 
 1.8.1.4
 
