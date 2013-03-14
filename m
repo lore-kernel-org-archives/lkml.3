@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab3CNKhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:37:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51879 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab3CNKh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:28 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 37/88] nfsd: add get_uint for u32's
-Date: Thu, 14 Mar 2013 10:35:30 +0000
-Message-Id: <1363257381-15900-38-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1757486Ab3CNKxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:53:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54258 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757178Ab3CNKxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:53:34 -0400
+Date: Thu, 14 Mar 2013 12:53:20 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
+        <thomas.abraham@linaro.org>, <dianders@chromium.org>
+Subject: Re: [PATCH 2/2] usb: dwc3: exynos: use clk_prepare_enable and
+ clk_disable_unprepare
+Message-ID: <20130314105320.GH32369@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
+ <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6lXr1rPCNTf1w0X8"
+Content-Disposition: inline
+In-Reply-To: <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+--6lXr1rPCNTf1w0X8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi,
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+On Thu, Mar 14, 2013 at 04:14:58PM +0530, Vivek Gautam wrote:
+> Convert clk_enable/clk_disable to clk_prepare_enable/clk_disable_unprepare
+> calls as required by common clock framework.
+>=20
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Felipe Balbi <balbi@ti.com>
+> CC: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>  drivers/usb/dwc3/dwc3-exynos.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exyno=
+s.c
+> index 66ca9ac..b03f609 100644
+> --- a/drivers/usb/dwc3/dwc3-exynos.c
+> +++ b/drivers/usb/dwc3/dwc3-exynos.c
+> @@ -129,7 +129,7 @@ static int dwc3_exynos_probe(struct platform_device *=
+pdev)
+>  	exynos->dev	=3D dev;
+>  	exynos->clk	=3D clk;
+> =20
+> -	clk_enable(exynos->clk);
+> +	clk_prepare_enable(exynos->clk);
 
-commit a007c4c3e943ecc054a806c259d95420a188754b upstream.
+eventually we need to pass this clock handling to dwc3/core.c. Just make
+sure it's optional since not all platforms need it.
 
-I don't think there's a practical difference for the range of values
-these interfaces should see, but it would be safer to be unambiguous.
+I guess the best way would be to handle clocks via
+->runtime_suspend()/->runtime_resume() ??
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/nfsd/export.c             |  6 +++---
- include/linux/sunrpc/cache.h | 16 ++++++++++++++++
- 2 files changed, 19 insertions(+), 3 deletions(-)
+--=20
+balbi
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index ba23349..1114463 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -398,7 +398,7 @@ fsloc_parse(char **mesg, char *buf, struct nfsd4_fs_locations *fsloc)
- 	int migrated, i, err;
- 
- 	/* listsize */
--	err = get_int(mesg, &fsloc->locations_count);
-+	err = get_uint(mesg, &fsloc->locations_count);
- 	if (err)
- 		return err;
- 	if (fsloc->locations_count > MAX_FS_LOCATIONS)
-@@ -456,7 +456,7 @@ static int secinfo_parse(char **mesg, char *buf, struct svc_export *exp)
- 		return -EINVAL;
- 
- 	for (f = exp->ex_flavors; f < exp->ex_flavors + listsize; f++) {
--		err = get_int(mesg, &f->pseudoflavor);
-+		err = get_uint(mesg, &f->pseudoflavor);
- 		if (err)
- 			return err;
- 		/*
-@@ -465,7 +465,7 @@ static int secinfo_parse(char **mesg, char *buf, struct svc_export *exp)
- 		 * problem at export time instead of when a client fails
- 		 * to authenticate.
- 		 */
--		err = get_int(mesg, &f->flags);
-+		err = get_uint(mesg, &f->flags);
- 		if (err)
- 			return err;
- 		/* Only some flags are allowed to differ between flavors: */
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index f5fd616..dd2bb84 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -228,6 +228,22 @@ static inline int get_int(char **bpp, int *anint)
- 	return 0;
- }
- 
-+static inline int get_uint(char **bpp, unsigned int *anint)
-+{
-+	char buf[50];
-+	int len = qword_get(bpp, buf, sizeof(buf));
-+
-+	if (len < 0)
-+		return -EINVAL;
-+	if (len == 0)
-+		return -ENOENT;
-+
-+	if (kstrtouint(buf, 0, anint))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
- /*
-  * timestamps kept in the cache are expressed in seconds
-  * since boot.  This is the best for measuring differences in
--- 
-1.8.1.2
+--6lXr1rPCNTf1w0X8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQawgAAoJEIaOsuA1yqRERc8P/jGz7Czv57nw66tpzFV18XaX
+ckMJpC8gcdZYnSKxejFs6sPYkXrYgQajq9FqfAxRGIoYL1ki1DhdJRPCCKsTNBQq
+d42dsESXIFaX+F04SlZRQaDoxYnuNtNz76v9szcJyPiy1uyZgQiJq5h2BpTDWRzZ
+bQJqNKbCnZ3tsk1mJ3l81xmtJ9EpZ3jua+IWX04cARU/u7SaAFmL//eRZgmnx9Jz
+VEdudP/T37xhqeR1R1Q9D/OT8wWxpKtMNcvI9UC6EWBpqq/TuYGR22uc2TLW3Jpz
+Z4LYfdHn8rbvyS6Nz1fVQppm4XrZxCmm4rqS7g4GG5aaFqA5JcD9TZ57UYQTW+o2
+GN8rr74dSmVn8fPhiiOmuT7rX3/93YsdMtSKg+nJUasDL7Cp7TVSAQnG5r+mMccO
+11z+4RgttYNf8be3TUtXznZooGy88sZrZLc1flPcalsLps7xQ7SiQhDbMwQyFDvI
+J55FnStR4pa/tpaprr5sufFH65ul6bRRU49PyElvyq9r5ZaxlIt6YzqNOfrIRX0t
+S1+yX16jUxD918AlSmhKodFA6Vga6AN27RNHCXO1VZ8zXI51bZJvkYxebkwv5+Ip
+xf8pOCXm7j/BgCYEFz9iKAP0LNz5aVkpAGSLeboKjD7YZesv5AgE9CF21qnwqeVL
+x+Ttdo4qCETDN75/g+8v
+=6rTS
+-----END PGP SIGNATURE-----
+
+--6lXr1rPCNTf1w0X8--
