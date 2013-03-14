@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3CNUeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:34:13 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:50469 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab3CNUeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:34:12 -0400
-From: Gene Heskett <gheskett@wdtv.com>
-To: linux-kernel@vger.kernel.org
-Subject: Nouveau q?
-Date: Thu, 14 Mar 2013 16:34:06 -0400
+	id S1752501Ab3CNUga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:36:30 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:43958 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab3CNUg2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 16:36:28 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: 3.8.2->3.8.3 i915 regression: GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+Date: Thu, 14 Mar 2013 21:36:24 +0100
+User-Agent: KMail/1.13.7 (Linux/3.8.2-00054-g2a98104-dirty; KDE/4.10.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
+Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303141634.06646.gheskett@wdtv.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201303142136.24917.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings;  I haven't built a kernel in half a coons age, so I thought I'd 
-try.  Currently running 2.6.32-122-rtai, with the nouveau driver on this 
-video card:
-VGA compatible controller: nVidia Corporation G96 [GeForce 9400 GT] (rev 
-a1)
 
-While configuring, I noted some WMI (don't run winderz, don't even have a 
-windows box on in the property) options & turned them off, but that 
-generates complaints from the make:
+Hello.
 
-warning: (DRM_NOUVEAU) selects ACPI_WMI which has unmet direct dependencies 
-(X86 && X86_PLATFORM_DEVICES && ACPI)
+After upgrading from 3.8.2 to 3.8.3 I'm getting regression :
 
-warning: (DRM_NOUVEAU) selects MXM_WMI which has unmet direct dependencies 
-(X86 && X86_PLATFORM_DEVICES && ACPI_WMI)
+diff:
+  [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+  [drm] Driver supports precise vblank timestamp query.
+  vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
++ [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+  fbcon: inteldrmfb (fb0) is primary device
+- Console: switching to colour frame buffer device 180x56
++ Console: switching to colour frame buffer device 128x48
+  i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
+  i915 0000:00:02.0: registered panic notifier
+  acpi device:01: registered as cooling_device0
 
-I'll go back and turn them on, which should not be a problem other than the 
-wasted build time measured in hours on this machine, a quad core phenom.  
-Can the make configs turn this back on automatically?
+console becomes weird, ends up in 2/3 of screen, X when starts gets tiny fonts etc.
 
-Thanks.
+Machine is Thinkpad T400 with gm45 GPU
+00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller [8086:2a42] (rev 07) (prog-if 00 [VGA controller])
+        Subsystem: Lenovo Device [17aa:2112]
 
-Cheers, Gene
+Reverting bisected commit from 3.8.3 fixes the problem
+
+2a9810441fcc26cf3f006f015f8a62094fe57a90 is the first bad commit
+commit 2a9810441fcc26cf3f006f015f8a62094fe57a90
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Sat Dec 1 21:03:22 2012 +0100
+
+    drm/i915: reorder setup sequence to have irqs for output setup
+    
+    commit 52d7ecedac3f96fb562cb482c139015372728638 upstream.
+    
+    Otherwise the new&shiny irq-driven gmbus and dp aux code won't work that
+    well. Noticed since the dp aux code doesn't have an automatic fallback
+    with a timeout (since the hw provides for that already).
+    
+    v2: Simple move drm_irq_install before intel_modeset_gem_init, as
+    suggested by Ben Widawsky.
+    
+    v3: Now that interrupts are enabled before all connectors are fully
+    set up, we might fall over serving a HPD interrupt while things are
+    still being set up. Instead of jumping through massive hoops and
+    complicating the code with a separate hpd irq enable step, simply
+    block out the hotplug work item from doing anything until things are
+    in place.
+    
+    v4: Actually, we can enable hotplug processing only after the fbdev is
+    fully set up, since we call down into the fbdev from the hotplug work
+    functions. So stick the hpd enabling right next to the poll helper
+    initialization.
+    
+    v5: We need to enable irqs before intel_modeset_init, since that
+    function sets up the outputs.
+    
+    v6: Fixup cleanup sequence, too.
+    
+    Reviewed-by: Imre Deak <imre.deak@intel.com>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+:040000 040000 26e83b14e8d49da8c451dc2c837646a337a79085 fa2cbfcf159808ce188675115888242245e4e69d M      drivers
+
+
+relevant dmesg:
+
+ [drm] Initialized drm 1.1.0 20060810
+ [drm] radeon defaulting to userspace modesetting.
+ i915 0000:00:02.0: setting latency timer to 64
+ i915 0000:00:02.0: irq 47 for MSI/MSI-X
+ [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+ [drm] Driver supports precise vblank timestamp query.
+ [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+ fbcon: inteldrmfb (fb0) is primary device
+ i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
+ i915 0000:00:02.0: registered panic notifier
+ [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
-My views 
-<http://www.armchairpatriot.com/What%20Has%20America%20Become.shtml>
-Consultant, n.:
-	An ordinary man a long way from home.
-I was taught to respect my elders, but its getting 
-harder and harder to find any...
+Arkadiusz Miśkiewicz, arekm / maven.pl
