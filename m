@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab3CNLAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:00:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51798 "EHLO
+	id S1756944Ab3CNKhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:37:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756948Ab3CNKhM (ORCPT
+	with ESMTP id S1756832Ab3CNKgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:12 -0400
+	Thu, 14 Mar 2013 06:36:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Xiaowei.Hu" <xiaowei.hu@oracle.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 22/88] ocfs2: ac->ac_allow_chain_relink=0 won't disable group relink
-Date: Thu, 14 Mar 2013 10:35:15 +0000
-Message-Id: <1363257381-15900-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 09/88] SUNRPC: Don't start the retransmission timer when out of socket space
+Date: Thu, 14 Mar 2013 10:35:02 +0000
+Message-Id: <1363257381-15900-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -30,112 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Xiaowei.Hu" <xiaowei.hu@oracle.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 309a85b6861fedbb48a22d45e0e079d1be993b3a upstream.
+commit a9a6b52ee1baa865283a91eb8d443ee91adfca56 upstream.
 
-ocfs2_block_group_alloc_discontig() disables chain relink by setting
-ac->ac_allow_chain_relink = 0 because it grabs clusters from multiple
-cluster groups.
+If the socket is full, we're better off just waiting until it empties,
+or until the connection is broken. The reason why we generally don't
+want to time out is that the call to xprt->ops->release_xprt() will
+trigger a connection reset, which isn't helpful...
 
-It doesn't keep the credits for all chain relink,but
-ocfs2_claim_suballoc_bits overrides this in this call trace:
-ocfs2_block_group_claim_bits()->ocfs2_claim_clusters()->
-__ocfs2_claim_clusters()->ocfs2_claim_suballoc_bits()
-ocfs2_claim_suballoc_bits set ac->ac_allow_chain_relink = 1; then call
-ocfs2_search_chain() one time and disable it again, and then we run out
-of credits.
+Let's make an exception for soft RPC calls, since they have to provide
+timeout guarantees.
 
-Fix is to allow relink by default and disable it in
-ocfs2_block_group_alloc_discontig.
-
-Without this patch, End-users will run into a crash due to run out of
-credits, backtrace like this:
-
-  RIP: 0010:[<ffffffffa0808b14>]  [<ffffffffa0808b14>]
-  jbd2_journal_dirty_metadata+0x164/0x170 [jbd2]
-  RSP: 0018:ffff8801b919b5b8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88022139ddc0 RCX: ffff880159f652d0
-  RDX: ffff880178aa3000 RSI: ffff880159f652d0 RDI: ffff880087f09bf8
-  RBP: ffff8801b919b5e8 R08: 0000000000000000 R09: 0000000000000000
-  R10: 0000000000001e00 R11: 00000000000150b0 R12: ffff880159f652d0
-  R13: ffff8801a0cae908 R14: ffff880087f09bf8 R15: ffff88018d177800
-  FS:  00007fc9b0b6b6e0(0000) GS:ffff88022fd40000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 000000000040819c CR3: 0000000184017000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process dd (pid: 9945, threadinfo ffff8801b919a000, task ffff880149a264c0)
-  Call Trace:
-    ocfs2_journal_dirty+0x2f/0x70 [ocfs2]
-    ocfs2_relink_block_group+0x111/0x480 [ocfs2]
-    ocfs2_search_chain+0x455/0x9a0 [ocfs2]
-    ...
-
-Signed-off-by: Xiaowei.Hu <xiaowei.hu@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ocfs2/suballoc.c | 7 +++----
- fs/ocfs2/suballoc.h | 2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ net/sunrpc/xprt.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ocfs2/suballoc.c b/fs/ocfs2/suballoc.c
-index f169da4..b7e74b5 100644
---- a/fs/ocfs2/suballoc.c
-+++ b/fs/ocfs2/suballoc.c
-@@ -642,7 +642,7 @@ ocfs2_block_group_alloc_discontig(handle_t *handle,
- 	 * cluster groups will be staying in cache for the duration of
- 	 * this operation.
- 	 */
--	ac->ac_allow_chain_relink = 0;
-+	ac->ac_disable_chain_relink = 1;
+diff --git a/net/sunrpc/xprt.c b/net/sunrpc/xprt.c
+index 6329ff3..b4efb51 100644
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -485,13 +485,17 @@ EXPORT_SYMBOL_GPL(xprt_wake_pending_tasks);
+  * xprt_wait_for_buffer_space - wait for transport output buffer to clear
+  * @task: task to be put to sleep
+  * @action: function pointer to be executed after wait
++ *
++ * Note that we only set the timer for the case of RPC_IS_SOFT(), since
++ * we don't in general want to force a socket disconnection due to
++ * an incomplete RPC call transmission.
+  */
+ void xprt_wait_for_buffer_space(struct rpc_task *task, rpc_action action)
+ {
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
  
- 	/* Claim the first region */
- 	status = ocfs2_block_group_claim_bits(osb, handle, ac, min_bits,
-@@ -1823,7 +1823,7 @@ static int ocfs2_search_chain(struct ocfs2_alloc_context *ac,
- 	 * Do this *after* figuring out how many bits we're taking out
- 	 * of our target group.
- 	 */
--	if (ac->ac_allow_chain_relink &&
-+	if (!ac->ac_disable_chain_relink &&
- 	    (prev_group_bh) &&
- 	    (ocfs2_block_group_reasonably_empty(bg, res->sr_bits))) {
- 		status = ocfs2_relink_block_group(handle, alloc_inode,
-@@ -1928,7 +1928,6 @@ static int ocfs2_claim_suballoc_bits(struct ocfs2_alloc_context *ac,
- 
- 	victim = ocfs2_find_victim_chain(cl);
- 	ac->ac_chain = victim;
--	ac->ac_allow_chain_relink = 1;
- 
- 	status = ocfs2_search_chain(ac, handle, bits_wanted, min_bits,
- 				    res, &bits_left);
-@@ -1947,7 +1946,7 @@ static int ocfs2_claim_suballoc_bits(struct ocfs2_alloc_context *ac,
- 	 * searching each chain in order. Don't allow chain relinking
- 	 * because we only calculate enough journal credits for one
- 	 * relink per alloc. */
--	ac->ac_allow_chain_relink = 0;
-+	ac->ac_disable_chain_relink = 1;
- 	for (i = 0; i < le16_to_cpu(cl->cl_next_free_rec); i ++) {
- 		if (i == victim)
- 			continue;
-diff --git a/fs/ocfs2/suballoc.h b/fs/ocfs2/suballoc.h
-index b8afabf..a36d0aa 100644
---- a/fs/ocfs2/suballoc.h
-+++ b/fs/ocfs2/suballoc.h
-@@ -49,7 +49,7 @@ struct ocfs2_alloc_context {
- 
- 	/* these are used by the chain search */
- 	u16    ac_chain;
--	int    ac_allow_chain_relink;
-+	int    ac_disable_chain_relink;
- 	group_search_t *ac_group_search;
- 
- 	u64    ac_last_group;
+-	task->tk_timeout = req->rq_timeout;
++	task->tk_timeout = RPC_IS_SOFT(task) ? req->rq_timeout : 0;
+ 	rpc_sleep_on(&xprt->pending, task, action);
+ }
+ EXPORT_SYMBOL_GPL(xprt_wait_for_buffer_space);
 -- 
 1.8.1.2
 
