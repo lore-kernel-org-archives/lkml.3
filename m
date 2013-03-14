@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3CNWrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:47:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35752 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753068Ab3CNWrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:47:31 -0400
-Date: Thu, 14 Mar 2013 23:47:24 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, bp@alien.de,
-        chegger@amazon.de, xen-devel@lists.xen.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] x86/mce: Replace shared_bank array with
- is_shared_bank() helper
-Message-ID: <20130314224724.GG10190@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Boris Ostrovsky <boris.ostrovsky@oracle.com>, bp@alien.de,
-	chegger@amazon.de, xen-devel@lists.xen.org,
-	linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-	JBeulich@suse.com, stable@vger.kernel.org
-References: <1363295441-1859-1-git-send-email-boris.ostrovsky@oracle.com>
- <1363295441-1859-2-git-send-email-boris.ostrovsky@oracle.com>
- <20130314222005.GB28339@kroah.com>
+	id S1753484Ab3CNWxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:53:40 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:49575 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab3CNWxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 18:53:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130314222005.GB28339@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBTh1Fph=GTOzN_2Q9coqLpiR3hcqVk1PBubUUEO7D=zsA@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+	<CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+	<CA+55aFzDMwHyPxqxNKRz0Y3vFhZOqtHMvPbvNXAD6C+-_=UAhg@mail.gmail.com>
+	<CABPqkBTTY7RBSXJw4kqdd0c07Ykz-Wy8TFUQ+hzBSn=5v2yz2w@mail.gmail.com>
+	<CABPqkBTh1Fph=GTOzN_2Q9coqLpiR3hcqVk1PBubUUEO7D=zsA@mail.gmail.com>
+Date: Thu, 14 Mar 2013 23:53:37 +0100
+Message-ID: <CABPqkBTQCce3ve9cP-Ajbtb7FSVggB_bL7Dmpq8KeG_7Gfx0Og@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Stephane Eranian <eranian@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 03:20:05PM -0700, Greg KH wrote:
-> On Thu, Mar 14, 2013 at 05:10:40PM -0400, Boris Ostrovsky wrote:
-> > Use helper function instead of an array to report whether register
-> > bank is shared. Currently only bank 4 (northbridge) is shared.
-> > 
-> > Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> > ---
-> >  arch/x86/kernel/cpu/mcheck/mce_amd.c | 17 +++++++++--------
-> >  1 file changed, 9 insertions(+), 8 deletions(-)
-> 
-> <formletter>
-> 
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
+On Thu, Mar 14, 2013 at 11:42 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Mar 14, 2013 at 11:19 PM, Stephane Eranian <eranian@google.com> wrote:
+>> On Thu, Mar 14, 2013 at 11:17 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>> On Thu, Mar 14, 2013 at 3:09 PM, Stephane Eranian <eranian@google.com> wrote:
+>>>>
+>>>> Could be related to suspend/resume. But were you running perf across
+>>>> that resume/suspend cycle?
+>>>
+>>> No.
+>>>
+>>> In most cases I was running a perf record before and after (but not
+>>> *while* suspending)
+>>>
+>>> In at least one other crash, I didn't run perf before at all, so the
+>>> first time I used perf was after the resume.
+>>>
+>>> So in no cases did I actually have any perf stuff active over the
+>>> suspend itself.
+>>>
+>> Ok, simpler test case then.
+>>
+>>>> Let's see if we can reproduce the problem on the same ChromeBook you
+>>>> have. Don't have one myself.
+>>>
+>>> I don't imagine it should be about chromebook per se, because afaik
+>>> all of pmu suspend/resume is done by the kernel, no firmware involved.
+>>>
+>>> So I'd assume it should happen with any IvyBridge.
+>>>
+>> Will try on a desktop IvyBridge too.
+>
+> Ok, it happens on my IVB desktop too, so I can investigate...
 
-Yeah,
-
-stable@ was obviously wrongly CCed. This patch is clearly not stable
-material.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+It's not specific to IVB either, it hangs on my Nehalem desktop as well.
