@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab3CNKgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:36:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51701 "EHLO
+	id S1757329Ab3CNLGS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:06:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51689 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756759Ab3CNKgs (ORCPT
+	with ESMTP id S1756666Ab3CNKgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:48 -0400
+	Thu, 14 Mar 2013 06:36:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joerg Roedel <joro@8bytes.org>, Shuah Khan <shuah.khan@hp.com>,
+Cc: Jianpeng Ma <majianpeng@gmail.com>, "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 03/88] iommu/amd: Initialize device table after dma_ops
-Date: Thu, 14 Mar 2013 10:34:56 +0000
-Message-Id: <1363257381-15900-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 02/88] nfsd: Fix memleak
+Date: Thu, 14 Mar 2013 10:34:55 +0000
+Message-Id: <1363257381-15900-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: majianpeng <majianpeng@gmail.com>
 
-commit f528d980c17b8714aedc918ba86e058af914d66b upstream.
+commit 2d32b29a1c2830f7c42caa8258c714acd983961f upstream.
 
-When dma_ops are initialized the unity mappings are
-created. The init_device_table_dma() function makes sure DMA
-from all devices is blocked by default. This opens a short
-window in time where DMA to unity mapped regions is blocked
-by the IOMMU. Make sure this does not happen by initializing
-the device table after dma_ops.
+When free nfs-client, it must free the ->cl_stateids.
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iommu/amd_iommu_init.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4state.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index eadc6b5..9e5096a 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1572,9 +1572,6 @@ int __init amd_iommu_init_hardware(void)
- 	if (amd_iommu_pd_alloc_bitmap == NULL)
- 		goto free;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 6ca92b1..c4daf96 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1090,6 +1090,8 @@ free_client(struct nfs4_client *clp)
+ 	}
+ 	free_svc_cred(&clp->cl_cred);
+ 	kfree(clp->cl_name.data);
++	idr_remove_all(&clp->cl_stateids);
++	idr_destroy(&clp->cl_stateids);
+ 	kfree(clp);
+ }
  
--	/* init the device table */
--	init_device_table();
--
- 	/*
- 	 * let all alias entries point to itself
- 	 */
-@@ -1655,6 +1652,7 @@ out:
-  */
- static int __init amd_iommu_init(void)
- {
-+	struct amd_iommu *iommu;
- 	int ret = 0;
- 
- 	ret = amd_iommu_init_hardware();
-@@ -1673,6 +1671,12 @@ static int __init amd_iommu_init(void)
- 	if (ret)
- 		goto free;
- 
-+	/* init the device table */
-+	init_device_table();
-+
-+	for_each_iommu(iommu)
-+		iommu_flush_all_caches(iommu);
-+
- 	amd_iommu_init_api();
- 
- 	x86_platform.iommu_shutdown = disable_iommus;
 -- 
 1.8.1.2
 
