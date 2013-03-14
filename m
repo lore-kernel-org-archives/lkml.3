@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3CNFKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 01:10:41 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:53692 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab3CNFKj (ORCPT
+	id S1752247Ab3CNFRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 01:17:40 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:57252 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab3CNFRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 01:10:39 -0400
+	Thu, 14 Mar 2013 01:17:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363229965-13128-4-git-send-email-b32955@freescale.com>
+In-Reply-To: <1363229965-13128-3-git-send-email-b32955@freescale.com>
 References: <1363229965-13128-1-git-send-email-b32955@freescale.com>
-	<1363229965-13128-4-git-send-email-b32955@freescale.com>
-Date: Wed, 13 Mar 2013 22:10:38 -0700
-Message-ID: <CAN8TOE9aGckZ2PrCCPQe4ZgW6Aph3otXGohNuRPssu8f302xaA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] mtd: add 4 Toshiba nand chips for the full-id case
+	<1363229965-13128-3-git-send-email-b32955@freescale.com>
+Date: Wed, 13 Mar 2013 22:17:38 -0700
+Message-ID: <CAN8TOE9zAfGry1KjhHXyonHE0n6n=sPx1Gz4EmiAejY+e7CKzw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] mtd: add the support to parse out the full-id nand type
 From: Brian Norris <computersforpeace@gmail.com>
 To: Huang Shijie <b32955@freescale.com>
 Cc: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com,
@@ -23,68 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Huang,
+
+A few nitpicks, and a few real comments.
+
 On Wed, Mar 13, 2013 at 7:59 PM, Huang Shijie <b32955@freescale.com> wrote:
-> I have 4 Toshiba nand chips which can not be parsed out by the
-> id data. We can not get the oob size from the id data. So add them
-> as the full-id nand chips in the first of nand_flash_ids.
+> When we meet a full-id nand type which @mfr_id is true, we can use
+> the find_full_id_nand() to parse out the neccessary information for a
+
+s/neccessary/necessary
+
+> nand chip.
 >
-> The nand_get_flash_type() scans the full id nands firstly.
-> If a full-id nand matchs, it will not continue to parse other
-> non-full-id nand types, else it will continue to parse the non-full-id nands.
->
+> If we meet a non full-id nand type, we can handle it in the lagacy way.
+
+s/lagacy/legacy
+
 > Signed-off-by: Huang Shijie <b32955@freescale.com>
 > ---
->  drivers/mtd/nand/nand_ids.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
+>  drivers/mtd/nand/nand_base.c |   36 +++++++++++++++++++++++++++++++++---
+>  1 files changed, 33 insertions(+), 3 deletions(-)
 >
-> diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
-> index 625bc89..38b8cee 100644
-> --- a/drivers/mtd/nand/nand_ids.c
-> +++ b/drivers/mtd/nand/nand_ids.c
-> @@ -10,6 +10,7 @@
->   */
->  #include <linux/module.h>
->  #include <linux/mtd/nand.h>
-> +#include <linux/sizes.h>
+> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> index 72eada2..b7ad9fd 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -3123,6 +3123,30 @@ static void nand_decode_bbm_options(struct mtd_info *mtd,
+>                 chip->bbt_options |= NAND_BBT_SCAN2NDPAGE;
+>  }
 >
->  #define LP_OPTIONS NAND_SAMSUNG_LP_OPTIONS
->  #define LP_OPTIONS16 (LP_OPTIONS | NAND_BUSWIDTH_16)
-> @@ -22,6 +23,27 @@
->   * extended chip ID.
->   */
->  struct nand_flash_dev nand_flash_ids[] = {
-> +       /*
-> +        * The full-id nands may share the same Device ID with the non-full-id
-> +        * nands. In order to distinguish the two type nands, we put the
-> +        * full-id nands in the first of the table. So the nand_get_flash_type()
-> +        * scans the full id nands firstly. If a full-id nand matchs, it will
-> +        * not continue to parse other non-full-id nand types, else it will
-> +        * continue to parse the non-full-id nands.
-> +        */
+> +static inline bool is_full_id_nand(struct nand_flash_dev *type)
+> +{
+> +       return type->mfr_id;
+> +}
 
-There are a few grammar/language issues (nands -> NAND chips, id ->
-ID, firstly -> first). Also, I don't think you need to explain the
-full search here. I would rewrite this whole paragraph as:
+If we restore the id_len field (as I recommended in reply to the cover
+letter), then I think this check would be better performed as:
 
-"Some incompatible NAND chips share device ID's and so must be listed
-by full ID. We list them first so that we can easily identify the most
-specific match."
+return !type->id_len;
 
-> +       {"TC58NVG2S0F 4G 3.3V 8-bit",
-> +               { .id = {0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08} },
-> +                       SZ_4K, SZ_512, SZ_256K, 0, 224},
-> +       {"TC58NVG3S0F 8G 3.3V 8-bit",
-> +               { .id = {0x98, 0xd3, 0x90, 0x26, 0x76, 0x15, 0x02, 0x08} },
-> +                       SZ_4K, SZ_1K, SZ_256K, 0, 232},
-> +       {"TC58NVG5D2 32G 3.3V 8-bit",
-> +               { .id = {0x98, 0xd7, 0x94, 0x32, 0x76, 0x56, 0x09, 0x00} },
-> +                       SZ_8K, SZ_4K, SZ_1M, 0, 640},
-> +       {"TC58NVG6D2 64G 3.3V 8-bit",
-> +               { .id = {0x98, 0xde, 0x94, 0x82, 0x76, 0x56, 0x04, 0x20} },
-> +                       SZ_8K, SZ_8K, SZ_2M, 0, 640},
+That would really be a more specific and accurate test and can
+compensate for some wildly unlikely case in which a manufacturer uses
+manufacturer ID = 0.
+
+> +static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
+> +                  struct nand_flash_dev *type, u8 *id_data, int *busw)
+> +{
+> +       if (!strncmp(type->id, id_data, 8)) {
+> +               mtd->writesize = type->pagesize;
+> +               mtd->erasesize = type->erasesize;
+> +               mtd->oobsize = type->oobsize;
 > +
->         LEGACY_ID_NAND("NAND 4MiB 5V 8-bit",   0x6B, 512, 4, 0x2000, 0),
->         LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE3, 512, 4, 0x2000, 0),
->         LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE5, 512, 4, 0x2000, 0),
+> +               chip->cellinfo = id_data[2];
+> +               chip->chipsize = (uint64_t)type->chipsize << 20;
+> +               chip->options |= type->options;
+> +
+> +               *busw = type->options & NAND_BUSWIDTH_16;
+> +
+> +               return true;
+> +       }
+> +       return false;
+> +}
+> +
+>  /*
+>   * Get the flash and manufacturer id and lookup if the type is supported.
+>   */
+> @@ -3174,9 +3198,15 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+>         if (!type)
+>                 type = nand_flash_ids;
+>
+> -       for (; type->name != NULL; type++)
+> -               if (*dev_id == type->dev_id)
+> -                       break;
+> +       for (; type->name != NULL; type++) {
+> +               if (is_full_id_nand(type)) {
+> +                       if (find_full_id_nand(mtd, chip, type, id_data, &busw))
+> +                               goto ident_done;
+> +               } else {
+> +                       if (*dev_id == type->dev_id)
+
+Combine the previous two lines to:
+
+} else if (*dev_id == type->dev_id) {
+
+> +                               break;
+> +               }
+> +       }
+>
+>         chip->onfi_version = 0;
+>         if (!type->name || !type->pagesize) {
 
 Brian
