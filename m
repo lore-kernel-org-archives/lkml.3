@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab3CNOMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:12:02 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56885 "EHLO
+	id S1757534Ab3CNOMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:12:52 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56880 "EHLO
 	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757249Ab3CNOKx (ORCPT
+	with ESMTP id S1756801Ab3CNOKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:10:53 -0400
+	Thu, 14 Mar 2013 10:10:51 -0400
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Mar 2013 10:10:50 EDT
 From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
 To: linux-media@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, hverkuil@xs4all.nl, elezegarcia@gmail.com,
         =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: [RFC V1 6/8] smi2021: Add smi2021_audio.c
-Date: Thu, 14 Mar 2013 15:07:02 +0100
-Message-Id: <1363270024-12127-7-git-send-email-jonarne@jonarne.no>
+Subject: [RFC V1 1/8] smi2021: Add the header file
+Date: Thu, 14 Mar 2013 15:06:57 +0100
+Message-Id: <1363270024-12127-2-git-send-email-jonarne@jonarne.no>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
 References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
@@ -24,24 +25,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file handles all setup of a new snd_card instance with one pcm_substream.
-It's also responsible for parsing the raw pcm data received in the isoc transfers,
-and passing it to the alsa buffers.
+This is the header file for the smi2021 module.
 
 Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
 ---
- drivers/media/usb/smi2021/smi2021_audio.c | 385 ++++++++++++++++++++++++++++++
- 1 file changed, 385 insertions(+)
- create mode 100644 drivers/media/usb/smi2021/smi2021_audio.c
+ drivers/media/usb/smi2021/smi2021.h | 228 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 228 insertions(+)
+ create mode 100644 drivers/media/usb/smi2021/smi2021.h
 
-diff --git a/drivers/media/usb/smi2021/smi2021_audio.c b/drivers/media/usb/smi2021/smi2021_audio.c
+diff --git a/drivers/media/usb/smi2021/smi2021.h b/drivers/media/usb/smi2021/smi2021.h
 new file mode 100644
-index 0000000..cd20181
+index 0000000..eba0fef
 --- /dev/null
-+++ b/drivers/media/usb/smi2021/smi2021_audio.c
-@@ -0,0 +1,385 @@
++++ b/drivers/media/usb/smi2021/smi2021.h
+@@ -0,0 +1,228 @@
 +/*******************************************************************************
-+ * smi2021_audio.c                                                             *
++ * smi2021.h                                                                   *
 + *                                                                             *
 + * USB Driver for SMI2021 - EasyCap                                            *
 + * USB ID 1c88:003c                                                            *
@@ -75,356 +74,199 @@ index 0000000..cd20181
 + *
 + */
 +
-+#include "smi2021.h"
++#ifndef SMI2021_H
++#define SMI2021_H
 +
-+static void pcm_buffer_free(struct snd_pcm_substream *substream)
-+{
-+	vfree(substream->runtime->dma_area);
-+	substream->runtime->dma_area = NULL;
-+	substream->runtime->dma_bytes = 0;
-+}
++#include <linux/module.h>
++#include <linux/usb.h>
++#include <linux/types.h>
++#include <linux/spinlock_types.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
 +
-+static int pcm_buffer_alloc(struct snd_pcm_substream *substream, int size)
-+{
-+	if (substream->runtime->dma_area) {
-+		if (substream->runtime->dma_bytes > size)
-+			return 0;
-+		pcm_buffer_free(substream);
-+	}
++#include <media/v4l2-event.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-ioctl.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-chip-ident.h>
++#include <media/videobuf2-core.h>
++#include <media/videobuf2-vmalloc.h>
++#include <media/saa7115.h>
 +
-+	substream->runtime->dma_area = vmalloc(size);
-+	if (substream->runtime->dma_area == NULL)
-+		return -ENOMEM;
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/initval.h>
 +
-+	substream->runtime->dma_bytes = size;
++#define SMI2021_DRIVER_VERSION "0.1"
 +
-+	return 0;
-+}
++/* For ISOC */
++#define SMI2021_MAX_PKT_SIZE	3072
++#define SMI2021_ISOC_PACKETS	10	/* 64 */
++#define SMI2021_ISOC_BUFS	4	/* 16 */
++#define SMI2021_ISOC_EP		0x82
 +
-+static const struct snd_pcm_hardware smi2021_pcm_hw = {
-+	.info = SNDRV_PCM_INFO_BLOCK_TRANSFER |
-+		SNDRV_PCM_INFO_INTERLEAVED    |
-+		SNDRV_PCM_INFO_MMAP           |
-+		SNDRV_PCM_INFO_MMAP_VALID     |
-+		SNDRV_PCM_INFO_BATCH,
++/* The structure of the array we use to send i2c settings to the device */
++#define SMI2021_CTRL_HEAD 0x00
++#define	SMI2021_CTRL_ADDR 0x01
++#define SMI2021_CTRL_BM_DATA_TYPE 0x02
++#define	SMI2021_CTRL_BM_DATA_OFFSET 0x03
++#define	SMI2021_CTRL_DATA_SIZE 0x04
 +
-+	.formats = SNDRV_PCM_FMTBIT_S32_LE,
++#define SMI2021_CTRL_REG_HI 0x05
++#define SMI2021_CTRL_REG_LO 0x06
++#define SMI2021_CTRL_REG_VAL 0x07
 +
-+	.rates = SNDRV_PCM_RATE_48000,
-+	.rate_min = 48000,
-+	.rate_max = 48000,
-+	.channels_min = 2,
-+	.channels_max = 2,
-+	.period_bytes_min = 992,	/* 32640 */ /* 15296 */
-+	.period_bytes_max = 15872,	/* 65280 */
-+	.periods_min = 1,		/* 1 */
-+	.periods_max = 16,		/* 2 */
-+	.buffer_bytes_max = 65280,	/* 65280 */
++#define SMI2021_CTRL_I2C_REG 0x05
++#define SMI2021_CTRL_I2C_VAL 0x06
++#define SMI2021_CTRL_I2C_RCV_VAL 0x05
++
++/* General video constants */
++#define SMI2021_BYTES_PER_LINE	1440
++#define SMI2021_PAL_LINES	576
++#define SMI2021_NTSC_LINES	486
++
++/* Timing Referance Codes, see saa7113 datasheet */
++#define SMI2021_TRC_EAV		0x10
++#define SMI2021_TRC_VBI		0x20
++#define SMI2021_TRC_FIELD_2	0x40
++#define SMI2021_TRC		0x80
++
++#define DEBUG
++#ifdef DEBUG
++#define smi2021_dbg(fmt, args...)		\
++	pr_debug("smi2021::%s: " fmt, __func__, \
++			##args)
++#else
++#define smi2021_dbg(fmt, args...)
++#endif
++
++#define smi2021_info(fmt, args...)		\
++	pr_info("smi2021::%s: " fmt,		\
++		__func__, ##args)
++
++#define smi2021_warn(fmt, args...)		\
++	pr_warn("smi2021::%s: " fmt,		\
++		__func__, ##args)
++
++#define smi2021_err(fmt, args...)		\
++	pr_err("smi2021::%s: " fmt,		\
++		__func__, ##args)
++
++enum smi2021_sync {
++	HSYNC,
++	SYNCZ1,
++	SYNCZ2,
++	TRC
 +};
 +
-+static int smi2021_pcm_open(struct snd_pcm_substream *substream)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+	struct snd_pcm_runtime *runtime = substream->runtime;
-+	int rc;
++/* Buffer for one video frame */
++struct smi2021_buffer {
++	/* Common vb2 stuff, must be first */
++	struct vb2_buffer		vb;
++	struct list_head		list;
 +
-+	rc = snd_pcm_hw_constraint_pow2(runtime, 0,
-+					SNDRV_PCM_HW_PARAM_PERIODS);
-+	if (rc < 0)
-+		return rc;
++	void				*mem;
++	unsigned int			length;
 +
-+	dev->pcm_substream = substream;
++	bool				second_field;
++	bool				in_blank;
++	unsigned int			pos;
 +
-+	runtime->hw = smi2021_pcm_hw;
-+	snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
-+
-+	smi2021_dbg("PCM device open!\n");
-+
-+	return 0;
-+}
-+
-+static int smi2021_pcm_close(struct snd_pcm_substream *substream)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+	smi2021_dbg("PCM device closing\n");
-+
-+	if (atomic_read(&dev->adev_capturing)) {
-+		atomic_set(&dev->adev_capturing, 0);
-+		schedule_work(&dev->adev_capture_trigger);
-+	}
-+	return 0;
-+
-+}
-+
-+
-+static int smi2021_pcm_hw_params(struct snd_pcm_substream *substream,
-+				struct snd_pcm_hw_params *hw_params)
-+{
-+	int size, rc;
-+	size = params_period_bytes(hw_params) * params_periods(hw_params);
-+
-+	rc = pcm_buffer_alloc(substream, size);
-+	if (rc < 0)
-+		return rc;
-+
-+
-+	return 0;
-+}
-+
-+static int smi2021_pcm_hw_free(struct snd_pcm_substream *substream)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+
-+	if (atomic_read(&dev->adev_capturing)) {
-+		atomic_set(&dev->adev_capturing, 0);
-+		schedule_work(&dev->adev_capture_trigger);
-+	}
-+
-+	pcm_buffer_free(substream);
-+	return 0;
-+}
-+
-+static int smi2021_pcm_prepare(struct snd_pcm_substream *substream)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+
-+	dev->pcm_complete_samples = 0;
-+	dev->pcm_read_offset = 0;
-+	dev->pcm_write_ptr = 0;
-+
-+	return 0;
-+}
-+
-+static void capture_trigger(struct work_struct *work)
-+{
-+	struct smi2021_dev *dev = container_of(work, struct smi2021_dev,
-+					adev_capture_trigger);
-+
-+	if (atomic_read(&dev->adev_capturing))
-+		smi2021_write_reg(dev, 0, 0x1740, 0x1d);
-+	else
-+		smi2021_write_reg(dev, 0, 0x1740, 0x00);
-+}
-+
-+/* This callback is ATOMIC, must not sleep */
-+static int smi2021_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+
-+	switch (cmd) {
-+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-+	case SNDRV_PCM_TRIGGER_RESUME:
-+	case SNDRV_PCM_TRIGGER_START:
-+		atomic_set(&dev->adev_capturing, 1);
-+		break;
-+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-+	case SNDRV_PCM_TRIGGER_SUSPEND:
-+	case SNDRV_PCM_TRIGGER_STOP:
-+		atomic_set(&dev->adev_capturing, 0);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	schedule_work(&dev->adev_capture_trigger);
-+
-+	return 0;
-+}
-+
-+static snd_pcm_uframes_t smi2021_pcm_pointer(
-+					struct snd_pcm_substream *substream)
-+{
-+	struct smi2021_dev *dev = snd_pcm_substream_chip(substream);
-+	return dev->pcm_write_ptr / 8;
-+}
-+
-+static struct page *smi2021_pcm_get_vmalloc_page(struct snd_pcm_substream *subs,
-+						unsigned long offset)
-+{
-+	void *pageptr = subs->runtime->dma_area + offset;
-+
-+	return vmalloc_to_page(pageptr);
-+}
-+
-+static struct snd_pcm_ops smi2021_pcm_ops = {
-+	.open = smi2021_pcm_open,
-+	.close = smi2021_pcm_close,
-+	.ioctl = snd_pcm_lib_ioctl,
-+	.hw_params = smi2021_pcm_hw_params,
-+	.hw_free = smi2021_pcm_hw_free,
-+	.prepare = smi2021_pcm_prepare,
-+	.trigger = smi2021_pcm_trigger,
-+	.pointer = smi2021_pcm_pointer,
-+	.page = smi2021_pcm_get_vmalloc_page,
++	/* ActiveVideo - Line counter */
++	u16				trc_av;
 +};
 +
-+int smi2021_snd_register(struct smi2021_dev *dev)
-+{
-+	struct snd_card	*card;
-+	struct snd_pcm *pcm;
-+	int rc = 0;
-+
-+	rc = snd_card_create(SNDRV_DEFAULT_IDX1, "smi2021 Audio", THIS_MODULE,
-+				0, &card);
-+	if (rc < 0)
-+		return rc;
-+
-+	rc = snd_pcm_new(card, "smi2021 Audio", 0, 0, 1, &pcm);
-+	if (rc < 0)
-+		goto err_free_card;
-+
-+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &smi2021_pcm_ops);
-+	pcm->info_flags = 0;
-+	pcm->private_data = dev;
-+	strcpy(pcm->name, "Somagic smi2021 Capture");
-+
-+	strcpy(card->driver, "smi2021-Audio");
-+	strcpy(card->shortname, "smi2021 Audio");
-+	strcpy(card->longname, "Somagic smi2021 Audio");
-+
-+	INIT_WORK(&dev->adev_capture_trigger, capture_trigger);
-+
-+	rc = snd_card_register(card);
-+	if (rc < 0)
-+		goto err_free_card;
-+
-+	dev->snd_card = card;
-+
-+	return 0;
-+
-+err_free_card:
-+	snd_card_free(card);
-+	return rc;
-+}
-+
-+void smi2021_snd_unregister(struct smi2021_dev *dev)
-+{
-+	if (!dev)
-+		return;
-+
-+	if (!dev->snd_card)
-+		return;
-+
-+	snd_card_free(dev->snd_card);
-+	dev->snd_card = NULL;
-+}
-+
-+void smi2021_audio(struct smi2021_dev *dev, u8 *data, int len)
-+{
-+	struct snd_pcm_runtime *runtime;
-+	u8 offset;
-+	int new_offset = 0;
-+
-+	int skip;
-+	unsigned int stride, oldptr, headptr;
-+
-+	int diff = 0;
-+	int samples = 0;
-+	bool period_elapsed = false;
++struct smi2021_isoc_ctl {
++	int max_pkt_size;
++	int num_bufs;
++	struct urb **urb;
++	char **transfer_buffer;
++	struct smi2021_buffer *buf;
++};
 +
 +
-+	if (!dev->udev)
-+		return;
++struct smi2021_fmt {
++	char				*name;
++	u32				fourcc;
++	int				depth;
++};
 +
-+	if (atomic_read(&dev->adev_capturing) == 0)
-+		return;
++struct smi2021_input {
++	char				*name;
++	int				type;
++};
 +
-+	if (!dev->pcm_substream)
-+		return;
++struct smi2021_dev {
++	struct v4l2_device		v4l2_dev;
++	struct video_device		vdev;
++	struct v4l2_ctrl_handler	ctrl_handler;
 +
-+	runtime = dev->pcm_substream->runtime;
-+	if (!runtime || !runtime->dma_area)
-+		return;
++	struct v4l2_subdev		*sd_saa7113;
 +
-+	offset = dev->pcm_read_offset;
-+	stride = runtime->frame_bits >> 3;
++	struct usb_device		*udev;
++	struct device			*dev;
 +
-+	if (stride == 0)
-+		return;
++	/* Capture buffer queue */
++	struct vb2_queue		vb_vidq;
 +
-+	diff = dev->pcm_write_ptr;
++	/* ISOC control struct */
++	struct list_head		avail_bufs;
++	struct smi2021_isoc_ctl		isoc_ctl;
 +
-+	/* Check that the end of the last buffer was correct.
-+	 * If not correct, we mark any partial frames in buffer as complete
-+	 */
-+	headptr = dev->pcm_write_ptr - offset - 4;
-+	if (dev->pcm_write_ptr > 10 && runtime->dma_area[headptr] != 0x00) {
-+		skip = stride - (dev->pcm_write_ptr % stride);
-+		snd_pcm_stream_lock(dev->pcm_substream);
-+		dev->pcm_write_ptr += skip;
++	int				width;		/* frame width */
++	int				height;		/* frame height */
++	unsigned int			ctl_input;	/* selected input */
++	v4l2_std_id			norm;		/* current norm */
++	struct smi2021_fmt		*fmt;		/* selected format */
++	unsigned int			buf_count;	/* for video buffers */
 +
-+		if (dev->pcm_write_ptr >= runtime->dma_bytes)
-+			dev->pcm_write_ptr -= runtime->dma_bytes;
++	/* i2c i/o */
++	struct i2c_adapter		i2c_adap;
++	struct i2c_client		i2c_client;
 +
-+		snd_pcm_stream_unlock(dev->pcm_substream);
-+		offset = dev->pcm_read_offset = 0;
-+	}
-+	/* The device is actually sending 24Bit pcm data
-+	 * with 0x00 as the header byte before each sample.
-+	 * We look for this byte to make sure we did not
-+	 * loose any bytes during transfer.
-+	 */
-+	while (len > stride && (data[offset] != 0x00 ||
-+			data[offset + (stride / 2)] != 0x00)) {
-+		new_offset++;
-+		data++;
-+		len--;
-+	}
++	struct mutex			v4l2_lock;
++	struct mutex			vb_queue_lock;
++	spinlock_t			buf_lock;
 +
-+	if (len <= stride) {
-+		/* We exhausted the buffer looking for 0x00 */
-+		dev->pcm_read_offset = 0;
-+		return;
-+	}
-+	if (new_offset != 0) {
-+		/* This buffer can not be appended to the current buffer,
-+		 * so we mark any partial frames in the buffer as complete.
-+		 */
-+		skip = stride - (dev->pcm_write_ptr % stride);
-+		snd_pcm_stream_lock(dev->pcm_substream);
-+		dev->pcm_write_ptr += skip;
++	enum smi2021_sync		sync_state;
 +
-+		if (dev->pcm_write_ptr >= runtime->dma_bytes)
-+			dev->pcm_write_ptr -= runtime->dma_bytes;
++	/* audio */
++	struct snd_card			*snd_card;
++	struct snd_pcm_substream	*pcm_substream;
 +
-+		snd_pcm_stream_unlock(dev->pcm_substream);
++	unsigned int			pcm_write_ptr;
++	unsigned int			pcm_complete_samples;
 +
-+		offset = dev->pcm_read_offset = new_offset % (stride / 2);
++	u8				pcm_read_offset;
++	struct work_struct		adev_capture_trigger;
++	atomic_t			adev_capturing;
++};
 +
-+	}
++/* Provided by smi2021_main.c */
++int smi2021_write_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 val);
++int smi2021_read_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 *val);
 +
-+	oldptr = dev->pcm_write_ptr;
-+	if (oldptr + len >= runtime->dma_bytes) {
-+		unsigned int cnt = runtime->dma_bytes - oldptr;
-+		memcpy(runtime->dma_area + oldptr, data, cnt);
-+		memcpy(runtime->dma_area, data + cnt, len - cnt);
-+	} else {
-+		memcpy(runtime->dma_area + oldptr, data, len);
-+	}
++/* Provided by smi2021_v4l2.c */
++int smi2021_vb2_setup(struct smi2021_dev *dev);
++int smi2021_video_register(struct smi2021_dev *dev);
++void smi2021_clear_queue(struct smi2021_dev *dev);
 +
-+	snd_pcm_stream_lock(dev->pcm_substream);
-+	dev->pcm_write_ptr += len;
++/* Provided by smi2021_video.c */
++int smi2021_alloc_isoc(struct smi2021_dev *dev);
++void smi2021_free_isoc(struct smi2021_dev *dev);
++void smi2021_cancel_isoc(struct smi2021_dev *dev);
++void smi2021_uninit_isoc(struct smi2021_dev *dev);
 +
-+	if (dev->pcm_write_ptr >= runtime->dma_bytes)
-+		dev->pcm_write_ptr -= runtime->dma_bytes;
++/* Provided by smi2021_i2c.c */
++int smi2021_i2c_register(struct smi2021_dev *dev);
++int smi2021_i2c_unregister(struct smi2021_dev *dev);
 +
-+	samples = dev->pcm_write_ptr - diff;
-+	if (samples < 0)
-+		samples += runtime->dma_bytes;
-+
-+	samples /= (stride / 2);
-+
-+	dev->pcm_complete_samples += samples;
-+	if (dev->pcm_complete_samples / 2 >= runtime->period_size) {
-+		dev->pcm_complete_samples -= runtime->period_size * 2;
-+		period_elapsed = true;
-+	}
-+	snd_pcm_stream_unlock(dev->pcm_substream);
-+
-+	if (period_elapsed)
-+		snd_pcm_period_elapsed(dev->pcm_substream);
-+
-+}
++/* Provided by smi2021_audio.c */
++int smi2021_snd_register(struct smi2021_dev *dev);
++void smi2021_snd_unregister(struct smi2021_dev *dev);
++void smi2021_audio(struct smi2021_dev *dev, u8 *data, int len);
++#endif /* SMI2021_H */
 -- 
 1.8.1.1
 
