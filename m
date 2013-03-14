@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3CNJ2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:28:12 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:47842 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab3CNJ2K (ORCPT
+	id S1756161Ab3CNJ35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:29:57 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:28615 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab3CNJ34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:28:10 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] drivers: gpio: Use devm_ioremap_resource function
-Date: Thu, 14 Mar 2013 11:27:29 +0200
-Message-Id: <1363253249-3128-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 14 Mar 2013 05:29:56 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/VwSUgfH8=
+X-RZG-CLASS-ID: mo00
+Date: Thu, 14 Mar 2013 10:29:52 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: Re: [PATCH 1/1] Drivers: hv: Add a new driver to support host
+ initiated backup
+Message-ID: <20130314092952.GA29201@aepfle.de>
+References: <1363114406-30575-1-git-send-email-kys@microsoft.com>
+ <20130312184839.GA30976@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130312184839.GA30976@aepfle.de>
+User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly introduced devm_ioremap_resource() instead of
-devm_request_and_ioremap() which provides more consistent error
-handling.
+On Tue, Mar 12, Olaf Hering wrote:
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- drivers/gpio/gpio-vt8500.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> On Tue, Mar 12, K. Y. Srinivasan wrote:
+> 
+> > +static int vss_operate(int operation)
+> > +{
+> > +	char *fs_op;
+> > +	char cmd[512];
+> > +	char buf[512];
+> > +	FILE *file;
+> > +	char *p;
+> > +	char *x;
+> > +	int error;
+> > +
+> > +	switch (operation) {
+> > +	case VSS_OP_FREEZE:
+> > +		fs_op = "-f ";
+> > +		break;
+> > +	case VSS_OP_THAW:
+> > +		fs_op = "-u ";
+> > +		break;
+> > +	}
+> > +
+> > +	sprintf(cmd, "%s", "mount | grep ^/dev/ | awk '{print $3 }'");
+> 
+> I think this can be char cmd[] = "mount | awk '/^\/dev\/ { print $3'";
 
-diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-index 81683ca..eaed4ac 100644
---- a/drivers/gpio/gpio-vt8500.c
-+++ b/drivers/gpio/gpio-vt8500.c
-@@ -309,10 +309,10 @@ static int vt8500_gpio_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	gpio_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!gpio_base) {
-+	gpio_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(gpio_base)) {
- 		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
--		return -ENOMEM;
-+		return PTR_ERR(gpio_base);
- 	}
- 
- 	ret = vt8500_add_chips(pdev, gpio_base, of_id->data);
--- 
-1.7.9.5
+After thinking about this part, perhaps start a helper script which has
+to provide as output the list of the mounted filesystems?
 
+Olaf
