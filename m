@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab3CNKzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:55:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51875 "EHLO
+	id S1757201Ab3CNKzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:55:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51873 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756876Ab3CNKh1 (ORCPT
+	with ESMTP id S1757065Ab3CNKh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:27 -0400
+	Thu, 14 Mar 2013 06:37:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olaf Hering <olaf@aepfle.de>, Jeff Garzik <jgarzik@redhat.com>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        CAI Qian <caiqian@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 36/88] ata_piix: reenable MS Virtual PC guests
-Date: Thu, 14 Mar 2013 10:35:29 +0000
-Message-Id: <1363257381-15900-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 35/88] ext4: convert number of blocks to clusters properly
+Date: Thu, 14 Mar 2013 10:35:28 +0000
+Message-Id: <1363257381-15900-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,149 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit d9904344fc4052fbe7e4dc137eba0dcdadf326bd upstream.
+commit 810da240f221d64bf90020f25941b05b378186fe upstream.
 
-An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
-defer disks to the Hyper-V drivers by default") broke MS Virtual PC
-guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
-info. As a result the driver does currently ignore the emulated hardware
-in Virtual PC guests and defers the handling to hv_blkvsc. Since Virtual
-PC does not offer paravirtualized drivers no disks will be found in the
-guest.
+We're using macro EXT4_B2C() to convert number of blocks to number of
+clusters for bigalloc file systems.  However, we should be using
+EXT4_NUM_B2C().
 
-One difference in the DMI info is the product version. This patch adds a
-match for MS Virtual PC 2007 and "unignores" the emulated hardware.
-
-This was reported for openSuSE 12.1 in bugzilla:
-https://bugzilla.novell.com/show_bug.cgi?id=737532
-
-Here is a detailed list of DMI info from example guests:
-
-hwinfo --bios:
-
-virtual pc guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "VS2005R2"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "5.0"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "5.0"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-    Asset Tag: "7188-3705-6309-9738-9645-0364-00"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-win2k8 guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-    Asset Tag: "7076-9522-6699-1042-9501-1785-77"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-win2k12 guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-    Asset Tag: "8374-0485-4557-6331-0620-5845-25"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
+[ caiqian: Adjust context; dropped change to ext4_calculate_overhead() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ata_piix.c | 25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ fs/ext4/balloc.c  | 2 +-
+ fs/ext4/mballoc.c | 8 ++++----
+ fs/ext4/resize.c  | 6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 3c809bf..36b5276 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -1577,12 +1577,31 @@ static void piix_ignore_devices_quirk(struct ata_host *host)
- 		},
- 		{ }	/* terminate list */
- 	};
--	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
-+	static const struct dmi_system_id allow_virtual_pc[] = {
-+		{
-+			/* In MS Virtual PC guests the DMI ident is nearly
-+			 * identical to a Hyper-V guest. One difference is the
-+			 * product version which is used here to identify
-+			 * a Virtual PC guest. This entry allows ata_piix to
-+			 * drive the emulated hardware.
-+			 */
-+			.ident = "MS Virtual PC 2007",
-+			.matches = {
-+				DMI_MATCH(DMI_SYS_VENDOR,
-+						"Microsoft Corporation"),
-+				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-+				DMI_MATCH(DMI_PRODUCT_VERSION, "VS2005R2"),
-+			},
-+		},
-+		{ }	/* terminate list */
-+	};
-+	const struct dmi_system_id *ignore = dmi_first_match(ignore_hyperv);
-+	const struct dmi_system_id *allow = dmi_first_match(allow_virtual_pc);
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index 2f2e0da..92e68b3 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -635,7 +635,7 @@ ext4_fsblk_t ext4_count_free_clusters(struct super_block *sb)
+ 	brelse(bitmap_bh);
+ 	printk(KERN_DEBUG "ext4_count_free_clusters: stored = %llu"
+ 	       ", computed = %llu, %llu\n",
+-	       EXT4_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
++	       EXT4_NUM_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
+ 	       desc_count, bitmap_count);
+ 	return bitmap_count;
+ #else
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index b5f8b5f..3631fbf 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3430,7 +3430,7 @@ ext4_mb_new_inode_pa(struct ext4_allocation_context *ac)
+ 			win = offs;
  
--	if (dmi && prefer_ms_hyperv) {
-+	if (ignore && !allow && prefer_ms_hyperv) {
- 		host->flags |= ATA_HOST_IGNORE_ATA;
- 		dev_info(host->dev, "%s detected, ATA device ignore set\n",
--			dmi->ident);
-+			ignore->ident);
+ 		ac->ac_b_ex.fe_logical = ac->ac_o_ex.fe_logical -
+-			EXT4_B2C(sbi, win);
++			EXT4_NUM_B2C(sbi, win);
+ 		BUG_ON(ac->ac_o_ex.fe_logical < ac->ac_b_ex.fe_logical);
+ 		BUG_ON(ac->ac_o_ex.fe_len > ac->ac_b_ex.fe_len);
  	}
- #endif
- }
+@@ -4574,7 +4574,7 @@ do_more:
+ 			EXT4_BLOCKS_PER_GROUP(sb);
+ 		count -= overflow;
+ 	}
+-	count_clusters = EXT4_B2C(sbi, count);
++	count_clusters = EXT4_NUM_B2C(sbi, count);
+ 	bitmap_bh = ext4_read_block_bitmap(sb, block_group);
+ 	if (!bitmap_bh) {
+ 		err = -EIO;
+@@ -4807,11 +4807,11 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
+ 	ext4_group_desc_csum_set(sb, block_group, desc);
+ 	ext4_unlock_group(sb, block_group);
+ 	percpu_counter_add(&sbi->s_freeclusters_counter,
+-			   EXT4_B2C(sbi, blocks_freed));
++			   EXT4_NUM_B2C(sbi, blocks_freed));
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(EXT4_B2C(sbi, blocks_freed),
++		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
+ 			   &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
+ 
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 4c31b71..86261ca 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1165,7 +1165,7 @@ static int ext4_setup_new_descs(handle_t *handle, struct super_block *sb,
+ 
+ 		ext4_inode_table_set(sb, gdp, group_data->inode_table);
+ 		ext4_free_group_clusters_set(sb, gdp,
+-					     EXT4_B2C(sbi, group_data->free_blocks_count));
++			EXT4_NUM_B2C(sbi, group_data->free_blocks_count));
+ 		ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
+ 		gdp->bg_flags = cpu_to_le16(*bg_flags);
+ 		ext4_group_desc_csum_set(sb, group, gdp);
+@@ -1263,7 +1263,7 @@ static void ext4_update_super(struct super_block *sb,
+ 
+ 	/* Update the free space counts */
+ 	percpu_counter_add(&sbi->s_freeclusters_counter,
+-			   EXT4_B2C(sbi, free_blocks));
++			   EXT4_NUM_B2C(sbi, free_blocks));
+ 	percpu_counter_add(&sbi->s_freeinodes_counter,
+ 			   EXT4_INODES_PER_GROUP(sb) * flex_gd->count);
+ 
+@@ -1272,7 +1272,7 @@ static void ext4_update_super(struct super_block *sb,
+ 	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, group_data[0].group);
+-		atomic_add(EXT4_B2C(sbi, free_blocks),
++		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
+ 			   &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
 -- 
 1.8.1.2
 
