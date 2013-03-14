@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892Ab3CNRwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:52:23 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:57514 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934608Ab3CNRwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:52:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <3681471.ufqahH3gTF@dtor-d630.eng.vmware.com>
-References: <1363280978-24051-1-git-send-email-fabio.porcedda@gmail.com>
- <1363280978-24051-5-git-send-email-fabio.porcedda@gmail.com> <3681471.ufqahH3gTF@dtor-d630.eng.vmware.com>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Thu, 14 Mar 2013 18:51:58 +0100
-Message-ID: <CAHkwnC-vOPxqWq3jF=sbDrhvyWhNYvV5rAd69K8b5iH3KyqyPQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/8] drivers: input: use module_platform_driver_probe()
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934703Ab3CNRwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:52:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52023 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934597Ab3CNRtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
+   d="scan'208";a="279559798"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 17/30] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
+Date: Thu, 14 Mar 2013 19:50:22 +0200
+Message-Id: <1363283435-7666-18-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 6:30 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Fabio,
->
-> On Thursday, March 14, 2013 06:09:34 PM Fabio Porcedda wrote:
->> This patch converts the drivers to use the
->> module_platform_driver_probe() macro which makes the code smaller and
->> a bit simpler.
->
-> I already have patches from Sachin Kamat for this, I am waiting for -rc3
-> to sync up with mainline and pick up the macro before applying them.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Thank for reviewing.
+Since we're going to have huge pages backed by files,
+wait_split_huge_page() has to serialize not only over anon_vma_lock,
+but over i_mmap_mutex too.
 
-I've sent a updated patch without the patch already sent by Sachin Kamat.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/huge_mm.h |   15 ++++++++++++---
+ mm/huge_memory.c        |    4 ++--
+ mm/memory.c             |    4 ++--
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
-Best regards
-Fabio Porcedda
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index a54939c..b53e295 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -113,11 +113,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+ 			__split_huge_page_pmd(__vma, __address,		\
+ 					____pmd);			\
+ 	}  while (0)
+-#define wait_split_huge_page(__anon_vma, __pmd)				\
++#define wait_split_huge_page(__vma, __pmd)				\
+ 	do {								\
+ 		pmd_t *____pmd = (__pmd);				\
+-		anon_vma_lock_write(__anon_vma);			\
+-		anon_vma_unlock_write(__anon_vma);			\
++		struct address_space *__mapping =			\
++					vma->vm_file->f_mapping;	\
++		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
++		if (__mapping)						\
++			mutex_lock(&__mapping->i_mmap_mutex);		\
++		if (__anon_vma) {					\
++			anon_vma_lock_write(__anon_vma);		\
++			anon_vma_unlock_write(__anon_vma);		\
++		}							\
++		if (__mapping)						\
++			mutex_unlock(&__mapping->i_mmap_mutex);		\
+ 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+ 		       pmd_trans_huge(*____pmd));			\
+ 	} while (0)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index eb777d3..a23da8b 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -907,7 +907,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		spin_unlock(&dst_mm->page_table_lock);
+ 		pte_free(dst_mm, pgtable);
+ 
+-		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
++		wait_split_huge_page(vma, src_pmd); /* src_vma */
+ 		goto out;
+ 	}
+ 	src_page = pmd_page(pmd);
+@@ -1480,7 +1480,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
+ 	if (likely(pmd_trans_huge(*pmd))) {
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+ 			spin_unlock(&vma->vm_mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, pmd);
++			wait_split_huge_page(vma, pmd);
+ 			return -1;
+ 		} else {
+ 			/* Thp mapped by 'pmd' is stable, so we can
+diff --git a/mm/memory.c b/mm/memory.c
+index 98c25dd..52bd6cf 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -619,7 +619,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (new)
+ 		pte_free(mm, new);
+ 	if (wait_split_huge_page)
+-		wait_split_huge_page(vma->anon_vma, pmd);
++		wait_split_huge_page(vma, pmd);
+ 	return 0;
+ }
+ 
+@@ -1529,7 +1529,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 		if (likely(pmd_trans_huge(*pmd))) {
+ 			if (unlikely(pmd_trans_splitting(*pmd))) {
+ 				spin_unlock(&mm->page_table_lock);
+-				wait_split_huge_page(vma->anon_vma, pmd);
++				wait_split_huge_page(vma, pmd);
+ 			} else {
+ 				page = follow_trans_huge_pmd(vma, address,
+ 							     pmd, flags);
+-- 
+1.7.10.4
 
-> Thanks.
->
-> --
-> Dmitry
