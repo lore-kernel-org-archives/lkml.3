@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab3CNXL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 19:11:57 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:44647 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab3CNXL4 (ORCPT
+	id S1753729Ab3CNXOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 19:14:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39604 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3CNXOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 19:11:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBTQCce3ve9cP-Ajbtb7FSVggB_bL7Dmpq8KeG_7Gfx0Og@mail.gmail.com>
-References: <20130226070247.GA14094@gmail.com>
-	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
-	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
-	<CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
-	<CA+55aFzDMwHyPxqxNKRz0Y3vFhZOqtHMvPbvNXAD6C+-_=UAhg@mail.gmail.com>
-	<CABPqkBTTY7RBSXJw4kqdd0c07Ykz-Wy8TFUQ+hzBSn=5v2yz2w@mail.gmail.com>
-	<CABPqkBTh1Fph=GTOzN_2Q9coqLpiR3hcqVk1PBubUUEO7D=zsA@mail.gmail.com>
-	<CABPqkBTQCce3ve9cP-Ajbtb7FSVggB_bL7Dmpq8KeG_7Gfx0Og@mail.gmail.com>
-Date: Fri, 15 Mar 2013 00:11:55 +0100
-Message-ID: <CABPqkBRuKzbxTr73LDpgLnq4WhadZf9VErjjcTMHoMWRwzhDGw@mail.gmail.com>
-Subject: Re: [GIT PULL] perf fixes
-From: Stephane Eranian <eranian@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Mar 2013 19:14:51 -0400
+Date: Fri, 15 Mar 2013 10:14:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error importing the device-mapper quilt series
+Message-Id: <20130315101441.2fd9eb05f1f9f85c1768bba9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Mar_2013_10_14_41_+1100_rQBvDqLJXApQl1Sl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 11:53 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Thu, Mar 14, 2013 at 11:42 PM, Stephane Eranian <eranian@google.com> wrote:
->> On Thu, Mar 14, 2013 at 11:19 PM, Stephane Eranian <eranian@google.com> wrote:
->>> On Thu, Mar 14, 2013 at 11:17 PM, Linus Torvalds
->>> <torvalds@linux-foundation.org> wrote:
->>>> On Thu, Mar 14, 2013 at 3:09 PM, Stephane Eranian <eranian@google.com> wrote:
->>>>>
->>>>> Could be related to suspend/resume. But were you running perf across
->>>>> that resume/suspend cycle?
->>>>
->>>> No.
->>>>
->>>> In most cases I was running a perf record before and after (but not
->>>> *while* suspending)
->>>>
->>>> In at least one other crash, I didn't run perf before at all, so the
->>>> first time I used perf was after the resume.
->>>>
->>>> So in no cases did I actually have any perf stuff active over the
->>>> suspend itself.
->>>>
->>> Ok, simpler test case then.
->>>
->>>>> Let's see if we can reproduce the problem on the same ChromeBook you
->>>>> have. Don't have one myself.
->>>>
->>>> I don't imagine it should be about chromebook per se, because afaik
->>>> all of pmu suspend/resume is done by the kernel, no firmware involved.
->>>>
->>>> So I'd assume it should happen with any IvyBridge.
->>>>
->>> Will try on a desktop IvyBridge too.
->>
->> Ok, it happens on my IVB desktop too, so I can investigate...
->
-> It's not specific to IVB either, it hangs on my Nehalem desktop as well.
+--Signature=_Fri__15_Mar_2013_10_14_41_+1100_rQBvDqLJXApQl1Sl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks related to PEBS. If I drop the :pp the machine does not hang. Even
-a single :p hangs it. So it is possible something is not properly
-restored in the
-DS state after a resume or is corrupted by the suspend.
+Hi Alasdair,
+
+While importing the device-mapper quilt series, I got this error:
+
+$ git am ../quilt/device-mapper/dm-cache-policy-fix-description-of-lookup-f=
+n.patch
+Patch format detection failed.
+
+The patch in question has no commit message or headers at all ...
+
+I did this:
+
+@@ -1,3 +1,6 @@
++From: Alasdair G Kergon <agk@redhat.com>
++Subject: dm-cache-policy: fix description of lookup fn
++
+
+Please fix it up properly.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__15_Mar_2013_10_14_41_+1100_rQBvDqLJXApQl1Sl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRQlnhAAoJEECxmPOUX5FEWBIP/1u+5iwNdQS5U7P3eZhX5UfV
+X7S1o0JZ5zASR3hqy4bmN5Dlyd7L3qzQWY06pRgdRBfwSCDmy7MsfyWpG8fg3JLM
+oxFq1XWnMv9Szg+XtOxJfjGHIzy+cvY+7AVBZYTNjl1T4bLdNI3LPHjoo/KptP7T
++2dJ9g+dhk/Bpsrv5fRL2MHIDy97JbQ6Np4ACYdrWry91BiYalsC6u2bdki4s3Jc
+x46j9e521m/W/pDhwMyVLr/YXwLVbzY6c0ULqE9Zm+Ql6Ejh/ZXxYeAvd5HK6FQD
+Ma5xVN9kmvwBBF4DSAbJ9SbRAvXcSicgBE+yB5/yxWI2S16FW6dzOT5zOMzaG3oH
+6B5wTCMtfsJ60GT3ll8sZ0lZFq0qJb771yTk2fCWuUqR2u1oUBDu+WMtE0lKGJnX
+LDaSGLPNmlkxXJM1aJ28hVZHkh5Xyj+VUq0wiCNJ+xMTZifbeN2IXU72YmNoNziv
++/gMhkoJkqDvwebzGtQlMA/u0YgI807Ac9aLEKZDEC1nJ4jqacVnalFXBPa33WNt
+iTH+MeiE1RzWrRwqQxFmd1ZrQPbB6O17kK9Jb5Bl5ErgPIudQnjdPj8Aly+7b6kC
+om6c7EXIJMMECsUj9WqulVj9BO9IVJaRayavsjDfFseR4driZkUY3bCAyXEI4Lhg
+iNsmpwG9z+vKGhASWM3u
+=OnBD
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__15_Mar_2013_10_14_41_+1100_rQBvDqLJXApQl1Sl--
