@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3CNKgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:36:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51698 "EHLO
+	id S1756858Ab3CNKgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:36:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51717 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab3CNKgs (ORCPT
+	with ESMTP id S1756688Ab3CNKgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:48 -0400
+	Thu, 14 Mar 2013 06:36:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 04/88] svcrpc: make svc_age_temp_xprts enqueue under sv_lock
-Date: Thu, 14 Mar 2013 10:34:57 +0000
-Message-Id: <1363257381-15900-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 06/88] xen-blkback: do not leak mode property
+Date: Thu, 14 Mar 2013 10:34:59 +0000
+Message-Id: <1363257381-15900-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,68 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit e75bafbff2270993926abcc31358361db74a9bc2 upstream.
+commit 9d092603cc306ee6edfe917bf9ab8beb5f32d7bc upstream.
 
-svc_age_temp_xprts expires xprts in a two-step process: first it takes
-the sv_lock and moves the xprts to expire off their server-wide list
-(sv_tempsocks or sv_permsocks) to a local list.  Then it drops the
-sv_lock and enqueues and puts each one.
+"be->mode" is obtained from xenbus_read(), which does a kmalloc() for
+the message body. The short string is never released, so do it along
+with freeing "be" itself, and make sure the string isn't kept when
+backend_changed() doesn't complete successfully (which made it
+desirable to slightly re-structure that function, so that the error
+cleanup can be done in one place).
 
-I see no reason for this: svc_xprt_enqueue() will take sp_lock, but the
-sv_lock and sp_lock are not otherwise nested anywhere (and documentation
-at the top of this file claims it's correct to nest these with sp_lock
-inside.)
-
-Tested-by: Jason Tibbitts <tibbs@math.uh.edu>
-Tested-by: Paweł Sikora <pawel.sikora@agmk.net>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/svc_xprt.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/block/xen-blkback/xenbus.c | 49 +++++++++++++++++++-------------------
+ 1 file changed, 24 insertions(+), 25 deletions(-)
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index bac973a..3e74e01 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -814,7 +814,6 @@ static void svc_age_temp_xprts(unsigned long closure)
- 	struct svc_serv *serv = (struct svc_serv *)closure;
- 	struct svc_xprt *xprt;
- 	struct list_head *le, *next;
--	LIST_HEAD(to_be_aged);
- 
- 	dprintk("svc_age_temp_xprts\n");
- 
-@@ -835,25 +834,15 @@ static void svc_age_temp_xprts(unsigned long closure)
- 		if (atomic_read(&xprt->xpt_ref.refcount) > 1 ||
- 		    test_bit(XPT_BUSY, &xprt->xpt_flags))
- 			continue;
--		svc_xprt_get(xprt);
--		list_move(le, &to_be_aged);
-+		list_del_init(le);
- 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
- 		set_bit(XPT_DETACHED, &xprt->xpt_flags);
--	}
--	spin_unlock_bh(&serv->sv_lock);
--
--	while (!list_empty(&to_be_aged)) {
--		le = to_be_aged.next;
--		/* fiddling the xpt_list node is safe 'cos we're XPT_DETACHED */
--		list_del_init(le);
--		xprt = list_entry(le, struct svc_xprt, xpt_list);
--
- 		dprintk("queuing xprt %p for closing\n", xprt);
- 
- 		/* a thread will dequeue and close it soon */
- 		svc_xprt_enqueue(xprt);
--		svc_xprt_put(xprt);
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 4f66171..a155254 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -367,6 +367,7 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
+ 		be->blkif = NULL;
  	}
-+	spin_unlock_bh(&serv->sv_lock);
  
- 	mod_timer(&serv->sv_temptimer, jiffies + svc_conn_age_period * HZ);
- }
++	kfree(be->mode);
+ 	kfree(be);
+ 	dev_set_drvdata(&dev->dev, NULL);
+ 	return 0;
+@@ -502,6 +503,7 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		= container_of(watch, struct backend_info, backend_watch);
+ 	struct xenbus_device *dev = be->dev;
+ 	int cdrom = 0;
++	unsigned long handle;
+ 	char *device_type;
+ 
+ 	DPRINTK("");
+@@ -521,10 +523,10 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		return;
+ 	}
+ 
+-	if ((be->major || be->minor) &&
+-	    ((be->major != major) || (be->minor != minor))) {
+-		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+-			be->major, be->minor, major, minor);
++	if (be->major | be->minor) {
++		if (be->major != major || be->minor != minor)
++			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
++				be->major, be->minor, major, minor);
+ 		return;
+ 	}
+ 
+@@ -542,36 +544,33 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		kfree(device_type);
+ 	}
+ 
+-	if (be->major == 0 && be->minor == 0) {
+-		/* Front end dir is a number, which is used as the handle. */
+-
+-		char *p = strrchr(dev->otherend, '/') + 1;
+-		long handle;
+-		err = strict_strtoul(p, 0, &handle);
+-		if (err)
+-			return;
++	/* Front end dir is a number, which is used as the handle. */
++	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
++	if (err)
++		return;
+ 
+-		be->major = major;
+-		be->minor = minor;
++	be->major = major;
++	be->minor = minor;
+ 
+-		err = xen_vbd_create(be->blkif, handle, major, minor,
+-				 (NULL == strchr(be->mode, 'w')), cdrom);
+-		if (err) {
+-			be->major = 0;
+-			be->minor = 0;
+-			xenbus_dev_fatal(dev, err, "creating vbd structure");
+-			return;
+-		}
++	err = xen_vbd_create(be->blkif, handle, major, minor,
++			     !strchr(be->mode, 'w'), cdrom);
+ 
++	if (err)
++		xenbus_dev_fatal(dev, err, "creating vbd structure");
++	else {
+ 		err = xenvbd_sysfs_addif(dev);
+ 		if (err) {
+ 			xen_vbd_free(&be->blkif->vbd);
+-			be->major = 0;
+-			be->minor = 0;
+ 			xenbus_dev_fatal(dev, err, "creating sysfs entries");
+-			return;
+ 		}
++	}
+ 
++	if (err) {
++		kfree(be->mode);
++		be->mode = NULL;
++		be->major = 0;
++		be->minor = 0;
++	} else {
+ 		/* We're potentially connected now */
+ 		xen_update_blkif_status(be->blkif);
+ 	}
 -- 
 1.8.1.2
 
