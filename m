@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934408Ab3CNDJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 23:09:03 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:50996 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932743Ab3CNDJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 23:09:01 -0400
-Date: Thu, 14 Mar 2013 03:09:00 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH mm] epoll: lock ep->mtx in ep_free to silence lockdep
-Message-ID: <20130314030900.GA30154@dcvr.yhbt.net>
-References: <20130307112639.GA25130@dcvr.yhbt.net>
- <20130308013027.GA31830@dcvr.yhbt.net>
- <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
- <20130308204944.GA27379@dcvr.yhbt.net>
- <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
- <20130309071037.GA13360@dcvr.yhbt.net>
- <20130310011136.GA4815@dcvr.yhbt.net>
- <1362891577.4051.21.camel@edumazet-glaptop>
- <20130310115028.GB16551@dcvr.yhbt.net>
+	id S934440Ab3CNDJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 23:09:58 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:40593 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933532Ab3CNDJ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 23:09:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130310115028.GB16551@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3174774.7AKCbYrzc6@vostro.rjw.lan>
+References: <cover.1362381470.git.viresh.kumar@linaro.org>
+	<1687194.MelaMkNoiM@vostro.rjw.lan>
+	<CAKohpompsA5bR6TauM7Wa6ciLxYYc7GdpN1NXdHF_WbP2ki=qA@mail.gmail.com>
+	<3174774.7AKCbYrzc6@vostro.rjw.lan>
+Date: Thu, 14 Mar 2013 08:39:55 +0530
+Message-ID: <CAKohpokwdtSwQmcK=gb2mpzjzp0vpbS7Sra-EhM3QsiQwpog1w@mail.gmail.com>
+Subject: Re: [PATCH V3 4/4] cpufreq: Add Kconfig option to enable/disable have_multiple_policies
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Technically we do not need to hold ep->mtx during ep_free since we are
-certain there are no other users of ep at that point.  However, lockdep
-complains with a "suspicious rcu_dereference_check() usage!" message;
-so lock the mutex before ep_remove to silence the warning.
+On 14 March 2013 03:11, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, March 12, 2013 08:55:12 AM Viresh Kumar wrote:
+>> On 12 March 2013 07:38, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > One more question before I apply it.
+>> >
+>> > Is there any architecture/platform that will set
+>> > CONFIG_CPU_FREQ_HAVE_MULTIPLE_POLICIES and keep have_multiple_policies unset
+>> > at the same time?
+>>
+>> No, they are redundant. That's why i have been forcing to drop this patch.
+>
+> I see.
+>
+> What about having the Kconfig option alone, however?
 
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: NeilBrown <neilb@suse.de>,
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
----
-  I considered using lockdep_off()/lockdep_on(), but I figure that may
-  hide other bugs...
-
- fs/eventpoll.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 633e69f..d71b754 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -745,11 +745,15 @@ static void ep_free(struct eventpoll *ep)
- 	 * point we are sure no poll callbacks will be lingering around, and also by
- 	 * holding "epmutex" we can be sure that no file cleanup code will hit
- 	 * us during this operation. So we can avoid the lock on "ep->lock".
-+	 * We do not need to lock ep->mtx, either, we only do it to prevent
-+	 * a lockdep warning.
- 	 */
-+	mutex_lock(&ep->mtx);
- 	while ((rbp = rb_first(&ep->rbr)) != NULL) {
- 		epi = rb_entry(rbp, struct epitem, rbn);
- 		ep_remove(ep, epi);
- 	}
-+	mutex_unlock(&ep->mtx);
- 
- 	mutex_unlock(&epmutex);
- 	mutex_destroy(&ep->mtx);
--- 
-Eric Wong
+Even that is not enough. We build multiplatform kernels and so need a
+variable to be set by platform.
