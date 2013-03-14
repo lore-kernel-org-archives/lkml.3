@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab3CNQNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 12:13:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52553 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755820Ab3CNQNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 12:13:11 -0400
-Date: Thu, 14 Mar 2013 12:13:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <alpine.LNX.2.00.1303141634440.30118@pobox.suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1303141212170.1983-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757862Ab3CNQSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:18:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44891 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755325Ab3CNQSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 12:18:06 -0400
+Message-ID: <1363277885.2146.3.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Add check for reuse of krealloc arg
+From: Joe Perches <joe@perches.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 14 Mar 2013 09:18:05 -0700
+In-Reply-To: <1363267820.4853.41.camel@i7.infradead.org>
+References: <1363267820.4853.41.camel@i7.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Mar 2013, Jiri Kosina wrote:
+On Thu, 2013-03-14 at 13:30 +0000, David Woodhouse wrote:
+> If krealloc() returns NULL, it *doesn't* free the original. So any code
+> of the form 'foo = krealloc(foo, …);' is almost certainly a bug.
 
-> > There have been only three significant changes to uhci-hcd since last 
-> > summer, and two of them appear to be completely unrelated to this 
-> > issue.  The three commits are
-> > 
-> > 	3171fcabb169  USB: uhci: beautify source code
-> > 	13996ca7afd5  USB: uhci: check buffer length to avoid memory 
-> > 			overflow
-> > 	0f815a0a700b  USB: UHCI: fix IRQ race during initialization
-> > 
-> > Reverting the first two almost certainly will not have any effect, but
-> > you may as well try it anyway.  The third commit may be relevant.
-> 
-> I have reverted all three commits, and the "nobody cared" is still there. 
+So add a check for it to checkpatch.
 
-There's one other commit I failed to find at first: 840008bb5162 (USB: 
-UHCI: notify usbcore about port resumes).  Probably not relevant, but 
-you should check to make sure.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Alan Stern
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b28cc38..7ef2b4b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3476,6 +3476,13 @@ sub process {
+ 			     "unnecessary cast may hide bugs, see http://c-faq.com/malloc/mallocnocast.html\n" . $herecurr);
+ 		}
+ 
++# check for krealloc arg reuse
++		if ($^V && $^V ge 5.10.0 &&
++		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
++			WARN("KREALLOC_ARG_REUSE",
++			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
++		}
++
+ # check for alloc argument mismatch
+ 		if ($line =~ /\b(kcalloc|kmalloc_array)\s*\(\s*sizeof\b/) {
+ 			WARN("ALLOC_ARRAY_ARGS",
+
 
