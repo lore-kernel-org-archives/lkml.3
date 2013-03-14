@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3CNVIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:08:48 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:52586 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3CNVIq (ORCPT
+	id S1752998Ab3CNVQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 17:16:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43631 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab3CNVQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 17:08:46 -0400
+	Thu, 14 Mar 2013 17:16:16 -0400
+Message-ID: <51423E34.1040206@infradead.org>
+Date: Thu, 14 Mar 2013 14:16:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <20130314203703.GF24238@redhat.com>
-References: <20130314182815.GB24238@redhat.com>
-	<CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
-	<20130314203028.GE24238@redhat.com>
-	<20130314203703.GF24238@redhat.com>
-Date: Thu, 14 Mar 2013 23:08:45 +0200
-Message-ID: <CALLzPKb646eXYCLrgtuNFYx_Y6dWdwNWZM1whJPR1wZBxbVY6w@mail.gmail.com>
-Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-03-01-15-50 uploaded (strict user copy)
+References: <20130301235135.E9F105A41B2@corp2gmr1-2.hot.corp.google.com> <51316B64.90102@infradead.org> <5131753F.3070302@codeaurora.org> <51420D62.7030701@codeaurora.org>
+In-Reply-To: <51420D62.7030701@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 10:37 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 14, 2013 at 04:30:28PM -0400, Vivek Goyal wrote:
->
-> [..]
->> I thought explicitly using signature format is more intutive. Exporting
->> signature version is not. I personally associate versioning with minor
->> changes like addition of some fields etc.
->
-> For instance, you might want to add some fields to  signature_v2_hdr down
-> the line. I think even after that change, it still remains "asymmetric
-> signature" just that structure size changes and there is additional
-> info. If there is versioning info assciated with signature type
-> ASYMMETRIC, we could simple bump it to 1.1 or whatever and keep the
-> version detail internal to ima/integrity subsystem.
->
+On 03/14/13 10:48, Stephen Boyd wrote:
+> On 03/01/13 19:42, Stephen Boyd wrote:
+>> On 03/01/13 19:00, Randy Dunlap wrote:
+>>> on i386:
+>>>
+>>> ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
+>>>
+>>> which I don't understand.
+>>> lib/usercopy.o is built and building binfmt_misc.c says:
+>>>
+>>>   CC [M]  fs/binfmt_misc.o
+>>> In file included from arch/x86/include/asm/uaccess.h:537:0,
+>>>                  from include/linux/uaccess.h:5,
+>>>                  from include/linux/highmem.h:8,
+>>>                  from include/linux/pagemap.h:10,
+>>>                  from fs/binfmt_misc.c:27:
+>>> arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.1':
+>>> arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+>> Hm.. That's because it's part of lib and not obj, right?
+>>
+>> diff --git a/lib/Makefile b/lib/Makefile
+>> index 59fabd0..4c55104 100644
+>> --- a/lib/Makefile
+>> +++ b/lib/Makefile
+>> @@ -15,7 +15,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>>          is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+>>          earlycpio.o percpu-refcount.o
+>>  
+>> -lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>> +obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>>  lib-$(CONFIG_MMU) += ioremap.o
+>>  lib-$(CONFIG_SMP) += cpumask.o
+>>  
+>>
+> 
+> Andrew, can you squash this into "Kconfig: consolidate
+> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"?
+> 
 
-Yes, it will make some things cleaner.
-We recently discussed with Mimi how to extend IMA with memory locking and
-one of the ideas was to use a flag in the signature header to indicate
-that we need
-require memory locking. There we need new subversion of the asymmetric
-signature type.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Please have a look to 3 top patches.
-
-http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/log/?h=working
-
-It is a prototype to verify signature with arbitrary hash algorithm.
-Top patch also locks the memory if executable is verified and it has
-asymmetric signature type.
-This unconditional locking is just for development and we might use
-mlock bit from signature header.
-Notice, that patch reset appraisal status when we get BPRM check and
-there is a signature.
-
-BTW, do you have a kernel repository somewhere.
-It is often easier to understand and discuss when seeing "complete"
-set of commits.
-If patch is taken out of context, it might be a waste of time to
-discuss unclear things.
-
-- Dmitry
+Thanks.
 
 
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+~Randy
