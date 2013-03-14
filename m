@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3CNVB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:01:26 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53292 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab3CNVBZ (ORCPT
+	id S1752858Ab3CNVGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 17:06:04 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:34000 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab3CNVGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 17:01:25 -0400
-Date: Thu, 14 Mar 2013 14:00:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Li Zefan <lizefan@huawei.com>,
-        Sasha Levin <sasha.levin@oracle.com>, ebiederm@xmission.com,
-        Eric Dumazet <eric.dumazet@gmail.com>, CAI Qian <caiqian@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: 3.9-rc1 NULL pointer crash at find_pid_ns
-Message-ID: <20130314210038.GD3725@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <876213wmwt.fsf@xmission.com>
- <5138D001.8000409@oracle.com>
- <1362678371.15793.218.camel@edumazet-glaptop>
- <5138D377.6040406@oracle.com>
- <87boavrspd.fsf@xmission.com>
- <5138D8F2.5020900@oracle.com>
- <20130307182934.GY3268@linux.vnet.ibm.com>
- <513AEC65.8000008@huawei.com>
- <20130309155146.GR3268@linux.vnet.ibm.com>
- <20130314200054.GA5924@redhat.com>
+	Thu, 14 Mar 2013 17:06:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130314200054.GA5924@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031421-2876-0000-0000-00000663D0DC
+In-Reply-To: <CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+Date: Thu, 14 Mar 2013 14:06:01 -0700
+X-Google-Sender-Auth: nAt9pPsaJM287yNP2ABtfEcvDPQ
+Message-ID: <CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 04:00:54PM -0400, Dave Jones wrote:
-> On Sat, Mar 09, 2013 at 07:51:46AM -0800, Paul E. McKenney wrote:
->  > On Sat, Mar 09, 2013 at 04:01:41PM +0800, Li Zefan wrote:
->  > 
->  > [ . . . ]
->  > 
->  > > > This way, "ptr" is executed exactly once, and the check and the
->  > > > hlist_entry() are both using the same value.
->  > > 
->  > > I just played with trinity, and triggered this bug in just a few mins,
->  > > and I tried Paul's proposed fix and it works.
->  > 
->  > Thank you for testing this!  Please see below for the patch.
->  > 
->  > Sasha, will you be pushing this or would you like me to do so?
-> 
-> [crickets]
-> 
-> Given this has been hanging for the better part of another week,
-> Paul why not send it Linus so hopefully rc3 doesn't have this bug ?
+On Thu, Mar 14, 2013 at 1:32 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> And to make things interesting, I seem to be able to only reproduce
+> this *after* a suspend cycle. That may be just happenstance, since it
+> seemed to be hard to replicate and most of the time it has happened
+> under X with no messages visible at all, but that *seems* to be the
+> pattern.
+>
+> And the one time I got it to happen on the text console, things
+> scrolled off (watchdog warnings due to lockups), but I did get a NULL
+> pointer dereference in intel_pmu_enable_all().
+>
+> I'll try to reproduce it and get a picture,
 
-Good point!  I sent a pull request.
+Theory more or less confirmed.
 
-							Thanx, Paul
+It does need a suspend/resume cycle, and I have a picture. The oops
+happens immediately when trying to do any perf work after the first
+suspend, before suspending I seem to be able to reliably use perf. It
+could still be just random flakiness, but I don't think so.
 
+The NULL pointer dereference is at intel_pmu_enable_all+0x4d/0xa0 for
+me, which seems to be the load of the
+
+    if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask))
+
+thing. It says
+
+   BUG: unable to handle NULL pointer dereference at 0000000000000028
+
+But that error makes no sense. The code at that EIP is
+
+  48 8b 83 00 02 00 00 mov    0x200(%rbx),%rax     <-- trapping instruction
+
+and the value printed out for %rbx is 0xffff80014f20b8e0, so it should
+*not* be a NULL pointer dereference (and "cpuc" was also used just
+before the wrmsrl).
+
+So I suspect that the "wrmsrl" that was just before that instruction
+does something odd, and the PMU is in some odd state, so that the NULL
+pointer dereference actually has something to do with *that*, rather
+than the instruction itself.
+
+The callchain looks normal. It's
+
+  finish_task_switch ->
+    __perf_event_task_sched_in ->
+      perf_event_context_sched_in ->
+        perf_pmu_enable ->
+          x86_pmu_enable ->
+            intel_pmu_enable_all()
+
+The immediately preceding wrmsrl was done with rax=0xf, rdx=0x7,
+rcx=0x38f according to the register dump (but the picture isn't great,
+so the numbers aren't 100% reliable).
+
+Does this give any clues?
+
+             Linus
