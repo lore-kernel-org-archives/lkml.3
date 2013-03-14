@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab3CNKiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:38:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52083 "EHLO
+	id S1757453Ab3CNKkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:40:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52095 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab3CNKiQ (ORCPT
+	with ESMTP id S1757372Ab3CNKiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:16 -0400
+	Thu, 14 Mar 2013 06:38:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 78/88] xen/pciback: Don't disable a PCI device that is already disabled.
-Date: Thu, 14 Mar 2013 10:36:11 +0000
-Message-Id: <1363257381-15900-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 73/88] HID: logitech-dj: do not directly call hid_output_raw_report() during probe
+Date: Thu, 14 Mar 2013 10:36:06 +0000
+Message-Id: <1363257381-15900-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit bdc5c1812cea6efe1aaefb3131fcba28cd0b2b68 upstream.
+commit dcd9006b1b053c7b1cebe81333261d4fd492ffeb upstream.
 
-While shuting down a HVM guest with pci devices passed through we
-get this:
+hid_output_raw_report() makes a direct call to usb_control_msg(). However,
+some USB3 boards have shown that the usb device is not ready during the
+.probe(). This blocks the entire usb device, and the paired mice, keyboards
+are not functional. The dmesg output is the following:
 
-pciback 0000:04:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100002)
-------------[ cut here ]------------
-WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x88/0xa0()
-Hardware name: MS-7640
-Device pciback
-disabling already-disabled device
-Modules linked in:
-Pid: 53, comm: xenwatch Not tainted 3.9.0-rc1-20130304a+ #1
-Call Trace:
- [<ffffffff8106994a>] warn_slowpath_common+0x7a/0xc0
- [<ffffffff81069a31>] warn_slowpath_fmt+0x41/0x50
- [<ffffffff813cf288>] pci_disable_device+0x88/0xa0
- [<ffffffff814554a7>] xen_pcibk_reset_device+0x37/0xd0
- [<ffffffff81454b6f>] ? pcistub_put_pci_dev+0x6f/0x120
- [<ffffffff81454b8d>] pcistub_put_pci_dev+0x8d/0x120
- [<ffffffff814582a9>] __xen_pcibk_release_devices+0x59/0xa0
+[   11.912287] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:14.0-2/input2
+[   11.912537] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_probe:logi_dj_recv_query_paired_devices error:-32
+[   11.912636] logitech-djreceiver: probe of 0003:046D:C52B.0003 failed with error -32
 
-This fixes the bug.
+Relying on the scheduled call to usbhid_submit_report() fixes the problem.
 
-Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+related bugs:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
+https://bugzilla.redhat.com/show_bug.cgi?id=840391
+https://bugzilla.kernel.org/show_bug.cgi?id=49781
+
+Reported-and-tested-by: Bob Bowles <bobjohnbowles@gmail.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/xen/xen-pciback/pciback_ops.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hid/hid-logitech-dj.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
-index 37c1f82..b98cf0c 100644
---- a/drivers/xen/xen-pciback/pciback_ops.c
-+++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -113,7 +113,8 @@ void xen_pcibk_reset_device(struct pci_dev *dev)
- 		if (dev->msi_enabled)
- 			pci_disable_msi(dev);
- #endif
--		pci_disable_device(dev);
-+		if (pci_is_enabled(dev))
-+			pci_disable_device(dev);
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index 9500f2f..8758f38c 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -459,19 +459,25 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
+ 				    struct dj_report *dj_report)
+ {
+ 	struct hid_device *hdev = djrcv_dev->hdev;
+-	int sent_bytes;
++	struct hid_report *report;
++	struct hid_report_enum *output_report_enum;
++	u8 *data = (u8 *)(&dj_report->device_index);
++	int i;
  
- 		pci_write_config_word(dev, PCI_COMMAND, 0);
+-	if (!hdev->hid_output_raw_report) {
+-		dev_err(&hdev->dev, "%s:"
+-			"hid_output_raw_report is null\n", __func__);
++	output_report_enum = &hdev->report_enum[HID_OUTPUT_REPORT];
++	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
++
++	if (!report) {
++		dev_err(&hdev->dev, "%s: unable to find dj report\n", __func__);
+ 		return -ENODEV;
+ 	}
  
+-	sent_bytes = hdev->hid_output_raw_report(hdev, (u8 *) dj_report,
+-						 sizeof(struct dj_report),
+-						 HID_OUTPUT_REPORT);
++	for (i = 0; i < report->field[0]->report_count; i++)
++		report->field[0]->value[i] = data[i];
++
++	usbhid_submit_report(hdev, report, USB_DIR_OUT);
+ 
+-	return (sent_bytes < 0) ? sent_bytes : 0;
++	return 0;
+ }
+ 
+ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
 -- 
 1.8.1.2
 
