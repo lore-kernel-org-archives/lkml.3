@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3CNV4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:56:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54324 "EHLO
+	id S1753216Ab3CNWBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:01:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51332 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab3CNV4v (ORCPT
+	with ESMTP id S1752982Ab3CNWBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 17:56:51 -0400
+	Thu, 14 Mar 2013 18:01:37 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Axel Lin <axel.lin@ingics.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 2/3] mfd: Make AB8500_CORE select POWER_SUPPLY to fix build error
-Date: Thu, 14 Mar 2013 22:56:39 +0100
-Message-Id: <1363298204-8014-2-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363298204-8014-1-git-send-email-arnd@arndb.de>
-References: <1363298204-8014-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:y15Jr/1fQWAwpH69ySBrNHtNT6b5xM/jbIOCq6R+Imv
- jV09K9imLgZnbNI9dKrfMByOfxoRPnILf2oPa6jvh0ccXeyb7N
- BYmolC+8EKPJYvrASLERk+NXtH4w8mOU+FbF6+P0vIAA+mfXCn
- AHzj2UA/ghQ+7njJ+tAXqP2A0R8j+YaWcjutL+L/NqJ5DXWpB9
- u8TI+AENs/F4WD7maqLffxdBsQmJVA70hVO4fKqmhDXYTqLzb7
- oNOP/n9JxolF0bAN32FUxMxSIPz5MWPQ5EmYx1AzmmOuRSl2V4
- bXdCXwnTO1hnuq2sdiIHS4Wt53WmkAWjr57q4+x5VGUla7NB1+
- esj2P7fX8Ua4lnmrk33jHrDPiVq27bdXXfMqY7+Cq
+To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Turn off -Wmaybe-uninitialized when building with -Os
+Date: Thu, 14 Mar 2013 23:01:35 +0100
+Message-ID: <7534695.eTHcH0enMV@wuerfel>
+User-Agent: KMail/4.10 rc3 (Linux/3.8.0-7-generic; KDE/4.10.0; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qeUzYebeZl3+ZdfT2hbVrJpRC5jE7DSvr/5viXSw66J
+ LeTlsCLCKdZvbt7RGOeNrug+QFC/eKXETkA+C9XlLhNiST19wT
+ epF5jN/013fQF98Qz1VBbMnmRoJnJeobGgQtEiErijavozLhBh
+ hHm4nXVheKgZnnt+iFLbtjJ9cm/TfOPIWuhrYg2OxzH3xVOJZi
+ fw2EyDF24xp+Lq1CQRRgZjjdxcfL8ZRAOC7KyNiD2O/W89YUWr
+ f4gJVua/k8cHQOdseYUNpDdppzOBDQ0fLMCTME+fw6PXOAKcxu
+ w3Cgq6OU/sDlDGNOn/UbtNGvUQGHwfR0X7UGncPJ/YbcRqYyAz
+ CHoilSpQDGVShJMKZqL8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@ingics.com>
+gcc-4.7 and higher add a lot of false positive warnings about
+potential uses of uninitialized warnings, but only when optimizing
+for size (-Os). This is the default when building allyesconfig,
+which turns on CONFIG_CC_OPTIMIZE_FOR_SIZE.
 
-This patch fixes below build error when CONFIG_POWER_SUPPLY is not set.
+In order to avoid getting a lot of patches that initialize such
+variables and accidentally hide real errors along the way, let's
+just turn off this warning on the respective gcc versions
+when building with size optimizations. The -Wmaybe-uninitialized
+option was introduced in the same gcc version (4.7) that is now
+causing the false positives, so there is no effect on older compilers.
 
-drivers/built-in.o: In function `ab8500_power_off':
-drivers/mfd/ab8500-sysctrl.c:37: undefined reference to `power_supply_get_by_name'
-drivers/mfd/ab8500-sysctrl.c:53: undefined reference to `power_supply_get_by_name'
-make: *** [vmlinux] Error 1
+A side effect is that when building with CONFIG_CC_OPTIMIZE_FOR_SIZE,
+we might now see /fewer/ warnings about possibly uninitialized
+warnings than with -O2, but that is still much better than seeing
+warnings known to be bogus.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
-Please apply to MFD tree for 3.9
+Cc: stable@vger.kernel.org
+--
+I'd like to merge this for 3.9 and also for the stable kernels,
+if people agree this is a good idea.
 
- drivers/mfd/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 671f5b1..c346941 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -858,6 +858,7 @@ config EZX_PCAP
- config AB8500_CORE
- 	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
- 	depends on GENERIC_HARDIRQS && ABX500_CORE && MFD_DB8500_PRCMU
-+	select POWER_SUPPLY
- 	select MFD_CORE
- 	select IRQ_DOMAIN
- 	help
--- 
-1.8.1.2
+diff --git a/Makefile b/Makefile
+index 10fb6c7..caea2d1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -570,7 +570,7 @@ endif # $(dot-config)
+ all: vmlinux
+ 
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+-KBUILD_CFLAGS	+= -Os
++KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+ else
+ KBUILD_CFLAGS	+= -O2
+ endif
 
