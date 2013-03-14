@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab3CNKrX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:47:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51994 "EHLO
+	id S1757257Ab3CNKrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:47:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51996 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab3CNKhx (ORCPT
+	with ESMTP id S1757232Ab3CNKhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 06:37:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 59/88] hw_random: make buffer usable in scatterlist.
-Date: Thu, 14 Mar 2013 10:35:52 +0000
-Message-Id: <1363257381-15900-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 58/88] libertas: fix crash for SD8688
+Date: Thu, 14 Mar 2013 10:35:51 +0000
+Message-Id: <1363257381-15900-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,77 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit f7f154f1246ccc5a0a7e9ce50932627d60a0c878 upstream.
+commit 466026989f112e0546ca39ab00a759af82dbe83a upstream.
 
-virtio_rng feeds the randomness buffer handed by the core directly
-into the scatterlist, since commit bb347d98079a547e80bd4722dee1de61e4dca0e8.
+For SD8688, FUNC_INIT command is queued before fw_ready flag is
+set. This causes the following crash as lbs_thread blocks any
+command if fw_ready is not set.
 
-However, if CONFIG_HW_RANDOM=m, the static buffer isn't a linear address
-(at least on most archs).  We could fix this in virtio_rng, but it's actually
-far easier to just do it in the core as virtio_rng would have to allocate
-a buffer every time (it doesn't know how much the core will want to read).
+[  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
+[  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
+[  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
+[  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
+[  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
+[  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
+[  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
+[  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
+[  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
+[  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
+[  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
+[  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
+[  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
+[  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
+[  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Tested-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Fix it by setting fw_ready flag prior to queuing FUNC_INIT command.
+
+Reported-by: Lubomir Rintel <lkundrak@v3.sk>
+Tested-by: Lubomir Rintel <lkundrak@v3.sk>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/hw_random/core.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/net/wireless/libertas/if_sdio.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 1bafb40..69ae597 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -40,6 +40,7 @@
- #include <linux/init.h>
- #include <linux/miscdevice.h>
- #include <linux/delay.h>
-+#include <linux/slab.h>
- #include <asm/uaccess.h>
+diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+index 76caeba..f384544 100644
+--- a/drivers/net/wireless/libertas/if_sdio.c
++++ b/drivers/net/wireless/libertas/if_sdio.c
+@@ -804,6 +804,11 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
  
+ 	sdio_release_host(func);
  
-@@ -52,8 +53,12 @@ static struct hwrng *current_rng;
- static LIST_HEAD(rng_list);
- static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
--static u8 rng_buffer[SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES]
--	__cacheline_aligned;
-+static u8 *rng_buffer;
++	/* Set fw_ready before queuing any commands so that
++	 * lbs_thread won't block from sending them to firmware.
++	 */
++	priv->fw_ready = 1;
 +
-+static size_t rng_buffer_size(void)
-+{
-+	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
-+}
+ 	/*
+ 	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+ 	 */
+@@ -818,7 +823,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+ 			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+ 	}
  
- static inline int hwrng_init(struct hwrng *rng)
- {
-@@ -116,7 +121,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
+-	priv->fw_ready = 1;
+ 	wake_up(&card->pwron_waitq);
  
- 		if (!data_avail) {
- 			bytes_read = rng_get_data(current_rng, rng_buffer,
--				sizeof(rng_buffer),
-+				rng_buffer_size(),
- 				!(filp->f_flags & O_NONBLOCK));
- 			if (bytes_read < 0) {
- 				err = bytes_read;
-@@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
- 
- 	mutex_lock(&rng_mutex);
- 
-+	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
-+	err = -ENOMEM;
-+	if (!rng_buffer) {
-+		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
-+		if (!rng_buffer)
-+			goto out_unlock;
-+	}
-+
- 	/* Must not register two RNGs with the same name. */
- 	err = -EEXIST;
- 	list_for_each_entry(tmp, &rng_list, list) {
+ 	if (!card->started) {
 -- 
 1.8.1.2
 
