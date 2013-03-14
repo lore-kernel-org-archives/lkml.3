@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab3CNKut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:50:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51946 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757176Ab3CNKhn (ORCPT
+	id S1757176Ab3CNKvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:51:05 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54121 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab3CNKvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:43 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 48/88] vhost: fix length for cross region descriptor
-Date: Thu, 14 Mar 2013 10:35:41 +0000
-Message-Id: <1363257381-15900-49-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 14 Mar 2013 06:51:01 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2] mm/hugetlb: fix total hugetlbfs pages count when memory overcommit accouting
+Date: Thu, 14 Mar 2013 18:49:49 +0800
+Message-Id: <1363258189-24945-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 13031410-6102-0000-0000-0000032771C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+Changelog:
+ v1 -> v2:
+  * update patch description, spotted by Michal
 
-------------------
+hugetlb_total_pages() does not account for all the supported hugepage
+sizes. This can lead to incorrect calculation of the total number of
+page frames used by hugetlb. This patch corrects the issue.
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+Testcase:
+boot: hugepagesz=1G hugepages=1
+before patch:
+egrep 'CommitLimit' /proc/meminfo
+CommitLimit:     55434168 kB
+after patch:
+egrep 'CommitLimit' /proc/meminfo
+CommitLimit:     54909880 kB
 
-commit bd97120fc3d1a11f3124c7c9ba1d91f51829eb85 upstream.
-
-If a single descriptor crosses a region, the
-second chunk length should be decremented
-by size translated so far, instead it includes
-the full descriptor length.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/vhost/vhost.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 112156f..6da514b 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1077,7 +1077,7 @@ static int translate_desc(struct vhost_dev *dev, u64 addr, u32 len,
- 		}
- 		_iov = iov + ret;
- 		size = reg->memory_size - addr + reg->guest_phys_addr;
--		_iov->iov_len = min((u64)len, size);
-+		_iov->iov_len = min((u64)len - s, size);
- 		_iov->iov_base = (void __user *)(unsigned long)
- 			(reg->userspace_addr + addr - reg->guest_phys_addr);
- 		s += size;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index cdb64e4..9e25040 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2124,8 +2124,11 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
+ }
+ 
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 -- 
-1.8.1.2
+1.7.11.7
 
