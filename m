@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab3CNOJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:09:18 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:38163 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910Ab3CNOJP (ORCPT
+	id S1757399Ab3CNOK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:10:56 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56881 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757055Ab3CNOKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:09:15 -0400
+	Thu, 14 Mar 2013 10:10:51 -0400
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hverkuil@xs4all.nl, elezegarcia@gmail.com,
+        =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+Subject: [RFC V1 8/8] smi2021: Add Kconfig and Makefiles
+Date: Thu, 14 Mar 2013 15:07:04 +0100
+Message-Id: <1363270024-12127-9-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbXhV_4PwOzAaTKtRB4-vjBB5hp007EWdz_DiDjtBgv4g@mail.gmail.com>
-References: <1363083150-30964-1-git-send-email-acourbot@nvidia.com>
- <CACRpkdbozpAVNb+7QLhiiinC+MMERvA=vNFP5kZiWLnsiv7dpg@mail.gmail.com>
- <CACxGe6shiqqACd6S1VTEkno993xB+E7y2cLi3HOw6yUH+Mbn7A@mail.gmail.com> <CACRpkdbXhV_4PwOzAaTKtRB4-vjBB5hp007EWdz_DiDjtBgv4g@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 14 Mar 2013 23:08:55 +0900
-Message-ID: <CAAVeFuJQ_QFaKRv=_POR=8MAv07=C9bSfQN6dn5AcRROx4m9xw@mail.gmail.com>
-Subject: Re: [RFC 00/17] Remove GENERIC_GPIO from architecture code
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 3:01 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Mar 13, 2013 at 8:53 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Wed, Mar 13, 2013 at 1:12 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> On Tue, Mar 12, 2013 at 11:12 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>>
->>>> This series makes sure the GENERIC_GPIO option can only be set through GPIOLIB
->>>> (and not by individual architectures), as a first step towards its removal.
->>>
->>> Nice!
->>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>>
->>> I bet something will break, anyway: no pain no gain.
->>
->> Since this is a pretty invasive patch series that touches a lot of
->> architectures, we should get it into a separate branch that can get
->> pulled into linux-next.
->
-> Good point. Alexandre, do you have a git repo to attain this?
 
-Would be reasonable indeed. I can publish the branch on Github, but
-(sorry for being clueless) what's the procedure to add a new branch to
-linux-next? Shall I write to Stephen Rothwell directly?
+Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+---
+ drivers/media/usb/Kconfig          |  1 +
+ drivers/media/usb/Makefile         |  1 +
+ drivers/media/usb/smi2021/Kconfig  | 18 ++++++++++++++++++
+ drivers/media/usb/smi2021/Makefile | 12 ++++++++++++
+ 4 files changed, 32 insertions(+)
+ create mode 100644 drivers/media/usb/smi2021/Kconfig
+ create mode 100644 drivers/media/usb/smi2021/Makefile
 
-Alex.
+diff --git a/drivers/media/usb/Kconfig b/drivers/media/usb/Kconfig
+index 0a7d520..dec0383 100644
+--- a/drivers/media/usb/Kconfig
++++ b/drivers/media/usb/Kconfig
+@@ -26,6 +26,7 @@ source "drivers/media/usb/hdpvr/Kconfig"
+ source "drivers/media/usb/tlg2300/Kconfig"
+ source "drivers/media/usb/usbvision/Kconfig"
+ source "drivers/media/usb/stk1160/Kconfig"
++source "drivers/media/usb/smi2021/Kconfig"
+ endif
+ 
+ if (MEDIA_ANALOG_TV_SUPPORT || MEDIA_DIGITAL_TV_SUPPORT)
+diff --git a/drivers/media/usb/Makefile b/drivers/media/usb/Makefile
+index 7f51d7e..932a6ba 100644
+--- a/drivers/media/usb/Makefile
++++ b/drivers/media/usb/Makefile
+@@ -20,3 +20,4 @@ obj-$(CONFIG_VIDEO_STK1160) += stk1160/
+ obj-$(CONFIG_VIDEO_CX231XX) += cx231xx/
+ obj-$(CONFIG_VIDEO_TM6000) += tm6000/
+ obj-$(CONFIG_VIDEO_EM28XX) += em28xx/
++obj-$(CONFIG_VIDEO_SMI2021) += smi2021/
+diff --git a/drivers/media/usb/smi2021/Kconfig b/drivers/media/usb/smi2021/Kconfig
+new file mode 100644
+index 0000000..311375f
+--- /dev/null
++++ b/drivers/media/usb/smi2021/Kconfig
+@@ -0,0 +1,18 @@
++config VIDEO_SMI2021
++	tristate "Somagic SMI2021 USB video/audio capture support"
++	depends on VIDEO_DEV && I2C && SND && USB
++	select VIDEOBUF2_VMALLOC
++	select VIDEO_SAA711X
++	select SND_PCM
++	help
++	  This is a video4linux driver for SMI2021 based video capture devices.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called smi2021
++
++config VIDEO_SMI2021_BOOTLOADER
++	bool "Somagic SMI2021 Bootloader"
++	depends on VIDEO_SMI2021
++
++	---help---
++	  Needed for most SMI2021 devices to work.
+diff --git a/drivers/media/usb/smi2021/Makefile b/drivers/media/usb/smi2021/Makefile
+new file mode 100644
+index 0000000..4f28027
+--- /dev/null
++++ b/drivers/media/usb/smi2021/Makefile
+@@ -0,0 +1,12 @@
++smi2021-bootloader-y := smi2021_bl.o
++obj-$(CONFIG_VIDEO_SMI2021_BOOTLOADER) += smi2021-bootloader.o
++
++smi2021-y := smi2021_main.o  \
++	     smi2021_v4l2.o  \
++	     smi2021_video.o \
++	     smi2021_i2c.o   \
++	     smi2021_audio.o \
++
++obj-$(CONFIG_VIDEO_SMI2021) += smi2021.o
++
++ccflags-y += -Idrivers/media/i2c
+-- 
+1.8.1.1
+
