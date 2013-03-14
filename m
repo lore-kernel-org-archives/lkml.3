@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab3CNWYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:24:55 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:64685 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab3CNWYy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:24:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
-References: <1363271189-6631-1-git-send-email-fweisbec@gmail.com>
- <1363271189-6631-3-git-send-email-fweisbec@gmail.com> <20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 14 Mar 2013 18:24:22 -0400
-X-Google-Sender-Auth: xnL_gtZm5tE9Jb31408hN3vsZAw
-Message-ID: <CAP=VYLqJuQqFpTkb0BvbNfwyzLLaX9_AfOioP_jOBp0Tvu15HA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] printk: Provide a wake_up_klogd() off-case
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753468Ab3CNW0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:26:06 -0400
+Received: from stator.leun.net ([85.214.203.199]:54107 "EHLO stator.leun.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab3CNW0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 18:26:04 -0400
+X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Mar 2013 18:26:03 EDT
+Date: Thu, 14 Mar 2013 23:19:57 +0100
+From: Michael Leun <lkml20130126@newton.leun.net>
+To: linux-kernel@vger.kernel.org
+Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: 3.8.2->3.8.3 i915 regression: GMBUS [i915 gmbus dpb] timed out,
+ falling back to bit banging on pin 5
+Message-ID: <20130314231957.677dda68@xenia>
+In-Reply-To: <201303142136.24917.a.miskiewicz@gmail.com>
+References: <201303142136.24917.a.miskiewicz@gmail.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.14; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 4:39 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 14 Mar 2013 15:26:29 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
->> wake_up_klogd() is useless when CONFIG_PRINTK=n because
->> neither printk() nor printk_sched() are in use and there
->> are actually no waiter on log_wait waitqueue. It should
->> be a stub in this case for users like bust_spinlocks().
->>
->> Otherwise this results in this warning when CONFIG_PRINTK=n
->> and CONFIG_IRQ_WORK=n:
->>
->>       kernel/built-in.o In function `wake_up_klogd':
->>       (.text.wake_up_klogd+0xb4): undefined reference to `irq_work_queue'
->>
->> To fix this, provide an off-case for wake_up_klogd() when
->> CONFIG_PRINTK=n.
->>
->> There is much more from console_unlock() and other console
->> related code in printk.c that should be moved under
->> CONFIG_PRINTK. But for now, focus on a minimal fix as we passed
->> the merged window already.
->>
->> --- a/include/linux/kernel.h
->> +++ b/include/linux/kernel.h
->> @@ -390,7 +390,6 @@ extern struct pid *session_of_pgrp(struct pid *pgrp);
->>  unsigned long int_sqrt(unsigned long);
->>
->>  extern void bust_spinlocks(int yes);
->> -extern void wake_up_klogd(void);
->>  extern int oops_in_progress;         /* If set, an oops, panic(), BUG() or die() is in progress */
->>  extern int panic_timeout;
->>  extern int panic_on_oops;
->> diff --git a/include/linux/printk.h b/include/linux/printk.h
->> index 1249a54..822171f 100644
->> --- a/include/linux/printk.h
->> +++ b/include/linux/printk.h
->> @@ -134,6 +134,8 @@ extern int printk_delay_msec;
->>  extern int dmesg_restrict;
->>  extern int kptr_restrict;
->>
->> +extern void wake_up_klogd(void);
->> +
->
-> Given this, it would be prudent to include printk.h in
-> bust_spinlocks.c.  printk.h currently gets included by kernel.h, but
-> that doesn't actually seem necessary - nothing in kernel.h calls
-> printk().
->
-> (I pity anyone who tries to remove that include from kernel.h ;))
+Hello,
 
-Why did you have to say that?  Now I'm inclined to poke at it and
-just see how bad it really is when I pull on that loose thread...
+On Thu, 14 Mar 2013 21:36:24 +0100
+Arkadiusz Miskiewicz <a.miskiewicz@gmail.com> wrote:
 
-P.
---
+> After upgrading from 3.8.2 to 3.8.3 I'm getting regression :
+[...]
+> 2a9810441fcc26cf3f006f015f8a62094fe57a90 is the first bad commit
 
->
-> --- a/lib/bust_spinlocks.c~printk-provide-a-wake_up_klogd-off-case-fix
-> +++ a/lib/bust_spinlocks.c
-> @@ -8,6 +8,7 @@
->   */
->
->  #include <linux/kernel.h>
-> +#include <linux/printk.h>
->  #include <linux/spinlock.h>
->  #include <linux/tty.h>
->  #include <linux/wait.h>
-> @@ -28,5 +29,3 @@ void __attribute__((weak)) bust_spinlock
->                         wake_up_klogd();
->         }
->  }
-> -
-> -
-> _
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I also have an 3.8.2->3.8.3 regression which goes away with reverting
+the same patch - X comes up with 1024x768 instead of 1366x768.
+
+Acer Aspire 1825PTZ
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA controller])
+        Subsystem: Acer Incorporated [ALI] Device 0300
+
+
+-- 
+MfG,
+
+Michael Leun
+
