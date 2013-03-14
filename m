@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab3CNKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:51:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51941 "EHLO
+	id S1757215Ab3CNKvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:51:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756975Ab3CNKhm (ORCPT
+	with ESMTP id S1757012Ab3CNKhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 06:37:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 47/88] unbreak automounter support on 64-bit kernel with 32-bit userspace (v2)
-Date: Thu, 14 Mar 2013 10:35:40 +0000
-Message-Id: <1363257381-15900-48-git-send-email-luis.henriques@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 49/88] workqueue: consider work function when searching for busy work items
+Date: Thu, 14 Mar 2013 10:35:42 +0000
+Message-Id: <1363257381-15900-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf upstream.
+commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
 
-automount-support is broken on the parisc architecture, because the existing
-architecture is similiar to other 64bit Linux targets where we have to define
-autofs_wqt_t (which is passed back and forth to user space) as int type which
-has a size of 32bit across 32 and 64bit kernels.
+To avoid executing the same work item concurrenlty, workqueue hashes
+currently busy workers according to their current work items and looks
+up the the table when it wants to execute a new work item.  If there
+already is a worker which is executing the new work item, the new item
+is queued to the found worker so that it gets executed only after the
+current execution finishes.
 
-During the discussion on the mailing list, H. Peter Anvin suggested to invert
-the #if list since only specific platforms (specifically those who do not have
-a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
-long type.
+Unfortunately, a work item may be freed while being executed and thus
+recycled for different purposes.  If it gets recycled for a different
+work item and queued while the previous execution is still in
+progress, workqueue may make the new work item wait for the old one
+although the two aren't really related in any way.
 
-This suggestion is probably the best way to go, since Arm64 (and maybe others?)
-seems to have a non-working automounter. So in the long run even for other new
-upcoming architectures this inverted check seem to be the best solution, since
-it will not require them to change this #if again (unless they are 64bit only).
+In extreme cases, this false dependency may lead to deadlock although
+it's extremely unlikely given that there aren't too many self-freeing
+work item users and they usually don't wait for other work items.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-[ luis: adjusted file name ]
+To alleviate the problem, record the current work function in each
+busy worker and match it together with the work item address in
+find_worker_executing_work().  While this isn't complete, it ensures
+that unrelated work items don't interact with each other and in the
+very unlikely case where a twisted wq user triggers it, it's always
+onto itself making the culprit easy to spot.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andrey Isakov <andy51@gmx.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/auto_fs.h | 24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+ kernel/workqueue.c | 42 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 31 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/auto_fs.h b/include/linux/auto_fs.h
-index da64e15..92bb651 100644
---- a/include/linux/auto_fs.h
-+++ b/include/linux/auto_fs.h
-@@ -31,25 +31,17 @@
- #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index a6a4c90..dd488af 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -128,6 +128,7 @@ struct worker {
+ 	};
  
- /*
-- * Architectures where both 32- and 64-bit binaries can be executed
-- * on 64-bit kernels need this.  This keeps the structure format
-- * uniform, and makes sure the wait_queue_token isn't too big to be
-- * passed back down to the kernel.
-- *
-- * This assumes that on these architectures:
-- * mode     32 bit    64 bit
-- * -------------------------
-- * int      32 bit    32 bit
-- * long     32 bit    64 bit
-- *
-- * If so, 32-bit user-space code should be backwards compatible.
-+ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
-+ * back to the kernel via ioctl from userspace. On architectures where 32- and
-+ * 64-bit userspace binaries can be executed it's important that the size of
-+ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
-+ * do not break the binary ABI interface by changing the structure size.
-  */
+ 	struct work_struct	*current_work;	/* L: work being processed */
++	work_func_t		current_func;	/* L: current_work's fn */
+ 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
+ 	struct list_head	scheduled;	/* L: scheduled works */
+ 	struct task_struct	*task;		/* I: worker task */
+@@ -838,7 +839,8 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
+ 	struct hlist_node *tmp;
  
--#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
-- || defined(__powerpc__) || defined(__s390__)
--typedef unsigned int autofs_wqt_t;
--#else
-+#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
- typedef unsigned long autofs_wqt_t;
-+#else
-+typedef unsigned int autofs_wqt_t;
- #endif
+ 	hlist_for_each_entry(worker, tmp, bwh, hentry)
+-		if (worker->current_work == work)
++		if (worker->current_work == work &&
++		    worker->current_func == work->func)
+ 			return worker;
+ 	return NULL;
+ }
+@@ -848,9 +850,27 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
+  * @gcwq: gcwq of interest
+  * @work: work to find worker for
+  *
+- * Find a worker which is executing @work on @gcwq.  This function is
+- * identical to __find_worker_executing_work() except that this
+- * function calculates @bwh itself.
++ * Find a worker which is executing @work on @gcwq by searching
++ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
++ * to match, its current execution should match the address of @work and
++ * its work function.  This is to avoid unwanted dependency between
++ * unrelated work executions through a work item being recycled while still
++ * being executed.
++ *
++ * This is a bit tricky.  A work item may be freed once its execution
++ * starts and nothing prevents the freed area from being recycled for
++ * another work item.  If the same work item address ends up being reused
++ * before the original execution finishes, workqueue will identify the
++ * recycled work item as currently executing and make it wait until the
++ * current execution finishes, introducing an unwanted dependency.
++ *
++ * This function checks the work item address, work function and workqueue
++ * to avoid false positives.  Note that this isn't complete as one may
++ * construct a work function which can introduce dependency onto itself
++ * through a recycled work item.  Well, if somebody wants to shoot oneself
++ * in the foot that badly, there's only so much we can do, and if such
++ * deadlock actually occurs, it should be easy to locate the culprit work
++ * function.
+  *
+  * CONTEXT:
+  * spin_lock_irq(gcwq->lock).
+@@ -1807,7 +1827,6 @@ __acquires(&gcwq->lock)
+ 	struct global_cwq *gcwq = cwq->gcwq;
+ 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
+ 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
+-	work_func_t f = work->func;
+ 	int work_color;
+ 	struct worker *collision;
+ #ifdef CONFIG_LOCKDEP
+@@ -1838,6 +1857,7 @@ __acquires(&gcwq->lock)
+ 	debug_work_deactivate(work);
+ 	hlist_add_head(&worker->hentry, bwh);
+ 	worker->current_work = work;
++	worker->current_func = work->func;
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
  
- /* Packet types */
+@@ -1875,7 +1895,7 @@ __acquires(&gcwq->lock)
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+ 	trace_workqueue_execute_start(work);
+-	f(work);
++	worker->current_func(work);
+ 	/*
+ 	 * While we must be careful to not use "work" after this, the trace
+ 	 * point will only record its address.
+@@ -1885,11 +1905,10 @@ __acquires(&gcwq->lock)
+ 	lock_map_release(&cwq->wq->lockdep_map);
+ 
+ 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
+-		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
+-		       "%s/0x%08x/%d\n",
+-		       current->comm, preempt_count(), task_pid_nr(current));
+-		printk(KERN_ERR "    last function: ");
+-		print_symbol("%s\n", (unsigned long)f);
++		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
++		       "     last function: %pf\n",
++		       current->comm, preempt_count(), task_pid_nr(current),
++		       worker->current_func);
+ 		debug_show_held_locks(current);
+ 		dump_stack();
+ 	}
+@@ -1903,6 +1922,7 @@ __acquires(&gcwq->lock)
+ 	/* we're done with it, release */
+ 	hlist_del_init(&worker->hentry);
+ 	worker->current_work = NULL;
++	worker->current_func = NULL;
+ 	worker->current_cwq = NULL;
+ 	cwq_dec_nr_in_flight(cwq, work_color, false);
+ }
 -- 
 1.8.1.2
 
