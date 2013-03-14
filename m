@@ -1,350 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab3CNVlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:41:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24358 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab3CNVka (ORCPT
+	id S1753221Ab3CNV4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 17:56:35 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51374 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753173Ab3CNV4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 17:40:30 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=4aMfGutIp-sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3Axxf1bwaxsA:10 a=VwQbUJbxAAAA:8 a=RpGju85Lc3TszkA24hcA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=RoLzSC8QgVLrqxJN2ZUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130314214029.308491197@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 14 Mar 2013 17:33:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>
-Subject: [PATCH 3/3] tracing: Prevent buffer overwrite disabled for latency tracers
-References: <20130314213303.302538352@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Prevent-buffer-overwrite-disabled-for-latenc.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Thu, 14 Mar 2013 17:56:33 -0400
+From: Reilly Grant <grantr@vmware.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
+        Reilly Grant <grantr@vmware.com>
+Subject: [PATCH v2] VSOCK: Support VM sockets connected to the hypervisor.
+Date: Thu, 14 Mar 2013 14:55:41 -0700
+Message-Id: <1363298141-25394-1-git-send-email-grantr@vmware.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1363117219-21911-1-git-send-email-grantr@vmware.com>
+References: <1363117219-21911-1-git-send-email-grantr@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The resource ID used for VM socket control packets (0) is already
+used for the VMCI_GET_CONTEXT_ID hypercall so a new ID (15) must be
+used when the guest sends these datagrams to the hypervisor.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+The hypervisor context ID must also be removed from the internal
+blacklist.
 
-The latency tracers require the buffers to be in overwrite mode,
-otherwise they get screwed up. Force the buffers to stay in overwrite
-mode when latency tracers are enabled.
-
-Added a flag_changed() method to the tracer structure to allow
-the tracers to see what flags are being changed, and also be able
-to prevent the change from happing.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Reilly Grant <grantr@vmware.com>
+Acked-by: Andy King <acking@vmware.com>
 ---
- kernel/trace/trace.c              |   38 +++++++++++++++++++++++++++++++--=
-----
- kernel/trace/trace.h              |    6 ++++++
- kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
- kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
- 4 files changed, 65 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index eaaccd8..1354f5d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2881,11 +2881,25 @@ static int set_tracer_option(struct tracer *trace, =
-char *cmp, int neg)
- 	return -EINVAL;
+I am an idiot and didn't commit the fix for two typos before generating
+this patch. Please accept this corrected version.
+
+ net/vmw_vsock/vmci_transport.c | 16 +++++++++++++---
+ net/vmw_vsock/vmci_transport.h |  3 +++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/net/vmw_vsock/vmci_transport.c b/net/vmw_vsock/vmci_transport.c
+index a70ace8..faf81b8 100644
+--- a/net/vmw_vsock/vmci_transport.c
++++ b/net/vmw_vsock/vmci_transport.c
+@@ -123,6 +123,14 @@ static s32 vmci_transport_error_to_vsock_error(s32 vmci_error)
+ 	return err > 0 ? -err : err;
  }
-=20
--static void set_tracer_flags(unsigned int mask, int enabled)
-+/* Some tracers require overwrite to stay enabled */
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
+ 
++static u32 vmci_transport_peer_rid(u32 peer_cid)
 +{
-+	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
-+		return -1;
++	if (VMADDR_CID_HYPERVISOR == peer_cid)
++		return VMCI_TRANSPORT_HYPERVISOR_PACKET_RID;
 +
-+	return 0;
++	return VMCI_TRANSPORT_PACKET_RID;
 +}
 +
-+int set_tracer_flag(unsigned int mask, int enabled)
+ static inline void
+ vmci_transport_packet_init(struct vmci_transport_packet *pkt,
+ 			   struct sockaddr_vm *src,
+@@ -140,7 +148,7 @@ vmci_transport_packet_init(struct vmci_transport_packet *pkt,
+ 	pkt->dg.src = vmci_make_handle(VMADDR_CID_ANY,
+ 				       VMCI_TRANSPORT_PACKET_RID);
+ 	pkt->dg.dst = vmci_make_handle(dst->svm_cid,
+-				       VMCI_TRANSPORT_PACKET_RID);
++				       vmci_transport_peer_rid(dst->svm_cid));
+ 	pkt->dg.payload_size = sizeof(*pkt) - sizeof(pkt->dg);
+ 	pkt->version = VMCI_TRANSPORT_PACKET_VERSION;
+ 	pkt->type = type;
+@@ -511,6 +519,9 @@ static bool vmci_transport_is_trusted(struct vsock_sock *vsock, u32 peer_cid)
+ 
+ static bool vmci_transport_allow_dgram(struct vsock_sock *vsock, u32 peer_cid)
  {
- 	/* do nothing if flag is already set */
- 	if (!!(trace_flags & mask) =3D=3D !!enabled)
--		return;
-+		return 0;
++	if (VMADDR_CID_HYPERVISOR == peer_cid)
++		return true;
 +
-+	/* Give the tracer a chance to approve the change */
-+	if (current_trace->flag_changed)
-+		if (current_trace->flag_changed(current_trace, mask, !!enabled))
-+			return -EINVAL;
-=20
- 	if (enabled)
- 		trace_flags |=3D mask;
-@@ -2902,13 +2916,15 @@ static void set_tracer_flags(unsigned int mask, int=
- enabled)
-=20
- 	if (mask =3D=3D TRACE_ITER_PRINTK)
- 		trace_printk_start_stop_comm(enabled);
-+
-+	return 0;
- }
-=20
- static int trace_set_options(char *option)
+ 	if (vsock->cached_peer != peer_cid) {
+ 		vsock->cached_peer = peer_cid;
+ 		if (!vmci_transport_is_trusted(vsock, peer_cid) &&
+@@ -631,7 +642,6 @@ static int vmci_transport_recv_dgram_cb(void *data, struct vmci_datagram *dg)
+ static bool vmci_transport_stream_allow(u32 cid, u32 port)
  {
- 	char *cmp;
- 	int neg =3D 0;
--	int ret =3D 0;
-+	int ret =3D -ENODEV;
+ 	static const u32 non_socket_contexts[] = {
+-		VMADDR_CID_HYPERVISOR,
+ 		VMADDR_CID_RESERVED,
+ 	};
  	int i;
-=20
- 	cmp =3D strstrip(option);
-@@ -2922,7 +2938,7 @@ static int trace_set_options(char *option)
-=20
- 	for (i =3D 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) =3D=3D 0) {
--			set_tracer_flags(1 << i, !neg);
-+			ret =3D set_tracer_flag(1 << i, !neg);
- 			break;
- 		}
- 	}
-@@ -2941,6 +2957,7 @@ tracing_trace_options_write(struct file *filp, const =
-char __user *ubuf,
- 			size_t cnt, loff_t *ppos)
- {
- 	char buf[64];
-+	int ret;
-=20
- 	if (cnt >=3D sizeof(buf))
- 		return -EINVAL;
-@@ -2950,7 +2967,9 @@ tracing_trace_options_write(struct file *filp, const =
-char __user *ubuf,
-=20
- 	buf[cnt] =3D 0;
-=20
--	trace_set_options(buf);
-+	ret =3D trace_set_options(buf);
-+	if (ret < 0)
-+		return ret;
-=20
- 	*ppos +=3D cnt;
-=20
-@@ -3254,6 +3273,9 @@ static int tracing_set_tracer(const char *buf)
- 		goto out;
-=20
- 	trace_branch_disable();
+@@ -670,7 +680,7 @@ static int vmci_transport_recv_stream_cb(void *data, struct vmci_datagram *dg)
+ 	 */
+ 
+ 	if (!vmci_transport_stream_allow(dg->src.context, -1)
+-	    || VMCI_TRANSPORT_PACKET_RID != dg->src.resource)
++	    || vmci_transport_peer_rid(dg->src.context) != dg->src.resource)
+ 		return VMCI_ERROR_NO_ACCESS;
+ 
+ 	if (VMCI_DG_SIZE(dg) < sizeof(*pkt))
+diff --git a/net/vmw_vsock/vmci_transport.h b/net/vmw_vsock/vmci_transport.h
+index 1bf9918..fd88ea8 100644
+--- a/net/vmw_vsock/vmci_transport.h
++++ b/net/vmw_vsock/vmci_transport.h
+@@ -28,6 +28,9 @@
+ /* The resource ID on which control packets are sent. */
+ #define VMCI_TRANSPORT_PACKET_RID 1
+ 
++/* The resource ID on which control packets are sent to the hypervisor. */
++#define VMCI_TRANSPORT_HYPERVISOR_PACKET_RID 15
 +
-+	current_trace->enabled =3D false;
-+
- 	if (current_trace->reset)
- 		current_trace->reset(tr);
-=20
-@@ -3298,6 +3320,7 @@ static int tracing_set_tracer(const char *buf)
- 	}
-=20
- 	current_trace =3D t;
-+	current_trace->enabled =3D true;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
-@@ -4786,9 +4809,12 @@ trace_options_core_write(struct file *filp, const ch=
-ar __user *ubuf, size_t cnt,
- 		return -EINVAL;
-=20
- 	mutex_lock(&trace_types_lock);
--	set_tracer_flags(1 << index, val);
-+	ret =3D set_tracer_flag(1 << index, val);
- 	mutex_unlock(&trace_types_lock);
-=20
-+	if (ret < 0)
-+		return ret;
-+
- 	*ppos +=3D cnt;
-=20
- 	return cnt;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 57d7e53..2081971 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -283,11 +283,15 @@ struct tracer {
- 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
- 	/* If you handled the flag setting, return 0 */
- 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
-+	/* Return 0 if OK with change, else return non-zero */
-+	int			(*flag_changed)(struct tracer *tracer,
-+						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
- 	bool			print_max;
- 	bool			use_max_tr;
- 	bool			allocated_snapshot;
-+	bool			enabled;
- };
-=20
-=20
-@@ -943,6 +947,8 @@ extern const char *__stop___trace_bprintk_fmt[];
-=20
- void trace_printk_init_buffers(void);
- void trace_printk_start_comm(void);
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-+int set_tracer_flag(unsigned int mask, int enabled);
-=20
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 713a2ca..443b25b 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -32,7 +32,7 @@ enum {
-=20
- static int trace_type __read_mostly;
-=20
--static int save_lat_flag;
-+static int save_flags;
-=20
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
- static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-@@ -558,8 +558,11 @@ static void stop_irqsoff_tracer(struct trace_array *tr=
-, int graph)
-=20
- static void __irqsoff_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag =3D trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |=3D TRACE_ITER_LATENCY_FMT;
-+	save_flags =3D trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
-=20
- 	tracing_max_latency =3D 0;
- 	irqsoff_trace =3D tr;
-@@ -573,10 +576,13 @@ static void __irqsoff_tracer_init(struct trace_array =
-*tr)
-=20
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag =3D save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag =3D save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_irqsoff_tracer(tr, is_graph());
-=20
--	if (!save_lat_flag)
--		trace_flags &=3D ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
-=20
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -609,6 +615,7 @@ static struct tracer irqsoff_tracer __read_mostly =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_irqsoff,
- #endif
-@@ -642,6 +649,7 @@ static struct tracer preemptoff_tracer __read_mostly =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_preemptoff,
- #endif
-@@ -677,6 +685,7 @@ static struct tracer preemptirqsoff_tracer __read_mostl=
-y =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_preemptirqsoff,
- #endif
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
-akeup.c
-index 75aa97f..fde652c 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_array *tr);
- static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
- static void wakeup_graph_return(struct ftrace_graph_ret *trace);
-=20
--static int save_lat_flag;
-+static int save_flags;
-=20
- #define TRACE_DISPLAY_GRAPH     1
-=20
-@@ -540,8 +540,11 @@ static void stop_wakeup_tracer(struct trace_array *tr)
-=20
- static int __wakeup_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag =3D trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |=3D TRACE_ITER_LATENCY_FMT;
-+	save_flags =3D trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
-=20
- 	tracing_max_latency =3D 0;
- 	wakeup_trace =3D tr;
-@@ -563,12 +566,15 @@ static int wakeup_rt_tracer_init(struct trace_array *=
-tr)
-=20
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag =3D save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag =3D save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_wakeup_tracer(tr);
- 	/* make sure we put back any tasks we are tracing */
- 	wakeup_reset(tr);
-=20
--	if (!save_lat_flag)
--		trace_flags &=3D ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
-=20
- static void wakeup_tracer_start(struct trace_array *tr)
-@@ -594,6 +600,7 @@ static struct tracer wakeup_tracer __read_mostly =3D
- 	.print_line	=3D wakeup_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D wakeup_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_wakeup,
- #endif
-@@ -615,6 +622,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =3D
- 	.print_line	=3D wakeup_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D wakeup_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_wakeup,
- #endif
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRQkPNAAoJEOdOSU1xswtMoqgIAJLarrXj8CnBudPpJFShf/0C
-hloVGoLb3lQRUD0AJS1DzvgvxPosgdQtu4K3gNlvyyQUsvvX2iux8qPkEfE9vtEZ
-SxGtQBQ63hV8KtE9Iwc8RuzEOepXSPXoY9cJ+mNA6Q/4UnH5MHjwL2S3GKHRvsvz
-mH6MbOLlwrTiGSbW/L0LtmiCXkYiqWk0fHm4WPcg4l/voMkrjZxVlnh7YDDuKRW1
-AfYRNv1bmJUgOinmNB1AS4frxBUrZfPlqIi7UUIUps+PIRkfIXSadWK8/nzYmhHq
-y0Fkyk1P09LEHylLZjLDie2syY1Uo9T4Tf2TAlHTqdHkO9E8lmnFk3P1r/cD8po=
-=N1jv
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+ #define VSOCK_PROTO_INVALID        0
+ #define VSOCK_PROTO_PKT_ON_NOTIFY (1 << 0)
+ #define VSOCK_PROTO_ALL_SUPPORTED (VSOCK_PROTO_PKT_ON_NOTIFY)
+-- 
+1.8.1.5
