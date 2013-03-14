@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3CNV46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:56:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65479 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3CNV4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753301Ab3CNV4z (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 14 Mar 2013 17:56:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51463 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab3CNV4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 17:56:53 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Timo Kokkonen <timo.t.kokkonen@iki.fi>,
-        Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH] [media] ir: IR_RX51 only works on OMAP2
-Date: Thu, 14 Mar 2013 22:56:44 +0100
-Message-Id: <1363298204-8014-7-git-send-email-arnd@arndb.de>
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org
+Subject: [PATCH] vfio: include <linux/slab.h> for kmalloc
+Date: Thu, 14 Mar 2013 22:56:43 +0100
+Message-Id: <1363298204-8014-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363298204-8014-1-git-send-email-arnd@arndb.de>
 References: <1363298204-8014-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:azUisV1g9iGoL0f1+UCiVUOKKVQlaFe3n5RRcJ0uWlH
- c0gSVRzKZ9pRsvy5KtrG9tc5UqBOHwbasxT5fihnnzC+khXDve
- py+CR9zzqUJozHgdPvZWKV52cTDMiZun8aBcr3b/MvPDc+7BUR
- Q5Ic/vRV1q61j2Ncu8Ar3Shl8p6/BRP7OoWTaab46vufX0Xd5R
- Kx/5GsTK5lcOE/yvjjMQBUQ/sE+FTt41UjHXaVPKdwJ4ixSyZN
- rY9bnCmV4HZkaaJ9j9fDCsFRe6yTlqOysMRqO+ulW2l5JjG7kJ
- 9s//pWqa66Odz0RilRp1yBkjyHgicif5vx6N8bpvRCx3DcATdl
- 4718oOfJoBt6nAMK+ANgWNvpWAjnYgrJ4mpYXrFBE
+X-Provags-ID: V02:K0:2S8UK4a3OWuR69bJAlgZUGs/fWNevL9vTTLkifrg5Yj
+ yjPqOf15QogRSAojb4/BWzw1KfGHrt9ajWy8CGRT0Oic4bGonW
+ gfAfPxavKp3iebHh4dI7WeEk1gwq769ZsVx1SyMwQClPsVeHAg
+ +T8+MeOG+eJ2JNyWrD/y5D4AwFLxqGN66Jlk9menmplv8tR3o0
+ pCOoeGhBWmGgRN4hRPFlsWW0dbfpyB5maGrg2+0tIUQGh3Whji
+ wIb6dWpeDL50JZ9upkalKraiVszIbS0yw8lGf69xuOyB8sHnL5
+ TLCBukP75KppmhTqLJiBGgtlCi54yVLNpZRCRWPvyk+8DE/OSW
+ ZjkR/J2zF8/QnVscp0t5Un49XWThsok6o/50wbvDS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver can be enabled on OMAP1 at the moment, which breaks
-allyesconfig for that platform. Let's mark it OMAP2PLUS-only
-in Kconfig, since that is the only thing it builds on.
+The vfio drivers call kmalloc or kzalloc, but do not
+include <linux/slab.h>, which causes build errors on
+ARM.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Timo Kokkonen <timo.t.kokkonen@iki.fi>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
+Cc: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org
 ---
-Mauro, please apply for 3.9
+Please apply for 3.9
 
- drivers/media/rc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/vfio/pci/vfio_pci_config.c | 1 +
+ drivers/vfio/pci/vfio_pci_intrs.c  | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
-index 19f3563..5a79c33 100644
---- a/drivers/media/rc/Kconfig
-+++ b/drivers/media/rc/Kconfig
-@@ -291,7 +291,7 @@ config IR_TTUSBIR
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+index 964ff22..aeb00fc 100644
+--- a/drivers/vfio/pci/vfio_pci_config.c
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -27,6 +27,7 @@
+ #include <linux/pci.h>
+ #include <linux/uaccess.h>
+ #include <linux/vfio.h>
++#include <linux/slab.h>
  
- config IR_RX51
- 	tristate "Nokia N900 IR transmitter diode"
--	depends on OMAP_DM_TIMER && LIRC && !ARCH_MULTIPLATFORM
-+	depends on OMAP_DM_TIMER && ARCH_OMAP2PLUS && LIRC && !ARCH_MULTIPLATFORM
- 	---help---
- 	   Say Y or M here if you want to enable support for the IR
- 	   transmitter diode built in the Nokia N900 (RX51) device.
+ #include "vfio_pci_private.h"
+ 
+diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+index 3639371..a965091 100644
+--- a/drivers/vfio/pci/vfio_pci_intrs.c
++++ b/drivers/vfio/pci/vfio_pci_intrs.c
+@@ -22,6 +22,7 @@
+ #include <linux/vfio.h>
+ #include <linux/wait.h>
+ #include <linux/workqueue.h>
++#include <linux/slab.h>
+ 
+ #include "vfio_pci_private.h"
+ 
 -- 
 1.8.1.2
 
