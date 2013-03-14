@@ -1,178 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3CNKwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:52:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51928 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab3CNKhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:41 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 46/88] pstore: Avoid deadlock in panic and emergency-restart path
-Date: Thu, 14 Mar 2013 10:35:39 +0000
-Message-Id: <1363257381-15900-47-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1757457Ab3CNKwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:52:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34618 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756930Ab3CNKwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:52:11 -0400
+Date: Thu, 14 Mar 2013 12:51:55 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>, <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
+        <thomas.abraham@linaro.org>, <dianders@chromium.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH 1/2] usb: dwc3: exynos: Use of_platform API to create
+ dwc3 core pdev
+Message-ID: <20130314105155.GG32369@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
+ <1363257898-17504-2-git-send-email-gautam.vivek@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YH9Qf6Fh2G5kB/85"
+Content-Disposition: inline
+In-Reply-To: <1363257898-17504-2-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+--YH9Qf6Fh2G5kB/85
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi,
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+On Thu, Mar 14, 2013 at 04:14:57PM +0530, Vivek Gautam wrote:
+> @@ -170,7 +155,6 @@ static int dwc3_exynos_remove(struct platform_device =
+*pdev)
+>  {
+>  	struct dwc3_exynos	*exynos =3D platform_get_drvdata(pdev);
+> =20
+> -	platform_device_unregister(exynos->dwc3);
 
-commit 9f244e9cfd70c7c0f82d3c92ce772ab2a92d9f64 upstream.
+don't you want to do what Kishon did here and have:
 
-[Issue]
+static int dwc3_exynos_remove_child(struct device *dev, void *unused)
+{
+	struct platform_device	*pdev =3D to_platform_device(dev);
 
-When pstore is in panic and emergency-restart paths, it may be blocked
-in those paths because it simply takes spin_lock.
+	platform_device_unregister(pdev);
 
-This is an example scenario which pstore may hang up in a panic path:
+	return 0;
+}
 
- - cpuA grabs psinfo->buf_lock
- - cpuB panics and calls smp_send_stop
- - smp_send_stop sends IRQ to cpuA
- - after 1 second, cpuB gives up on cpuA and sends an NMI instead
- - cpuA is now in an NMI handler while still holding buf_lock
- - cpuB is deadlocked
+device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
 
-This case may happen if a firmware has a bug and
-cpuA is stuck talking with it more than one second.
+???
 
-Also, this is a similar scenario in an emergency-restart path:
+--=20
+balbi
 
- - cpuA grabs psinfo->buf_lock and stucks in a firmware
- - cpuB kicks emergency-restart via either sysrq-b or hangcheck timer.
-   And then, cpuB is deadlocked by taking psinfo->buf_lock again.
+--YH9Qf6Fh2G5kB/85
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[Solution]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This patch avoids the deadlocking issues in both panic and emergency_restart
-paths by introducing a function, is_non_blocking_path(), to check if a cpu
-can be blocked in current path.
+iQIcBAEBAgAGBQJRQavLAAoJEIaOsuA1yqREcP0P/RW25dtnA4FyuLaD6Q7QMHPa
+771znPkwXxH4bdlt6u8FLLHMYTmG9ZQNXEGvKjHn3yCqBl4XEwpSVcOmAVcJgJfA
+KZvDnPbSjXLWVGdqn94YieiZQ/xaTm+Lam1LjokOnLJlgmZwbuNpX8baVSFfxWrP
+/GCjJl0Wh1Ps0Yldr+TpGH9XhMCHkuhe/4mtnUaTcM4Hdr3cpw4Y47oESxJHPgWh
+6+BiZ8G69vtEMpoMYpX/rybkI28LFseLEacbRe1aGPbP13MSqpY6Dy6z39s0y9Kc
+rU96hM9BJNxFI8i+6jNTd1WCf6YdzkQprc8v/k36Jatq7+CHn4I/Q7hnAt2bY+8X
+rAHpiSMN5peL1jMn/xW7zy2LIOO/bFpbPwCCOzD8XiffK4XxR690ZUcVPFL82eb4
+Oac7iXFxuoXqT2+ydi1vi60OSrqtK0bmk50NFpkPXMCjfpvfm0Z4AhtsCiVEUA+w
++1SjOPhGsCwtFwwfPvV2jKDnPs/peBpCP0sjrf3TSMsFmwwa6180KyumuLNih6xj
+Syj/AoMPrqzhoQFGHhU/qnshOMYW1xGslPgy0kRn0w9UEE1YbapZAZImyWOzzwdS
+0zaTd/JFg82WEYyD08vXsr8XM5yAR+bhsJaPHq265TCSEFnDbtnmNb96uVEXWC7I
+I+3/2UAdHQ5gOg/79IqA
+=6nix
+-----END PGP SIGNATURE-----
 
-With this patch, pstore is not blocked even if another cpu has
-taken a spin_lock, in those paths by changing from spin_lock_irqsave
-to spin_trylock_irqsave.
-
-In addition, according to a comment of emergency_restart() in kernel/sys.c,
-spin_lock shouldn't be taken in an emergency_restart path to avoid
-deadlock. This patch fits the comment below.
-
-<snip>
-/**
- *      emergency_restart - reboot the system
- *
- *      Without shutting down any hardware or taking any locks
- *      reboot the system.  This is called when we know we are in
- *      trouble so this is our best effort to reboot.  This is
- *      safe to call in interrupt context.
- */
-void emergency_restart(void)
-<snip>
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/pstore/platform.c   | 35 +++++++++++++++++++++++++++++------
- include/linux/pstore.h |  6 ++++++
- 2 files changed, 35 insertions(+), 6 deletions(-)
-
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 03ce7a9..e1f4f8a 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -88,6 +88,27 @@ static const char *get_reason_str(enum kmsg_dump_reason reason)
- 	}
- }
- 
-+bool pstore_cannot_block_path(enum kmsg_dump_reason reason)
-+{
-+	/*
-+	 * In case of NMI path, pstore shouldn't be blocked
-+	 * regardless of reason.
-+	 */
-+	if (in_nmi())
-+		return true;
-+
-+	switch (reason) {
-+	/* In panic case, other cpus are stopped by smp_send_stop(). */
-+	case KMSG_DUMP_PANIC:
-+	/* Emergency restart shouldn't be blocked by spin lock. */
-+	case KMSG_DUMP_EMERG:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pstore_cannot_block_path);
-+
- /*
-  * callback from kmsg_dump. (s2,l2) has the most recently
-  * written bytes, older bytes are in (s1,l1). Save as much
-@@ -106,10 +127,12 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 
- 	why = get_reason_str(reason);
- 
--	if (in_nmi()) {
--		is_locked = spin_trylock(&psinfo->buf_lock);
--		if (!is_locked)
--			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
-+	if (pstore_cannot_block_path(reason)) {
-+		is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
-+		if (!is_locked) {
-+			pr_err("pstore dump routine blocked in %s path, may corrupt error record\n"
-+				       , in_nmi() ? "NMI" : why);
-+		}
- 	} else
- 		spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	oopscount++;
-@@ -135,9 +158,9 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		total += hsize + len;
- 		part++;
- 	}
--	if (in_nmi()) {
-+	if (pstore_cannot_block_path(reason)) {
- 		if (is_locked)
--			spin_unlock(&psinfo->buf_lock);
-+			spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 	} else
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- }
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index e1461e1..318cca1 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -54,12 +54,18 @@ struct pstore_info {
- 
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
-+extern bool pstore_cannot_block_path(enum kmsg_dump_reason reason);
- #else
- static inline int
- pstore_register(struct pstore_info *psi)
- {
- 	return -ENODEV;
- }
-+static inline bool
-+pstore_cannot_block_path(enum kmsg_dump_reason reason)
-+{
-+	return false;
-+}
- #endif
- 
- #endif /*_LINUX_PSTORE_H*/
--- 
-1.8.1.2
-
+--YH9Qf6Fh2G5kB/85--
