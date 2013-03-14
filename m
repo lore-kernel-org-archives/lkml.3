@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3CNVaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 17:30:00 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:46697
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752991Ab3CNV37 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 17:29:59 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Mar 2013 17:29:59 EDT
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Yoder Stuart-B08248 <B08248@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>,
-        Sethi Varun-B16395 <B16395@freescale.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 5/5 v9] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Topic: [PATCH 5/5 v9] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Index: AQHOIPF/4Mvb0DPAr0qXmtpkEQeBHZilr5TQ
-Date: Thu, 14 Mar 2013 21:14:52 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E1503586936@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1363200580-11623-1-git-send-email-Varun.Sethi@freescale.com>
- <0080B56D-8417-41B9-8341-665457D04DE6@kernel.crashing.org>
-In-Reply-To: <0080B56D-8417-41B9-8341-665457D04DE6@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.82.121.95]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753064Ab3CNVcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 17:32:11 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:58034 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752142Ab3CNVcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 17:32:10 -0400
+Date: Thu, 14 Mar 2013 21:32:09 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
+ Implementation
+Message-ID: <20130314213209.GA15771@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
+ <20130314042227.GA15675@dcvr.yhbt.net>
+ <20130314131855.GA9155@Krystal>
+ <20130314190746.GA16120@dcvr.yhbt.net>
+ <20130314194853.GA22198@Krystal>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314194853.GA22198@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@kernel.crashing.org]
-> Sent: Thursday, March 14, 2013 3:20 PM
-> To: Sethi Varun-B16395
-> Cc: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; benh@kernel.crashing.org; Wood Scott-B07421; Yoder Stuart-B08248
-> Subject: Re: [PATCH 5/5 v9] iommu/fsl: Freescale PAMU driver and iommu implementation.
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> * Eric Wong (normalperson@yhbt.net) wrote:
+> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > The advantage of using splice() over dequeue() is that you will reduce
+> > > the amount of interactions between concurrent enqueue and dequeue
+> > > operations on the head and tail of the same queue.
+> > 
+> > I wanted to use splice here originally, but epoll_wait(2) may not
+> > consume the entire queue, as it's limited to maxevents specified by the
+> > user calling epoll_wait.
 > 
+> I see,
 > 
-> On Mar 13, 2013, at 1:49 PM, Varun Sethi wrote:
+> > 
+> > With unconsumed elements, I need to preserve ordering of the queue to
+> > avoid starvation.  So I would either need to:
+> > 
+> > a) splice the unconsumed portion back to the head of the shared queue.
+> >    I'm not sure if this is possible while elements are being enqueued...
 > 
-> > +/*
-> > + * Table of SVRs and the corresponding PORT_ID values.
-> > + *
-> > + * All future CoreNet-enabled SOCs will have this erratum fixed, so this table
-> > + * should never need to be updated.  SVRs are guaranteed to be unique, so
-> > + * there is no worry that a future SOC will inadvertently have one of these
-> > + * values.
-> > + */
+> That would be a double-ended queue. I haven't thought this problem
+> through yet.
 > 
-> Maybe add to the comment about what port_id represents
+> >    Using a mutex for splicing back to unconsumed elements is OK, and
+> >    probably required anyways since we need to keep EPOLLONESHOT
+> >    unmasking synced with dequeue.
+> > 
+> > b) preserve the unconsumed spliced queue across epoll_wait invocations
+> >    but that requires checking both queues for event availability...
+> 
+> I think b) should be preferred over a).
+> 
+> Basically, instead of having the "unconsumed element" queue on the stack
+> as I suggested, you might want to keep it across epoll_wait invocations.
+> 
+> Before you start digging in the unconsumed element queue, you just start
+> by splicing the content of the shared queue into the tail of unconsumed
+> queue. Then, you simply dequeue the unconsumed queue elements until you
+> either reach the end or the max nr.
+> 
+> You should note that with this scheme, you'll have to dequeue items from
+> the unconsumed queue rather than just iterating over the elements. The
+> nice side of consuming all the elements (in the temp queue on the local
+> stack) is that you don't care about dequeuing, since the entire queue
+> will vanish. However, in this case, since you care about keeping the
+> queue after a partial iteration, you need to dequeue from it.
+> 
+> And yes, this approach involves checking both queues for event
+> availability. Hopefully none of this will be too much of an issue
+> performance-wise.
 
-When you update the comment, I would also suggest identifying the specific
-errata here (A-004510) so that it's easy to reference back to the specific
-issue this code is fixing.
+Right.  I will try this, I don't think the check will be too expensive.
 
-Stuart
+When dequeuing from the unconsumed queue, perhaps there should be a
+"dequeue_local" function which omits the normal barriers required
+for the shared queue.
 
+With a splice and without needing barriers for iteration, this sounds good.
+
+> Another approach could be to let you work directly on the shared queue:
+> 
+> I could possibly implement a
+> 
+> void __wfcq_snapshot(struct wfcq_head *head,
+>                 struct wfcq_tail *tail);
+> 
+> That would save a tail shapshot that would then be used to stop
+> iteration, dequeue and splice at the location of the tail snapshot. And
+> 
+> void __wfcq_snapshot_reset(struct wfcq_head *head,
+>                 struct wfcq_tail *tail);
+> 
+> would set the tail snapshot pointer back to NULL.
+> 
+> This would require a few extra checks, but nothing very expensive I
+> expect.
+> 
+> Thoughts ?
+
+I'm not sure I follow, would using it be something like this?
+
+	snapshot
+	iterate (read-only, no dequeue)
+	splice(discard_head, discard_tail, shared_head, iter_stop_point)
+	snapshot_reset
+
+I also use an atomic state variable to prevent an item from being queued
+twice, and I unset that while iterating+dequeueing.
+
+I change the state to IDLE while iterating and ep_poll_callback sets
+state READY on any item before being spliced out, that would cause the
+event to be lost when it's spliced out.
+
+So I think dequeue/state IDLE while iterating is required for epoll_wait,
+I'll try the private queue.
