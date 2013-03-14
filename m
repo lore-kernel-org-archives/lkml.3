@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab3CNN7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:59:41 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:51219 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3CNN7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:59:40 -0400
+	id S1756894Ab3CNOBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:01:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756661Ab3CNOBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:01:12 -0400
+Date: Thu, 14 Mar 2013 09:55:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: 3.9.0-rc1: kexec not working: root disk does not show up
+Message-ID: <20130314135507.GA24238@redhat.com>
+References: <20130308171704.GE8219@redhat.com>
+ <20130312192922.GA2268@redhat.com>
+ <51402ED5.6000902@openvz.org>
+ <20130313135351.GB11528@redhat.com>
+ <514092DC.5020500@openvz.org>
 MIME-Version: 1.0
-Date: Thu, 14 Mar 2013 21:59:38 +0800
-Message-ID: <CAPgLHd8yrZbidfvavg2nrO77zpx_NvKS7QDk=oDWD4T6Vb5+zQ@mail.gmail.com>
-Subject: [PATCH] pinctrl: exynos5440: fix invalid use of sizeof in exynos5440_pinctrl_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514092DC.5020500@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, Mar 13, 2013 at 06:53:16PM +0400, Konstantin Khlebnikov wrote:
 
-sizeof() when applied to a pointer typed expression gives the
-size of the pointer, not that of the pointed data.
+[..]
+> PCI: Don't try to disable Bus Master on disconnected PCI devices
+> 
+> From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> 
+> This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from v3.9-rc1
+> ("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
+> in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from v3.5-rc1
+> ("PCI: disable Bus Master on PCI device shutdown")
+> 
+> Unfortunately fixing one bug uncovers another: after ->shutdown() device can be
+> already disconnected from the bus and configuration space in no longer available
+> 
+> Link: https://lkml.org/lkml/2013/3/12/529
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Reported-by: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/pci/pci-driver.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 1fa1e48..79277fb 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
+>  
+>  	/*
+>  	 * Turn off Bus Master bit on the device to tell it to not
+> -	 * continue to do DMA
+> +	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
+>  	 */
+> -	pci_clear_master(pci_dev);
+> +	if (pci_dev->current_state <= PCI_D3hot)
+> +		pci_clear_master(pci_dev);
+>  }
+>  
+>  #ifdef CONFIG_PM
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/pinctrl/pinctrl-exynos5440.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi,
 
-diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
-index 1376eb7..fe65739 100644
---- a/drivers/pinctrl/pinctrl-exynos5440.c
-+++ b/drivers/pinctrl/pinctrl-exynos5440.c
-@@ -854,7 +854,7 @@ static int exynos5440_pinctrl_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	priv = devm_kzalloc(dev, sizeof(priv), GFP_KERNEL);
-+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
- 	if (!priv) {
- 		dev_err(dev, "could not allocate memory for private data\n");
- 		return -ENOMEM;
+Above patch fixed the issue on my box. Now I can kexec. Thanks.
 
+Vivek
 
