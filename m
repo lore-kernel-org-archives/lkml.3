@@ -1,88 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab3CNO4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:56:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45065 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755858Ab3CNO4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:56:19 -0400
-Date: Thu, 14 Mar 2013 15:56:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org>
-Message-ID: <alpine.LNX.2.00.1303141555090.30118@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757748Ab3CNO6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:58:49 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:41674 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757614Ab3CNO6q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:58:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
+References: <1363219179-14900-1-git-send-email-agraf@suse.de>
+	<CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
+	<6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
+Date: Thu, 14 Mar 2013 20:28:46 +0530
+Message-ID: <CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
+Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dmueller@suse.de,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Anderson <dianders@chromium.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Mar 2013, Alan Stern wrote:
+On 14 March 2013 17:31, Alexander Graf <agraf@suse.de> wrote:
+>
+> On 14.03.2013, at 05:19, Thomas Abraham wrote:
+>
+>> On 14 March 2013 05:29, Alexander Graf <agraf@suse.de> wrote:
+>>> On my Exynos 5 based Arndale system, I need to pull the reset line down
+>>> and then let it go up again to actually perform a reset. Without that
+>>> reset, I can't find any USB hubs on my bus, rendering the USB controller
+>>> useless.
+>>>
+>>> We also only need to reset the line after the phy node has been found.
+>>> This way we don't accidently reserve the vbus GPIO pin, but later on
+>>> defer the creation of our controller, because the phy device tree node
+>>> hasn't been probed yet.
+>>>
+>>> This patch implements the above logic, making EHCI and OHCI work on
+>>> Arndale systems for me.
+>>>
+>>> Signed-off-by: Alexander Graf <agraf@suse.de>
+>>> CC: Vivek Gautam <gautam.vivek@samsung.com>
+>>> CC: Jingoo Han <jg1.han@samsung.com>
+>>> CC: Alan Stern <stern@rowland.harvard.edu>
+>>> CC: Kukjin Kim <kgene.kim@samsung.com>
+>>> CC: Felipe Balbi <balbi@ti.com>
+>>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> CC: Doug Anderson <dianders@chromium.org>
+>>>
+>>> ---
+>>>
+>>> v1 -> v2:
+>>>
+>>>  - remove gpio_free call
+>>>  - move reset logic after phy node search
+>>>
+>>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+>>> index 20ebf6a..b29b2b8 100644
+>>> --- a/drivers/usb/host/ehci-s5p.c
+>>> +++ b/drivers/usb/host/ehci-s5p.c
+>>> @@ -103,9 +103,14 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
+>>>        if (!gpio_is_valid(gpio))
+>>>                return;
+>>>
+>>> -       err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
+>>> -       if (err)
+>>> +       /* reset pulls the line down, then up again */
+>>> +       err = gpio_request_one(gpio, GPIOF_OUT_INIT_LOW, "ehci_vbus_gpio");
+>>> +       if (err) {
+>>>                dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
+>>> +               return;
+>>> +       }
+>>> +       mdelay(1);
+>>> +       __gpio_set_value(gpio, 1);
+>>> }
+>>>
+>>> static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
+>>> @@ -131,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>>        if (!pdev->dev.coherent_dma_mask)
+>>>                pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>>>
+>>> -       s5p_setup_vbus_gpio(pdev);
+>>> -
+>>>        s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
+>>>                                GFP_KERNEL);
+>>>        if (!s5p_ehci)
+>>> @@ -152,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>>                s5p_ehci->otg = phy->otg;
+>>>        }
+>>>
+>>> +       s5p_setup_vbus_gpio(pdev);
+>>> +
+>>>        s5p_ehci->dev = &pdev->dev;
+>>>
+>>>        hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
+>>
+>> Hi Alexander,
+>>
+>> This change, though it works for Exynos5250 based Arndale board, does
+>> not actually seem correct. On Arndale board, the on-board 4-port usb
+>> hub is self powered and hence the vbus 'enable' gpio line from
+>> Exynos5250 SoC is instead used as a "reset" signal for the on-board
+>> usb hub (and not as the vbus enable signal).
+>>
+>> Whereas, the driver uses the gpio used in 's5p_setup_vbus_gpio'
+>> function as just a mechanism to enable vbus for downstream devices. So
+>> the driver should not be modified as above to handle the board
+>> specific behavior.
+>>
+>> Instead, what needs to be done is, remove the "samsung,vbus-gpio"
+>> property from the usb2.0 node in dts files (this property is optional)
+>> for Arndale board. Then, during the machine_init, perform the reset
+>> sequencing as required.
+>>
+>> Ideally, the reset sequencing for the on-board AX88760 usb hub should
+>> have been handled in the driver for this device. I have not checked if
+>> there is a driver for this in the kernel.
+>
+> I can see your point, but as I mentioned earlier there seems to be some timing issue here. By simply doing the reset a few ms earlier (in the first probe, before the driver detects that it needs to defer probing), I already can't find the hub on the bus later.
+>
+> So I'm assuming that the same thing would also happen if I put it even earlier in machine init.
 
-> > [    4.116847] irq 16: nobody cared (try booting with the "irqpoll" option)
-> > [    4.116849] Pid: 1, comm: systemd Not tainted 3.9.0-rc2-00188-g6c23cbb #186
-> > [    4.116850] Call Trace:
-> > [    4.116860]  <IRQ>  [<ffffffff810db0f8>] __report_bad_irq+0x38/0xf0
-> > [    4.116862]  [<ffffffff810db3a3>] note_interrupt+0x1f3/0x240
-> > [    4.116865]  [<ffffffff810d8977>] handle_irq_event_percpu+0x147/0x230
-> > [    4.116867]  [<ffffffff810d8aa9>] handle_irq_event+0x49/0x70
-> > [    4.116869]  [<ffffffff810dbbc1>] handle_fasteoi_irq+0x61/0x100
-> > [    4.116873]  [<ffffffff81004689>] handle_irq+0x59/0x150
-> > [    4.116877]  [<ffffffff8104e916>] ? irq_enter+0x16/0x80
-> > [    4.116879]  [<ffffffff81003d4b>] do_IRQ+0x5b/0xe0
-> > [    4.116883]  [<ffffffff815563ad>] common_interrupt+0x6d/0x6d
-> > [    4.116888]  <EOI>  [<ffffffff81320dc1>] ? cfb_imageblit+0x581/0x5b0
-> > [    4.116891]  [<ffffffff8131e019>] bit_putcs+0x329/0x560
-> > [    4.116893]  [<ffffffff8131dc8f>] ? bit_cursor+0x5cf/0x630
-> > [    4.116896]  [<ffffffff81317a28>] fbcon_putcs+0xf8/0x130
-> > [    4.116898]  [<ffffffff8131dcf0>] ? bit_cursor+0x630/0x630
-> > [    4.116900]  [<ffffffff8131a27e>] fbcon_redraw+0x16e/0x1e0
-> > [    4.116902]  [<ffffffff8131a554>] fbcon_scroll+0x264/0xe40
-> > [    4.116905]  [<ffffffff8138a263>] scrup+0x113/0x120
-> > [    4.116907]  [<ffffffff8138a4d0>] lf+0x80/0x90
-> > [    4.116910]  [<ffffffff8138e1dd>] do_con_trol+0xcd/0x1360
-> > [    4.116912]  [<ffffffff8138f725>] do_con_write+0x2b5/0xa10
-> > [    4.116915]  [<ffffffff81552bb7>] ? __mutex_lock_slowpath+0x237/0x2e0
-> > [    4.116917]  [<ffffffff8138fed9>] con_write+0x19/0x30
-> > [    4.116920]  [<ffffffff8137823b>] do_output_char+0x1eb/0x220
-> > [    4.116922]  [<ffffffff813782b6>] process_output+0x46/0x70
-> > [    4.116924]  [<ffffffff81378b0f>] n_tty_write+0x13f/0x2f0
-> > [    4.116928]  [<ffffffff8107a900>] ? try_to_wake_up+0x2b0/0x2b0
-> > [    4.116930]  [<ffffffff8137553c>] tty_write+0x1cc/0x280
-> > [    4.116932]  [<ffffffff813789d0>] ? n_tty_ioctl+0x110/0x110
-> > [    4.116934]  [<ffffffff8137569d>] redirected_tty_write+0xad/0xc0
-> > [    4.116937]  [<ffffffff811733ab>] vfs_write+0xcb/0x130
-> > [    4.116939]  [<ffffffff81173bac>] sys_write+0x5c/0xa0
-> > [    4.116943]  [<ffffffff8155e4a9>] system_call_fastpath+0x16/0x1b
-> > [    4.116943] handlers:
-> > [    4.116959] [<ffffffffa0048450>] usb_hcd_irq [usbcore]
-> > [    4.116960] Disabling IRQ #16
-> > 
-> > I don't think I have seen this message on rc1+ (8343bce, to be precise), 
-> > but I have definitely seen sluggish system response on that kernel as 
-> > well.
-> > 
-> > Attaching lspci, /proc/interrupts and dmesg. 
-> 
-> Can you try to do a git bisect for this?  Is the sluggish system 
-> response clear enough that you can tell reliably when it is present and 
-> when it isn't?
+True, I missed that point. The usb hub connected over hsic interface,
+after power-on-reset, might have initiated the 'connect' state on
+seeing the idle condition on the bus and since the host/phy controller
+is not ready yet, the connect might have failed.
 
-That was my first thought, but unfortunately I am afraid there will be 
-point at which I will easily make a bisection mistake, as the 
-responsiveness of the system varies over time, so it's not really a 
-100% objective measure.
+So the correct sequence would be, after the usb host controller and
+the phy controllers are initialized, the 'reset' pin on the on-board
+usb hub should be asserted. Upon releasing that reset, the usb hub
+would initiate the 'connect' state on the HSIC bus.
 
--- 
-Jiri Kosina
-SUSE Labs
+>
+> The change in this patch actually does a reset even on non-Arndale boards. By taking away power and returning power to the line, the chip will most likely have reset :). So even on non-Arndale boards, this should get the USB phy into a clean state regardless of where the bootloader left it, right?
+>
+
+No, the toggling of the vbus cannot ensure hardware-reset on self
+powered devices. On Arndale board, since the usb hub is self powered
+and being on HSIC interface, the dedicated vbus control gpio line is
+instead used to assert the 'reset' pin of the on-board usb hub.
+
+Using the dedicated vbus control line of Exynos5250 (XuhostPWREN) for
+hardware resetting the usb hub is a board specific design of Arndale
+board. The function ''s5p_setup_vbus_gpio' is meant to turn on the
+vbus for downstream ports. Utilizing this function to hardware-reset
+the usb hub is not right.
+
+In fact, for Arndale board, there should not be a 'samsung,vbus-gpio'
+property for usb2.0 host controller node. Because, there is no such
+vbus control line on Arndale board which is using HSIC interface to
+connect to USB devices. So this change is not correct. The assertion
+of the hardware-reset for the on board usb hub should be handled
+elsewhere.
+
+Thanks,
+Thomas.
+
+>
+> Alex
+>
