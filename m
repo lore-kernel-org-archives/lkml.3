@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934703Ab3CNRwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:52:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52023 "EHLO mga02.intel.com"
+	id S934689Ab3CNRwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:52:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52046 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934597Ab3CNRtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934598Ab3CNRtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 13:49:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="279559798"
+   d="scan'208";a="279559796"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 17/30] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-Date: Thu, 14 Mar 2013 19:50:22 +0200
-Message-Id: <1363283435-7666-18-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
+Date: Thu, 14 Mar 2013 19:50:25 +0200
+Message-Id: <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,89 +33,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Since we're going to have huge pages backed by files,
-wait_split_huge_page() has to serialize not only over anon_vma_lock,
-but over i_mmap_mutex too.
+ramfs is the most simple fs from page cache point of view. Let's start
+transparent huge page cache enabling here.
+
+For now we allocate only non-movable huge page. It's not yet clear if
+movable page is safe here and what need to be done to make it safe.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |   15 ++++++++++++---
- mm/huge_memory.c        |    4 ++--
- mm/memory.c             |    4 ++--
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ fs/ramfs/inode.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index a54939c..b53e295 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -113,11 +113,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
- 			__split_huge_page_pmd(__vma, __address,		\
- 					____pmd);			\
- 	}  while (0)
--#define wait_split_huge_page(__anon_vma, __pmd)				\
-+#define wait_split_huge_page(__vma, __pmd)				\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
--		anon_vma_lock_write(__anon_vma);			\
--		anon_vma_unlock_write(__anon_vma);			\
-+		struct address_space *__mapping =			\
-+					vma->vm_file->f_mapping;	\
-+		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
-+		if (__mapping)						\
-+			mutex_lock(&__mapping->i_mmap_mutex);		\
-+		if (__anon_vma) {					\
-+			anon_vma_lock_write(__anon_vma);		\
-+			anon_vma_unlock_write(__anon_vma);		\
-+		}							\
-+		if (__mapping)						\
-+			mutex_unlock(&__mapping->i_mmap_mutex);		\
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
- 	} while (0)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index eb777d3..a23da8b 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -907,7 +907,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		spin_unlock(&dst_mm->page_table_lock);
- 		pte_free(dst_mm, pgtable);
- 
--		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
-+		wait_split_huge_page(vma, src_pmd); /* src_vma */
- 		goto out;
- 	}
- 	src_page = pmd_page(pmd);
-@@ -1480,7 +1480,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
- 	if (likely(pmd_trans_huge(*pmd))) {
- 		if (unlikely(pmd_trans_splitting(*pmd))) {
- 			spin_unlock(&vma->vm_mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
-+			wait_split_huge_page(vma, pmd);
- 			return -1;
- 		} else {
- 			/* Thp mapped by 'pmd' is stable, so we can
-diff --git a/mm/memory.c b/mm/memory.c
-index 98c25dd..52bd6cf 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -619,7 +619,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (new)
- 		pte_free(mm, new);
- 	if (wait_split_huge_page)
--		wait_split_huge_page(vma->anon_vma, pmd);
-+		wait_split_huge_page(vma, pmd);
- 	return 0;
- }
- 
-@@ -1529,7 +1529,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 		if (likely(pmd_trans_huge(*pmd))) {
- 			if (unlikely(pmd_trans_splitting(*pmd))) {
- 				spin_unlock(&mm->page_table_lock);
--				wait_split_huge_page(vma->anon_vma, pmd);
-+				wait_split_huge_page(vma, pmd);
- 			} else {
- 				page = follow_trans_huge_pmd(vma, address,
- 							     pmd, flags);
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index c24f1e1..da30b4f 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+ 		inode_init_owner(inode, dir, mode);
+ 		inode->i_mapping->a_ops = &ramfs_aops;
+ 		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
++		/*
++		 * TODO: what should be done to make movable safe?
++		 */
++		mapping_set_gfp_mask(inode->i_mapping,
++				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+ 		mapping_set_unevictable(inode->i_mapping);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		switch (mode & S_IFMT) {
 -- 
 1.7.10.4
 
