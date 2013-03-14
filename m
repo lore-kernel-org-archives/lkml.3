@@ -1,96 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab3CNJkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:40:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50894 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab3CNJka (ORCPT
+	id S1756631Ab3CNJki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:40:38 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46692 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755804Ab3CNJkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:40:30 -0400
-Date: Thu, 14 Mar 2013 10:40:18 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] memory: tegra30: Fix build error w/o PM
-Message-ID: <20130314094018.GA23538@avionic-0098.mockup.avionic-design.de>
-References: <1363252334-4672-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 14 Mar 2013 05:40:35 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <coreteam@netfilter.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] netfilter: nf_conntrack: Batch cleanup
+Date: Thu, 14 Mar 2013 13:40:14 +0400
+Message-ID: <1363254014-10725-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <1363252334-4672-1-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:t0ArtarzCcVphFUrf5nrXxrUA4WweeeMrBnT3itE0Ri
- 9lt8QoAk16IZmiXznK+8zMM8KHvYB4YshbCjlzG3ZiMJD/mb7v
- FO4RUwKISbsAb9v5oGYoNvCm4TQOYn+bZuMhJxMPxplBSAWkaV
- Sk/EzvMeqIOZu7YXVn6QazADgz3Pxkdj78C7VsKnoyspVSbDRk
- I0+XF5m97haHAuG8lJqlZdhj0eVi+L45w2HeTtikoAf1lCMMmx
- pQXgT7jBW+I8iwiIDul1tnMq9vI3aSmLE4EMJsfVQF5ezqXe2n
- c1MAY5qqwCHN9OwjoL1wx7boKzo5Zj06mD6sZcfq/IWVW1Rc0H
- HmC/xvzayM3Y1mMQ3y99+1NwC1MSg995S9M78nGdf720CAQuvD
- aWi2KhpMldR7UlZay3Px5VL3agXnZEeyzI=
+Content-Type: text/plain
+X-Originating-IP: [10.30.22.158]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch introduces nf_conntrack_cleanup_net_list(), which cleanups
+nf_conntrack for a list of netns and calls synchronize_net() only once
+for them all. This should reduce netns destruction time.
+--
+I've measured cleanup time for 1k dummy net ns. Here are the results:
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ <without the patch>
+ # modprobe nf_conntrack
+ # time modprobe -r nf_conntrack
 
-On Thu, Mar 14, 2013 at 11:12:10AM +0200, Hiroshi Doyu wrote:
-> Make this depend on CONFIG_PM.
->=20
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  drivers/memory/tegra30-mc.c | 2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
-> index 0b97598..f4ae074 100644
-> --- a/drivers/memory/tegra30-mc.c
-> +++ b/drivers/memory/tegra30-mc.c
-> @@ -268,6 +268,7 @@ static const u32 tegra30_mc_ctx[] =3D {
->  	MC_INTMASK,
->  };
-> =20
-> +#ifdef CONFIG_PM
->  static int tegra30_mc_suspend(struct device *dev)
->  {
->  	int i;
-> @@ -291,6 +292,7 @@ static int tegra30_mc_resume(struct device *dev)
->  	mc_readl(mc, MC_TIMING_CONTROL);
->  	return 0;
->  }
-> +#endif
-> =20
->  static UNIVERSAL_DEV_PM_OPS(tegra30_mc_pm,
->  			    tegra30_mc_suspend,
+ real	0m10.337s
+ user	0m0.000s
+ sys	0m0.376s
 
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+ <with the patch>
+ # modprobe nf_conntrack
+ # time modprobe -r nf_conntrack
 
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature
+ real    0m5.661s
+ user    0m0.000s
+ sys     0m0.216s
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ include/net/netfilter/nf_conntrack_core.h |    1 +
+ net/netfilter/nf_conntrack_core.c         |   46 ++++++++++++++++++++---------
+ net/netfilter/nf_conntrack_standalone.c   |   16 ++++++----
+ 3 files changed, 43 insertions(+), 20 deletions(-)
 
-iQIcBAEBAgAGBQJRQZsCAAoJEN0jrNd/PrOhnmYQAJrN0S9XON566kglm1yuZrJO
-HDniJfgM5mMZ7HzqeZtAM+bw+5ECKw5suzZ4zj0HUBuc4SXUtIzqWd6CASLXhzTo
-G5OPJZ8+tXk1+ADlb9/MGK6K9TrWhX3Vu/CYwC2K+HIY48A79wGtg+KYV+ZMYe2c
-ND4nZ5okJ+wv4buBJr6J8/89YJJAt8jaJQCoEVHjrRz3y12mkwwglb9bMdEisMk4
-OgXIoYuswFtmYka6IL/zCTQaZnlu5taAXh+91pUggr94hlYRe8NC5zFtnGhdIoJB
-glag/aSeIrwYOEOVLG2pdPi05VkRYmWKXtAeIm/2H62LYDeCk+9P0AigkKqfiORP
-lM0lU2TOq0hQx3EJYGgOkoMP8AJzJBQLWWwoMR1L6D3Z5QOW7xKuF7mz+TXmydCL
-OFEtMPGt+9m2megobO4N+xVA5p717OaCz9PljOePNtCQy4JIArcfeXCxypaAme+I
-nkOlTWvJQ7dG1kcN9eDVaelS2yabmqDQRz77pw5WC0fHUy4nLH+TUOphwA4js5L2
-nWLJf8T6WvVneaqSA5Wxkss7LZBddDjEbdZtYUPQutYhVYKxjkyT04B3RCOk0lCm
-Xxdli64Fuf4F/JnQM1/Q69EbeIo6qRTO0FhoC9nrFMVhoyGcgWtxjKBcdACxVurK
-u4KCVZx8qg+lKlbNHjnx
-=p35M
------END PGP SIGNATURE-----
+diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
+index 930275f..fb2b623 100644
+--- a/include/net/netfilter/nf_conntrack_core.h
++++ b/include/net/netfilter/nf_conntrack_core.h
+@@ -27,6 +27,7 @@ extern unsigned int nf_conntrack_in(struct net *net,
+ 
+ extern int nf_conntrack_init_net(struct net *net);
+ extern void nf_conntrack_cleanup_net(struct net *net);
++extern void nf_conntrack_cleanup_net_list(struct list_head *net_exit_list);
+ 
+ extern int nf_conntrack_proto_pernet_init(struct net *net);
+ extern void nf_conntrack_proto_pernet_fini(struct net *net);
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index c8e001a..09c02ef 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -1364,30 +1364,48 @@ void nf_conntrack_cleanup_end(void)
+  */
+ void nf_conntrack_cleanup_net(struct net *net)
+ {
++	LIST_HEAD(single);
++
++	list_add(&net->exit_list, &single);
++	nf_conntrack_cleanup_net_list(&single);
++}
++
++void nf_conntrack_cleanup_net_list(struct list_head *net_exit_list)
++{
++	int busy;
++	struct net *net;
++
+ 	/*
+ 	 * This makes sure all current packets have passed through
+ 	 *  netfilter framework.  Roll on, two-stage module
+ 	 *  delete...
+ 	 */
+ 	synchronize_net();
+- i_see_dead_people:
+-	nf_ct_iterate_cleanup(net, kill_all, NULL);
+-	nf_ct_release_dying_list(net);
+-	if (atomic_read(&net->ct.count) != 0) {
++i_see_dead_people:
++	busy = 0;
++	list_for_each_entry(net, net_exit_list, exit_list) {
++		nf_ct_iterate_cleanup(net, kill_all, NULL);
++		nf_ct_release_dying_list(net);
++		if (atomic_read(&net->ct.count) != 0)
++			busy = 1;
++	}
++	if (busy) {
+ 		schedule();
+ 		goto i_see_dead_people;
+ 	}
+ 
+-	nf_ct_free_hashtable(net->ct.hash, net->ct.htable_size);
+-	nf_conntrack_proto_pernet_fini(net);
+-	nf_conntrack_helper_pernet_fini(net);
+-	nf_conntrack_ecache_pernet_fini(net);
+-	nf_conntrack_tstamp_pernet_fini(net);
+-	nf_conntrack_acct_pernet_fini(net);
+-	nf_conntrack_expect_pernet_fini(net);
+-	kmem_cache_destroy(net->ct.nf_conntrack_cachep);
+-	kfree(net->ct.slabname);
+-	free_percpu(net->ct.stat);
++	list_for_each_entry(net, net_exit_list, exit_list) {
++		nf_ct_free_hashtable(net->ct.hash, net->ct.htable_size);
++		nf_conntrack_proto_pernet_fini(net);
++		nf_conntrack_helper_pernet_fini(net);
++		nf_conntrack_ecache_pernet_fini(net);
++		nf_conntrack_tstamp_pernet_fini(net);
++		nf_conntrack_acct_pernet_fini(net);
++		nf_conntrack_expect_pernet_fini(net);
++		kmem_cache_destroy(net->ct.nf_conntrack_cachep);
++		kfree(net->ct.slabname);
++		free_percpu(net->ct.stat);
++	}
+ }
+ 
+ void *nf_ct_alloc_hashtable(unsigned int *sizep, int nulls)
+diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+index 6bcce40..6c69fbd 100644
+--- a/net/netfilter/nf_conntrack_standalone.c
++++ b/net/netfilter/nf_conntrack_standalone.c
+@@ -545,16 +545,20 @@ out_init:
+ 	return ret;
+ }
+ 
+-static void nf_conntrack_pernet_exit(struct net *net)
++static void nf_conntrack_pernet_exit(struct list_head *net_exit_list)
+ {
+-	nf_conntrack_standalone_fini_sysctl(net);
+-	nf_conntrack_standalone_fini_proc(net);
+-	nf_conntrack_cleanup_net(net);
++	struct net *net;
++
++	list_for_each_entry(net, net_exit_list, exit_list) {
++		nf_conntrack_standalone_fini_sysctl(net);
++		nf_conntrack_standalone_fini_proc(net);
++	}
++	nf_conntrack_cleanup_net_list(net_exit_list);
+ }
+ 
+ static struct pernet_operations nf_conntrack_net_ops = {
+-	.init = nf_conntrack_pernet_init,
+-	.exit = nf_conntrack_pernet_exit,
++	.init		= nf_conntrack_pernet_init,
++	.exit_batch	= nf_conntrack_pernet_exit,
+ };
+ 
+ static int __init nf_conntrack_standalone_init(void)
+-- 
+1.7.1
 
---SLDf9lqlvOQaIe6s--
