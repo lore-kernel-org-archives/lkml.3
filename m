@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3CNKoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:44:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52038 "EHLO
+	id S1757313Ab3CNKor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:44:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52034 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757295Ab3CNKiE (ORCPT
+	with ESMTP id S1756728Ab3CNKiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:04 -0400
+	Thu, 14 Mar 2013 06:38:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 68/88] ALSA: vmaster: Fix slave change notification
-Date: Thu, 14 Mar 2013 10:36:01 +0000
-Message-Id: <1363257381-15900-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 67/88] random: fix locking dependency with the tasklist_lock
+Date: Thu, 14 Mar 2013 10:36:00 +0000
+Message-Id: <1363257381-15900-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 2069d483b39a603a5f3428a19d3b4ac89aa97f48 upstream.
+commit b980955236922ae6106774511c5c05003d3ad225 upstream.
 
-When a value of a vmaster slave control is changed, the ctl change
-notification is sometimes ignored.  This happens when the master
-control overrides, e.g. when the corresponding master control is
-muted.  The reason is that slave_put() returns the value of the actual
-slave put callback, and it doesn't reflect the virtual slave value
-change.
+Commit 6133705494bb introduced a circular lock dependency because
+posix_cpu_timers_exit() is called by release_task(), which is holding
+a writer lock on tasklist_lock, and this can cause a deadlock since
+kill_fasync() gets called with nonblocking_pool.lock taken.
 
-This patch fixes the function just to return 1 whenever a slave value
-is changed.
+There's no reason why kill_fasync() needs to be taken while the random
+pool is locked, so move it out to fix this locking dependency.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Russ Dill <Russ.Dill@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/core/vmaster.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/char/random.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/sound/core/vmaster.c b/sound/core/vmaster.c
-index 8575861..0097f36 100644
---- a/sound/core/vmaster.c
-+++ b/sound/core/vmaster.c
-@@ -213,7 +213,10 @@ static int slave_put(struct snd_kcontrol *kcontrol,
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index d98b2a6..91abbc4 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -855,6 +855,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+ 	unsigned long flags;
++	int wakeup_write = 0;
+ 
+ 	/* Hold lock while accounting */
+ 	spin_lock_irqsave(&r->lock, flags);
+@@ -876,10 +877,8 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		else
+ 			r->entropy_count = reserved;
+ 
+-		if (r->entropy_count < random_write_wakeup_thresh) {
+-			wake_up_interruptible(&random_write_wait);
+-			kill_fasync(&fasync, SIGIO, POLL_OUT);
+-		}
++		if (r->entropy_count < random_write_wakeup_thresh)
++			wakeup_write = 1;
  	}
- 	if (!changed)
- 		return 0;
--	return slave_put_val(slave, ucontrol);
-+	err = slave_put_val(slave, ucontrol);
-+	if (err < 0)
-+		return err;
-+	return 1;
+ 
+ 	DEBUG_ENT("debiting %d entropy credits from %s%s\n",
+@@ -887,6 +886,11 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 
+ 	spin_unlock_irqrestore(&r->lock, flags);
+ 
++	if (wakeup_write) {
++		wake_up_interruptible(&random_write_wait);
++		kill_fasync(&fasync, SIGIO, POLL_OUT);
++	}
++
+ 	return nbytes;
  }
  
- static int slave_tlv_cmd(struct snd_kcontrol *kcontrol,
 -- 
 1.8.1.2
 
