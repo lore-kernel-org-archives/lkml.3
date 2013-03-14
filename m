@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3CNW2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:28:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36678 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab3CNW2U (ORCPT
+	id S1753551Ab3CNW2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:28:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40523 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab3CNW2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:28:20 -0400
-Date: Thu, 14 Mar 2013 15:28:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Feng Hong <hongfeng@marvell.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [PATCH 1/1] poweroff: change orderly_poweroff() to use
- schedule_work()
-Message-Id: <20130314152819.7fb1242b493e8bad2d34671b@linux-foundation.org>
-In-Reply-To: <20130313174705.GB28083@redhat.com>
-References: <1363058712.4534.12.camel@pasglop>
-	<CA+55aFzMKjk+bGbBrb5Qw-XDXaAXLMyrrpqMWH7o0duHq2wxzw@mail.gmail.com>
-	<CAKi4VALkUhOtP_8BOi3Mi8fTz8TUPwmwQq7WW27BEDue2wFNRw@mail.gmail.com>
-	<20130312182210.GA15862@redhat.com>
-	<CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com>
-	<20130312191118.GA17439@redhat.com>
-	<CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
-	<20130312203514.GA23488@redhat.com>
-	<20130313174641.GA28083@redhat.com>
-	<20130313174705.GB28083@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 18:28:34 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH] tools/perf: fix build on non-glibc systems due to libio.h absence
+Date: Thu, 14 Mar 2013 15:27:51 -0700
+Message-Id: <1363300074-26288-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031422-3620-0000-0000-000001A1D458
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Mar 2013 18:47:05 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
+Including libio.h causes build failures on uClibc systems (which lack
+libio.h).
 
-> orderly_poweroff() can be used from any context but UMH_WAIT_EXEC
-> is sleepable. Move the "force" logic into __orderly_poweroff() and
-> change orderly_poweroff() to use the global poweroff_work which
-> simply calls __orderly_poweroff().
-> 
-> While at it, remove the unneeded "int argc" and change argv_split()
-> to use GFP_KERNEL.
-> 
-> We use the global "bool poweroff_force" to pass the argument, this
-> can obviously affect the previous request if it is pending/running.
-> So we only allow the "false => true" transition assuming that the
-> pending "true" should succeed anyway. If schedule_work() fails after
-> that we know that work->func() was not called yet, it must see the
-> new value.
-> 
-> This means that orderly_poweroff() becomes async even if we do not
-> run the command and always succeeds, schedule_work() can only fail
-> if the work is already pending. We can export __orderly_poweroff()
-> and change the non-atomic callers which want the old semantics.
-> 
-> ...
->
-> @@ -2218,21 +2237,9 @@ static int __orderly_poweroff(void)
->   */
->  int orderly_poweroff(bool force)
->  {
-> -	int ret = __orderly_poweroff();
-> -
-> -	if (ret && force) {
-> -		printk(KERN_WARNING "Failed to start orderly shutdown: "
-> -		       "forcing the issue\n");
-> -
-> -		/*
-> -		 * I guess this should try to kick off some daemon to sync and
-> -		 * poweroff asap.  Or not even bother syncing if we're doing an
-> -		 * emergency shutdown?
-> -		 */
-> -		emergency_sync();
-> -		kernel_power_off();
-> -	}
-> -
-> -	return ret;
-> +	if (force) /* do not override the pending "true" */
-> +		poweroff_force = true;
-> +	schedule_work(&poweroff_work);
-> +	return 0;
->  }
+It appears that libio.h was only included to pull in a definition for
+NULL, so it has been replaced by stddef.h.
 
-afaict the current version of orderly_poweroff() will never return -
-either __orderly_poweroff() will block until the machine shuts down or
-kernel_power_off() will do so.
+On powerpc, libio.h was conditionally included, but could be removed
+completely as it is unneeded. Also, the included of stdlib.h was changed
+to stddef.h (as again, only NULL is needed).
 
-However with this patch there is a path via which orderly_poweroff()
-can return to its caller, I think?  If so, the caller might be rather
-surprised and we're exercising never-before-used code paths.  In fact
-if the surprised caller goes oops, the poweroff might not occur at all.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ tools/perf/arch/arm/util/dwarf-regs.c     | 5 +----
+ tools/perf/arch/powerpc/util/dwarf-regs.c | 5 +----
+ tools/perf/arch/s390/util/dwarf-regs.c    | 2 +-
+ tools/perf/arch/sh/util/dwarf-regs.c      | 2 +-
+ tools/perf/arch/sparc/util/dwarf-regs.c   | 2 +-
+ tools/perf/arch/x86/util/dwarf-regs.c     | 2 +-
+ 6 files changed, 6 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/arch/arm/util/dwarf-regs.c b/tools/perf/arch/arm/util/dwarf-regs.c
+index e8d5c55..33ec5b3 100644
+--- a/tools/perf/arch/arm/util/dwarf-regs.c
++++ b/tools/perf/arch/arm/util/dwarf-regs.c
+@@ -8,10 +8,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <stdlib.h>
+-#ifndef __UCLIBC__
+-#include <libio.h>
+-#endif
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ struct pt_regs_dwarfnum {
+diff --git a/tools/perf/arch/powerpc/util/dwarf-regs.c b/tools/perf/arch/powerpc/util/dwarf-regs.c
+index 7cdd61d..733151c 100644
+--- a/tools/perf/arch/powerpc/util/dwarf-regs.c
++++ b/tools/perf/arch/powerpc/util/dwarf-regs.c
+@@ -9,10 +9,7 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <stdlib.h>
+-#ifndef __UCLIBC__
+-#include <libio.h>
+-#endif
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ 
+diff --git a/tools/perf/arch/s390/util/dwarf-regs.c b/tools/perf/arch/s390/util/dwarf-regs.c
+index e19653e..0469df0 100644
+--- a/tools/perf/arch/s390/util/dwarf-regs.c
++++ b/tools/perf/arch/s390/util/dwarf-regs.c
+@@ -6,7 +6,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ #define NUM_GPRS 16
+diff --git a/tools/perf/arch/sh/util/dwarf-regs.c b/tools/perf/arch/sh/util/dwarf-regs.c
+index a11edb0..0d0897f 100644
+--- a/tools/perf/arch/sh/util/dwarf-regs.c
++++ b/tools/perf/arch/sh/util/dwarf-regs.c
+@@ -19,7 +19,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ /*
+diff --git a/tools/perf/arch/sparc/util/dwarf-regs.c b/tools/perf/arch/sparc/util/dwarf-regs.c
+index 0ab8848..92eda41 100644
+--- a/tools/perf/arch/sparc/util/dwarf-regs.c
++++ b/tools/perf/arch/sparc/util/dwarf-regs.c
+@@ -9,7 +9,7 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ #define SPARC_MAX_REGS	96
+diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
+index a794d30..be22dd4 100644
+--- a/tools/perf/arch/x86/util/dwarf-regs.c
++++ b/tools/perf/arch/x86/util/dwarf-regs.c
+@@ -20,7 +20,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ /*
+-- 
+1.8.1.5
+
