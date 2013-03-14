@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab3CNKcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:32:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51920 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756640Ab3CNKcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:32:14 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>
-CC: <nsekhar@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 0/3] Davinci support for EHRPWM & ECAP
-Date: Thu, 14 Mar 2013 16:02:35 +0530
-Message-ID: <1363257158-11615-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756718Ab3CNKdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:33:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52674 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640Ab3CNKdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:33:17 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org, sachin.kamat@linaro.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [PATCH 1/2] drivers: uio_dmem_genirq: Use of_match_ptr() macro
+Date: Thu, 14 Mar 2013 15:52:24 +0530
+Message-Id: <1363256545-30687-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series enables EHRPWM & ECAP driver support for da850
-platforms.
+This eliminates having an #ifdef returning NULL for the case
+when OF is disabled.
 
-This patch series based on [1] and is available at [2]. This has been tested
-backlight support using EHRPWM in da850-evm.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+---
+ drivers/uio/uio_dmem_genirq.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-[1] https://gitorious.org/linux-pwm/linux-pwm/trees/for-next
-[2] https://github.com/avinashphilip/am335x_linux/tree/davinci-for-v3.9_soc_pwm
-
-Philip Avinash (3):
-  pwm: davinci: Add Kconfig support for ECAP & EHRPWM devices
-  pwm: pwm-tiecap: Add device-tree binding support for da850 SOC
-  pwm: pwm-tiehrpwm: Add device tree binding support for da850 SOC
-
- .../devicetree/bindings/pwm/pwm-tiecap.txt         |    2 +-
- .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |    2 +-
- drivers/pwm/Kconfig                                |    8 +++-----
- drivers/pwm/pwm-tiecap.c                           |    1 +
- drivers/pwm/pwm-tiehrpwm.c                         |    1 +
- drivers/pwm/pwm-tipwmss.h                          |    2 +-
- 6 files changed, 8 insertions(+), 8 deletions(-)
-
+diff --git a/drivers/uio/uio_dmem_genirq.c b/drivers/uio/uio_dmem_genirq.c
+index 252434c..125d0e5 100644
+--- a/drivers/uio/uio_dmem_genirq.c
++++ b/drivers/uio/uio_dmem_genirq.c
+@@ -336,8 +336,6 @@ static const struct of_device_id uio_of_genirq_match[] = {
+ 	{ /* empty for now */ },
+ };
+ MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+-#else
+-# define uio_of_genirq_match NULL
+ #endif
+ 
+ static struct platform_driver uio_dmem_genirq = {
+@@ -347,7 +345,7 @@ static struct platform_driver uio_dmem_genirq = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+ 		.pm = &uio_dmem_genirq_dev_pm_ops,
+-		.of_match_table = uio_of_genirq_match,
++		.of_match_table = of_match_ptr(uio_of_genirq_match),
+ 	},
+ };
+ 
 -- 
-1.7.9.5
+1.7.4.1
 
