@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3CNKmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:42:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52091 "EHLO
+	id S1757448Ab3CNKml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:42:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52075 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757253Ab3CNKiR (ORCPT
+	with ESMTP id S1757342Ab3CNKiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:17 -0400
+	Thu, 14 Mar 2013 06:38:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Bruce Allan <bruce.w.allan@intel.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 80/88] vfs: fix pipe counter breakage
-Date: Thu, 14 Mar 2013 10:36:13 +0000
-Message-Id: <1363257381-15900-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 75/88] e1000e: fix pci-device enable-counter balance
+Date: Thu, 14 Mar 2013 10:36:08 +0000
+Message-Id: <1363257381-15900-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
+commit 4e0855dff094b0d56d6b5b271e0ce7851cc1e063 upstream.
 
-If you open a pipe for neither read nor write, the pipe code will not
-add any usage counters to the pipe, causing the 'struct pipe_inode_info"
-to be potentially released early.
+This patch removes redundant and unbalanced pci_disable_device() from
+__e1000_shutdown(). pci_clear_master() is enough, device can go into
+suspended state with elevated enable_cnt.
 
-That doesn't normally matter, since you cannot actually use the pipe,
-but the pipe release code - particularly fasync handling - still expects
-the actual pipe infrastructure to all be there.  And rather than adding
-NULL pointer checks, let's just disallow this case, the same way we
-already do for the named pipe ("fifo") case.
+Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
 
-This is ancient going back to pre-2.4 days, and until trinity, nobody
-naver noticed.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/pipe.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/intel/e1000e/netdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 49c1065..b342faa 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -863,6 +863,9 @@ pipe_rdwr_open(struct inode *inode, struct file *filp)
- {
- 	int ret = -ENOENT;
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index 2c78ef0..2ea52ce 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -5560,7 +5560,7 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake,
+ 	 */
+ 	e1000e_release_hw_control(adapter);
  
-+	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
-+		return -EINVAL;
-+
- 	mutex_lock(&inode->i_mutex);
+-	pci_disable_device(pdev);
++	pci_clear_master(pdev);
  
- 	if (inode->i_pipe) {
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
