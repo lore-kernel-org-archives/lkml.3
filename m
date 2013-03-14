@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3CNLAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:00:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51796 "EHLO
+	id S1757581Ab3CNLAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:00:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51798 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab3CNKhM (ORCPT
+	with ESMTP id S1756948Ab3CNKhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 06:37:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomas Henzl <thenzl@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: "Xiaowei.Hu" <xiaowei.hu@oracle.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/88] block: fix ext_devt_idr handling
-Date: Thu, 14 Mar 2013 10:35:16 +0000
-Message-Id: <1363257381-15900-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 22/88] ocfs2: ac->ac_allow_chain_relink=0 won't disable group relink
+Date: Thu, 14 Mar 2013 10:35:15 +0000
+Message-Id: <1363257381-15900-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -29,115 +30,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Henzl <thenzl@redhat.com>
+From: "Xiaowei.Hu" <xiaowei.hu@oracle.com>
 
-commit 7b74e912785a11572da43292786ed07ada7e3e0c upstream.
+commit 309a85b6861fedbb48a22d45e0e079d1be993b3a upstream.
 
-While adding and removing a lot of disks disks and partitions this
-sometimes shows up:
+ocfs2_block_group_alloc_discontig() disables chain relink by setting
+ac->ac_allow_chain_relink = 0 because it grabs clusters from multiple
+cluster groups.
 
-  WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
-  Hardware name:
-  sysfs: cannot create duplicate filename '/dev/block/259:751'
-  Modules linked in: raid1 autofs4 bnx2fc cnic uio fcoe libfcoe libfc 8021q scsi_transport_fc scsi_tgt garp stp llc sunrpc cpufreq_ondemand powernow_k8 freq_table mperf ipv6 dm_mirror dm_region_hash dm_log power_meter microcode dcdbas serio_raw amd64_edac_mod edac_core edac_mce_amd i2c_piix4 i2c_core k10temp bnx2 sg ixgbe dca mdio ext4 mbcache jbd2 dm_round_robin sr_mod cdrom sd_mod crc_t10dif ata_generic pata_acpi pata_atiixp ahci mptsas mptscsih mptbase scsi_transport_sas dm_multipath dm_mod [last unloaded: scsi_wait_scan]
-  Pid: 44103, comm: async/16 Not tainted 2.6.32-195.el6.x86_64 #1
+It doesn't keep the credits for all chain relink,but
+ocfs2_claim_suballoc_bits overrides this in this call trace:
+ocfs2_block_group_claim_bits()->ocfs2_claim_clusters()->
+__ocfs2_claim_clusters()->ocfs2_claim_suballoc_bits()
+ocfs2_claim_suballoc_bits set ac->ac_allow_chain_relink = 1; then call
+ocfs2_search_chain() one time and disable it again, and then we run out
+of credits.
+
+Fix is to allow relink by default and disable it in
+ocfs2_block_group_alloc_discontig.
+
+Without this patch, End-users will run into a crash due to run out of
+credits, backtrace like this:
+
+  RIP: 0010:[<ffffffffa0808b14>]  [<ffffffffa0808b14>]
+  jbd2_journal_dirty_metadata+0x164/0x170 [jbd2]
+  RSP: 0018:ffff8801b919b5b8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff88022139ddc0 RCX: ffff880159f652d0
+  RDX: ffff880178aa3000 RSI: ffff880159f652d0 RDI: ffff880087f09bf8
+  RBP: ffff8801b919b5e8 R08: 0000000000000000 R09: 0000000000000000
+  R10: 0000000000001e00 R11: 00000000000150b0 R12: ffff880159f652d0
+  R13: ffff8801a0cae908 R14: ffff880087f09bf8 R15: ffff88018d177800
+  FS:  00007fc9b0b6b6e0(0000) GS:ffff88022fd40000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 000000000040819c CR3: 0000000184017000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process dd (pid: 9945, threadinfo ffff8801b919a000, task ffff880149a264c0)
   Call Trace:
-    warn_slowpath_common+0x87/0xc0
-    warn_slowpath_fmt+0x46/0x50
-    sysfs_add_one+0xc9/0x130
-    sysfs_do_create_link+0x12b/0x170
-    sysfs_create_link+0x13/0x20
-    device_add+0x317/0x650
-    idr_get_new+0x13/0x50
-    add_partition+0x21c/0x390
-    rescan_partitions+0x32b/0x470
-    sd_open+0x81/0x1f0 [sd_mod]
-    __blkdev_get+0x1b6/0x3c0
-    blkdev_get+0x10/0x20
-    register_disk+0x155/0x170
-    add_disk+0xa6/0x160
-    sd_probe_async+0x13b/0x210 [sd_mod]
-    add_wait_queue+0x46/0x60
-    async_thread+0x102/0x250
-    default_wake_function+0x0/0x20
-    async_thread+0x0/0x250
-    kthread+0x96/0xa0
-    child_rip+0xa/0x20
-    kthread+0x0/0xa0
-    child_rip+0x0/0x20
+    ocfs2_journal_dirty+0x2f/0x70 [ocfs2]
+    ocfs2_relink_block_group+0x111/0x480 [ocfs2]
+    ocfs2_search_chain+0x455/0x9a0 [ocfs2]
+    ...
 
-This most likely happens because dev_t is freed while the number is
-still used and idr_get_new() is not protected on every use.  The fix
-adds a mutex where it wasn't before and moves the dev_t free function so
-it is called after device del.
-
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Xiaowei.Hu <xiaowei.hu@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/genhd.c             | 6 +++++-
- block/partition-generic.c | 2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ fs/ocfs2/suballoc.c | 7 +++----
+ fs/ocfs2/suballoc.h | 2 +-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 9cf5583..9433636 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -420,14 +420,18 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
- 	do {
- 		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
- 			return -ENOMEM;
-+		mutex_lock(&ext_devt_mutex);
- 		rc = idr_get_new(&ext_devt_idr, part, &idx);
-+		mutex_unlock(&ext_devt_mutex);
- 	} while (rc == -EAGAIN);
+diff --git a/fs/ocfs2/suballoc.c b/fs/ocfs2/suballoc.c
+index f169da4..b7e74b5 100644
+--- a/fs/ocfs2/suballoc.c
++++ b/fs/ocfs2/suballoc.c
+@@ -642,7 +642,7 @@ ocfs2_block_group_alloc_discontig(handle_t *handle,
+ 	 * cluster groups will be staying in cache for the duration of
+ 	 * this operation.
+ 	 */
+-	ac->ac_allow_chain_relink = 0;
++	ac->ac_disable_chain_relink = 1;
  
- 	if (rc)
- 		return rc;
+ 	/* Claim the first region */
+ 	status = ocfs2_block_group_claim_bits(osb, handle, ac, min_bits,
+@@ -1823,7 +1823,7 @@ static int ocfs2_search_chain(struct ocfs2_alloc_context *ac,
+ 	 * Do this *after* figuring out how many bits we're taking out
+ 	 * of our target group.
+ 	 */
+-	if (ac->ac_allow_chain_relink &&
++	if (!ac->ac_disable_chain_relink &&
+ 	    (prev_group_bh) &&
+ 	    (ocfs2_block_group_reasonably_empty(bg, res->sr_bits))) {
+ 		status = ocfs2_relink_block_group(handle, alloc_inode,
+@@ -1928,7 +1928,6 @@ static int ocfs2_claim_suballoc_bits(struct ocfs2_alloc_context *ac,
  
- 	if (idx > MAX_EXT_DEVT) {
-+		mutex_lock(&ext_devt_mutex);
- 		idr_remove(&ext_devt_idr, idx);
-+		mutex_unlock(&ext_devt_mutex);
- 		return -EBUSY;
- 	}
+ 	victim = ocfs2_find_victim_chain(cl);
+ 	ac->ac_chain = victim;
+-	ac->ac_allow_chain_relink = 1;
  
-@@ -644,7 +648,6 @@ void del_gendisk(struct gendisk *disk)
- 	disk_part_iter_exit(&piter);
+ 	status = ocfs2_search_chain(ac, handle, bits_wanted, min_bits,
+ 				    res, &bits_left);
+@@ -1947,7 +1946,7 @@ static int ocfs2_claim_suballoc_bits(struct ocfs2_alloc_context *ac,
+ 	 * searching each chain in order. Don't allow chain relinking
+ 	 * because we only calculate enough journal credits for one
+ 	 * relink per alloc. */
+-	ac->ac_allow_chain_relink = 0;
++	ac->ac_disable_chain_relink = 1;
+ 	for (i = 0; i < le16_to_cpu(cl->cl_next_free_rec); i ++) {
+ 		if (i == victim)
+ 			continue;
+diff --git a/fs/ocfs2/suballoc.h b/fs/ocfs2/suballoc.h
+index b8afabf..a36d0aa 100644
+--- a/fs/ocfs2/suballoc.h
++++ b/fs/ocfs2/suballoc.h
+@@ -49,7 +49,7 @@ struct ocfs2_alloc_context {
  
- 	invalidate_partition(disk, 0);
--	blk_free_devt(disk_to_dev(disk)->devt);
- 	set_capacity(disk, 0);
- 	disk->flags &= ~GENHD_FL_UP;
+ 	/* these are used by the chain search */
+ 	u16    ac_chain;
+-	int    ac_allow_chain_relink;
++	int    ac_disable_chain_relink;
+ 	group_search_t *ac_group_search;
  
-@@ -662,6 +665,7 @@ void del_gendisk(struct gendisk *disk)
- 	if (!sysfs_deprecated)
- 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	device_del(disk_to_dev(disk));
-+	blk_free_devt(disk_to_dev(disk)->devt);
- }
- EXPORT_SYMBOL(del_gendisk);
- 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 6df5d69..7b8b8d1 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -249,11 +249,11 @@ void delete_partition(struct gendisk *disk, int partno)
- 	if (!part)
- 		return;
- 
--	blk_free_devt(part_devt(part));
- 	rcu_assign_pointer(ptbl->part[partno], NULL);
- 	rcu_assign_pointer(ptbl->last_lookup, NULL);
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
-+	blk_free_devt(part_devt(part));
- 
- 	hd_struct_put(part);
- }
+ 	u64    ac_last_group;
 -- 
 1.8.1.2
 
