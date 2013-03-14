@@ -1,40 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab3CNNCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:02:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35448 "EHLO comal.ext.ti.com"
+	id S1757734Ab3CNNEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:04:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38531 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab3CNNCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:02:14 -0400
-Message-ID: <5141CA40.9010005@ti.com>
-Date: Thu, 14 Mar 2013 18:31:52 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1755776Ab3CNNEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 09:04:51 -0400
+Date: Thu, 14 Mar 2013 14:04:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mm/hugetlb: fix total hugetlbfs pages count when
+ memory overcommit accouting
+Message-ID: <20130314130449.GE11631@dhcp22.suse.cz>
+References: <1363260646-26896-1-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>
-Subject: Re: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
-References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com> <1363257453-24747-3-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1363257453-24747-3-git-send-email-avinashphilip@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363260646-26896-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/14/2013 4:07 PM, Philip Avinash wrote:
-> da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
-> TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
-> DT node status is set to "okay" DT blob.
-> Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
-> DA8XX_CFGCHIP1_REG.
+On Thu 14-03-13 19:30:46, Wanpeng Li wrote:
+> Changelog:
+>  v2 -> v3:
+>   * update patch description, spotted by Michal
+>  v1 -> v2:
+>   * update patch description, spotted by Michal
+> 
+> "hugetlb_total_pages is used for overcommit calculations but the
+> current implementation considers only default hugetlb page size (which
+> is either the first defined hugepage size or the one specified by
+> default_hugepagesz kernel boot parameter).
+> 
+> If the system is configured for more than one hugepage size (which is
+> possible since a137e1cc hugetlbfs: per mount huge page sizes) then
+> the overcommit estimation done by __vm_enough_memory (resp. shown by
+> meminfo_proc_show) is not precise - there is an impression of more
+> available/allowed memory. This can lead to an unexpected ENOMEM/EFAULT
+> resp. SIGSEGV when memory is accounted."
 
-So there is actually a TBCLK in DA850 - it's just not modeled as a clock
-similar to the way it is done on AM335x? If yes, then instead of adding
-a dummy clock node and doing the TBCLK enable as part of init, why not
-model TBCLK in clock tree even on DA850?
+Any reason for keeping the quotes I put in the previous email just to
+show what changelog I had in mind?
+ 
+> The patch should also push to 2.6.27 stable tree.
 
-Thanks,
-Sekhar
+There are no such trees, I have mentioned that only to point out which
+kernels are affected.
+
+> 
+> Testcase:
+> boot: hugepagesz=1G hugepages=1
+> the default overcommit ratio is 50
+> before patch:
+> egrep 'CommitLimit' /proc/meminfo
+> CommitLimit:     55434168 kB
+> after patch:
+> egrep 'CommitLimit' /proc/meminfo
+> CommitLimit:     54909880 kB
+>
+
+Is this information useful at all?
+
+Cc: <stable@vger.kernel.org> # 3.0+
+please
+
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/hugetlb.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index cdb64e4..9e25040 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2124,8 +2124,11 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
+>  /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+>  unsigned long hugetlb_total_pages(void)
+>  {
+> -	struct hstate *h = &default_hstate;
+> -	return h->nr_huge_pages * pages_per_huge_page(h);
+> +	struct hstate *h;
+> +	unsigned long nr_total_pages = 0;
+> +	for_each_hstate(h)
+> +		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
+> +	return nr_total_pages;
+>  }
+>  
+>  static int hugetlb_acct_memory(struct hstate *h, long delta)
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
