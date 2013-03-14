@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964974Ab3CNRza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:55:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52023 "EHLO mga02.intel.com"
+	id S934594Ab3CNRzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:55:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49929 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934550Ab3CNRtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:49:20 -0400
+	id S934537Ab3CNRtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="302267380"
+   d="scan'208";a="302267346"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 26/30] thp: extract fallback path from do_huge_pmd_anonymous_page() to a function
-Date: Thu, 14 Mar 2013 19:50:31 +0200
-Message-Id: <1363283435-7666-27-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 16/30] thp: handle file pages in split_huge_page()
+Date: Thu, 14 Mar 2013 19:50:21 +0200
+Message-Id: <1363283435-7666-17-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,149 +33,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-The same fallback path will be reused by non-anonymous pages, so lets'
-extract it in separate function.
+The base scheme is the same as for anonymous pages, but we walk by
+mapping->i_mmap rather then anon_vma->rb_root.
+
+__split_huge_page_refcount() has been tunned a bit: we need to transfer
+PG_swapbacked to tail pages.
+
+Splitting mapped pages haven't tested at all, since we cannot mmap()
+file-backed huge pages yet.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |  112 ++++++++++++++++++++++++++++--------------------------
- 1 file changed, 59 insertions(+), 53 deletions(-)
+ mm/huge_memory.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 54 insertions(+), 9 deletions(-)
 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index be7b7e1..0df1309 100644
+index e2f7f5aa..eb777d3 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -779,64 +779,12 @@ static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
- 	return true;
+@@ -1613,7 +1613,8 @@ static void __split_huge_page_refcount(struct page *page)
+ 				     ((1L << PG_referenced) |
+ 				      (1L << PG_swapbacked) |
+ 				      (1L << PG_mlocked) |
+-				      (1L << PG_uptodate)));
++				      (1L << PG_uptodate) |
++				      (1L << PG_swapbacked)));
+ 		page_tail->flags |= (1L << PG_dirty);
+ 
+ 		/* clear PageTail before overwriting first_page */
+@@ -1641,10 +1642,8 @@ static void __split_huge_page_refcount(struct page *page)
+ 		page_tail->index = page->index + i;
+ 		page_nid_xchg_last(page_tail, page_nid_last(page));
+ 
+-		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
+ 		BUG_ON(!PageDirty(page_tail));
+-		BUG_ON(!PageSwapBacked(page_tail));
+ 
+ 		lru_add_page_tail(page, page_tail, lruvec);
+ 	}
+@@ -1752,7 +1751,7 @@ static int __split_huge_page_map(struct page *page,
  }
  
--int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+static int do_fallback(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       unsigned int flags)
+ /* must be called with anon_vma->root->rwsem held */
+-static void __split_huge_page(struct page *page,
++static void __split_anon_huge_page(struct page *page,
+ 			      struct anon_vma *anon_vma)
  {
--	struct page *page;
--	unsigned long haddr = address & HPAGE_PMD_MASK;
- 	pte_t *pte;
- 
--	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
--		if (unlikely(anon_vma_prepare(vma)))
--			return VM_FAULT_OOM;
--		if (unlikely(khugepaged_enter(vma)))
--			return VM_FAULT_OOM;
--		if (!(flags & FAULT_FLAG_WRITE) &&
--				transparent_hugepage_use_zero_page()) {
--			pgtable_t pgtable;
--			unsigned long zero_pfn;
--			bool set;
--			pgtable = pte_alloc_one(mm, haddr);
--			if (unlikely(!pgtable))
--				return VM_FAULT_OOM;
--			zero_pfn = get_huge_zero_page();
--			if (unlikely(!zero_pfn)) {
--				pte_free(mm, pgtable);
--				count_vm_event(THP_FAULT_FALLBACK);
--				goto out;
--			}
--			spin_lock(&mm->page_table_lock);
--			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
--					zero_pfn);
--			spin_unlock(&mm->page_table_lock);
--			if (!set) {
--				pte_free(mm, pgtable);
--				put_huge_zero_page();
--			}
--			return 0;
--		}
--		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					  vma, haddr, numa_node_id(), 0);
--		if (unlikely(!page)) {
--			count_vm_event(THP_FAULT_FALLBACK);
--			goto out;
--		}
--		count_vm_event(THP_FAULT_ALLOC);
--		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
--			put_page(page);
--			goto out;
--		}
--		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
--							  page))) {
--			mem_cgroup_uncharge_page(page);
--			put_page(page);
--			goto out;
--		}
--
--		return 0;
--	}
--out:
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
-@@ -858,6 +806,64 @@ out:
- 	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+ 	int mapcount, mapcount2;
+@@ -1799,14 +1798,11 @@ static void __split_huge_page(struct page *page,
+ 	BUG_ON(mapcount != mapcount2);
  }
  
-+int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+			       unsigned long address, pmd_t *pmd,
-+			       unsigned int flags)
+-int split_huge_page(struct page *page)
++static int split_anon_huge_page(struct page *page)
+ {
+ 	struct anon_vma *anon_vma;
+ 	int ret = 1;
+ 
+-	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
+-	BUG_ON(!PageAnon(page));
+-
+ 	/*
+ 	 * The caller does not necessarily hold an mmap_sem that would prevent
+ 	 * the anon_vma disappearing so we first we take a reference to it
+@@ -1824,7 +1820,7 @@ int split_huge_page(struct page *page)
+ 		goto out_unlock;
+ 
+ 	BUG_ON(!PageSwapBacked(page));
+-	__split_huge_page(page, anon_vma);
++	__split_anon_huge_page(page, anon_vma);
+ 	count_vm_event(THP_SPLIT);
+ 
+ 	BUG_ON(PageCompound(page));
+@@ -1835,6 +1831,55 @@ out:
+ 	return ret;
+ }
+ 
++static int split_file_huge_page(struct page *page)
 +{
-+	struct page *page;
-+	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct address_space *mapping = page->mapping;
++	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	struct vm_area_struct *vma;
++	int mapcount, mapcount2;
 +
-+	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
-+		return do_fallback(mm, vma, address, pmd, flags);
-+	if (unlikely(anon_vma_prepare(vma)))
-+		return VM_FAULT_OOM;
-+	if (unlikely(khugepaged_enter(vma)))
-+		return VM_FAULT_OOM;
-+	if (!(flags & FAULT_FLAG_WRITE) &&
-+			transparent_hugepage_use_zero_page()) {
-+		pgtable_t pgtable;
-+		unsigned long zero_pfn;
-+		bool set;
-+		pgtable = pte_alloc_one(mm, haddr);
-+		if (unlikely(!pgtable))
-+			return VM_FAULT_OOM;
-+		zero_pfn = get_huge_zero_page();
-+		if (unlikely(!zero_pfn)) {
-+			pte_free(mm, pgtable);
-+			count_vm_event(THP_FAULT_FALLBACK);
-+			return do_fallback(mm, vma, address, pmd, flags);
-+		}
-+		spin_lock(&mm->page_table_lock);
-+		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-+				zero_pfn);
-+		spin_unlock(&mm->page_table_lock);
-+		if (!set) {
-+			pte_free(mm, pgtable);
-+			put_huge_zero_page();
-+		}
-+		return 0;
-+	}
-+	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-+			vma, haddr, numa_node_id(), 0);
-+	if (unlikely(!page)) {
-+		count_vm_event(THP_FAULT_FALLBACK);
-+		return do_fallback(mm, vma, address, pmd, flags);
-+	}
-+	count_vm_event(THP_FAULT_ALLOC);
-+	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
-+		put_page(page);
-+		return do_fallback(mm, vma, address, pmd, flags);
-+	}
-+	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
-+					page))) {
-+		mem_cgroup_uncharge_page(page);
-+		put_page(page);
-+		return do_fallback(mm, vma, address, pmd, flags);
++	BUG_ON(!PageHead(page));
++	BUG_ON(PageTail(page));
++
++	mutex_lock(&mapping->i_mmap_mutex);
++	mapcount = 0;
++	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long addr = vma_address(page, vma);
++		mapcount += __split_huge_page_splitting(page, vma, addr);
 +	}
 +
++	if (mapcount != page_mapcount(page))
++		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
++		       mapcount, page_mapcount(page));
++	BUG_ON(mapcount != page_mapcount(page));
++
++	__split_huge_page_refcount(page);
++
++	mapcount2 = 0;
++	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long addr = vma_address(page, vma);
++		mapcount2 += __split_huge_page_map(page, vma, addr);
++	}
++
++	if (mapcount != mapcount2)
++		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
++		       mapcount, mapcount2, page_mapcount(page));
++	BUG_ON(mapcount != mapcount2);
++	count_vm_event(THP_SPLIT);
++	mutex_unlock(&mapping->i_mmap_mutex);
 +	return 0;
 +}
 +
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		  pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
- 		  struct vm_area_struct *vma)
++int split_huge_page(struct page *page)
++{
++	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
++
++	if (PageAnon(page))
++		return split_anon_huge_page(page);
++	else
++		return split_file_huge_page(page);
++}
++
+ #define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
+ 
+ int hugepage_madvise(struct vm_area_struct *vma,
 -- 
 1.7.10.4
 
