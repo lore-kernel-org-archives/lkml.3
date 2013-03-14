@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3CNOBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:01:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756661Ab3CNOBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:01:12 -0400
-Date: Thu, 14 Mar 2013 09:55:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: 3.9.0-rc1: kexec not working: root disk does not show up
-Message-ID: <20130314135507.GA24238@redhat.com>
-References: <20130308171704.GE8219@redhat.com>
- <20130312192922.GA2268@redhat.com>
- <51402ED5.6000902@openvz.org>
- <20130313135351.GB11528@redhat.com>
- <514092DC.5020500@openvz.org>
+	id S1757038Ab3CNOBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:01:32 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53121 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756880Ab3CNOBa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:01:30 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 14 Mar 2013 07:01:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-ide@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
+        linux-fbdev@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH 04/10] drivers: hwmon: use module_platform_driver_probe()
+Message-ID: <20130314140130.GB16825@roeck-us.net>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
+ <1363266691-15757-6-git-send-email-fabio.porcedda@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <514092DC.5020500@openvz.org>
+In-Reply-To: <1363266691-15757-6-git-send-email-fabio.porcedda@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 06:53:16PM +0400, Konstantin Khlebnikov wrote:
-
-[..]
-> PCI: Don't try to disable Bus Master on disconnected PCI devices
+On Thu, Mar 14, 2013 at 02:11:25PM +0100, Fabio Porcedda wrote:
+> This patch converts the drivers to use the
+> module_platform_driver_probe() macro which makes the code smaller and
+> a bit simpler.
 > 
-> From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> 
-> This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from v3.9-rc1
-> ("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
-> in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from v3.5-rc1
-> ("PCI: disable Bus Master on PCI device shutdown")
-> 
-> Unfortunately fixing one bug uncovers another: after ->shutdown() device can be
-> already disconnected from the bus and configuration space in no longer available
-> 
-> Link: https://lkml.org/lkml/2013/3/12/529
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Reported-by: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: lm-sensors@lm-sensors.org
 > ---
->  drivers/pci/pci-driver.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+>  drivers/hwmon/mc13783-adc.c | 13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
 > 
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 1fa1e48..79277fb 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
->  
->  	/*
->  	 * Turn off Bus Master bit on the device to tell it to not
-> -	 * continue to do DMA
-> +	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
->  	 */
-> -	pci_clear_master(pci_dev);
-> +	if (pci_dev->current_state <= PCI_D3hot)
-> +		pci_clear_master(pci_dev);
->  }
->  
->  #ifdef CONFIG_PM
+I have that one already queued for -next, submitted by Jingoo Han.
 
-Hi,
-
-Above patch fixed the issue on my box. Now I can kexec. Thanks.
-
-Vivek
-
+Thanks,
+Guenter
