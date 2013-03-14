@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3CNLnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:43:11 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:47242 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab3CNLnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:43:08 -0400
-Message-ID: <1363261359.25976.224.camel@thor.lan>
-Subject: Re: [PATCH v5 00/44] ldisc patchset
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Date: Thu, 14 Mar 2013 07:42:39 -0400
-In-Reply-To: <CANN689Fe7K-+Mf1is9GaS0bjDuYaTd8AtBMjLvAVAkNy+QLmuw@mail.gmail.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-	 <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-	 <CANN689HvZK3gHyxRBPZyXwz2cJfheiEoQMA23oRARMCp=7GUCQ@mail.gmail.com>
-	 <1363106846.27803.174.camel@thor.lan>
-	 <CANN689HX1VAURYZL4=ixOSwim2LdYDgZyORtfUffrc4JCqK4xQ@mail.gmail.com>
-	 <1363223574.25976.135.camel@thor.lan>
-	 <CANN689Fe7K-+Mf1is9GaS0bjDuYaTd8AtBMjLvAVAkNy+QLmuw@mail.gmail.com>
+	id S1757024Ab3CNLnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:43:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59149 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab3CNLna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 07:43:30 -0400
+Message-ID: <5141B7CC.7000700@ti.com>
+Date: Thu, 14 Mar 2013 17:13:08 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <thierry.reding@avionic-design.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 2/3] pwm: pwm-tiecap: Add device-tree binding support
+ for da850 SOC
+References: <1363257158-11615-1-git-send-email-avinashphilip@ti.com> <1363257158-11615-3-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1363257158-11615-3-git-send-email-avinashphilip@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 00:25 -0700, Michel Lespinasse wrote:
-> On Wed, Mar 13, 2013 at 6:12 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> > On Wed, 2013-03-13 at 04:36 -0700, Michel Lespinasse wrote:
-> >> Have you considered building your ldlock based on lib/rwsem-spinlock.c
-> >> instead ? i.e. having an internal spinlock to protect the ldisc
-> >> reference count and the reader and writer queues. This would seem much
-> >> simpler get right. The downside would be that a spinlock would be
-> >> taken for a short time whenever an ldisc reference is taken or
-> >> released. I don't expect that the internal spinlock would get
-> >> significant contention ?
-> >
-> > That would have been too easy :)
-> >
-> > TBH, I hadn't considered it until I was most the way through a working
-> > atomic version. I had already split the reader/writer wait lists. And
-> > figured out how to always use the wait bias for every waiting reader and
-> > writer -- rather than the rwsem way of testing for an empty list --
-> > which made the timeout handling easier.
-> >
-> > At the time, the only thing that I was still struggling with was
-> > recursion, and the spinlock flavor wasn't going to fix that. So I just
-> > kept with the atomic flavor.
+On 3/14/2013 4:02 PM, Philip Avinash wrote:
+> ECAP IP is used in da850 SOC's also. Hence adds ECAP device tree binding
+> support for da850.
 > 
-> Its not too late to run away from it and preserve your sanity (as well
-> as that of the next person working on the tty layer :)
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> ---
+> :100644 100644 131e8c1... fcbd3c1... M	Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> :100644 100644 22e96e2... e0d96c8... M	drivers/pwm/pwm-tiecap.c
+>  .../devicetree/bindings/pwm/pwm-tiecap.txt         |    2 +-
+>  drivers/pwm/pwm-tiecap.c                           |    1 +
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt b/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> index 131e8c1..fcbd3c1 100644
+> --- a/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> @@ -1,7 +1,7 @@
+>  TI SOC ECAP based APWM controller
+>  
+>  Required properties:
+> -- compatible: Must be "ti,am33xx-ecap"
+> +- compatible: Must be "ti,am33xx-ecap" or "ti,da850-ecap"
+>  - #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
+>    First cell specifies the per-chip index of the PWM to use, the second
+>    cell is the period in nanoseconds and bit 0 in the third cell is used to
+> diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+> index 22e96e2..e0d96c8 100644
+> --- a/drivers/pwm/pwm-tiecap.c
+> +++ b/drivers/pwm/pwm-tiecap.c
+> @@ -197,6 +197,7 @@ static const struct pwm_ops ecap_pwm_ops = {
+>  
+>  static const struct of_device_id ecap_of_match[] = {
+>  	{ .compatible	= "ti,am33xx-ecap" },
+> +	{ .compatible	= "ti,da850-ecap" },
+>  	{},
 
-The long-term plan is to migrate it to lib so it won't be a maintenance
-burden to tty.
+You add a new compatible, but don't really show any changes in driver in
+this series. So why can't we simply use ti,am33xx-ecap on DA850 too?
 
+Thanks,
+Sekhar
