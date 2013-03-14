@@ -1,205 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab3CNOMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:12:50 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:56883 "EHLO
-	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757066Ab3CNOKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:10:51 -0400
-From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, hverkuil@xs4all.nl, elezegarcia@gmail.com,
-        =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
-Date: Thu, 14 Mar 2013 15:06:59 +0100
-Message-Id: <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+	id S1757681Ab3CNONM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:13:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40154 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756801Ab3CNONJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:13:09 -0400
+Date: Thu, 14 Mar 2013 16:13:01 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: remove MACH_OMAP_H4_OTG
+Message-ID: <20130314141301.GI26080@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363032881.3137.101.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l0l+eSofNeLXHSnY"
+Content-Disposition: inline
+In-Reply-To: <1363032881.3137.101.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is responsible for registering the device
-with the kernel i2c subsystem.
-v4l2 talks to the saa7113 chip of the device via i2c.
+--l0l+eSofNeLXHSnY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
----
- drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
- 1 file changed, 160 insertions(+)
- create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
+On Mon, Mar 11, 2013 at 09:14:41PM +0100, Paul Bolle wrote:
+> The Kconfig option MACH_OMAP_H4_OTG was already considered dead as of
+> v2.6.36, as can be seen in commit
+> 267ecec95f7d215d2da38252640b06198515acc3 ("Removing dead
+> MACH_OMAP_H4_OTG"). Remove its last trace now.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Tested with "make ARCH=3Darm menuconfig" (specifically whether setting
+> either MACH_OMAP_H2 or MACH_OMAP_H3 still selected ISP1301_OMAP).
+>=20
+> 1) By the way "if ARCH_OMAP" on the next line seems superfluous, as
+> ARCH_OMAP1 already selects ARCH_OMAP. Minor nit, actually.
+>=20
+>  drivers/usb/gadget/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index 5a0c541..c65b5e2 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -194,7 +194,7 @@ config USB_FUSB300
+>  config USB_OMAP
+>  	tristate "OMAP USB Device Controller"
+>  	depends on ARCH_OMAP1
+> -	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_H4_OTG
+> +	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
 
-diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
-new file mode 100644
-index 0000000..5b6f3f5
---- /dev/null
-+++ b/drivers/media/usb/smi2021/smi2021_i2c.c
-@@ -0,0 +1,160 @@
-+/*******************************************************************************
-+ * smi2021_i2c.c                                                               *
-+ *                                                                             *
-+ * USB Driver for SMI2021 - EasyCAP                                            *
-+ * USB ID 1c88:003c                                                            *
-+ *                                                                             *
-+ * *****************************************************************************
-+ *
-+ * Copyright 2011-2013 Jon Arne Jørgensen
-+ * <jonjon.arnearne--a.t--gmail.com>
-+ *
-+ * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
-+ *
-+ * This file is part of SMI2021
-+ * http://code.google.com/p/easycap-somagic-linux/
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * This driver is heavily influensed by the STK1160 driver.
-+ * Copyright (C) 2012 Ezequiel Garcia
-+ * <elezegarcia--a.t--gmail.com>
-+ *
-+ */
-+
-+#include "smi2021.h"
-+
-+/* The device will not return the chip_name on address 0x00.
-+ * But the saa7115 i2c driver needs the chip id to match "f7113"
-+ * if we want to use it,
-+ * so we have to fake the return of this value
-+ */
-+
-+static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
-+static int id_ptr;
-+
-+static unsigned int i2c_debug;
-+module_param(i2c_debug, int, 0644);
-+MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
-+
-+#define dprint_i2c(fmt, args...)					\
-+do {									\
-+	if (i2c_debug)							\
-+		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
-+} while (0)
-+
-+
-+static int i2c_xfer(struct i2c_adapter *i2c_adap,
-+				struct i2c_msg msgs[], int num)
-+{
-+	struct smi2021_dev *dev = i2c_adap->algo_data;
-+
-+	switch (num) {
-+	case 2: { /* Read reg */
-+		if (msgs[0].len != 1 || msgs[1].len != 1) {
-+			dprint_i2c("both messages must be 1 byte\n");
-+			goto err_out;
-+
-+		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
-+			dprint_i2c("last message should have rd flag\n");
-+			goto err_out;
-+		}
-+
-+		if (msgs[0].buf[0] == 0) {
-+			msgs[1].buf[0] = chip_id[id_ptr];
-+			if (chip_id[id_ptr] != 0)
-+				id_ptr += 1;
-+		} else {
-+			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
-+						msgs[1].buf);
-+		}
-+		break;
-+	}
-+	case 1: { /* Write reg */
-+		if (msgs[0].len == 0) {
-+			break;
-+		} else if (msgs[0].len != 2) {
-+			dprint_i2c("unsupported len\n");
-+			goto err_out;
-+		}
-+		if (msgs[0].buf[0] == 0) {
-+			/* We don't handle writing to addr 0x00 */
-+			break;
-+		}
-+
-+		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
-+						msgs[0].buf[1]);
-+		break;
-+	}
-+	default: {
-+		dprint_i2c("driver can only handle 1 or 2 messages\n");
-+		goto err_out;
-+	}
-+	}
-+	return num;
-+
-+err_out:
-+	return -EOPNOTSUPP;
-+}
-+
-+static u32 functionality(struct i2c_adapter *adap)
-+{
-+	return I2C_FUNC_SMBUS_EMUL;
-+}
-+
-+static struct i2c_algorithm algo = {
-+	.master_xfer = i2c_xfer,
-+	.functionality = functionality,
-+};
-+
-+static struct i2c_adapter adap_template = {
-+	.owner = THIS_MODULE,
-+	.name = "smi2021_easycap_dc60",
-+	.algo = &algo,
-+};
-+
-+static struct i2c_client client_template = {
-+	.name = "smi2021 internal",
-+};
-+
-+int smi2021_i2c_register(struct smi2021_dev *dev)
-+{
-+	int rc;
-+
-+	id_ptr = 0;
-+
-+	dev->i2c_adap = adap_template;
-+	dev->i2c_adap.dev.parent = dev->dev;
-+	strcpy(dev->i2c_adap.name, "smi2021");
-+	dev->i2c_adap.algo_data = dev;
-+
-+	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
-+
-+	rc = i2c_add_adapter(&dev->i2c_adap);
-+	if (rc < 0) {
-+		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
-+		return rc;
-+	}
-+
-+	dev->i2c_client = client_template;
-+	dev->i2c_client.adapter = &dev->i2c_adap;
-+
-+	return 0;
-+}
-+
-+int smi2021_i2c_unregister(struct smi2021_dev *dev)
-+{
-+	i2c_del_adapter(&dev->i2c_adap);
-+	return 0;
-+}
--- 
-1.8.1.1
+could you, instead, just remove the entire line ? we have an overuse of
+select and this is one of those cases where it doesn't make sense.
 
+--=20
+balbi
+
+--l0l+eSofNeLXHSnY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQdrtAAoJEIaOsuA1yqREaHcP/jtJ8VK3i7ueK8J5Kht8q6h0
+3nvMb0AcktdNsZfycn8YL8vOu45jvwAD/nizScSn+mMP83Co6rSIaJqWo4Cwo/ki
+pEwe9mMIErP9bfNd7TDIngTJDa8G3IkmWBjHHeGJ05J2SVtAXMOdsUfF2mGpDLRQ
+9WdMslVX7ZVAfnDwWmfXpKtbXhSkNU9bZjMxHcJoL9vZjwwpoJ/s0IoWDS/nW5sF
+ZKwcAdZ6YbGQcvDCNezHu24KsN1qrTFgbWPeTgD/lioiK/5DkFnLLh4eaqX/NJVR
+xPEoSvH4cb6C9YH4f9AMtIiZ+oLBCAqZkUo85GRz1s+ZtWkfZ+5GxPIS0WyRZnCA
+94OBQUi819/XFVCv3sCGD6ce0rcDYx9oN4zAYbfXfpmLCRX219EZwg3mhxOdTAJW
+vc/8+PYhkcY363cmEnVUcOpQKz7x2Fd+Iu1CwNdOyaQ3JY8w7v4Eku1ZCDl1nViJ
+2Hh6JIJHGoWbDqLkQUlCkT5G64pjr4iMUHz+6Nc16Ymqca1fe7xRfH5KfLwEz9Tt
+JHE7Q+9jO0jiY60zRjxi5iyALnM52S9B7O/gl4+n4pbEwCiHEEIuffNYl3hrlrly
+xO6KSpTEK6sqDQ6BLrMyOpK5Kz4IFH6Jn3K82RNsHQZEMgI7PVHtgtG//Ct0C+ol
+ZvU9XT46k8hHrMjaEpe3
+=qKwq
+-----END PGP SIGNATURE-----
+
+--l0l+eSofNeLXHSnY--
