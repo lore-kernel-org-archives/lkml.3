@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964813Ab3CNQmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 12:42:42 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:51898 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3CNQmk (ORCPT
+	id S934502Ab3CNQnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:43:08 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:48092 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487Ab3CNQnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 12:42:40 -0400
-Message-ID: <1363279329.7443.10.camel@thor.lan>
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor
- interrupt responses)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Date: Thu, 14 Mar 2013 12:42:09 -0400
-In-Reply-To: <alpine.LNX.2.00.1303141709000.30118@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org>
-	 <alpine.LNX.2.00.1303141555090.30118@pobox.suse.cz>
-	 <alpine.LNX.2.00.1303141709000.30118@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 14 Mar 2013 12:43:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130314140130.GB16825@roeck-us.net>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
+ <1363266691-15757-6-git-send-email-fabio.porcedda@gmail.com> <20130314140130.GB16825@roeck-us.net>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Thu, 14 Mar 2013 17:42:34 +0100
+Message-ID: <CAHkwnC8nn1SFv-wzf18jATGM+gfmR+sf+nrjATMNYkyWgR9bNw@mail.gmail.com>
+Subject: Re: [PATCH 04/10] drivers: hwmon: use module_platform_driver_probe()
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-ide <linux-ide@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 17:09 +0100, Jiri Kosina wrote:
-> On Thu, 14 Mar 2013, Jiri Kosina wrote:
-> 
-> > > > I don't think I have seen this message on rc1+ (8343bce, to be precise), 
-> > > > but I have definitely seen sluggish system response on that kernel as 
-> > > > well.
-> > > > 
-> > > > Attaching lspci, /proc/interrupts and dmesg. 
-> > > 
-> > > Can you try to do a git bisect for this?  Is the sluggish system 
-> > > response clear enough that you can tell reliably when it is present and 
-> > > when it isn't?
-> > 
-> > That was my first thought, but unfortunately I am afraid there will be 
-> > point at which I will easily make a bisection mistake, as the 
-> > responsiveness of the system varies over time, so it's not really a 
-> > 100% objective measure.
-> 
-> So I will try a bisect, but it'll take some time so that I could claim it 
-> to be trustworthy.
-> 
-> Therefore in case anyone has any idea in parallel, I am all ears.
+On Thu, Mar 14, 2013 at 3:01 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Thu, Mar 14, 2013 at 02:11:25PM +0100, Fabio Porcedda wrote:
+>> This patch converts the drivers to use the
+>> module_platform_driver_probe() macro which makes the code smaller and
+>> a bit simpler.
+>>
+>> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Jean Delvare <khali@linux-fr.org>
+>> Cc: Guenter Roeck <linux@roeck-us.net>
+>> Cc: lm-sensors@lm-sensors.org
+>> ---
+>>  drivers/hwmon/mc13783-adc.c | 13 +------------
+>>  1 file changed, 1 insertion(+), 12 deletions(-)
+>>
+> I have that one already queued for -next, submitted by Jingoo Han.
 
-When I had this happen on -next, it was PCI + ACPI-related and I had to
-bisect it. But for me the problem was quite noticable and showed up
-right at login prompt.
+Ok i will drop this patch.
 
-Regards,
-Peter Hurley
+Best regards
+Fabio Porcedda
 
-PS - I already confirmed that the commit that fixes that is in 3.9-rc1
-
-
+> Thanks,
+> Guenter
