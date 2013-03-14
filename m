@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab3CNKxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:53:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54258 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757178Ab3CNKxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:53:34 -0400
-Date: Thu, 14 Mar 2013 12:53:20 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
-        <thomas.abraham@linaro.org>, <dianders@chromium.org>
-Subject: Re: [PATCH 2/2] usb: dwc3: exynos: use clk_prepare_enable and
- clk_disable_unprepare
-Message-ID: <20130314105320.GH32369@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
- <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
+	id S1757515Ab3CNKxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:53:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4061 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756814Ab3CNKxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:53:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 14 Mar 2013 03:47:02 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <gg@slimlogic.co.uk>, <ldewangan@nvidia.com>,
+        <broonie@opensource.wolfsonmicro.com>, <ian@slimlogic.co.uk>,
+        <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
+        Bill Huang <bilhuang@nvidia.com>
+Subject: [PATCH 1/1] mfd: palmas: Add power off control
+Date: Thu, 14 Mar 2013 03:58:00 -0700
+Message-ID: <1363258680-12600-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6lXr1rPCNTf1w0X8"
-Content-Disposition: inline
-In-Reply-To: <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6lXr1rPCNTf1w0X8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hook up "pm_power_off" to palmas power off routine if there is DT
+property "ti,system-power-controller" defined, so platform which is
+powered by this regulator can be powered off properly.
 
-Hi,
+Based on work by:
+Mallikarjun Kasoju <mkasoju@nvidia.com>
 
-On Thu, Mar 14, 2013 at 04:14:58PM +0530, Vivek Gautam wrote:
-> Convert clk_enable/clk_disable to clk_prepare_enable/clk_disable_unprepare
-> calls as required by common clock framework.
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> CC: Felipe Balbi <balbi@ti.com>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> ---
->  drivers/usb/dwc3/dwc3-exynos.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exyno=
-s.c
-> index 66ca9ac..b03f609 100644
-> --- a/drivers/usb/dwc3/dwc3-exynos.c
-> +++ b/drivers/usb/dwc3/dwc3-exynos.c
-> @@ -129,7 +129,7 @@ static int dwc3_exynos_probe(struct platform_device *=
-pdev)
->  	exynos->dev	=3D dev;
->  	exynos->clk	=3D clk;
-> =20
-> -	clk_enable(exynos->clk);
-> +	clk_prepare_enable(exynos->clk);
+Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+---
+ drivers/mfd/palmas.c       |   25 +++++++++++++++++++++++--
+ include/linux/mfd/palmas.h |    1 +
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-eventually we need to pass this clock handling to dwc3/core.c. Just make
-sure it's optional since not all platforms need it.
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index bbdbc50..ee8180d 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -283,6 +283,22 @@ static void palmas_dt_to_pdata(struct device_node *node,
+ 		pdata->power_ctrl = PALMAS_POWER_CTRL_NSLEEP_MASK |
+ 					PALMAS_POWER_CTRL_ENABLE1_MASK |
+ 					PALMAS_POWER_CTRL_ENABLE2_MASK;
++
++	pdata->pm_off = of_property_read_bool(node,
++			"ti,system-power-controller");
++}
++
++static struct palmas *palmas_dev;
++static void palmas_power_off(void)
++{
++	unsigned int addr;
++
++	if (!palmas_dev)
++		return;
++
++	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_DEV_CTRL);
++
++	regmap_update_bits(palmas_dev->regmap[0], addr, 1, 0);
+ }
+ 
+ static int palmas_i2c_probe(struct i2c_client *i2c,
+@@ -435,10 +451,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 	 */
+ 	if (node) {
+ 		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+-		if (ret < 0)
++		if (ret < 0) {
+ 			goto err_irq;
+-		else
++		} else {
++			if (pdata->pm_off && !pm_power_off) {
++				palmas_dev = palmas;
++				pm_power_off = palmas_power_off;
++			}
+ 			return ret;
++		}
+ 	}
+ 
+ 	children = kmemdup(palmas_children, sizeof(palmas_children),
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index a4d13d7..a447e54 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -232,6 +232,7 @@ struct palmas_platform_data {
+ 	 */
+ 	int mux_from_pdata;
+ 	u8 pad1, pad2;
++	bool pm_off;
+ 
+ 	struct palmas_pmic_platform_data *pmic_pdata;
+ 	struct palmas_gpadc_platform_data *gpadc_pdata;
+-- 
+1.7.9.5
 
-I guess the best way would be to handle clocks via
-->runtime_suspend()/->runtime_resume() ??
-
---=20
-balbi
-
---6lXr1rPCNTf1w0X8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQawgAAoJEIaOsuA1yqRERc8P/jGz7Czv57nw66tpzFV18XaX
-ckMJpC8gcdZYnSKxejFs6sPYkXrYgQajq9FqfAxRGIoYL1ki1DhdJRPCCKsTNBQq
-d42dsESXIFaX+F04SlZRQaDoxYnuNtNz76v9szcJyPiy1uyZgQiJq5h2BpTDWRzZ
-bQJqNKbCnZ3tsk1mJ3l81xmtJ9EpZ3jua+IWX04cARU/u7SaAFmL//eRZgmnx9Jz
-VEdudP/T37xhqeR1R1Q9D/OT8wWxpKtMNcvI9UC6EWBpqq/TuYGR22uc2TLW3Jpz
-Z4LYfdHn8rbvyS6Nz1fVQppm4XrZxCmm4rqS7g4GG5aaFqA5JcD9TZ57UYQTW+o2
-GN8rr74dSmVn8fPhiiOmuT7rX3/93YsdMtSKg+nJUasDL7Cp7TVSAQnG5r+mMccO
-11z+4RgttYNf8be3TUtXznZooGy88sZrZLc1flPcalsLps7xQ7SiQhDbMwQyFDvI
-J55FnStR4pa/tpaprr5sufFH65ul6bRRU49PyElvyq9r5ZaxlIt6YzqNOfrIRX0t
-S1+yX16jUxD918AlSmhKodFA6Vga6AN27RNHCXO1VZ8zXI51bZJvkYxebkwv5+Ip
-xf8pOCXm7j/BgCYEFz9iKAP0LNz5aVkpAGSLeboKjD7YZesv5AgE9CF21qnwqeVL
-x+Ttdo4qCETDN75/g+8v
-=6rTS
------END PGP SIGNATURE-----
-
---6lXr1rPCNTf1w0X8--
