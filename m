@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab3CNJIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:08:18 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:41285 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab3CNJIR (ORCPT
+	id S1755269Ab3CNJI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:08:27 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9914 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab3CNJIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:08:17 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] drivers: spi: Use PTR_RET function
-Date: Thu, 14 Mar 2013 11:07:31 +0200
-Message-Id: <1363252051-29362-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 14 Mar 2013 05:08:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 14 Mar 2013 02:01:42 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>
+CC: <linux-tegra@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] amba: tegra-ahb: Fix build error w/ PM_SLEEP w/o PM_RUNTIME
+Date: Thu, 14 Mar 2013 11:08:09 +0200
+Message-ID: <1363252089-4120-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced calls to IS_ERR and PTR_ERR with PTR_RET function.
-Patch found using coccinelle.
+Make this depend on CONFIG_PM. This protection is necessary to not
+cause any build errors with any combination of PM features especially
+when supporting a new SoC where each PM features are being enabled
+one-by-one during its depelopment.
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+Reported-by: Joseph Lo <josephl@nvidia.com>
 ---
- drivers/spi/spi-fsl-spi.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/amba/tegra-ahb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index 086a9ee..1985ba3 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -1134,9 +1134,7 @@ static int plat_mpc8xxx_spi_probe(struct platform_device *pdev)
- 		return -EINVAL;
+diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+index 093c435..1f44e56 100644
+--- a/drivers/amba/tegra-ahb.c
++++ b/drivers/amba/tegra-ahb.c
+@@ -158,7 +158,7 @@ int tegra_ahb_enable_smmu(struct device_node *dn)
+ EXPORT_SYMBOL(tegra_ahb_enable_smmu);
+ #endif
  
- 	master = fsl_spi_probe(&pdev->dev, mem, irq);
--	if (IS_ERR(master))
--		return PTR_ERR(master);
--	return 0;
-+	return PTR_RET(master);
- }
- 
- static int plat_mpc8xxx_spi_remove(struct platform_device *pdev)
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ static int tegra_ahb_suspend(struct device *dev)
+ {
+ 	int i;
 -- 
-1.7.9.5
+1.8.1.5
 
