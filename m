@@ -1,128 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab3CNLKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:10:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56676 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756779Ab3CNLKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:10:35 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC] i7300_edac: Fix memory detection in single mode
-Date: Thu, 14 Mar 2013 08:10:28 -0300
-Message-Id: <8ed5b5d41168a98cffa63e2f6c51c3243e159706.1363259423.git.mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756895Ab3CNLPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:15:09 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:55955 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756693Ab3CNLPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 07:15:07 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <20130313154431.e39aed27efb095f9183bc123@linux-foundation.org>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<1363184193-1796-2-git-send-email-miklos@szeredi.hu>
+	<20130313154431.e39aed27efb095f9183bc123@linux-foundation.org>
+Date: Thu, 14 Mar 2013 12:15:04 +0100
+Message-ID: <CAJfpegvGDTu3RUqC05EPNJA5zZrU5rgaBqWpXVz=B-JGoV_cog@mail.gmail.com>
+Subject: Re: [PATCH 1/9] vfs: add i_op->dentry_open()
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, dhowells@redhat.com,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the machine is on single mode, only branch 0 channel 0
-is valid. However, the code is not honouring it:
+On Wed, Mar 13, 2013 at 11:44 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 13 Mar 2013 15:16:25 +0100 Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>>
+>> Add a new inode operation i_op->dentry_open().  This is for stacked filesystems
+>> that want to return a struct file from a different filesystem.
+>>
+>> ...
+>>
+>> +/**
+>> + * vfs_open - open the file at the given path
+>> + * @path: path to open
+>> + * @filp: newly allocated file with f_flag initialized
+>> + * @cred: credentials to use
+>> + */
+>> +int vfs_open(const struct path *path, struct file *filp,
+>> +          const struct cred *cred)
+>> +{
+>> +     struct inode *inode = path->dentry->d_inode;
+>> +
+>> +     if (inode->i_op->dentry_open)
+>> +             return inode->i_op->dentry_open(path->dentry, filp, cred);
+>> +     else {
+>> +             filp->f_path = *path;
+>> +             return do_dentry_open(filp, NULL, cred);
+>> +     }
+>> +}
+>
+> This looks like it will add some overhead to dentry_open().  That long
+> walk path->dentry->d_inode->i_op->dentry_open, particularly.  Can we do
+> anything?  Using filp->f_inode might save a tad.
 
-[ 1952.639341] EDAC DEBUG: i7300_get_mc_regs: Memory controller operating on single mode
-...
-[ 1952.639351] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH0 = 0x1:
-[ 1952.639353] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH1 = 0x0:
-[ 1952.639355] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH2 = 0x0:
-[ 1952.639358] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH3 = 0x0:
-...
-[ 1952.639360] EDAC DEBUG: decode_mtr: 	MTR0 CH0: DIMMs are Present (mtr)
-[ 1952.639362] EDAC DEBUG: decode_mtr: 		WIDTH: x8
-[ 1952.639363] EDAC DEBUG: decode_mtr: 		ELECTRICAL THROTTLING is enabled
-[ 1952.639364] EDAC DEBUG: decode_mtr: 		NUMBANK: 4 bank(s)
-[ 1952.639366] EDAC DEBUG: decode_mtr: 		NUMRANK: single
-[ 1952.639367] EDAC DEBUG: decode_mtr: 		NUMROW: 16,384 - 14 rows
-[ 1952.639368] EDAC DEBUG: decode_mtr: 		NUMCOL: 1,024 - 10 columns
-[ 1952.639370] EDAC DEBUG: decode_mtr: 		SIZE: 512 MB
-[ 1952.639371] EDAC DEBUG: decode_mtr: 		ECC code is 8-byte-over-32-byte SECDED+ code
-[ 1952.639373] EDAC DEBUG: decode_mtr: 		Scrub algorithm for x8 is on enhanced mode
-[ 1952.639374] EDAC DEBUG: decode_mtr: 	MTR0 CH1: DIMMs are Present (mtr)
-[ 1952.639376] EDAC DEBUG: decode_mtr: 		WIDTH: x8
-[ 1952.639377] EDAC DEBUG: decode_mtr: 		ELECTRICAL THROTTLING is enabled
-[ 1952.639379] EDAC DEBUG: decode_mtr: 		NUMBANK: 4 bank(s)
-[ 1952.639380] EDAC DEBUG: decode_mtr: 		NUMRANK: single
-[ 1952.639381] EDAC DEBUG: decode_mtr: 		NUMROW: 16,384 - 14 rows
-[ 1952.639383] EDAC DEBUG: decode_mtr: 		NUMCOL: 1,024 - 10 columns
-[ 1952.639384] EDAC DEBUG: decode_mtr: 		SIZE: 512 MB
-[ 1952.639385] EDAC DEBUG: decode_mtr: 		ECC code is 8-byte-over-32-byte SECDED+ code
-[ 1952.639387] EDAC DEBUG: decode_mtr: 		Scrub algorithm for x8 is on enhanced mode
-...
-[ 1952.639449] EDAC DEBUG: print_dimm_size:               channel 0 | channel 1 | channel 2 | channel 3 |
-[ 1952.639451] EDAC DEBUG: print_dimm_size: -------------------------------------------------------------
-[ 1952.639453] EDAC DEBUG: print_dimm_size: csrow/SLOT 0   512 MB   |  512 MB   |    0 MB   |    0 MB   |
-[ 1952.639456] EDAC DEBUG: print_dimm_size: csrow/SLOT 1     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639458] EDAC DEBUG: print_dimm_size: csrow/SLOT 2     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639460] EDAC DEBUG: print_dimm_size: csrow/SLOT 3     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639462] EDAC DEBUG: print_dimm_size: csrow/SLOT 4     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639464] EDAC DEBUG: print_dimm_size: csrow/SLOT 5     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639466] EDAC DEBUG: print_dimm_size: csrow/SLOT 6     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639468] EDAC DEBUG: print_dimm_size: csrow/SLOT 7     0 MB   |    0 MB   |    0 MB   |    0 MB   |
-[ 1952.639470] EDAC DEBUG: print_dimm_size: -------------------------------------------------------------
+filp->f_inode is initialized in do_dentry_open.  But we can move that
+to callers.
 
-Instead of detecting a single memory at channel 0, it is showing
-twice the memory.
+Adding an IOP_DENTRY_OPEN flag should take care of the rest.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i7300_edac.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+> It's unfortunate and a bit ugly that ->dentry_open() and
+> do_dentry_open() don't have the same arguments.  One would expect and
+> like them to do so, and this difference raises suspicions about design
+> warts.
 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index 087c27b..9004c64 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -750,15 +750,23 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 	struct i7300_dimm_info *dinfo;
- 	int rc = -ENODEV;
- 	int mtr;
--	int ch, branch, slot, channel;
-+	int ch, branch, slot, channel, max_channel, max_branch;
- 	struct dimm_info *dimm;
- 
- 	pvt = mci->pvt_info;
- 
- 	edac_dbg(2, "Memory Technology Registers:\n");
- 
-+	if (IS_SINGLE_MODE(pvt->mc_settings_a)) {
-+		max_branch = 1;
-+		max_channel = 1;
-+	} else {
-+		max_branch = MAX_BRANCHES;
-+		max_channel = MAX_CH_PER_BRANCH;
-+	}
-+
- 	/* Get the AMB present registers for the four channels */
--	for (branch = 0; branch < MAX_BRANCHES; branch++) {
-+	for (branch = 0; branch < max_branch; branch++) {
- 		/* Read and dump branch 0's MTRs */
- 		channel = to_channel(0, branch);
- 		pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
-@@ -767,6 +775,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 		edac_dbg(2, "\t\tAMB-present CH%d = 0x%x:\n",
- 			 channel, pvt->ambpresent[channel]);
- 
-+		if (max_channel == 1)
-+			continue;
-+
- 		channel = to_channel(1, branch);
- 		pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
- 				     AMBPRESENT_1,
-@@ -778,11 +789,11 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 	/* Get the set of MTR[0-7] regs by each branch */
- 	for (slot = 0; slot < MAX_SLOTS; slot++) {
- 		int where = mtr_regs[slot];
--		for (branch = 0; branch < MAX_BRANCHES; branch++) {
-+		for (branch = 0; branch < max_branch; branch++) {
- 			pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
- 					where,
- 					&pvt->mtr[slot][branch]);
--			for (ch = 0; ch < MAX_CH_PER_BRANCH; ch++) {
-+			for (ch = 0; ch < max_channel; ch++) {
- 				int channel = to_channel(ch, branch);
- 
- 				dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
--- 
-1.8.1.4
+Hmm, the basic reason for the difference is that filesystems should
+not have access to the vfsmount part of the path.
 
+Otherwise it would be trivial to make them match up.
+
+>
+> If they _did_ have the same signature then we could perhaps populate
+> ->dentry_open with do_dentry_open by default and avoid the `if'.
+
+Except there's no way to add a default i_op, AFAIK.
+
+>
+> The test of inode->i_op->dentry_open could do with an unlikely(), but
+> that won't save us :(
+>
+>> +EXPORT_SYMBOL(vfs_open);
+>
+> Did you consider EXPORT_SYMBOL_GPL()?
+
+It is not clear to me what to base that decision on.  Either one is fine by me.
+
+Thanks,
+Miklos
