@@ -1,156 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3CNULS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:11:18 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33480
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1751841Ab3CNUUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:20:32 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48560 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab3CNUJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:09:29 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 2/6] Drivers: hv: balloon: Execute balloon inflation in a separate context
-Date: Thu, 14 Mar 2013 13:39:21 -0700
-Message-Id: <1363293565-13428-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363293565-13428-1-git-send-email-kys@microsoft.com>
-References: <1363293537-13389-1-git-send-email-kys@microsoft.com>
- <1363293565-13428-1-git-send-email-kys@microsoft.com>
+	id S1751378Ab3CNUUa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 16:20:30 -0400
+Subject: Re: [PATCH 5/5 v9] iommu/fsl: Freescale PAMU driver and iommu implementation.
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1363200580-11623-1-git-send-email-Varun.Sethi@freescale.com>
+Date: Thu, 14 Mar 2013 15:20:11 -0500
+Cc: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <benh@kernel.crashing.org>, <scottwood@freescale.com>,
+        <stuart.yoder@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0080B56D-8417-41B9-8341-665457D04DE6@kernel.crashing.org>
+References: <1363200580-11623-1-git-send-email-Varun.Sethi@freescale.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Execute the balloon inflation operation in a separate work context.
-This allows us to decouple the pressure reporting activity from the
-ballooning activity. Testing has shown that this decoupling makes the
-guest more reponsive.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/hv_balloon.c |   34 ++++++++++++++++++++++++----------
- 1 files changed, 24 insertions(+), 10 deletions(-)
+On Mar 13, 2013, at 1:49 PM, Varun Sethi wrote:
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 7fb72dd..8dc406c 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -412,6 +412,11 @@ struct dm_info_msg {
-  * End protocol definitions.
-  */
- 
-+struct balloon_state {
-+	__u32 num_pages;
-+	struct work_struct wrk;
-+};
-+
- static bool hot_add;
- static bool do_hot_add;
- /*
-@@ -459,7 +464,12 @@ struct hv_dynmem_device {
- 	unsigned int num_pages_ballooned;
- 
- 	/*
--	 * This thread handles both balloon/hot-add
-+	 * State to manage the ballooning (up) operation.
-+	 */
-+	struct balloon_state balloon_wrk;
-+
-+	/*
-+	 * This thread handles hot-add
- 	 * requests from the host as well as notifying
- 	 * the host with regards to memory pressure in
- 	 * the guest.
-@@ -657,9 +667,9 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
- 
- 
- 
--static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
-+static void balloon_up(struct work_struct *dummy)
- {
--	int num_pages = req->num_pages;
-+	int num_pages = dm_device.balloon_wrk.num_pages;
- 	int num_ballooned = 0;
- 	struct dm_balloon_response *bl_resp;
- 	int alloc_unit;
-@@ -684,14 +694,14 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
- 
- 
- 		num_pages -= num_ballooned;
--		num_ballooned = alloc_balloon_pages(dm, num_pages,
-+		num_ballooned = alloc_balloon_pages(&dm_device, num_pages,
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
- 
- 		if ((alloc_error) || (num_ballooned == num_pages)) {
- 			bl_resp->more_pages = 0;
- 			done = true;
--			dm->state = DM_INITIALIZED;
-+			dm_device.state = DM_INITIALIZED;
- 		}
- 
- 		/*
-@@ -719,7 +729,7 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
- 			pr_info("Balloon response failed\n");
- 
- 			for (i = 0; i < bl_resp->range_count; i++)
--				free_balloon_pages(dm,
-+				free_balloon_pages(&dm_device,
- 						 &bl_resp->range_array[i]);
- 
- 			done = true;
-@@ -775,9 +785,6 @@ static int dm_thread_func(void *dm_dev)
- 
- 		scan_start = jiffies;
- 		switch (dm->state) {
--		case DM_BALLOON_UP:
--			balloon_up(dm, (struct dm_balloon *)recv_buffer);
--			break;
- 
- 		case DM_HOT_ADD:
- 			hot_add_req(dm, (struct dm_hot_add *)recv_buffer);
-@@ -861,6 +868,7 @@ static void balloon_onchannelcallback(void *context)
- 	struct dm_message *dm_msg;
- 	struct dm_header *dm_hdr;
- 	struct hv_dynmem_device *dm = hv_get_drvdata(dev);
-+	struct dm_balloon *bal_msg;
- 
- 	memset(recv_buffer, 0, sizeof(recv_buffer));
- 	vmbus_recvpacket(dev->channel, recv_buffer,
-@@ -882,8 +890,12 @@ static void balloon_onchannelcallback(void *context)
- 			break;
- 
- 		case DM_BALLOON_REQUEST:
-+			if (dm->state == DM_BALLOON_UP)
-+				pr_warn("Currently ballooning\n");
-+			bal_msg = (struct dm_balloon *)recv_buffer;
- 			dm->state = DM_BALLOON_UP;
--			complete(&dm->config_event);
-+			dm_device.balloon_wrk.num_pages = bal_msg->num_pages;
-+			schedule_work(&dm_device.balloon_wrk.wrk);
- 			break;
- 
- 		case DM_UNBALLOON_REQUEST:
-@@ -937,6 +949,7 @@ static int balloon_probe(struct hv_device *dev,
- 	dm_device.next_version = DYNMEM_PROTOCOL_VERSION_WIN7;
- 	init_completion(&dm_device.host_event);
- 	init_completion(&dm_device.config_event);
-+	INIT_WORK(&dm_device.balloon_wrk.wrk, balloon_up);
- 
- 	dm_device.thread =
- 		 kthread_run(dm_thread_func, &dm_device, "hv_balloon");
-@@ -1048,6 +1061,7 @@ static int balloon_remove(struct hv_device *dev)
- 	if (dm->num_pages_ballooned != 0)
- 		pr_warn("Ballooned pages: %d\n", dm->num_pages_ballooned);
- 
-+	cancel_work_sync(&dm->balloon_wrk.wrk);
- 	vmbus_close(dev->channel);
- 	kthread_stop(dm->thread);
- 	kfree(send_buffer);
--- 
-1.7.4.1
+> +/*
+> + * Table of SVRs and the corresponding PORT_ID values.
+> + *
+> + * All future CoreNet-enabled SOCs will have this erratum fixed, so this table
+> + * should never need to be updated.  SVRs are guaranteed to be unique, so
+> + * there is no worry that a future SOC will inadvertently have one of these
+> + * values.
+> + */
+
+Maybe add to the comment about what port_id represents
+
+> +static const struct {
+> +	u32 svr;
+> +	u32 port_id;
+> +} port_id_map[] = {
+> +	{0x82100010, 0xFF000000},	/* P2040 1.0 */
+> +	{0x82100011, 0xFF000000},	/* P2040 1.1 */
+> +	{0x82100110, 0xFF000000},	/* P2041 1.0 */
+> +	{0x82100111, 0xFF000000},	/* P2041 1.1 */
+> +	{0x82110310, 0xFF000000},	/* P3041 1.0 */
+> +	{0x82110311, 0xFF000000},	/* P3041 1.1 */
+> +	{0x82010020, 0xFFF80000},	/* P4040 2.0 */
+> +	{0x82000020, 0xFFF80000},	/* P4080 2.0 */
+> +	{0x82210010, 0xFC000000},       /* P5010 1.0 */
+> +	{0x82210020, 0xFC000000},       /* P5010 2.0 */
+> +	{0x82200010, 0xFC000000},	/* P5020 1.0 */
+> +	{0x82050010, 0xFF800000},	/* P5021 1.0 */
+> +	{0x82040010, 0xFF800000},	/* P5040 1.0 */
+> +};
+> +
+> +#define SVR_SECURITY	0x80000	/* The Security (E) bit */
+> +
+> +static int __init fsl_pamu_probe(struct platform_device *pdev)
+> +{
+> +	void __iomem *pamu_regs = NULL;
+> +	struct ccsr_guts __iomem *guts_regs = NULL;
+> +	u32 pamubypenr, pamu_counter;
+> +	unsigned long pamu_reg_off;
+> +	unsigned long pamu_reg_base;
+> +	struct pamu_isr_data *data;
+> +	struct device_node *guts_node;
+> +	u64 size;
+> +	struct page *p;
+> +	int ret = 0;
+> +	int irq;
+> +	phys_addr_t ppaact_phys;
+> +	phys_addr_t spaact_phys;
+> +	phys_addr_t omt_phys;
+> +	size_t mem_size = 0;
+> +	unsigned int order = 0;
+> +	u32 csd_port_id = 0;
+> +	unsigned i;
+> +	/*
+> +	 * enumerate all PAMUs and allocate and setup PAMU tables
+> +	 * for each of them,
+> +	 * NOTE : All PAMUs share the same LIODN tables.
+> +	 */
+> +
+> +	pamu_regs = of_iomap(pdev->dev.of_node, 0);
+> +	if (!pamu_regs) {
+> +		dev_err(&pdev->dev, "ioremap of PAMU node failed\n");
+> +		return -ENOMEM;
+> +	}
+> +	of_get_address(pdev->dev.of_node, 0, &size, NULL);
+> +
+> +	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+> +	if (irq == NO_IRQ) {
+> +		dev_warn(&pdev->dev, "no interrupts listed in PAMU node\n");
+> +		goto error;
+> +	}
+> +
+> +	data = kzalloc(sizeof(struct pamu_isr_data), GFP_KERNEL);
+> +	if (!data) {
+> +		iounmap(pamu_regs);
+> +		return -ENOMEM;
+> +	}
+> +	data->pamu_reg_base = pamu_regs;
+> +	data->count = size / PAMU_OFFSET;
+> +
+> +	/* The ISR needs access to the regs, so we won't iounmap them */
+> +	ret = request_irq(irq, pamu_av_isr, 0, "pamu", data);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "error %i installing ISR for irq %i\n",
+> +			ret, irq);
+> +		goto error;
+> +	}
+> +
+> +	guts_node = of_find_compatible_node(NULL, NULL,
+> +			"fsl,qoriq-device-config-1.0");
+
+This doesn't work for T4 or B4 device trees.
+
+> +	if (!guts_node) {
+> +		dev_err(&pdev->dev, "could not find GUTS node %s\n",
+> +			pdev->dev.of_node->full_name);
+> +		ret = -ENODEV;
+> +		goto error;
+> +	}
+> +
+> +	guts_regs = of_iomap(guts_node, 0);
+> +	of_node_put(guts_node);
+> +	if (!guts_regs) {
+> +		dev_err(&pdev->dev, "ioremap of GUTS node failed\n");
+> +		ret = -ENODEV;
+> +		goto error;
+> +	}
+> +
+> +	/* read in the PAMU capability registers */
+> +	get_pamu_cap_values((unsigned long)pamu_regs);
+> +	/*
+> +	 * To simplify the allocation of a coherency domain, we allocate the
+> +	 * PAACT and the OMT in the same memory buffer.  Unfortunately, this
+> +	 * wastes more memory compared to allocating the buffers separately.
+> +	 */
+> +	/* Determine how much memory we need */
+> +	mem_size = (PAGE_SIZE << get_order(PAACT_SIZE)) +
+> +		(PAGE_SIZE << get_order(SPAACT_SIZE)) +
+> +		(PAGE_SIZE << get_order(OMT_SIZE));
+> +	order = get_order(mem_size);
+> +
+> +	p = alloc_pages(GFP_KERNEL | __GFP_ZERO, order);
+> +	if (!p) {
+> +		dev_err(&pdev->dev, "unable to allocate PAACT/SPAACT/OMT block\n");
+> +		ret = -ENOMEM;
+> +		goto error;
+> +	}
+> +
+> +	ppaact = page_address(p);
+> +	ppaact_phys = page_to_phys(p);
+> +
+> +	/* Make sure the memory is naturally aligned */
+> +	if (ppaact_phys & ((PAGE_SIZE << order) - 1)) {
+> +		dev_err(&pdev->dev, "PAACT/OMT block is unaligned\n");
+> +		ret = -ENOMEM;
+> +		goto error;
+> +	}
+> +
+> +	spaact = (void *)ppaact + (PAGE_SIZE << get_order(PAACT_SIZE));
+> +	omt = (void *)spaact + (PAGE_SIZE << get_order(SPAACT_SIZE));
+> +
+> +	dev_dbg(&pdev->dev, "ppaact virt=%p phys=0x%llx\n", ppaact,
+> +		(unsigned long long) ppaact_phys);
+> +
+> +	/* Check to see if we need to implement the work-around on this SOC */
+> +
+> +	/* Determine the Port ID for our coherence subdomain */
+> +	for (i = 0; i < ARRAY_SIZE(port_id_map); i++) {
+> +		if (port_id_map[i].svr == (mfspr(SPRN_SVR) & ~SVR_SECURITY)) {
+> +			csd_port_id = port_id_map[i].port_id;
+> +			dev_dbg(&pdev->dev, "found matching SVR %08x\n",
+> +				port_id_map[i].svr);
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (csd_port_id) {
+> +		dev_dbg(&pdev->dev, "creating coherency subdomain at address "
+> +			"0x%llx, size %zu, port id 0x%08x", ppaact_phys,
+> +			mem_size, csd_port_id);
+> +
+> +		ret = create_csd(ppaact_phys, mem_size, csd_port_id);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "could not create coherence "
+> +				"subdomain\n");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	spaact_phys = virt_to_phys(spaact);
+> +	omt_phys = virt_to_phys(omt);
+> +
+> +	spaace_pool = gen_pool_create(ilog2(sizeof(struct paace)), -1);
+> +	if (!spaace_pool) {
+> +		ret = -ENOMEM;
+> +		dev_err(&pdev->dev, "PAMU : failed to allocate spaace gen pool\n");
+> +		goto error;
+> +	}
+> +
+> +	ret = gen_pool_add(spaace_pool, (unsigned long)spaact, SPAACT_SIZE, -1);
+> +	if (ret)
+> +		goto error_genpool;
+> +
+> +	pamubypenr = in_be32(&guts_regs->pamubypenr);
+> +
+> +	for (pamu_reg_off = 0, pamu_counter = 0x80000000; pamu_reg_off < size;
+> +	     pamu_reg_off += PAMU_OFFSET, pamu_counter >>= 1) {
+> +
+> +		pamu_reg_base = (unsigned long) pamu_regs + pamu_reg_off;
+> +		setup_one_pamu(pamu_reg_base, pamu_reg_off, ppaact_phys,
+> +				 spaact_phys, omt_phys);
+> +		/* Disable PAMU bypass for this PAMU */
+> +		pamubypenr &= ~pamu_counter;
+> +	}
+> +
+> +	setup_omt(omt);
+> +
+> +	/* Enable all relevant PAMU(s) */
+> +	out_be32(&guts_regs->pamubypenr, pamubypenr);
+> +
+> +	iounmap(guts_regs);
+> +
+> +	/* Enable DMA for the LIODNs in the device tree*/
+> +
+> +	setup_liodns();
+> +
+> +	return 0;
+> +
+> +error_genpool:
+> +	gen_pool_destroy(spaace_pool);
+> +
+> +error:
+> +	if (irq != NO_IRQ)
+> +		free_irq(irq, 0);
+
+Should be:
+
+free_irq(irq, data);
+
+> +
+> +	if (pamu_regs)
+> +		iounmap(pamu_regs);
+> +
+> +	if (guts_regs)
+> +		iounmap(guts_regs);
+> +
+> +	if (ppaact)
+> +		free_pages((unsigned long)ppaact, order);
+> +
+> +	ppaact = NULL;
+> +
+
+you alloc data, shouldn't you free it ?
+
+> +	return ret;
+> +}
+> +
+> +
 
