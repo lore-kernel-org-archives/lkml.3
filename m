@@ -1,180 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab3CNPgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:36:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47243 "EHLO mx2.suse.de"
+	id S1757945Ab3CNPjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:39:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47523 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab3CNPgO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:36:14 -0400
-Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
-Date: Thu, 14 Mar 2013 16:36:07 +0100
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, dmueller@suse.de,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Doug Anderson <dianders@chromium.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <A092CD36-1BE0-4070-81DF-3254D225F0F6@suse.de>
-References: <1363219179-14900-1-git-send-email-agraf@suse.de> <CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com> <6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de> <CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-X-Mailer: Apple Mail (2.1278)
+	id S1751089Ab3CNPjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 11:39:22 -0400
+Date: Thu, 14 Mar 2013 16:39:19 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
+ responses)
+In-Reply-To: <Pine.LNX.4.44L0.1303141111350.1983-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LNX.2.00.1303141634440.30118@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303141111350.1983-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 14 Mar 2013, Alan Stern wrote:
 
-On 14.03.2013, at 15:58, Thomas Abraham wrote:
+> > > Can you try to do a git bisect for this?  Is the sluggish system 
+> > > response clear enough that you can tell reliably when it is present and 
+> > > when it isn't?
+> > 
+> > That was my first thought, but unfortunately I am afraid there will be 
+> > point at which I will easily make a bisection mistake, as the 
+> > responsiveness of the system varies over time, so it's not really a 
+> > 100% objective measure.
+> 
+> All right.
+> 
+> There have been only three significant changes to uhci-hcd since last 
+> summer, and two of them appear to be completely unrelated to this 
+> issue.  The three commits are
+> 
+> 	3171fcabb169  USB: uhci: beautify source code
+> 	13996ca7afd5  USB: uhci: check buffer length to avoid memory 
+> 			overflow
+> 	0f815a0a700b  USB: UHCI: fix IRQ race during initialization
+> 
+> Reverting the first two almost certainly will not have any effect, but
+> you may as well try it anyway.  The third commit may be relevant.
 
-> On 14 March 2013 17:31, Alexander Graf <agraf@suse.de> wrote:
->> 
->> On 14.03.2013, at 05:19, Thomas Abraham wrote:
->> 
->>> On 14 March 2013 05:29, Alexander Graf <agraf@suse.de> wrote:
->>>> On my Exynos 5 based Arndale system, I need to pull the reset line down
->>>> and then let it go up again to actually perform a reset. Without that
->>>> reset, I can't find any USB hubs on my bus, rendering the USB controller
->>>> useless.
->>>> 
->>>> We also only need to reset the line after the phy node has been found.
->>>> This way we don't accidently reserve the vbus GPIO pin, but later on
->>>> defer the creation of our controller, because the phy device tree node
->>>> hasn't been probed yet.
->>>> 
->>>> This patch implements the above logic, making EHCI and OHCI work on
->>>> Arndale systems for me.
->>>> 
->>>> Signed-off-by: Alexander Graf <agraf@suse.de>
->>>> CC: Vivek Gautam <gautam.vivek@samsung.com>
->>>> CC: Jingoo Han <jg1.han@samsung.com>
->>>> CC: Alan Stern <stern@rowland.harvard.edu>
->>>> CC: Kukjin Kim <kgene.kim@samsung.com>
->>>> CC: Felipe Balbi <balbi@ti.com>
->>>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>> CC: Doug Anderson <dianders@chromium.org>
->>>> 
->>>> ---
->>>> 
->>>> v1 -> v2:
->>>> 
->>>> - remove gpio_free call
->>>> - move reset logic after phy node search
->>>> 
->>>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
->>>> index 20ebf6a..b29b2b8 100644
->>>> --- a/drivers/usb/host/ehci-s5p.c
->>>> +++ b/drivers/usb/host/ehci-s5p.c
->>>> @@ -103,9 +103,14 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
->>>>       if (!gpio_is_valid(gpio))
->>>>               return;
->>>> 
->>>> -       err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
->>>> -       if (err)
->>>> +       /* reset pulls the line down, then up again */
->>>> +       err = gpio_request_one(gpio, GPIOF_OUT_INIT_LOW, "ehci_vbus_gpio");
->>>> +       if (err) {
->>>>               dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
->>>> +               return;
->>>> +       }
->>>> +       mdelay(1);
->>>> +       __gpio_set_value(gpio, 1);
->>>> }
->>>> 
->>>> static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
->>>> @@ -131,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->>>>       if (!pdev->dev.coherent_dma_mask)
->>>>               pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->>>> 
->>>> -       s5p_setup_vbus_gpio(pdev);
->>>> -
->>>>       s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
->>>>                               GFP_KERNEL);
->>>>       if (!s5p_ehci)
->>>> @@ -152,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
->>>>               s5p_ehci->otg = phy->otg;
->>>>       }
->>>> 
->>>> +       s5p_setup_vbus_gpio(pdev);
->>>> +
->>>>       s5p_ehci->dev = &pdev->dev;
->>>> 
->>>>       hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
->>> 
->>> Hi Alexander,
->>> 
->>> This change, though it works for Exynos5250 based Arndale board, does
->>> not actually seem correct. On Arndale board, the on-board 4-port usb
->>> hub is self powered and hence the vbus 'enable' gpio line from
->>> Exynos5250 SoC is instead used as a "reset" signal for the on-board
->>> usb hub (and not as the vbus enable signal).
->>> 
->>> Whereas, the driver uses the gpio used in 's5p_setup_vbus_gpio'
->>> function as just a mechanism to enable vbus for downstream devices. So
->>> the driver should not be modified as above to handle the board
->>> specific behavior.
->>> 
->>> Instead, what needs to be done is, remove the "samsung,vbus-gpio"
->>> property from the usb2.0 node in dts files (this property is optional)
->>> for Arndale board. Then, during the machine_init, perform the reset
->>> sequencing as required.
->>> 
->>> Ideally, the reset sequencing for the on-board AX88760 usb hub should
->>> have been handled in the driver for this device. I have not checked if
->>> there is a driver for this in the kernel.
->> 
->> I can see your point, but as I mentioned earlier there seems to be some timing issue here. By simply doing the reset a few ms earlier (in the first probe, before the driver detects that it needs to defer probing), I already can't find the hub on the bus later.
->> 
->> So I'm assuming that the same thing would also happen if I put it even earlier in machine init.
-> 
-> True, I missed that point. The usb hub connected over hsic interface,
-> after power-on-reset, might have initiated the 'connect' state on
-> seeing the idle condition on the bus and since the host/phy controller
-> is not ready yet, the connect might have failed.
-> 
-> So the correct sequence would be, after the usb host controller and
-> the phy controllers are initialized, the 'reset' pin on the on-board
-> usb hub should be asserted. Upon releasing that reset, the usb hub
-> would initiate the 'connect' state on the HSIC bus.
+I have reverted all three commits, and the "nobody cared" is still there. 
 
-So we can just add another property to the dt - let's call it "reset-hsic-gpio" - which then would get pulled down and up again after the phy has been initialized? The vbus property would be completely unaffected from this and indeed, we wouldn't have a vbus property on Arndale dts's then.
+> If you revert all three and still see the problem then it must be
+> caused by changes outside of the USB stack.  Differences in interrupt
+> routing could be a result of changes to PCI or ACPI.  Have you compared 
+> the current /proc/interrupts with versions from earlier kernels without 
+> this problem?
 
+The diff of stripped-down (without CPU statistics) /proc/interrupts from 
+some oldish working 3.1 and the current tree:
 
-Alex
+--- /tmp/interrupts-old.txt	2013-03-14 16:30:46.938710286 +0100
++++ /tmp/interrupts-new.txt	2013-03-14 16:30:18.954571413 +0100
+@@ -3,27 +3,28 @@
+   8:IO-APIC-edge      rtc0
+   9:IO-APIC-fasteoi   acpi
+  12:IO-APIC-edge      i8042
+- 16:IO-APIC-fasteoi   uhci_hcd:usb6
+- 17:IO-APIC-fasteoi   uhci_hcd:usb7
+- 18:IO-APIC-fasteoi   ata_generic, uhci_hcd:usb8
+- 19:IO-APIC-fasteoi   ehci_hcd:usb2
+- 20:IO-APIC-fasteoi   uhci_hcd:usb3
+- 21:IO-APIC-fasteoi   uhci_hcd:usb4
+- 22:IO-APIC-fasteoi   uhci_hcd:usb5
+- 23:IO-APIC-fasteoi   ehci_hcd:usb1
++ 16:IO-APIC-fasteoi   uhci_hcd:usb4
++ 17:IO-APIC-fasteoi   uhci_hcd:usb5
++ 18:IO-APIC-fasteoi   ata_generic, uhci_hcd:usb6
++ 19:IO-APIC-fasteoi   ehci_hcd:usb8
++ 20:IO-APIC-fasteoi   uhci_hcd:usb1
++ 21:IO-APIC-fasteoi   uhci_hcd:usb2
++ 22:IO-APIC-fasteoi   uhci_hcd:usb3
++ 23:IO-APIC-fasteoi   ehci_hcd:usb7, i801_smbus
+  40:PCI-MSI-edge      PCIe PME
+  41:PCI-MSI-edge      PCIe PME
+  42:PCI-MSI-edge      PCIe PME
+  43:PCI-MSI-edge      ahci
+  44:PCI-MSI-edge      i915
+  45:PCI-MSI-edge      eth0
+- 46:PCI-MSI-edge      iwlagn
++ 46:PCI-MSI-edge      iwlwifi
+  47:PCI-MSI-edge      snd_hda_intel
+ NMI:Non-maskable interrupts
+ LOC:Local timer interrupts
+ SPU:Spurious interrupts
+ PMI:Performance monitoring interrupts
+ IWI:IRQ work interrupts
++RTR:APIC ICR read retries
+ RES:Rescheduling interrupts
+ CAL:Function call interrupts
+ TLB:TLB shootdowns
 
-> 
->> 
->> The change in this patch actually does a reset even on non-Arndale boards. By taking away power and returning power to the line, the chip will most likely have reset :). So even on non-Arndale boards, this should get the USB phy into a clean state regardless of where the bootloader left it, right?
->> 
-> 
-> No, the toggling of the vbus cannot ensure hardware-reset on self
-> powered devices. On Arndale board, since the usb hub is self powered
-> and being on HSIC interface, the dedicated vbus control gpio line is
-> instead used to assert the 'reset' pin of the on-board usb hub.
-> 
-> Using the dedicated vbus control line of Exynos5250 (XuhostPWREN) for
-> hardware resetting the usb hub is a board specific design of Arndale
-> board. The function ''s5p_setup_vbus_gpio' is meant to turn on the
-> vbus for downstream ports. Utilizing this function to hardware-reset
-> the usb hub is not right.
-> 
-> In fact, for Arndale board, there should not be a 'samsung,vbus-gpio'
-> property for usb2.0 host controller node. Because, there is no such
-> vbus control line on Arndale board which is using HSIC interface to
-> connect to USB devices. So this change is not correct. The assertion
-> of the hardware-reset for the on board usb hub should be handled
-> elsewhere.
-> 
-> Thanks,
-> Thomas.
-> 
->> 
->> Alex
->> 
+IRQ16 is routed differently (usb4 vs usb6), so that might be relevant.
 
+> Is occurrence of the "nobody cared" connected with any particular 
+> device?  Somebody reported a similar problem not long ago (although IIRC 
+> it was for OHCI rather than UHCI) which appeared to be related to 
+> activity on the built-in webcam.
+
+Will check this. No external devices are plugged in, I think the only 
+internal one it has is bluetooth chip. I'll try turning it off.
+
+-- 
+Jiri Kosina
+SUSE Labs
