@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3CNWHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:07:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36636 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab3CNWHL (ORCPT
+	id S1753256Ab3CNWKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:10:03 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52843 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab3CNWKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:07:11 -0400
-Date: Thu, 14 Mar 2013 15:07:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: cleanup partitions when detaching loop device
-Message-Id: <20130314150709.056aa4de5fadf3a5e94103d4@linux-foundation.org>
-In-Reply-To: <1362336553-16880-1-git-send-email-psusi@ubuntu.com>
-References: <1362336553-16880-1-git-send-email-psusi@ubuntu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 18:10:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+Date: Thu, 14 Mar 2013 23:09:59 +0100
+Message-ID: <CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Stephane Eranian <eranian@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  3 Mar 2013 13:49:13 -0500 Phillip Susi <psusi@ubuntu.com> wrote:
+Hi,
 
-> Any partitions added by user space to the loop device were being
-> left in place after detaching the loop device.  This was because
-> the detach path issued a BLKRRPART to clean up partitions if
-> LO_FLAGS_PARTSCAN was set, meaning that the partitions were auto
-> scanned on attach.  Replace this BLKRRPART with code that
-> unconditionally cleans up partitions on detach instead.
 
-huh.  What is the user-visible effect of this bug?  Just a memory leak
-or something more serious?
+On Thu, Mar 14, 2013 at 10:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> On Thu, Mar 14, 2013 at 1:32 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > And to make things interesting, I seem to be able to only reproduce
+> > this *after* a suspend cycle. That may be just happenstance, since it
+> > seemed to be hard to replicate and most of the time it has happened
+> > under X with no messages visible at all, but that *seems* to be the
+> > pattern.
+> >
+> > And the one time I got it to happen on the text console, things
+> > scrolled off (watchdog warnings due to lockups), but I did get a NULL
+> > pointer dereference in intel_pmu_enable_all().
+> >
+> > I'll try to reproduce it and get a picture,
+>
+> Theory more or less confirmed.
+>
+> It does need a suspend/resume cycle, and I have a picture. The oops
+> happens immediately when trying to do any perf work after the first
+> suspend, before suspending I seem to be able to reliably use perf. It
+> could still be just random flakiness, but I don't think so.
+>
+Could be related to suspend/resume. But were you running perf across
+that resume/suspend cycle?
 
-If "something more serious", why did this problem remain hidden for so
-long?
 
-> --- a/drivers/block/loop.c
-> +++ b/drivers/block/loop.c
-> @@ -1039,12 +1039,24 @@ static int loop_clr_fd(struct loop_device *lo)
->  	lo->lo_state = Lo_unbound;
->  	/* This is safe: open() is still holding a reference. */
->  	module_put(THIS_MODULE);
-> -	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
-> -		ioctl_by_bdev(bdev, BLKRRPART, 0);
->  	lo->lo_flags = 0;
->  	if (!part_shift)
->  		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
->  	mutex_unlock(&lo->lo_ctl_mutex);
-> +	if (bdev)
-> +	{
 
-scripts/checkpatch.pl is your friend.
+But still don't see how a wrmsrl could corrupt a cpuc.
 
-Can you please suggest a code comment which we can slip in here to tell
-readers what's going on and why we're doing this?
 
-> +		struct disk_part_iter piter;
-> +		struct hd_struct *part;
-> +
-> +		mutex_lock_nested(&bdev->bd_mutex, 1);
-> +		invalidate_partition(bdev->bd_disk, 0);
-> +		disk_part_iter_init(&piter, bdev->bd_disk, DISK_PITER_INCL_EMPTY);
-> +		while ((part = disk_part_iter_next(&piter)))
-> +			delete_partition(bdev->bd_disk, part->partno);
-> +		disk_part_iter_exit(&piter);
-> +		mutex_unlock(&bdev->bd_mutex);
-> +	}
+>
+> The NULL pointer dereference is at intel_pmu_enable_all+0x4d/0xa0 for
+> me, which seems to be the load of the
+>
+>     if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask))
+>
+> thing. It says
+>
+>    BUG: unable to handle NULL pointer dereference at 0000000000000028
+>
+> But that error makes no sense. The code at that EIP is
+>
+>   48 8b 83 00 02 00 00 mov    0x200(%rbx),%rax     <-- trapping instruction
+>
+> and the value printed out for %rbx is 0xffff80014f20b8e0, so it should
+> *not* be a NULL pointer dereference (and "cpuc" was also used just
+> before the wrmsrl).
 
+
+>
+> So I suspect that the "wrmsrl" that was just before that instruction
+> does something odd, and the PMU is in some odd state, so that the NULL
+> pointer dereference actually has something to do with *that*, rather
+> than the instruction itself.
+>
+> The callchain looks normal. It's
+>
+>   finish_task_switch ->
+>     __perf_event_task_sched_in ->
+>       perf_event_context_sched_in ->
+>         perf_pmu_enable ->
+>           x86_pmu_enable ->
+>             intel_pmu_enable_all()
+>
+> The immediately preceding wrmsrl was done with rax=0xf, rdx=0x7,
+> rcx=0x38f according to the register dump (but the picture isn't great,
+> so the numbers aren't 100% reliable).
+>
+Value 0x38f for GLOBAL_CTRL is valid. And 0x70000000f is valid too
+for the counter bitmask (4 generic counters + 3 fixed counters).
+
+Let's see if we can reproduce the problem on the same ChromeBook you
+have. Don't have one myself.
+
+> Does this give any clues?
+>
+>              Linus
