@@ -1,163 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab3CNJrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:47:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15791 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab3CNJrf (ORCPT
+	id S1756624Ab3CNJsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:48:24 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:41432 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab3CNJsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:47:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 14 Mar 2013 02:40:49 -0700
-From: Bill Huang <bilhuang@nvidia.com>
-To: <mturquette@linaro.org>, <patches@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Bill Huang <bilhuang@nvidia.com>
-Subject: [RFC v3 1/1] clk: Add notifier support in clk_prepare/clk_unprepare
-Date: Thu, 14 Mar 2013 02:51:49 -0700
-Message-ID: <1363254709-9209-1-git-send-email-bilhuang@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Thu, 14 Mar 2013 05:48:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Thu, 14 Mar 2013 18:48:20 +0900
+X-Google-Sender-Auth: 2HH5WwAoKqJAmYPPFnIcIi289cI
+Message-ID: <CAOAMb1D+h8BRu=YWQ9dJ3JN-5CmmDLjgq1mLnnCH9TELrPx2bw@mail.gmail.com>
+Subject: [PATCH 0/2] lib,crypto: Add lz4 compressor module and crypto API
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Chanho Min <chanho0207@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the below two notifier events so drivers which are interested in
-knowing the clock status can act accordingly. This is extremely useful
-in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+This patchset is for supporting LZ4 compression and the crypto API using it.
+This should be applied after the previous Kyungsik's "LZ4 compressed kernel"
+patches - https://lkml.org/lkml/2013/3/5/181.
 
-CLK_PREPARED
-CLK_UNPREPARED
+As shown in bellow result, the size of data is a little bit bigger but
+compressing speed is faster under the enabled unaligned memory access.
+We can use lz4 de/compression through crypto API as well. Also,
+It will be useful for another potential user of lz4 compression.
 
-Signed-off-by: Bill Huang <bilhuang@nvidia.com>
----
- drivers/clk/clk.c   |   75 ++++++++++++++++++++++++++-------------------------
- include/linux/clk.h |    2 ++
- 2 files changed, 41 insertions(+), 36 deletions(-)
+lz4 Compression Benchmark:
+Compiler: ARM gcc 4.6.4
+ARMv7, 1 GHz based board
+   Kernel: linux 3.4
+   Uncompressed data Size: 101 MB
+         Compressed Size  compression Speed
+   LZO   72.1MB		  32.1MB/s, 33.0MB/s(UA)
+   LZ4   75.1MB		  30.4MB/s, 35.9MB/s(UA)
+   LZ4HC 59.8MB		   2.4MB/s,  2.5MB/s(UA)
+- UA: Unaligned memory Access support
+- Latest patch set for LZO applied
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index ed87b24..d78ed16 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -516,6 +516,42 @@ struct clk *__clk_lookup(const char *name)
- 
- /***        clk api        ***/
- 
-+/**
-+ * __clk_notify - call clk notifier chain
-+ * @clk: struct clk * that is changing rate
-+ * @msg: clk notifier type (see include/linux/clk.h)
-+ * @old_rate: old clk rate
-+ * @new_rate: new clk rate
-+ *
-+ * Triggers a notifier call chain on the clk rate-change notification
-+ * for 'clk'.  Passes a pointer to the struct clk and the previous
-+ * and current rates to the notifier callback.  Intended to be called by
-+ * internal clock code only.  Returns NOTIFY_DONE from the last driver
-+ * called if all went well, or NOTIFY_STOP or NOTIFY_BAD immediately if
-+ * a driver returns that.
-+ */
-+static int __clk_notify(struct clk *clk, unsigned long msg,
-+		unsigned long old_rate, unsigned long new_rate)
-+{
-+	struct clk_notifier *cn;
-+	struct clk_notifier_data cnd;
-+	int ret = NOTIFY_DONE;
-+
-+	cnd.clk = clk;
-+	cnd.old_rate = old_rate;
-+	cnd.new_rate = new_rate;
-+
-+	list_for_each_entry(cn, &clk_notifier_list, node) {
-+		if (cn->clk == clk) {
-+			ret = srcu_notifier_call_chain(&cn->notifier_head, msg,
-+					&cnd);
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
- void __clk_unprepare(struct clk *clk)
- {
- 	if (!clk)
-@@ -550,6 +586,7 @@ void clk_unprepare(struct clk *clk)
- {
- 	mutex_lock(&prepare_lock);
- 	__clk_unprepare(clk);
-+	__clk_notify(clk, CLK_UNPREPARED, clk->rate, clk->rate);
- 	mutex_unlock(&prepare_lock);
- }
- EXPORT_SYMBOL_GPL(clk_unprepare);
-@@ -598,6 +635,8 @@ int clk_prepare(struct clk *clk)
- 
- 	mutex_lock(&prepare_lock);
- 	ret = __clk_prepare(clk);
-+	if (!ret)
-+		__clk_notify(clk, CLK_PREPARED, clk->rate, clk->rate);
- 	mutex_unlock(&prepare_lock);
- 
- 	return ret;
-@@ -749,42 +788,6 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
- EXPORT_SYMBOL_GPL(clk_round_rate);
- 
- /**
-- * __clk_notify - call clk notifier chain
-- * @clk: struct clk * that is changing rate
-- * @msg: clk notifier type (see include/linux/clk.h)
-- * @old_rate: old clk rate
-- * @new_rate: new clk rate
-- *
-- * Triggers a notifier call chain on the clk rate-change notification
-- * for 'clk'.  Passes a pointer to the struct clk and the previous
-- * and current rates to the notifier callback.  Intended to be called by
-- * internal clock code only.  Returns NOTIFY_DONE from the last driver
-- * called if all went well, or NOTIFY_STOP or NOTIFY_BAD immediately if
-- * a driver returns that.
-- */
--static int __clk_notify(struct clk *clk, unsigned long msg,
--		unsigned long old_rate, unsigned long new_rate)
--{
--	struct clk_notifier *cn;
--	struct clk_notifier_data cnd;
--	int ret = NOTIFY_DONE;
--
--	cnd.clk = clk;
--	cnd.old_rate = old_rate;
--	cnd.new_rate = new_rate;
--
--	list_for_each_entry(cn, &clk_notifier_list, node) {
--		if (cn->clk == clk) {
--			ret = srcu_notifier_call_chain(&cn->notifier_head, msg,
--					&cnd);
--			break;
--		}
--	}
--
--	return ret;
--}
--
--/**
-  * __clk_recalc_rates
-  * @clk: first clk in the subtree
-  * @msg: notification type (see include/linux/clk.h)
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index b3ac22d..16c1d92 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -43,6 +43,8 @@ struct clk;
- #define PRE_RATE_CHANGE			BIT(0)
- #define POST_RATE_CHANGE		BIT(1)
- #define ABORT_RATE_CHANGE		BIT(2)
-+#define CLK_PREPARED			BIT(3)
-+#define CLK_UNPREPARED			BIT(4)
- 
- /**
-  * struct clk_notifier - associate a clk with a notifier
+Chanho Min (2):
+  lib: Add lz4 compressor module
+  crypto: Add lz4 Cryptographic API
+
+ crypto/Kconfig           |   16 ++
+ crypto/Makefile          |    2 +
+ crypto/lz4.c             |  105 +++++++++
+ crypto/lz4hc.c           |  105 +++++++++
+ include/linux/lz4.h      |   36 ++++
+ lib/Kconfig              |    6 +
+ lib/Makefile             |    2 +
+ lib/lz4/Makefile         |    2 +
+ lib/lz4/lz4_compress.c   |  443 +++++++++++++++++++++++++++++++++++++
+ lib/lz4/lz4defs.h        |   66 +++++-
+ lib/lz4/lz4hc_compress.c |  539 ++++++++++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 1320 insertions(+), 2 deletions(-)
+ create mode 100644 crypto/lz4.c
+ create mode 100644 crypto/lz4hc.c
+ create mode 100644 lib/lz4/lz4_compress.c
+ create mode 100644 lib/lz4/lz4hc_compress.c
+
 -- 
 1.7.9.5
-
