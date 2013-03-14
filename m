@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab3CNRGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:06:53 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:55688 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab3CNRGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:06:51 -0400
-Message-ID: <1363280764.26318.4.camel@thor.lan>
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor
- interrupt responses)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        Thomas Meyer <thomas@m3y3r.de>, Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Date: Thu, 14 Mar 2013 13:06:04 -0400
-In-Reply-To: <1460519.ejNFI1DrGk@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org>
-	 <alpine.LNX.2.00.1303141555090.30118@pobox.suse.cz>
-	 <alpine.LNX.2.00.1303141709000.30118@pobox.suse.cz>
-	 <1460519.ejNFI1DrGk@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1757975Ab3CNRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:09:27 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42802 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755509Ab3CNRJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:09:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
+Date: Thu, 14 Mar 2013 18:16:30 +0100
+Message-ID: <3390139.KZuRkSrE4e@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130304131023.GA4561@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <18666371.hyHAvqrdQ6@vostro.rjw.lan> <20130304131023.GA4561@dhcp-192-168-178-175.profitbricks.localdomain>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 17:46 +0100, Rafael J. Wysocki wrote:
-> On Thursday, March 14, 2013 05:09:59 PM Jiri Kosina wrote:
-> > On Thu, 14 Mar 2013, Jiri Kosina wrote:
-> > 
-> > > > > I don't think I have seen this message on rc1+ (8343bce, to be precise), 
-> > > > > but I have definitely seen sluggish system response on that kernel as 
-> > > > > well.
-> > > > > 
-> > > > > Attaching lspci, /proc/interrupts and dmesg. 
+Sorry for the sluggish response, I've been travelling recently. ->
+
+On Monday, March 04, 2013 02:10:23 PM Vasilis Liaskovitis wrote:
+> Hi,
+> 
+> On Tue, Feb 26, 2013 at 12:39:50AM +0100, Rafael J. Wysocki wrote:
+> > On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
+> > > On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > > > > 
-> > > > Can you try to do a git bisect for this?  Is the sluggish system 
-> > > > response clear enough that you can tell reliably when it is present and 
-> > > > when it isn't?
-> > > 
-> > > That was my first thought, but unfortunately I am afraid there will be 
-> > > point at which I will easily make a bisection mistake, as the 
-> > > responsiveness of the system varies over time, so it's not really a 
-> > > 100% objective measure.
+> > > > Multiple drivers handling hotplug-capable ACPI device nodes install
+> > > > notify handlers covering the same types of events in a very similar
+> > > > way.  Moreover, those handlers are installed in separate namespace
+> > > > walks, although that really should be done during namespace scans
+> > > > carried out by acpi_bus_scan().  This leads to substantial code
+> > > > duplication, unnecessary overhead and behavior that is hard to
+> > > > follow.
+> > > > 
+> > > > For this reason, introduce common code in drivers/acpi/scan.c for
+> > > > handling hotplug-related notification and carrying out device
+> > > > insertion and eject operations in a generic fashion, such that it
+> > > > may be used by all of the relevant drivers in the future.  To cover
+> > > > the existing differences between those drivers introduce struct
+> > > > acpi_hotplug_profile for representing collections of hotplug
+> > > > settings associated with different ACPI scan handlers that can be
+> > > > used by the drivers to make the common code reflect their current
+> > > > behavior.
+> [...]
+> > That's correct, but I don't know what the user space expectations are
+> > currently.
 > > 
-> > So I will try a bisect, but it'll take some time so that I could claim it 
-> > to be trustworthy.
+> > > So, I'd suggest the following changes.
+> > >  - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
+> > > ACPI device objects.
+> > >  - Make the !autoeject case as an exception for now, and emit
+> > > KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
+> > > tied with the !autoeject case.  We can then revisit if this use-case
+> > > needs to be supported going forward.  If so, we may want to consider a
+> > > different event type.
 > > 
-> > Therefore in case anyone has any idea in parallel, I am all ears.
+> > Well, what about avoiding to expose uevents and autoeject for now and
+> > exposing enabled only?  Drivers would still be able to set the other flags on
+> > init on init to enforce the backwards-compatible behavior.
 > 
-> This one is a candidate to focus on I think:
+> Now that we don't define uevents and autoeject in v2 of this series, could you
+> explain how we get safe ejection from userspace e.g. for memory hot-remove? What
+> are the other flags drivers can use (on init?) to avoid autoeject and only issue
+> KOBJ_OFFLINE?
 > 
-> commit 181380b702eee1a9aca51354d7b87c7b08541fcf
-> Author: Yinghai Lu <yinghai@kernel.org>
-> Date:   Sat Feb 16 11:58:34 2013 -0700
+> > 
+> > I agree that it would be sufficient to use one additional flag then, to start
+> > with, but its meaning would be something like "keep backwards compatibility
+> > with the old container driver", so perhaps "autoeject" is not a good name.
+> > 
+> > What about "user_eject" (that won't be exposed to user space) instead?  Where,
+> > if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
+> > like the old container driver did"?
 > 
->     PCI/ACPI: Don't cache _PRT, and don't associate them with bus numbers
+> I don't see user_eject in v2. Is it unnecessary for userspace ejection control
+> or planned for later? Also why shouldn't it be exposed to userpace?
 
-This patch __fixed__ this problem for me in linux-next back in February.
+-> At this point we are not sure if it is necessary to have an attribute for
+direct ejection control.  Since the plan is to have a separate offline/online
+attribute anyway (and a check preventing us from ejecting things that haven't
+been put offline), it is not clear how useful it is going to be to control
+ejection directly from user space.
 
-Rafael, did you hold back some ACPI patches from 3.9 that would have
-made fix no longer applicable?
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
