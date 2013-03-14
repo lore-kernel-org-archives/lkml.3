@@ -1,194 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab3CNLAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:00:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51807 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954Ab3CNKhN (ORCPT
+	id S1757577Ab3CNLAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:00:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41927 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757570Ab3CNLAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:13 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jie Liu <jeff.liu@oracle.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 21/88] ocfs2: fix ocfs2_init_security_and_acl() to initialize acl correctly
-Date: Thu, 14 Mar 2013 10:35:14 +0000
-Message-Id: <1363257381-15900-22-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 14 Mar 2013 07:00:08 -0400
+Date: Thu, 14 Mar 2013 13:59:53 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: ccg: remove two outdated dependencies
+Message-ID: <20130314105953.GJ9138@mwanda>
+References: <1363256224.1335.46.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363256224.1335.46.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Mar 14, 2013 at 11:17:04AM +0100, Paul Bolle wrote:
+> 1) This patch is rather hard to review. That is because the "depends on"
+> line is rather hard to read. Perhaps the easiest way to review is to do
+>     git grep -n "\bUSB_FILE_STORAGE\(_TEST\)\?\b"
+> 
+> before and after applying this patch. But that doesn't catch possible
+> other, unwanted, changes. Maybe we need to split up the "depends on"
+> line before removing these two negative entries.
 
-------------------
+Your patch is fine as is, but if you wanted to send a follow on
+patch to break the depend mess into separate lines, that would also
+be welcome.  :)
 
-From: Jeff Liu <jeff.liu@oracle.com>
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 32918dd9f19e5960af4cdfa41190bb843fb2247b upstream.
+regards,
+dan carpenter
 
-We need to re-initialize the security for a new reflinked inode with its
-parent dirs if it isn't specified to be preserved for ocfs2_reflink().
-However, the code logic is broken at ocfs2_init_security_and_acl()
-although ocfs2_init_security_get() succeed.  As a result,
-ocfs2_acl_init() does not involked and therefore the default ACL of
-parent dir was missing on the new inode.
-
-Note this was introduced by 9d8f13ba3 ("security: new
-security_inode_init_security API adds function callback")
-
-To reproduce:
-
-    set default ACL for the parent dir(ocfs2 in this case):
-    $ setfacl -m default:user:jeff:rwx ../ocfs2/
-    $ getfacl ../ocfs2/
-    # file: ../ocfs2/
-    # owner: jeff
-    # group: jeff
-    user::rwx
-    group::r-x
-    other::r-x
-    default:user::rwx
-    default:user:jeff:rwx
-    default:group::r-x
-    default:mask::rwx
-    default:other::r-x
-
-    $ touch a
-    $ getfacl a
-    # file: a
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    group::rw-
-    other::r--
-
-Before patching, create reflink file b from a, the user
-default ACL entry(user:jeff:rwx)was missing:
-
-    $ ./ocfs2_reflink a b
-    $ getfacl b
-    # file: b
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    group::rw-
-    other::r--
-
-In this case, the end user can also observed an error message at syslog:
-
-  (ocfs2_reflink,3229,2):ocfs2_init_security_and_acl:7193 ERROR: status = 0
-
-After applying this patch, create reflink file c from a:
-
-    $ ./ocfs2_reflink a c
-    $ getfacl c
-    # file: c
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    user:jeff:rwx			#effective:rw-
-    group::r-x			#effective:r--
-    mask::rw-
-    other::r--
-
-Test program:
-/* Usage: reflink <source> <dest> */
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-
-static int
-reflink_file(char const *src_name, char const *dst_name,
-	     bool preserve_attrs)
-{
-	int fd;
-
-#ifndef REFLINK_ATTR_NONE
-#  define REFLINK_ATTR_NONE 0
-#endif
-#ifndef REFLINK_ATTR_PRESERVE
-#  define REFLINK_ATTR_PRESERVE 1
-#endif
-#ifndef OCFS2_IOC_REFLINK
-	struct reflink_arguments {
-		uint64_t old_path;
-		uint64_t new_path;
-		uint64_t preserve;
-	};
-
-#  define OCFS2_IOC_REFLINK _IOW ('o', 4, struct reflink_arguments)
-#endif
-	struct reflink_arguments args = {
-		.old_path = (unsigned long) src_name,
-		.new_path = (unsigned long) dst_name,
-		.preserve = preserve_attrs ? REFLINK_ATTR_PRESERVE :
-					     REFLINK_ATTR_NONE,
-	};
-
-	fd = open(src_name, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open %s: %s\n",
-			src_name, strerror(errno));
-		return -1;
-	}
-
-	if (ioctl(fd, OCFS2_IOC_REFLINK, &args) < 0) {
-		fprintf(stderr, "Failed to reflink %s to %s: %s\n",
-			src_name, dst_name, strerror(errno));
-		return -1;
-	}
-}
-
-int
-main(int argc, char *argv[])
-{
-	if (argc != 3) {
-		fprintf(stdout, "Usage: %s source dest\n", argv[0]);
-		return 1;
-	}
-
-	return reflink_file(argv[1], argv[2], 0);
-}
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reviewed-by: Tao Ma <boyu.mt@taobao.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/ocfs2/xattr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
-index 0ba9ea1..2e3ea30 100644
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -7189,7 +7189,7 @@ int ocfs2_init_security_and_acl(struct inode *dir,
- 	struct buffer_head *dir_bh = NULL;
- 
- 	ret = ocfs2_init_security_get(inode, dir, qstr, NULL);
--	if (!ret) {
-+	if (ret) {
- 		mlog_errno(ret);
- 		goto leave;
- 	}
--- 
-1.8.1.2
 
