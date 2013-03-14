@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab3CNAVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 20:21:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57083 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754015Ab3CNAVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 20:21:45 -0400
-Message-ID: <1363220493.3937.97.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 008/153] powerpc/eeh: Fix crash when adding a device in a
- slot with DDW
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 14 Mar 2013 00:21:33 +0000
-In-Reply-To: <5857.1363130238@ale.ozlabs.ibm.com>
-References: <20130304033707.648729212@decadent.org.uk>
-	 <20130304033708.479195432@decadent.org.uk>
-	 <CAEjGV6z-d2f6G_bozJmaeg7pmK71uM_JjBZ24KgijnjO1wv+4g@mail.gmail.com>
-	 <1362713395.3768.466.camel@deadeye.wl.decadent.org.uk>
-	 <20130312181457.GA24837@oc0268524204.ibm.com>
-	 <5857.1363130238@ale.ozlabs.ibm.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-/6KrW7S/dWs2tpz7BIs+"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S934451Ab3CNA0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 20:26:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18511 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932357Ab3CNA0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Mar 2013 20:26:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,840,1355126400"; 
+   d="scan'208";a="302206316"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/3] genirq: Do not consider the irqs with
+ IRQF_NO_SUSPEND in check_wakeup_irqs()
+Thread-Topic: [PATCH 2/3] genirq: Do not consider the irqs with
+ IRQF_NO_SUSPEND in check_wakeup_irqs()
+Thread-Index: AQHOHrs9zBjWcDkk/EuSrmtq0bC7upikVznw
+Date: Thu, 14 Mar 2013 00:26:32 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A258027@SHSMSX101.ccr.corp.intel.com>
+References: <1363024396.31506.60.camel@cliu38-desktop-build>
+	 <1363024631.31506.64.camel@cliu38-desktop-build>
+ <1363082294.7518.4.camel@cliu38-desktop-build>
+In-Reply-To: <1363082294.7518.4.camel@cliu38-desktop-build>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2E0Qdnx027031
 
+Hello Thomas,
 
---=-/6KrW7S/dWs2tpz7BIs+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sorry to miss the V2 in the subject.
+I have updated the comments in this new patch, could you consider to take it into upstream?
 
-On Wed, 2013-03-13 at 10:17 +1100, Michael Neuling wrote:
-> Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com> wrote:
->=20
-> > On Fri, Mar 08, 2013 at 03:29:55AM +0000, Ben Hutchings wrote:
-> > > On Fri, 2013-03-08 at 13:51 +1100, Michael Neuling wrote:
-> > > > This patch is breaking the celleb_defconfig on powerpc with:
-> > > >=20
-> > > > arch/powerpc/kernel/of_platform.c: In function 'of_pci_phb_probe':
-> > > > arch/powerpc/kernel/of_platform.c:95:2: error: implicit declaration=
- of
-> > > > function 'eeh_add_sysfs_files' [-Werror=3Dimplicit-function-declara=
-tion]
-> > >=20
-> > > In 3.2 this file doesn't (directly) include <asm/eeh.h> which is wher=
-e
-> > > the definition was added.  In mainline it does.
-> > >=20
-> > > Assuming that this change is actually required for 3.2 (which I'm not
-> > > sure about), I suppose we just need to add the #include.
-> > >=20
-> > > Ben.
-> > >=20
-> >=20
-> > This is not required for 3.2. The patch that *may* have broken DLPAR
-> > (39baadbf36cee3ede5fdb8a34006d9109e5e2570) was introduced between 3.3
-> > and 3.4.
->=20
-> Reverting 066f289835f09a3f744d6bac96f25e25d20b3ded (from 3.2.40) fixes
-> the problem for me so I'm ok if we do that instead.
+Thanks.
 
-Thanks all; I've queued up the revert.
+Best Regards
+Liu chuansheng
 
-Ben.
+> -----Original Message-----
+> From: Liu, Chuansheng
+> Sent: Tuesday, March 12, 2013 5:58 PM
+> To: tglx@linutronix.de
+> Cc: mingo@redhat.com; linux-kernel@vger.kernel.org; Liu, Chuansheng
+> Subject: [PATCH 2/3] genirq: Do not consider the irqs with IRQF_NO_SUSPEND
+> in check_wakeup_irqs()
+> 
+> 
+> According to commit 9c6079aa1bf(genirq: Do not consider disabled
+> wakeup irqs), we should not break the suspend when one interrupt has
+> been disabled before suspending and is pending there.
+> 
+> But there is another case missed:
+> If an interrupt which is marked IRQF_NO_SUSPEND has been disabled
+> before suspend invocation then desc->depth is 1 and therefor it should
+> not be checked for IRQS_PENDING in check_wakeup_irqs().
+> 
+> Here also checking if the desc->istate & IRQS_SUSPENDED is true to avoid
+> this case.
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  kernel/irq/pm.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+> index cb228bf..f02a03d 100644
+> --- a/kernel/irq/pm.c
+> +++ b/kernel/irq/pm.c
+> @@ -107,9 +107,16 @@ int check_wakeup_irqs(void)
+>  		 * Only interrupts which are marked as wakeup source
+>  		 * and have not been disabled before the suspend check
+>  		 * can abort suspend.
+> +		 *
+> +		 * Meanwhile, if an interrupt which is marked IRQF_NO_SUSPEND
+> +		 * has been disabled before suspend invocation then
+> +		 * desc->depth is 1 and therefor it should not be checked
+> +		 * for IRQS_PENDING, so also adding the checking of
+> +		 * desc->istate & IRQS_SUSPENDED for this case.
+>  		 */
+>  		if (irqd_is_wakeup_set(&desc->irq_data)) {
+> -			if (desc->depth == 1 && desc->istate & IRQS_PENDING)
+> +			if (desc->depth == 1 && (desc->istate & IRQS_PENDING)
+> +				&& (desc->istate & IRQS_SUSPENDED))
+>  				return -EBUSY;
+>  			continue;
+>  		}
+> --
+> 1.7.0.4
+> 
+> 
 
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-
---=-/6KrW7S/dWs2tpz7BIs+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUUEYDee/yOyVhhEJAQoo1BAA04UJmEord89jXYExN4z0yZq/C1GCUmcu
-lf0e5gzM7etGtAYSmZB94CXU5HXpAIZQEwpQPF40moEVqHwuM9hIWdUET9OLYqep
-wVeW2HyrjByQz3xnVdaosW0lvBAnv/U+FlGS+21UCZZTB9X3+KK9eXS4vGq/gcvP
-MPaa4+1VgaUoJMNfP4HGj2mt+JyybBMmdyyNzabGoR/DybQUZ38EY77x/2b/xqxn
-todTzT2p8uWol2wb9o9Yi479vhLZ0JRwJlvCHy6flZvHeatoqH7dFx+ujxSEzjID
-rlaDRjYFK85FtyMz/PXaquUIoIVYExX7qsmTHxt9tLasCzO+Iaa9+zA6I/5orPA+
-Y67ikglbGRvco/TjMERQD9LCqSTb8BqXGAnZ6rKbbzC1CkRdx2ILoUwEs5Ul1GWi
-Fpjg+ymVTbk+Yl6FdTsnGoghAxAGLNRYHw+j1OAk/cYZnLAE6nX7lqt+ClGMD9zS
-T3kfJJk7QLbG54h+ksPbsPuTK/xXE8gXGo9GQ5HvlgRI8UAc7j3Ii4V/y12QxjZg
-A/rjUH8g9Bu6q4Ulxbzn50JO0wxsGM1dR7QiOWPFiLVo/WM3eFlXKl/f+/pzpNAm
-MLrQ5e7Qicqn/QVvisZNP7yQcmy/W0jhAKwSyQmXZxeGV2dZXB4Z779iNAXq6UGW
-JQoaeJ1/BTk=
-=h3QJ
------END PGP SIGNATURE-----
-
---=-/6KrW7S/dWs2tpz7BIs+--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
