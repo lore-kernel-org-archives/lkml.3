@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab3CNCJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 22:09:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22428 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab3CNCJI (ORCPT
+	id S934333Ab3CNCKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 22:10:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1832 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab3CNCKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 22:09:08 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=qyopD3fBDQ4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=6naRQuOZ-EEA:10 a=waCHHPEWWAXJ2XoQu0gA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363226945.25967.25.camel@gandalf.local.home>
-Subject: Question about a patch for stable
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 13 Mar 2013 22:09:05 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Wed, 13 Mar 2013 22:10:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 13 Mar 2013 19:10:39 -0700
+Message-ID: <1363227311.3311.30.camel@bilhuang-vm1>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Date: Wed, 13 Mar 2013 19:15:11 -0700
+In-Reply-To: <5140C12A.4060900@wwwdotorg.org>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
+	 <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>
+	 <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org>
+	 <1363153204.3311.14.camel@bilhuang-vm1> <5140C12A.4060900@wwwdotorg.org>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-9"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-I was bringing Documentation/trace/ftrace.txt up to date, and obviously
-I found some minor bugs in the code while doing so :-)  One of the
-things I've discovered, is that the new -mfentry option for gcc used for
-function tracing (for only x86 and gcc >= 4.6.0), the stack tracer gives
-some bogus results:
-
-     # cat stack_trace
-            Depth    Size   Location    (48 entries)
-            -----    ----   --------
-      0)     4824     216   ftrace_call+0x5/0x2f
-      1)     4608     112   ____cache_alloc+0xb7/0x22d
-      2)     4496      80   kmem_cache_alloc+0x63/0x12f
-[...]
-
-One thing is that it shows the ftrace_call label of the function tracer
-instead of the top function and its stack. This is due to fentry being
-called as the first operation of a function instead of the way mcount is
-called, which is after the stack frame is set up. Because the function
-is traced before the stack frame was set up, we lose what function
-called the current function. Not only that, the stack frame size (216)
-is a combination of that function we missed as well as the ftrace_call
-stack size used to save registers.
-
-I have a couple of small fixes that make this more correct:
-
-     # cat stack_trace
-            Depth    Size   Location    (14 entries)
-            -----    ----   --------
-      0)     2640      48   update_group_power+0x26/0x187
-      1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
-      2)     2368     160   find_busiest_group+0x31/0x1f1
-      3)     2208     256   load_balance+0xd9/0x662
-
-The bug only affects that first entry. Do you think its worth adding to
-stable. The changes are solely contained in kernel/trace/trace_stack.c
-and do not affect anything else.
-
-I'm not sure I'm going to even submit this for 3.9, and just let it go
-into 3.9.1.
-
-I also noticed that the contents of the file stack_max_size doesn't
-match the depth (2640 from above), because it also includes the stack
-size of the overhead of the stack tracer itself. I have a fix for that
-too, but I believe this has always been broken (with and without
--mfentry) and I'm not sure that deserves to be back ported. I'm going to
-queue the fix for 3.10. I'm not sure people care about this one or not.
-
-What's your thoughts?
-
-Thanks,
-
--- Steve
-
-
+On Thu, 2013-03-14 at 02:10 +0800, Stephen Warren wrote:
+> On 03/12/2013 11:40 PM, Bill Huang wrote:
+> > On Wed, 2013-03-13 at 13:24 +0800, Stephen Warren wrote:
+> >> On 03/12/2013 11:08 PM, Bill Huang wrote:
+> >>> On Wed, 2013-03-13 at 12:42 +0800, Stephen Warren wrote:
+> >>>> On 03/12/2013 07:47 PM, Bill Huang wrote:
+> >>>>> On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
+> >>>>>> On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> >>>>>>> Add the below four notifier events so drivers which are interested in
+> >>>>>>> knowing the clock status can act accordingly. This is extremely useful
+> >>>>>>> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+> >>>>>>>
+> >>>>>>> PRE_CLK_ENABLE
+> >>>>>>> POST_CLK_ENABLE
+> >>>>>>> PRE_CLK_DISABLE
+> >>>>>>> POST_CLK_DISABLE
+> ...
+> >>> Thanks, I know the point, but unfortunately there is no good choice for
+> >>> hooking this since those low level functions clk_enable/clk_disable will
+> >>> be called in interrupt context so it is not possible to send notify. We
+> >>> might need to come out a better approach if we can think of any.
+> >>> Currently I still think this is acceptable (Having all the drivers which
+> >>> are using our interested clocks call these function to enable/disable
+> >>> clock in their runtime_pm calls) though it's not perfect. 
+> >>
+> >> No, that definitely won't work. Not all drivers use those APIs, nor
+> >> should they.
+> >>
+> > That will be too bad, it looks like we deadlock in the mechanism, we
+> > cannot change existing drivers behavior (that means some call
+> > clk_disable/enable directly, some are not), and we cannot hook notifier
+> > in clk_disable/enable either, that means there seems no any chance to
+> > get what we want, any idea?
+> 
+> I don't know the correct answer.
+> 
+> But I have a question: Why can't we run notifications from the real
+> clk_enable? Does the notification mechanism itself inherently block, or
+> are we worried that implementations/receivers of these notifications
+> might block. Perhaps we can simply define that these notification types
+I think both.
+> may be triggered in atomic context and hence implementations have to
+> support executing in atomic context. Is possible to make that a
+> requirement? Is it possible to implement the code that receives these
+> notifications in atomic context?
+Making it executing in atomic context won't work since for DVFS we
+generally having to set voltage (while receiving the notify) through I2C
+interface which can sleep.
+> 
+> Is it possible to defer triggering of notifications to some non-atomic
+> context, even if they happen in an atomic context?
+I don't think deferring will work either, considering the usage of DVFS,
+device voltage is tightly coupled with frequency, when clock rate is
+about to increase, we have to boost voltage first and we can lower the
+voltage after the clock rate has decreased. All the above sequence have
+to be guaranteed or you might crash, so deferring not only make thing
+complicated in controlling the order but also hurt performance.
+> 
+> I also wonder if this is the right conceptual level to be hooking into
+> the system. Perhaps DVFS is not something that should be triggered by
+> noticing that clocks have changed rates, but rather it should be some
+> form of higher layer that controls (calls into) both the regulator and
+> clock APIs?
+I wonder will there be a feasible API can do that since most of SoC is
+characterizing DVFS on frequency vs. voltage, it makes sense that
+reviewing voltage when the clock rate change happen, and the only
+mechanism seem to be hooking notifier in not only clock rate change but
+also clock enable/disable. 
 
 
