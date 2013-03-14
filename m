@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab3CNPRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:17:11 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53553 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758053Ab3CNPRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:17:09 -0400
-Message-ID: <5141EA01.3060905@windriver.com>
-Date: Thu, 14 Mar 2013 11:17:21 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] usb: limit OMAP related USB options to OMAP2PLUS platforms
-References: <1361992119-2465-1-git-send-email-paul.gortmaker@windriver.com> <20130227195046.GA2300@arwen.pp.htv.fi> <512E653F.1090706@windriver.com>
-In-Reply-To: <512E653F.1090706@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1758115Ab3CNPS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:18:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758094Ab3CNPSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 11:18:25 -0400
+Date: Thu, 14 Mar 2013 12:18:17 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Kevin Baradon <kevin.baradon@gmail.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] media/rc/imon.c: avoid flooding syslog with
+ "unknown keypress" when keypad is pressed
+Message-ID: <20130314121817.07fca24a@redhat.com>
+In-Reply-To: <1361737170-4687-3-git-send-email-kevin.baradon@gmail.com>
+References: <1361737170-4687-1-git-send-email-kevin.baradon@gmail.com>
+	<1361737170-4687-3-git-send-email-kevin.baradon@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-27 02:57 PM, Paul Gortmaker wrote:
-> On 13-02-27 02:51 PM, Felipe Balbi wrote:
->> HI,
->>
->> On Wed, Feb 27, 2013 at 02:08:39PM -0500, Paul Gortmaker wrote:
->>> commit 57f6ce072e35770a63be0c5d5e82f90d8da7d665 ("usb: phy:
->>> add a new driver for usb3 phy") added the new Kconfig option
->>> OMAP_USB3, but it had no dependencies whatsoever, and hence
->>> became available across all arch/platforms.
->>>
->>> Which presumably caused this to show up in x86 randconfig:
->>>
->>>     warning: (USB_MUSB_HDRC && OMAP_USB3) selects \
->>>         OMAP_CONTROL_USB which has unmet direct \
->>>         dependencies (USB_SUPPORT && ARCH_OMAP2PLUS)
->>>
->>> Then commit 6992819feb39cb9adac72170555d957d07f869f2 ("usb: phy:
->>> fix Kconfig warning") was added.  However, this just deleted the
->>> ARCH_OMAP2PLUS dependency from OMAP_CONTROL_USB, further
->>> compounding the problem by opening up OMAP_CONTROL_USB to
->>> all arch/platforms as well.
->>>
->>> Here we revert the change of 6992819feb to restore the dependency,
->>> and add the same ARCH_OMAP2PLUS dependency to the new OMAP_USB3.
->>>
->>> Perhaps a more platform specific dependency could be chosen for
->>> OMAP_USB3, but at least this keeps it from bleeding out to other
->>> architectures and non-OMAP ARM platforms as it is currently doing.
->>>
->>> Cc: Felipe Balbi <balbi@ti.com>
->>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
->>> Cc: Moiz Sonasath <m-sonasath@ti.com>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->>> ---
->>>  drivers/usb/phy/Kconfig | 2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
->>> index 65217a5..40b8463 100644
->>> --- a/drivers/usb/phy/Kconfig
->>> +++ b/drivers/usb/phy/Kconfig
->>> @@ -17,6 +17,7 @@ config OMAP_USB2
->>>  
->>>  config OMAP_USB3
->>>  	tristate "OMAP USB3 PHY Driver"
->>> +	depends on ARCH_OMAP2PLUS
->>>  	select USB_OTG_UTILS
->>>  	select OMAP_CONTROL_USB
->>>  	help
->>> @@ -27,6 +28,7 @@ config OMAP_USB3
->>>  
->>>  config OMAP_CONTROL_USB
->>>  	tristate "OMAP CONTROL USB Driver"
->>> +	depends on ARCH_OMAP2PLUS
->>
->> I rather not add dependencies here and fix the selections of
->> OMAP_CONTROL_USB.
+Em Sun, 24 Feb 2013 21:19:30 +0100
+Kevin Baradon <kevin.baradon@gmail.com> escreveu:
+
+> My 15c2:0036 device floods syslog when a keypad key is pressed:
 > 
-> I am not sure I understand what you mean, or why you wouldn't
-> want sane dependencies in place like those given above.  Perhaps
-> you can send an alternate patch so there is no ambiguity?
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fef2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> 
+> This patch lowers severity of this message when key appears to be coming from keypad.
+> 
+> Signed-off-by: Kevin Baradon <kevin.baradon@gmail.com>
+> ---
+>  drivers/media/rc/imon.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
+> index a3e66a0..bca03d4 100644
+> --- a/drivers/media/rc/imon.c
+> +++ b/drivers/media/rc/imon.c
+> @@ -1499,7 +1499,7 @@ static void imon_incoming_packet(struct imon_context *ictx,
+>  	int i;
+>  	u64 scancode;
+>  	int press_type = 0;
+> -	int msec;
+> +	int msec, is_pad_key = 0;
+>  	struct timeval t;
+>  	static struct timeval prev_time = { 0, 0 };
+>  	u8 ktype;
+> @@ -1562,6 +1562,7 @@ static void imon_incoming_packet(struct imon_context *ictx,
+>  	    ((len == 8) && (buf[0] & 0x40) &&
+>  	     !(buf[1] & 0x1 || buf[1] >> 2 & 0x1))) {
+>  		len = 8;
+> +		is_pad_key = 1;
+>  		imon_pad_to_keys(ictx, buf);
+>  	}
+>  
+> @@ -1625,8 +1626,16 @@ static void struct imon_context *ictx,
+>  
+>  unknown_key:
+>  	spin_unlock_irqrestore(&ictx->kc_lock, flags);
+> -	dev_info(dev, "%s: unknown keypress, code 0x%llx\n", __func__,
+> -		 (long long)scancode);
+> +	/*
+> +	 * On some devices syslog is flooded with unknown keypresses when keypad
+> +	 * is pressed. Lower message severity in that case.
+> +	 */
+> +	if (!is_pad_key)
+> +		dev_info(dev, "%s: unknown keypress, code 0x%llx\n", __func__,
+> +			 (long long)scancode);
+> +	else
+> +		dev_dbg(dev, "%s: unknown keypad keypress, code 0x%llx\n",
+> +			__func__, (long long)scancode);
 
-Hi Felipe,
+Hmmm... this entire logic looks weird to me. IMO, the proper fix is to
+remove this code snippet from imon_incoming_packet():
 
-I'm still seeing the OMAP settings in x86 builds on mainline
-from today, and since I'd not got a reply to the above, I'm
-still wondering what alternative you have in mind vs. my
-above patch.  We can't be having the arch specific settings
-leaking out to the other arch where they make no sense[1].
+	spin_lock_irqsave(&ictx->kc_lock, flags);
+	if (ictx->kc == KEY_UNKNOWN)
+		goto unknown_key;
+	spin_unlock_irqrestore(&ictx->kc_lock, flags);
 
-Thanks,
-Paul.
+and similar logic from other parts of the code, and just let rc_keydown()
+to be handled for KEY_UNKNOWN.
 
-[1] https://lkml.org/lkml/2013/3/7/456
+rc_keydown() actually produces two input events:
+	input_event(dev->input_dev, EV_MSC, MSC_SCAN, scancode);
+	input_event(dev, EV_KEY, code, !!value);
+
+(the last one, indirectly, by calling input_report_key)
+
+In this particular case, the fist event will allow userspace programs
+like "rc-keycode -t" to detect that an unknown scancode was produced,
+helping the user to properly fill the scancode table for a particular device.
+
+In the case of your remote, you'll likely will want to add support for those
+currently unknown scancodes.
+
+Those "unkonwn keypad keypress" type of messages are now obsolete, as users
+can get it anytime in userspace, using the appropriate tool (ir-keytable,
+with is part of v4l-utils).
+
+Regards,
+Mauro
