@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab3CNNZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:25:38 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44307 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757802Ab3CNNZZ (ORCPT
+	id S1757831Ab3CNN0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:26:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50481 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757749Ab3CNN0F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:25:25 -0400
-Message-ID: <5142878A.7050701@gmail.com>
-Date: Thu, 14 Mar 2013 22:29:30 -0400
-From: Huang Shijie <shijie8@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110817 Fedora/3.1.12-1.fc14 Thunderbird/3.1.12
+	Thu, 14 Mar 2013 09:26:05 -0400
+Message-ID: <5141CFE4.2030909@arm.com>
+Date: Thu, 14 Mar 2013 13:25:56 +0000
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Huang Shijie <b32955@freescale.com>, dwmw2@infradead.org,
-        artem.bityutskiy@linux.intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 3/3] mtd: add 4 Toshiba nand chips for the full-id
- case
-References: <1363229965-13128-1-git-send-email-b32955@freescale.com>	<1363229965-13128-4-git-send-email-b32955@freescale.com> <CAN8TOE9aGckZ2PrCCPQe4ZgW6Aph3otXGohNuRPssu8f302xaA@mail.gmail.com>
-In-Reply-To: <CAN8TOE9aGckZ2PrCCPQe4ZgW6Aph3otXGohNuRPssu8f302xaA@mail.gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [Suggestion] Latest randconfig build errors for CONFIG_MMU=no
+References: <514147A0.2060002@asianux.com>
+In-Reply-To: <514147A0.2060002@asianux.com>
+X-OriginalArrivalTime: 14 Mar 2013 13:26:01.0234 (UTC) FILETIME=[7874AF20:01CE20B7]
+X-MC-Unique: 113031413260303601
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月14日 01:10, Brian Norris 写道:
-> On Wed, Mar 13, 2013 at 7:59 PM, Huang Shijie<b32955@freescale.com>  wrote:
->> I have 4 Toshiba nand chips which can not be parsed out by the
->> id data. We can not get the oob size from the id data. So add them
->> as the full-id nand chips in the first of nand_flash_ids.
->>
->> The nand_get_flash_type() scans the full id nands firstly.
->> If a full-id nand matchs, it will not continue to parse other
->> non-full-id nand types, else it will continue to parse the non-full-id nands.
->>
->> Signed-off-by: Huang Shijie<b32955@freescale.com>
->> ---
->>   drivers/mtd/nand/nand_ids.c |   22 ++++++++++++++++++++++
->>   1 files changed, 22 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
->> index 625bc89..38b8cee 100644
->> --- a/drivers/mtd/nand/nand_ids.c
->> +++ b/drivers/mtd/nand/nand_ids.c
->> @@ -10,6 +10,7 @@
->>    */
->>   #include<linux/module.h>
->>   #include<linux/mtd/nand.h>
->> +#include<linux/sizes.h>
->>
->>   #define LP_OPTIONS NAND_SAMSUNG_LP_OPTIONS
->>   #define LP_OPTIONS16 (LP_OPTIONS | NAND_BUSWIDTH_16)
->> @@ -22,6 +23,27 @@
->>    * extended chip ID.
->>    */
->>   struct nand_flash_dev nand_flash_ids[] = {
->> +       /*
->> +        * The full-id nands may share the same Device ID with the non-full-id
->> +        * nands. In order to distinguish the two type nands, we put the
->> +        * full-id nands in the first of the table. So the nand_get_flash_type()
->> +        * scans the full id nands firstly. If a full-id nand matchs, it will
->> +        * not continue to parse other non-full-id nand types, else it will
->> +        * continue to parse the non-full-id nands.
->> +        */
-> There are a few grammar/language issues (nands ->  NAND chips, id ->
-> ID, firstly ->  first). Also, I don't think you need to explain the
-> full search here. I would rewrite this whole paragraph as:
+Hi Chen,
+
+On 14/03/13 03:44, Chen Gang wrote:
+> Hello Maintainers:
 >
-sorry for my poor english.
-
-> "Some incompatible NAND chips share device ID's and so must be listed
-> by full ID. We list them first so that we can easily identify the most
-> specific match."
+>    when use randconfig:
+>      make V=1 EXTRA_CFLAGS=-W ARCH=arm randconfig
+>        (and "grep CONFIG_MMU .config" outputs "# CONFIG_MMU is not set")
 >
-thanks. I will use this description.
+>    the error information:
+>      arch/arm/kernel/suspend.c: 在函数‘cpu_suspend’中:
+>      arch/arm/kernel/suspend.c:56:32: 错误：提领指向不完全类型的指针
+>      arch/arm/kernel/suspend.c:70:3: 错误：隐式声明函数‘cpu_switch_mm’ [-Werror=implicit-function-declaration]
+>      arch/arm/kernel/suspend.c:71:3: 错误：隐式声明函数‘local_flush_bp_all’ [-Werror=implicit-function-declaration]
+>      arch/arm/kernel/suspend.c:72:3: 错误：隐式声明函数‘local_flush_tlb_all’ [-Werror=implicit-function-declaration]
+>
+>    I want to be sure whether we can bear it ?
+>
+
+You're right that at the moment that suspend code is broken for NOMMU.
+
+However, Will Deacon has a patch to fix it in his nommu branch on 
+kernel.org:
+
+https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=nommu
+
+I'll let Will comment on how/when he might look at proposing that code 
+to be merged.
+
+Jonny
 
 
-
-Huang Shijie
