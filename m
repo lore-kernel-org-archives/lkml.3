@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3CNKh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:37:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51982 "EHLO
+	id S1757230Ab3CNKql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:46:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab3CNKhv (ORCPT
+	with ESMTP id S1757241Ab3CNKhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:51 -0400
+	Thu, 14 Mar 2013 06:37:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 55/88] ath9k_htc: fix signal strength handling issues
-Date: Thu, 14 Mar 2013 10:35:48 +0000
-Message-Id: <1363257381-15900-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 60/88] drm/i915: Don't clobber crtc->fb when queue_flip fails
+Date: Thu, 14 Mar 2013 10:35:53 +0000
+Message-Id: <1363257381-15900-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,70 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 
-commit 838f427955dcfd16858b0108ce29029da0d56a4e upstream.
+commit 4a35f83b2b7c6aae3fc0d1c4554fdc99dc33ad07 upstream.
 
-The ath9k commit 2ef167557c0a26c88162ecffb017bfcc51eb7b29
-(ath9k: fix signal strength reporting issues) fixed an issue where the
-reported per-frame signal strength reported to mac80211 was being
-overwritten with an internal average. The same issue is also present
-in ath9k_htc.
-In addition to preventing the driver from overwriting the value, this
-commit also ensures that the internal average (which is used for ANI)
-only tracks beacons of the AP that we're connected to.
+Restore crtc->fb to the old framebuffer if queue_flip fails.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+While at it, kill the pointless intel_fb temp variable.
+
+v2: Update crtc->fb before queue_flip and restore it back
+    after a failure.
+
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-and-Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc.h          |  1 +
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c | 18 +++++++++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc.h b/drivers/net/wireless/ath/ath9k/htc.h
-index 1357952..17f687b 100644
---- a/drivers/net/wireless/ath/ath9k/htc.h
-+++ b/drivers/net/wireless/ath/ath9k/htc.h
-@@ -22,6 +22,7 @@
- #include <linux/firmware.h>
- #include <linux/skbuff.h>
- #include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <net/mac80211.h>
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-index 3e40a64..9cbbb6a 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -1067,15 +1067,19 @@ static bool ath9k_rx_prepare(struct ath9k_htc_priv *priv,
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 142a918..1f06ab4 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6240,8 +6240,8 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	struct intel_framebuffer *intel_fb;
+-	struct drm_i915_gem_object *obj;
++	struct drm_framebuffer *old_fb = crtc->fb;
++	struct drm_i915_gem_object *obj = to_intel_framebuffer(fb)->obj;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_unpin_work *work;
+ 	unsigned long flags;
+@@ -6253,8 +6253,7 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
  
- 	last_rssi = priv->rx.last_rssi;
+ 	work->event = event;
+ 	work->crtc = crtc;
+-	intel_fb = to_intel_framebuffer(crtc->fb);
+-	work->old_fb_obj = intel_fb->obj;
++	work->old_fb_obj = to_intel_framebuffer(old_fb)->obj;
+ 	INIT_WORK(&work->work, intel_unpin_work_fn);
  
--	if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
--		rxbuf->rxstatus.rs_rssi = ATH_EP_RND(last_rssi,
--						     ATH_RSSI_EP_MULTIPLIER);
-+	if (ieee80211_is_beacon(hdr->frame_control) &&
-+	    !is_zero_ether_addr(common->curbssid) &&
-+	    ether_addr_equal(hdr->addr3, common->curbssid)) {
-+		s8 rssi = rxbuf->rxstatus.rs_rssi;
+ 	ret = drm_vblank_get(dev, intel_crtc->pipe);
+@@ -6274,9 +6273,6 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
+ 	intel_crtc->unpin_work = work;
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
  
--	if (rxbuf->rxstatus.rs_rssi < 0)
--		rxbuf->rxstatus.rs_rssi = 0;
-+		if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
-+			rssi = ATH_EP_RND(last_rssi, ATH_RSSI_EP_MULTIPLIER);
+-	intel_fb = to_intel_framebuffer(fb);
+-	obj = intel_fb->obj;
+-
+ 	if (atomic_read(&intel_crtc->unpin_work_count) >= 2)
+ 		flush_workqueue(dev_priv->wq);
  
--	if (ieee80211_is_beacon(fc))
--		priv->ah->stats.avgbrssi = rxbuf->rxstatus.rs_rssi;
-+		if (rssi < 0)
-+			rssi = 0;
-+
-+		priv->ah->stats.avgbrssi = rssi;
-+	}
- 
- 	rx_status->mactime = be64_to_cpu(rxbuf->rxstatus.rs_tstamp);
- 	rx_status->band = hw->conf.channel->band;
+@@ -6313,6 +6309,7 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
+ cleanup_pending:
+ 	atomic_dec(&intel_crtc->unpin_work_count);
+ 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
++	crtc->fb = old_fb;
+ 	drm_gem_object_unreference(&work->old_fb_obj->base);
+ 	drm_gem_object_unreference(&obj->base);
+ 	mutex_unlock(&dev->struct_mutex);
 -- 
 1.8.1.2
 
