@@ -1,84 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461Ab3CNAaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 20:30:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39593 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab3CNAaQ convert rfc822-to-8bit (ORCPT
+	id S1756535Ab3CNAcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 20:32:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57146 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754015Ab3CNAcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 20:30:16 -0400
-Subject: Re: [PATCH] USB: ehci-s5p: Fix phy reset
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <CAD=FV=W331nkdJJhXrXe739o+-iBSzGAS6anu+C_mmix0MbAUg@mail.gmail.com>
-Date: Thu, 14 Mar 2013 01:30:09 +0100
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dmueller@suse.de, Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <D288652A-C975-46D5-92D8-048463C15AAB@suse.de>
-References: <1363136988-3704-1-git-send-email-agraf@suse.de> <CAD=FV=UXaZvZJOZwAguwi=iyYO1iMSvt8fdEsDhr96pgMXDYSg@mail.gmail.com> <A763CC55-549D-4CCD-8EE8-2BCE17F84606@suse.de> <CAD=FV=W331nkdJJhXrXe739o+-iBSzGAS6anu+C_mmix0MbAUg@mail.gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-X-Mailer: Apple Mail (2.1278)
+	Wed, 13 Mar 2013 20:32:02 -0400
+Message-ID: <1363221113.3937.101.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] dmi_scan: proper buf type in dmi_present()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Artem Savkov <artem.savkov@gmail.com>
+Cc: tmhikaru@gmail.com, akpm@linux-foundation.org, zhenzhong.duan@oracle.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 14 Mar 2013 00:31:53 +0000
+In-Reply-To: <1363119427-4371-1-git-send-email-artem.savkov@gmail.com>
+References: <1363119427-4371-1-git-send-email-artem.savkov@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-83ms+Va9lISuucSy2V+z"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 13.03.2013, at 18:59, Doug Anderson wrote:
+--=-83ms+Va9lISuucSy2V+z
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Alexander,
-> 
-> On Wed, Mar 13, 2013 at 10:45 AM, Alexander Graf <agraf@suse.de> wrote:
->> 
->>>> +       gpio_free(gpio);
->>> 
->>> Freeing the gpio is a little on the iffy side since you actually care
->>> about keeping the value.  Perhaps you can change this to
->>> devm_gpio_request_one() and avoid the free?  I was about to submit a
->>> patch to do just that (since otherwise you run into trouble if you
->>> ever defer the probe) but then ran across your patch.
->> 
->> I could also just return it when the function exits and only free it when we exit the probe function with a negative value. The reason I put it in here was that on probe deferral, the pin simply gets blocked.
->> 
->> However, I could probably also just completely take the gpio_free() out of this patch and resubmit, as it should be pretty much unrelated. Then you can patch it properly.
-> 
-> Sure, if you want to resubmit without the gpio_free() I'll submit a
-> new patch atop yours with the change to devm and people can see if
-> they like it...
+On Wed, 2013-03-13 at 00:17 +0400, Artem Savkov wrote:
+> buf needs to be unsigned in dmi_present(), otherwise dmi_base calculation
+> doesn't work properly leading to a wraparound during dmi_ioremap:
+>=20
+> [    0.000000] ------------[ cut here ]------------
+> [    0.000000] WARNING: at arch/x86/mm/ioremap.c:524 __early_ioremap+0x85=
+/0x18a()
+> [    0.000000] Modules linked in:
+> [    0.000000] Pid: 0, comm: swapper Not tainted 3.9.0-rc2-next-20130312 =
+#283
+> [    0.000000] Call Trace:
+> [    0.000000]  [<c1036992>] warn_slowpath_common+0x72/0xa0
+> [    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
+> [    0.000000]  [<c19cc176>] ? __early_ioremap+0x85/0x18a
+> [    0.000000]  [<c10369e2>] warn_slowpath_null+0x22/0x30
+> [    0.000000]  [<c19cc176>] __early_ioremap+0x85/0x18a
+> [    0.000000]  [<c19cc1ed>] ? __early_ioremap+0xfc/0x18a
+> [    0.000000]  [<c19cc412>] early_ioremap+0xd/0xf
+> [    0.000000]  [<c19fbba9>] dmi_present+0xf5/0x22a
+> [    0.000000]  [<c19fbd9d>] dmi_scan_machine+0xbf/0x11c
+> [    0.000000]  [<c19bd781>] setup_arch+0x4db/0xca0
+> [    0.000000]  [<c168105c>] ? printk+0x3d/0x3f
+> [    0.000000]  [<c19ba763>] start_kernel+0x7b/0x329
+> [    0.000000]  [<c19ba361>] i386_start_kernel+0x137/0x13a
+> [    0.000000] ---[ end trace 4eaa2a86a8e2da22 ]---
+> [    0.000000] DMI not present or invalid.
+>=20
+> Introduced in "dmi_scan: refactor dmi_scan_machine(), {smbios,dmi}_presen=
+t()"
+>=20
+> Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
+Acked-by: Ben Hutchings <ben@decadent.org.uk>
 
-Hrm. So when I remove the gpio_free() again, I can't find the USB hub anymore. If I however postpone the whole reset procedure until after the potential deferral, it works (see patch below).
+Wow, this is a pretty obvious fix.  Somehow this code did work for at
+least two of us, so I suppose we were (un)lucky to have bit 7 clear on
+all the critical bytes!
 
-Any idea what is going on here?
+Ben.
 
+> ---
+>  drivers/firmware/dmi_scan.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> index 3439f59..40e940d 100644
+> --- a/drivers/firmware/dmi_scan.c
+> +++ b/drivers/firmware/dmi_scan.c
+> @@ -410,7 +410,7 @@ static void __init dmi_dump_ids(void)
+>  	printk(KERN_CONT "\n");
+>  }
+> =20
+> -static int __init dmi_present(const char *buf)
+> +static int __init dmi_present(const u8 *buf)
+>  {
+>  	int smbios_ver;
+> =20
 
-Alex
+--=20
+Ben Hutchings
+Humans are not rational beings; they are rationalising beings.
 
+--=-83ms+Va9lISuucSy2V+z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index f692f70..b29b2b8 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -136,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
-        if (!pdev->dev.coherent_dma_mask)
-                pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
--       s5p_setup_vbus_gpio(pdev);
--
-        s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
-                                GFP_KERNEL);
-        if (!s5p_ehci)
-@@ -157,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
-                s5p_ehci->otg = phy->otg;
-        }
- 
-+       s5p_setup_vbus_gpio(pdev);
-+
-        s5p_ehci->dev = &pdev->dev;
- 
-        hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUUEaeee/yOyVhhEJAQrLzQ//St6l/b1HsO8lYBzkDsZdxN9SYdeZbg+q
+VZ2B2hi6Jv/F1uSbSslj/F2ddfU/7JWMVgDLn5E/fAOMlWChemRwjgK13uaj5Zta
+mcQo1MeV0Jsx85OjgRHzk3R7XHWvSDLXUx1vL4NWAshOqGmkABkPtXFuUvYu76Kt
+26EebIeIp/p3RKFkDOaDUcRqmIZXdmKAeNNWNO0vlaqPWcq3w66cKn8hC6hL9sx7
+UAW4+bW+e6mHtDmTQy6zcjbkOK0nO9WtuMiBl4pgGjAGc1CyJzq1EVfNebHIr5YV
+P6keR0pR7Pw8csYssozn3xLzTP4SKTwCsXIoN+a53Jq7PydGcI/Erfpj4Ie7uEMk
+9V67EajLVWJeOrq+gxXhIUJKoPh0QLkyu15uFpIrV2wiy68bdIytLMu2WNRvt+Ox
+E/VSVqhltcooOzBewqa30GJNwdZVjRe0ZuAkUBZveAuILk/oMuqjUi6lGqbe2UZY
+HpNbNGAOsl8IDWMeKmu96thEDMlAswwc32iNzEC6ReB/5nsmF9ZX7v8C56sKpJyU
+dO8+sWS6Xq9dIENE/aiNZ3yTJdZkGyMFkmhec/6En8n7Sylnq0BqaOfhlCtj0blq
+mNXU9j9n0rIqVY0aUzo7c12Xfe65RtS1MYtOATBtAyGj7a7/+WYAdwgZov1sWP1k
+/MDaqEjxVAw=
+=g/ai
+-----END PGP SIGNATURE-----
+
+--=-83ms+Va9lISuucSy2V+z--
