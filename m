@@ -1,173 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3CNJki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:40:38 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46692 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab3CNJkf (ORCPT
+	id S1756223Ab3CNJlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:41:42 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:58925 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751856Ab3CNJll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:40:35 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH] netfilter: nf_conntrack: Batch cleanup
-Date: Thu, 14 Mar 2013 13:40:14 +0400
-Message-ID: <1363254014-10725-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.22.158]
+	Thu, 14 Mar 2013 05:41:41 -0400
+Message-ID: <1363254099.1335.38.camel@x61.thuisdomein>
+Subject: [PATCH] staging: android: remove dependency on TINY_SHMEM
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Thu, 14 Mar 2013 10:41:39 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Mar 2013 09:41:39.0455 (UTC) FILETIME=[209C38F0:01CE2098]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch introduces nf_conntrack_cleanup_net_list(), which cleanups
-nf_conntrack for a list of netns and calls synchronize_net() only once
-for them all. This should reduce netns destruction time.
---
-I've measured cleanup time for 1k dummy net ns. Here are the results:
+The Kconfig entry for the "Anonymous Shared Memory Subsystem" got added
+in v3.3. It has an optional dependency on TINY_SHMEM. But TINY_SHMEM had
+already been removed in v2.6.29. So this optional dependency can safely
+be removed too.
 
- <without the patch>
- # modprobe nf_conntrack
- # time modprobe -r nf_conntrack
-
- real	0m10.337s
- user	0m0.000s
- sys	0m0.376s
-
- <with the patch>
- # modprobe nf_conntrack
- # time modprobe -r nf_conntrack
-
- real    0m5.661s
- user    0m0.000s
- sys     0m0.216s
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- include/net/netfilter/nf_conntrack_core.h |    1 +
- net/netfilter/nf_conntrack_core.c         |   46 ++++++++++++++++++++---------
- net/netfilter/nf_conntrack_standalone.c   |   16 ++++++----
- 3 files changed, 43 insertions(+), 20 deletions(-)
+Untested.
 
-diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
-index 930275f..fb2b623 100644
---- a/include/net/netfilter/nf_conntrack_core.h
-+++ b/include/net/netfilter/nf_conntrack_core.h
-@@ -27,6 +27,7 @@ extern unsigned int nf_conntrack_in(struct net *net,
- 
- extern int nf_conntrack_init_net(struct net *net);
- extern void nf_conntrack_cleanup_net(struct net *net);
-+extern void nf_conntrack_cleanup_net_list(struct list_head *net_exit_list);
- 
- extern int nf_conntrack_proto_pernet_init(struct net *net);
- extern void nf_conntrack_proto_pernet_fini(struct net *net);
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index c8e001a..09c02ef 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1364,30 +1364,48 @@ void nf_conntrack_cleanup_end(void)
-  */
- void nf_conntrack_cleanup_net(struct net *net)
- {
-+	LIST_HEAD(single);
-+
-+	list_add(&net->exit_list, &single);
-+	nf_conntrack_cleanup_net_list(&single);
-+}
-+
-+void nf_conntrack_cleanup_net_list(struct list_head *net_exit_list)
-+{
-+	int busy;
-+	struct net *net;
-+
- 	/*
- 	 * This makes sure all current packets have passed through
- 	 *  netfilter framework.  Roll on, two-stage module
- 	 *  delete...
- 	 */
- 	synchronize_net();
-- i_see_dead_people:
--	nf_ct_iterate_cleanup(net, kill_all, NULL);
--	nf_ct_release_dying_list(net);
--	if (atomic_read(&net->ct.count) != 0) {
-+i_see_dead_people:
-+	busy = 0;
-+	list_for_each_entry(net, net_exit_list, exit_list) {
-+		nf_ct_iterate_cleanup(net, kill_all, NULL);
-+		nf_ct_release_dying_list(net);
-+		if (atomic_read(&net->ct.count) != 0)
-+			busy = 1;
-+	}
-+	if (busy) {
- 		schedule();
- 		goto i_see_dead_people;
- 	}
- 
--	nf_ct_free_hashtable(net->ct.hash, net->ct.htable_size);
--	nf_conntrack_proto_pernet_fini(net);
--	nf_conntrack_helper_pernet_fini(net);
--	nf_conntrack_ecache_pernet_fini(net);
--	nf_conntrack_tstamp_pernet_fini(net);
--	nf_conntrack_acct_pernet_fini(net);
--	nf_conntrack_expect_pernet_fini(net);
--	kmem_cache_destroy(net->ct.nf_conntrack_cachep);
--	kfree(net->ct.slabname);
--	free_percpu(net->ct.stat);
-+	list_for_each_entry(net, net_exit_list, exit_list) {
-+		nf_ct_free_hashtable(net->ct.hash, net->ct.htable_size);
-+		nf_conntrack_proto_pernet_fini(net);
-+		nf_conntrack_helper_pernet_fini(net);
-+		nf_conntrack_ecache_pernet_fini(net);
-+		nf_conntrack_tstamp_pernet_fini(net);
-+		nf_conntrack_acct_pernet_fini(net);
-+		nf_conntrack_expect_pernet_fini(net);
-+		kmem_cache_destroy(net->ct.nf_conntrack_cachep);
-+		kfree(net->ct.slabname);
-+		free_percpu(net->ct.stat);
-+	}
- }
- 
- void *nf_ct_alloc_hashtable(unsigned int *sizep, int nulls)
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index 6bcce40..6c69fbd 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -545,16 +545,20 @@ out_init:
- 	return ret;
- }
- 
--static void nf_conntrack_pernet_exit(struct net *net)
-+static void nf_conntrack_pernet_exit(struct list_head *net_exit_list)
- {
--	nf_conntrack_standalone_fini_sysctl(net);
--	nf_conntrack_standalone_fini_proc(net);
--	nf_conntrack_cleanup_net(net);
-+	struct net *net;
-+
-+	list_for_each_entry(net, net_exit_list, exit_list) {
-+		nf_conntrack_standalone_fini_sysctl(net);
-+		nf_conntrack_standalone_fini_proc(net);
-+	}
-+	nf_conntrack_cleanup_net_list(net_exit_list);
- }
- 
- static struct pernet_operations nf_conntrack_net_ops = {
--	.init = nf_conntrack_pernet_init,
--	.exit = nf_conntrack_pernet_exit,
-+	.init		= nf_conntrack_pernet_init,
-+	.exit_batch	= nf_conntrack_pernet_exit,
- };
- 
- static int __init nf_conntrack_standalone_init(void)
+ drivers/staging/android/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 465a28c..ae575ee 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -22,7 +22,7 @@ config ANDROID_BINDER_IPC
+ config ASHMEM
+ 	bool "Enable the Anonymous Shared Memory Subsystem"
+ 	default n
+-	depends on SHMEM || TINY_SHMEM
++	depends on SHMEM
+ 	---help---
+ 	  The ashmem subsystem is a new shared memory allocator, similar to
+ 	  POSIX SHM but with different behavior and sporting a simpler
 -- 
-1.7.1
+1.7.11.7
 
