@@ -1,254 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab3CNKke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:40:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52101 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab3CNKiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:38:19 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 81/88] crypto: user - fix info leaks in report API
-Date: Thu, 14 Mar 2013 10:36:14 +0000
-Message-Id: <1363257381-15900-82-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1756863Ab3CNKld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:41:33 -0400
+Received: from smtp8.mail.ru ([94.100.176.53]:48041 "EHLO smtp8.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757422Ab3CNKl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:41:29 -0400
+From: Kirill Kapranov <kapranoff@inbox.ru>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, bhutchings@solarflare.com, peppe.cavallaro@st.com,
+        joe@perches.com, bruce.w.allan@intel.com, linux-kernel@vger.kernel.org,
+        Kirill Kapranov <kapranoff@inbox.ru>
+Subject: [PATCH] phy: Elimination the forced speed reduction algorithm.
+Date: Thu, 14 Mar 2013 14:40:52 +0400
+Message-Id: <1363257652-8255-1-git-send-email-kapranoff@inbox.ru>
+X-Mailer: git-send-email 1.7.2.5
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed
+100 duplex full) with an ethernet cable plugged off, the mentioned algorithm
+slows down a NIC speed, so further cable hook-up leads to nonoperable link state.
 
-------------------
-
-From: Mathias Krause <minipli@googlemail.com>
-
-commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
-
-Three errors resulting in kernel memory disclosure:
-
-1/ The structures used for the netlink based crypto algorithm report API
-are located on the stack. As snprintf() does not fill the remainder of
-the buffer with null bytes, those stack bytes will be disclosed to users
-of the API. Switch to strncpy() to fix this.
-
-2/ crypto_report_one() does not initialize all field of struct
-crypto_user_alg. Fix this to fix the heap info leak.
-
-3/ For the module name we should copy only as many bytes as
-module_name() returns -- not as much as the destination buffer could
-hold. But the current code does not and therefore copies random data
-from behind the end of the module name, as the module name is always
-shorter than CRYPTO_MAX_ALG_NAME.
-
-Also switch to use strncpy() to copy the algorithm's name and
-driver_name. They are strings, after all.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Kirill Kapranov <kapranoff@inbox.ru>
 ---
- crypto/ablkcipher.c  | 12 ++++++------
- crypto/aead.c        |  9 ++++-----
- crypto/ahash.c       |  2 +-
- crypto/blkcipher.c   |  6 +++---
- crypto/crypto_user.c | 22 +++++++++++-----------
- crypto/pcompress.c   |  3 +--
- crypto/rng.c         |  2 +-
- crypto/shash.c       |  3 ++-
- 8 files changed, 29 insertions(+), 30 deletions(-)
+ drivers/net/phy/phy.c |   47 -----------------------------------------------
+ 1 files changed, 0 insertions(+), 47 deletions(-)
 
-diff --git a/crypto/ablkcipher.c b/crypto/ablkcipher.c
-index 533de95..7d4a8d2 100644
---- a/crypto/ablkcipher.c
-+++ b/crypto/ablkcipher.c
-@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_blkcipher rblkcipher;
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index ef9ea92..0e40170 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -463,33 +463,6 @@ void phy_stop_machine(struct phy_device *phydev)
+ }
  
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
-@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<built-in>");
-+	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
-diff --git a/crypto/aead.c b/crypto/aead.c
-index 0b8121e..27bc487 100644
---- a/crypto/aead.c
-+++ b/crypto/aead.c
-@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_buff *skb, struct crypto_alg *alg)
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 aead->geniv ?: "<built-in>");
-+	strncpy(raead.type, "aead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
-@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct sk_buff *skb, struct crypto_alg *alg)
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
-+	strncpy(raead.type, "nivaead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
-diff --git a/crypto/ahash.c b/crypto/ahash.c
-index 3887856..793a27f 100644
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_hash rhash;
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
-+	strncpy(rhash.type, "ahash", sizeof(rhash.type));
- 
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
-diff --git a/crypto/blkcipher.c b/crypto/blkcipher.c
-index a8d85a1..c44e014 100644
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_blkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
-diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-index 5a37ead..ee69458 100644
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -75,7 +75,7 @@ static int crypto_report_cipher(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_cipher rcipher;
- 
--	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
-+	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
- 
- 	rcipher.blocksize = alg->cra_blocksize;
- 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
-@@ -94,8 +94,7 @@ static int crypto_report_comp(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_comp rcomp;
- 
--	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
+ /**
+- * phy_force_reduction - reduce PHY speed/duplex settings by one step
+- * @phydev: target phy_device struct
+- *
+- * Description: Reduces the speed/duplex settings by one notch,
+- *   in this order--
+- *   1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
+- *   The function bottoms out at 10/HALF.
+- */
+-static void phy_force_reduction(struct phy_device *phydev)
+-{
+-	int idx;
 -
-+	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
- 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		    sizeof(struct crypto_report_comp), &rcomp))
- 		goto nla_put_failure;
-@@ -108,12 +107,14 @@ nla_put_failure:
- static int crypto_report_one(struct crypto_alg *alg,
- 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
- {
--	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
--	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
--	       sizeof(ualg->cru_driver_name));
--	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
--	       CRYPTO_MAX_ALG_NAME);
+-	idx = phy_find_setting(phydev->speed, phydev->duplex);
+-	
+-	idx++;
 -
-+	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
-+	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
-+		sizeof(ualg->cru_driver_name));
-+	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
-+		sizeof(ualg->cru_module_name));
-+
-+	ualg->cru_type = 0;
-+	ualg->cru_mask = 0;
- 	ualg->cru_flags = alg->cra_flags;
- 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
- 
-@@ -122,8 +123,7 @@ static int crypto_report_one(struct crypto_alg *alg,
- 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
- 		struct crypto_report_larval rl;
- 
--		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
+-	idx = phy_find_valid(idx, phydev->supported);
 -
-+		strncpy(rl.type, "larval", sizeof(rl.type));
- 		if (nla_put(skb, CRYPTOCFGA_REPORT_LARVAL,
- 			    sizeof(struct crypto_report_larval), &rl))
- 			goto nla_put_failure;
-diff --git a/crypto/pcompress.c b/crypto/pcompress.c
-index 04e083f..7140fe7 100644
---- a/crypto/pcompress.c
-+++ b/crypto/pcompress.c
-@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_comp rpcomp;
- 
--	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
+-	phydev->speed = settings[idx].speed;
+-	phydev->duplex = settings[idx].duplex;
 -
-+	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
- 	if (nla_put(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		    sizeof(struct crypto_report_comp), &rpcomp))
- 		goto nla_put_failure;
-diff --git a/crypto/rng.c b/crypto/rng.c
-index f3b7894..e0a25c2 100644
---- a/crypto/rng.c
-+++ b/crypto/rng.c
-@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
- {
- 	struct crypto_report_rng rrng;
+-	pr_info("Trying %d/%s\n",
+-		phydev->speed, DUPLEX_FULL == phydev->duplex ? "FULL" : "HALF");
+-}
+-
+-
+-/**
+  * phy_error - enter HALTED state for this PHY device
+  * @phydev: target phy_device struct
+  *
+@@ -818,30 +791,11 @@ void phy_state_machine(struct work_struct *work)
+ 				phydev->adjust_link(phydev->attached_dev);
  
--	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
-+	strncpy(rrng.type, "rng", sizeof(rrng.type));
- 
- 	rrng.seedsize = alg->cra_rng.seedsize;
- 
-diff --git a/crypto/shash.c b/crypto/shash.c
-index 32067f4..18e4b00 100644
---- a/crypto/shash.c
-+++ b/crypto/shash.c
-@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk_buff *skb, struct crypto_alg *alg)
- 	struct crypto_report_hash rhash;
- 	struct shash_alg *salg = __crypto_shash_alg(alg);
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
-+	strncpy(rhash.type, "shash", sizeof(rhash.type));
-+
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = salg->digestsize;
- 
+ 			} else if (0 == phydev->link_timeout--) {
+-				int idx;
+-
+ 				needs_aneg = 1;
+ 				/* If we have the magic_aneg bit,
+ 				 * we try again */
+ 				if (phydev->drv->flags & PHY_HAS_MAGICANEG)
+ 					break;
+-
+-				/* The timer expired, and we still
+-				 * don't have a setting, so we try
+-				 * forcing it until we find one that
+-				 * works, starting from the fastest speed,
+-				 * and working our way down */
+-				idx = phy_find_valid(0, phydev->supported);
+-
+-				phydev->speed = settings[idx].speed;
+-				phydev->duplex = settings[idx].duplex;
+-
+-				phydev->autoneg = AUTONEG_DISABLE;
+-
+-				pr_info("Trying %d/%s\n",
+-					phydev->speed,
+-					DUPLEX_FULL == phydev->duplex ?
+-					"FULL" : "HALF");
+ 			}
+ 			break;
+ 		case PHY_NOLINK:
+@@ -867,7 +821,6 @@ void phy_state_machine(struct work_struct *work)
+ 				netif_carrier_on(phydev->attached_dev);
+ 			} else {
+ 				if (0 == phydev->link_timeout--) {
+-					phy_force_reduction(phydev);
+ 					needs_aneg = 1;
+ 				}
+ 			}
 -- 
-1.8.1.2
+1.7.2.5
 
