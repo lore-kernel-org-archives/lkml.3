@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab3CNLEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:04:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51719 "EHLO
+	id S1757136Ab3CNLFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:05:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51706 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab3CNKgx (ORCPT
+	with ESMTP id S1756799Ab3CNKgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:53 -0400
+	Thu, 14 Mar 2013 06:36:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>,
+Cc: Jan Engelhardt <jengelh@inai.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 07/88] btrfs: Init io_lock after cloning btrfs device struct
-Date: Thu, 14 Mar 2013 10:35:00 +0000
-Message-Id: <1363257381-15900-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 05/88] target: Add missing mapped_lun bounds checking during make_mappedlun setup
+Date: Thu, 14 Mar 2013 10:34:58 +0000
+Message-Id: <1363257381-15900-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 1cba0cdf5e4dbcd9e5fa5b54d7a028e55e2ca057 upstream.
+commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
 
-__btrfs_close_devices() clones btrfs device structs with
-memcpy(). Some of the fields in the clone are reinitialized, but it's
-missing to init io_lock. In mainline this goes unnoticed, but on RT it
-leaves the plist pointing to the original about to be freed lock
-struct.
+This patch adds missing bounds checking for the configfs provided
+mapped_lun value during target_fabric_make_mappedlun() setup ahead
+of se_lun_acl initialization.
 
-Initialize io_lock after cloning, so no references to the original
-struct are left.
+This addresses a potential OOPs when using a mapped_lun value that
+exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
+se_node_acl->device_list[].
 
-Reported-and-tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Cc: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/volumes.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_fabric_configfs.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 037e0bb..2208f0f 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -575,6 +575,7 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- 		new_device->writeable = 0;
- 		new_device->in_fs_metadata = 0;
- 		new_device->can_discard = 0;
-+		spin_lock_init(&new_device->io_lock);
- 		list_replace_rcu(&device->dev_list, &new_device->dev_list);
+diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
+index c42143b..8b07a88 100644
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -358,6 +358,14 @@ static struct config_group *target_fabric_make_mappedlun(
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
++	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
++		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
++			"-1: %u for Target Portal Group: %u\n", mapped_lun,
++			TRANSPORT_MAX_LUNS_PER_TPG-1,
++			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
++		ret = -EINVAL;
++		goto out;
++	}
  
- 		call_rcu(&device->rcu, free_device);
+ 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
+ 			mapped_lun, &ret);
 -- 
 1.8.1.2
 
