@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab3CNMza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:55:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49274 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3CNMz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:55:28 -0400
+	id S1757715Ab3CNMzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:55:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60711 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757684Ab3CNMzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 08:55:33 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: "Nori, Sekhar" <nsekhar@ti.com>
 CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
@@ -18,19 +17,21 @@ CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
         "Manjunathappa, Prakash" <prakash.pm@ti.com>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH 1/3] pwm: davinci: Add Kconfig support for ECAP & EHRPWM
- devices
-Thread-Topic: [PATCH 1/3] pwm: davinci: Add Kconfig support for ECAP &
- EHRPWM devices
-Thread-Index: AQHOIJ9WyjtWH0oEmk2BClfJ1npOrZiks5wAgABq0QA=
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: RE: [PATCH 2/3] pwm: pwm-tiecap: Add device-tree binding support
+ for da850 SOC
+Thread-Topic: [PATCH 2/3] pwm: pwm-tiecap: Add device-tree binding support
+ for da850 SOC
+Thread-Index: AQHOIJ9dx623btCsUEejQOTf1qQnkZiktL8AgABp72A=
 Date: Thu, 14 Mar 2013 12:54:08 +0000
 Deferred-Delivery: Thu, 14 Mar 2013 12:54:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EA96FA6@DBDE01.ent.ti.com>
+Message-ID: <518397C60809E147AF5323E0420B992E3EA96FA1@DBDE01.ent.ti.com>
 References: <1363257158-11615-1-git-send-email-avinashphilip@ti.com>
- <1363257158-11615-2-git-send-email-avinashphilip@ti.com>
- <5141B6D8.2050308@ti.com>
-In-Reply-To: <5141B6D8.2050308@ti.com>
+ <1363257158-11615-3-git-send-email-avinashphilip@ti.com>
+ <5141B7CC.7000700@ti.com>
+In-Reply-To: <5141B7CC.7000700@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,53 +43,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2ECta0i030290
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2ECta6O030294
 
-On Thu, Mar 14, 2013 at 17:09:04, Nori, Sekhar wrote:
+On Thu, Mar 14, 2013 at 17:13:08, Nori, Sekhar wrote:
 > On 3/14/2013 4:02 PM, Philip Avinash wrote:
-> > Add EHRPWM and ECAP support build support for DAVINCI_DA850 platforms.
+> > ECAP IP is used in da850 SOC's also. Hence adds ECAP device tree binding
+> > support for da850.
 > > 
-> > Also, since DAVINCI platforms doesn't support TI-PWM-Subsystem module,
-> > remove the select option for CONFIG_PWM_TIPWMSS.
-> > 
-> > Also, update CONFIG_PWM_TIPWMSS compiler directive appropriately in
-> > pwm-tipwmss.h to fix the below compiler error upon removal of
-> > CONFIG_PWM_TIPWMSS for Davinci platforms.
-> > 
-> > 	drivers/pwm/pwm-tiecap.c: In function 'ecap_pwm_probe':
-> > 	drivers/pwm/pwm-tiecap.c:263:4: error: 'PWMSS_ECAPCLK_EN' undeclared
-> > 	(first use in this function)
-> > 	drivers/pwm/pwm-tiecap.c:263:4: note: each undeclared identifier
-> > 	is reported only once for each function it appears in
-> > 	drivers/pwm/pwm-tiecap.c:264:17: error: 'PWMSS_ECAPCLK_EN_ACK'
-> > 	undeclared (first use in this function)
-> > 	drivers/pwm/pwm-tiecap.c: In function 'ecap_pwm_remove':
-> > 	drivers/pwm/pwm-tiecap.c:291:49: error: 'PWMSS_ECAPCLK_STOP_REQ'
-> > 	undeclared (first use in this function)
-> > 	make[2]: *** [drivers/pwm/pwm-tiecap.o] Error 1
-> > 	make[1]: *** [drivers/pwm] Error 2
-> > 	make: *** [drivers] Error 2
-> > 
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Rob Landley <rob@landley.net>
 > > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> > ---
+> > :100644 100644 131e8c1... fcbd3c1... M	Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> > :100644 100644 22e96e2... e0d96c8... M	drivers/pwm/pwm-tiecap.c
+> >  .../devicetree/bindings/pwm/pwm-tiecap.txt         |    2 +-
+> >  drivers/pwm/pwm-tiecap.c                           |    1 +
+> >  2 files changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt b/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> > index 131e8c1..fcbd3c1 100644
+> > --- a/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> > +++ b/Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+> > @@ -1,7 +1,7 @@
+> >  TI SOC ECAP based APWM controller
+> >  
+> >  Required properties:
+> > -- compatible: Must be "ti,am33xx-ecap"
+> > +- compatible: Must be "ti,am33xx-ecap" or "ti,da850-ecap"
+> >  - #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
+> >    First cell specifies the per-chip index of the PWM to use, the second
+> >    cell is the period in nanoseconds and bit 0 in the third cell is used to
+> > diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+> > index 22e96e2..e0d96c8 100644
+> > --- a/drivers/pwm/pwm-tiecap.c
+> > +++ b/drivers/pwm/pwm-tiecap.c
+> > @@ -197,6 +197,7 @@ static const struct pwm_ops ecap_pwm_ops = {
+> >  
+> >  static const struct of_device_id ecap_of_match[] = {
+> >  	{ .compatible	= "ti,am33xx-ecap" },
+> > +	{ .compatible	= "ti,da850-ecap" },
+> >  	{},
 > 
-> >  config  PWM_TIECAP
-> >  	tristate "ECAP PWM support"
-> > -	depends on SOC_AM33XX
-> > -	select PWM_TIPWMSS
-> > +	depends on SOC_AM33XX || ARCH_DAVINCI_DA850
-> 
-> Having such narrow dependencies is wrong. The same device is present on
-> DaVinci DA830 too. A depends on should not be required at all since the
-> driver should build on all architectures. But I have seen resistance to
-> doing that since users don't like to see configuration options totally
-> irrelevant for the architecture they are building for. So may be take a
-> middle path and do 'depends on ARCH_ARM'?
+> You add a new compatible, but don't really show any changes in driver in
+> this series. So why can't we simply use ti,am33xx-ecap on DA850 too?
 
-I will add dependency only on ARCH_ARM and submit another version.
+Ok it can happily live with ti,am33xx-ecap. Hence this patch and next [1]patch
+can be dropped.
+
+1. [PATCH 3/3] pwm: pwm-tiehrpwm: Add device tree binding support for da850 SOC
 
 Thanks
 Avinash
-
 > 
 > Thanks,
 > Sekhar
