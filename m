@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab3CNPSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:18:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52486 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758072Ab3CNPSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:18:22 -0400
-Date: Thu, 14 Mar 2013 11:18:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <alpine.LNX.2.00.1303141555090.30118@pobox.suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1303141111350.1983-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758132Ab3CNPSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:18:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758035Ab3CNPSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 11:18:48 -0400
+Date: Thu, 14 Mar 2013 12:18:41 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Kevin Baradon <kevin.baradon@gmail.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jarod Wilson <jarod@wilsonet.com>
+Subject: Re: [PATCH 2/2] media/rc/imon.c: avoid flooding syslog with
+ "unknown keypress" when keypad is pressed
+Message-ID: <20130314121841.574d2d0f@redhat.com>
+In-Reply-To: <1361737170-4687-3-git-send-email-kevin.baradon@gmail.com>
+References: <1361737170-4687-1-git-send-email-kevin.baradon@gmail.com>
+	<1361737170-4687-3-git-send-email-kevin.baradon@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Mar 2013, Jiri Kosina wrote:
+Em Sun, 24 Feb 2013 21:19:30 +0100
+Kevin Baradon <kevin.baradon@gmail.com> escreveu:
 
-> On Thu, 14 Mar 2013, Alan Stern wrote:
+> My 15c2:0036 device floods syslog when a keypad key is pressed:
 > 
-> > > [    4.116847] irq 16: nobody cared (try booting with the "irqpoll" option)
-> > > [    4.116849] Pid: 1, comm: systemd Not tainted 3.9.0-rc2-00188-g6c23cbb #186
-> > > [    4.116850] Call Trace:
-> > > [    4.116860]  <IRQ>  [<ffffffff810db0f8>] __report_bad_irq+0x38/0xf0
-> > > [    4.116862]  [<ffffffff810db3a3>] note_interrupt+0x1f3/0x240
-> > > [    4.116865]  [<ffffffff810d8977>] handle_irq_event_percpu+0x147/0x230
-> > > [    4.116867]  [<ffffffff810d8aa9>] handle_irq_event+0x49/0x70
-> > > [    4.116869]  [<ffffffff810dbbc1>] handle_fasteoi_irq+0x61/0x100
-> > > [    4.116873]  [<ffffffff81004689>] handle_irq+0x59/0x150
-> > > [    4.116877]  [<ffffffff8104e916>] ? irq_enter+0x16/0x80
-> > > [    4.116879]  [<ffffffff81003d4b>] do_IRQ+0x5b/0xe0
-> > > [    4.116883]  [<ffffffff815563ad>] common_interrupt+0x6d/0x6d
-> > > [    4.116888]  <EOI>  [<ffffffff81320dc1>] ? cfb_imageblit+0x581/0x5b0
-> > > [    4.116891]  [<ffffffff8131e019>] bit_putcs+0x329/0x560
-> > > [    4.116893]  [<ffffffff8131dc8f>] ? bit_cursor+0x5cf/0x630
-> > > [    4.116896]  [<ffffffff81317a28>] fbcon_putcs+0xf8/0x130
-> > > [    4.116898]  [<ffffffff8131dcf0>] ? bit_cursor+0x630/0x630
-> > > [    4.116900]  [<ffffffff8131a27e>] fbcon_redraw+0x16e/0x1e0
-> > > [    4.116902]  [<ffffffff8131a554>] fbcon_scroll+0x264/0xe40
-> > > [    4.116905]  [<ffffffff8138a263>] scrup+0x113/0x120
-> > > [    4.116907]  [<ffffffff8138a4d0>] lf+0x80/0x90
-> > > [    4.116910]  [<ffffffff8138e1dd>] do_con_trol+0xcd/0x1360
-> > > [    4.116912]  [<ffffffff8138f725>] do_con_write+0x2b5/0xa10
-> > > [    4.116915]  [<ffffffff81552bb7>] ? __mutex_lock_slowpath+0x237/0x2e0
-> > > [    4.116917]  [<ffffffff8138fed9>] con_write+0x19/0x30
-> > > [    4.116920]  [<ffffffff8137823b>] do_output_char+0x1eb/0x220
-> > > [    4.116922]  [<ffffffff813782b6>] process_output+0x46/0x70
-> > > [    4.116924]  [<ffffffff81378b0f>] n_tty_write+0x13f/0x2f0
-> > > [    4.116928]  [<ffffffff8107a900>] ? try_to_wake_up+0x2b0/0x2b0
-> > > [    4.116930]  [<ffffffff8137553c>] tty_write+0x1cc/0x280
-> > > [    4.116932]  [<ffffffff813789d0>] ? n_tty_ioctl+0x110/0x110
-> > > [    4.116934]  [<ffffffff8137569d>] redirected_tty_write+0xad/0xc0
-> > > [    4.116937]  [<ffffffff811733ab>] vfs_write+0xcb/0x130
-> > > [    4.116939]  [<ffffffff81173bac>] sys_write+0x5c/0xa0
-> > > [    4.116943]  [<ffffffff8155e4a9>] system_call_fastpath+0x16/0x1b
-> > > [    4.116943] handlers:
-> > > [    4.116959] [<ffffffffa0048450>] usb_hcd_irq [usbcore]
-> > > [    4.116960] Disabling IRQ #16
-> > > 
-> > > I don't think I have seen this message on rc1+ (8343bce, to be precise), 
-> > > but I have definitely seen sluggish system response on that kernel as 
-> > > well.
-> > > 
-> > > Attaching lspci, /proc/interrupts and dmesg. 
-> > 
-> > Can you try to do a git bisect for this?  Is the sluggish system 
-> > response clear enough that you can tell reliably when it is present and 
-> > when it isn't?
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fef2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
+> Feb 18 19:00:57 homeserver kernel: imon 5-1:1.0: imon_incoming_packet: unknown keypress, code 0x100fff2
 > 
-> That was my first thought, but unfortunately I am afraid there will be 
-> point at which I will easily make a bisection mistake, as the 
-> responsiveness of the system varies over time, so it's not really a 
-> 100% objective measure.
+> This patch lowers severity of this message when key appears to be coming from keypad.
+> 
+> Signed-off-by: Kevin Baradon <kevin.baradon@gmail.com>
+> ---
+>  drivers/media/rc/imon.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
+> index a3e66a0..bca03d4 100644
+> --- a/drivers/media/rc/imon.c
+> +++ b/drivers/media/rc/imon.c
+> @@ -1499,7 +1499,7 @@ static void imon_incoming_packet(struct imon_context *ictx,
+>  	int i;
+>  	u64 scancode;
+>  	int press_type = 0;
+> -	int msec;
+> +	int msec, is_pad_key = 0;
+>  	struct timeval t;
+>  	static struct timeval prev_time = { 0, 0 };
+>  	u8 ktype;
+> @@ -1562,6 +1562,7 @@ static void imon_incoming_packet(struct imon_context *ictx,
+>  	    ((len == 8) && (buf[0] & 0x40) &&
+>  	     !(buf[1] & 0x1 || buf[1] >> 2 & 0x1))) {
+>  		len = 8;
+> +		is_pad_key = 1;
+>  		imon_pad_to_keys(ictx, buf);
+>  	}
+>  
+> @@ -1625,8 +1626,16 @@ static void struct imon_context *ictx,
+>  
+>  unknown_key:
+>  	spin_unlock_irqrestore(&ictx->kc_lock, flags);
+> -	dev_info(dev, "%s: unknown keypress, code 0x%llx\n", __func__,
+> -		 (long long)scancode);
+> +	/*
+> +	 * On some devices syslog is flooded with unknown keypresses when keypad
+> +	 * is pressed. Lower message severity in that case.
+> +	 */
+> +	if (!is_pad_key)
+> +		dev_info(dev, "%s: unknown keypress, code 0x%llx\n", __func__,
+> +			 (long long)scancode);
+> +	else
+> +		dev_dbg(dev, "%s: unknown keypad keypress, code 0x%llx\n",
+> +			__func__, (long long)scancode);
 
-All right.
+Hmmm... this entire logic looks weird to me. IMO, the proper fix is to
+remove this code snippet from imon_incoming_packet():
 
-There have been only three significant changes to uhci-hcd since last 
-summer, and two of them appear to be completely unrelated to this 
-issue.  The three commits are
+	spin_lock_irqsave(&ictx->kc_lock, flags);
+	if (ictx->kc == KEY_UNKNOWN)
+		goto unknown_key;
+	spin_unlock_irqrestore(&ictx->kc_lock, flags);
 
-	3171fcabb169  USB: uhci: beautify source code
-	13996ca7afd5  USB: uhci: check buffer length to avoid memory 
-			overflow
-	0f815a0a700b  USB: UHCI: fix IRQ race during initialization
+and similar logic from other parts of the code, and just let rc_keydown()
+to be handled for KEY_UNKNOWN.
 
-Reverting the first two almost certainly will not have any effect, but
-you may as well try it anyway.  The third commit may be relevant.
+rc_keydown() actually produces two input events:
+	input_event(dev->input_dev, EV_MSC, MSC_SCAN, scancode);
+	input_event(dev, EV_KEY, code, !!value);
 
-If you revert all three and still see the problem then it must be
-caused by changes outside of the USB stack.  Differences in interrupt
-routing could be a result of changes to PCI or ACPI.  Have you compared 
-the current /proc/interrupts with versions from earlier kernels without 
-this problem?
+(the last one, indirectly, by calling input_report_key)
 
-Is occurrence of the "nobody cared" connected with any particular
-device?  Somebody reported a similar problem not long ago (although
-IIRC it was for OHCI rather than UHCI) which appeared to be related to
-activity on the built-in webcam.
+In this particular case, the fist event will allow userspace programs
+like "rc-keycode -t" to detect that an unknown scancode was produced,
+helping the user to properly fill the scancode table for a particular device.
 
-Alan Stern
+In the case of your remote, you'll likely will want to add support for those
+currently unknown scancodes.
 
+Those "unkonwn keypad keypress" type of messages are now obsolete, as users
+can get it anytime in userspace, using the appropriate tool (ir-keytable,
+with is part of v4l-utils).
+
+Regards,
+Mauro
