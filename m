@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab3CNKhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:37:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51742 "EHLO
+	id S1757071Ab3CNLDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:03:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51765 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab3CNKg6 (ORCPT
+	with ESMTP id S1756688Ab3CNKhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:36:58 -0400
+	Thu, 14 Mar 2013 06:37:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Mattia Dongili <malattia@linux.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 11/88] dc395x: uninitialized variable in device_alloc()
-Date: Thu, 14 Mar 2013 10:35:04 +0000
-Message-Id: <1363257381-15900-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 17/88] sony-laptop: fully enable SNY controlled modems
+Date: Thu, 14 Mar 2013 10:35:10 +0000
+Message-Id: <1363257381-15900-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Mattia Dongili <malattia@linux.it>
 
-commit 208afec4f3be8c51ad6eebe6611dd6d2ad2fa298 upstream.
+commit 3ec1c3983d73b1e3d4cfd72afab94c34eceafe8a upstream.
 
-This bug was introduced back in bitkeeper days in 2003.  We use
-"dcb->dev_mode" before it has been initialized.
+The call to handlers 0x124 and 0x135 (rfkill control) seems to take a
+bitmask to control various states of the device. For our rfkill we need
+a fully on/off. SVZ1311Z9R/X's LTE modem needs more bits up.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47751
+Signed-off-by: Mattia Dongili <malattia@linux.it>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/dc395x.c | 2 +-
+ drivers/platform/x86/sony-laptop.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/dc395x.c b/drivers/scsi/dc395x.c
-index 13aeca3..48105fc 100644
---- a/drivers/scsi/dc395x.c
-+++ b/drivers/scsi/dc395x.c
-@@ -3747,13 +3747,13 @@ static struct DeviceCtlBlk *device_alloc(struct AdapterCtlBlk *acb,
- 	dcb->max_command = 1;
- 	dcb->target_id = target;
- 	dcb->target_lun = lun;
-+	dcb->dev_mode = eeprom->target[target].cfg0;
- #ifndef DC395x_NO_DISCONNECT
- 	dcb->identify_msg =
- 	    IDENTIFY(dcb->dev_mode & NTC_DO_DISCONNECT, lun);
- #else
- 	dcb->identify_msg = IDENTIFY(0, lun);
- #endif
--	dcb->dev_mode = eeprom->target[target].cfg0;
- 	dcb->inquiry7 = 0;
- 	dcb->sync_mode = 0;
- 	dcb->min_nego_period = clock_period[period_index];
+diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+index d4a6172..edbb51f 100644
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -1528,7 +1528,7 @@ static int sony_nc_rfkill_set(void *data, bool blocked)
+ 	int argument = sony_rfkill_address[(long) data] + 0x100;
+ 
+ 	if (!blocked)
+-		argument |= 0x030000;
++		argument |= 0x070000;
+ 
+ 	return sony_call_snc_handle(sony_rfkill_handle, argument, &result);
+ }
 -- 
 1.8.1.2
 
