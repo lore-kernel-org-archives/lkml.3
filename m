@@ -1,62 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab3CNJ35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:29:57 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:28615 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab3CNJ34 (ORCPT
+	id S1756198Ab3CNJe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:34:28 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:51036 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab3CNJe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:29:56 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/VwSUgfH8=
-X-RZG-CLASS-ID: mo00
-Date: Thu, 14 Mar 2013 10:29:52 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
-        Evgeniy Polyakov <zbr@ioremap.net>
-Subject: Re: [PATCH 1/1] Drivers: hv: Add a new driver to support host
- initiated backup
-Message-ID: <20130314092952.GA29201@aepfle.de>
-References: <1363114406-30575-1-git-send-email-kys@microsoft.com>
- <20130312184839.GA30976@aepfle.de>
+	Thu, 14 Mar 2013 05:34:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130312184839.GA30976@aepfle.de>
-User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
+In-Reply-To: <1363253249-3128-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1363253249-3128-1-git-send-email-gheorghiuandru@gmail.com>
+Date: Thu, 14 Mar 2013 15:04:26 +0530
+Message-ID: <CAK9yfHw8df1ktZNYx=998_KmbvUt-be8vGo=kSC52DsEF5utAw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: gpio: Use devm_ioremap_resource function
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, Olaf Hering wrote:
+On 14 March 2013 14:57, Alexandru Gheorghiu <gheorghiuandru@gmail.com> wrote:
+> Use the newly introduced devm_ioremap_resource() instead of
+> devm_request_and_ioremap() which provides more consistent error
+> handling.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 
-> On Tue, Mar 12, K. Y. Srinivasan wrote:
-> 
-> > +static int vss_operate(int operation)
-> > +{
-> > +	char *fs_op;
-> > +	char cmd[512];
-> > +	char buf[512];
-> > +	FILE *file;
-> > +	char *p;
-> > +	char *x;
-> > +	int error;
-> > +
-> > +	switch (operation) {
-> > +	case VSS_OP_FREEZE:
-> > +		fs_op = "-f ";
-> > +		break;
-> > +	case VSS_OP_THAW:
-> > +		fs_op = "-u ";
-> > +		break;
-> > +	}
-> > +
-> > +	sprintf(cmd, "%s", "mount | grep ^/dev/ | awk '{print $3 }'");
-> 
-> I think this can be char cmd[] = "mount | awk '/^\/dev\/ { print $3'";
-
-After thinking about this part, perhaps start a helper script which has
-to provide as output the list of the mounted filesystems?
-
-Olaf
+Similar patch has already been submitted:
+https://lkml.org/lkml/2013/3/4/124
