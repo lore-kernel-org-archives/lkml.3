@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab3CNO0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:26:44 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39638 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab3CNO0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:26:41 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 1/2] irq_work.h: fix warning when CONFIG_IRQ_WORK=n
-Date: Thu, 14 Mar 2013 15:26:28 +0100
-Message-Id: <1363271189-6631-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1363271189-6631-1-git-send-email-fweisbec@gmail.com>
-References: <1363271189-6631-1-git-send-email-fweisbec@gmail.com>
+	id S1757205Ab3CNOmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755766Ab3CNOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:42:20 -0400
+Date: Thu, 14 Mar 2013 15:40:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: liguang <lig.fnst@cn.fujitsu.com>
+Cc: viro@zeniv.linux.org.uk, edumazet@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] task_work: make FIFO task_work list
+Message-ID: <20130314144019.GA16136@redhat.com>
+References: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
+On 03/14, liguang wrote:
+>
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 
-A randconfig caught repeated compiler warnings when CONFIG_IRQ_WORK=n
-due to the definition of a non-inline static function in
-<linux/irq_work.h>:
+Changelog please...
 
-include/linux/irq_work.h +40 : warning: 'irq_work_needs_cpu' defined but not used
+> ---
+>  kernel/task_work.c |   15 +++------------
+>  1 files changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/task_work.c b/kernel/task_work.c
+> index 65bd3c9..0bf4258 100644
+> --- a/kernel/task_work.c
+> +++ b/kernel/task_work.c
+> @@ -13,11 +13,12 @@ task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
+>  		head = ACCESS_ONCE(task->task_works);
+>  		if (unlikely(head == &work_exited))
+>  			return -ESRCH;
+> -		work->next = head;
+> -	} while (cmpxchg(&task->task_works, head, work) != head);
+> +		head = head->next;
+> +	} while (cmpxchg(&head, NULL, work) == head);
 
-Make it inline to supress the warning. This is caused by the following
-commit:
+I simply can't understand how this can work... The patch assumes
+that head->next == NULL after head = head->next, why? And then
+compares the result with head and succeeds if not equal.
 
-Commit 00b42959106a9ca1c2899e591ae4e9a83ad6af05 ("irq_work: Don't stop
-the tick with pending works") merged in v3.9-rc1.
+Could you please explain how it was supposed to work? If nothing
+else, Suppose we have task->task_works -> W1 -> W2 -> W3. How this
+code can add W4 after W3?
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/irq_work.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And cmpxchg(&head) should be cmpxchg(&head->next)....
 
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index f5dbce5..6601702 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -37,7 +37,7 @@ void irq_work_sync(struct irq_work *work);
- #ifdef CONFIG_IRQ_WORK
- bool irq_work_needs_cpu(void);
- #else
--static bool irq_work_needs_cpu(void) { return false; }
-+static inline bool irq_work_needs_cpu(void) { return false; }
- #endif
- 
- #endif /* _LINUX_IRQ_WORK_H */
--- 
-1.7.5.4
+
+
+Anyway, whatever I missed this is racy.
+
+	head = head->next;
+
+nothing protects "head" after this. Say, it can be task_work_cancel'ed
+and freed. So,
+
+	 cmpxchg(&head, ...)
+
+can modify the freed and reused memory.
+
+Oleg.
 
