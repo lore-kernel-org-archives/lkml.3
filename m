@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab3CNSjK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 14:39:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab3CNSjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 14:39:08 -0400
-Date: Thu, 14 Mar 2013 15:38:44 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: linux-edac@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        "Mark A. Grondona" <mgrondona@llnl.gov>
-Subject: [ANNOUNCE] rasdaemon userspace tool v.0.1
-Message-ID: <20130314153844.158d817c@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752063Ab3CNSkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 14:40:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36689 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab3CNSkT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 14:40:19 -0400
+Message-ID: <514219A5.9080305@windriver.com>
+Date: Thu, 14 Mar 2013 14:40:37 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: limit OMAP related USB options to OMAP2PLUS platforms
+References: <1361992119-2465-1-git-send-email-paul.gortmaker@windriver.com> <20130227195046.GA2300@arwen.pp.htv.fi> <512E653F.1090706@windriver.com> <5141EA01.3060905@windriver.com> <20130314161204.GE3001@arwen.pp.htv.fi>
+In-Reply-To: <20130314161204.GE3001@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Kernel 3.5 we've started to address the long-discussed need of having a
-better way to handle platform Reliability, Availability and Serviceability
-(RAS).
+On 13-03-14 12:12 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Mar 14, 2013 at 11:17:21AM -0400, Paul Gortmaker wrote:
+>>>>> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+>>>>> index 65217a5..40b8463 100644
+>>>>> --- a/drivers/usb/phy/Kconfig
+>>>>> +++ b/drivers/usb/phy/Kconfig
+>>>>> @@ -17,6 +17,7 @@ config OMAP_USB2
+>>>>>  
+>>>>>  config OMAP_USB3
+>>>>>  	tristate "OMAP USB3 PHY Driver"
+>>>>> +	depends on ARCH_OMAP2PLUS
+>>>>>  	select USB_OTG_UTILS
+>>>>>  	select OMAP_CONTROL_USB
+>>>>>  	help
+>>>>> @@ -27,6 +28,7 @@ config OMAP_USB3
+>>>>>  
+>>>>>  config OMAP_CONTROL_USB
+>>>>>  	tristate "OMAP CONTROL USB Driver"
+>>>>> +	depends on ARCH_OMAP2PLUS
+>>>>
+>>>> I rather not add dependencies here and fix the selections of
+>>>> OMAP_CONTROL_USB.
+>>>
+>>> I am not sure I understand what you mean, or why you wouldn't
+>>> want sane dependencies in place like those given above.  Perhaps
+>>> you can send an alternate patch so there is no ambiguity?
+>>
+>> Hi Felipe,
+>>
+>> I'm still seeing the OMAP settings in x86 builds on mainline
+>> from today, and since I'd not got a reply to the above, I'm
+>> still wondering what alternative you have in mind vs. my
+>> above patch.  We can't be having the arch specific settings
+>> leaking out to the other arch where they make no sense[1].
+> 
+> why not ? It forces people to write portable drivers, it forces people
+> to avoid including the wrong headers and allows maintainers and patch
+> authors to easily compile test their drivers.
 
-Basically, a tracepoint event that handles memory errors called ras:mc_event
-was added there, together with HERM/EDAC version 3.0 patches.
+Why not?  That was covered in the link I'd referenced.  What you
+list above is a very developer centric point of view.  To quote
+Andrew Morton from that same link, in regards to dependencies
+and how they should be used:
 
-In Kernel 3.8, a new event was added, to handle PCIe AER events (ras:aer_event)
-[1].
+"...offering useless stuff to non-kernel-developers has downsides
+with no balancing benefit, and we really should optimise things for
+our users because there are so many more of them than there are of us."
 
-On kernel 3.9, a new driver was added to report hardware memory errors that
-comes from the BIOS via ras:mc_event (the new ghes_edac driver).
+Look at what you've written.  The key word above and below in your
+text is "force people".  Showing no interest in simplifying things for
+our users and taking that approach is a good way to alienate our user
+base.
 
-It is still on my TODO list to add a RAS trace event for non-memory related
-errors that come via the MCA machine check handler (mcelog).
+Paul.
+--
 
-While progress made was made at Kernel infrastructure, the needed userspace
-tools were still lacking. So, I decided to start materializing the userspace
-counterpart for what it was informally named as rasdaemon on some discussions.
-
-The rasdaemon tool is available	at: 
-	http://git.infradead.org/users/mchehab/rasdaemon.git
-
-The current version is on very early stages, and it has a copy on it of
-the library that Steven Rostedt's is writing for trace-cmd tool. The plan
-is to use the trace-cmd library, when it starts to packaged as a separate
-library. I'd like to thanks Steven for the help he gave me to write this 
-initial version.
-
-The current version of the tool enables the ras:mc_event log, and reads
-it via the raw trace debugfs node:
-	/sys/kernel/debug/tracing/per_cpu/cpu*/trace_pipe_raw
-
-It also has a code that allows recording the errors via an sqlite3 database.
-
-The long term plan is to provide a tool that will catch and handle all
-ras:* error events that comes from the Kernel tracing infrastructure,
-logging them and providing tools to report it, being able to detect burst
-errors (like the ones caused by a solar storm at memories) or sparsed errors,
-in a way that would provide a glue to the users about the root cause of the
-error.
-
-Of course, there are much to do there.
-
-It is a natural evolution of the tool to add support there for the 
-ras:aer_event traces that can come from PCIe AER.
-
-While it currently works with current Kernels since kernel 3.5, there are a
-number of interesting changes at tracing that are planned to be merged for
-Kernel 3.10:
-	- poll() support for per_cpu trace_pipe_raw;
-	- a timestamp that could more easily associated with machine's
-	  uptime;
-	- support for a separate ringbuffer for RAS.
-
-So, it is planned the minimal requirement for the final version (v1.0)
-would be kernel 3.10.
-
-This is currently on very early staging. Help is needed ;)
-
-So, please send us suggestions, patches etc to the EDAC mailing list:
-	linux-edac@vger.kernel.org
-
-Thanks!
-Mauro
-
--
-
-[1] Currently, ras:mc_event is at include/ras/. It is on my todo list
-to move it to be together with ras:aer_event, at include/trace/events/ras.h.
+> 
+> On top of all that, it lets me better use linux-next as a big build
+> testing before I send a pull request to Greg.
+> 
+> When you're going to build a product, you will come up with a proper
+> .config anyway. Because of a bunch of these misused 'depends on' and
+> 'select' statements that right now ARM multiplatform builds don't even
+> compile cleanly if you enable all ARM-related drivers.
+> 
+> Until all of those are cleaned up, the best way is to force people to
+> write drivers which compile in all architectures and make sure Kconfig
+> doesn't add any ARCH dependency.
+> 
