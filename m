@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934545Ab3CNRtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:49:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20168 "EHLO mga02.intel.com"
+	id S934633Ab3CNR4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:56:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1936 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934495Ab3CNRtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:49:15 -0400
+	id S934533Ab3CNRtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="302267278"
+   d="scan'208";a="302979131"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 09/30] thp, mm: rewrite delete_from_page_cache() to support huge pages
-Date: Thu, 14 Mar 2013 19:50:14 +0200
-Message-Id: <1363283435-7666-10-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 15/30] thp, libfs: initial support of thp in simple_read/write_begin/write_end
+Date: Thu, 14 Mar 2013 19:50:20 +0200
+Message-Id: <1363283435-7666-16-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,83 +33,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-As with add_to_page_cache_locked() we handle HPAGE_CACHE_NR pages a
-time.
+For now we try to grab a huge cache page if gfp_mask has __GFP_COMP.
+It's probably to weak condition and need to be reworked later.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ fs/libfs.c |   50 +++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 39 insertions(+), 11 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 6bac9e2..0ff3403 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -115,6 +115,7 @@
- void __delete_from_page_cache(struct page *page)
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 916da8c..6edfa9d 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -383,7 +383,10 @@ EXPORT_SYMBOL(simple_setattr);
+ 
+ int simple_readpage(struct file *file, struct page *page)
  {
- 	struct address_space *mapping = page->mapping;
-+	int nr = 1;
- 
- 	trace_mm_filemap_delete_from_page_cache(page);
- 	/*
-@@ -127,13 +128,23 @@ void __delete_from_page_cache(struct page *page)
- 	else
- 		cleancache_invalidate_page(mapping, page);
- 
--	radix_tree_delete(&mapping->page_tree, page->index);
-+	if (PageTransHuge(page)) {
-+		int i;
-+
-+		for (i = 0; i < HPAGE_CACHE_NR; i++)
-+			radix_tree_delete(&mapping->page_tree, page->index + i);
-+		nr = HPAGE_CACHE_NR;
-+	} else {
-+		radix_tree_delete(&mapping->page_tree, page->index);
-+	}
-+
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation lookup relies upon it */
--	mapping->nrpages--;
--	__dec_zone_page_state(page, NR_FILE_PAGES);
-+
-+	mapping->nrpages -= nr;
-+	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, -nr);
- 	if (PageSwapBacked(page))
--		__dec_zone_page_state(page, NR_SHMEM);
-+		__mod_zone_page_state(page_zone(page), NR_SHMEM, -nr);
- 	BUG_ON(page_mapped(page));
- 
- 	/*
-@@ -144,8 +155,8 @@ void __delete_from_page_cache(struct page *page)
- 	 * having removed the page entirely.
- 	 */
- 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
--		dec_zone_page_state(page, NR_FILE_DIRTY);
--		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-+		mod_zone_page_state(page_zone(page), NR_FILE_DIRTY, -nr);
-+		add_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE, -nr);
- 	}
- }
- 
-@@ -161,6 +172,7 @@ void delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 	void (*freepage)(struct page *);
-+	int i;
- 
- 	BUG_ON(!PageLocked(page));
- 
-@@ -172,6 +184,9 @@ void delete_from_page_cache(struct page *page)
- 
- 	if (freepage)
- 		freepage(page);
+-	clear_highpage(page);
 +	if (PageTransHuge(page))
-+		for (i = 1; i < HPAGE_CACHE_NR; i++)
-+			page_cache_release(page + i);
- 	page_cache_release(page);
++		zero_huge_user(page, 0, HPAGE_PMD_SIZE);
++	else
++		clear_highpage(page);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	unlock_page(page);
+@@ -394,21 +397,41 @@ int simple_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	pgoff_t index;
+ 
+ 	index = pos >> PAGE_CACHE_SHIFT;
+ 
+-	page = grab_cache_page_write_begin(mapping, index, flags);
++	/* XXX: too weak condition. Good enough for initial testing */
++	if (mapping_can_have_hugepages(mapping)) {
++		page = grab_cache_huge_page_write_begin(mapping,
++				index & ~HPAGE_CACHE_INDEX_MASK, flags);
++		/* fallback to small page */
++		if (!page || !PageTransHuge(page)) {
++			unsigned long offset;
++			offset = pos & ~PAGE_CACHE_MASK;
++			len = min_t(unsigned long,
++					len, PAGE_CACHE_SIZE - offset);
++		}
++	}
++	if (!page)
++		page = grab_cache_page_write_begin(mapping, index, flags);
+ 	if (!page)
+ 		return -ENOMEM;
+-
+ 	*pagep = page;
+ 
+-	if (!PageUptodate(page) && (len != PAGE_CACHE_SIZE)) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user_segments(page, 0, from, from + len, PAGE_CACHE_SIZE);
++	if (!PageUptodate(page)) {
++		unsigned from;
++
++		if (PageTransHuge(page) && len != HPAGE_PMD_SIZE) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user_segments(page, 0, from,
++					from + len, HPAGE_PMD_SIZE);
++		} else if (len != PAGE_CACHE_SIZE) {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user_segments(page, 0, from,
++					from + len, PAGE_CACHE_SIZE);
++		}
+ 	}
+ 	return 0;
  }
- EXPORT_SYMBOL(delete_from_page_cache);
+@@ -443,9 +466,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 
+ 	/* zero the stale part of the page if we did a short copy */
+ 	if (copied < len) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user(page, from + copied, len - copied);
++		unsigned from;
++		if (PageTransHuge(page)) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user(page, from + copied, len - copied);
++		} else {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user(page, from + copied, len - copied);
++		}
+ 	}
+ 
+ 	if (!PageUptodate(page))
 -- 
 1.7.10.4
 
