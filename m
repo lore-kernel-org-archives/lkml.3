@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab3CNMAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:00:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20803 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab3CNMAr (ORCPT
+	id S1757278Ab3CNMBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:01:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35849 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab3CNMBo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:00:47 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=g8VO1FjuAB0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=184NE7b5fP4A:10 a=0JF42AakBzeabsJhMOkA:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363262445.25967.30.camel@gandalf.local.home>
-Subject: Re: [PATCH] sched,trace: Allow tracing the preemption decision on
- wakeup
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, tglx <tglx@linutronix.de>,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 14 Mar 2013 08:00:45 -0400
-In-Reply-To: <1363254519.26965.9.camel@laptop>
-References: <1363254519.26965.9.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 08:01:44 -0400
+Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
+Date: Thu, 14 Mar 2013 13:01:38 +0100
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dmueller@suse.de,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Anderson <dianders@chromium.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
+References: <1363219179-14900-1-git-send-email-agraf@suse.de> <CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 10:48 +0100, Peter Zijlstra wrote:
-> Thomas noted that we do the wakeup preemption check after the wakeup
-> trace point, this means the tracepoint cannot test/report this decision;
-> which is rather important for latency sensitive workloads. Therefore
-> move the tracepoint after doing the preemption check.
-> 
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+On 14.03.2013, at 05:19, Thomas Abraham wrote:
 
-> ---
->  kernel/sched/core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> On 14 March 2013 05:29, Alexander Graf <agraf@suse.de> wrote:
+>> On my Exynos 5 based Arndale system, I need to pull the reset line down
+>> and then let it go up again to actually perform a reset. Without that
+>> reset, I can't find any USB hubs on my bus, rendering the USB controller
+>> useless.
+>> 
+>> We also only need to reset the line after the phy node has been found.
+>> This way we don't accidently reserve the vbus GPIO pin, but later on
+>> defer the creation of our controller, because the phy device tree node
+>> hasn't been probed yet.
+>> 
+>> This patch implements the above logic, making EHCI and OHCI work on
+>> Arndale systems for me.
+>> 
+>> Signed-off-by: Alexander Graf <agraf@suse.de>
+>> CC: Vivek Gautam <gautam.vivek@samsung.com>
+>> CC: Jingoo Han <jg1.han@samsung.com>
+>> CC: Alan Stern <stern@rowland.harvard.edu>
+>> CC: Kukjin Kim <kgene.kim@samsung.com>
+>> CC: Felipe Balbi <balbi@ti.com>
+>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> CC: Doug Anderson <dianders@chromium.org>
+>> 
+>> ---
+>> 
+>> v1 -> v2:
+>> 
+>>  - remove gpio_free call
+>>  - move reset logic after phy node search
+>> 
+>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+>> index 20ebf6a..b29b2b8 100644
+>> --- a/drivers/usb/host/ehci-s5p.c
+>> +++ b/drivers/usb/host/ehci-s5p.c
+>> @@ -103,9 +103,14 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
+>>        if (!gpio_is_valid(gpio))
+>>                return;
+>> 
+>> -       err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
+>> -       if (err)
+>> +       /* reset pulls the line down, then up again */
+>> +       err = gpio_request_one(gpio, GPIOF_OUT_INIT_LOW, "ehci_vbus_gpio");
+>> +       if (err) {
+>>                dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
+>> +               return;
+>> +       }
+>> +       mdelay(1);
+>> +       __gpio_set_value(gpio, 1);
+>> }
+>> 
+>> static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
+>> @@ -131,8 +136,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>        if (!pdev->dev.coherent_dma_mask)
+>>                pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+>> 
+>> -       s5p_setup_vbus_gpio(pdev);
+>> -
+>>        s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
+>>                                GFP_KERNEL);
+>>        if (!s5p_ehci)
+>> @@ -152,6 +155,8 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>>                s5p_ehci->otg = phy->otg;
+>>        }
+>> 
+>> +       s5p_setup_vbus_gpio(pdev);
+>> +
+>>        s5p_ehci->dev = &pdev->dev;
+>> 
+>>        hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b36635e..849deb9 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1288,8 +1288,8 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
->  static void
->  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
->  {
-> -	trace_sched_wakeup(p, true);
->  	check_preempt_curr(rq, p, wake_flags);
-> +	trace_sched_wakeup(p, true);
->  
->  	p->state = TASK_RUNNING;
->  #ifdef CONFIG_SMP
+> Hi Alexander,
 > 
+> This change, though it works for Exynos5250 based Arndale board, does
+> not actually seem correct. On Arndale board, the on-board 4-port usb
+> hub is self powered and hence the vbus 'enable' gpio line from
+> Exynos5250 SoC is instead used as a "reset" signal for the on-board
+> usb hub (and not as the vbus enable signal).
+> 
+> Whereas, the driver uses the gpio used in 's5p_setup_vbus_gpio'
+> function as just a mechanism to enable vbus for downstream devices. So
+> the driver should not be modified as above to handle the board
+> specific behavior.
+> 
+> Instead, what needs to be done is, remove the "samsung,vbus-gpio"
+> property from the usb2.0 node in dts files (this property is optional)
+> for Arndale board. Then, during the machine_init, perform the reset
+> sequencing as required.
+> 
+> Ideally, the reset sequencing for the on-board AX88760 usb hub should
+> have been handled in the driver for this device. I have not checked if
+> there is a driver for this in the kernel.
 
+I can see your point, but as I mentioned earlier there seems to be some timing issue here. By simply doing the reset a few ms earlier (in the first probe, before the driver detects that it needs to defer probing), I already can't find the hub on the bus later.
+
+So I'm assuming that the same thing would also happen if I put it even earlier in machine init.
+
+The change in this patch actually does a reset even on non-Arndale boards. By taking away power and returning power to the line, the chip will most likely have reset :). So even on non-Arndale boards, this should get the USB phy into a clean state regardless of where the bootloader left it, right?
+
+
+Alex
 
