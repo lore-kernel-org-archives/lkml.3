@@ -1,119 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab3CNMj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:39:29 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:47603 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3CNMj2 (ORCPT
+	id S1757662Ab3CNMjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:39:40 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:42575 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab3CNMjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:39:28 -0400
+	Thu, 14 Mar 2013 08:39:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <513A9AF7.4020909@gmail.com>
-References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
-	<51347A6E.8010608@iskon.hr>
-	<CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com>
-	<513A9AF7.4020909@gmail.com>
-Date: Thu, 14 Mar 2013 20:39:27 +0800
-Message-ID: <CAJd=RBAoNyniJpaeHafpWm0w7FfC9y+9+x_Gpdb74Jtzyk81HA@mail.gmail.com>
-Subject: Re: Inactive memory keep growing and how to release it?
-From: Hillf Danton <dhillf@gmail.com>
-To: Will Huck <will.huckk@gmail.com>
-Cc: Lenky Gao <lenky.gao@gmail.com>, Zlatko Calusic <zlatko.calusic@iskon.hr>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>, Linux-MM <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130314091342.GB1377@redhat.com>
+References: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
+	<20130314071427.GB7869@gmail.com>
+	<20130314091342.GB1377@redhat.com>
+Date: Thu, 14 Mar 2013 13:39:35 +0100
+Message-ID: <CAFTL4hzTwiN8b8=SYVbt0NxMu1Y6ijO4-7aV1JVCBuvUbNmc5Q@mail.gmail.com>
+Subject: Re: [GIT PULL] sched: Cputime update for 3.10
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 9, 2013 at 10:14 AM, Will Huck <will.huckk@gmail.com> wrote:
-> Cc experts. Hugh, Johannes,
+2013/3/14 Stanislaw Gruszka <sgruszka@redhat.com>:
+> On Thu, Mar 14, 2013 at 08:14:27AM +0100, Ingo Molnar wrote:
+>> Hm, is this a new bug? When was it introduced and is upstream affected as
+>> well?
 >
-> On 03/04/2013 08:21 PM, Lenky Gao wrote:
->>
->> 2013/3/4 Zlatko Calusic <zlatko.calusic@iskon.hr>:
->>>
->>> The drop_caches mechanism doesn't free dirty page cache pages. And your
->>> bash
->>> script is creating a lot of dirty pages. Run it like this and see if it
->>> helps your case:
->>>
->>> sync; echo 3 > /proc/sys/vm/drop_caches
->>
->> Thanks for your advice.
->>
->> The inactive memory still cannot be reclaimed after i execute the sync
->> command:
->>
->> # cat /proc/meminfo | grep Inactive\(file\);
->> Inactive(file):   882824 kB
->> # sync;
->> # echo 3 > /proc/sys/vm/drop_caches
->> # cat /proc/meminfo | grep Inactive\(file\);
->> Inactive(file):   777664 kB
->>
->> I find these page becomes orphaned in this function, but do not understand
->> why:
->>
->> /*
->>   * If truncate cannot remove the fs-private metadata from the page, the
->> page
->>   * becomes orphaned.  It will be left on the LRU and may even be mapped
->> into
->>   * user pagetables if we're racing with filemap_fault().
->>   *
->>   * We need to bale out if page->mapping is no longer equal to the
->> original
->>   * mapping.  This happens a) when the VM reclaimed the page while we
->> waited on
->>   * its lock, b) when a concurrent invalidate_mapping_pages got there
->> first and
->>   * c) when tmpfs swizzles a page between a tmpfs inode and swapper_space.
->>   */
->> static int
->> truncate_complete_page(struct address_space *mapping, struct page *page)
->> {
->> ...
->>
->> My file system type is ext3, mounted with the opteion data=journal and
->> it is easy to reproduce.
->>
+> Commit 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239 start to use scalling
+> for whole thread group, so increase chances of hitting multiplication
+> overflow, depending on how many CPUs are on the system.
 
-Perhaps we have to consider page count for orphan page if it
-could be reproduced with mainline.
+Yeah, it was introduced with that commit. Although problems was there
+back when we started scaling cputime against precise sched runtime.
+But certainly that commit 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239
+made the bug visible and happening in practice.
 
-Hillf
----
---- a/mm/vmscan.c	Sun Mar 10 13:36:26 2013
-+++ b/mm/vmscan.c	Thu Mar 14 20:29:40 2013
-@@ -315,14 +315,14 @@ out:
- 	return ret;
- }
-
--static inline int is_page_cache_freeable(struct page *page)
-+static inline int is_page_cache_freeable(struct page *page, int has_mapping)
- {
- 	/*
- 	 * A freeable page cache page is referenced only by the caller
- 	 * that isolated the page, the page cache radix tree and
- 	 * optional buffer heads at page->private.
- 	 */
--	return page_count(page) - page_has_private(page) == 2;
-+	return page_count(page) - page_has_private(page) == has_mapping + 1;
- }
-
- static int may_write_to_queue(struct backing_dev_info *bdi,
-@@ -393,7 +393,7 @@ static pageout_t pageout(struct page *pa
- 	 * swap_backing_dev_info is bust: it doesn't reflect the
- 	 * congestion state of the swapdevs.  Easy to fix, if needed.
- 	 */
--	if (!is_page_cache_freeable(page))
-+	if (!is_page_cache_freeable(page, mapping ? 1 : 0))
- 		return PAGE_KEEP;
- 	if (!mapping) {
- 		/*
---
+And indeed upstream is affected.
