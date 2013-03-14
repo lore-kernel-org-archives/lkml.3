@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab3CNKwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:52:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51920 "EHLO
+	id S1757482Ab3CNKw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:52:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab3CNKhi (ORCPT
+	with ESMTP id S1757134Ab3CNKhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:38 -0400
+	Thu, 14 Mar 2013 06:37:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Ralston <james.d.ralston@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
+Cc: Alexey Klimov <klimov.linux@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 41/88] ata_piix: Add Device IDs for Intel Lynx Point-LP PCH
-Date: Thu, 14 Mar 2013 10:35:34 +0000
-Message-Id: <1363257381-15900-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 45/88] usb hid quirks for Masterkit MA901 usb radio
+Date: Thu, 14 Mar 2013 10:35:38 +0000
+Message-Id: <1363257381-15900-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
 References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Alexey Klimov <klimov.linux@gmail.com>
 
-commit 389cd784969e9148fedcde0608f15bd74d6b769e upstream.
+commit 0322bd3980b3ebf7dde8474e22614cb443d6479a upstream.
 
-This patch adds the IDE-mode SATA Device IDs for the Intel Lynx Point-LP PCH
+Don't let Masterkit MA901 USB radio be handled by usb hid drivers.
+This device will be handled by radio-ma901.c driver.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Alexey Klimov <klimov.linux@gmail.com>
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ata_piix.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/hid/hid-core.c | 1 +
+ drivers/hid/hid-ids.h  | 3 +++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 47bd6ab..fe5973f 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -329,6 +329,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
- 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Avoton) */
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 3cb5c99..52bc936 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -2012,6 +2012,7 @@ static const struct hid_device_id hid_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MASTERKIT, USB_DEVICE_ID_MASTERKIT_MA901RADIO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index dc48cd1..de39a12 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -532,6 +532,9 @@
+ #define USB_VENDOR_ID_MADCATZ		0x0738
+ #define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
+ 
++#define USB_VENDOR_ID_MASTERKIT			0x16c0
++#define USB_DEVICE_ID_MASTERKIT_MA901RADIO	0x05df
++
+ #define USB_VENDOR_ID_MCC		0x09db
+ #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+ #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
 -- 
 1.8.1.2
 
