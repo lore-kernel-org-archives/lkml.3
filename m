@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934570Ab3CNRtV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:49:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54841 "EHLO mga02.intel.com"
+	id S934647Ab3CNRyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:54:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1032 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934473Ab3CNRtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:49:15 -0400
+	id S934560Ab3CNRtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="302267281"
+   d="scan'208";a="270892713"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked() to support huge pages
-Date: Thu, 14 Mar 2013 19:50:13 +0200
-Message-Id: <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 03/30] mm: drop actor argument of do_generic_file_read()
+Date: Thu, 14 Mar 2013 19:50:08 +0200
+Message-Id: <1363283435-7666-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,112 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-For huge page we add to radix tree HPAGE_CACHE_NR pages at once: head
-page for the specified index and HPAGE_CACHE_NR-1 tail pages for
-following indexes.
+There's only one caller of do_generic_file_read() and the only actor is
+file_read_actor(). No reason to have a callback parameter.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |   76 ++++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 53 insertions(+), 23 deletions(-)
+ mm/filemap.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/mm/filemap.c b/mm/filemap.c
-index 2d99191..6bac9e2 100644
+index 4ebaf95..2d99191 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -447,6 +447,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 		pgoff_t offset, gfp_t gfp_mask)
+@@ -1075,7 +1075,6 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * @filp:	the file to read
+  * @ppos:	current file position
+  * @desc:	read_descriptor
+- * @actor:	read method
+  *
+  * This is a generic file read routine, and uses the
+  * mapping->a_ops->readpage() function for the actual low-level stuff.
+@@ -1084,7 +1083,7 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * of the logic when it comes to error handling etc.
+  */
+ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+-		read_descriptor_t *desc, read_actor_t actor)
++		read_descriptor_t *desc)
  {
- 	int error;
-+	int nr = 1;
- 
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(PageSwapBacked(page));
-@@ -454,32 +455,61 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 	error = mem_cgroup_cache_charge(page, current->mm,
- 					gfp_mask & GFP_RECLAIM_MASK);
- 	if (error)
--		goto out;
-+		return error;
- 
--	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
--	if (error == 0) {
--		page_cache_get(page);
--		page->mapping = mapping;
--		page->index = offset;
-+	if (PageTransHuge(page)) {
-+		BUILD_BUG_ON(HPAGE_CACHE_NR > RADIX_TREE_PRELOAD_NR);
-+		nr = HPAGE_CACHE_NR;
-+	}
-+	error = radix_tree_preload_count(nr, gfp_mask & ~__GFP_HIGHMEM);
-+	if (error) {
-+		mem_cgroup_uncharge_cache_page(page);
-+		return error;
-+	}
- 
--		spin_lock_irq(&mapping->tree_lock);
--		error = radix_tree_insert(&mapping->page_tree, offset, page);
--		if (likely(!error)) {
--			mapping->nrpages++;
--			__inc_zone_page_state(page, NR_FILE_PAGES);
--			spin_unlock_irq(&mapping->tree_lock);
--			trace_mm_filemap_add_to_page_cache(page);
--		} else {
--			page->mapping = NULL;
--			/* Leave page->index set: truncation relies upon it */
--			spin_unlock_irq(&mapping->tree_lock);
--			mem_cgroup_uncharge_cache_page(page);
--			page_cache_release(page);
-+	page_cache_get(page);
-+	spin_lock_irq(&mapping->tree_lock);
-+	page->mapping = mapping;
-+	page->index = offset;
-+	error = radix_tree_insert(&mapping->page_tree, offset, page);
-+	if (unlikely(error))
-+		goto err;
-+	if (PageTransHuge(page)) {
-+		int i;
-+		for (i = 1; i < HPAGE_CACHE_NR; i++) {
-+			page_cache_get(page + i);
-+			page[i].index = offset + i;
-+			error = radix_tree_insert(&mapping->page_tree,
-+					offset + i, page + i);
-+			if (error) {
-+				page_cache_release(page + i);
-+				break;
-+			}
- 		}
--		radix_tree_preload_end();
--	} else
--		mem_cgroup_uncharge_cache_page(page);
--out:
-+		if (error) {
-+			error = ENOSPC; /* no space for a huge page */
-+			for (i--; i > 0; i--) {
-+				radix_tree_delete(&mapping->page_tree,
-+						offset + i);
-+				page_cache_release(page + i);
-+			}
-+			radix_tree_delete(&mapping->page_tree, offset);
-+			goto err;
-+		}
-+	}
-+	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
-+	mapping->nrpages += nr;
-+	spin_unlock_irq(&mapping->tree_lock);
-+	trace_mm_filemap_add_to_page_cache(page);
-+	radix_tree_preload_end();
-+	return 0;
-+err:
-+	page->mapping = NULL;
-+	/* Leave page->index set: truncation relies upon it */
-+	spin_unlock_irq(&mapping->tree_lock);
-+	radix_tree_preload_end();
-+	mem_cgroup_uncharge_cache_page(page);
-+	page_cache_release(page);
- 	return error;
- }
- EXPORT_SYMBOL(add_to_page_cache_locked);
+ 	struct address_space *mapping = filp->f_mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1185,13 +1184,14 @@ page_ok:
+ 		 * Ok, we have the page, and it's up-to-date, so
+ 		 * now we can copy it to user space...
+ 		 *
+-		 * The actor routine returns how many bytes were actually used..
++		 * The file_read_actor routine returns how many bytes were
++		 * actually used..
+ 		 * NOTE! This may not be the same as how much of a user buffer
+ 		 * we filled up (we may be padding etc), so we can only update
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_actor(desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+@@ -1464,7 +1464,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		do_generic_file_read(filp, ppos, &desc);
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
 -- 
 1.7.10.4
 
