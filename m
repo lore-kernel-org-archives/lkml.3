@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934639Ab3CNR4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:56:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23908 "EHLO mga14.intel.com"
+	id S934660Ab3CNR4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:56:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1032 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934511Ab3CNRtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758203Ab3CNRtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Mar 2013 13:49:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="214771560"
+   d="scan'208";a="270892710"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,118 +21,95 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 14/30] thp, mm: naive support of thp in generic read/write routines
-Date: Thu, 14 Mar 2013 19:50:19 +0200
-Message-Id: <1363283435-7666-15-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 00/30] Transparent huge page cache
+Date: Thu, 14 Mar 2013 19:50:05 +0200
+Message-Id: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-For now we still write/read at most PAGE_CACHE_SIZE bytes a time.
+Here's the second version of the patchset.
 
-This implementation doesn't cover address spaces with backing store.
+The intend of the work is get code ready to enable transparent huge page
+cache for the most simple fs -- ramfs.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/filemap.c |   35 ++++++++++++++++++++++++++++++-----
- 1 file changed, 30 insertions(+), 5 deletions(-)
+We have read()/write()/mmap() functionality now. Still plenty work ahead.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index bdedb1b..79ba9cd 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1165,12 +1165,23 @@ find_page:
- 			if (unlikely(page == NULL))
- 				goto no_cached_page;
- 		}
-+		if (PageTransTail(page)) {
-+			page_cache_release(page);
-+			page = find_get_page(mapping,
-+					index & ~HPAGE_CACHE_INDEX_MASK);
-+			if (!PageTransHuge(page)) {
-+				page_cache_release(page);
-+				goto find_page;
-+			}
-+		}
- 		if (PageReadahead(page)) {
-+			BUG_ON(PageTransHuge(page));
- 			page_cache_async_readahead(mapping,
- 					ra, filp, page,
- 					index, last_index - index);
- 		}
- 		if (!PageUptodate(page)) {
-+			BUG_ON(PageTransHuge(page));
- 			if (inode->i_blkbits == PAGE_CACHE_SHIFT ||
- 					!mapping->a_ops->is_partially_uptodate)
- 				goto page_not_up_to_date;
-@@ -1212,18 +1223,25 @@ page_ok:
- 		}
- 		nr = nr - offset;
- 
-+		/* Recalculate offset in page if we've got a huge page */
-+		if (PageTransHuge(page)) {
-+			offset = (((loff_t)index << PAGE_CACHE_SHIFT) + offset);
-+			offset &= ~HPAGE_PMD_MASK;
-+		}
-+
- 		/* If users can be writing to this page using arbitrary
- 		 * virtual addresses, take care about potential aliasing
- 		 * before reading the page on the kernel side.
- 		 */
- 		if (mapping_writably_mapped(mapping))
--			flush_dcache_page(page);
-+			flush_dcache_page(page + (offset >> PAGE_CACHE_SHIFT));
- 
- 		/*
- 		 * When a sequential read accesses a page several times,
- 		 * only mark it as accessed the first time.
- 		 */
--		if (prev_index != index || offset != prev_offset)
-+		if (prev_index != index ||
-+				(offset & ~PAGE_CACHE_MASK) != prev_offset)
- 			mark_page_accessed(page);
- 		prev_index = index;
- 
-@@ -1238,8 +1256,9 @@ page_ok:
- 		 * "pos" here (the actor routine has to update the user buffer
- 		 * pointers and the remaining count).
- 		 */
--		ret = file_read_actor(desc, page, offset, nr);
--		offset += ret;
-+		ret = file_read_actor(desc, page + (offset >> PAGE_CACHE_SHIFT),
-+				offset & ~PAGE_CACHE_MASK, nr);
-+		offset =  (offset & ~PAGE_CACHE_MASK) + ret;
- 		index += offset >> PAGE_CACHE_SHIFT;
- 		offset &= ~PAGE_CACHE_MASK;
- 		prev_offset = offset;
-@@ -2440,8 +2459,13 @@ again:
- 		if (mapping_writably_mapped(mapping))
- 			flush_dcache_page(page);
- 
-+		if (PageTransHuge(page))
-+			offset = pos & ~HPAGE_PMD_MASK;
-+
- 		pagefault_disable();
--		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
-+		copied = iov_iter_copy_from_user_atomic(
-+				page + (offset >> PAGE_CACHE_SHIFT),
-+				i, offset & ~PAGE_CACHE_MASK, bytes);
- 		pagefault_enable();
- 		flush_dcache_page(page);
- 
-@@ -2464,6 +2488,7 @@ again:
- 			 * because not all segments in the iov can be copied at
- 			 * once without a pagefault.
- 			 */
-+			offset = pos & ~PAGE_CACHE_MASK;
- 			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
- 						iov_iter_single_seg_count(i));
- 			goto again;
+Any feedback is welcome.
+
+Changes since v1:
+ - mmap();
+ - fix add_to_page_cache_locked() and delete_from_page_cache();
+ - introduce mapping_can_have_hugepages();
+ - call split_huge_page() only for head page in filemap_fault();
+ - wait_split_huge_page(): serialize over i_mmap_mutex too;
+ - lru_add_page_tail: avoid PageUnevictable on active/inactive lru lists;
+ - fix off-by-one in zero_huge_user_segment();
+ - THP_WRITE_ALLOC/THP_WRITE_FAILED counters;
+
+TODO:
+ - memcg accounting has not yet evaluated;
+ - collapse;
+ - migration (?);
+ - stats, knobs, etc.;
+ - tmpfs/shmem enabling;
+
+
+Kirill A. Shutemov (30):
+  block: implement add_bdi_stat()
+  mm: implement zero_huge_user_segment and friends
+  mm: drop actor argument of do_generic_file_read()
+  radix-tree: implement preload for multiple contiguous elements
+  thp, mm: avoid PageUnevictable on active/inactive lru lists
+  thp, mm: basic defines for transparent huge page cache
+  thp, mm: introduce mapping_can_have_hugepages() predicate
+  thp, mm: rewrite add_to_page_cache_locked() to support huge pages
+  thp, mm: rewrite delete_from_page_cache() to support huge pages
+  thp, mm: locking tail page is a bug
+  thp, mm: handle tail pages in page_cache_get_speculative()
+  thp, mm: add event counters for huge page alloc on write to a file
+  thp, mm: implement grab_cache_huge_page_write_begin()
+  thp, mm: naive support of thp in generic read/write routines
+  thp, libfs: initial support of thp in
+    simple_read/write_begin/write_end
+  thp: handle file pages in split_huge_page()
+  thp: wait_split_huge_page(): serialize over i_mmap_mutex too
+  thp, mm: truncate support for transparent huge page cache
+  thp, mm: split huge page on mmap file page
+  ramfs: enable transparent huge page cache
+  x86-64, mm: proper alignment mappings with hugepages
+  mm: add huge_fault() callback to vm_operations_struct
+  thp: prepare zap_huge_pmd() to uncharge file pages
+  thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
+  thp, mm: basic huge_fault implementation for generic_file_vm_ops
+  thp: extract fallback path from do_huge_pmd_anonymous_page() to a
+    function
+  thp: initial implementation of do_huge_linear_fault()
+  thp: handle write-protect exception to file-backed huge pages
+  thp: call __vma_adjust_trans_huge() for file-backed VMA
+  thp: map file-backed huge pages on fault
+
+ arch/x86/kernel/sys_x86_64.c  |   13 +-
+ fs/libfs.c                    |   50 ++++-
+ fs/ramfs/inode.c              |    6 +-
+ include/linux/backing-dev.h   |   10 +
+ include/linux/huge_mm.h       |   36 +++-
+ include/linux/mm.h            |   16 ++
+ include/linux/pagemap.h       |   24 ++-
+ include/linux/radix-tree.h    |    3 +
+ include/linux/vm_event_item.h |    2 +
+ lib/radix-tree.c              |   32 ++-
+ mm/filemap.c                  |  283 +++++++++++++++++++++----
+ mm/huge_memory.c              |  462 ++++++++++++++++++++++++++++++++++-------
+ mm/memory.c                   |   31 ++-
+ mm/swap.c                     |    3 +-
+ mm/truncate.c                 |   12 ++
+ mm/vmstat.c                   |    2 +
+ 16 files changed, 842 insertions(+), 143 deletions(-)
+
 -- 
 1.7.10.4
 
