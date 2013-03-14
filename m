@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab3CNQ5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 12:57:36 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:42961 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab3CNQ5e (ORCPT
+	id S964883Ab3CNQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:57:53 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:49716 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964808Ab3CNQ5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 12:57:34 -0400
+	Thu, 14 Mar 2013 12:57:52 -0400
 MIME-Version: 1.0
-X-Originating-IP: [67.232.160.146]
-In-Reply-To: <20130313202858.GD1896@bremse>
-References: <20130312003145.GA28993@www.outflux.net>
-	<20130312090746.GD31324@cantiga.alporthouse.com>
-	<20130313202858.GD1896@bremse>
-Date: Thu, 14 Mar 2013 17:57:31 +0100
-Message-ID: <CAKMK7uEDjtECnAO1v38KMDuB7kd=DthiZRvQdto7+HJ19tWkEw@mail.gmail.com>
-Subject: Re: [PATCH v3] drm/i915: bounds check execbuffer relocation count
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Julien Tinnes <jln@google.com>,
-        marcheu@chromium.org
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E488F7@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E488F7@DQHE02.ent.ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 14 Mar 2013 09:57:29 -0700
+Message-ID: <CAK5ve-LSnX5WLKTe27xV1QMZskCJFFtpf+szSaddNpxqYKRw9w@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] leds: replace macros with inline functions and
+ support camera LED triggers
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 9:28 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Tue, Mar 12, 2013 at 09:07:46AM +0000, Chris Wilson wrote:
->> On Mon, Mar 11, 2013 at 05:31:45PM -0700, Kees Cook wrote:
->> > It is possible to wrap the counter used to allocate the buffer for
->> > relocation copies. This could lead to heap writing overflows.
->> >
->> > CVE-2013-0913
->> >
->> > v3: collapse test, improve comment
->> > v2: move check into validate_exec_list
->> >
->> > Signed-off-by: Kees Cook <keescook@chromium.org>
->> > Reported-by: Pinkie Pie
->> > Cc: stable@vger.kernel.org
->>
->> Looks good to me. The only bikeshed that remains is whether we should
->> just collapse the two variables into one, but the current 'max - count'
->> is more idiomatic and so preferrable.
->> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+On Thu, Mar 14, 2013 at 4:29 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> Patch v2
+>  (1) LED trigger macros are replaced with inline function in case of
+>      !CONFIG_LED_TRIGGERS and !CONFIG_LEDS_TRIGGER_IDE_DISK.
+>  (2) Use an inline function when CONFIG_LEDS_TRIGGER_CAMERA is not configured.
 >
-> Picked up for -fixes, thanks for the patch.
+> Patch v1
+>  Initial patch
+>
 
-I've forgotten to dump my wishlist: Can I have an i-g-t for this? For
-this bug here specifically an execbuf with just one buffer with too
-many relocs plus another execbuf with two buffers with relocation so
-that the 2nd relocation list will overflow should be sufficient.
+Thanks Milo, I merged these 3 patches!
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+-Bryan
+
+> Milo(Woogyom) Kim (3):
+>   leds: trigger: use inline functions instead of macros
+>   leds: add camera LED triggers
+>   leds: lm355x, lm3642: support camera LED triggers for flash and torch
+>
+>  drivers/leds/leds-lm355x.c            |    2 ++
+>  drivers/leds/leds-lm3642.c            |    2 ++
+>  drivers/leds/trigger/Kconfig          |    8 +++++
+>  drivers/leds/trigger/Makefile         |    1 +
+>  drivers/leds/trigger/ledtrig-camera.c |   57 +++++++++++++++++++++++++++++++++
+>  include/linux/leds.h                  |   33 ++++++++++++-------
+>  include/linux/mmc/host.h              |    2 --
+>  7 files changed, 92 insertions(+), 13 deletions(-)
+>  create mode 100644 drivers/leds/trigger/ledtrig-camera.c
+>
+> --
+> 1.7.9.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
