@@ -1,217 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940Ab3CNQAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 12:00:46 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:53205 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3CNQAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 12:00:44 -0400
+	id S933994Ab3CNQIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 12:08:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52820 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933603Ab3CNQII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 12:08:08 -0400
+Date: Thu, 14 Mar 2013 18:07:56 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: remove MACH_OMAP_H4_OTG
+Message-ID: <20130314160756.GD3001@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363032881.3137.101.camel@x61.thuisdomein>
+ <20130314141301.GI26080@arwen.pp.htv.fi>
+ <1363272657.1335.79.camel@x61.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <1363229845-6831-2-git-send-email-tj@kernel.org>
-References: <1363229845-6831-1-git-send-email-tj@kernel.org>
-	<1363229845-6831-2-git-send-email-tj@kernel.org>
-Date: Fri, 15 Mar 2013 00:00:44 +0800
-Message-ID: <CACvQF51pwb=63j3Q_U8=Kr2f4-6NE8+1qckMeo95Dws4iwPTVA@mail.gmail.com>
-Subject: Re: [PATCH 1/7] workqueue: rename worker_pool->assoc_mutex to ->manager_mutex
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WChQLJJJfbwij+9x"
+Content-Disposition: inline
+In-Reply-To: <1363272657.1335.79.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 10:57 AM, Tejun Heo <tj@kernel.org> wrote:
-> Manager operations are currently governed by two mutexes -
-> pool->manager_arb and ->assoc_mutex.  The former is used to decide who
-> gets to be the manager and the latter to exclude the actual manager
-> operations including creation and destruction of workers.  Anyone who
-> grabs ->manager_arb must perform manager role; otherwise, the pool
-> might stall.
->
-> Grabbing ->assoc_mutex blocks everyone else from performing manager
-> operations but doesn't require the holder to perform manager duties as
-> it's merely blocking manager operations without becoming the manager.
->
-> Because the blocking was necessary when [dis]associating per-cpu
-> workqueues during CPU hotplug events, the latter was named
-> assoc_mutex.  The mutex is scheduled to be used for other purposes, so
-> this patch gives it a more fitting generic name - manager_mutex - and
-> updates / adds comments to explain synchronization around the manager
-> role and operations.
->
-> This patch is pure rename / doc update.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/workqueue.c | 62 +++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 38 insertions(+), 24 deletions(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index f37421f..bc25bdf 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -60,8 +60,8 @@ enum {
->          * %WORKER_UNBOUND set and concurrency management disabled, and may
->          * be executing on any CPU.  The pool behaves as an unbound one.
->          *
-> -        * Note that DISASSOCIATED can be flipped only while holding
-> -        * assoc_mutex to avoid changing binding state while
-> +        * Note that DISASSOCIATED should be flipped only while holding
-> +        * manager_mutex to avoid changing binding state while
->          * create_worker() is in progress.
->          */
->         POOL_MANAGE_WORKERS     = 1 << 0,       /* need to manage workers */
-> @@ -149,8 +149,9 @@ struct worker_pool {
->         DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
->                                                 /* L: hash of busy workers */
->
-> +       /* see manage_workers() for details on the two manager mutexes */
->         struct mutex            manager_arb;    /* manager arbitration */
-> -       struct mutex            assoc_mutex;    /* protect POOL_DISASSOCIATED */
-> +       struct mutex            manager_mutex;  /* manager exclusion */
->         struct ida              worker_ida;     /* L: for worker IDs */
->
->         struct workqueue_attrs  *attrs;         /* I: worker attributes */
-> @@ -1635,7 +1636,7 @@ static void rebind_workers(struct worker_pool *pool)
->         struct worker *worker, *n;
->         int i;
->
-> -       lockdep_assert_held(&pool->assoc_mutex);
-> +       lockdep_assert_held(&pool->manager_mutex);
->         lockdep_assert_held(&pool->lock);
->
->         /* dequeue and kick idle ones */
-> @@ -2022,31 +2023,44 @@ static bool manage_workers(struct worker *worker)
->         struct worker_pool *pool = worker->pool;
->         bool ret = false;
->
-> +       /*
-> +        * Managership is governed by two mutexes - manager_arb and
-> +        * manager_mutex.  manager_arb handles arbitration of manager role.
-> +        * Anyone who successfully grabs manager_arb wins the arbitration
-> +        * and becomes the manager.  mutex_trylock() on pool->manager_arb
-> +        * failure while holding pool->lock reliably indicates that someone
-> +        * else is managing the pool and the worker which failed trylock
-> +        * can proceed to executing work items.  This means that anyone
-> +        * grabbing manager_arb is responsible for actually performing
-> +        * manager duties.  If manager_arb is grabbed and released without
-> +        * actual management, the pool may stall indefinitely.
-> +        *
-> +        * manager_mutex is used for exclusion of actual management
-> +        * operations.  The holder of manager_mutex can be sure that none
-> +        * of management operations, including creation and destruction of
-> +        * workers, won't take place until the mutex is released.  Because
-> +        * manager_mutex doesn't interfere with manager role arbitration,
-> +        * it is guaranteed that the pool's management, while may be
-> +        * delayed, won't be disturbed by someone else grabbing
-> +        * manager_mutex.
-> +        */
->         if (!mutex_trylock(&pool->manager_arb))
->                 return ret;
->
->         /*
-> -        * To simplify both worker management and CPU hotplug, hold off
-> -        * management while hotplug is in progress.  CPU hotplug path can't
-> -        * grab @pool->manager_arb to achieve this because that can lead to
-> -        * idle worker depletion (all become busy thinking someone else is
-> -        * managing) which in turn can result in deadlock under extreme
-> -        * circumstances.  Use @pool->assoc_mutex to synchronize manager
-> -        * against CPU hotplug.
-> -        *
-> -        * assoc_mutex would always be free unless CPU hotplug is in
-> -        * progress.  trylock first without dropping @pool->lock.
-> +        * With manager arbitration won, manager_mutex would be free in
-> +        * most cases.  trylock first without dropping @pool->lock.
->          */
-> -       if (unlikely(!mutex_trylock(&pool->assoc_mutex))) {
-> +       if (unlikely(!mutex_trylock(&pool->manager_mutex))) {
->                 spin_unlock_irq(&pool->lock);
-> -               mutex_lock(&pool->assoc_mutex);
-> +               mutex_lock(&pool->manager_mutex);
->                 /*
->                  * CPU hotplug could have happened while we were waiting
->                  * for assoc_mutex.  Hotplug itself can't handle us
->                  * because manager isn't either on idle or busy list, and
->                  * @pool's state and ours could have deviated.
->                  *
-> -                * As hotplug is now excluded via assoc_mutex, we can
-> +                * As hotplug is now excluded via manager_mutex, we can
->                  * simply try to bind.  It will succeed or fail depending
->                  * on @pool's current state.  Try it and adjust
->                  * %WORKER_UNBOUND accordingly.
-> @@ -2068,7 +2082,7 @@ static bool manage_workers(struct worker *worker)
->         ret |= maybe_destroy_workers(pool);
->         ret |= maybe_create_worker(pool);
->
-> -       mutex_unlock(&pool->assoc_mutex);
-> +       mutex_unlock(&pool->manager_mutex);
->         mutex_unlock(&pool->manager_arb);
->         return ret;
->  }
-> @@ -3436,7 +3450,7 @@ static int init_worker_pool(struct worker_pool *pool)
->                     (unsigned long)pool);
->
->         mutex_init(&pool->manager_arb);
-> -       mutex_init(&pool->assoc_mutex);
-> +       mutex_init(&pool->manager_mutex);
->         ida_init(&pool->worker_ida);
->
->         INIT_HLIST_NODE(&pool->hash_node);
-> @@ -4076,11 +4090,11 @@ static void wq_unbind_fn(struct work_struct *work)
->         for_each_cpu_worker_pool(pool, cpu) {
->                 WARN_ON_ONCE(cpu != smp_processor_id());
->
-> -               mutex_lock(&pool->assoc_mutex);
-> +               mutex_lock(&pool->manager_mutex);
->                 spin_lock_irq(&pool->lock);
->
->                 /*
-> -                * We've claimed all manager positions.  Make all workers
-> +                * We've blocked all manager operations.  Make all workers
->                  * unbound and set DISASSOCIATED.  Before this, all workers
->                  * except for the ones which are still executing works from
->                  * before the last CPU down must be on the cpu.  After
-> @@ -4095,7 +4109,7 @@ static void wq_unbind_fn(struct work_struct *work)
->                 pool->flags |= POOL_DISASSOCIATED;
->
->                 spin_unlock_irq(&pool->lock);
-> -               mutex_unlock(&pool->assoc_mutex);
-> +               mutex_unlock(&pool->manager_mutex);
+--WChQLJJJfbwij+9x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi, Tejun
+On Thu, Mar 14, 2013 at 03:50:57PM +0100, Paul Bolle wrote:
+> On Thu, 2013-03-14 at 16:13 +0200, Felipe Balbi wrote:
+> > On Mon, Mar 11, 2013 at 09:14:41PM +0100, Paul Bolle wrote:
+> > > diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> > > index 5a0c541..c65b5e2 100644
+> > > --- a/drivers/usb/gadget/Kconfig
+> > > +++ b/drivers/usb/gadget/Kconfig
+> > > @@ -194,7 +194,7 @@ config USB_FUSB300
+> > >  config USB_OMAP
+> > >  	tristate "OMAP USB Device Controller"
+> > >  	depends on ARCH_OMAP1
+> > > -	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_H4=
+_OTG
+> > > +	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
+> >=20
+> > could you, instead, just remove the entire line ? we have an overuse of
+> > select and this is one of those cases where it doesn't make sense.
+>=20
+> Sure, but there's one problem: I need to come up with a descriptive
+> summary. "Remove "select" because Felipe told it makes no sense" might
 
-It must conflicts with wq/for-3.9-fixes.
+heh :-) that'd look very funny 10 years from now ;-)
 
-Thanks,
-Lai
+> not be good enough. Any hint why you think this entire line can be
+> dropped?
 
->         }
->
->         /*
-> @@ -4152,14 +4166,14 @@ static int __cpuinit workqueue_cpu_up_callback(struct notifier_block *nfb,
->         case CPU_DOWN_FAILED:
->         case CPU_ONLINE:
->                 for_each_cpu_worker_pool(pool, cpu) {
-> -                       mutex_lock(&pool->assoc_mutex);
-> +                       mutex_lock(&pool->manager_mutex);
->                         spin_lock_irq(&pool->lock);
->
->                         pool->flags &= ~POOL_DISASSOCIATED;
->                         rebind_workers(pool);
->
->                         spin_unlock_irq(&pool->lock);
-> -                       mutex_unlock(&pool->assoc_mutex);
-> +                       mutex_unlock(&pool->manager_mutex);
->                 }
->                 break;
->         }
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+How about:
+
+"An improper use of 'select' has been proliferating through a bunch of
+Kconfig files, this is just one instance of such case which prevents the
+particular PHY driver to be enabled as a dynamically loaded module.
+
+Users of the omap_udc, or any other UDC, should know that PHYs need to
+be enabled in order for proper functionality. Based on that, we're
+dropping the entire 'select' statement which will also remove warnings
+further down the line when the PHY layer re-write is finished."
+
+Sounds good to you ?
+
+--=20
+balbi
+
+--WChQLJJJfbwij+9x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQfXcAAoJEIaOsuA1yqREGosP/3RGtJsnaKDoG6Beu5a1jmQS
+Crcw4+PHi1o6lFpV4T7NIetZiaYDkdIjgrJrTmGFqpMnsEO4St0NTGuVG8Al/pl7
+MbQCv8eHf6x1myKBGVYpgUKIvz47VshNHW1pGoKH+YXOAe4fduy2LEsSSgeXEo+r
+xyE72cKfdbps+a8Y+zF/eL69yNwhMQfZp7cLIgUYQP0bAP5oszxRkdBIehFgZeQf
+8i+3Fr/5nfik0j/QdI5gt/RVEl4QR+SMwwW5CrPQYNFbwwdVMQnbahGq4PwPYocr
+odsRQxtXvuyV/c+ZOZdaCjw/yFeGF55COEbez0rtnaFr90Ul8qKyOWwI24GbEow7
+mPzyaDUPHEDxItpR+2N1dfqB+Uy2Ij35XPwgqLlfDgKdbRKBYLsqCuDl0IuXBmCJ
+gWSJQP8l40r4IlTv+9q8R2ecy0UXT7ArGLDafM1cH+XVZ3YYI4nrU6oySt3qyUqM
+ZjaH8aspH3noOqjjjzLtZWUCNgPhUjCqW1o11u56S+iSUxgOh26LPb3omJJBsLxU
+PzHTxH3Hg6OLJeW9yRedndnIgxjHfhW8DRF8XXBpnKen+W57/LKjL0L8kdQiy609
+donqNAN23jCYoKGPzRH/lhOBr174LaFtJjBV6SmmzaLjpMk5z6TMYj6f8pG0cuzD
+H0ZV5D4Qd5wPjCMZHtje
+=MZfb
+-----END PGP SIGNATURE-----
+
+--WChQLJJJfbwij+9x--
