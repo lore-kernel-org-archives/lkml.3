@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3CNMXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:23:33 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56844
+	id S1757658Ab3CNMZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:25:24 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56838
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757573Ab3CNMXa (ORCPT
+	by vger.kernel.org with ESMTP id S1757501Ab3CNMX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:23:30 -0400
+	Thu, 14 Mar 2013 08:23:27 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Feng Tang <feng.tang@intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/8] perf report: Fix build with NO_NEWT=1
-Date: Thu, 14 Mar 2013 09:23:09 -0300
-Message-Id: <1363263795-31485-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/8] perf tools: check if -DFORTIFY_SOURCE=2 is allowed
+Date: Thu, 14 Mar 2013 09:23:10 -0300
+Message-Id: <1363263795-31485-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363263795-31485-1-git-send-email-acme@infradead.org>
 References: <1363263795-31485-1-git-send-email-acme@infradead.org>
@@ -26,43 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-Commit ad0de09 "Enable the runtime switching of perf data file" broke
-the build with NO_NEWT=1:
+It seems gcc (4.7.2) defines _FORTIFY_SOURCE internally and becomes
+confused when it sees another definition in flags.
 
-    CC builtin-report.o
-builtin-report.c: In function '__cmd_report':
-builtin-report.c:479:15: error: 'K_SWITCH_INPUT_DATA' undeclared (first use in this function)
-builtin-report.c:479:15: note: each undeclared identifier is reported only once for each function it appears in
-builtin-report.c: In function 'cmd_report':
-builtin-report.c:823:13: error: 'K_SWITCH_INPUT_DATA' undeclared (first use in this function)
-make: *** [builtin-report.o] Error 1
+For me, build failed like this:
 
-Fix it by adding a dummy definition of K_SWITCH_INPUT_DATA.
+CHK glibc
+Makefile:548: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static. Stop.
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1361854923-1814-2-git-send-email-michael@ellerman.id.au
+and only with V=1 it printed:
+
+<command-line>:0:0: error: "_FORTIFY_SOURCE" redefined [-Werror]
+<stdin>:1:0: note: this is the location of the previous definition
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1361113416-8662-1-git-send-email-marcin.slusarz@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/Makefile |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 609a115..226a4ae 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -210,6 +210,7 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a2108ca..bb74c79 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -95,7 +95,7 @@ ifeq ("$(origin DEBUG)", "command line")
+   PERF_DEBUG = $(DEBUG)
+ endif
+ ifndef PERF_DEBUG
+-  CFLAGS_OPTIMIZE = -O6 -D_FORTIFY_SOURCE=2
++  CFLAGS_OPTIMIZE = -O6
+ endif
  
- #define K_LEFT  -1000
- #define K_RIGHT -2000
-+#define K_SWITCH_INPUT_DATA -3000
- #endif
+ ifdef PARSER_DEBUG
+@@ -180,6 +180,12 @@ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-W
+        CFLAGS := $(CFLAGS) -Wvolatile-register-var
+ endif
  
- #ifdef GTK2_SUPPORT
++ifndef PERF_DEBUG
++	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
++	endif
++endif
++
+ ### --- END CONFIGURATION SECTION ---
+ 
+ ifeq ($(srctree),)
 -- 
 1.7.1
 
