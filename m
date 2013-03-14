@@ -1,186 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab3CNUGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 16:06:02 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:58864 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3CNUGA (ORCPT
+	id S1751841Ab3CNUHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 16:07:12 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60741 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3CNUHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 16:06:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130314182815.GB24238@redhat.com>
-References: <20130314182815.GB24238@redhat.com>
-Date: Thu, 14 Mar 2013 22:05:59 +0200
-Message-ID: <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
-Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Mar 2013 16:07:10 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC PATCH] Allow optional module parameters
+Date: Thu, 14 Mar 2013 13:07:05 -0700
+Message-Id: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 8:28 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> Hi Dmitry/Mimi,
->
-> Here is an RFC patch. I am playing with exporting some functions from
-> ima/integrity and make reuse of IMA signature format and reuse of some
-> of IMA verification code.
->
-> One of the things required is that caller wants trusts only certain
-> type of signatures. For example, it might not trust DIGEST or HMAC
-> but might trust only digital signatures. So caller needs to know what
-> kind of signature are stored in IMA security attribute (if any) and
-> decide what to do.
->
-> Currently there seem to be two types of digital signatures. Old one and
-> that is RSA and new one which is being called asymmetric. Right now they
-> both fall in the categorty of EVM_IMA_XATTR_DIGSIG and one differentiates
-> between two using signature version. Version 1 is old type and version 2
-> is new type.
->
-> How about asymmetric signature using a new type say
-> EVM_IMA_XATTR_DIGSIG_ASYMMETRIC. And version numbering can be used for
-> structure variation with-in signature type.
->
+Current parameter behavior is odd.  Boot parameters that have values
+and don't match anything become environment variables, with no
+warning.  Boot parameters without values that don't match anything
+go into argv_init.  Everything goes into /proc/cmdline.
 
-Hello Vivek,
+The init_module and finit_module syscalls, however, are strict:
+parameters that don't match result in -ENOENT.
 
-This was exactly the way how I initially implemented asymmetric key support.
-But then thought that we might have new versions of signature formats
-in the future and there is
-not point to create new xattr type for every signature format.
+kmod (and hence modprobe), when loading a module called foo, look in
+/proc/cmdline for foo.x or foo.x=y, strip off the foo., and pass the
+rest to init_module.
 
-What prevents just using of signature version?
+The upshot is that booting with module.nonexistent_parameter=1 is
+okay if module is built in or missing entirely but prevents module
+from loading if it's an actual module.  Similarly, option module
+nonexistent_parameter=1 in /etc/modprobe.d prevents the module from
+loading the parameter goes away.  This means that removing module
+parameters unnecessarily breaks things.
 
-Thanks,
+With this patch, module parameters can be made explicitly optional.
+This approach is IMO silly, but it's unlikely to break anything,
+since I doubt that anyone needs init parameters or init environment
+variables that end in a tilde.
 
-Dmitry
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-> This can allow caller to differentiate between two kinds of digital
-> signatures as understood by IMA.  And calling subsystems will call into
-> ima/integrity for verification only if digital signatures are of certain
-> type.
->
-> asymmetric support has gone in just now. Before it becomes an ABI, it
-> might be worth to discuss it.
->
-> Yet-to-by-signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  security/integrity/digsig.c           |   11 +++++++----
->  security/integrity/evm/evm_main.c     |    4 +++-
->  security/integrity/ima/ima_appraise.c |    7 +++++--
->  security/integrity/integrity.h        |    9 ++++++---
->  4 files changed, 21 insertions(+), 10 deletions(-)
->
-> Index: linux-2.6/security/integrity/integrity.h
-> ===================================================================
-> --- linux-2.6.orig/security/integrity/integrity.h       2013-03-14 13:44:30.000000000 -0400
-> +++ linux-2.6/security/integrity/integrity.h    2013-03-14 14:02:43.404474646 -0400
-> @@ -63,6 +63,7 @@ enum evm_ima_xattr_type {
->         IMA_XATTR_DIGEST = 0x01,
->         EVM_XATTR_HMAC,
->         EVM_IMA_XATTR_DIGSIG,
-> +       EVM_IMA_XATTR_DIGSIG_ASYMMETRIC,
->  };
->
->  struct evm_ima_xattr_data {
-> @@ -98,12 +99,14 @@ struct integrity_iint_cache *integrity_i
->
->  #ifdef CONFIG_INTEGRITY_SIGNATURE
->
-> -int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> -                                       const char *digest, int digestlen);
-> +int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
-> +       const unsigned int id, const char *sig, int siglen,
-> +       const char *digest, int digestlen);
->
->  #else
->
-> -static inline int integrity_digsig_verify(const unsigned int id,
-> +static inline int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
-> +                                         const unsigned int id,
->                                           const char *sig, int siglen,
->                                           const char *digest, int digestlen)
->  {
-> Index: linux-2.6/security/integrity/ima/ima_appraise.c
-> ===================================================================
-> --- linux-2.6.orig/security/integrity/ima/ima_appraise.c        2013-03-14 13:44:30.000000000 -0400
-> +++ linux-2.6/security/integrity/ima/ima_appraise.c     2013-03-14 14:00:06.027469811 -0400
-> @@ -188,8 +188,10 @@ int ima_appraise_measurement(int func, s
->                 status = INTEGRITY_PASS;
->                 break;
->         case EVM_IMA_XATTR_DIGSIG:
-> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
->                 iint->flags |= IMA_DIGSIG;
-> -               rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> +               rc = integrity_digsig_verify(xattr_value->type,
-> +                                            INTEGRITY_KEYRING_IMA,
->                                              xattr_value->digest, rc - 1,
->                                              iint->ima_xattr.digest,
->                                              IMA_DIGEST_SIZE);
-> @@ -210,7 +212,8 @@ out:
->         if (status != INTEGRITY_PASS) {
->                 if ((ima_appraise & IMA_APPRAISE_FIX) &&
->                     (!xattr_value ||
-> -                    xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
-> +                    (xattr_value->type != EVM_IMA_XATTR_DIGSIG &&
-> +                     xattr_value->type != EVM_IMA_XATTR_DIGSIG_ASYMMETRIC))) {
->                         if (!ima_fix_xattr(dentry, iint))
->                                 status = INTEGRITY_PASS;
->                 }
-> Index: linux-2.6/security/integrity/evm/evm_main.c
-> ===================================================================
-> --- linux-2.6.orig/security/integrity/evm/evm_main.c    2013-03-14 09:51:46.000000000 -0400
-> +++ linux-2.6/security/integrity/evm/evm_main.c 2013-03-14 14:00:52.265471232 -0400
-> @@ -134,11 +134,13 @@ static enum integrity_status evm_verify_
->                         rc = -EINVAL;
->                 break;
->         case EVM_IMA_XATTR_DIGSIG:
-> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
->                 rc = evm_calc_hash(dentry, xattr_name, xattr_value,
->                                 xattr_value_len, calc.digest);
->                 if (rc)
->                         break;
-> -               rc = integrity_digsig_verify(INTEGRITY_KEYRING_EVM,
-> +               rc = integrity_digsig_verify(xattr_data->type,
-> +                                       INTEGRITY_KEYRING_EVM,
->                                         xattr_data->digest, xattr_len,
->                                         calc.digest, sizeof(calc.digest));
->                 if (!rc) {
-> Index: linux-2.6/security/integrity/digsig.c
-> ===================================================================
-> --- linux-2.6.orig/security/integrity/digsig.c  2013-03-12 15:06:54.000000000 -0400
-> +++ linux-2.6/security/integrity/digsig.c       2013-03-14 14:06:53.721482335 -0400
-> @@ -27,7 +27,8 @@ static const char *keyring_name[INTEGRIT
->         "_ima",
->  };
->
-> -int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> +int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
-> +                       const unsigned int id, const char *sig, int siglen,
->                                         const char *digest, int digestlen)
->  {
->         if (id >= INTEGRITY_KEYRING_MAX)
-> @@ -44,13 +45,15 @@ int integrity_digsig_verify(const unsign
->                 }
->         }
->
-> -       switch (sig[0]) {
-> -       case 1:
-> +       switch (sig_type) {
-> +       case EVM_IMA_XATTR_DIGSIG:
->                 return digsig_verify(keyring[id], sig, siglen,
->                                      digest, digestlen);
-> -       case 2:
-> +       case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
->                 return asymmetric_verify(keyring[id], sig, siglen,
->                                          digest, digestlen);
-> +       default:
-> +               break;
->         }
->
->         return -EOPNOTSUPP;
+This is, IMO, rather ugly.  Better ideas are welcome, but I think that this
+is a significant improvement over the status quo.
+
+ Documentation/kernel-parameters.txt | 11 +++++++++++
+ kernel/params.c                     | 29 ++++++++++++++++++++++-------
+ 2 files changed, 33 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4609e81..605240c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -22,6 +22,17 @@ Hyphens (dashes) and underscores are equivalent in parameter names, so
+ can also be entered as
+ 	log-buf-len=1M print_fatal_signals=1
+ 
++Parameter settings may be suffixed by '~' to make them optional; non-optional
++parameters that don't match anything can cause modprobe to fail.  For example,
++modprobe usbcore typoedlights=1 will fail, but modprobe usbcore typoedlights~=1
++or modprobe usbcore typoedlights~ will merely print a warning.
++
++Note that module parameters on the kernel command line are parsed internally
++by the kernel if the module is built in and by kmod if not.  In either case,
++
++	usbcore.typoedlights~=1
++
++will result in an optional parameter setting.
+ 
+ This document may not be entirely up to date and comprehensive. The command
+ "modinfo -p ${modulename}" shows a current list of all parameters of a loadable
+diff --git a/kernel/params.c b/kernel/params.c
+index ed35345..83664b3 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -126,9 +126,9 @@ static int parse_one(char *param,
+ 
+ /* You can use " around spaces, but can't escape ". */
+ /* Hyphens and underscores equivalent in parameter names. */
+-static char *next_arg(char *args, char **param, char **val)
++static char *next_arg(char *args, char **param, char **val, bool *optional)
+ {
+-	unsigned int i, equals = 0;
++	unsigned int i, equals = 0, param_len;
+ 	int in_quote = 0, quoted = 0;
+ 	char *next;
+ 
+@@ -150,11 +150,13 @@ static char *next_arg(char *args, char **param, char **val)
+ 	}
+ 
+ 	*param = args;
+-	if (!equals)
++	if (!equals) {
+ 		*val = NULL;
+-	else {
++		param_len = i;
++	} else {
+ 		args[equals] = '\0';
+ 		*val = args + equals + 1;
++		param_len = equals;
+ 
+ 		/* Don't include quotes in value. */
+ 		if (**val == '"') {
+@@ -166,6 +168,13 @@ static char *next_arg(char *args, char **param, char **val)
+ 			args[i-1] = '\0';
+ 	}
+ 
++	if (param_len && (*param)[param_len-1] == '~') {
++		*optional = true;
++		(*param)[param_len-1] = '\0';
++	} else {
++		*optional = false;
++	}
++
+ 	if (args[i]) {
+ 		args[i] = '\0';
+ 		next = args + i + 1;
+@@ -196,8 +205,9 @@ int parse_args(const char *doing,
+ 	while (*args) {
+ 		int ret;
+ 		int irq_was_disabled;
++		bool optional;
+ 
+-		args = next_arg(args, &param, &val);
++		args = next_arg(args, &param, &val, &optional);
+ 		irq_was_disabled = irqs_disabled();
+ 		ret = parse_one(param, val, doing, params, num,
+ 				min_level, max_level, unknown);
+@@ -207,8 +217,13 @@ int parse_args(const char *doing,
+ 
+ 		switch (ret) {
+ 		case -ENOENT:
+-			pr_err("%s: Unknown parameter `%s'\n", doing, param);
+-			return ret;
++			if (optional) {
++				pr_warn("%s: Ignoring unknown optional parameter `%s'\n", doing, param);
++				break;
++			} else {
++				pr_err("%s: Unknown parameter `%s'\n", doing, param);
++				return ret;
++			}
+ 		case -ENOSPC:
+ 			pr_err("%s: `%s' too large for parameter `%s'\n",
+ 			       doing, val ?: "", param);
+-- 
+1.8.1.4
+
