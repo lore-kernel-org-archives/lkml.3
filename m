@@ -1,101 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3CNHeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 03:34:24 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:41891 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3CNHeW (ORCPT
+	id S1751408Ab3CNHgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 03:36:07 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:56961 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab3CNHgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 03:34:22 -0400
-Date: Thu, 14 Mar 2013 08:34:18 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Vinson Lee <vlee@twitter.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v3] perf tools: Fix LIBNUMA build with glibc 2.12 and
- older.
-Message-ID: <20130314073418.GA10245@gmail.com>
-References: <20130311083652.GE12742@gmail.com>
- <1363214064-4671-1-git-send-email-vlee@twitter.com>
- <1363214064-4671-2-git-send-email-vlee@twitter.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363214064-4671-2-git-send-email-vlee@twitter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Mar 2013 03:36:05 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v2] X.509: Support parse long form of length octets in Authority Key Identifier
+Date: Thu, 14 Mar 2013 15:34:29 +0800
+Message-Id: <1363246469-31787-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chun-Yi Lee <jlee@suse.com>
 
-* Vinson Lee <vlee@twitter.com> wrote:
+Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
+Identifier Extension is:
 
-> The tokens MADV_HUGEPAGE and MADV_NOHUGEPAGE are not available with
-> glibc 2.12 and older. Define these tokens if they are not already
-> defined.
-> 
-> This patch fixes these build errors with older versions of glibc.
-> 
->     CC bench/numa.o
-> bench/numa.c: In function ???alloc_data???:
-> bench/numa.c:334: error: ???MADV_HUGEPAGE??? undeclared (first use in this function)
-> bench/numa.c:334: error: (Each undeclared identifier is reported only once
-> bench/numa.c:334: error: for each function it appears in.)
-> bench/numa.c:341: error: ???MADV_NOHUGEPAGE??? undeclared (first use in this function)
-> make: *** [bench/numa.o] Error 1
-> 
-> Signed-off-by: Vinson Lee <vlee@twitter.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Irina Tirdea <irina.tirdea@intel.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  tools/perf/bench/bench.h |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-> index a5223e6..c132ee7 100644
-> --- a/tools/perf/bench/bench.h
-> +++ b/tools/perf/bench/bench.h
-> @@ -1,6 +1,30 @@
->  #ifndef BENCH_H
->  #define BENCH_H
->  
-> +/*
-> + * The madvise transparent hugepage constants were added in glibc
-> + * 2.13. For compatibility with older versions of glibc, define these
-> + * tokens if they are not already defined.
-> + *
-> + * PA-RISC uses different madvise values from other architectures and
-> + * needs to be special-cased.
-> + */
-> +#ifdef __hppa__
-> +# ifndef MADV_HUGEPAGE
-> +#  define MADV_HUGEPAGE		67
-> +# endif
-> +# ifndef MADV_NOHUGEPAGE
-> +#  define MADV_NOHUGEPAGE	68
-> +# endif
-> +#else
-> +# ifndef MADV_HUGEPAGE
-> +#  define MADV_HUGEPAGE		14
-> +# endif
-> +# ifndef MADV_NOHUGEPAGE
-> +#  define MADV_NOHUGEPAGE	15
-> +# endif
-> +#endif
+   AuthorityKeyIdentifier ::= SEQUENCE {
+      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
+      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
+      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
 
-Thanks!
+   KeyIdentifier ::= OCTET STRING
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+When a certificate also provides
+authorityCertIssuer and authorityCertSerialNumber then the length of
+AuthorityKeyIdentifier SEQUENCE is likely to long form format.
+e.g.
+   The example certificate demos/tunala/A-server.pem in openssl source:
 
-Arnaldo, will you be picking this up for perf/urgent, or should I?
+X509v3 Authority Key Identifier:
+    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
+    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
+    serial:00
 
-Thanks,
+Current parsing rule of OID_authorityKeyIdentifier only take care the
+short form format, it causes load certificate to modsign_keyring fail:
 
-	Ingo
+[   12.061147] X.509: Extension: 47
+[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
+
+So, this patch add the parsing rule for support long form format against
+Authority Key Identifier.
+
+v2:
+ - Removed comma from author's name.
+ - Moved 'Short Form length' comment inside the if-body.
+ - Changed the type of sub to size_t.
+ - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
+ - Moved the key_len's value assignment before alter v.
+ - Fixed the typo of octets.
+ - Add 2 to v before entering the loop for calculate the length.
+ - Removed the comment of check vlen.
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
+ 1 files changed, 47 insertions(+), 8 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 7fabc4c..59ab6d2 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
+ 	return 0;
+ }
+ 
++/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
++#define SEQ_TAG_KEYID (ASN1_CONT << 6)
++
+ /*
+  * Process certificate extensions that are used to qualify the certificate.
+  */
+@@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 	}
+ 
+ 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
++		size_t key_len;
++
+ 		/* Get hold of the CA key fingerprint */
+ 		if (vlen < 5)
+ 			return -EBADMSG;
+-		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
+-		    v[1] != vlen - 2 ||
+-		    v[2] != (ASN1_CONT << 6) ||
+-		    v[3] != vlen - 4)
++
++		/* Authority Key Identifier must be a Constructed SEQUENCE */
++		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
+ 			return -EBADMSG;
+-		v += 4;
+-		vlen -= 4;
+ 
+-		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
++		/* Authority Key Identifier is not indefinite length */
++		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
++			return -EBADMSG;
++
++		if (vlen < ASN1_INDEFINITE_LENGTH) {
++			/* Short Form length */
++			if (v[1] != vlen - 2 ||
++			    v[2] != SEQ_TAG_KEYID ||
++			    v[3] != vlen - 4)
++				return -EBADMSG;
++
++			key_len = v[3];
++			v += 4;
++		} else {
++			/* Long Form length */
++			size_t seq_len = 0;
++			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
++
++			if (sub > 2)
++				return -EBADMSG;
++
++			/* calculate the length from subsequent octets */
++			v += 2;
++			for (i = 0; i < sub; i++) {
++				seq_len <<= 8;
++				seq_len |= v[i];
++			}
++
++			if (seq_len != vlen - 2 - sub ||
++			    v[sub] != SEQ_TAG_KEYID ||
++			    v[sub + 1] > vlen - 4 - sub)
++				return -EBADMSG;
++
++			key_len = v[sub + 1];
++			v += (sub + 2);
++		}
++
++		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
+ 		if (!f)
+ 			return -ENOMEM;
+-		for (i = 0; i < vlen; i++)
++		for (i = 0; i < key_len; i++)
+ 			sprintf(f + i * 2, "%02x", v[i]);
+ 		pr_debug("authority   %s\n", f);
+ 		ctx->cert->authority = f;
+-- 
+1.6.4.2
+
