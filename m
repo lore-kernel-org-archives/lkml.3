@@ -1,83 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab3CNCrX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Mar 2013 22:47:23 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:40866 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab3CNCrW (ORCPT
+	id S933489Ab3CNCvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Mar 2013 22:51:19 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:50377 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab3CNCvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Mar 2013 22:47:22 -0400
-Date: Wed, 13 Mar 2013 19:48:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Question about a patch for stable
-Message-ID: <20130314024819.GB9342@kroah.com>
-References: <1363226945.25967.25.camel@gandalf.local.home>
+	Wed, 13 Mar 2013 22:51:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363226945.25967.25.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363196060-1149-2-git-send-email-shc_work@mail.ru>
+References: <1363196060-1149-1-git-send-email-shc_work@mail.ru>
+	<1363196060-1149-2-git-send-email-shc_work@mail.ru>
+Date: Thu, 14 Mar 2013 10:51:16 +0800
+Message-ID: <CAP1dx+xSXszPiPEGp-zo6YDUxh3fNST5m-4EqLoQ6BMPu_-Lzg@mail.gmail.com>
+Subject: Re: [PATCH v7 2/2] mfd: syscon: Add non-DT support
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 10:09:05PM -0400, Steven Rostedt wrote:
-> Hi Greg,
-> 
-> I was bringing Documentation/trace/ftrace.txt up to date, and obviously
-> I found some minor bugs in the code while doing so :-)  One of the
-> things I've discovered, is that the new -mfentry option for gcc used for
-> function tracing (for only x86 and gcc >= 4.6.0), the stack tracer gives
-> some bogus results:
-> 
->      # cat stack_trace
->             Depth    Size   Location    (48 entries)
->             -----    ----   --------
->       0)     4824     216   ftrace_call+0x5/0x2f
->       1)     4608     112   ____cache_alloc+0xb7/0x22d
->       2)     4496      80   kmem_cache_alloc+0x63/0x12f
-> [...]
-> 
-> One thing is that it shows the ftrace_call label of the function tracer
-> instead of the top function and its stack. This is due to fentry being
-> called as the first operation of a function instead of the way mcount is
-> called, which is after the stack frame is set up. Because the function
-> is traced before the stack frame was set up, we lose what function
-> called the current function. Not only that, the stack frame size (216)
-> is a combination of that function we missed as well as the ftrace_call
-> stack size used to save registers.
-> 
-> I have a couple of small fixes that make this more correct:
-> 
->      # cat stack_trace
->             Depth    Size   Location    (14 entries)
->             -----    ----   --------
->       0)     2640      48   update_group_power+0x26/0x187
->       1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
->       2)     2368     160   find_busiest_group+0x31/0x1f1
->       3)     2208     256   load_balance+0xd9/0x662
-> 
-> The bug only affects that first entry. Do you think its worth adding to
-> stable. The changes are solely contained in kernel/trace/trace_stack.c
-> and do not affect anything else.
-> 
-> I'm not sure I'm going to even submit this for 3.9, and just let it go
-> into 3.9.1.
-> 
-> I also noticed that the contents of the file stack_max_size doesn't
-> match the depth (2640 from above), because it also includes the stack
-> size of the overhead of the stack tracer itself. I have a fix for that
-> too, but I believe this has always been broken (with and without
-> -mfentry) and I'm not sure that deserves to be back ported. I'm going to
-> queue the fix for 3.10. I'm not sure people care about this one or not.
-> 
-> What's your thoughts?
+On 14 March 2013 01:34, Alexander Shiyan <shc_work@mail.ru> wrote:
+> This patch allow using syscon driver from the platform data, i.e.
+> possibility using driver on systems without oftree support.
+> For search syscon device from the client drivers,
+> "syscon_regmap_lookup_by_pdevname" function was added.
+>
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 
-I always defer to the maintainer of the subsystem, so it's up to you.
+Actually i've acked this series before, usually you can send out the
+updated series
+with my tag if no other big changes except the minor comments fix i pointed out.
+Here again, for this series:
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-greg k-h
+Regards
+Dong Aisheng
+
+> ---
+>  drivers/mfd/Kconfig        |  1 -
+>  drivers/mfd/syscon.c       | 75 +++++++++++++++++++++++++++-------------------
+>  include/linux/mfd/syscon.h |  1 +
+>  3 files changed, 46 insertions(+), 31 deletions(-)
+>
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 671f5b1..8fdd87e 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -1070,7 +1070,6 @@ config MFD_STA2X11
+>
+>  config MFD_SYSCON
+>         bool "System Controller Register R/W Based on Regmap"
+> -       depends on OF
+>         select REGMAP_MMIO
+>         help
+>           Select this option to enable accessing system control registers
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index 674af14..d1e5eb9 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -29,7 +29,7 @@ struct syscon {
+>         struct regmap *regmap;
+>  };
+>
+> -static int syscon_match(struct device *dev, void *data)
+> +static int syscon_match_node(struct device *dev, void *data)
+>  {
+>         struct device_node *dn = data;
+>
+> @@ -42,7 +42,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
+>         struct device *dev;
+>
+>         dev = driver_find_device(&syscon_driver.driver, NULL, np,
+> -                                syscon_match);
+> +                                syscon_match_node);
+>         if (!dev)
+>                 return ERR_PTR(-EPROBE_DEFER);
+>
+> @@ -68,6 +68,34 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+>  }
+>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+>
+> +static int syscon_match_pdevname(struct device *dev, void *data)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       const struct platform_device_id *id = platform_get_device_id(pdev);
+> +
+> +       if (id)
+> +               if (!strcmp(id->name, (const char *)data))
+> +                       return 1;
+> +
+> +       return !strcmp(dev_name(dev), (const char *)data);
+> +}
+> +
+> +struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+> +{
+> +       struct device *dev;
+> +       struct syscon *syscon;
+> +
+> +       dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> +                                syscon_match_pdevname);
+> +       if (!dev)
+> +               return ERR_PTR(-EPROBE_DEFER);
+> +
+> +       syscon = dev_get_drvdata(dev);
+> +
+> +       return syscon->regmap;
+> +}
+> +EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> +
+>  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
+>                                         const char *property)
+>  {
+> @@ -99,28 +127,22 @@ static struct regmap_config syscon_regmap_config = {
+>  static int syscon_probe(struct platform_device *pdev)
+>  {
+>         struct device *dev = &pdev->dev;
+> -       struct device_node *np = dev->of_node;
+>         struct syscon *syscon;
+> -       struct resource res;
+> -       int ret;
+> -
+> -       if (!np)
+> -               return -ENOENT;
+> +       struct resource *res;
+>
+> -       syscon = devm_kzalloc(dev, sizeof(struct syscon),
+> -                           GFP_KERNEL);
+> +       syscon = devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
+>         if (!syscon)
+>                 return -ENOMEM;
+>
+> -       syscon->base = of_iomap(np, 0);
+> -       if (!syscon->base)
+> -               return -EADDRNOTAVAIL;
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       if (!res)
+> +               return -ENOENT;
+>
+> -       ret = of_address_to_resource(np, 0, &res);
+> -       if (ret)
+> -               return ret;
+> +       syscon->base = devm_ioremap(dev, res->start, resource_size(res));
+> +       if (!syscon->base)
+> +               return -ENOMEM;
+>
+> -       syscon_regmap_config.max_register = res.end - res.start - 3;
+> +       syscon_regmap_config.max_register = res->end - res->start - 3;
+>         syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
+>                                         &syscon_regmap_config);
+>         if (IS_ERR(syscon->regmap)) {
+> @@ -130,22 +152,15 @@ static int syscon_probe(struct platform_device *pdev)
+>
+>         platform_set_drvdata(pdev, syscon);
+>
+> -       dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> -               res.start, res.end);
+> +       dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
+>
+>         return 0;
+>  }
+>
+> -static int syscon_remove(struct platform_device *pdev)
+> -{
+> -       struct syscon *syscon;
+> -
+> -       syscon = platform_get_drvdata(pdev);
+> -       iounmap(syscon->base);
+> -       platform_set_drvdata(pdev, NULL);
+> -
+> -       return 0;
+> -}
+> +static const struct platform_device_id syscon_ids[] = {
+> +       { "syscon", },
+> +       { }
+> +};
+>
+>  static struct platform_driver syscon_driver = {
+>         .driver = {
+> @@ -154,7 +169,7 @@ static struct platform_driver syscon_driver = {
+>                 .of_match_table = of_syscon_match,
+>         },
+>         .probe          = syscon_probe,
+> -       .remove         = syscon_remove,
+> +       .id_table       = syscon_ids,
+>  };
+>
+>  static int __init syscon_init(void)
+> diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
+> index 6aeb6b8..5c9ee6e 100644
+> --- a/include/linux/mfd/syscon.h
+> +++ b/include/linux/mfd/syscon.h
+> @@ -17,6 +17,7 @@
+>
+>  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
+>  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
+> +extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
+>  extern struct regmap *syscon_regmap_lookup_by_phandle(
+>                                         struct device_node *np,
+>                                         const char *property);
+> --
+> 1.7.12.4
+>
