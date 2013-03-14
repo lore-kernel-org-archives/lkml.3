@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3CNJO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 05:14:56 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61465 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab3CNJOy (ORCPT
+	id S1755165Ab3CNJTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 05:19:00 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:38891 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3CNJS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 05:14:54 -0400
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3]Perf: Fix Makefile to clean all object files
-Date: Thu, 14 Mar 2013 17:14:28 +0800
-Message-Id: <1363252468-10170-1-git-send-email-chenggang.qin@gmail.com>
+	Thu, 14 Mar 2013 05:18:59 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] drivers: spi: Use PTR_RET function
+Date: Thu, 14 Mar 2013 11:18:18 +0200
+Message-Id: <1363252698-29500-1-git-send-email-gheorghiuandru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
+Replaced calls to IS_ERR and PTR_ERR with PTR_RET function.
+Patch found using coccinelle.
 
-If we execute "make clean" in perf's directory, many object files cannot be
-cleaned in the current version.
-For example:
-While we run "make clean" in perf's directory, and run the command:
-"fine ./ -name "*.o""
-we will get:
-------------------------------------
-./arch/x86/util/unwind.o
-./arch/x86/util/header.o
-./arch/x86/util/dwarf-regs.o
-./util/scripting-engines/trace-event-python.o
-./util/scripting-engines/trace-event-perl.o
-./util/probe-finder.o
-./util/dwarf-aux.o
-./util/unwind.o
-... ...
-------------------------------------
-These ".o" files are not cleaned.
-
-The reason is:
-These object files are added into "BUILTIN_OBJS" while "make" process check the environment.
-If the make command is "clean", the environment check process is not executed. So,
-these object files will not be added into "BUILTIN_OBJS" while we execute "make clean".
-
-This patch fixed this problem.
-We only add a command:
-"find . -name "*.o" -exec rm -f {} \;"
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 ---
- tools/perf/Makefile |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/spi/spidev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a2108ca..dec08ba 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1174,6 +1174,7 @@ clean: $(LIBTRACEEVENT)-clean
- 	$(RM) $(OUTPUT)util/*-bison*
- 	$(RM) $(OUTPUT)util/*-flex*
- 	$(python-clean)
-+	$(FIND) . -name "*.o" -exec rm -f {} \;
- 
- .PHONY: all install clean strip $(LIBTRACEEVENT)
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 2e0655d..911e9e0 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -603,7 +603,7 @@ static int spidev_probe(struct spi_device *spi)
+ 		dev = device_create(spidev_class, &spi->dev, spidev->devt,
+ 				    spidev, "spidev%d.%d",
+ 				    spi->master->bus_num, spi->chip_select);
+-		status = IS_ERR(dev) ? PTR_ERR(dev) : 0;
++		status = PTR_RET(dev);
+ 	} else {
+ 		dev_dbg(&spi->dev, "no minor number available!\n");
+ 		status = -ENODEV;
 -- 
-1.7.8.rc2.5.g815b
+1.7.9.5
 
