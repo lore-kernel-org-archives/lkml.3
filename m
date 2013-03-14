@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab3CNOyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:54:39 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:53543 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755972Ab3CNOyi (ORCPT
+	id S1757237Ab3CNOzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:55:50 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:54536 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3CNOzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:54:38 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd: abx500 move the AB8500 Kconfig fragment
-Date: Thu, 14 Mar 2013 15:54:24 +0100
-Message-ID: <1363272864-16183-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 14 Mar 2013 10:55:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Thu, 14 Mar 2013 22:55:47 +0800
+Message-ID: <CAPgLHd_gP4uiNYgHp7tT9t9_gZh0OKGZiVJGfJj8tAKNynT-JA@mail.gmail.com>
+Subject: [PATCH -next] Staging: netlogic: remove unused variable in xlr_net_start_xmit()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, ganesanr@broadcom.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Move the AB8500 Kconfig fragment below the AB3100 so the
-menuconfig menu gets hierarchically nested and looks nice.
-Having the EZX PCAP in the middle disturbs the nice
-hierarchical layout from kconfig.
+The variable 'qmap' is initialized but never used
+otherwise, so remove the unused variable.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
-NOTE: it might look like this code is only touching the EZX
-PCAP config fragment, but that is not the semantic effect,
-that affects only the ABx500's.
----
- drivers/mfd/Kconfig | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/netlogic/xlr_net.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 671f5b1..f91ae12 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -848,13 +848,6 @@ config AB3100_OTP
- 	  programmable memory) support. This exposes a sysfs file to read
- 	  out OTP values.
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index efc6172..dd98cb1 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -293,10 +293,8 @@ static netdev_tx_t xlr_net_start_xmit(struct sk_buff *skb,
+ 	struct nlm_fmn_msg msg;
+ 	struct xlr_net_priv *priv = netdev_priv(ndev);
+ 	int ret;
+-	u16 qmap;
+ 	u32 flags;
  
--config EZX_PCAP
--	bool "PCAP Support"
--	depends on GENERIC_HARDIRQS && SPI_MASTER
--	help
--	  This enables the PCAP ASIC present on EZX Phones. This is
--	  needed for MMC, TouchScreen, Sound, USB, etc..
--
- config AB8500_CORE
- 	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
- 	depends on GENERIC_HARDIRQS && ABX500_CORE && MFD_DB8500_PRCMU
-@@ -882,6 +875,13 @@ config AB8500_GPADC
- 	help
- 	  AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
- 
-+config EZX_PCAP
-+	bool "PCAP Support"
-+	depends on GENERIC_HARDIRQS && SPI_MASTER
-+	help
-+	  This enables the PCAP ASIC present on EZX Phones. This is
-+	  needed for MMC, TouchScreen, Sound, USB, etc..
-+
- config MFD_DB8500_PRCMU
- 	bool "ST-Ericsson DB8500 Power Reset Control Management Unit"
- 	depends on UX500_SOC_DB8500
--- 
-1.7.11.3
+-	qmap = skb->queue_mapping;
+ 	xlr_make_tx_desc(&msg, virt_to_phys(skb->data), skb);
+ 	flags = nlm_cop2_enable();
+ 	ret = nlm_fmn_send(2, 0, priv->nd->tx_stnid, &msg);
+
 
