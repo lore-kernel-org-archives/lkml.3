@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab3CNK4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 06:56:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51864 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039Ab3CNKhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 06:37:24 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 34/88] dm snapshot: add missing module aliases
-Date: Thu, 14 Mar 2013 10:35:27 +0000
-Message-Id: <1363257381-15900-35-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1757034Ab3CNKhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 06:37:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33267 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756862Ab3CNKhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 06:37:09 -0400
+From: Philip Avinash <avinashphilip@ti.com>
+To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH 0/3] Platform support for EHRPWM & ECAP devices in Davinci.
+Date: Thu, 14 Mar 2013 16:07:30 +0530
+Message-ID: <1363257453-24747-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
+Add platform support for EHRPWM and ECAP by providing clock nodes and
+device tree nodes.
+This series depends on [1] and [2] and is available for testing at [3]
 
-------------------
+[1] http://gitorious.org/linux-davinci/linux-davinci/trees/davinci-for-v3.9/dt-2
+[2] https://gitorious.org/linux-pwm/linux-pwm/trees/for-next
+[3] https://github.com/avinashphilip/am335x_linux/tree/davinci-for-v3.9_soc_pwm
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+Philip Avinash (3):
+  arm: davinci: clock node support for ECAP & EHRPWM
+  ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
+  ARM: davinci: da850: add EHRPWM & ECAP DT node
 
-commit 23cb21092eb9dcec9d3604b68d95192b79915890 upstream.
+ arch/arm/boot/dts/da850.dtsi               |   30 ++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da850.c              |   24 ++++++++++++++++++++++
+ arch/arm/mach-davinci/da8xx-dt.c           |   20 +++++++++++++++++++
+ arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+ 4 files changed, 75 insertions(+)
 
-Add module aliases so that autoloading works correctly if the user
-tries to activate "snapshot-origin" or "snapshot-merge" targets.
-
-Reference: https://bugzilla.redhat.com/889973
-
-Reported-by: Chao Yang <chyang@redhat.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/md/dm-snap.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index 6f75887..5f4659e 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -2327,3 +2327,5 @@ module_exit(dm_snapshot_exit);
- MODULE_DESCRIPTION(DM_NAME " snapshot target");
- MODULE_AUTHOR("Joe Thornber");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("dm-snapshot-origin");
-+MODULE_ALIAS("dm-snapshot-merge");
 -- 
-1.8.1.2
+1.7.9.5
 
