@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3CNMWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 08:22:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60712 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757259Ab3CNMWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 08:22:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,844,1355126400"; 
-   d="scan'208";a="302730278"
-Message-ID: <1363263812.11441.112.camel@sauron.fi.intel.com>
-Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Mark Jackson <mpfj-list@mimc.co.uk>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
-Date: Thu, 14 Mar 2013 14:23:32 +0200
-In-Reply-To: <1363263529.11441.109.camel@sauron.fi.intel.com>
-References: <5134CEF9.5070502@mimc.co.uk>
-	 <1363087506.3348.62.camel@sauron.fi.intel.com>
-	 <51405F3A.3090901@mimc.co.uk>
-	 <1363252425.11441.94.camel@sauron.fi.intel.com>
-	 <51419E3A.8030007@mimc.co.uk>
-	 <1363257009.11441.97.camel@sauron.fi.intel.com>
-	 <5141B154.6050504@mimc.co.uk>
-	 <1363260202.11441.108.camel@sauron.fi.intel.com>
-	 <5141BC63.6060501@mimc.co.uk>
-	 <1363263529.11441.109.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757568Ab3CNMX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:23:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41917 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab3CNMX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 08:23:26 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
+        Feng Tang <feng.tang@intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/8] perf annotate: Fix build with NO_NEWT=1
+Date: Thu, 14 Mar 2013 09:23:08 -0300
+Message-Id: <1363263795-31485-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1363263795-31485-1-git-send-email-acme@infradead.org>
+References: <1363263795-31485-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 14:18 +0200, Artem Bityutskiy wrote:
-> > Is this size larger than the allocated buffer ?
-> 
-> I believe so.
+From: Michael Ellerman <michael@ellerman.id.au>
 
-Err, I mean, the buffer is large enough. I do not believe there is a
-stupid bug like too small buffer. This code has worked for years and I
-do not think it was changes much.
+Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
+the build with NO_NEWT=1:
 
-The oops may be cause by memory corruption - some of your drivers may
-corrupt memory. You need to spend more time debugging this carefully.
+   CC builtin-annotate.o
+builtin-annotate.c: In function 'hists__find_annotations':
+builtin-annotate.c:161:4: error: duplicate case value
+builtin-annotate.c:154:4: error: previously used here
+make: *** [builtin-annotate.o] Error 1
 
-Do you have fastmap UBI feature enabled?
+This is because without NEWT support K_LEFT is #defined to -1 in
+utils/hist.h
 
+Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
+of error values.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1361854923-1814-1-git-send-email-michael@ellerman.id.au
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/hist.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 3862468..609a115 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -208,8 +208,8 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ 	return 0;
+ }
+ 
+-#define K_LEFT -1
+-#define K_RIGHT -2
++#define K_LEFT  -1000
++#define K_RIGHT -2000
+ #endif
+ 
+ #ifdef GTK2_SUPPORT
 -- 
-Best Regards,
-Artem Bityutskiy
+1.7.1
 
