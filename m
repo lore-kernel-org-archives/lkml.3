@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab3CNPbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:31:25 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56021 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3CNPbW convert rfc822-to-8bit (ORCPT
+	id S1758105Ab3CNPbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:31:48 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:44522 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab3CNPbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:31:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
-References: <1363219179-14900-1-git-send-email-agraf@suse.de>
-	<CAJuYYwRYp0dvf=veg1UVAj8rJ2CdpFy32LUE6zeq1sH9FbZ=KQ@mail.gmail.com>
-	<6F88F86A-8C8E-4C2E-BD15-14C788FC6E48@suse.de>
-	<CAJuYYwQgXx67rSNeBFBJQfkbaf17vP6XXhFZ2Zc5hRqxshUFbw@mail.gmail.com>
-Date: Thu, 14 Mar 2013 08:31:20 -0700
-X-Google-Sender-Auth: 8HfgGVaemzGgNmJqe-fnhK8RwI4
-Message-ID: <CAD=FV=Veidj_1MdPLEUCfMy7gEVGszdkJv_oMPVF8yQTQUbJ=A@mail.gmail.com>
-Subject: Re: [PATCH v2] USB: ehci-s5p: Fix phy reset
-From: Doug Anderson <dianders@chromium.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Alexander Graf <agraf@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dmueller@suse.de, Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>, jwerner@chromium.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 14 Mar 2013 11:31:47 -0400
+Date: Thu, 14 Mar 2013 10:30:25 -0500
+From: scameron@beardog.cce.hp.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: mike.miller@hp.com, axboe@kernel.dk, akpm@linux-foundation.org,
+        yongjun_wei@trendmicro.com.cn, iss_storagedev@hp.com,
+        linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] cciss: fix invalid use of sizeof in cciss_find_cfgtables()
+Message-ID: <20130314153025.GJ28545@beardog.cce.hp.com>
+References: <CAPgLHd-8dxVHPbeZgcSu3XcyJozuws5YUftDO3W9W1OQVGy1Kw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd-8dxVHPbeZgcSu3XcyJozuws5YUftDO3W9W1OQVGy1Kw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Mar 14, 2013 at 11:19:45PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> sizeof() when applied to a pointer typed expression gives the
+> size of the pointer, not that of the pointed data.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/block/cciss.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index ade58bc..1c1b8e5 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -4206,7 +4206,7 @@ static int cciss_find_cfgtables(ctlr_info_t *h)
+>  	if (rc)
+>  		return rc;
+>  	h->cfgtable = remap_pci_mem(pci_resource_start(h->pdev,
+> -		cfg_base_addr_index) + cfg_offset, sizeof(h->cfgtable));
+> +		cfg_base_addr_index) + cfg_offset, sizeof(*h->cfgtable));
+>  	if (!h->cfgtable)
+>  		return -ENOMEM;
+>  	rc = write_driver_ver_to_cfgtable(h->cfgtable);
+> 
 
-On Thu, Mar 14, 2013 at 7:58 AM, Thomas Abraham
-<thomas.abraham@linaro.org> wrote:
->> I can see your point, but as I mentioned earlier there seems to be some timing issue here. By simply doing the reset a few ms earlier (in the first probe, before the driver detects that it needs to defer probing), I already can't find the hub on the bus later.
->>
->> So I'm assuming that the same thing would also happen if I put it even earlier in machine init.
->
-> True, I missed that point. The usb hub connected over hsic interface,
-> after power-on-reset, might have initiated the 'connect' state on
-> seeing the idle condition on the bus and since the host/phy controller
-> is not ready yet, the connect might have failed.
->
-> So the correct sequence would be, after the usb host controller and
-> the phy controllers are initialized, the 'reset' pin on the on-board
-> usb hub should be asserted. Upon releasing that reset, the usb hub
-> would initiate the 'connect' state on the HSIC bus.
+Ack.
 
-I think we ran into similar issues on one of our boards that had a hub
-attached to the HSIC port.  We had to make our fix in a version of the
-code that's nowhere near what landed upstream (so our change is not
-relevant), but we're definitely interested in whatever solution you
-come up with.  :)
+I suppose it has worked all this time because ioremap can't map less
+than a page, and sizeof(*h->cfgtable) is less than a page, and likely
+starts on a page boundary.
 
--Doug
+-- steve
+
