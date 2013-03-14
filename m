@@ -1,45 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab3CNLJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:09:58 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59581 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756200Ab3CNLJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:09:57 -0400
-Message-ID: <1363259393.1335.55.camel@x61.thuisdomein>
-Subject: Re: [PATCH] staging: ccg: remove two outdated dependencies
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 14 Mar 2013 12:09:53 +0100
-In-Reply-To: <20130314105953.GJ9138@mwanda>
-References: <1363256224.1335.46.camel@x61.thuisdomein>
-	 <20130314105953.GJ9138@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Mar 2013 11:09:53.0851 (UTC) FILETIME=[7450F0B0:01CE20A4]
-X-RcptDomain: vger.kernel.org
+	id S1757135Ab3CNLKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 07:10:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56676 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756779Ab3CNLKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 07:10:35 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC] i7300_edac: Fix memory detection in single mode
+Date: Thu, 14 Mar 2013 08:10:28 -0300
+Message-Id: <8ed5b5d41168a98cffa63e2f6c51c3243e159706.1363259423.git.mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 13:59 +0300, Dan Carpenter wrote:
-> Your patch is fine as is, but if you wanted to send a follow on
-> patch to break the depend mess into separate lines, that would also
-> be welcome.  :)
+When the machine is on single mode, only branch 0 channel 0
+is valid. However, the code is not honouring it:
 
-Well, now that you somehow managed to review this patch the urge to
-clean this line up has suddenly diminished. But maybe you're lucky and
-this will not pass Greg. 
+[ 1952.639341] EDAC DEBUG: i7300_get_mc_regs: Memory controller operating on single mode
+...
+[ 1952.639351] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH0 = 0x1:
+[ 1952.639353] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH1 = 0x0:
+[ 1952.639355] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH2 = 0x0:
+[ 1952.639358] EDAC DEBUG: i7300_init_csrows: 		AMB-present CH3 = 0x0:
+...
+[ 1952.639360] EDAC DEBUG: decode_mtr: 	MTR0 CH0: DIMMs are Present (mtr)
+[ 1952.639362] EDAC DEBUG: decode_mtr: 		WIDTH: x8
+[ 1952.639363] EDAC DEBUG: decode_mtr: 		ELECTRICAL THROTTLING is enabled
+[ 1952.639364] EDAC DEBUG: decode_mtr: 		NUMBANK: 4 bank(s)
+[ 1952.639366] EDAC DEBUG: decode_mtr: 		NUMRANK: single
+[ 1952.639367] EDAC DEBUG: decode_mtr: 		NUMROW: 16,384 - 14 rows
+[ 1952.639368] EDAC DEBUG: decode_mtr: 		NUMCOL: 1,024 - 10 columns
+[ 1952.639370] EDAC DEBUG: decode_mtr: 		SIZE: 512 MB
+[ 1952.639371] EDAC DEBUG: decode_mtr: 		ECC code is 8-byte-over-32-byte SECDED+ code
+[ 1952.639373] EDAC DEBUG: decode_mtr: 		Scrub algorithm for x8 is on enhanced mode
+[ 1952.639374] EDAC DEBUG: decode_mtr: 	MTR0 CH1: DIMMs are Present (mtr)
+[ 1952.639376] EDAC DEBUG: decode_mtr: 		WIDTH: x8
+[ 1952.639377] EDAC DEBUG: decode_mtr: 		ELECTRICAL THROTTLING is enabled
+[ 1952.639379] EDAC DEBUG: decode_mtr: 		NUMBANK: 4 bank(s)
+[ 1952.639380] EDAC DEBUG: decode_mtr: 		NUMRANK: single
+[ 1952.639381] EDAC DEBUG: decode_mtr: 		NUMROW: 16,384 - 14 rows
+[ 1952.639383] EDAC DEBUG: decode_mtr: 		NUMCOL: 1,024 - 10 columns
+[ 1952.639384] EDAC DEBUG: decode_mtr: 		SIZE: 512 MB
+[ 1952.639385] EDAC DEBUG: decode_mtr: 		ECC code is 8-byte-over-32-byte SECDED+ code
+[ 1952.639387] EDAC DEBUG: decode_mtr: 		Scrub algorithm for x8 is on enhanced mode
+...
+[ 1952.639449] EDAC DEBUG: print_dimm_size:               channel 0 | channel 1 | channel 2 | channel 3 |
+[ 1952.639451] EDAC DEBUG: print_dimm_size: -------------------------------------------------------------
+[ 1952.639453] EDAC DEBUG: print_dimm_size: csrow/SLOT 0   512 MB   |  512 MB   |    0 MB   |    0 MB   |
+[ 1952.639456] EDAC DEBUG: print_dimm_size: csrow/SLOT 1     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639458] EDAC DEBUG: print_dimm_size: csrow/SLOT 2     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639460] EDAC DEBUG: print_dimm_size: csrow/SLOT 3     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639462] EDAC DEBUG: print_dimm_size: csrow/SLOT 4     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639464] EDAC DEBUG: print_dimm_size: csrow/SLOT 5     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639466] EDAC DEBUG: print_dimm_size: csrow/SLOT 6     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639468] EDAC DEBUG: print_dimm_size: csrow/SLOT 7     0 MB   |    0 MB   |    0 MB   |    0 MB   |
+[ 1952.639470] EDAC DEBUG: print_dimm_size: -------------------------------------------------------------
 
-> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+Instead of detecting a single memory at channel 0, it is showing
+twice the memory.
 
-Thanks.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/i7300_edac.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-
-Paul Bolle
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 087c27b..9004c64 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -750,15 +750,23 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	struct i7300_dimm_info *dinfo;
+ 	int rc = -ENODEV;
+ 	int mtr;
+-	int ch, branch, slot, channel;
++	int ch, branch, slot, channel, max_channel, max_branch;
+ 	struct dimm_info *dimm;
+ 
+ 	pvt = mci->pvt_info;
+ 
+ 	edac_dbg(2, "Memory Technology Registers:\n");
+ 
++	if (IS_SINGLE_MODE(pvt->mc_settings_a)) {
++		max_branch = 1;
++		max_channel = 1;
++	} else {
++		max_branch = MAX_BRANCHES;
++		max_channel = MAX_CH_PER_BRANCH;
++	}
++
+ 	/* Get the AMB present registers for the four channels */
+-	for (branch = 0; branch < MAX_BRANCHES; branch++) {
++	for (branch = 0; branch < max_branch; branch++) {
+ 		/* Read and dump branch 0's MTRs */
+ 		channel = to_channel(0, branch);
+ 		pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
+@@ -767,6 +775,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 		edac_dbg(2, "\t\tAMB-present CH%d = 0x%x:\n",
+ 			 channel, pvt->ambpresent[channel]);
+ 
++		if (max_channel == 1)
++			continue;
++
+ 		channel = to_channel(1, branch);
+ 		pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
+ 				     AMBPRESENT_1,
+@@ -778,11 +789,11 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	/* Get the set of MTR[0-7] regs by each branch */
+ 	for (slot = 0; slot < MAX_SLOTS; slot++) {
+ 		int where = mtr_regs[slot];
+-		for (branch = 0; branch < MAX_BRANCHES; branch++) {
++		for (branch = 0; branch < max_branch; branch++) {
+ 			pci_read_config_word(pvt->pci_dev_2x_0_fbd_branch[branch],
+ 					where,
+ 					&pvt->mtr[slot][branch]);
+-			for (ch = 0; ch < MAX_CH_PER_BRANCH; ch++) {
++			for (ch = 0; ch < max_channel; ch++) {
+ 				int channel = to_channel(ch, branch);
+ 
+ 				dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
+-- 
+1.8.1.4
 
