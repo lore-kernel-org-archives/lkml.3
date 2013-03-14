@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964850Ab3CNPtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:49:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60357 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964808Ab3CNPtJ (ORCPT
+	id S964878Ab3CNPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:49:25 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:60069 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964813Ab3CNPtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:49:09 -0400
-Date: Thu, 14 Mar 2013 17:49:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <notasas@gmail.com>
-Subject: Re: [PATCH v2 4/4] usb: otg: twl4030: fix cold plug on OMAP3
-Message-ID: <20130314154901.GB3001@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363242239-1061-1-git-send-email-kishon@ti.com>
- <1363242239-1061-5-git-send-email-kishon@ti.com>
+	Thu, 14 Mar 2013 11:49:10 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Philip Avinash <avinashphilip@ti.com>
+Cc: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        prakash.pm@ti.com
+Subject: Re: [PATCH 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com>
+	<1363257453-24747-4-git-send-email-avinashphilip@ti.com>
+Date: Thu, 14 Mar 2013 16:49:06 +0100
+In-Reply-To: <1363257453-24747-4-git-send-email-avinashphilip@ti.com> (Philip
+	Avinash's message of "Thu, 14 Mar 2013 16:07:33 +0530")
+Message-ID: <87mwu656dp.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
-Content-Disposition: inline
-In-Reply-To: <1363242239-1061-5-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+g7M9IMkV8truYOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>>>> "P" == Philip Avinash <avinashphilip@ti.com> writes:
 
-On Thu, Mar 14, 2013 at 11:53:59AM +0530, Kishon Vijay Abraham I wrote:
-> Having twl4030_usb_phy_init() (detects if a cable is connected before
-> twl4030 is probed) in twl4030 probe makes cable connect events to be
-> missed by musb glue, since it gets loaded after twl4030. Having
-> twl4030_usb_phy_init as a usb_phy ops lets twl4030_usb_phy_init to be
-> called when glue is ready.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+ P> Add da850 EHRPWM & ECAP DT node.
+ P> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+ P> clock.
 
-likewise. The other two I have taken
+ P> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+ P> ---
+ P> :100644 100644 3ec1bda... 9b5b613... M	arch/arm/boot/dts/da850.dtsi
+ P> :100644 100644 72466ab... e32484c... M	arch/arm/mach-davinci/da8xx-dt.c
+ P>  arch/arm/boot/dts/da850.dtsi     |   30 ++++++++++++++++++++++++++++++
+ P>  arch/arm/mach-davinci/da8xx-dt.c |    5 +++++
+ P>  2 files changed, 35 insertions(+)
 
---=20
-balbi
+ P> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+ P> index 3ec1bda..9b5b613 100644
+ P> --- a/arch/arm/boot/dts/da850.dtsi
+ P> +++ b/arch/arm/boot/dts/da850.dtsi
+ P> @@ -107,6 +107,36 @@
+ P>  			reg = <0x21000 0x1000>;
+ P>  			status = "disabled";
+ P>  		};
+ P> +		ehrpwm0: ehrpwm@01f00000 {
+ P> +			compatible = "ti,da850-ehrpwm";
 
---+g7M9IMkV8truYOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This should be:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
 
-iQIcBAEBAgAGBQJRQfFtAAoJEIaOsuA1yqRE1+8P/1t5C+bVacIIXmTgxWQycxiF
-pJ0/FsY0uBSdMDA9LP3WvBtt6kqZ2FS37nnfsbf/8zpHZVG+B5Wck1K6QveHm7nm
-LIKxWEvc46fE8ZICx2TR09wam/crpD0vn0eiAj06F1UR93r9iy6Ia3AWvuy4D49c
-2NuMH9WOEC9+vL6mlFJS4qcIwTSnyKnv4iqhFVbaAK9/buFHXdItNbxfs45vhSwd
-VsBbNKGwp/rSrU8biji+Wcr5p5GLSJ7XF5VbSB6HM2Dg25NKGoPlvYre8TWSFw6+
-VxgrrO1lNbEF7t+DbveHvj5Wz6Md/dSRfzeUfD/Tl05QOHIZlgO3Ugv8xpB6eXZg
-NUiH8hIhWpncXk5DuCn/JuRGCNVSNXXGZDahI17V77s/DpZTmz6s8yiFuaRlUyT+
-8oqvWzvU3yPqhOVw23LtScAZZxDMS+zlCzUoaepFSBKq9D0hn1x7lWoSlNz5ZdCW
-ub51Xm5iLt80qu7Yrtq3lngYL5+s5aVFKRIpM4qHvfpZ2ueD3BN0f3/2xPjyDrIc
-LIhiZ8UXt5OzkjZxhTYJzuQPAdJcOy5T98Z+06DucBwrc9zYRNl4Hvs4Yew/GiHp
-pJtgR27VgTUiWNvHm10+0lDSn7s4oZDr6sXemjVRy4MmIm3UBRux1kwXgCU8BPkV
-VmaG7yJ99JbGNx+OlXE+
-=EbxY
------END PGP SIGNATURE-----
+ P> +		ecap0: ecap@01f06000 {
+ P> +			compatible = "ti,da850-ecap";
 
---+g7M9IMkV8truYOl--
+And:
+
+compatible = "ti,da850-ecap", "ti,am33xx-ecap";
+
+-- 
+Bye, Peter Korsgaard
