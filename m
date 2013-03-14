@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab3CNW2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 18:28:36 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40523 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab3CNW2e (ORCPT
+	id S1753528Ab3CNWet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 18:34:49 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:48701 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab3CNWes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 18:28:34 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH] tools/perf: fix build on non-glibc systems due to libio.h absence
-Date: Thu, 14 Mar 2013 15:27:51 -0700
-Message-Id: <1363300074-26288-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031422-3620-0000-0000-000001A1D458
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 14 Mar 2013 18:34:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAP=VYLqJuQqFpTkb0BvbNfwyzLLaX9_AfOioP_jOBp0Tvu15HA@mail.gmail.com>
+References: <1363271189-6631-1-git-send-email-fweisbec@gmail.com>
+	<1363271189-6631-3-git-send-email-fweisbec@gmail.com>
+	<20130314133931.3609b75deff58a2df02ca96b@linux-foundation.org>
+	<CAP=VYLqJuQqFpTkb0BvbNfwyzLLaX9_AfOioP_jOBp0Tvu15HA@mail.gmail.com>
+Date: Thu, 14 Mar 2013 23:34:46 +0100
+Message-ID: <CAFTL4hwp0E8v9_rP-qkU30njW8nGPc0dRSFxFuzE0YnnNnn4DA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] printk: Provide a wake_up_klogd() off-case
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Including libio.h causes build failures on uClibc systems (which lack
-libio.h).
+2013/3/14 Paul Gortmaker <paul.gortmaker@windriver.com>:
+> On Thu, Mar 14, 2013 at 4:39 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Thu, 14 Mar 2013 15:26:29 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>>> wake_up_klogd() is useless when CONFIG_PRINTK=n because
+>>> neither printk() nor printk_sched() are in use and there
+>>> are actually no waiter on log_wait waitqueue. It should
+>>> be a stub in this case for users like bust_spinlocks().
+>>>
+>>> Otherwise this results in this warning when CONFIG_PRINTK=n
+>>> and CONFIG_IRQ_WORK=n:
+>>>
+>>>       kernel/built-in.o In function `wake_up_klogd':
+>>>       (.text.wake_up_klogd+0xb4): undefined reference to `irq_work_queue'
+>>>
+>>> To fix this, provide an off-case for wake_up_klogd() when
+>>> CONFIG_PRINTK=n.
+>>>
+>>> There is much more from console_unlock() and other console
+>>> related code in printk.c that should be moved under
+>>> CONFIG_PRINTK. But for now, focus on a minimal fix as we passed
+>>> the merged window already.
+>>>
+>>> --- a/include/linux/kernel.h
+>>> +++ b/include/linux/kernel.h
+>>> @@ -390,7 +390,6 @@ extern struct pid *session_of_pgrp(struct pid *pgrp);
+>>>  unsigned long int_sqrt(unsigned long);
+>>>
+>>>  extern void bust_spinlocks(int yes);
+>>> -extern void wake_up_klogd(void);
+>>>  extern int oops_in_progress;         /* If set, an oops, panic(), BUG() or die() is in progress */
+>>>  extern int panic_timeout;
+>>>  extern int panic_on_oops;
+>>> diff --git a/include/linux/printk.h b/include/linux/printk.h
+>>> index 1249a54..822171f 100644
+>>> --- a/include/linux/printk.h
+>>> +++ b/include/linux/printk.h
+>>> @@ -134,6 +134,8 @@ extern int printk_delay_msec;
+>>>  extern int dmesg_restrict;
+>>>  extern int kptr_restrict;
+>>>
+>>> +extern void wake_up_klogd(void);
+>>> +
+>>
+>> Given this, it would be prudent to include printk.h in
+>> bust_spinlocks.c.  printk.h currently gets included by kernel.h, but
+>> that doesn't actually seem necessary - nothing in kernel.h calls
+>> printk().
+>>
+>> (I pity anyone who tries to remove that include from kernel.h ;))
+>
+> Why did you have to say that?  Now I'm inclined to poke at it and
+> just see how bad it really is when I pull on that loose thread...
 
-It appears that libio.h was only included to pull in a definition for
-NULL, so it has been replaced by stddef.h.
+$ git grep "#include <linux/printk.h>" | cut -d: -f1 | uniq | wc -l
+29
 
-On powerpc, libio.h was conditionally included, but could be removed
-completely as it is unneeded. Also, the included of stdlib.h was changed
-to stddef.h (as again, only NULL is needed).
+$ git grep printk | cut -d: -f1 | uniq | wc -l
+6689
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- tools/perf/arch/arm/util/dwarf-regs.c     | 5 +----
- tools/perf/arch/powerpc/util/dwarf-regs.c | 5 +----
- tools/perf/arch/s390/util/dwarf-regs.c    | 2 +-
- tools/perf/arch/sh/util/dwarf-regs.c      | 2 +-
- tools/perf/arch/sparc/util/dwarf-regs.c   | 2 +-
- tools/perf/arch/x86/util/dwarf-regs.c     | 2 +-
- 6 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/arch/arm/util/dwarf-regs.c b/tools/perf/arch/arm/util/dwarf-regs.c
-index e8d5c55..33ec5b3 100644
---- a/tools/perf/arch/arm/util/dwarf-regs.c
-+++ b/tools/perf/arch/arm/util/dwarf-regs.c
-@@ -8,10 +8,7 @@
-  * published by the Free Software Foundation.
-  */
- 
--#include <stdlib.h>
--#ifndef __UCLIBC__
--#include <libio.h>
--#endif
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- struct pt_regs_dwarfnum {
-diff --git a/tools/perf/arch/powerpc/util/dwarf-regs.c b/tools/perf/arch/powerpc/util/dwarf-regs.c
-index 7cdd61d..733151c 100644
---- a/tools/perf/arch/powerpc/util/dwarf-regs.c
-+++ b/tools/perf/arch/powerpc/util/dwarf-regs.c
-@@ -9,10 +9,7 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
--#include <stdlib.h>
--#ifndef __UCLIBC__
--#include <libio.h>
--#endif
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- 
-diff --git a/tools/perf/arch/s390/util/dwarf-regs.c b/tools/perf/arch/s390/util/dwarf-regs.c
-index e19653e..0469df0 100644
---- a/tools/perf/arch/s390/util/dwarf-regs.c
-+++ b/tools/perf/arch/s390/util/dwarf-regs.c
-@@ -6,7 +6,7 @@
-  *
-  */
- 
--#include <libio.h>
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- #define NUM_GPRS 16
-diff --git a/tools/perf/arch/sh/util/dwarf-regs.c b/tools/perf/arch/sh/util/dwarf-regs.c
-index a11edb0..0d0897f 100644
---- a/tools/perf/arch/sh/util/dwarf-regs.c
-+++ b/tools/perf/arch/sh/util/dwarf-regs.c
-@@ -19,7 +19,7 @@
-  *
-  */
- 
--#include <libio.h>
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- /*
-diff --git a/tools/perf/arch/sparc/util/dwarf-regs.c b/tools/perf/arch/sparc/util/dwarf-regs.c
-index 0ab8848..92eda41 100644
---- a/tools/perf/arch/sparc/util/dwarf-regs.c
-+++ b/tools/perf/arch/sparc/util/dwarf-regs.c
-@@ -9,7 +9,7 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
--#include <libio.h>
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- #define SPARC_MAX_REGS	96
-diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
-index a794d30..be22dd4 100644
---- a/tools/perf/arch/x86/util/dwarf-regs.c
-+++ b/tools/perf/arch/x86/util/dwarf-regs.c
-@@ -20,7 +20,7 @@
-  *
-  */
- 
--#include <libio.h>
-+#include <stddef.h>
- #include <dwarf-regs.h>
- 
- /*
--- 
-1.8.1.5
-
+There is roughly 6689 - 29 = 6660 files to modify :)
