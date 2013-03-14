@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab3CNNEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 09:04:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755776Ab3CNNEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 09:04:51 -0400
-Date: Thu, 14 Mar 2013 14:04:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mm/hugetlb: fix total hugetlbfs pages count when
- memory overcommit accouting
-Message-ID: <20130314130449.GE11631@dhcp22.suse.cz>
-References: <1363260646-26896-1-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363260646-26896-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757788Ab3CNNLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 09:11:47 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:59776 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757743Ab3CNNLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 09:11:45 -0400
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-ide@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Josh Wu <josh.wu@atmel.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 01/10] drivers: media: use module_platform_driver_probe()
+Date: Thu, 14 Mar 2013 14:11:21 +0100
+Message-Id: <1363266691-15757-2-git-send-email-fabio.porcedda@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 14-03-13 19:30:46, Wanpeng Li wrote:
-> Changelog:
->  v2 -> v3:
->   * update patch description, spotted by Michal
->  v1 -> v2:
->   * update patch description, spotted by Michal
-> 
-> "hugetlb_total_pages is used for overcommit calculations but the
-> current implementation considers only default hugetlb page size (which
-> is either the first defined hugepage size or the one specified by
-> default_hugepagesz kernel boot parameter).
-> 
-> If the system is configured for more than one hugepage size (which is
-> possible since a137e1cc hugetlbfs: per mount huge page sizes) then
-> the overcommit estimation done by __vm_enough_memory (resp. shown by
-> meminfo_proc_show) is not precise - there is an impression of more
-> available/allowed memory. This can lead to an unexpected ENOMEM/EFAULT
-> resp. SIGSEGV when memory is accounted."
+This patch converts the drivers to use the
+module_platform_driver_probe() macro which makes the code smaller and
+a bit simpler.
 
-Any reason for keeping the quotes I put in the previous email just to
-show what changelog I had in mind?
+Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Josh Wu <josh.wu@atmel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: linux-media@vger.kernel.org
+---
+ drivers/media/platform/sh_vou.c                | 13 +------------
+ drivers/media/platform/soc_camera/atmel-isi.c  | 12 +-----------
+ drivers/media/platform/soc_camera/mx1_camera.c | 13 +------------
+ 3 files changed, 3 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/media/platform/sh_vou.c b/drivers/media/platform/sh_vou.c
+index 66c8da1..d853162 100644
+--- a/drivers/media/platform/sh_vou.c
++++ b/drivers/media/platform/sh_vou.c
+@@ -1485,18 +1485,7 @@ static struct platform_driver __refdata sh_vou = {
+ 	},
+ };
  
-> The patch should also push to 2.6.27 stable tree.
-
-There are no such trees, I have mentioned that only to point out which
-kernels are affected.
-
-> 
-> Testcase:
-> boot: hugepagesz=1G hugepages=1
-> the default overcommit ratio is 50
-> before patch:
-> egrep 'CommitLimit' /proc/meminfo
-> CommitLimit:     55434168 kB
-> after patch:
-> egrep 'CommitLimit' /proc/meminfo
-> CommitLimit:     54909880 kB
->
-
-Is this information useful at all?
-
-Cc: <stable@vger.kernel.org> # 3.0+
-please
-
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/hugetlb.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index cdb64e4..9e25040 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2124,8 +2124,11 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
->  /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
->  unsigned long hugetlb_total_pages(void)
->  {
-> -	struct hstate *h = &default_hstate;
-> -	return h->nr_huge_pages * pages_per_huge_page(h);
-> +	struct hstate *h;
-> +	unsigned long nr_total_pages = 0;
-> +	for_each_hstate(h)
-> +		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
-> +	return nr_total_pages;
->  }
->  
->  static int hugetlb_acct_memory(struct hstate *h, long delta)
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+-static int __init sh_vou_init(void)
+-{
+-	return platform_driver_probe(&sh_vou, sh_vou_probe);
+-}
+-
+-static void __exit sh_vou_exit(void)
+-{
+-	platform_driver_unregister(&sh_vou);
+-}
+-
+-module_init(sh_vou_init);
+-module_exit(sh_vou_exit);
++module_platform_driver_probe(sh_vou, sh_vou_probe);
+ 
+ MODULE_DESCRIPTION("SuperH VOU driver");
+ MODULE_AUTHOR("Guennadi Liakhovetski <g.liakhovetski@gmx.de>");
+diff --git a/drivers/media/platform/soc_camera/atmel-isi.c b/drivers/media/platform/soc_camera/atmel-isi.c
+index 82dbf99..12ba31d 100644
+--- a/drivers/media/platform/soc_camera/atmel-isi.c
++++ b/drivers/media/platform/soc_camera/atmel-isi.c
+@@ -1081,17 +1081,7 @@ static struct platform_driver atmel_isi_driver = {
+ 	},
+ };
+ 
+-static int __init atmel_isi_init_module(void)
+-{
+-	return  platform_driver_probe(&atmel_isi_driver, &atmel_isi_probe);
+-}
+-
+-static void __exit atmel_isi_exit(void)
+-{
+-	platform_driver_unregister(&atmel_isi_driver);
+-}
+-module_init(atmel_isi_init_module);
+-module_exit(atmel_isi_exit);
++module_platform_driver_probe(atmel_isi_driver, atmel_isi_probe);
+ 
+ MODULE_AUTHOR("Josh Wu <josh.wu@atmel.com>");
+ MODULE_DESCRIPTION("The V4L2 driver for Atmel Linux");
+diff --git a/drivers/media/platform/soc_camera/mx1_camera.c b/drivers/media/platform/soc_camera/mx1_camera.c
+index 25b2a28..4389f43 100644
+--- a/drivers/media/platform/soc_camera/mx1_camera.c
++++ b/drivers/media/platform/soc_camera/mx1_camera.c
+@@ -859,18 +859,7 @@ static struct platform_driver mx1_camera_driver = {
+ 	.remove		= __exit_p(mx1_camera_remove),
+ };
+ 
+-static int __init mx1_camera_init(void)
+-{
+-	return platform_driver_probe(&mx1_camera_driver, mx1_camera_probe);
+-}
+-
+-static void __exit mx1_camera_exit(void)
+-{
+-	return platform_driver_unregister(&mx1_camera_driver);
+-}
+-
+-module_init(mx1_camera_init);
+-module_exit(mx1_camera_exit);
++module_platform_driver_probe(mx1_camera_driver, mx1_camera_probe);
+ 
+ MODULE_DESCRIPTION("i.MX1/i.MXL SoC Camera Host driver");
+ MODULE_AUTHOR("Paulius Zaleckas <paulius.zaleckas@teltonika.lt>");
 -- 
-Michal Hocko
-SUSE Labs
+1.8.1.5
+
