@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab3CNOr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 10:47:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42245 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab3CNOrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 10:47:55 -0400
-Date: Thu, 14 Mar 2013 16:47:45 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: kishon <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <notasas@gmail.com>
-Subject: Re: [PATCH v2 0/4] usb: musb/otg: cleanup and fixes
-Message-ID: <20130314144744.GM26080@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363242239-1061-1-git-send-email-kishon@ti.com>
- <20130314133313.GB26080@arwen.pp.htv.fi>
- <5141E26C.10700@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KSyhVCl2eeZHT0Rn"
-Content-Disposition: inline
-In-Reply-To: <5141E26C.10700@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757579Ab3CNOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 10:48:25 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:41412 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757424Ab3CNOsX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 10:48:23 -0400
+Message-ID: <1363271833.12845.186.camel@misato.fc.hp.com>
+Subject: Re: Regression: Fixing recursive fault but reboot is needed at boot
+ on HP 6730B - bisected
+From: Toshi Kani <toshi.kani@hp.com>
+To: Roberto Oppedisano <roberto.oppedisano@infracom.it>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org
+Date: Thu, 14 Mar 2013 08:37:13 -0600
+In-Reply-To: <51418863.8000902@infracom.it>
+References: <513D8F3A.8030308@gmail.com> <51418863.8000902@infracom.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---KSyhVCl2eeZHT0Rn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-03-14 at 09:20 +0100, Roberto Oppedisano wrote:
+> Hi
+> 
+> Il 11/03/2013 09:00, Roberto Oppedisano ha scritto:
+> > Hello
+> >     I'm observing this kind of boot failure when my laptop
+> > is not docked; I didn't notice before because I seldom reboot
+> > it when it's not connected to a docking station.
+> >
+> > The failure is reproducible at 80-90%, meaning that one boot
+> > over 8-10 will complete also with the laptop undocked; it seems
+> > that being attached to a power supply (via jack, not docking) or
+> > on batteries makes no difference WRT this failure.
 
-On Thu, Mar 14, 2013 at 08:15:00PM +0530, kishon wrote:
-> On Thursday 14 March 2013 07:03 PM, Felipe Balbi wrote:
-> >On Thu, Mar 14, 2013 at 11:53:55AM +0530, Kishon Vijay Abraham I wrote:
-> >>This series has some misc cleanup and fixes. The fix solves the cold
-> >>plug issue in omap3 which some have reported. Developed these patches on
-> >>fixes-for-v3.9-rc3 after applying
-> >>http://www.spinics.net/lists/linux-usb/msg81563.html
-> >>(Grazvydas Ignotas patch series)
-> >>
-> >>Tested for g_zero enumeration in pandaboard and beagleboard in both
-> >>cold plug and hot plug case. Any kind of testing for this series is wel=
-come.
-> >>
-> >>Changes from v1:
-> >>* removed *usb: musb: omap: remove the check before calling otg_set_vbu=
-s*
->=20
-> er.. removed *usb: musb: omap: always glue have the correct vbus/id
-> status* since a patch similar to it is already merged.
+By the boot failure, are you referring the one that is partially
+captured in screeshot3.png?  If so, we need full error messages (i.e.
+the top of the stack trace) to see what happened. 
 
-alright, I'll apply this series soonish.
+> following the results of a bisection:
+> 
+> b17b537ac1429a609addb55bf985f5ebfcf4ae7b is the first bad commit
+> commit b17b537ac1429a609addb55bf985f5ebfcf4ae7b
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Tue Jan 15 13:23:44 2013 +0100
+> 
+>      ACPI / scan: Drop the second argument of acpi_device_unregister()
+> 
+>      Drop the second argument of acpi_device_unregister(), type, which is
+>      not used by that function.
+> 
+>      Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>      Acked-by: Toshi Kani <toshi.kani@hp.com>
+>      Acked-by: Yinghai Lu <yinghai@kernel.org>
+>      Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> :040000 040000 13aeb8bccbd062e65bc3710bb426fe8ac7d0cad5 
+> 17d4603977ea57133d149814dc34e274ca0c2deb M      drivers
+> 
+> Trying to revert this commit on current master gave me an error.
+> 
+> Let me know if you need more info or testing.
 
---=20
-balbi
+The above patch is just a cleanup, and should have no functional
+changes.  There are quite a bit of changes made around that day, so it
+might be the case that other patch around that day is causing your
+problem...  In any case, can you capture the full error message and send
+it to us?
 
---KSyhVCl2eeZHT0Rn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+-Toshi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRQeMQAAoJEIaOsuA1yqRE2KIP/3WZtZjO/RRDKLh7W0NhQi0Q
-mPrDwGEp8TVIOeYqJlTbYARNl2nLcW/bVsGvww4F7VDWPzKLphHT+OyD0EPEg0UY
-zQbA91a8hoXobTW5D7fTrSeO4cfzQX4WYecBW6/yJU/x4NyzuUW9ryLUaoHSQLSd
-MiqsUDVddcbNkDwnPrDJy9PcyRf4P41zWX5gr6RTPgBoRjlSiwp3/8sHT93Dxhc8
-FN8stsIknMYWL0QQK5rUfR7xsodezpH/qkQgWHnsYxHbvi/yeFigSg2iyXpBE+My
-GEshnNmP2MM1VZSYRhHoe+DiMacnW4LybwN57uZDH6nAr6gUAWciy2DXSmDrlU3K
-TYrKRDnfP3e2AaHxPfJGQy81S60Hl88ZOGRQkk0TeDvPYtHXOLvm+QlbRTGwsr5y
-R9pn4RZGprJKH4YVrh2CG2TKkUnSnTvZzenBGzGPteYZry0IcCQrMphSaecRr6jI
-QfYYcwx4IrNMNM9XUt4aSpSemf+Zfb8wDymvt1chSJZb3I1AndN7Wl5WSNpkNZe3
-YKtYz9V0kM9CP7FHCSO57wvieN1w+yeW3yCpBBuKg1UJszimD1h8tHHOq+zEJlqW
-p17rapqng9sd8bBKTPg77+g2ogdeRXirJTSEoFshafOjTj7n2S1q/mMQmNIaDSQi
-P5KJhx8VRYOrd7c3wDQJ
-=9Ti/
------END PGP SIGNATURE-----
-
---KSyhVCl2eeZHT0Rn--
