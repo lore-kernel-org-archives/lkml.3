@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934644Ab3CNRt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 13:49:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23908 "EHLO mga14.intel.com"
+	id S934670Ab3CNRtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 13:49:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8545 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934549Ab3CNRtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 13:49:20 -0400
+	id S934640Ab3CNRt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 13:49:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,845,1355126400"; 
-   d="scan'208";a="214771586"
+   d="scan'208";a="302979161"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -21,9 +21,9 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
         Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2, RFC 25/30] thp, mm: basic huge_fault implementation for generic_file_vm_ops
-Date: Thu, 14 Mar 2013 19:50:30 +0200
-Message-Id: <1363283435-7666-26-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2, RFC 30/30] thp: map file-backed huge pages on fault
+Date: Thu, 14 Mar 2013 19:50:35 +0200
+Message-Id: <1363283435-7666-31-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,107 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-It provide enough functionality for simple cases like ramfs. Need to be
-extended later.
+Look like all pieces are in place, we can map file-backed huge-pages
+now.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |   75 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
+ include/linux/huge_mm.h |    4 +++-
+ mm/memory.c             |    1 +
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 57611be..032fec39 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1781,6 +1781,80 @@ page_not_uptodate:
- }
- EXPORT_SYMBOL(filemap_fault);
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static int filemap_huge_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	struct file *file = vma->vm_file;
-+	struct address_space *mapping = file->f_mapping;
-+	struct inode *inode = mapping->host;
-+	pgoff_t size, offset = vmf->pgoff;
-+	unsigned long address = (unsigned long) vmf->virtual_address;
-+	struct page *page;
-+	int ret = 0;
-+
-+	BUG_ON(((address >> PAGE_SHIFT) & HPAGE_CACHE_INDEX_MASK) !=
-+			(offset & HPAGE_CACHE_INDEX_MASK));
-+
-+retry:
-+	page = find_get_page(mapping, offset);
-+	if (!page) {
-+		gfp_t gfp_mask = mapping_gfp_mask(mapping) | __GFP_COLD;
-+		page = alloc_pages(gfp_mask, HPAGE_PMD_ORDER);
-+		if (!page) {
-+			count_vm_event(THP_FAULT_FALLBACK);
-+			return VM_FAULT_OOM;
-+		}
-+		count_vm_event(THP_FAULT_ALLOC);
-+		ret = add_to_page_cache_lru(page, mapping, offset, GFP_KERNEL);
-+		if (ret == 0)
-+			ret = mapping->a_ops->readpage(file, page);
-+		else if (ret == -EEXIST)
-+			ret = 0; /* losing race to add is OK */
-+		page_cache_release(page);
-+		if (!ret || ret == AOP_TRUNCATED_PAGE)
-+			goto retry;
-+		return ret;
-+	}
-+
-+	if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
-+		page_cache_release(page);
-+		return ret | VM_FAULT_RETRY;
-+	}
-+
-+	/* Did it get truncated? */
-+	if (unlikely(page->mapping != mapping)) {
-+		unlock_page(page);
-+		put_page(page);
-+		goto retry;
-+	}
-+	VM_BUG_ON(page->index != offset);
-+	VM_BUG_ON(!PageUptodate(page));
-+
-+	if (!PageTransHuge(page)) {
-+		unlock_page(page);
-+		put_page(page);
-+		/* Ask fallback to small pages */
-+		return VM_FAULT_OOM;
-+	}
-+
-+	/*
-+	 * Found the page and have a reference on it.
-+	 * We must recheck i_size under page lock.
-+	 */
-+	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
-+	if (unlikely(offset >= size)) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+		return VM_FAULT_SIGBUS;
-+	}
-+
-+	vmf->page = page;
-+	return ret | VM_FAULT_LOCKED;
-+}
-+#else
-+#define filemap_huge_fault NULL
-+#endif
-+
- int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	struct page *page = vmf->page;
-@@ -1810,6 +1884,7 @@ EXPORT_SYMBOL(filemap_page_mkwrite);
- 
- const struct vm_operations_struct generic_file_vm_ops = {
- 	.fault		= filemap_fault,
-+	.huge_fault	= filemap_huge_fault,
- 	.page_mkwrite	= filemap_page_mkwrite,
- 	.remap_pages	= generic_file_remap_pages,
- };
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index c6e3aef..c175c78 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -80,7 +80,9 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+ 	   (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG) &&			\
+ 	   ((__vma)->vm_flags & VM_HUGEPAGE))) &&			\
+ 	 !((__vma)->vm_flags & VM_NOHUGEPAGE) &&			\
+-	 !is_vma_temporary_stack(__vma))
++	 !is_vma_temporary_stack(__vma) &&				\
++	 (!(__vma)->vm_ops ||						\
++		  mapping_can_have_hugepages((__vma)->vm_file->f_mapping)))
+ #define transparent_hugepage_defrag(__vma)				\
+ 	((transparent_hugepage_flags &					\
+ 	  (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)) ||			\
+diff --git a/mm/memory.c b/mm/memory.c
+index 52bd6cf..f3b5a11 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3738,6 +3738,7 @@ retry:
+ 		if (!vma->vm_ops)
+ 			return do_huge_pmd_anonymous_page(mm, vma, address,
+ 							  pmd, flags);
++		return do_huge_linear_fault(mm, vma, address, pmd, flags);
+ 	} else {
+ 		pmd_t orig_pmd = *pmd;
+ 		int ret;
 -- 
 1.7.10.4
 
