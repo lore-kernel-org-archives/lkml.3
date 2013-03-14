@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab3CNL6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 07:58:19 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:53366 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757260Ab3CNL6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 07:58:16 -0400
-Message-ID: <5141BB52.6080604@slimlogic.co.uk>
-Date: Thu, 14 Mar 2013 11:58:10 +0000
-From: Ian Lartey <ian@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
-Subject: Re: [PATCH v8 07/12] gpio: palmas: add in GPIO support for palmas
- charger
-References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk> <1362662276-20792-7-git-send-email-ian@slimlogic.co.uk> <CACRpkdaNs+NmAbuwRYzn1xgjHy=7ZknJa-GD1+Q8HBsu53KQqQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaNs+NmAbuwRYzn1xgjHy=7ZknJa-GD1+Q8HBsu53KQqQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757175Ab3CNMAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 08:00:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20803 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab3CNMAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 08:00:47 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=g8VO1FjuAB0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=184NE7b5fP4A:10 a=0JF42AakBzeabsJhMOkA:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363262445.25967.30.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched,trace: Allow tracing the preemption decision on
+ wakeup
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, tglx <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Mar 2013 08:00:45 -0400
+In-Reply-To: <1363254519.26965.9.camel@laptop>
+References: <1363254519.26965.9.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/03/13 14:15, Linus Walleij wrote:
-> Sorry for slow replies :-(
->
-> On Thu, Mar 7, 2013 at 2:17 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
->
->> +static int palmas_gpio_read(struct palmas *palmas, unsigned int reg,
->> +               int gpio, unsigned int *dest)
->
-> I don't like "int gpio" here, please use "int offset".
->
-> This is not a global GPIO number, it is an offset in the local gpio_chip,
-> right?
+On Thu, 2013-03-14 at 10:48 +0100, Peter Zijlstra wrote:
+> Thomas noted that we do the wakeup preemption check after the wakeup
+> trace point, this means the tracepoint cannot test/report this decision;
+> which is rather important for latency sensitive workloads. Therefore
+> move the tracepoint after doing the preemption check.
+> 
+> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Correct.
->
->> +{
->> +       /* registers for second bank are identical and offset by 0x9 */
->> +       if (gpio > 7)
->> +               reg += PALMAS_GPIO_DATA_IN2;
->> +
->> +       return palmas_read(palmas, PALMAS_GPIO_BASE, reg, dest);
->> +}
->> +
->> +static int palmas_gpio_write(struct palmas *palmas, unsigned int reg,
->> +               int gpio, unsigned int data)
->> +{
->> +       /* registers for second bank are identical and offset by 0x9 */
->> +       if (gpio > 7)
->> +               reg += PALMAS_GPIO_DATA_IN2;
->> +
->> +       return palmas_write(palmas, PALMAS_GPIO_BASE, reg, data);
->> +}
->> +
->> +static int palmas_gpio_update_bits(struct palmas *palmas, unsigned int reg,
->> +               int gpio, unsigned int mask, unsigned int data)
->> +{
->> +       /* registers for second bank are identical and offset by 0x9 */
->> +       if (gpio > 7)
->> +               reg += PALMAS_GPIO_DATA_IN2;
->> +
->> +       return palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg, mask, data);
->> +}
->
->
->> -       ret = palmas_read(palmas, PALMAS_GPIO_BASE, PALMAS_GPIO_DATA_IN, &val);
->> +       ret = palmas_gpio_read(palmas, PALMAS_GPIO_DATA_IN, offset, &val);
->
-> (Obviously you are passing the offset.)
->
->> +               ret = palmas_gpio_write(palmas, PALMAS_GPIO_SET_DATA_OUT,
->> +                               offset, BIT(offset % 8));
-> (..)
->> +               ret = palmas_gpio_write(palmas, PALMAS_GPIO_CLEAR_DATA_OUT,
->> +                               offset, BIT(offset % 8));
-> (...)
->> +       ret = palmas_gpio_update_bits(palmas, PALMAS_GPIO_DATA_DIR,
->> +                       offset, 1 << (offset % 8), 1 << (offset % 8));
->
-> Why aren't you using the BIT() macro here too?
->
-> Further: if these functions are always used like this, with offset
-> and some BIT() or (1 << (offset % 8)) why don't you move that
-> latter part into the static helper and just pass offset into the
-> helper?
->
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Good points  - I missed the other bit shifts.
+> ---
+>  kernel/sched/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b36635e..849deb9 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1288,8 +1288,8 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+>  static void
+>  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+>  {
+> -	trace_sched_wakeup(p, true);
+>  	check_preempt_curr(rq, p, wake_flags);
+> +	trace_sched_wakeup(p, true);
+>  
+>  	p->state = TASK_RUNNING;
+>  #ifdef CONFIG_SMP
+> 
 
-
-> Yours,
-> Linus Walleij
-
-
-Thanks
-
-Ian
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
 
