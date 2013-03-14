@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab3CNHUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 03:20:25 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:40633 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3CNHUY (ORCPT
+	id S1751220Ab3CNHYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 03:24:03 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:57274 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab3CNHYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 03:20:24 -0400
-Date: Thu, 14 Mar 2013 08:20:19 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH 13/14] x86/UV: Update UV support for external NMI signals
-Message-ID: <20130314072019.GC7869@gmail.com>
-References: <20130312193823.212544181@gulag1.americas.sgi.com>
- <20130312193825.244350065@gulag1.americas.sgi.com>
+	Thu, 14 Mar 2013 03:24:01 -0400
+Date: Thu, 14 Mar 2013 08:23:55 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: s390: mm: Removed useless label
+Message-ID: <20130314072355.GA3480@osiris>
+References: <1363203968-17967-1-git-send-email-gheorghiuandru@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130312193825.244350065@gulag1.americas.sgi.com>
+In-Reply-To: <1363203968-17967-1-git-send-email-gheorghiuandru@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+x-cbid: 13031407-4966-0000-0000-00000527ECAB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mike Travis <travis@sgi.com> wrote:
-
+On Wed, Mar 13, 2013 at 09:46:08PM +0200, Alexandru Gheorghiu wrote:
+> Rewrote conditional statement and eliminated the out_kthread label.
 > 
-> There is an exception where the NMI_LOCAL notifier chain is used. When 
-> the perf tools are in use, it's possible that our NMI was captured by 
-> some other NMI handler and then ignored.  We set a per_cpu flag for 
-> those CPUs that ignored the initial NMI, and then send them an IPI NMI 
-> signal.
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  arch/s390/mm/cmm.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
 
-"Other" NMI handlers should never lose NMIs - if they do then they should 
-be fixed I think.
+Applied, thanks.
 
-Thanks,
-
-	Ingo
