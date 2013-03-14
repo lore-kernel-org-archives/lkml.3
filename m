@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964818Ab3CNPoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 11:44:30 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:64663 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933550Ab3CNPo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 11:44:28 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Philip Avinash <avinashphilip@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        prakash.pm@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] pwm: pwm-tiecap: Add device-tree binding support for da850 SOC
-References: <1363257158-11615-1-git-send-email-avinashphilip@ti.com>
-	<1363257158-11615-3-git-send-email-avinashphilip@ti.com>
-	<5141B7CC.7000700@ti.com>
-Date: Thu, 14 Mar 2013 16:44:23 +0100
-In-Reply-To: <5141B7CC.7000700@ti.com> (Sekhar Nori's message of "Thu, 14 Mar
-	2013 17:13:08 +0530")
-Message-ID: <87txoe56lk.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S933949Ab3CNPrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 11:47:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932575Ab3CNPrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Mar 2013 11:47:39 -0400
+Date: Thu, 14 Mar 2013 16:47:35 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
+ responses)
+In-Reply-To: <alpine.LNX.2.00.1303141634440.30118@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1303141644230.30118@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303141111350.1983-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1303141634440.30118@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sekhar" == Sekhar Nori <nsekhar@ti.com> writes:
+On Thu, 14 Mar 2013, Jiri Kosina wrote:
 
- >> Required properties:
- >> -- compatible: Must be "ti,am33xx-ecap"
- >> +- compatible: Must be "ti,am33xx-ecap" or "ti,da850-ecap"
- >> - #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
- >> First cell specifies the per-chip index of the PWM to use, the second
- >> cell is the period in nanoseconds and bit 0 in the third cell is used to
- >> diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
- >> index 22e96e2..e0d96c8 100644
- >> --- a/drivers/pwm/pwm-tiecap.c
- >> +++ b/drivers/pwm/pwm-tiecap.c
- >> @@ -197,6 +197,7 @@ static const struct pwm_ops ecap_pwm_ops = {
- >> 
- >> static const struct of_device_id ecap_of_match[] = {
- >> { .compatible	= "ti,am33xx-ecap" },
- >> +	{ .compatible	= "ti,da850-ecap" },
- >> {},
+> > Is occurrence of the "nobody cared" connected with any particular 
+> > device?  Somebody reported a similar problem not long ago (although IIRC 
+> > it was for OHCI rather than UHCI) which appeared to be related to 
+> > activity on the built-in webcam.
+> 
+> Will check this. No external devices are plugged in, I think the only 
+> internal one it has is bluetooth chip. I'll try turning it off.
 
- Sekhar> You add a new compatible, but don't really show any changes in
- Sekhar> driver in this series. So why can't we simply use
- Sekhar> ti,am33xx-ecap on DA850 too?
-
-Indeed, if the hardware block is identical the dts should simply list:
-
-compatible = "ti,da850-ecap", "ti,am33xx-ecap"
-
-And the driver only bind to ti,am33xx-ecap (unless there ever needs to
-be a da850 specific workarounde.
+That didn't help (I disabled it via hard rfkill and it vanished from 
+lsusb), i.e. it happens even with only the hubs being there.
 
 -- 
-Bye, Peter Korsgaard
+Jiri Kosina
+SUSE Labs
