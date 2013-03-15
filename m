@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab3COUb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 16:31:28 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34947 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3COUb1 (ORCPT
+	id S932353Ab3COUc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 16:32:58 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38904 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755229Ab3COUcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 16:31:27 -0400
-Date: Fri, 15 Mar 2013 13:31:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de,
-        akpm@linux-foundation.org, acme@redhat.com, jolsa@redhat.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] perf,x86: fix kernel crash with PEBS/BTS after
- suspend/resume
-Message-ID: <20130315203123.GA28128@kroah.com>
-References: <20130315132607.GA4565@quad>
+	Fri, 15 Mar 2013 16:32:55 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19A5Re5EkOy9XumZiMyA//+4GbHtt7U/NU=
+Date: Fri, 15 Mar 2013 16:32:51 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jamie Iles <jamie@jamieiles.com>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: Serial port initialization broken on Armada 370/XP due to
+ "serial: 8250_dw: Don't use UPF_FIXED_TYPE"
+Message-ID: <20130315203251.GY12700@titan.lakedaemon.net>
+References: <512E1AD9.4090403@free-electrons.com>
+ <512E2F64.2010706@free-electrons.com>
+ <20130228092602.GA5688@xps8300>
+ <512F428E.3080400@free-electrons.com>
+ <20130228123421.GC5688@xps8300>
+ <20130315202452.GA15617@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130315132607.GA4565@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130315202452.GA15617@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 02:26:07PM +0100, Stephane Eranian wrote:
+On Fri, Mar 15, 2013 at 01:24:52PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Feb 28, 2013 at 02:34:21PM +0200, Heikki Krogerus wrote:
+> > Hi,
+> > 
+> > On Thu, Feb 28, 2013 at 12:42:06PM +0100, Gregory CLEMENT wrote:
+> > > >> Would you agree with this kind of patch to fix the issue?
+> > > >>
+> > > >> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+> > > >> index e2ac25a..0b284c6 100644
+> > > >> --- a/drivers/tty/serial/8250/8250.c
+> > > >> +++ b/drivers/tty/serial/8250/8250.c
+> > > >> @@ -1119,7 +1119,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+> > > >>         serial_out(up, UART_LCR, 0);
+> > > >>
+> > > >>         serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO);
+> > > >> -       scratch = serial_in(up, UART_IIR) >> 6;
+> > > >> +       scratch = (serial_in(up, UART_IIR) & 0xFF) >> 6;
+> > > >>
+> > > >>         switch (scratch) {
+> > > >>         case 0:
+> > > > 
+> > > > Instead, can you test if it's enough for you to set the reg-io-width
+> > > > to 1 instead of 4:
+> > > 
+> > > Yes indeed it worked and it seems to be the correct description of my
+> > > hardware. So I will fix the dtsi file.
+> > > 
+> > > However isn't buggy to use a function as it returned a char whereas
+> > > it returns an int?
+> > 
+> > Yes, the driver should probable be cleaned.
+> > 
+> > It seems to be happening in quite a few places in 8250.c.
+> > autoconfig_16550a() has pretty much identical code in it, where
+> > UART_IIR is read to unsigned char and shifted without a mask.
 > 
-> This patch fixes a kernel crash when using precise sampling (PEBS)
-> after a suspend/resume. Turns out the CPU notifier code is not invoked
-> on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
-> by the kernel and keeps it power-on/resume value of 0 causing any PEBS
-> measurement to crash when running on CPU0.
-> 
-> The workaround is to add a hook in the actual resume code to restore
-> the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
-> the DS_AREA will be restored twice but this is harmless.
-> 
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
+> Can someone send me the correct fix here, if they want it included in
+> 3.9-final?
 
-Is this needed for the 3.8 or older kernels as well?
+The fix is in arm-soc/fixes slated for merging into 3.9:
 
-thanks,
+  commit e366154f70c54dee3665d1c0f780007e514412f3
+  Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+  Date:   Wed Mar 6 11:23:33 2013 +0100
 
-greg k-h
+      arm: mvebu: Reduce reg-io-width with UARTs
+
+      Setting the reg-io-width to 1 byte represents more accurate
+      description of the HW.
+
+      This will fix an issue where UART driver causes kernel
+      panic during bootup. Gregory CLEMENT traced the issue to
+      autoconfig() in 8250.c, where the existence of FIFO is
+      checked from UART_IIR register. The register is now read as
+      32-bit value as the reg-io-width is set to 4-bytes. The
+      retuned value seems to contain bogus data for bits 31:8,
+      causing the issue.
+
+      Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+      Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+      Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+      Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+      Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+      Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+      Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+      Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+
+   arch/arm/boot/dts/armada-370-xp.dtsi | 4 ++--
+   arch/arm/boot/dts/armada-xp.dtsi     | 4 ++--
+
+thx,
+
+Jason.
