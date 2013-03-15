@@ -1,140 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3COQ3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:29:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42361 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab3COQ3C (ORCPT
+	id S1753909Ab3COQep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:34:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32759 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab3COQen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:29:02 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-01-51434c4c1062
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de
-Subject: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race
- conditions
-Date: Fri, 15 Mar 2013 21:56:41 +0530
-Message-id: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsWyRsSkWtfHxznQ4MMhPYuzyw6yWTQvXs9m
-	sWTyfFaLeUfesVhc3jWHzWLG+X1MFou2/Wd2YPeY3XCRxWPnrLvsHvvnrmH3WPLmEKvH501y
-	AaxRXDYpqTmZZalF+nYJXBl7e26zFvwXqtiy9TB7A+Ny/i5GTg4JAROJnnfbGSFsMYkL99az
-	dTFycQgJLGWU2H/uCzNM0cdbp5ghEtOBEl93MkE4PUwSd269ZQKpYhMwkzi4aDV7FyMHh4iA
-	rMTMbj2QGmaB5YwSS659YAepERYIkWg6toYFxGYRUJU4eewuWC+vgKvEhe8trCC9EgIKEnMm
-	2YD0Sgi0swNdsZYNol5A4tvkQywQNbISmw5AHScpcXDFDZYJjIILGBlWMYqmFiQXFCelFxnr
-	FSfmFpfmpesl5+duYgSG7el/z/p3MN49YH2IMRlo3ERmKdHkfGDY55XEGxqbGVmYmpgaG5lb
-	mpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB0ST4TbGI9wvR8Deeh8Q7Ap1P
-	90e9fPH7YtpjCbHf/RUvY9TWV1zmaC1eKFP9SOH5jiz57rsV73axN3fsPpmo/OSnUWPu6ptm
-	tU38BQZ8GW5s7+wcfTbZv7si1n7AI//sWtH+LXN1TQQ95BUjInUPd3MveHlsVY6Bd613kL3Q
-	6RM3RN/Hnn+oxFKckWioxVxUnAgAE+G0dHECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQV0fH+dAgxc7VS3OLjvIZtG8eD2b
-	xZLJ81kt5h15x2JxedccNosZ5/cxWSza9p/Zgd1jdsNFFo+ds+6ye+yfu4bdY8mbQ6wenzfJ
-	BbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
-	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM2Ntzm7Xgv1DFlq2H2RsY
-	l/N3MXJySAiYSHy8dYoZwhaTuHBvPVsXIxeHkMB0Ron9X3cyQTg9TBJ3br1lAqliEzCTOLho
-	NXsXIweHiICsxMxuPZAaZoHljBJLrn1gB6kRFgiRaDq2hgXEZhFQlTh57C5YL6+Aq8SF7y2s
-	IL0SAgoScybZTGDkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOCqeSe9gXNVgcYhR
-	gINRiYdXwcY5UIg1say4MvcQowQHs5II7zt9oBBvSmJlVWpRfnxRaU5q8SHGZKDlE5mlRJPz
-	gRGbVxJvaGxibmpsamliYWJmSZqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2Mxhtfvf/m
-	+VvvWIlh9Rsl8S2hOQcXFhjpK93Q8TOKPxFw3Yvnef6BQK2/gm8l+RvjErfdeLiF6f5tP+a5
-	GkW63ra+/1zzVvEm5GjM/yUk+uOeluiE+5vOaMZ9mrsjX9UhrLmvpeu2zdc6K94Liq6yj9cH
-	vkmc8nHG6m9J01KVeLJqehb+PvxUiaU4I9FQi7moOBEAVjtpsc4CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 15 Mar 2013 12:34:43 -0400
+Message-ID: <51434D78.9030308@oracle.com>
+Date: Fri, 15 Mar 2013 12:34:00 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: vyasevich@gmail.com, sri@us.ibm.com, nhorman@tuxdriver.com,
+        "David S. Miller" <davem@davemloft.net>
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: sctp: hang in sctp_remaddr_seq_show
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does the following
-1. Handle the return values of wait_for_completion_interruptible_timeout
-2. Add spin locks to avoid race conditions during ISR.
+Hi all,
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
----
-Discussion thread for this patch can be found at
-http://www.gossamer-threads.com/lists/linux/kernel/1693284?page=last
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+I've stumbled on an interesting hang related to sctp.
 
-I've not seen any reference to spin lock usage in IIO.
-Kindly, suggest me if there is a better way to avoid the race.
+After some fuzzing, I get a hang message about procfs not able to grab a hold
+of a mutex for one of the files:
+
+[  375.900309] INFO: task trinity-child21:7178 blocked for more than 120 seconds.
+[  375.901767] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  375.903022] trinity-child21 D ffff88009b9f74a8  5336  7178   7121 0x00000004
+[  375.904211]  ffff88009ba79cb8 0000000000000002 ffff8800abf48690 ffff8800abf48690
+[  375.905972]  ffff880075308000 ffff88009c798000 ffff88009ba79cb8 00000000001d7140
+[  375.907263]  ffff88009c798000 ffff88009ba79fd8 00000000001d7140 00000000001d7140
+[  375.908987] Call Trace:
+[  375.909415]  [<ffffffff83d89569>] __schedule+0x2e9/0x3b0
+[  375.910795]  [<ffffffff83d89795>] schedule+0x55/0x60
+[  375.911611]  [<ffffffff83d89ae3>] schedule_preempt_disabled+0x13/0x20
+[  375.912644]  [<ffffffff83d87b7d>] __mutex_lock_common+0x36d/0x5a0
+[  375.913986]  [<ffffffff8129f11a>] ? seq_read+0x3a/0x3d0
+[  375.914838]  [<ffffffff8129f11a>] ? seq_read+0x3a/0x3d0
+[  375.916187]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  375.917075]  [<ffffffff83d87edf>] mutex_lock_nested+0x3f/0x50
+[  375.918005]  [<ffffffff8129f11a>] seq_read+0x3a/0x3d0
+[  375.919124]  [<ffffffff819f19cd>] ? delay_tsc+0xdd/0x110
+[  375.920916]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  375.921794]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  375.922966]  [<ffffffff812e7b61>] proc_reg_read+0x201/0x230
+[  375.923870]  [<ffffffff812e7960>] ? proc_reg_write+0x230/0x230
+[  375.924820]  [<ffffffff81279e05>] vfs_read+0xb5/0x180
+[  375.925668]  [<ffffffff81279f20>] SyS_read+0x50/0xa0
+[  375.926476]  [<ffffffff83d946d8>] tracesys+0xe1/0xe6
+[  375.940223] 1 lock held by trinity-child21/7178:
+[  375.940985]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff8129f11a>] seq_read+0x3a/0x3d
+
+Digging deeper, there's another thread that's stuck holding that lock:
+
+[  381.880804] trinity-child97 R  running task     4856  9490   7121 0x00000004
+[  381.882064]  ffff880084cad708 0000000000000002 ffff8800bbbd71f8 ffff8800bbbd71f8
+[  381.883341]  ffff8800b9490000 ffff88009a5e8000 ffff880084cad708 00000000001d7140
+[  381.884652]  ffff88009a5e8000 ffff880084cadfd8 00000000001d7140 00000000001d7140
+[  381.885977] Call Trace:
+[  381.886392]  [<ffffffff83d89569>] __schedule+0x2e9/0x3b0
+[  381.887238]  [<ffffffff83d89714>] preempt_schedule+0x44/0x70
+[  381.888175]  [<ffffffff83b5674a>] ? sctp_remaddr_seq_show+0x2da/0x2f0
+[  381.889314]  [<ffffffff8110e8a8>] local_bh_enable+0x128/0x140
+[  381.890292]  [<ffffffff83b5674a>] sctp_remaddr_seq_show+0x2da/0x2f0
+[  381.891397]  [<ffffffff83b56497>] ? sctp_remaddr_seq_show+0x27/0x2f0
+[  381.892448]  [<ffffffff8129f11a>] ? seq_read+0x3a/0x3d0
+[  381.893308]  [<ffffffff8129ec50>] traverse+0xe0/0x1f0
+[  381.894135]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  381.895100]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  381.896074]  [<ffffffff8129f13c>] seq_read+0x5c/0x3d0
+[  381.896912]  [<ffffffff819f19cd>] ? delay_tsc+0xdd/0x110
+[  381.897796]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  381.898734]  [<ffffffff8129f0e0>] ? seq_lseek+0x110/0x110
+[  381.899629]  [<ffffffff812e7b61>] proc_reg_read+0x201/0x230
+[  381.900592]  [<ffffffff812e7960>] ? proc_reg_write+0x230/0x230
+[  381.901614]  [<ffffffff812e7960>] ? proc_reg_write+0x230/0x230
+[  381.902543]  [<ffffffff8127a22b>] do_loop_readv_writev+0x4b/0x90
+[  381.903480]  [<ffffffff8127a4a6>] do_readv_writev+0xf6/0x1d0
+[  381.904456]  [<ffffffff8109b1c8>] ? kvm_clock_read+0x38/0x70
+[  381.905460]  [<ffffffff8127a61e>] vfs_readv+0x3e/0x60
+[  381.906306]  [<ffffffff812abb31>] default_file_splice_read+0x1e1/0x320
+[  381.907365]  [<ffffffff81259396>] ? deactivate_slab+0x7d6/0x820
+[  381.908412]  [<ffffffff81259396>] ? deactivate_slab+0x7d6/0x820
+[  381.909404]  [<ffffffff8117db31>] ? __lock_release+0xf1/0x110
+[  381.910435]  [<ffffffff81259396>] ? deactivate_slab+0x7d6/0x820
+[  381.911483]  [<ffffffff81a06ee8>] ? do_raw_spin_unlock+0xc8/0xe0
+[  381.912478]  [<ffffffff83d8b3d0>] ? _raw_spin_unlock+0x30/0x60
+[  381.913438]  [<ffffffff81259396>] ? deactivate_slab+0x7d6/0x820
+[  381.914478]  [<ffffffff812830ae>] ? alloc_pipe_info+0x3e/0xa0
+[  381.915504]  [<ffffffff812830ae>] ? alloc_pipe_info+0x3e/0xa0
+[  381.916461]  [<ffffffff812830ae>] ? alloc_pipe_info+0x3e/0xa0
+[  381.917418]  [<ffffffff83d00b0c>] ? __slab_alloc.isra.34+0x2ed/0x31f
+[  381.918533]  [<ffffffff8117acf8>] ? trace_hardirqs_on_caller+0x168/0x1a0
+[  381.919637]  [<ffffffff8117ae35>] ? debug_check_no_locks_freed+0xf5/0x130
+[  381.920799]  [<ffffffff812a9ef0>] ? page_cache_pipe_buf_release+0x20/0x20
+[  381.921963]  [<ffffffff812aa823>] do_splice_to+0x83/0xb0
+[  381.922849]  [<ffffffff812aabee>] splice_direct_to_actor+0xce/0x1c0
+[  381.923874]  [<ffffffff812aa780>] ? do_splice_from+0xb0/0xb0
+[  381.924855]  [<ffffffff812ac398>] do_splice_direct+0x48/0x60
+[  381.925865]  [<ffffffff81279a25>] do_sendfile+0x165/0x310
+[  381.926763]  [<ffffffff8117ad3d>] ? trace_hardirqs_on+0xd/0x10
+[  381.927722]  [<ffffffff8127aaaa>] SyS_sendfile64+0x8a/0xc0
+[  381.928702]  [<ffffffff83d94675>] ? tracesys+0x7e/0xe6
+[  381.929556]  [<ffffffff83d946d8>] tracesys+0xe1/0xe6
+
+It has gone to sleep while holding the proc mutex we're trying to acquire and
+never woke up!
+
+Looking at the code, we see:
+
+        rcu_read_unlock();
+        read_unlock(&head->lock);
+        sctp_local_bh_enable(); <--- here
+
+It hangs on local_bh_enable().
+
+It seems that local_bh_enable() calls preempt_check_resched() which never
+gets woken up. Why? I have no clue.
+
+It's also pretty reproducible with sctp.
+
 
 Thanks,
-Naveen
- drivers/iio/adc/exynos_adc.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index ed6fdd7..4de28ae 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -91,6 +91,7 @@ struct exynos_adc {
- 
- 	struct completion	completion;
- 
-+	spinlock_t		reg_lock;
- 	u32			value;
- 	unsigned int            version;
- };
-@@ -117,7 +118,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 				long mask)
- {
- 	struct exynos_adc *info = iio_priv(indio_dev);
--	unsigned long timeout;
-+	long timeout;
- 	u32 con1, con2;
- 
- 	if (mask != IIO_CHAN_INFO_RAW)
-@@ -143,15 +144,19 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 				ADC_V1_CON(info->regs));
- 	}
- 
-+	INIT_COMPLETION(info->completion);
-+
- 	timeout = wait_for_completion_interruptible_timeout
- 			(&info->completion, EXYNOS_ADC_TIMEOUT);
-+
- 	*val = info->value;
- 
- 	mutex_unlock(&indio_dev->mlock);
- 
- 	if (timeout == 0)
- 		return -ETIMEDOUT;
--
-+	else if (timeout < 0)
-+		return timeout;
- 	return IIO_VAL_INT;
- }
- 
-@@ -159,6 +164,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
- {
- 	struct exynos_adc *info = (struct exynos_adc *)dev_id;
- 
-+	spin_lock(&info->reg_lock);
-+
- 	/* Read value */
- 	info->value = readl(ADC_V1_DATX(info->regs)) &
- 						ADC_DATX_MASK;
-@@ -170,6 +177,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
- 
- 	complete(&info->completion);
- 
-+	spin_unlock(&info->reg_lock);
-+
- 	return IRQ_HANDLED;
- }
- 
-@@ -327,6 +336,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	else
- 		indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
- 
-+	spin_lock_init(&info->reg_lock);
- 	ret = iio_device_register(indio_dev);
- 	if (ret)
- 		goto err_irq;
--- 
-1.7.9.5
-
+Sasha
