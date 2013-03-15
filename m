@@ -1,130 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab3COIvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:51:19 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:62456 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3COIvQ (ORCPT
+	id S1753960Ab3COIzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:55:47 -0400
+Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:41463 "EHLO
+	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab3COIzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:51:16 -0400
-Message-ID: <5142E0FA.7020200@gmail.com>
-Date: Fri, 15 Mar 2013 16:51:06 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 15 Mar 2013 04:55:44 -0400
+Message-ID: <5142E20C.40805@web.de>
+Date: Fri, 15 Mar 2013 09:55:40 +0100
+From: Danny Baumann <dannybaumann@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Will Huck <will.huckk@gmail.com>, Lenky Gao <lenky.gao@gmail.com>,
-        Zlatko Calusic <zlatko.calusic@iskon.hr>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>, Linux-MM <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: Inactive memory keep growing and how to release it?
-References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com> <51347A6E.8010608@iskon.hr> <CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com> <513A9AF7.4020909@gmail.com> <CAJd=RBAoNyniJpaeHafpWm0w7FfC9y+9+x_Gpdb74Jtzyk81HA@mail.gmail.com>
-In-Reply-To: <CAJd=RBAoNyniJpaeHafpWm0w7FfC9y+9+x_Gpdb74Jtzyk81HA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Aaron Lu <aaron.lu@intel.com>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 3/3] ACPI video: Fix applying indexed initial brightness
+ value.
+References: <1363257264-15984-1-git-send-email-dannybaumann@web.de> <1363257264-15984-4-git-send-email-dannybaumann@web.de> <5142E04F.1010400@intel.com>
+In-Reply-To: <5142E04F.1010400@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-purgate: clean
+X-purgate-type: clean
+X-purgate-ID: 154106::1363337741-000004E7-8E4F743B/0-0/0-0
+X-Scan-AV: cora.hrz.tu-chemnitz.de;2013-03-15 09:55:41;3a1c82f1db07627c64454a1993685b86
+X-Scan-SA: cora.hrz.tu-chemnitz.de;2013-03-15 09:55:41;609ecf75c3100e960252c20b3645cf67
+X-Spam-Score: -1.0 (-)
+X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
+ Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
+ * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+ *  0.0 TVD_RCVD_IP TVD_RCVD_IP
+ *  0.0 FREEMAIL_FROM Sender email is commonly abused enduser mail provider
+ *      (dannybaumann[at]web.de)
+ --- Ende Textanalyse
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 08:39 PM, Hillf Danton wrote:
-> On Sat, Mar 9, 2013 at 10:14 AM, Will Huck <will.huckk@gmail.com> wrote:
->> Cc experts. Hugh, Johannes,
->>
->> On 03/04/2013 08:21 PM, Lenky Gao wrote:
->>> 2013/3/4 Zlatko Calusic <zlatko.calusic@iskon.hr>:
->>>> The drop_caches mechanism doesn't free dirty page cache pages. And your
->>>> bash
->>>> script is creating a lot of dirty pages. Run it like this and see if it
->>>> helps your case:
->>>>
->>>> sync; echo 3 > /proc/sys/vm/drop_caches
->>> Thanks for your advice.
->>>
->>> The inactive memory still cannot be reclaimed after i execute the sync
->>> command:
->>>
->>> # cat /proc/meminfo | grep Inactive\(file\);
->>> Inactive(file):   882824 kB
->>> # sync;
->>> # echo 3 > /proc/sys/vm/drop_caches
->>> # cat /proc/meminfo | grep Inactive\(file\);
->>> Inactive(file):   777664 kB
->>>
->>> I find these page becomes orphaned in this function, but do not understand
->>> why:
->>>
->>> /*
->>>    * If truncate cannot remove the fs-private metadata from the page, the
->>> page
->>>    * becomes orphaned.  It will be left on the LRU and may even be mapped
->>> into
->>>    * user pagetables if we're racing with filemap_fault().
->>>    *
->>>    * We need to bale out if page->mapping is no longer equal to the
->>> original
->>>    * mapping.  This happens a) when the VM reclaimed the page while we
->>> waited on
->>>    * its lock, b) when a concurrent invalidate_mapping_pages got there
->>> first and
->>>    * c) when tmpfs swizzles a page between a tmpfs inode and swapper_space.
->>>    */
->>> static int
->>> truncate_complete_page(struct address_space *mapping, struct page *page)
->>> {
->>> ...
->>>
->>> My file system type is ext3, mounted with the opteion data=journal and
->>> it is easy to reproduce.
->>>
-> Perhaps we have to consider page count for orphan page if it
-> could be reproduced with mainline.
+Hi,
 
-Why? /proc/sys/vm/drop_caches will call invalidate_mapping_pages() 
-instead of truncate_complete_page().
-
+ >> +static unsigned long long
+>> +acpi_video_index_to_level(struct acpi_video_device *device,
+>> +			  unsigned long long index)
+>> +{
+>> +	if (device->brightness->flags._BCL_reversed)
+>> +		index = device->brightness->count - 3 - index;
+>> +
+>> +	return device->brightness->levels[index + 2];
+>> +}
 >
-> Hillf
-> ---
-> --- a/mm/vmscan.c	Sun Mar 10 13:36:26 2013
-> +++ b/mm/vmscan.c	Thu Mar 14 20:29:40 2013
-> @@ -315,14 +315,14 @@ out:
->   	return ret;
->   }
+> What about making this function also take care of the
+> bqc_offset_aml_bug_workaround? so that this function serves more like a
+> conversion from raw value to fixed value, the function name can perhaps
+> be named as: acpi_video_fix_bqc_value, or whatever you think is more
+> appropriate.
+
+Makes sense to me. How about acpi_video_bqc_to_level? I'd suggest 
+acpi_video_bqc_value_to_level, but that makes it hard to keep the 80 
+char limit in acpi_video_device_lcd_get_level_current.
+
+>> @@ -742,9 +749,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+>>   				}
+>>   		}
+>>   	} else {
+>> -		if (br->flags._BCL_reversed)
+>> -			level_old = (br->count - 1) - level_old;
+>> -		level = br->levels[level_old];
+>> +		level = acpi_video_index_to_level(device, level_old);
 >
-> -static inline int is_page_cache_freeable(struct page *page)
-> +static inline int is_page_cache_freeable(struct page *page, int has_mapping)
->   {
->   	/*
->   	 * A freeable page cache page is referenced only by the caller
->   	 * that isolated the page, the page cache radix tree and
->   	 * optional buffer heads at page->private.
->   	 */
-> -	return page_count(page) - page_has_private(page) == 2;
-> +	return page_count(page) - page_has_private(page) == has_mapping + 1;
->   }
+> And here, that new function should be used, which also takes care of the
+> offset_aml_bug problem(though in theory, the two problems may not happen
+> on the same BIOS table).
 
-page count 2 is for page cache and isolator, why you check mapping 
-separately?
+But that new function (whatever it's named) is already used here?
 
->   static int may_write_to_queue(struct backing_dev_info *bdi,
-> @@ -393,7 +393,7 @@ static pageout_t pageout(struct page *pa
->   	 * swap_backing_dev_info is bust: it doesn't reflect the
->   	 * congestion state of the swapdevs.  Easy to fix, if needed.
->   	 */
-> -	if (!is_page_cache_freeable(page))
-> +	if (!is_page_cache_freeable(page, mapping ? 1 : 0))
->   		return PAGE_KEEP;
->   	if (!mapping) {
->   		/*
-> --
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+BTW, shouldn't the use_bios_initial_backlight also be respected for the 
+BQC-returns-index case? Currently it's only used for the 
+BQC-returns-level case.
 
+> And the acpi_video_device_lcd_get_level_current's param init can
+> probably be renamed as raw, meaning if raw value is desired or fixed
+> value, but it's not a big deal.
+
+Agreed. I'll send a new patch set (this time with signed-off-by) once I 
+get opinion on the question above.
+
+Thanks,
+
+Danny
