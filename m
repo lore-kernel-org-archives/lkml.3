@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab3COPFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:05:35 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48574 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754401Ab3COPFe (ORCPT
+	id S1754976Ab3COPMC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:12:02 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:33422 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3COPMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:05:34 -0400
-Date: Fri, 15 Mar 2013 11:05:31 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Rob Landley <rob@landley.net>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Remove text on tracepoint samples
-Message-ID: <20130315150531.GA1382@Krystal>
-References: <1363359483.1335.110.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363359483.1335.110.camel@x61.thuisdomein>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 15 Mar 2013 11:12:00 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v6 0/2] ARM: davinci: add support for dm365 vpbe display
+Date: Fri, 15 Mar 2013 20:41:41 +0530
+Message-Id: <1363360303-15521-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle (pebolle@tiscali.nl) wrote:
-> The tracepoint sample code got removed. Remove a few lines on its usage
-> too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Thanks!
+This patch series enables VPBE display driver on DM365.
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+This patch is work on on following pull request from Hans
+http://davinci-linux-open-source.1494791.n2.nabble.com/GIT-PULL-FOR-v3-10-tvp7002-davinci-blackfin-legacy-cleanups-td7582451.html
 
-> ---
->  Documentation/trace/tracepoints.txt | 15 ---------------
->  1 file changed, 15 deletions(-)
-> 
-> diff --git a/Documentation/trace/tracepoints.txt b/Documentation/trace/tracepoints.txt
-> index c0e1cee..da49437 100644
-> --- a/Documentation/trace/tracepoints.txt
-> +++ b/Documentation/trace/tracepoints.txt
-> @@ -81,7 +81,6 @@ tracepoint_synchronize_unregister() must be called before the end of
->  the module exit function to make sure there is no caller left using
->  the probe. This, and the fact that preemption is disabled around the
->  probe call, make sure that probe removal and module unload are safe.
-> -See the "Probe example" section below for a sample probe module.
->  
->  The tracepoint mechanism supports inserting multiple instances of the
->  same tracepoint, but a single definition must be made of a given
-> @@ -100,17 +99,3 @@ core kernel image or in modules.
->  If the tracepoint has to be used in kernel modules, an
->  EXPORT_TRACEPOINT_SYMBOL_GPL() or EXPORT_TRACEPOINT_SYMBOL() can be
->  used to export the defined tracepoints.
-> -
-> -* Probe / tracepoint example
-> -
-> -See the example provided in samples/tracepoints
-> -
-> -Compile them with your kernel.  They are built during 'make' (not
-> -'make modules') when CONFIG_SAMPLE_TRACEPOINTS=m.
-> -
-> -Run, as root :
-> -modprobe tracepoint-sample (insmod order is not important)
-> -modprobe tracepoint-probe-sample
-> -cat /proc/tracepoint-sample (returns an expected error)
-> -rmmod tracepoint-sample tracepoint-probe-sample
-> -dmesg
-> -- 
-> 1.7.11.7
-> 
+Changes for v6:
+1: Fixed review comments pointed by Sekhar.
+
+Changes for v5:
+1: pass different platform names to handle different ip's.
+2: Fixed review comments pointed by Sekhar.
+
+Changes for v4:
+1: Replaced the obsolete preset API by timings API.
+
+Changes for v3:
+1: Removed VPSS clock alias for master and slave which was
+   sent for VPSS driver. since this patch was dependent on
+   patch[1]. I will revist this patch once MC(captrure driver)
+   goes into mainline.
+[1] http://www.spinics.net/lists/linux-media/msg50562.html
+
+Changes for v2:
+1: Added VPSS clock so that capture and display
+   can work independent.
+
+Lad, Prabhakar (2):
+  ARM: davinci: dm365: add support for v4l2 video display
+  ARM: davinci: dm365 EVM: add support for VPBE display
+
+ arch/arm/mach-davinci/board-dm365-evm.c |  166 +++++++++++++++++++++++++-
+ arch/arm/mach-davinci/davinci.h         |    2 +-
+ arch/arm/mach-davinci/dm365.c           |  203 +++++++++++++++++++++++++++++--
+ 3 files changed, 357 insertions(+), 14 deletions(-)
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.7.4.1
+
