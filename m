@@ -1,164 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3COJE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 05:04:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65146 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab3COJD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 05:03:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="279915540"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
-        Shane Huang <shane.huang@amd.com>, Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH RESEND v11 1/4] block: add a flag to identify PM request
-Date: Fri, 15 Mar 2013 17:05:02 +0800
-Message-Id: <1363338305-4987-2-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1363338305-4987-1-git-send-email-aaron.lu@intel.com>
-References: <1363338305-4987-1-git-send-email-aaron.lu@intel.com>
+	id S1754003Ab3COJGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 05:06:08 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:50466 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab3COJGG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 05:06:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ip4tf7d7.fsf@intel.com>
+References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
+	<20130219100849.72d2330b@jbarnes-desktop>
+	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
+	<20130219125217.6b6f55ff@jbarnes-desktop>
+	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
+	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
+	<CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
+	<CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
+	<CANeU7Q=K4Adu3yokT182ZaG3hW04bhDiXhyZgjngd7Nn+JD3aQ@mail.gmail.com>
+	<CANeU7QmMYERbg9fCnyGuDcEdzwfErNT4B_7YbAD7w243hWdaQQ@mail.gmail.com>
+	<CANeU7Q=hbU89zfcrP15ZAqMYaZPhQzM4f7i71txQDmESt0J36w@mail.gmail.com>
+	<CANeU7Q=ge+z=uzpWdvXbfpZ0vaA0C0bnZcPBad5zKGyj1DmLAA@mail.gmail.com>
+	<CAKMK7uGGN6ikKr4KvaJJ7iLPgK2KwE5RsgUn=WqTtvU-ryM5nQ@mail.gmail.com>
+	<CAKMK7uEc5R8WrdDaQWQPG-0L+uEFc_5idkvwKm2vvLDeOGQ3tA@mail.gmail.com>
+	<CANeU7Q=rbfDXULOsMqVkGCOny5aECwqNjEwyab37pPhHfVBa4w@mail.gmail.com>
+	<CANeU7Q=_+qt5C3G2uKhQYq_hh9kOg5c8=uAvjQzRwvx_xOe2hA@mail.gmail.com>
+	<87txoit6uf.fsf@intel.com>
+	<CANeU7QmoW7EcmfPgzFqvo6UVjZnaYGp6UiB_4HP238v2SGhMRg@mail.gmail.com>
+	<CANeU7QmJx=3m94ut0SYGEes4-C9khTMWbpee1u0rD4-esUpV=Q@mail.gmail.com>
+	<87ip4tf7d7.fsf@intel.com>
+Date: Fri, 15 Mar 2013 02:06:02 -0700
+X-Google-Sender-Auth: COjCZCvXBk9CuOZFNJRQcHH34ZA
+Message-ID: <CANeU7Qmk8JqCZzMh2Vdmydpm=9Bxi+x=HmRbXxX4CTz1H_PX=g@mail.gmail.com>
+Subject: Re: [Intel-gfx] i915 black screen introduced by ACPI changes
+From: Chris Li <lkml@chrisli.org>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, len.brown@intel.com,
+        feng.tang@intel.com, intel-gfx <intel-gfx@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, robert.moore@intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+On Fri, Mar 15, 2013 at 12:29 AM, Jani Nikula
+<jani.nikula@linux.intel.com> wrote:
+> I've never used the acpi_osi= kernel parameter, but it looks like you
+> could workaround this with acpi_osi="!Windows 2012". Please check that
+> running the "bad" kernel.
 
-Add a flag REQ_PM to identify the request is PM related, such requests
-will not change the device request queue's runtime status. It is
-intended to be used in driver's runtime PM callback, so that driver can
-perform some IO to the device there with the queue's runtime status
-unaffected. e.g. in SCSI disk's runtime suspend callback, the disk will
-be put into stopped power state, and this require sending a command to
-the device. Such command processing should not change the disk's runtime
-status.
+That did not work for me. Still have black screen on the tip of git.
+I did that to the gurb2-efi.cfg
+Here is my kernel cmdline:
 
-As an example, modify scsi code to use this flag.
+$ cat /proc/cmdline
+BOOT_IMAGE=/vmlinuz-3.9.0-rc2+
+root=UUID=75d90f06-bcdc-40c0-a3a3-7edf9af38d41 ro rd.md=0 rd.lvm=0
+rd.dm=0 rd.luks=0 vconsole.keymap=us LANG=en_US.UTF-8 drm.debug=0xe
+"acpi_osi=!Windows\x202012"
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/scsi/scsi_lib.c    |  9 ++++-----
- drivers/scsi/sd.c          |  9 +++++----
- include/linux/blk_types.h  |  2 ++
- include/scsi/scsi_device.h | 16 ++++++++++++----
- 4 files changed, 23 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 765398c..23f795f 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -271,11 +271,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
- }
- EXPORT_SYMBOL(scsi_execute);
- 
--
--int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
-+int scsi_execute_req_flags(struct scsi_device *sdev, const unsigned char *cmd,
- 		     int data_direction, void *buffer, unsigned bufflen,
- 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
--		     int *resid)
-+		     int *resid, int flags)
- {
- 	char *sense = NULL;
- 	int result;
-@@ -286,14 +285,14 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
- 			return DRIVER_ERROR << 24;
- 	}
- 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
--			      sense, timeout, retries, 0, resid);
-+			      sense, timeout, retries, flags, resid);
- 	if (sshdr)
- 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
- 
- 	kfree(sense);
- 	return result;
- }
--EXPORT_SYMBOL(scsi_execute_req);
-+EXPORT_SYMBOL(scsi_execute_req_flags);
- 
- /*
-  * Function:    scsi_init_cmd_errh()
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 7992635..c6e2b34 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1424,8 +1424,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 		 * Leave the rest of the command zero to indicate
- 		 * flush everything.
- 		 */
--		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
--				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
-+		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
-+					     &sshdr, SD_FLUSH_TIMEOUT,
-+					     SD_MAX_RETRIES, NULL, REQ_PM);
- 		if (res == 0)
- 			break;
- 	}
-@@ -3021,8 +3022,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
- 	if (!scsi_device_online(sdp))
- 		return -ENODEV;
- 
--	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
--			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
-+	res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
-+			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
- 	if (res) {
- 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
- 		sd_print_result(sdkp, res);
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index cdf1119..fcc1ce2 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -175,6 +175,7 @@ enum rq_flag_bits {
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
- 	__REQ_KERNEL, 		/* direct IO to kernel pages */
-+	__REQ_PM,		/* runtime pm request */
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
-@@ -223,5 +224,6 @@ enum rq_flag_bits {
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
- #define REQ_KERNEL		(1 << __REQ_KERNEL)
-+#define REQ_PM			(1 << __REQ_PM)
- 
- #endif /* __LINUX_BLK_TYPES_H */
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index a7f9cba..cc64587 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -394,10 +394,18 @@ extern int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
- 			int data_direction, void *buffer, unsigned bufflen,
- 			unsigned char *sense, int timeout, int retries,
- 			int flag, int *resid);
--extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
--			    int data_direction, void *buffer, unsigned bufflen,
--			    struct scsi_sense_hdr *, int timeout, int retries,
--			    int *resid);
-+extern int scsi_execute_req_flags(struct scsi_device *sdev,
-+	const unsigned char *cmd, int data_direction, void *buffer,
-+	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
-+	int retries, int *resid, int flags);
-+static inline int scsi_execute_req(struct scsi_device *sdev,
-+	const unsigned char *cmd, int data_direction, void *buffer,
-+	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
-+	int retries, int *resid)
-+{
-+	return scsi_execute_req_flags(sdev, cmd, data_direction, buffer,
-+		bufflen, sshdr, timeout, retries, resid, 0);
-+}
- extern void sdev_disable_disk_events(struct scsi_device *sdev);
- extern void sdev_enable_disk_events(struct scsi_device *sdev);
- 
--- 
-1.8.1.4
-
+Chris
