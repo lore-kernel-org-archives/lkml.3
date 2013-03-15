@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3CONWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:22:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13226 "EHLO mga03.intel.com"
+	id S1755247Ab3CONXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:23:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1119 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab3CONWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:22:20 -0400
+	id S1754173Ab3CONXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:23:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="271309413"
+   d="scan'208";a="303416350"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Hillf Danton <dhillf@gmail.com>
 Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
@@ -21,15 +21,15 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Matthew Wilcox <matthew.r.wilcox@intel.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBDWGNUvjPBiOmYDOfwbf8ZvyoMDdZn8uhcN0xTNbgKYfA@mail.gmail.com>
+In-Reply-To: <CAJd=RBCHLigJBWiBt==wjjm7HA3CYSSyS6odKy0BgoudVxN80g@mail.gmail.com>
 References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-10-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBDWGNUvjPBiOmYDOfwbf8ZvyoMDdZn8uhcN0xTNbgKYfA@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 09/30] thp, mm: rewrite delete_from_page_cache() to
- support huge pages
+ <1363283435-7666-14-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAJd=RBCHLigJBWiBt==wjjm7HA3CYSSyS6odKy0BgoudVxN80g@mail.gmail.com>
+Subject: Re: [PATCHv2, RFC 13/30] thp, mm: implement
+ grab_cache_huge_page_write_begin()
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130315132359.19AB9E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 15:23:59 +0200 (EET)
+Message-Id: <20130315132440.C4DF8E0085@blue.fi.intel.com>
+Date: Fri, 15 Mar 2013 15:24:40 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,22 +37,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hillf Danton wrote:
 > On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
 > <kirill.shutemov@linux.intel.com> wrote:
-> > +       if (PageTransHuge(page)) {
-> > +               int i;
-> > +
-> > +               for (i = 0; i < HPAGE_CACHE_NR; i++)
-> > +                       radix_tree_delete(&mapping->page_tree, page->index + i);
-> 
-> Move the below page_cache_release for tail page here, please.
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +struct page *grab_cache_huge_page_write_begin(struct address_space *mapping,
+> > +                       pgoff_t index, unsigned flags);
+> > +#else
+> > +static inline struct page *grab_cache_huge_page_write_begin(
+> > +               struct address_space *mapping, pgoff_t index, unsigned flags)
+> > +{
+> build bug?
 
-Okay. Thanks.
+Hm?. No. Why?
 
-> > +               nr = HPAGE_CACHE_NR;
-> [...]
-> > +       if (PageTransHuge(page))
-> > +               for (i = 1; i < HPAGE_CACHE_NR; i++)
-> > +                       page_cache_release(page + i);
-> >         page_cache_release(page);
+> > +       return NULL;
+> > +}
+> > +#endif
+> >
+> btw, how about grab_thp_write_begin?
+
+Sounds better, thanks.
 
 -- 
  Kirill A. Shutemov
