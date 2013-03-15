@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3COFFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 01:05:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:59204 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab3COFFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 01:05:41 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Aurelien Jarno <aurelien@aurel32.net>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] hw_random: free rng_buffer at module exit
-In-Reply-To: <87k3pagllu.wl%satoru.takeuchi@gmail.com>
-References: <20130312223211.492954675@linuxfoundation.org> <20130312223212.790278686@linuxfoundation.org> <874ngeykp6.wl%satoru.takeuchi@gmail.com> <87txoetre6.fsf@rustcorp.com.au> <87k3pagllu.wl%satoru.takeuchi@gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 15 Mar 2013 15:35:07 +1030
-Message-ID: <87d2v1tfr0.fsf@rustcorp.com.au>
+	id S1752030Ab3COFJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 01:09:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38522 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3COFJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 01:09:13 -0400
+Message-ID: <5142ACEA.4060305@ti.com>
+Date: Fri, 15 Mar 2013 10:38:58 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: Re: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
+References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com> <1363257453-24747-3-git-send-email-avinashphilip@ti.com> <5141CA40.9010005@ti.com> <518397C60809E147AF5323E0420B992E3EA97355@DBDE01.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EA97355@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
-> At Thu, 14 Mar 2013 17:11:21 +1030,
-> Rusty Russell wrote:
->> 
->> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
->> > Hi Rusty,
->> >
->> > At Tue, 12 Mar 2013 15:43:33 -0700,
->> > Greg Kroah-Hartman wrote:
->> >> @@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
->> >>  
->> >>  	mutex_lock(&rng_mutex);
->> >>  
->> >> +	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
->> >> +	err = -ENOMEM;
->> >> +	if (!rng_buffer) {
->> >> +		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
->> >
->> > rng_buffer is now kmalloc-ed, but not kfree-ed. Shoudn't it be kfree-ed
->> > at hwrng_unregister()? If my suspect is correct, the same problem is
->> > in 3.8.3-rc1 and 3.0.69-rc1. I'm OK to make a patch, but it'll be after
->> > some hours.
->> >
->> > Corecct me if I'm wrong.
->> 
->> Yes, it would be nice to free it, but it really makes sense to free it
->> in module_cleanup() (which would have to be written, as the module
->> currently doesn't have one).
->> 
->> Cheers,
->> Rusty.
->
-> From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
->
-> rng-core module allocates rng_buffer by kmalloc() since commit
-> f7f154f1246ccc5a0a7e9ce50932627d60a0c878. But this buffer won't be
-> freed and there is a memory leak possibility at module exit.
->
-> Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Aurelien Jarno <aurelien@aurel32.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: stable@vger.kernel.org
+On 3/15/2013 10:27 AM, Philip, Avinash wrote:
+> On Thu, Mar 14, 2013 at 18:31:52, Nori, Sekhar wrote:
+>> On 3/14/2013 4:07 PM, Philip Avinash wrote:
+>>> da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
+>>> TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
+>>> DT node status is set to "okay" DT blob.
+>>> Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
+>>> DA8XX_CFGCHIP1_REG.
+>>
+>> So there is actually a TBCLK in DA850 - it's just not modeled as a clock
+>> similar to the way it is done on AM335x? If yes, then instead of adding
+>> a dummy clock node and doing the TBCLK enable as part of init, why not
+>> model TBCLK in clock tree even on DA850?
+> 
+> 
+> TBCLK enabling should done from platform specific way. In DA850 it is done at
+> CFGCHIP1 register. Unfortunately Davinci clock frame work will support only
+> clock nodes inside PLLC and PSC modules. Handling of CFGCHP1 require
 
-Cc: stable might be overkill, but I've tested it and put it in my patch
-queue, and will push it to Linus once it's survived linux-next.
+That's true at the moment, but that can be fixed.
+
+> modifications in clock frame work.
+> 
+> Hence handling it as part of initialization.
+
+I am curious as to how this clock is handled in am335x. I searched for
+tbclk in arch/arm/ of linux-next but could not find any references.
+Where should I be looking?
 
 Thanks,
-Rusty.
+Sekhar
