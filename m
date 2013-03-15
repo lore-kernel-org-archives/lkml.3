@@ -1,261 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3COJXC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 05:23:02 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39928 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab3COJXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 05:23:00 -0400
-Message-ID: <5142E86C.90805@ti.com>
-Date: Fri, 15 Mar 2013 11:22:52 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754093Ab3COJY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 05:24:59 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:46348 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab3COJYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 05:24:55 -0400
+Date: Fri, 15 Mar 2013 10:24:01 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] TTY: fix DTR being raised on hang up
+Message-ID: <20130315092401.GB28843@localhost>
+References: <51361724.4050107@suse.cz>
+ <1362668153-10972-1-git-send-email-jhovold@gmail.com>
+ <1362668153-10972-4-git-send-email-jhovold@gmail.com>
+ <1363203823.25976.102.camel@thor.lan>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <balbi@ti.com>, <b-cousson@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 00/24] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
-References: <1363088606-2692-1-git-send-email-rogerq@ti.com> <20130312164007.GZ26093@atomide.com> <5140821B.2030902@ti.com> <20130313162454.GE26093@atomide.com> <5140AAFD.4080508@ti.com> <20130313165729.GF26093@atomide.com> <5141EFAE.2040809@ti.com> <20130314165440.GG26093@atomide.com>
-In-Reply-To: <20130314165440.GG26093@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363203823.25976.102.camel@thor.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 06:54 PM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [130314 08:45]:
->>
->> OK. Let me know how the below patch looks. After that, the board code
->> will look like.
->>
->> static struct usbhs_phy_data phy_data[] = {
->> 	{
->> 		.reset_gpio = 147,
->> 		.vcc_gpio = 148
->> 		.vcc_polarity = 1,
->> 		.phy_id = "nop_usb_xceiv.2",
->> 	},
->> 	{}, /* Terminator */
->> };
->>
->> usbhs_init_phys(phy_data);
+On Wed, Mar 13, 2013 at 03:43:43PM -0400, Peter Hurley wrote:
+> On Thu, 2013-03-07 at 15:55 +0100, Johan Hovold wrote:
+> > Make sure to check ASYNC_INITIALISED before raising DTR when waking up
+> > from blocked open in tty_port_block_til_ready.
+> > 
+> > Currently DTR could get raised at hang up as a blocked process would
+> > raise DTR unconditionally before checking for hang up and returning.
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > ---
+> >  drivers/tty/tty_port.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+> > index 3de5918..52f1066 100644
+> > --- a/drivers/tty/tty_port.c
+> > +++ b/drivers/tty/tty_port.c
+> > @@ -355,7 +355,7 @@ int tty_port_block_til_ready(struct tty_port *port,
+> >  
+> >  	while (1) {
+> >  		/* Indicate we are open */
+> > -		if (tty->termios.c_cflag & CBAUD)
+> > +		if (C_BAUD(tty) && test_bit(ASYNCB_INITIALIZED, &port->flags))
+> >  			tty_port_raise_dtr_rts(port);
+> >  
+> >  		prepare_to_wait(&port->open_wait, &wait, TASK_INTERRUPTIBLE);
 > 
-> Great, looks good to me.
->  
->> Patch to implement usbhs_init_phys();
->>
->> diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
->> index 5706bdc..b9d6bff 100644
->> --- a/arch/arm/mach-omap2/usb-host.c
->> +++ b/arch/arm/mach-omap2/usb-host.c
->> @@ -22,8 +22,12 @@
->>  #include <linux/platform_device.h>
->>  #include <linux/slab.h>
->>  #include <linux/dma-mapping.h>
->> +#include <linux/regulator/machine.h>
->> +#include <linux/regulator/fixed.h>
->> +#include <linux/string.h>
->>  
->>  #include <asm/io.h>
->> +#include <asm/gpio.h>
+> This is ok, but there are 6 other *_block_til_ready() functions:
+
+Yes, but that's not really a comment on this patch, is it?
+
+The purpose of this series is to fix the tty-port implementation, and
+I've only touched individual drivers when I had to in order not to break
+anything due to changed assumptions.
+
+There's a ton of buggy and odd behaviour to be found once you start
+turning the stones. Drivers like the ones below really ought to be
+using tty ports and it's helpers.
+
+Thanks,
+Johan
+
+> This one doesn't use DTR/RTS so can be ignored:
+> ./drivers/staging/sb105x/sb_pci_mp.c:static int mp_block_til_ready(struct file *filp, struct sb_uart_state *state)
 > 
-> Please change these both to linux/io.h and linux/gpio.h.
-
-OK.
-
->   
->>  #include "soc.h"
->>  #include "omap_device.h"
->> @@ -472,6 +476,141 @@ void __init setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
->>  	}
->>  }
->>  
->> +static const char *reset_supply = "reset";
->> +static const char *vcc_supply = "vcc";
->> +
->> +/* Template for PHY regulators */
->> +static struct regulator_consumer_supply hsusb_reg_supplies[] = {
->> +	{ /* .supply & .dev_name filled later */ },
->> +};
->> +
->> +static struct regulator_init_data hsusb_reg_data = {
->> +	.constraints = {
->> +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
->> +	},
->> +	.consumer_supplies	= hsusb_reg_supplies,
->> +	.num_consumer_supplies	= ARRAY_SIZE(hsusb_reg_supplies),
->> +};
->> +
->> +static struct fixed_voltage_config hsusb_reg_config = {
->> +	/* .supply_name filled later */
->> +	.microvolts = 3300000,
->> +	.gpio = -1,		/* updated later */
->> +	.startup_delay = 70000, /* 70msec */
->> +	.enable_high = 1,	/* updated later */
->> +	.enabled_at_boot = 0,	/* keep in RESET */
->> +	/* .init_data filled later */
->> +};
->> +
->> +static struct platform_device_info hsusb_reg_pdev_info = {
->> +	.name	= "reg-fixed-voltage",
->> +	.id	= PLATFORM_DEVID_AUTO,
->> +};
->> +
->> +int __init usbhs_init_phys(struct usbhs_phy_data *phy)
->> +{
->> +	struct regulator_consumer_supply *supplies;
->> +	struct regulator_init_data *reg_data;
->> +	struct fixed_voltage_config *config;
->> +	char *supply_name;
->> +	int i;
->> +
->> +
->> +	for (i = 1; i <= OMAP3_HS_USB_PORTS; i++) {
+> This one is so scary you should probably leave it alone:
+> ./drivers/tty/serial/crisv10.c:block_til_ready(struct tty_struct *tty, struct file * filp,
 > 
-> Maybe pass the number of ports to initialize too to the
-> function? Might be more future proof, although it will only
-> be needed until we have converted to DT.
-> 
+> These will need the same change (although be careful: some use
+> ASYNC_INITIALIZED rather than ASYNCB_INITIALIZED).
+> ./drivers/tty/synclinkmp.c:static int block_til_ready(struct tty_struct *tty, struct file *filp,
+> ./drivers/tty/synclink_gt.c:static int block_til_ready(struct tty_struct *tty, struct file *filp,
+> ./drivers/tty/synclink.c:static int block_til_ready(struct tty_struct *tty, struct file * filp,
+> ./net/irda/ircomm/ircomm_tty.c:static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
 
-OK. I'll add a port index parameter to the usbhs_phy_data structure
-to indicate which port the data belongs to and a number of ports
-to usbhs_init_phys()
-
-board code can then do
-
-static struct usbhs_phy_data phy_data[] = {
-	{
-		.port = 1,	/* First USB port */
-		.reset_gpio = 147,
-		.vcc_gpio = 148
-		.vcc_polarity = 1,
-		.phy_id = "nop_usb_xceiv.2",
-	},
-};
-
-usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
-
->> +
->> +		if (!phy->phy_id)	/* Terminator ? */
->> +			break;
->> +
->> +		if (!gpio_is_valid(phy->reset_gpio))
->> +			goto check_vcc;
->> +
->> +		supplies = kmemdup(hsusb_reg_supplies,
->> +			    ARRAY_SIZE(hsusb_reg_supplies) *
->> +			    sizeof(struct regulator_consumer_supply),
->> +			    GFP_KERNEL);
->> +		if (!supplies)
->> +			return -ENOMEM;
->> +
->> +		supplies->supply = reset_supply;
->> +		supplies->dev_name = phy->phy_id;
->> +
->> +		reg_data = kmemdup(&hsusb_reg_data, sizeof(hsusb_reg_data),
->> +							GFP_KERNEL);
->> +		if (!reg_data)
->> +			return -ENOMEM;
->> +
->> +		reg_data->consumer_supplies = supplies;
->> +
->> +		config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
->> +							GFP_KERNEL);
->> +		if (!config)
->> +			return -ENOMEM;
->> +
->> +		supply_name = kmalloc(14, GFP_KERNEL);
->> +		if (!supply_name)
->> +			return -ENOMEM;
->> +
->> +		scnprintf(supply_name, 13, "hsusb%d_reset", i);
->> +		config->supply_name = supply_name;
->> +		config->gpio = phy->reset_gpio;
->> +		config->init_data = reg_data;
->> +
->> +		hsusb_reg_pdev_info.data = config;
->> +		hsusb_reg_pdev_info.size_data = sizeof(hsusb_reg_config);
->> +		platform_device_register_full(&hsusb_reg_pdev_info);
->> +
->> +check_vcc:
->> +		if (!gpio_is_valid(phy->vcc_gpio))
->> +			goto next;
->> +
->> +		supplies = kmemdup(hsusb_reg_supplies,
->> +			    ARRAY_SIZE(hsusb_reg_supplies) *
->> +			    sizeof(struct regulator_consumer_supply),
->> +			    GFP_KERNEL);
->> +		if (!supplies)
->> +			return -ENOMEM;
->> +
->> +		supplies->supply = vcc_supply;
->> +		supplies->dev_name = phy->phy_id;
->> +
->> +		reg_data = kmemdup(&hsusb_reg_data, sizeof(hsusb_reg_data),
->> +							GFP_KERNEL);
->> +		if (!reg_data)
->> +			return -ENOMEM;
->> +
->> +		reg_data->consumer_supplies = supplies;
->> +
->> +		config = kmemdup(&hsusb_reg_config, sizeof(hsusb_reg_config),
->> +							GFP_KERNEL);
->> +		if (!config)
->> +			return -ENOMEM;
->> +
->> +		supply_name = kmalloc(14, GFP_KERNEL);
->> +		if (!supply_name)
->> +			return -ENOMEM;
->> +
->> +		scnprintf(supply_name, 13, "hsusb%d_vcc", i);
->> +		config->supply_name = supply_name;
->> +		config->gpio = phy->vcc_gpio;
->> +		config->enable_high = phy->vcc_polarity;
->> +		config->init_data = reg_data;
->> +
->> +		hsusb_reg_pdev_info.data = config;
->> +		hsusb_reg_pdev_info.size_data = sizeof(hsusb_reg_config);
->> +		platform_device_register_full(&hsusb_reg_pdev_info);
->> +
->> +next:
->> +		phy++;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->>  void __init usbhs_init(struct usbhs_omap_platform_data *pdata)
->>  {
->>  	struct omap_hwmod	*uhh_hwm, *tll_hwm;
->> diff --git a/arch/arm/mach-omap2/usb.h b/arch/arm/mach-omap2/usb.h
->> index 3319f5c..70a8c63 100644
->> --- a/arch/arm/mach-omap2/usb.h
->> +++ b/arch/arm/mach-omap2/usb.h
->> @@ -53,8 +53,16 @@
->>  #define USBPHY_OTGSESSEND_EN	(1 << 20)
->>  #define USBPHY_DATA_POLARITY	(1 << 23)
->>  
->> +struct usbhs_phy_data {
->> +	int reset_gpio;
->> +	int vcc_gpio;
->> +	bool vcc_polarity;	/* 1 active high, 0 active low */
->> +	char *phy_id;
->> +};
->> +
->>  extern void usb_musb_init(struct omap_musb_board_data *board_data);
->>  extern void usbhs_init(struct usbhs_omap_platform_data *pdata);
->> +extern int usbhs_init_phys(struct usbhs_phy_data *phy);
-> 
-> Maybe need a static inline version when no EHCI is selected?
-> 
-Yes.
-
-> Otherwise looks good to me, thanks for updating it.
-> 
-
-Cool. I'll update all boards and send it to you soon.
-
-cheers,
--roger
