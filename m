@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3COHba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 03:31:30 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:52722 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab3COHb2 (ORCPT
+	id S1753271Ab3COHiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 03:38:24 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:64666 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab3COHiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 03:31:28 -0400
+	Fri, 15 Mar 2013 03:38:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363283435-7666-25-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1363283435-7666-25-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Fri, 15 Mar 2013 15:31:27 +0800
-Message-ID: <CAJd=RBD_PDGqLyhcnwwj2UsOxu0dE5B1UAhmRM-esL_mwa-dhw@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 24/30] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <5142ABD3.4040106@gmail.com>
+References: <20130307052854.GA23745@redhat.com>
+	<20130307060230.GA31738@kroah.com>
+	<20130307062626.GA25095@redhat.com>
+	<51429D7A.30906@gmail.com>
+	<5142ABD3.4040106@gmail.com>
+Date: Fri, 15 Mar 2013 15:38:22 +0800
+Message-ID: <CACVXFVOZ=3WwnTPbi66Crgg1azqHMMYiRQ9YcEgrh_e65MLH1Q@mail.gmail.com>
+Subject: Re: use after free in sysfs_find_dirent
+From: Ming Lei <tom.leiming@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> It's confusing that mk_huge_pmd() has sematics different from mk_pte()
-> or mk_pmd().
->
-> Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
-> prototype to match mk_pte().
->
-No urgent if not used subsequently.
+Hi,
 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/huge_memory.c |   14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
+On Fri, Mar 15, 2013 at 1:04 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On 03/15/2013 12:03 AM, Sasha Levin wrote:
+>>
+>> [  350.140100] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> [  350.141468] Dumping ftrace buffer:
+>> [  350.142048]    (ftrace buffer empty)
+>> [  350.142619] Modules linked in:
+>> [  350.143128] CPU 0
+>> [  350.143434] Pid: 25064, comm: trinity-child14 Tainted: G        W    3.9.0-rc2-next-20130314-sasha-00046-g3897511 #295
+>> [  350.145415] RIP: 0010:[<ffffffff819ebfb3>]  [<ffffffff819ebfb3>] rb_next+0x23/0x60
+>> [  350.146680] RSP: 0018:ffff88007b9dde48  EFLAGS: 00010202
+>> [  350.147528] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800b8524b70 RCX: ffff8800b8524b70
+>> [  350.148738] RDX: 6b6b6b6b6b6b6b6b RSI: ffff8800b63b96e0 RDI: ffff8800b8524bb8
+>> [  350.149939] RBP: ffff88007b9dde48 R08: 2222222222222222 R09: 2222222222222222
+>> [  350.150035] R10: 2222222222222222 R11: 0000000000000000 R12: ffff88008c5cb180
+>> [  350.150035] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000010
+>> [  350.150035] FS:  00007fec4eae2700(0000) GS:ffff8800bb800000(0000) knlGS:0000000000000000
+>> [  350.150035] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [  350.150035] CR2: 0000000000000001 CR3: 000000007c32d000 CR4: 00000000000406f0
+>> [  350.150035] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [  350.150035] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [  350.150035] Process trinity-child14 (pid: 25064, threadinfo ffff88007b9dc000, task ffff880096413000)
+>> [  350.150035] Stack:
+>> [  350.150035]  ffff88007b9ddeb8 ffffffff812fa959 2222222222222222 2222222200000008
+>> [  350.150035]  000000000000293e ffffffff8128cca0 ffff88007b9ddf28 ffff8800b63b96e0
+>> [  350.150035]  ffff8800a14e9b78 ffff88008c5cb180 ffff88007b9ddf28 ffffffff8128cca0
+>> [  350.150035] Call Trace:
+>> [  350.150035]  [<ffffffff812fa959>] sysfs_readdir+0x219/0x280
+>> [  350.150035]  [<ffffffff8128cca0>] ? filldir+0x100/0x100
+>> [  350.150035]  [<ffffffff8128cca0>] ? filldir+0x100/0x100
+>> [  350.150035]  [<ffffffff8128cf18>] vfs_readdir+0x78/0xc0
+>> [  350.150035]  [<ffffffff8117ad3d>] ? trace_hardirqs_on+0xd/0x10
+>> [  350.150035]  [<ffffffff8128d190>] SyS_getdents64+0x90/0x120
+>> [  350.150035]  [<ffffffff83d946d8>] tracesys+0xe1/0xe6
+>> [  350.150035] Code: 85 d2 75 f4 5d c3 66 90 55 31 c0 48 8b 17 48 89 e5 48 39 d7 74 4a 48 8b 47 08 48 85 c0 75 0c eb 17 0f 1f 80
+>> 00 00 00 00 48 89 d0 <48> 8b 50 10 48 85 d2 75 f4 eb 2a 66 90 48 89 d1 48 83 e1 fc 74
+>> [  350.150035] RIP  [<ffffffff819ebfb3>] rb_next+0x23/0x60
+>> [  350.150035]  RSP <ffff88007b9dde48>
+>> [  350.179705] ---[ end trace a39f58a515b594d5 ]---
 >
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 34e0385..be7b7e1 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -691,11 +691,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
->         return pmd;
->  }
->
-> -static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
-> +static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
->  {
->         pmd_t entry;
-> -       entry = mk_pmd(page, vma->vm_page_prot);
-> -       entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-> +       entry = mk_pmd(page, prot);
->         entry = pmd_mkhuge(entry);
->         return entry;
->  }
-> @@ -723,7 +722,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
->                 pte_free(mm, pgtable);
->         } else {
->                 pmd_t entry;
-> -               entry = mk_huge_pmd(page, vma);
-> +               entry = mk_huge_pmd(page, vma->vm_page_prot);
-> +               entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
->                 /*
->                  * The spinlocking to take the lru_lock inside
->                  * page_add_new_anon_rmap() acts as a full memory
-> @@ -1212,7 +1212,8 @@ alloc:
->                 goto out_mn;
->         } else {
->                 pmd_t entry;
-> -               entry = mk_huge_pmd(new_page, vma);
-> +               entry = mk_huge_pmd(new_page, vma->vm_page_prot);
-> +               entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
->                 pmdp_clear_flush(vma, haddr, pmd);
->                 page_add_new_anon_rmap(new_page, vma, haddr);
->                 set_pmd_at(mm, haddr, pmd, entry);
-> @@ -2382,7 +2383,8 @@ static void collapse_huge_page(struct mm_struct *mm,
->         __SetPageUptodate(new_page);
->         pgtable = pmd_pgtable(_pmd);
->
-> -       _pmd = mk_huge_pmd(new_page, vma);
-> +       _pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
-> +       _pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
->
->         /*
->          * spin_lock() below is not the equivalent of smp_wmb(), so
-> --
-> 1.7.10.4
->
+> And on the bright side, unlike in Dave's case, similar issues reproduce rather easily
+> over here:
+
+Could you share how to reproduce that easily?
+
+Thanks,
+-- 
+Ming Lei
