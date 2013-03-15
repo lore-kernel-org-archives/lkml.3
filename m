@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3CONnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:43:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47270 "EHLO mga02.intel.com"
+	id S1755016Ab3CONoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:44:39 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:34593 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754326Ab3CONnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:43:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="302745465"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBAEOF7qx1=6vUAA7wYKq6i8efz=Mr9BvUHGxgEE4c6rvg@mail.gmail.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-20-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBD2jWsMOjwXenbHu_Y3-jRm+=XR+h44Tw4KRKEb79ptqg@mail.gmail.com>
- <20130315132911.63716E0085@blue.fi.intel.com>
- <CAJd=RBAEOF7qx1=6vUAA7wYKq6i8efz=Mr9BvUHGxgEE4c6rvg@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 19/30] thp, mm: split huge page on mmap file page
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130315134528.8BD83E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 15:45:28 +0200 (EET)
+	id S1754529Ab3CONoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:44:37 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Robert Richter <rric@kernel.org>, <oprofile-list@lists.sf.net>
+Subject: [PATCH 8/9] metag: perf: prepare for use by oprofile
+Date: Fri, 15 Mar 2013 13:43:47 +0000
+Message-ID: <1363355028-23278-9-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363355028-23278-1-git-send-email-james.hogan@imgtec.com>
+References: <1363355028-23278-1-git-send-email-james.hogan@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_03_15_13_44_35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Fri, Mar 15, 2013 at 9:29 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Hillf Danton wrote:
-> >> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
-> >> <kirill.shutemov@linux.intel.com> wrote:
-> >> >
-> >> > We are not ready to mmap file-backed tranparent huge pages.
-> >> >
-> >> It is not on todo list either.
-> >
-> > Actually, following patches implement mmap for file-backed thp and this
-> > split_huge_page() will catch only fallback cases.
-> >
-> I wonder if the effort we pay for THP cache is nuked by mmap.
+To allow our perf_events code to work with oprofile the PERF_TYPE_RAW
+event type attribute is implemented, which allows the internal encoding
+of events to be used externally (this requires some tweaks so that it
+handles invalid event types more gracefully), and perf_pmu_name() is
+adjusted to return metag_pmu->name instead of metag_pmu->pmu.name (which
+is changed to "meta2").
 
-I will not be nuked after patch 30/30.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Robert Richter <rric@kernel.org>
+Cc: oprofile-list@lists.sf.net
+---
+ arch/metag/kernel/perf/perf_event.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-Actually, it will be splited only if process tries to map hugepage with
-unsuitable alignment.
-
+diff --git a/arch/metag/kernel/perf/perf_event.c b/arch/metag/kernel/perf/perf_event.c
+index a1eff36..3665694 100644
+--- a/arch/metag/kernel/perf/perf_event.c
++++ b/arch/metag/kernel/perf/perf_event.c
+@@ -40,10 +40,10 @@ static DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+ /* PMU admin */
+ const char *perf_pmu_name(void)
+ {
+-	if (metag_pmu)
+-		return metag_pmu->pmu.name;
++	if (!metag_pmu)
++		return NULL;
+ 
+-	return NULL;
++	return metag_pmu->name;
+ }
+ EXPORT_SYMBOL_GPL(perf_pmu_name);
+ 
+@@ -171,6 +171,7 @@ static int metag_pmu_event_init(struct perf_event *event)
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_HARDWARE:
+ 	case PERF_TYPE_HW_CACHE:
++	case PERF_TYPE_RAW:
+ 		err = _hw_perf_event_init(event);
+ 		break;
+ 
+@@ -556,6 +557,10 @@ static int _hw_perf_event_init(struct perf_event *event)
+ 		if (err)
+ 			return err;
+ 		break;
++
++	case PERF_TYPE_RAW:
++		mapping = attr->config;
++		break;
+ 	}
+ 
+ 	/* Return early if the event is unsupported */
+@@ -623,7 +628,7 @@ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
+ 
+ 	/* Check for a core internal or performance channel event. */
+ 	if (tmp) {
+-		void *perf_addr = (void *)PERF_COUNT(idx);
++		void *perf_addr;
+ 
+ 		/*
+ 		 * Anything other than a cycle count will write the low-
+@@ -637,9 +642,14 @@ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
+ 		case 0xf0:
+ 			perf_addr = (void *)PERF_CHAN(idx);
+ 			break;
++
++		default:
++			perf_addr = NULL;
++			break;
+ 		}
+ 
+-		metag_out32((config & 0x0f), perf_addr);
++		if (perf_addr)
++			metag_out32((config & 0x0f), perf_addr);
+ 
+ 		/*
+ 		 * Now we use the high nibble as the performance event to
+@@ -848,7 +858,7 @@ static int __init init_hw_perf_events(void)
+ 			metag_pmu->max_period = 0;
+ 		}
+ 
+-		metag_pmu->name = "Meta 2";
++		metag_pmu->name = "meta2";
+ 		metag_pmu->version = version;
+ 		metag_pmu->pmu = pmu;
+ 	}
 -- 
- Kirill A. Shutemov
+1.8.1.2
+
+
