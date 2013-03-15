@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab3COTxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:53:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27573 "EHLO
+	id S932304Ab3COTxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:53:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18130 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab3COTv1 (ORCPT
+	with ESMTP id S1755413Ab3COTv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 15:51:27 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LZeOiBshvH8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=q7izd8dhLW4A:10 a=BbLmiaFJiMmzLd_09KYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=pL8ehe5o7oPLC27hingA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=MAVrf0i2zKgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=QZHP1AdjtUwA:10 a=yPCof4ZbAAAA:8 a=QyXUC8HyAAAA:8 a=D-kCI3Pid-mGlK6KmnwA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=7DSvI1NPTFQA:10 a=sA9wab0uyux7C8yj:21 a=AVJ_VHyoWzXDlgNC:21 a=SgFX7rVqX0xF5XTBfiAA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195124.516791964@goodmis.org>
+Message-Id: <20130315195124.096013444@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:48 -0400
+Date: Fri, 15 Mar 2013 15:39:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH 13/20] tracing: Add function probe to trigger stack traces
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [for-next][PATCH 11/20] tracing: Add function probe triggers to enable/disable events
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0013-tracing-Add-function-probe-to-trigger-stack-traces.patch
+Content-Disposition: inline; filename=0011-tracing-Add-function-probe-triggers-to-enable-disabl.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,274 +34,337 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add a function probe that will cause a stack trace to be traced in
-the ring buffer when the given function(s) are called.
+Add triggers to function tracer that lets an event get enabled or
+disabled when a function is called:
 
 format is:
 
- <function>:stacktrace[:<count>]
+ <function>:enable_event:<system>:<event>[:<count>]
+ <function>:disable_event:<system>:<event>[:<count>]
 
- echo 'schedule:stacktrace' > /debug/tracing/set_ftrace_filter
- cat /debug/tracing/trace_pipe
-     kworker/2:0-4329  [002] ...2  2933.558007: <stack trace>
- =3D> kthread
- =3D> ret_from_fork
-          <idle>-0     [000] .N.2  2933.558019: <stack trace>
- =3D> rest_init
- =3D> start_kernel
- =3D> x86_64_start_reservations
- =3D> x86_64_start_kernel
-     kworker/2:0-4329  [002] ...2  2933.558109: <stack trace>
- =3D> kthread
- =3D> ret_from_fork
-[...]
+ echo 'schedule:enable_event:sched:sched_switch' > /debug/tracing/set_ftrac=
+e_filter
 
-This can be set to only trace a specific amount of times:
+Every time schedule is called, it will enable the sched_switch event.
 
- echo 'schedule:stacktrace:3' > /debug/tracing/set_ftrace_filter
- cat /debug/tracing/trace_pipe
-           <...>-58    [003] ...2   841.801694: <stack trace>
- =3D> kthread
- =3D> ret_from_fork
-          <idle>-0     [001] .N.2   841.801697: <stack trace>
- =3D> start_secondary
-           <...>-2059  [001] ...2   841.801736: <stack trace>
- =3D> wait_for_common
- =3D> wait_for_completion
- =3D> flush_work
- =3D> tty_flush_to_ldisc
- =3D> input_available_p
- =3D> n_tty_poll
- =3D> tty_poll
- =3D> do_select
- =3D> core_sys_select
- =3D> sys_select
- =3D> system_call_fastpath
+ echo 'schedule:disable_event:sched:sched_switch:2' > /debug/tracing/set_ft=
+race_filter
 
-To remove these:
+The first two times schedule is called while the sched_switch
+event is enabled, it will disable it. It will not count for a time
+that the event is already disabled (or enabled for enable_event).
 
- echo '!schedule:stacktrace' > /debug/tracing/set_ftrace_filter
- echo '!schedule:stacktrace:0' > /debug/tracing/set_ftrace_filter
+[ fixed return without mutex_unlock() - thanks to Dan Carpenter and smatch ]
 
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions.c |  150 ++++++++++++++++++++++++++++++------=
-----
- 1 file changed, 115 insertions(+), 35 deletions(-)
+ kernel/trace/trace_events.c |  279 +++++++++++++++++++++++++++++++++++++++=
+++++
+ 1 file changed, 279 insertions(+)
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 043b242..c4d6d71 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -265,56 +265,103 @@ ftrace_traceoff(unsigned long ip, unsigned long pare=
-nt_ip, void **data)
- 	tracing_off();
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 106640b..c636523 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1798,6 +1798,283 @@ __trace_add_event_dirs(struct trace_array *tr)
+ 	}
  }
 =20
-+/*
-+ * Skip 4:
-+ *   ftrace_stacktrace()
-+ *   function_trace_probe_call()
-+ *   ftrace_ops_list_func()
-+ *   ftrace_call()
-+ */
-+#define STACK_SKIP 4
++#ifdef CONFIG_DYNAMIC_FTRACE
 +
-+static void
-+ftrace_stacktrace(unsigned long ip, unsigned long parent_ip, void **data)
++/* Avoid typos */
++#define ENABLE_EVENT_STR	"enable_event"
++#define DISABLE_EVENT_STR	"disable_event"
++
++struct event_probe_data {
++	struct ftrace_event_file	*file;
++	unsigned long			count;
++	int				ref;
++	bool				enable;
++};
++
++static struct ftrace_event_file *
++find_event_file(struct trace_array *tr, const char *system,  const char *e=
+vent)
 +{
-+	trace_dump_stack(STACK_SKIP);
++	struct ftrace_event_file *file;
++	struct ftrace_event_call *call;
++
++	list_for_each_entry(file, &tr->events, list) {
++
++		call =3D file->event_call;
++
++		if (!call->name || !call->class || !call->class->reg)
++			continue;
++
++		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
++			continue;
++
++		if (strcmp(event, call->name) =3D=3D 0 &&
++		    strcmp(system, call->class->system) =3D=3D 0)
++			return file;
++	}
++	return NULL;
 +}
 +
 +static void
-+ftrace_stacktrace_count(unsigned long ip, unsigned long parent_ip, void **=
-data)
++event_enable_probe(unsigned long ip, unsigned long parent_ip, void **_data)
 +{
-+	if (!tracing_is_on())
++	struct event_probe_data **pdata =3D (struct event_probe_data **)_data;
++	struct event_probe_data *data =3D *pdata;
++
++	if (!data)
 +		return;
 +
-+	if (update_count(data))
-+		trace_dump_stack(STACK_SKIP);
++	if (data->enable)
++		clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
++	else
++		set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
 +}
 +
- static int
--ftrace_trace_onoff_print(struct seq_file *m, unsigned long ip,
--			 struct ftrace_probe_ops *ops, void *data);
-+ftrace_probe_print(const char *name, struct seq_file *m,
-+		   unsigned long ip, void *data)
++static void
++event_enable_count_probe(unsigned long ip, unsigned long parent_ip, void *=
+*_data)
 +{
-+	long count =3D (long)data;
++	struct event_probe_data **pdata =3D (struct event_probe_data **)_data;
++	struct event_probe_data *data =3D *pdata;
 +
-+	seq_printf(m, "%ps:%s", (void *)ip, name);
++	if (!data)
++		return;
 +
-+	if (count =3D=3D -1)
++	if (!data->count)
++		return;
++
++	/* Skip if the event is in a state we want to switch to */
++	if (data->enable =3D=3D !(data->file->flags & FTRACE_EVENT_FL_SOFT_DISABL=
+ED))
++		return;
++
++	if (data->count !=3D -1)
++		(data->count)--;
++
++	event_enable_probe(ip, parent_ip, _data);
++}
++
++static int
++event_enable_print(struct seq_file *m, unsigned long ip,
++		      struct ftrace_probe_ops *ops, void *_data)
++{
++	struct event_probe_data *data =3D _data;
++
++	seq_printf(m, "%ps:", (void *)ip);
++
++	seq_printf(m, "%s:%s:%s",
++		   data->enable ? ENABLE_EVENT_STR : DISABLE_EVENT_STR,
++		   data->file->event_call->class->system,
++		   data->file->event_call->name);
++
++	if (data->count =3D=3D -1)
 +		seq_printf(m, ":unlimited\n");
 +	else
-+		seq_printf(m, ":count=3D%ld\n", count);
++		seq_printf(m, ":count=3D%ld\n", data->count);
 +
 +	return 0;
 +}
 +
 +static int
-+ftrace_traceon_print(struct seq_file *m, unsigned long ip,
-+			 struct ftrace_probe_ops *ops, void *data)
++event_enable_init(struct ftrace_probe_ops *ops, unsigned long ip,
++		  void **_data)
 +{
-+	return ftrace_probe_print("traceon", m, ip, data);
++	struct event_probe_data **pdata =3D (struct event_probe_data **)_data;
++	struct event_probe_data *data =3D *pdata;
++
++	data->ref++;
++	return 0;
 +}
 +
-+static int
-+ftrace_traceoff_print(struct seq_file *m, unsigned long ip,
-+			 struct ftrace_probe_ops *ops, void *data)
++static void
++event_enable_free(struct ftrace_probe_ops *ops, unsigned long ip,
++		  void **_data)
 +{
-+	return ftrace_probe_print("traceoff", m, ip, data);
-+}
++	struct event_probe_data **pdata =3D (struct event_probe_data **)_data;
++	struct event_probe_data *data =3D *pdata;
 +
-+static int
-+ftrace_stacktrace_print(struct seq_file *m, unsigned long ip,
-+			struct ftrace_probe_ops *ops, void *data)
-+{
-+	return ftrace_probe_print("stacktrace", m, ip, data);
-+}
-=20
- static struct ftrace_probe_ops traceon_count_probe_ops =3D {
- 	.func			=3D ftrace_traceon_count,
--	.print			=3D ftrace_trace_onoff_print,
-+	.print			=3D ftrace_traceon_print,
- };
-=20
- static struct ftrace_probe_ops traceoff_count_probe_ops =3D {
- 	.func			=3D ftrace_traceoff_count,
--	.print			=3D ftrace_trace_onoff_print,
-+	.print			=3D ftrace_traceoff_print,
-+};
++	if (WARN_ON_ONCE(data->ref <=3D 0))
++		return;
 +
-+static struct ftrace_probe_ops stacktrace_count_probe_ops =3D {
-+	.func			=3D ftrace_stacktrace_count,
-+	.print			=3D ftrace_stacktrace_print,
- };
-=20
- static struct ftrace_probe_ops traceon_probe_ops =3D {
- 	.func			=3D ftrace_traceon,
--	.print			=3D ftrace_trace_onoff_print,
-+	.print			=3D ftrace_traceon_print,
- };
-=20
- static struct ftrace_probe_ops traceoff_probe_ops =3D {
- 	.func			=3D ftrace_traceoff,
--	.print			=3D ftrace_trace_onoff_print,
-+	.print			=3D ftrace_traceoff_print,
- };
-=20
--static int
--ftrace_trace_onoff_print(struct seq_file *m, unsigned long ip,
--			 struct ftrace_probe_ops *ops, void *data)
--{
--	long count =3D (long)data;
--
--	seq_printf(m, "%ps:", (void *)ip);
--
--	if (ops =3D=3D &traceon_probe_ops || ops =3D=3D &traceon_count_probe_ops)
--		seq_printf(m, "traceon");
--	else
--		seq_printf(m, "traceoff");
--
--	if (count =3D=3D -1)
--		seq_printf(m, ":unlimited\n");
--	else
--		seq_printf(m, ":count=3D%ld\n", count);
--
--	return 0;
--}
-+static struct ftrace_probe_ops stacktrace_probe_ops =3D {
-+	.func			=3D ftrace_stacktrace,
-+	.print			=3D ftrace_stacktrace_print,
-+};
-=20
- static int
--ftrace_trace_onoff_callback(struct ftrace_hash *hash,
--			    char *glob, char *cmd, char *param, int enable)
-+ftrace_trace_probe_callback(struct ftrace_probe_ops *ops,
-+			    struct ftrace_hash *hash, char *glob,
-+			    char *cmd, char *param, int enable)
- {
--	struct ftrace_probe_ops *ops;
- 	void *count =3D (void *)-1;
- 	char *number;
- 	int ret;
-@@ -323,12 +370,6 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
- 	if (!enable)
- 		return -EINVAL;
-=20
--	/* we register both traceon and traceoff to this callback */
--	if (strcmp(cmd, "traceon") =3D=3D 0)
--		ops =3D param ? &traceon_count_probe_ops : &traceon_probe_ops;
--	else
--		ops =3D param ? &traceoff_count_probe_ops : &traceoff_probe_ops;
--
- 	if (glob[0] =3D=3D '!') {
- 		unregister_ftrace_function_probe_func(glob+1, ops);
- 		return 0;
-@@ -356,6 +397,34 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
- 	return ret < 0 ? ret : 0;
- }
-=20
-+static int
-+ftrace_trace_onoff_callback(struct ftrace_hash *hash,
-+			    char *glob, char *cmd, char *param, int enable)
-+{
-+	struct ftrace_probe_ops *ops;
-+
-+	/* we register both traceon and traceoff to this callback */
-+	if (strcmp(cmd, "traceon") =3D=3D 0)
-+		ops =3D param ? &traceon_count_probe_ops : &traceon_probe_ops;
-+	else
-+		ops =3D param ? &traceoff_count_probe_ops : &traceoff_probe_ops;
-+
-+	return ftrace_trace_probe_callback(ops, hash, glob, cmd,
-+					   param, enable);
-+}
-+
-+static int
-+ftrace_stacktrace_callback(struct ftrace_hash *hash,
-+			   char *glob, char *cmd, char *param, int enable)
-+{
-+	struct ftrace_probe_ops *ops;
-+
-+	ops =3D param ? &stacktrace_count_probe_ops : &stacktrace_probe_ops;
-+
-+	return ftrace_trace_probe_callback(ops, hash, glob, cmd,
-+					   param, enable);
-+}
-+
- static struct ftrace_func_command ftrace_traceon_cmd =3D {
- 	.name			=3D "traceon",
- 	.func			=3D ftrace_trace_onoff_callback,
-@@ -366,6 +435,11 @@ static struct ftrace_func_command ftrace_traceoff_cmd =
-=3D {
- 	.func			=3D ftrace_trace_onoff_callback,
- };
-=20
-+static struct ftrace_func_command ftrace_stacktrace_cmd =3D {
-+	.name			=3D "stacktrace",
-+	.func			=3D ftrace_stacktrace_callback,
-+};
-+
- static int __init init_func_cmd_traceon(void)
- {
- 	int ret;
-@@ -377,6 +451,12 @@ static int __init init_func_cmd_traceon(void)
- 	ret =3D register_ftrace_command(&ftrace_traceon_cmd);
- 	if (ret)
- 		unregister_ftrace_command(&ftrace_traceoff_cmd);
-+
-+	ret =3D register_ftrace_command(&ftrace_stacktrace_cmd);
-+	if (ret) {
-+		unregister_ftrace_command(&ftrace_traceoff_cmd);
-+		unregister_ftrace_command(&ftrace_traceon_cmd);
++	data->ref--;
++	if (!data->ref) {
++		/* Remove the SOFT_MODE flag */
++		__ftrace_event_enable_disable(data->file, 0, 1);
++		module_put(data->file->event_call->mod);
++		kfree(data);
 +	}
- 	return ret;
++	*pdata =3D NULL;
++}
++
++static struct ftrace_probe_ops event_enable_probe_ops =3D {
++	.func			=3D event_enable_probe,
++	.print			=3D event_enable_print,
++	.init			=3D event_enable_init,
++	.free			=3D event_enable_free,
++};
++
++static struct ftrace_probe_ops event_enable_count_probe_ops =3D {
++	.func			=3D event_enable_count_probe,
++	.print			=3D event_enable_print,
++	.init			=3D event_enable_init,
++	.free			=3D event_enable_free,
++};
++
++static struct ftrace_probe_ops event_disable_probe_ops =3D {
++	.func			=3D event_enable_probe,
++	.print			=3D event_enable_print,
++	.init			=3D event_enable_init,
++	.free			=3D event_enable_free,
++};
++
++static struct ftrace_probe_ops event_disable_count_probe_ops =3D {
++	.func			=3D event_enable_count_probe,
++	.print			=3D event_enable_print,
++	.init			=3D event_enable_init,
++	.free			=3D event_enable_free,
++};
++
++static int
++event_enable_func(struct ftrace_hash *hash,
++		  char *glob, char *cmd, char *param, int enabled)
++{
++	struct trace_array *tr =3D top_trace_array();
++	struct ftrace_event_file *file;
++	struct ftrace_probe_ops *ops;
++	struct event_probe_data *data;
++	const char *system;
++	const char *event;
++	char *number;
++	bool enable;
++	int ret;
++
++	/* hash funcs only work with set_ftrace_filter */
++	if (!enabled)
++		return -EINVAL;
++
++	if (!param)
++		return -EINVAL;
++
++	system =3D strsep(&param, ":");
++	if (!param)
++		return -EINVAL;
++
++	event =3D strsep(&param, ":");
++
++	mutex_lock(&event_mutex);
++
++	ret =3D -EINVAL;
++	file =3D find_event_file(tr, system, event);
++	if (!file)
++		goto out;
++
++	enable =3D strcmp(cmd, ENABLE_EVENT_STR) =3D=3D 0;
++
++	if (enable)
++		ops =3D param ? &event_enable_count_probe_ops : &event_enable_probe_ops;
++	else
++		ops =3D param ? &event_disable_count_probe_ops : &event_disable_probe_op=
+s;
++
++	if (glob[0] =3D=3D '!') {
++		unregister_ftrace_function_probe_func(glob+1, ops);
++		ret =3D 0;
++		goto out;
++	}
++
++	ret =3D -ENOMEM;
++	data =3D kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		goto out;
++
++	data->enable =3D enable;
++	data->count =3D -1;
++	data->file =3D file;
++
++	if (!param)
++		goto out_reg;
++
++	number =3D strsep(&param, ":");
++
++	ret =3D -EINVAL;
++	if (!strlen(number))
++		goto out_free;
++
++	/*
++	 * We use the callback data field (which is a pointer)
++	 * as our counter.
++	 */
++	ret =3D kstrtoul(number, 0, &data->count);
++	if (ret)
++		goto out_free;
++
++ out_reg:
++	/* Don't let event modules unload while probe registered */
++	ret =3D try_module_get(file->event_call->mod);
++	if (!ret)
++		goto out_free;
++
++	ret =3D __ftrace_event_enable_disable(file, 1, 1);
++	if (ret < 0)
++		goto out_put;
++	ret =3D register_ftrace_function_probe(glob, ops, data);
++	if (!ret)
++		goto out_disable;
++ out:
++	mutex_unlock(&event_mutex);
++	return ret;
++
++ out_disable:
++	__ftrace_event_enable_disable(file, 0, 1);
++ out_put:
++	module_put(file->event_call->mod);
++ out_free:
++	kfree(data);
++	goto out;
++}
++
++static struct ftrace_func_command event_enable_cmd =3D {
++	.name			=3D ENABLE_EVENT_STR,
++	.func			=3D event_enable_func,
++};
++
++static struct ftrace_func_command event_disable_cmd =3D {
++	.name			=3D DISABLE_EVENT_STR,
++	.func			=3D event_enable_func,
++};
++
++static __init int register_event_cmds(void)
++{
++	int ret;
++
++	ret =3D register_ftrace_command(&event_enable_cmd);
++	if (WARN_ON(ret < 0))
++		return ret;
++	ret =3D register_ftrace_command(&event_disable_cmd);
++	if (WARN_ON(ret < 0))
++		unregister_ftrace_command(&event_enable_cmd);
++	return ret;
++}
++#else
++static inline int register_event_cmds(void) { return 0; }
++#endif /* CONFIG_DYNAMIC_FTRACE */
++
+ /*
+  * The top level array has already had its ftrace_event_file
+  * descriptors created in order to allow for early events to
+@@ -2058,6 +2335,8 @@ static __init int event_trace_enable(void)
+=20
+ 	trace_printk_start_comm();
+=20
++	register_event_cmds();
++
+ 	return 0;
  }
- #else
+=20
 --=20
 1.7.10.4
 
@@ -312,13 +377,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u8AAoJEOdOSU1xswtM2NAH/3bkfAZNDNxsFsGxHm/AWAdp
-rO1s1MFJEuOUD66Di71PySgQfsuk7kMtM4v4SZotz1ueEkpv4n32oJra7828ZF6T
-dpYmky6twa3bERkpxuUVZCXwEOcpQAfm93/aGHSHP1ztmAyULsnkhJiH4zdJDtNJ
-K4tC+bJRZnO9la05rt6QdCGxFDkjPRhpcmlbD18FYJjFslGpxd44uNV2Kbijn3X0
-7dglNsl+cgT8YtPdIHOIBbKGMoNuOR8LwfB9MNGvYF0LVB9nuY/at/uQBqhm1TP+
-LLvI344+eo916osJhk6FMHdzcOOq/Ue+A1317Tm/4MMd4YB2k+Gulo0zwLfCNro=
-=i89E
+iQEcBAABAgAGBQJRQ3u8AAoJEOdOSU1xswtMBPAH/2gClc0oG05dzf0Eyk38//yl
+n56F36OsYekAd3jKtXQ0EB3S4YuibMTMttDxcFbRgvSsgqPqTbMV+p9j+nwWGl/o
++ZrOUj1ckRAnqkHLzJC1D1jcOTvRa5OkpNAGszQk8RfQYoo6ve+Ppsf+fRG3SJ3h
+uWwci/fBUuvo/uAY2NNOyq89MmODAYtA7flweLcBCtIMmG54j0EqKP7jfD5YB9ES
+ZzcF8H4/BCSAbAG3OHdvabaBEfHf5mbHTHLCgzPDNqMEVikM/LXM2KtEjSZt6OBI
+p9GKfCmJlAd68Bzqvq5cv6+PCRPFt4N0oEFR2t5GnKpKkuZAeJLfyGiam7M5YDY=
+=fQPh
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
