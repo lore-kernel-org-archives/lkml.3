@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3COL7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 07:59:37 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:64254 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753921Ab3COL7g (ORCPT
+	id S1754195Ab3COMAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 08:00:37 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:62874 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab3COMAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 07:59:36 -0400
-Message-ID: <1363348770.1335.102.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] Fix typo "----help---"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 15 Mar 2013 12:59:30 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Mar 2013 11:59:30.0945 (UTC) FILETIME=[8D372F10:01CE2174]
-X-RcptDomain: vger.kernel.org
+	Fri, 15 Mar 2013 08:00:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130314154811.GA3001@arwen.pp.htv.fi>
+References: <1363242239-1061-1-git-send-email-kishon@ti.com>
+	<1363242239-1061-3-git-send-email-kishon@ti.com>
+	<20130314154811.GA3001@arwen.pp.htv.fi>
+Date: Fri, 15 Mar 2013 14:00:33 +0200
+Message-ID: <CANOLnOMxej7dSbQeVKZEjEN+WAFR5qLz5hO0q8NiPvQguNKcgw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] usb: otg: twl4030: use devres API for regulator
+ get and request irq
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: balbi@ti.com
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-13
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) The kconfig parsing code doesn't care about this typo. Not sure why,
-actually. Staring at zconf.l reveals "---" will be ignored, anywhere.
-But it's a mystery why one or two minuses will sometimes also be
-ignored. The joys of lex and yacc! Anyhow, it's a typo.
+On Thu, Mar 14, 2013 at 5:48 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Mar 14, 2013 at 11:53:57AM +0530, Kishon Vijay Abraham I wrote:
+>> Used devres APIs devm_request_threaded_irq and devm_regulator_get for
+>> requesting irq and for getting regulator respectively.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> please refresh this on top of my testing branch, you should be patching
+> drivers/usb/phy/phy-twl4030-usb.c
 
-1) In case you fear a steady stream of trivialities like this: I've
-actually grepped the tree for all typos of this kind and there seem to
-be none left.
+Does that mean I need to rebase my series on your testing branch too?
 
- drivers/net/ethernet/sfc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --
+> balbi
 
-diff --git a/drivers/net/ethernet/sfc/Kconfig b/drivers/net/ethernet/sfc/Kconfig
-index 435b4f1..4136ccc 100644
---- a/drivers/net/ethernet/sfc/Kconfig
-+++ b/drivers/net/ethernet/sfc/Kconfig
-@@ -24,7 +24,7 @@ config SFC_MCDI_MON
- 	bool "Solarflare SFC9000-family hwmon support"
- 	depends on SFC && HWMON && !(SFC=y && HWMON=m)
- 	default y
--	----help---
-+	---help---
- 	  This exposes the on-board firmware-managed sensors as a
- 	  hardware monitor device.
- config SFC_SRIOV
 -- 
-1.7.11.7
-
+Graþvydas
