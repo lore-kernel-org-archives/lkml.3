@@ -1,156 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3COS66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:58:58 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:36276
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab3COS65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932104Ab3COS65 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 15 Mar 2013 14:58:57 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/6] Drivers: hv: balloon: Execute balloon inflation in a separate context
-Date: Fri, 15 Mar 2013 12:25:40 -0700
-Message-Id: <1363375544-19901-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363375544-19901-1-git-send-email-kys@microsoft.com>
-References: <1363375509-19860-1-git-send-email-kys@microsoft.com>
- <1363375544-19901-1-git-send-email-kys@microsoft.com>
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43580 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab3COS6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 14:58:55 -0400
+Message-ID: <51436F6C.1050901@wwwdotorg.org>
+Date: Fri, 15 Mar 2013 12:58:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 3/5] ARM: tegra:add aliases and DMA requestor for serial
+ nodes of Tegra114
+References: <1363204194-19487-1-git-send-email-ldewangan@nvidia.com> <1363204194-19487-4-git-send-email-ldewangan@nvidia.com> <5140DB61.3090809@wwwdotorg.org> <514367F3.6040909@wwwdotorg.org> <51436BAE.9080206@nvidia.com>
+In-Reply-To: <51436BAE.9080206@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Execute the balloon inflation operation in a separate work context.
-This allows us to decouple the pressure reporting activity from the
-ballooning activity. Testing has shown that this decoupling makes the
-guest more reponsive.
+On 03/15/2013 12:42 PM, Laxman Dewangan wrote:
+> On Friday 15 March 2013 11:56 PM, Stephen Warren wrote:
+>> On 03/13/2013 02:02 PM, Stephen Warren wrote:
+>>> On 03/13/2013 01:49 PM, Laxman Dewangan wrote:
+>>>> Add APB DMA requestor and serial aliases for serial controller.
+>>>> There will be two serial driver i.e. 8250 based simple serial driver
+>>>> and APB DMA based serial driver for higher baudrate and performace.
+>>>>
+>>>> The simple serial driver get enabled with compatible
+>>>> "nvidia,tegra114-uart",
+>>>> "nvidia,tegra20-uart" and APB DMA based driver will get enabled with
+>>>> compatible "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart".
+>>>> +    /*
+>>>> +     * There are two serial driver i.e. 8250 based simple serial
+>>>> +     * driver and APB DMA based serial driver for higher baudrate
+>>>> +     * and performace. To enable the 8250 based driver, the compatible
+>>>> +     * is "nvidia,tegra114-uart", "nvidia,tegra20-uart" and to enable
+>>>> +     * the APB DMA based serial driver, the comptible is
+>>>> +     * "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart".
+>>>> +     */
+>>> Again, that text says you want either of:
+>>>
+>>> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+>>> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart";
+>>>
+>>> (note Tegra20-vs-Tegra30 in the second compatible value)
+>>>
+>>> Why isn't it instead:
+>>>
+>>> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+>>> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra20-hsuart";
+>>>
+>>> (note both second compatible values say Tegra20)
+>>>
+>>> I assume this is a typo.
+>>>
+>>> I suppose I can fix this up when I apply it to avoid a resend, assuming
+>>> it's wrong.
+>> Since I haven't seen a reply to this, when I apply this, I'm going to
+>> change the comment I quoted above to match the values I wrote above
+>> under "why isn't it instead:".
+> 
+> Stephen,
+> Sorry, I missed your comment to reply.
+> I mean was that compatible should be
+> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart";
+> 
+> not
+> 
+> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra20-hsuart";
+> 
+> 
+> The reason is that, tegra30 has the clock divider in the CAR register
+> set and it is 15.1 which gives more precise baudrate. tegra20 does not
+> have the same.
+> Tegra114 also have the clock divider in the CAR register.
+> 
+> All SoCs UART support 16.0 clock divider inside the uart controller as
+> DLL/DLM.
+> 
+> Simple uart driver use the uart clock divider and it is fine here.
+> 
+> High speed uart driver uses the car register driver for better
+> flexibility and better resolution.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/hv_balloon.c |   34 ++++++++++++++++++++++++----------
- 1 files changed, 24 insertions(+), 10 deletions(-)
+OK, so I see that Tegra30 has an enhancement over Tegra20. However,
+given your description, that enhancement is optional; a driver could
+simply continue to use /just/ the in-UART divider, and ignore the CAR
+divider, and still work just fine, albeit with (entirely
+backwards-compatible) less accuracy than it might achieve if it used the
+new feature.
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 7fb72dd..8dc406c 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -412,6 +412,11 @@ struct dm_info_msg {
-  * End protocol definitions.
-  */
- 
-+struct balloon_state {
-+	__u32 num_pages;
-+	struct work_struct wrk;
-+};
-+
- static bool hot_add;
- static bool do_hot_add;
- /*
-@@ -459,7 +464,12 @@ struct hv_dynmem_device {
- 	unsigned int num_pages_ballooned;
- 
- 	/*
--	 * This thread handles both balloon/hot-add
-+	 * State to manage the ballooning (up) operation.
-+	 */
-+	struct balloon_state balloon_wrk;
-+
-+	/*
-+	 * This thread handles hot-add
- 	 * requests from the host as well as notifying
- 	 * the host with regards to memory pressure in
- 	 * the guest.
-@@ -657,9 +667,9 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
- 
- 
- 
--static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
-+static void balloon_up(struct work_struct *dummy)
- {
--	int num_pages = req->num_pages;
-+	int num_pages = dm_device.balloon_wrk.num_pages;
- 	int num_ballooned = 0;
- 	struct dm_balloon_response *bl_resp;
- 	int alloc_unit;
-@@ -684,14 +694,14 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
- 
- 
- 		num_pages -= num_ballooned;
--		num_ballooned = alloc_balloon_pages(dm, num_pages,
-+		num_ballooned = alloc_balloon_pages(&dm_device, num_pages,
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
- 
- 		if ((alloc_error) || (num_ballooned == num_pages)) {
- 			bl_resp->more_pages = 0;
- 			done = true;
--			dm->state = DM_INITIALIZED;
-+			dm_device.state = DM_INITIALIZED;
- 		}
- 
- 		/*
-@@ -719,7 +729,7 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
- 			pr_info("Balloon response failed\n");
- 
- 			for (i = 0; i < bl_resp->range_count; i++)
--				free_balloon_pages(dm,
-+				free_balloon_pages(&dm_device,
- 						 &bl_resp->range_array[i]);
- 
- 			done = true;
-@@ -775,9 +785,6 @@ static int dm_thread_func(void *dm_dev)
- 
- 		scan_start = jiffies;
- 		switch (dm->state) {
--		case DM_BALLOON_UP:
--			balloon_up(dm, (struct dm_balloon *)recv_buffer);
--			break;
- 
- 		case DM_HOT_ADD:
- 			hot_add_req(dm, (struct dm_hot_add *)recv_buffer);
-@@ -861,6 +868,7 @@ static void balloon_onchannelcallback(void *context)
- 	struct dm_message *dm_msg;
- 	struct dm_header *dm_hdr;
- 	struct hv_dynmem_device *dm = hv_get_drvdata(dev);
-+	struct dm_balloon *bal_msg;
- 
- 	memset(recv_buffer, 0, sizeof(recv_buffer));
- 	vmbus_recvpacket(dev->channel, recv_buffer,
-@@ -882,8 +890,12 @@ static void balloon_onchannelcallback(void *context)
- 			break;
- 
- 		case DM_BALLOON_REQUEST:
-+			if (dm->state == DM_BALLOON_UP)
-+				pr_warn("Currently ballooning\n");
-+			bal_msg = (struct dm_balloon *)recv_buffer;
- 			dm->state = DM_BALLOON_UP;
--			complete(&dm->config_event);
-+			dm_device.balloon_wrk.num_pages = bal_msg->num_pages;
-+			schedule_work(&dm_device.balloon_wrk.wrk);
- 			break;
- 
- 		case DM_UNBALLOON_REQUEST:
-@@ -937,6 +949,7 @@ static int balloon_probe(struct hv_device *dev,
- 	dm_device.next_version = DYNMEM_PROTOCOL_VERSION_WIN7;
- 	init_completion(&dm_device.host_event);
- 	init_completion(&dm_device.config_event);
-+	INIT_WORK(&dm_device.balloon_wrk.wrk, balloon_up);
- 
- 	dm_device.thread =
- 		 kthread_run(dm_thread_func, &dm_device, "hv_balloon");
-@@ -1048,6 +1061,7 @@ static int balloon_remove(struct hv_device *dev)
- 	if (dm->num_pages_ballooned != 0)
- 		pr_warn("Ballooned pages: %d\n", dm->num_pages_ballooned);
- 
-+	cancel_work_sync(&dm->balloon_wrk.wrk);
- 	vmbus_close(dev->channel);
- 	kthread_stop(dm->thread);
- 	kfree(send_buffer);
--- 
-1.7.4.1
+As such, I think it's correct to mark the device as actually being
+compatible with all 3: 114 (precise HW model), 30 (base model w/ extra
+divider), 20 (base model that's compatible, albeit ignoring extra features).
 
+That might be a bit excessive though, so I guess I'll just go with the
+values in your patch. It'd be a good idea if you could post a follow-on
+patch that updates the DT binding to explain this, and then removes the
+comments from *.dtsi since this really should be explained in the
+binding document not the .dtsi files, I think.
+
+At most, I'd expect to see the following in the .dtsi files:
+
+These nodes can either be compatible with nvidia,tegra114-uart, or
+nvidia,tegra114-hsuart. See the bindings for details of the difference.
