@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab3COT0U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:26:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48049 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755219Ab3COT0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 15:26:17 -0400
-Date: Fri, 15 Mar 2013 20:26:09 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: chegger@amazon.de, xen-devel@lists.xen.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] AMD MCE fixes
-Message-ID: <20130315192609.GJ13775@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Boris Ostrovsky <boris.ostrovsky@oracle.com>, chegger@amazon.de,
-	xen-devel@lists.xen.org, linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org, JBeulich@suse.com,
-	stable@vger.kernel.org
-References: <1363295441-1859-1-git-send-email-boris.ostrovsky@oracle.com>
+	id S1755521Ab3COTcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:32:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54680 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab3COTcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 15:32:52 -0400
+Message-ID: <51437761.6020901@wwwdotorg.org>
+Date: Fri, 15 Mar 2013 13:32:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1363295441-1859-1-git-send-email-boris.ostrovsky@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: wsa@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: check the clk_prepare_enable() return value
+References: <1363361648-10326-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1363361648-10326-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 05:10:39PM -0400, Boris Ostrovsky wrote:
+On 03/15/2013 09:34 AM, Laxman Dewangan wrote:
+> NVIDIA's Tegra SoC allows read/write of controller register only
+> if controller clock is enabled. System hangs if read/write happens
+> to registers without enabling clock.
 > 
-> Boris,
-> 
-> Here is the updated patch for determining number of regiter banks on
-> AMD plus a patch removing shared_bank array, as you suggested.
-> 
-> Offline/online testing didn't show any issues.
-> 
-> 
-> 
-> Boris Ostrovsky (2):
->   x86/mce: Replace shared_bank array with is_shared_bank() helper
->   x86/mce: Use MCG_CAP MSR to find out number of banks on AMD
+> clk_prepare_enable() can be fail due to unknown reason and hence
+> adding check for return value of this function. If this function
+> success then only access register otherwise return to caller with
+> error.
 
-Both applied,
+Wolfram,
 
-thanks.
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+This is probably suitable for Cc: stable.
