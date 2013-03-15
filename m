@@ -1,133 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3CORgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 13:36:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33448 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab3CORgM (ORCPT
+	id S1754547Ab3CORhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 13:37:21 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:58736 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab3CORhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 13:36:12 -0400
-Message-ID: <51435C08.2030402@wwwdotorg.org>
-Date: Fri, 15 Mar 2013 11:36:08 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 15 Mar 2013 13:37:20 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
+Date: Fri, 15 Mar 2013 18:37:12 +0100
+Message-ID: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Danny Huang <dahuang@nvidia.com>
-CC: linux@arm.linux.org.uk, josephl@nvidia.com, pgaikwad@nvidia.com,
-        ldewangan@nvidia.com, hdoyu@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra114: add speedo-based process identification
-References: <1363246822-14597-1-git-send-email-dahuang@nvidia.com>
-In-Reply-To: <1363246822-14597-1-git-send-email-dahuang@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 01:40 AM, Danny Huang wrote:
-> Add speedo-based process identifictaion for Tegra114.
-> 
-> Based on the work by:
-> Alex Frid <afrid@nvidia.com>
+On some revisions of AT91 SoCs, the RTC IMR register is not working.
+Instead of elaborating a workaround for that specific SoC or IP version,
+we simply use a software variable to store the Interrupt Mask Register and
+modify it for each enabling/disabling of an interrupt. The overhead of this
+is negligible anyway.
 
-This code is surprisingly quite a bit simpler than the existing
-tegra30_speedo.c. Are you sure it's complete?
+Reported-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/rtc/rtc-at91rm9200.c | 50 +++++++++++++++++++++++++++-----------------
+ drivers/rtc/rtc-at91rm9200.h |  1 -
+ 2 files changed, 31 insertions(+), 20 deletions(-)
 
-> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 79233d0..29b92e4 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -46,6 +46,7 @@ static DECLARE_COMPLETION(at91_rtc_updated);
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
++static u32 at91_rtc_imr;
+ 
+ /*
+  * Decode time/date into rtc_time structure
+@@ -110,9 +111,11 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
+ 
++	at91_rtc_imr |= AT91_RTC_ACKUPD;
+ 	at91_rtc_write(AT91_RTC_IER, AT91_RTC_ACKUPD);
+ 	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD interrupt */
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD);
++	at91_rtc_imr &= ~AT91_RTC_ACKUPD;
+ 
+ 	at91_rtc_write(AT91_RTC_TIMR,
+ 			  bin2bcd(tm->tm_sec) << 0
+@@ -144,7 +147,7 @@ static int at91_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon, tm->tm_year);
+ 	tm->tm_year = at91_alarm_year - 1900;
+ 
+-	alrm->enabled = (at91_rtc_read(AT91_RTC_IMR) & AT91_RTC_ALARM)
++	alrm->enabled = (at91_rtc_imr & AT91_RTC_ALARM)
+ 			? 1 : 0;
+ 
+ 	dev_dbg(dev, "%s(): %4d-%02d-%02d %02d:%02d:%02d\n", __func__,
+@@ -170,6 +173,7 @@ static int at91_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	tm.tm_sec = alrm->time.tm_sec;
+ 
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
++	at91_rtc_imr &= ~AT91_RTC_ALARM;
+ 	at91_rtc_write(AT91_RTC_TIMALR,
+ 		  bin2bcd(tm.tm_sec) << 0
+ 		| bin2bcd(tm.tm_min) << 8
+@@ -182,6 +186,7 @@ static int at91_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 
+ 	if (alrm->enabled) {
+ 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
++		at91_rtc_imr |= AT91_RTC_ALARM;
+ 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+ 	}
+ 
+@@ -198,9 +203,12 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 
+ 	if (enabled) {
+ 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
++		at91_rtc_imr |= AT91_RTC_ALARM;
+ 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+-	} else
++	} else {
+ 		at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
++		at91_rtc_imr &= ~AT91_RTC_ALARM;
++	}
+ 
+ 	return 0;
+ }
+@@ -209,12 +217,10 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+  */
+ static int at91_rtc_proc(struct device *dev, struct seq_file *seq)
+ {
+-	unsigned long imr = at91_rtc_read(AT91_RTC_IMR);
+-
+ 	seq_printf(seq, "update_IRQ\t: %s\n",
+-			(imr & AT91_RTC_ACKUPD) ? "yes" : "no");
++			(at91_rtc_imr & AT91_RTC_ACKUPD) ? "yes" : "no");
+ 	seq_printf(seq, "periodic_IRQ\t: %s\n",
+-			(imr & AT91_RTC_SECEV) ? "yes" : "no");
++			(at91_rtc_imr & AT91_RTC_SECEV) ? "yes" : "no");
+ 
+ 	return 0;
+ }
+@@ -229,7 +235,7 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+ 	unsigned int rtsr;
+ 	unsigned long events = 0;
+ 
+-	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read(AT91_RTC_IMR);
++	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_imr;
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+@@ -293,6 +299,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
+ 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
+ 					AT91_RTC_CALEV);
++	at91_rtc_imr = 0;
+ 
+ 	ret = request_irq(irq, at91_rtc_interrupt,
+ 				IRQF_SHARED,
+@@ -331,6 +338,7 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
+ 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
+ 					AT91_RTC_CALEV);
++	at91_rtc_imr = 0;
+ 	free_irq(irq, pdev);
+ 
+ 	rtc_device_unregister(rtc);
+@@ -343,31 +351,35 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
+ 
+ /* AT91RM9200 RTC Power management control */
+ 
+-static u32 at91_rtc_imr;
++static u32 at91_rtc_bkpimr;
++
+ 
+ static int at91_rtc_suspend(struct device *dev)
+ {
+ 	/* this IRQ is shared with DBGU and other hardware which isn't
+ 	 * necessarily doing PM like we are...
+ 	 */
+-	at91_rtc_imr = at91_rtc_read(AT91_RTC_IMR)
+-			& (AT91_RTC_ALARM|AT91_RTC_SECEV);
+-	if (at91_rtc_imr) {
+-		if (device_may_wakeup(dev))
++	at91_rtc_bkpimr = at91_rtc_imr & (AT91_RTC_ALARM|AT91_RTC_SECEV);
++	if (at91_rtc_bkpimr) {
++		if (device_may_wakeup(dev)) {
+ 			enable_irq_wake(irq);
+-		else
+-			at91_rtc_write(AT91_RTC_IDR, at91_rtc_imr);
+-	}
++		} else {
++			at91_rtc_write(AT91_RTC_IDR, at91_rtc_bkpimr);
++			at91_rtc_imr &= ~at91_rtc_bkpimr;
++		}
++}
+ 	return 0;
+ }
+ 
+ static int at91_rtc_resume(struct device *dev)
+ {
+-	if (at91_rtc_imr) {
+-		if (device_may_wakeup(dev))
++	if (at91_rtc_bkpimr) {
++		if (device_may_wakeup(dev)) {
+ 			disable_irq_wake(irq);
+-		else
+-			at91_rtc_write(AT91_RTC_IER, at91_rtc_imr);
++		} else {
++			at91_rtc_imr |= at91_rtc_bkpimr;
++			at91_rtc_write(AT91_RTC_IER, at91_rtc_bkpimr);
++		}
+ 	}
+ 	return 0;
+ }
+diff --git a/drivers/rtc/rtc-at91rm9200.h b/drivers/rtc/rtc-at91rm9200.h
+index da1945e..5f940b6 100644
+--- a/drivers/rtc/rtc-at91rm9200.h
++++ b/drivers/rtc/rtc-at91rm9200.h
+@@ -64,7 +64,6 @@
+ #define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
+ #define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
+ #define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
+-#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
+ 
+ #define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
+ #define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
+-- 
+1.8.0
 
-> @@ -137,6 +138,9 @@ void tegra_init_fuse(void)
->  		tegra_fuse_spare_bit = TEGRA30_FUSE_SPARE_BIT;
->  		tegra_init_speedo_data = &tegra30_init_speedo_data;
->  		break;
-> +	case TEGRA114:
-> +		tegra_init_speedo_data = &tegra114_init_speedo_data;
-> +		break;
-
-Don't you need to set tegra_fuse_spare_bit there just like all the other
-paths do?
-
-> diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
-
-> +#define CORE_PROCESS_CORNERS_NUM	2
-> +#define CPU_PROCESS_CORNERS_NUM		2
-> +
-> +enum {
-> +	THRESHOLD_INDEX_0,
-> +	THRESHOLD_INDEX_1,
-> +	THRESHOLD_INDEX_COUNT,
-> +};
-> +
-> +static const u32 core_process_speedos[THRESHOLD_INDEX_COUNT]
-> +	[CORE_PROCESS_CORNERS_NUM] = {
-> +	{1123,     UINT_MAX},
-> +	{0,        UINT_MAX},
-> +};
-> +
-> +static const u32 cpu_process_speedos[THRESHOLD_INDEX_COUNT]
-> +	[CPU_PROCESS_CORNERS_NUM] = {
-> +	{1695,     UINT_MAX},
-> +	{0,        UINT_MAX},
-> +};
-
-Those enums/tables are a lot smaller than Tegra30. I'm surprised if we
-end up making new chips simpler rather than more complex in this area.
-Are those tables complete?
-
-> +static void rev_sku_to_speedo_ids(int rev, int sku, int *threshold)
-> +{
-> +	u32 tmp;
-> +
-> +	switch (sku) {
-> +	case 0x00:
-> +	case 0x10:
-> +	case 0x05:
-> +	case 0x06:
-> +		tegra_cpu_speedo_id = 1;
-> +		tegra_soc_speedo_id = 0;
-> +		*threshold = THRESHOLD_INDEX_0;
-> +		break;
-> +
-> +	case 0x03:
-> +	case 0x04:
-> +		tegra_cpu_speedo_id = 2;
-> +		tegra_soc_speedo_id = 1;
-> +		*threshold = THRESHOLD_INDEX_1;
-> +		break;
-> +
-> +	default:
-> +		pr_err("Tegra114 Unknown SKU %d\n", sku);
-> +		tegra_cpu_speedo_id = 0;
-> +		tegra_soc_speedo_id = 0;
-> +		*threshold = THRESHOLD_INDEX_0;
-> +		break;
-> +	}
-> +
-> +	if (rev == TEGRA_REVISION_A01) {
-> +		tmp = tegra_fuse_readl(0x270) << 1;
-> +		tmp |= tegra_fuse_readl(0x26c);
-> +		if (!tmp)
-> +			tegra_cpu_speedo_id = 0;
-> +	}
-> +}
-
-That's also a lot simpler than Tegra30. Are all those SKUs really valid
-for all chip revisions including A01 where the 0x270/0x26c fuses are clear?
-
-If life really is this simple, then I should be happy:-) But I just want
-to check that this code really is accurate.
-
-> +void tegra114_init_speedo_data(void)
-
-The Tegra30 code has a couple BUILD_BUG_ON() here to ensure that the
-size of the {cpu,core}_process_speedos arrays match
-THRESHOLD_INDEX_COUNT. It'd be good to be consistent here.
-
-
-In general, the implementation of tegra114_init_speedo_data() is quite
-different from that of the existing tegra30_init_speedo_data(). It'd be
-nice if they were as similar as possible in structure so they could be
-easily compared. Can you take a look at the two and see if any changes
-are warranted in this patch?
