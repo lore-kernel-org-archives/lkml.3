@@ -1,109 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3COKIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:08:20 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58304 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3COKIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:08:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
-References: <1363151317.3311.9.camel@bilhuang-vm1>
-	<51400D9D.9060305@wwwdotorg.org>
-	<1363153204.3311.14.camel@bilhuang-vm1>
-	<5140C12A.4060900@wwwdotorg.org>
-	<1363227311.3311.30.camel@bilhuang-vm1>
-	<20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
-	<1363253287.3311.32.camel@bilhuang-vm1>
-	<51420EBB.7080503@wwwdotorg.org>
-	<1363310454.3311.44.camel@bilhuang-vm1>
-	<5142B027.4040403@wwwdotorg.org>
-	<20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
-Date: Fri, 15 Mar 2013 11:08:17 +0100
-Message-ID: <CAPDyKFoBJpraMz8i1FmFqG7=Zsv0DTQ0PKVOQJ-+iEsKpb3Hdg@mail.gmail.com>
-Subject: Re: [RFC 1/1] clk: Add notifier support in clk_prepare_enable/clk_disable_unprepare
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Bill Huang <bilhuang@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754107Ab3COKLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:11:09 -0400
+Received: from mout.web.de ([212.227.17.12]:50758 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753282Ab3COKLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 06:11:08 -0400
+From: Danny Baumann <dannybaumann@web.de>
+To: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, Danny Baumann <dannybaumann@web.de>
+Subject: [PATCH v2 1/3] ACPI video: Fix brightness control initialization for some laptops.
+Date: Fri, 15 Mar 2013 11:10:46 +0100
+Message-Id: <1363342248-6496-1-git-send-email-dannybaumann@web.de>
+X-Mailer: git-send-email 1.8.1.4
+X-Provags-ID: V02:K0:urpPtPey7XNz51emYmMIuYfAkgVijXDrXg3rZNbs/34
+ DfwwboboqRWPm3vO8H6BUngCoKpBHkfAwLlCCTUwQg5hvmBeyX
+ eIrIoWEal7vi4ekE+jGIn4QvDZoDtyUiETV13fp8MbKGYhOuqv
+ m/s/yzcPb8bx86+l3HdbUaiMQgqHp2Ps4cHI5P7/n1x8hJ0Fje
+ GGDHBVG2P/Z3wk3d5tlRg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 March 2013 10:39, Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
-> On Fri, Mar 15, 2013 at 06:22:47AM +0100, Stephen Warren wrote:
->> On 03/14/2013 07:20 PM, Bill Huang wrote:
->> > On Fri, 2013-03-15 at 01:54 +0800, Stephen Warren wrote:
->> >> On 03/14/2013 03:28 AM, Bill Huang wrote:
->> >>> On Thu, 2013-03-14 at 17:21 +0800, Peter De Schrijver wrote:
->> >>>> On Thu, Mar 14, 2013 at 03:15:11AM +0100, Bill Huang wrote:
->> >>>>
->> >>>>> I don't think deferring will work either, considering the usage of DVFS,
->> >>>>> device voltage is tightly coupled with frequency, when clock rate is
->> >>>>> about to increase, we have to boost voltage first and we can lower the
->> >>>>> voltage after the clock rate has decreased. All the above sequence have
->> >>>>> to be guaranteed or you might crash, so deferring not only make thing
->> >>>>> complicated in controlling the order but also hurt performance.
->> >>>>
->> >>>> But we could use notifiers in clk_prepare/clk_unprepare to set the voltage no?
->> >>>> As clk_prepare/clk_unprepare have to be called before clk_enable or after
->> >>>> clk_disable, the voltage can be raised to a safe level, before the clock
->> >>>> becomes active.
->> >>>
->> >>> Thanks Peter, actually I'm just about to propose my v2 RFC which add
->> >>> notifier in clk_prepare/clk_unprepare.
->> >>
->> >> Can't clk_set_rate() be called while the clock is prepared, or even
->> >> enabled? I don't see how your proposal would work.
->> >
->> > I think it works with just a little sacrifice on saving more power but
->> > that's related minor. Taking clk_prepare as an indicator on that clock
->> > will be enabled later, so we can raise the voltage to a safe level
->> > (according to the current rate or maybe default rate when clk_prepare is
->> > called, some time late when clk_set_rate() is called we can adjust again
->> > according to the requested rate change)
->>
->> Is clk_set_rate() only legal to call in non-atomic contexts then? The
->> header file doesn't say, although I guess since many other functions
->> explicitly say they can't, then by omission it can...
->
-> Yes. Only clk_enable() and clk_disable() can be called in an atomic context.
->
-> Cheers,
->
-> Peter.
->
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
+In particular, this fixes brightness control initialization for all
+devices that return index values from _BQC and don't happen to have the
+initial index set by the BIOS in their _BCL table. One example for that
+is the Dell Inspiron 15R SE (model number 7520).
 
-Just wanted to add my reflection on this topic;
+What happened for those devices is that acpi_init_brightness queried the
+initial brightness by calling acpi_video_device_lcd_get_level_current.
+This called _BQC, which returned e.g. 13. As _BQC_use_index isn't
+determined at this point (and thus has its initial value of 0), the
+index isn't converted into the actual level. As '13' isn't present in
+the _BCL list, *level is later overwritten with brightness->curr, which
+was initialized to max_level (100) before. Later in
+acpi_init_brightness, level_old (with the value 100) is used as an index
+into the _BCL table, which causes a value outside of the actual table to
+be used as input into acpi_video_device_lcd_set_level(). Depending on
+the (undefined) value of that location, this call will fail, causing the
+brightness control for the device in question not to be enabled.
 
-Some prerequisites; I think am in favor of using the clk API to
-trigger DVFS changes and then I agree on that clk_prepare|unprepare
-needs to be possible to track from a DVFS perspective. clk_set_rate is
-not enough.
+Fix that by returning the raw value returned by the _BQC call in the
+initialization case.
 
-So if we decide to do the above (using the clk API to trigger DVFS
-changes), I believe we should discuss two possible solutions;
-- clk notifiers or..
-- dvfs clock type.
+Signed-off-by: Danny Baumann <dannybaumann@web.de>
+---
+ drivers/acpi/video.c | 33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
-I am trying to make up my mind of what I think is the best solution.
-Have you considered "dvfs clock type"?
-I put some comments about this for "[PATCH 2/5] clk: notifier handler
-for dynamic voltage scaling" recently as well.
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 313f959..9c33871 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -222,7 +222,7 @@ static int acpi_video_device_lcd_set_level(struct acpi_video_device *device,
+ 			int level);
+ static int acpi_video_device_lcd_get_level_current(
+ 			struct acpi_video_device *device,
+-			unsigned long long *level, int init);
++			unsigned long long *level, int raw);
+ static int acpi_video_get_next_level(struct acpi_video_device *device,
+ 				     u32 level_current, u32 event);
+ static int acpi_video_switch_brightness(struct acpi_video_device *device,
+@@ -452,7 +452,7 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 
+ static int
+ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+-					unsigned long long *level, int init)
++					unsigned long long *level, int raw)
+ {
+ 	acpi_status status = AE_OK;
+ 	int i;
+@@ -463,6 +463,15 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+ 		status = acpi_evaluate_integer(device->dev->handle, buf,
+ 						NULL, level);
+ 		if (ACPI_SUCCESS(status)) {
++			if (raw) {
++				/*
++				 * Caller has indicated he wants the raw
++				 * value returned by _BQC, so don't furtherly
++				 * mess with the value.
++				 */
++				return 0;
++			}
++
+ 			if (device->brightness->flags._BQC_use_index) {
+ 				if (device->brightness->flags._BCL_reversed)
+ 					*level = device->brightness->count
+@@ -476,16 +485,14 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+ 					device->brightness->curr = *level;
+ 					return 0;
+ 			}
+-			if (!init) {
+-				/*
+-				 * BQC returned an invalid level.
+-				 * Stop using it.
+-				 */
+-				ACPI_WARNING((AE_INFO,
+-					      "%s returned an invalid level",
+-					      buf));
+-				device->cap._BQC = device->cap._BCQ = 0;
+-			}
++			/*
++			 * BQC returned an invalid level.
++			 * Stop using it.
++			 */
++			ACPI_WARNING((AE_INFO,
++				      "%s returned an invalid level",
++				      buf));
++			device->cap._BQC = device->cap._BCQ = 0;
+ 		} else {
+ 			/* Fixme:
+ 			 * should we return an error or ignore this failure?
+@@ -714,7 +721,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+ 	if (result)
+ 		goto out_free_levels;
+ 
+-	result = acpi_video_device_lcd_get_level_current(device, &level, 0);
++	result = acpi_video_device_lcd_get_level_current(device, &level, 1);
+ 	if (result)
+ 		goto out_free_levels;
+ 
+-- 
+1.8.1.4
 
-What could the advantages/disadvantages be between the two options?
-
-Kind regards
-Ulf Hansson
