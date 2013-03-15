@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab3CODS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 23:18:58 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:11600
+	id S1753841Ab3CODTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 23:19:04 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:23863
 	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751734Ab3CODS5 (ORCPT
+	by vger.kernel.org with ESMTP id S1751734Ab3CODS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 23:18:57 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Mar 2013 23:18:56 EDT
+	Thu, 14 Mar 2013 23:18:59 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-SpamScore: 6
+X-BigFish: VS6(z3121kzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <artem.bityutskiy@linux.intel.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 2/3] mtd: add the support to parse out the full-id nand type
-Date: Fri, 15 Mar 2013 11:01:00 +0800
-Message-ID: <1363316461-10592-3-git-send-email-b32955@freescale.com>
+Subject: [PATCH v6 1/3] mtd: add new fields to nand_flash_dev{}
+Date: Fri, 15 Mar 2013 11:00:59 +0800
+Message-ID: <1363316461-10592-2-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1363316461-10592-1-git-send-email-b32955@freescale.com>
 References: <1363316461-10592-1-git-send-email-b32955@freescale.com>
@@ -29,70 +28,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we meet a full-id nand type whose @id_len is not zero, we can use
-the find_full_id_nand() to parse out the necessary information for a
-nand chip.
+As time goes on, we begin to meet the situation that we can not get enough
+information from some nand chips's id data. Take some Toshiba's nand chips
+for example. I have 4 Toshiba's nand chips in my hand:
+	TC58NVG2S0F, TC58NVG3S0F, TC58NVG5D2, TC58NVG6D2
 
-If we meet a non full-id nand type, we can handle it in the legacy way.
+When we read these chips' datasheets, we will get the geometry of these chips:
+	TC58NVG2S0F : 4096 + 224
+	TC58NVG3S0F : 4096 + 232
+	TC58NVG5D2  : 8192 + 640
+	TC58NVG6D2  : 8192 + 640
+
+But we can not parse out the correct oob size for these chips from the id data.
+
+This patch adds some new fields to the nand_flash_dev{}:
+  @id_len: the valid length of the id data. See the comments in
+           nand_id_has_period()
+  @oobsize: the oob size.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- drivers/mtd/nand/nand_base.c |   35 ++++++++++++++++++++++++++++++++---
- 1 files changed, 32 insertions(+), 3 deletions(-)
+ include/linux/mtd/nand.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 72eada2..49de9da 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3123,6 +3123,30 @@ static void nand_decode_bbm_options(struct mtd_info *mtd,
- 		chip->bbt_options |= NAND_BBT_SCAN2NDPAGE;
- }
- 
-+static inline bool is_full_id_nand(struct nand_flash_dev *type)
-+{
-+	return type->id_len;
-+}
-+
-+static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
-+		   struct nand_flash_dev *type, u8 *id_data, int *busw)
-+{
-+	if (!strncmp(type->id, id_data, type->id_len)) {
-+		mtd->writesize = type->pagesize;
-+		mtd->erasesize = type->erasesize;
-+		mtd->oobsize = type->oobsize;
-+
-+		chip->cellinfo = id_data[2];
-+		chip->chipsize = (uint64_t)type->chipsize << 20;
-+		chip->options |= type->options;
-+
-+		*busw = type->options & NAND_BUSWIDTH_16;
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
- /*
-  * Get the flash and manufacturer id and lookup if the type is supported.
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 33516eb..4b87815 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -584,6 +584,8 @@ struct nand_chip {
+  * @chipsize: total chip size in MiB
+  * @erasesize: eraseblock size in bytes (determined from the extended ID if 0)
+  * @options: stores various chip bit options
++ * @id_len: The valid length of the @id.
++ * @oobsize: OOB size
   */
-@@ -3174,9 +3198,14 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 	if (!type)
- 		type = nand_flash_ids;
+ struct nand_flash_dev {
+ 	char *name;
+@@ -598,6 +600,8 @@ struct nand_flash_dev {
+ 	unsigned int chipsize;
+ 	unsigned int erasesize;
+ 	unsigned int options;
++	uint16_t id_len;
++	uint16_t oobsize;
+ };
  
--	for (; type->name != NULL; type++)
--		if (*dev_id == type->dev_id)
--			break;
-+	for (; type->name != NULL; type++) {
-+		if (is_full_id_nand(type)) {
-+			if (find_full_id_nand(mtd, chip, type, id_data, &busw))
-+				goto ident_done;
-+		} else if (*dev_id == type->dev_id) {
-+				break;
-+		}
-+	}
- 
- 	chip->onfi_version = 0;
- 	if (!type->name || !type->pagesize) {
+ /**
 -- 
 1.7.1
 
