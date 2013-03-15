@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab3COPYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:24:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40398 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3COPQx (ORCPT
+	id S1755474Ab3COP0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:26:46 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38699 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab3COP0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:16:53 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <rogerq@ti.com>
-Subject: [PATCH v2 01/23] usb: phy: nop: Add some parameters to platform data
-Date: Fri, 15 Mar 2013 17:16:22 +0200
-Message-ID: <1363360604-21368-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363360604-21368-1-git-send-email-rogerq@ti.com>
-References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
+	Fri, 15 Mar 2013 11:26:44 -0400
+Message-ID: <51433D98.4050605@linux.vnet.ibm.com>
+Date: Fri, 15 Mar 2013 23:26:16 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 0/5] KVM: MMU: fast invalid all mmio sptes
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031515-2000-0000-0000-00000B577976
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clk_rate parameter to platform data. If supplied, the
-NOP phy driver will program the clock to that rate during probe.
+The current way is holding hot mmu-lock and walking all shadow pages, this
+is not scale. This patchset tries to introduce a very simple and scale way
+to fast invalid all mmio sptes - it need not walk any shadow pages and hold
+any locks.
 
-Also add 2 flags, needs_vcc and needs_reset.
-If the flag is set and the regulator couldn't be found
-then the driver will bail out with -EPROBE_DEFER.
+The idea is simple:
+KVM maintains a global mmio invalid generation-number which is stored in
+kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+generation-number into his available bits when it is created.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- include/linux/usb/nop-usb-xceiv.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+When KVM need zap all mmio sptes, it just simply increase the global
+generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+then it walks the shadow page table and get the mmio spte. If the
+generation-number on the spte does not equal the global generation-number,
+it will go to the normal #PF handler to update the mmio spte.
 
-diff --git a/include/linux/usb/nop-usb-xceiv.h b/include/linux/usb/nop-usb-xceiv.h
-index 28884c7..148d351 100644
---- a/include/linux/usb/nop-usb-xceiv.h
-+++ b/include/linux/usb/nop-usb-xceiv.h
-@@ -5,6 +5,11 @@
- 
- struct nop_usb_xceiv_platform_data {
- 	enum usb_phy_type type;
-+	unsigned long clk_rate;
-+
-+	/* if set fails with -EPROBE_DEFER if can't get regulator */
-+	unsigned int needs_vcc:1;
-+	unsigned int needs_reset:1;
- };
- 
- #if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
--- 
-1.7.4.1
+Since 19 bits are used to store generation-number on mmio spte, the
+generation-number can be round after 33554432 times. It is large enough
+for nearly all most cases, but making the code be more strong, we zap all
+shadow pages when the number is round.
+
+Note: after my patchset that fast zap all shadow pages, kvm_mmu_zap_all is
+not a problem any more. The scalability is the same as zap mmio shadow page
+
 
