@@ -1,120 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab3CONoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:44:39 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:34593 "EHLO multi.imgtec.com"
+	id S1755207Ab3CONov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:44:51 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:34616 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab3CONoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:44:37 -0400
+	id S1754274Ab3CONoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:44:38 -0400
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Robert Richter <rric@kernel.org>, <oprofile-list@lists.sf.net>
-Subject: [PATCH 8/9] metag: perf: prepare for use by oprofile
-Date: Fri, 15 Mar 2013 13:43:47 +0000
-Message-ID: <1363355028-23278-9-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>, Robert Richter <rric@kernel.org>,
+        <oprofile-list@lists.sf.net>
+Subject: [PATCH 9/9] metag: OProfile support
+Date: Fri, 15 Mar 2013 13:43:48 +0000
+Message-ID: <1363355028-23278-10-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363355028-23278-1-git-send-email-james.hogan@imgtec.com>
 References: <1363355028-23278-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_15_13_44_35
+X-SEF-Processed: 7_3_0_01181__2013_03_15_13_44_36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To allow our perf_events code to work with oprofile the PERF_TYPE_RAW
-event type attribute is implemented, which allows the internal encoding
-of events to be used externally (this requires some tweaks so that it
-handles invalid event types more gracefully), and perf_pmu_name() is
-adjusted to return metag_pmu->name instead of metag_pmu->pmu.name (which
-is changed to "meta2").
+Add OProfile support for metag, using the perf backend, and falling back
+to generic timer based sampling if perf counter interrupt support is
+disabled.
+
+The oprofile code prepends "metag/" to the perf pmu name to give
+"metag/meta2" which is more consistent with other oprofile arch names.
+
+The backtrace code makes use of <asm/stacktrace.h> for kernel
+backtracing, and a simple frame pointer walk for userland backtracing.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Robert Richter <rric@kernel.org>
 Cc: oprofile-list@lists.sf.net
 ---
- arch/metag/kernel/perf/perf_event.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ arch/metag/Kconfig              |  4 +++
+ arch/metag/Makefile             |  2 ++
+ arch/metag/oprofile/Makefile    | 17 +++++++++++
+ arch/metag/oprofile/backtrace.c | 63 +++++++++++++++++++++++++++++++++++++++
+ arch/metag/oprofile/backtrace.h |  6 ++++
+ arch/metag/oprofile/common.c    | 66 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 158 insertions(+)
+ create mode 100644 arch/metag/oprofile/Makefile
+ create mode 100644 arch/metag/oprofile/backtrace.c
+ create mode 100644 arch/metag/oprofile/backtrace.h
+ create mode 100644 arch/metag/oprofile/common.c
 
-diff --git a/arch/metag/kernel/perf/perf_event.c b/arch/metag/kernel/perf/perf_event.c
-index a1eff36..3665694 100644
---- a/arch/metag/kernel/perf/perf_event.c
-+++ b/arch/metag/kernel/perf/perf_event.c
-@@ -40,10 +40,10 @@ static DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- /* PMU admin */
- const char *perf_pmu_name(void)
- {
--	if (metag_pmu)
--		return metag_pmu->pmu.name;
-+	if (!metag_pmu)
-+		return NULL;
+diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
+index afc8973..b06b418 100644
+--- a/arch/metag/Kconfig
++++ b/arch/metag/Kconfig
+@@ -25,6 +25,7 @@ config METAG
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_MOD_ARCH_SPECIFIC
++	select HAVE_OPROFILE
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select IRQ_DOMAIN
+@@ -209,6 +210,9 @@ config METAG_PERFCOUNTER_IRQS
+ 	  When disabled, Performance Counters information will be collected
+ 	  based on Timer Interrupt.
  
--	return NULL;
-+	return metag_pmu->name;
- }
- EXPORT_SYMBOL_GPL(perf_pmu_name);
- 
-@@ -171,6 +171,7 @@ static int metag_pmu_event_init(struct perf_event *event)
- 	switch (event->attr.type) {
- 	case PERF_TYPE_HARDWARE:
- 	case PERF_TYPE_HW_CACHE:
-+	case PERF_TYPE_RAW:
- 		err = _hw_perf_event_init(event);
- 		break;
- 
-@@ -556,6 +557,10 @@ static int _hw_perf_event_init(struct perf_event *event)
- 		if (err)
- 			return err;
- 		break;
++config HW_PERF_EVENTS
++	def_bool METAG_PERFCOUNTER_IRQS && PERF_EVENTS
 +
-+	case PERF_TYPE_RAW:
-+		mapping = attr->config;
-+		break;
- 	}
+ config METAG_DA
+ 	bool "DA support"
+ 	help
+diff --git a/arch/metag/Makefile b/arch/metag/Makefile
+index 81bd6a1..b566116 100644
+--- a/arch/metag/Makefile
++++ b/arch/metag/Makefile
+@@ -49,6 +49,8 @@ core-y					+= arch/metag/mm/
+ libs-y					+= arch/metag/lib/
+ libs-y					+= arch/metag/tbx/
  
- 	/* Return early if the event is unsupported */
-@@ -623,7 +628,7 @@ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
- 
- 	/* Check for a core internal or performance channel event. */
- 	if (tmp) {
--		void *perf_addr = (void *)PERF_COUNT(idx);
-+		void *perf_addr;
- 
- 		/*
- 		 * Anything other than a cycle count will write the low-
-@@ -637,9 +642,14 @@ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
- 		case 0xf0:
- 			perf_addr = (void *)PERF_CHAN(idx);
- 			break;
++drivers-$(CONFIG_OPROFILE)		+= arch/metag/oprofile/
 +
-+		default:
-+			perf_addr = NULL;
+ boot					:= arch/metag/boot
+ 
+ boot_targets				+= uImage
+diff --git a/arch/metag/oprofile/Makefile b/arch/metag/oprofile/Makefile
+new file mode 100644
+index 0000000..c9639d4
+--- /dev/null
++++ b/arch/metag/oprofile/Makefile
+@@ -0,0 +1,17 @@
++obj-$(CONFIG_OPROFILE)	+= oprofile.o
++
++oprofile-core-y	+= buffer_sync.o
++oprofile-core-y	+= cpu_buffer.o
++oprofile-core-y	+= event_buffer.o
++oprofile-core-y	+= oprof.o
++oprofile-core-y	+= oprofile_files.o
++oprofile-core-y	+= oprofile_stats.o
++oprofile-core-y	+= oprofilefs.o
++oprofile-core-y	+= timer_int.o
++oprofile-core-$(CONFIG_HW_PERF_EVENTS)	+= oprofile_perf.o
++
++oprofile-y	+= backtrace.o
++oprofile-y	+= common.o
++oprofile-y	+= $(addprefix ../../../drivers/oprofile/,$(oprofile-core-y))
++
++ccflags-y	+= -Werror
+diff --git a/arch/metag/oprofile/backtrace.c b/arch/metag/oprofile/backtrace.c
+new file mode 100644
+index 0000000..7cc3f37
+--- /dev/null
++++ b/arch/metag/oprofile/backtrace.c
+@@ -0,0 +1,63 @@
++/*
++ * Copyright (C) 2010-2013 Imagination Technologies Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/oprofile.h>
++#include <linux/uaccess.h>
++#include <asm/processor.h>
++#include <asm/stacktrace.h>
++
++#include "backtrace.h"
++
++static void user_backtrace_fp(unsigned long __user *fp, unsigned int depth)
++{
++	while (depth-- && access_ok(VERIFY_READ, fp, 8)) {
++		unsigned long addr;
++		unsigned long __user *fpnew;
++		if (__copy_from_user_inatomic(&addr, fp + 1, sizeof(addr)))
 +			break;
- 		}
- 
--		metag_out32((config & 0x0f), perf_addr);
-+		if (perf_addr)
-+			metag_out32((config & 0x0f), perf_addr);
- 
- 		/*
- 		 * Now we use the high nibble as the performance event to
-@@ -848,7 +858,7 @@ static int __init init_hw_perf_events(void)
- 			metag_pmu->max_period = 0;
- 		}
- 
--		metag_pmu->name = "Meta 2";
-+		metag_pmu->name = "meta2";
- 		metag_pmu->version = version;
- 		metag_pmu->pmu = pmu;
- 	}
++		addr -= 4;
++
++		oprofile_add_trace(addr);
++
++		/* stack grows up, so frame pointers must decrease */
++		if (__copy_from_user_inatomic(&fpnew, fp + 0, sizeof(fpnew)))
++			break;
++		if (fpnew >= fp)
++			break;
++		fp = fpnew;
++	}
++}
++
++static int kernel_backtrace_frame(struct stackframe *frame, void *data)
++{
++	unsigned int *depth = data;
++
++	oprofile_add_trace(frame->pc);
++
++	/* decrement depth and stop if we reach 0 */
++	if ((*depth)-- == 0)
++		return 1;
++
++	/* otherwise onto the next frame */
++	return 0;
++}
++
++void metag_backtrace(struct pt_regs * const regs, unsigned int depth)
++{
++	if (user_mode(regs)) {
++		unsigned long *fp = (unsigned long *)regs->ctx.AX[1].U0;
++		user_backtrace_fp((unsigned long __user __force *)fp, depth);
++	} else {
++		struct stackframe frame;
++		frame.fp = regs->ctx.AX[1].U0;		/* A0FrP */
++		frame.sp = user_stack_pointer(regs);	/* A0StP */
++		frame.lr = 0;				/* from stack */
++		frame.pc = regs->ctx.CurrPC;		/* PC */
++		walk_stackframe(&frame, &kernel_backtrace_frame, &depth);
++	}
++}
+diff --git a/arch/metag/oprofile/backtrace.h b/arch/metag/oprofile/backtrace.h
+new file mode 100644
+index 0000000..c0fcc42
+--- /dev/null
++++ b/arch/metag/oprofile/backtrace.h
+@@ -0,0 +1,6 @@
++#ifndef _METAG_OPROFILE_BACKTRACE_H
++#define _METAG_OPROFILE_BACKTRACE_H
++
++void metag_backtrace(struct pt_regs * const regs, unsigned int depth);
++
++#endif
+diff --git a/arch/metag/oprofile/common.c b/arch/metag/oprofile/common.c
+new file mode 100644
+index 0000000..ba26152
+--- /dev/null
++++ b/arch/metag/oprofile/common.c
+@@ -0,0 +1,66 @@
++/*
++ * arch/metag/oprofile/common.c
++ *
++ * Copyright (C) 2013 Imagination Technologies Ltd.
++ *
++ * Based on arch/sh/oprofile/common.c:
++ *
++ * Copyright (C) 2003 - 2010  Paul Mundt
++ *
++ * Based on arch/mips/oprofile/common.c:
++ *
++ *	Copyright (C) 2004, 2005 Ralf Baechle
++ *	Copyright (C) 2005 MIPS Technologies, Inc.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/oprofile.h>
++#include <linux/perf_event.h>
++#include <linux/slab.h>
++
++#include "backtrace.h"
++
++#ifdef CONFIG_HW_PERF_EVENTS
++/*
++ * This will need to be reworked when multiple PMUs are supported.
++ */
++static char *metag_pmu_op_name;
++
++char *op_name_from_perf_id(void)
++{
++	return metag_pmu_op_name;
++}
++
++int __init oprofile_arch_init(struct oprofile_operations *ops)
++{
++	ops->backtrace = metag_backtrace;
++
++	if (perf_num_counters() == 0)
++		return -ENODEV;
++
++	metag_pmu_op_name = kasprintf(GFP_KERNEL, "metag/%s",
++				      perf_pmu_name());
++	if (unlikely(!metag_pmu_op_name))
++		return -ENOMEM;
++
++	return oprofile_perf_init(ops);
++}
++
++void oprofile_arch_exit(void)
++{
++	oprofile_perf_exit();
++	kfree(metag_pmu_op_name);
++}
++#else
++int __init oprofile_arch_init(struct oprofile_operations *ops)
++{
++	ops->backtrace = metag_backtrace;
++	/* fall back to timer interrupt PC sampling */
++	return -ENODEV;
++}
++void oprofile_arch_exit(void) {}
++#endif /* CONFIG_HW_PERF_EVENTS */
 -- 
 1.8.1.2
 
