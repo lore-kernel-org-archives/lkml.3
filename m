@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab3COPRi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:17:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50696 "EHLO bear.ext.ti.com"
+	id S932194Ab3COPRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:17:42 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50704 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab3COPRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:17:34 -0400
+	id S932164Ab3COPRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:17:39 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <rogerq@ti.com>, =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>
-Subject: [PATCH v2 20/23] ARM: dts: OMAP4: Add HS USB Host IP nodes
-Date: Fri, 15 Mar 2013 17:16:41 +0200
-Message-ID: <1363360604-21368-21-git-send-email-rogerq@ti.com>
+Subject: [PATCH v2 22/23] ARM: dts: OMAP3: Add HS USB Host IP nodes
+Date: Fri, 15 Mar 2013 17:16:43 +0200
+Message-ID: <1363360604-21368-23-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363360604-21368-1-git-send-email-rogerq@ti.com>
 References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
@@ -30,47 +30,48 @@ OHCI and EHCI controllers.
 CC: Benoît Cousson <b-cousson@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap4.dtsi |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/omap3.dtsi |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 739bb79..b7db1a2 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -529,5 +529,35 @@
- 			ti,hwmods = "timer11";
- 			ti,timer-pwm;
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 1acc261..a14f74b 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -397,5 +397,36 @@
+ 			ti,timer-alwon;
+ 			ti,timer-secure;
  		};
 +
-+		usbhstll: usbhstll@4a062000 {
++		usbhstll: usbhstll@48062000 {
 +			compatible = "ti,usbhs-tll";
-+			reg = <0x4a062000 0x1000>;
-+			interrupts = <0 78 0x4>;
++			reg = <0x48062000 0x1000>;
++			interrupts = <78>;
 +			ti,hwmods = "usb_tll_hs";
 +		};
 +
-+		usbhshost: usbhshost@4a064000 {
++		usbhshost: usbhshost@48064000 {
 +			compatible = "ti,usbhs-host";
-+			reg = <0x4a064000 0x800>;
++			reg = <0x48064000 0x400>;
 +			ti,hwmods = "usb_host_hs";
 +			#address-cells = <1>;
 +			#size-cells = <1>;
 +			ranges;
 +
-+			usbhsohci: ohci@4a064800 {
++			usbhsohci: ohci@48064400 {
 +				compatible = "ti,ohci-omap3", "usb-ohci";
-+				reg = <0x4a064800 0x400>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <0 76 0x4>;
++				reg = <0x48064400 0x400>;
++				interrupt-parent = <&intc>;
++				interrupts = <76>;
 +			};
 +
-+			usbhsehci: ehci@4a064c00 {
++			usbhsehci: ehci@48064800 {
 +				compatible = "ti,ehci-omap", "usb-ehci";
-+				reg = <0x4a064c00 0x400>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <0 77 0x4>;
++				reg = <0x48064800 0x400>;
++				interrupt-parent = <&intc>;
++				interrupts = <77>;
 +			};
 +		};
++
  	};
  };
 -- 
