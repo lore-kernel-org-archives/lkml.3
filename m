@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3COIs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:48:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57683 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab3COIs1 (ORCPT
+	id S1753928Ab3COIvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:51:19 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:62456 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab3COIvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:48:27 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: vinod.koul@intel.com
-Cc: linaro-kernel@lists.linaro.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] DMA: OF: Check properties value before running be32_to_cpup() on it
-Date: Fri, 15 Mar 2013 14:18:20 +0530
-Message-Id: <0a0ef15d47393fe9d24a395c38068b871f913776.1363337257.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 15 Mar 2013 08:48:22.0646 (UTC) FILETIME=[D993A160:01CE2159]
-X-MC-Unique: 113031508482408001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 15 Mar 2013 04:51:16 -0400
+Message-ID: <5142E0FA.7020200@gmail.com>
+Date: Fri, 15 Mar 2013 16:51:06 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Hillf Danton <dhillf@gmail.com>
+CC: Will Huck <will.huckk@gmail.com>, Lenky Gao <lenky.gao@gmail.com>,
+        Zlatko Calusic <zlatko.calusic@iskon.hr>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>, Linux-MM <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: Inactive memory keep growing and how to release it?
+References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com> <51347A6E.8010608@iskon.hr> <CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com> <513A9AF7.4020909@gmail.com> <CAJd=RBAoNyniJpaeHafpWm0w7FfC9y+9+x_Gpdb74Jtzyk81HA@mail.gmail.com>
+In-Reply-To: <CAJd=RBAoNyniJpaeHafpWm0w7FfC9y+9+x_Gpdb74Jtzyk81HA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2F8mWiS003172
 
-In of_dma_controller_register() routine we are calling of_get_property() as an
-parameter to be32_to_cpup(). In case the property doesn't exist we will get a
-crash.
+On 03/14/2013 08:39 PM, Hillf Danton wrote:
+> On Sat, Mar 9, 2013 at 10:14 AM, Will Huck <will.huckk@gmail.com> wrote:
+>> Cc experts. Hugh, Johannes,
+>>
+>> On 03/04/2013 08:21 PM, Lenky Gao wrote:
+>>> 2013/3/4 Zlatko Calusic <zlatko.calusic@iskon.hr>:
+>>>> The drop_caches mechanism doesn't free dirty page cache pages. And your
+>>>> bash
+>>>> script is creating a lot of dirty pages. Run it like this and see if it
+>>>> helps your case:
+>>>>
+>>>> sync; echo 3 > /proc/sys/vm/drop_caches
+>>> Thanks for your advice.
+>>>
+>>> The inactive memory still cannot be reclaimed after i execute the sync
+>>> command:
+>>>
+>>> # cat /proc/meminfo | grep Inactive\(file\);
+>>> Inactive(file):   882824 kB
+>>> # sync;
+>>> # echo 3 > /proc/sys/vm/drop_caches
+>>> # cat /proc/meminfo | grep Inactive\(file\);
+>>> Inactive(file):   777664 kB
+>>>
+>>> I find these page becomes orphaned in this function, but do not understand
+>>> why:
+>>>
+>>> /*
+>>>    * If truncate cannot remove the fs-private metadata from the page, the
+>>> page
+>>>    * becomes orphaned.  It will be left on the LRU and may even be mapped
+>>> into
+>>>    * user pagetables if we're racing with filemap_fault().
+>>>    *
+>>>    * We need to bale out if page->mapping is no longer equal to the
+>>> original
+>>>    * mapping.  This happens a) when the VM reclaimed the page while we
+>>> waited on
+>>>    * its lock, b) when a concurrent invalidate_mapping_pages got there
+>>> first and
+>>>    * c) when tmpfs swizzles a page between a tmpfs inode and swapper_space.
+>>>    */
+>>> static int
+>>> truncate_complete_page(struct address_space *mapping, struct page *page)
+>>> {
+>>> ...
+>>>
+>>> My file system type is ext3, mounted with the opteion data=journal and
+>>> it is easy to reproduce.
+>>>
+> Perhaps we have to consider page count for orphan page if it
+> could be reproduced with mainline.
 
-This patch changes this code to check if we got a valid property first and then
-runs be32_to_cpup() on it.
+Why? /proc/sys/vm/drop_caches will call invalidate_mapping_pages() 
+instead of truncate_complete_page().
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
+>
+> Hillf
+> ---
+> --- a/mm/vmscan.c	Sun Mar 10 13:36:26 2013
+> +++ b/mm/vmscan.c	Thu Mar 14 20:29:40 2013
+> @@ -315,14 +315,14 @@ out:
+>   	return ret;
+>   }
+>
+> -static inline int is_page_cache_freeable(struct page *page)
+> +static inline int is_page_cache_freeable(struct page *page, int has_mapping)
+>   {
+>   	/*
+>   	 * A freeable page cache page is referenced only by the caller
+>   	 * that isolated the page, the page cache radix tree and
+>   	 * optional buffer heads at page->private.
+>   	 */
+> -	return page_count(page) - page_has_private(page) == 2;
+> +	return page_count(page) - page_has_private(page) == has_mapping + 1;
+>   }
 
-My mails are broken, i have pushed this patch here:
+page count 2 is for page cache and isolator, why you check mapping 
+separately?
 
-http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/dma-of-fix
-
- drivers/dma/of-dma.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index 69d04d2..09c7ad1 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -93,6 +93,7 @@ int of_dma_controller_register(struct device_node *np,
- {
- 	struct of_dma	*ofdma;
- 	int		nbcells;
-+	const __be32	*prop;
- 
- 	if (!np || !of_dma_xlate) {
- 		pr_err("%s: not enough information provided\n", __func__);
-@@ -103,8 +104,11 @@ int of_dma_controller_register(struct device_node *np,
- 	if (!ofdma)
- 		return -ENOMEM;
- 
--	nbcells = be32_to_cpup(of_get_property(np, "#dma-cells", NULL));
--	if (!nbcells) {
-+	prop = of_get_property(np, "#dma-cells", NULL);
-+	if (prop)
-+		nbcells = be32_to_cpup(prop);
-+
-+	if (!prop || !nbcells) {
- 		pr_err("%s: #dma-cells property is missing or invalid\n",
- 		       __func__);
- 		kfree(ofdma);
--- 
-1.7.12.rc2.18.g61b472e
-
+>   static int may_write_to_queue(struct backing_dev_info *bdi,
+> @@ -393,7 +393,7 @@ static pageout_t pageout(struct page *pa
+>   	 * swap_backing_dev_info is bust: it doesn't reflect the
+>   	 * congestion state of the swapdevs.  Easy to fix, if needed.
+>   	 */
+> -	if (!is_page_cache_freeable(page))
+> +	if (!is_page_cache_freeable(page, mapping ? 1 : 0))
+>   		return PAGE_KEEP;
+>   	if (!mapping) {
+>   		/*
+> --
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
