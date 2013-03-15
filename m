@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab3COK51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:57:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53177 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab3COK5Y (ORCPT
+	id S1754235Ab3COK5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:57:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38905 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3COKyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:57:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [Suggestion] Latest randconfig build errors for Head.S
-Date: Fri, 15 Mar 2013 10:56:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrea Adami <andrea.adami@gmail.com>, Chen Gang <gang.chen@asianux.com>,
-        matthew.leach@arm.com, dave.martin@linaro.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>, nico@linaro.org,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        matthew.gretton-dann@linaro.org
-References: <51415428.1070401@asianux.com> <514270D2.9010205@asianux.com> <CAAQYJAvXLV38shKncAKKqgQ9G0SnXjh+=aJHBdhd29yzVtL80A@mail.gmail.com>
-In-Reply-To: <CAAQYJAvXLV38shKncAKKqgQ9G0SnXjh+=aJHBdhd29yzVtL80A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="gb2312"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201303151056.55819.arnd@arndb.de>
-X-Provags-ID: V02:K0:FsYiqV/x6GgSY7VF8blAHgg9tdz4YZUxVnn0K54I7x8
- uguKIKrgEfjg8Xnne/9QsRs8AbMUN/vv+rcBvENYQcSzg2MKi9
- 7uxgGdUNW8Dbj5z96J4YyT9b9JIxqbTBH04GtRWrTR99QGEhbI
- EYTuhmtVZf8n9R/6Azqi+nMKTfhEtTIEKzhyyvE64Li+N8WWZM
- iPdt0KXyWnu5uhQixpvWPB4qU7XFsvgWsbmRv/Ydn0h62vfZ02
- /pzBHoL5zgd8689GQClhP2Q1NreVWbzSl84MjONkcAEjmGF+0V
- DJhWPwgesRn4C+3nJ65g3w6jQHHyQR4gq58tZ8rLhrhcbpCUNX
- bR0AqN974v1RIbAwYYW8=
+	Fri, 15 Mar 2013 06:54:36 -0400
+From: Michel Lespinasse <walken@google.com>
+To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 02/13] rwsem: shorter spinlocked section in rwsem_down_failed_common()
+Date: Fri, 15 Mar 2013 03:54:18 -0700
+Message-Id: <1363344869-15732-3-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363344869-15732-1-git-send-email-walken@google.com>
+References: <1363344869-15732-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 March 2013, Andrea Adami wrote:
-> On Fri, Mar 15, 2013 at 1:52 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> > 于 2013年03月15日 07:43, Russell King - ARM Linux 写道:
-> >> So our wonderful toolchain has decided to start producing NULL warnings
-> >> for every "mcr     p15, 0, rX, c7, c10, 4" instruction?  I'd just ignore
-> >> them and hope that the toolchain people fix it.
-> 
-> AFAIK Arnd is aware and waiting for feedback about his patch:
-> 
-> ARM: compressed/head.S: work around new binutils warning   Arnd Bergmann
-> 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-January/144846.html
+This change reduces the size of the spinlocked and TASK_UNINTERRUPTIBLE
+sections in rwsem_down_failed_common():
 
-Right. The fact that as prints a warning for those instructions makes sense
-given that we are telling it we want to run on *all* ARM architectures,
-and that ARMv8 has deprecated them officially.
+- We only need the sem->wait_lock to insert ourselves on the wait_list;
+  the waiter node can be prepared outside of the wait_lock.
 
-Of course, what is bogus about this is the "NULL" part rather than printing
-the text that was meant to come out to explain the situation.  I don't
-know how to report that bug other than what I tried before, but if it gets
-fixed by printing the right text, we will still want to build a kernel
-without getting any warnings.
+- The task state only needs to be set to TASK_UNINTERRUPTIBLE immediately
+  before checking if we actually need to sleep; it doesn't need to protect
+  the entire function.
 
-	Arnd
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+---
+ lib/rwsem.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 672eb33218ac..40636454cf3c 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -188,14 +188,12 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	struct task_struct *tsk = current;
+ 	signed long count;
+ 
+-	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+-
+ 	/* set up my own style of waitqueue */
+-	raw_spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+ 	waiter.type = type;
+ 	get_task_struct(tsk);
+ 
++	raw_spin_lock_irq(&sem->wait_lock);
+ 	if (list_empty(&sem->wait_list))
+ 		adjustment += RWSEM_WAITING_BIAS;
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+@@ -218,7 +216,8 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	raw_spin_unlock_irq(&sem->wait_lock);
+ 
+ 	/* wait to be given the lock */
+-	for (;;) {
++	while (true) {
++		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 		if (!waiter.task)
+ 			break;
+ 
+@@ -231,7 +230,6 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 			}
+ 		raw_spin_unlock_irq(&sem->wait_lock);
+ 		schedule();
+-		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 	}
+ 
+ 	tsk->state = TASK_RUNNING;
+-- 
+1.8.1.3
