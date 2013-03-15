@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3COS51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:57:27 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:49085 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab3COS5W (ORCPT
+	id S932150Ab3COS5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 14:57:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2666 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab3COS5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 14:57:22 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        mszeredi@suse.cz
-In-Reply-To: <20130315121220.GY21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <20130313160854.54ac0491044371b4db214698@linux-foundation.org> <CAJfpeguvhJaoSBDKEXoJFn_C=52aXbC9L2ALJvp6ekwEGyQX_g@mail.gmail.com> <20130315012541.GU21522@ZenIV.linux.org.uk> <19058.1363320936@jrobl> <20130315044411.GW21522@ZenIV.linux.org.uk> <20079.1363324154@jrobl> <20130315051322.GX21522@ZenIV.linux.org.uk> <1363335318.2459.4.camel@dabdike> <20130315121220.GY21522@ZenIV.linux.org.uk>
-Date: Sat, 16 Mar 2013 03:57:18 +0900
-Message-ID: <29608.1363373838@jrobl>
+	Fri, 15 Mar 2013 14:57:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Mar 2013 11:50:56 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: tegra: fix register address of slink controller
+Date: Sat, 16 Mar 2013 00:25:30 +0530
+Message-ID: <1363373730-10703-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix typo on register address of slink3 controller where register
+address is wrongly set as 0x7000d480 but it is 0x7000d800.
 
-Al Viro:
-> The trouble with such mechanisms is that they tend to end up depending on
-> fairly non-trivial properties of underlying fs.  Try aufs one on btrfs,
-> see how soon you spot the problem.  It's nice when a method turns out
-> to be really redundant and implementable in uniform way via other methods
-> present; see fh_to_dentry history for example of situation where it hadn't...
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/boot/dts/tegra20.dtsi |    2 +-
+ arch/arm/boot/dts/tegra30.dtsi |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Hmm, I could not see problem around aufs using btrfs as the upper RW
-branch, tested on linux-3.9-rc2.
-Would you describe more specifically?
-Some of my local tests didn't pass due to an error return from
-btrfs. For example, repeat "ln fileA $very_loooong_filename", then btrfs
-returns EMLINK so soon.
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 0bfd823..4084da0 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -385,7 +385,7 @@
+ 
+ 	spi@7000d800 {
+ 		compatible = "nvidia,tegra20-slink";
+-		reg = <0x7000d480 0x200>;
++		reg = <0x7000d800 0x200>;
+ 		interrupts = <0 83 0x04>;
+ 		nvidia,dma-request-selector = <&apbdma 17>;
+ 		#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index c371651..f302ace 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -372,7 +372,7 @@
+ 
+ 	spi@7000d800 {
+ 		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
+-		reg = <0x7000d480 0x200>;
++		reg = <0x7000d800 0x200>;
+ 		interrupts = <0 83 0x04>;
+ 		nvidia,dma-request-selector = <&apbdma 17>;
+ 		#address-cells = <1>;
+-- 
+1.7.1.1
 
-And aufs refers the common set of inode attribute. I mean attrs declared
-in VFS. Also I know some filesystems don't maintain attrs on each
-operation. For such fs, aufs calls vfs_getattr() internally.
-
-
-J. R. Okajima
