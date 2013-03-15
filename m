@@ -1,125 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab3CONKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:10:30 -0400
-Received: from mx02.infracom.it ([62.196.48.11]:37098 "EHLO mx02.infracom.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754774Ab3CONK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:10:28 -0400
-Message-ID: <51431DC0.1090603@infracom.it>
-Date: Fri, 15 Mar 2013 14:10:24 +0100
-From: Roberto Oppedisano <roberto.oppedisano@infracom.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1755005Ab3CONKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:10:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60138 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab3CONKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:10:45 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 26/50] staging: omap-thermal: move conv table limits out of sensor data
+Date: Fri, 15 Mar 2013 09:00:14 -0400
+Message-ID: <1363352438-15935-27-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+In-Reply-To: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "toshi.kani@hp.com" <toshi.kani@hp.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>
-Subject: Re: Regression: Fixing recursive fault but reboot is needed at boot
- on HP 6730B - bisected
-References: <513D8F3A.8030308@gmail.com> <51418863.8000902@infracom.it> <1453029.sQIX9a1hrM@vostro.rjw.lan> <5142ED1A.1040500@infracom.it>
-In-Reply-To: <5142ED1A.1040500@infracom.it>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+As we have one conv table per bandgap device and not per sensor,
+this patch changes the data structures so that the conv table
+min and max values are now part of bandgap_data and not sensor_data.
 
-Il 15/03/2013 10:42, Roberto Oppedisano ha scritto:
-> Il 14/03/2013 18:27, Rafael J. Wysocki ha scritto:
->> On Thursday, March 14, 2013 09:20:51 AM Roberto Oppedisano wrote:
->> As Toshi said, this particular commit doesn't make any functional 
->> changes. Can you please verify if the immediately preceding commit 
->> 6af9a803f4d2e4137d9f74a8fc9af4857fbda001 works for you? Rafael 
->
-> I have checked out this commit and it is NOT working.
->
-> BTW I did find the same commit in my bisection log, and probably
-> it was a false negative (I tried a couple of boot for each working kernel
-> during bisectrion, probably it was not not enough).
-> I'm going to replay the bisection today; will report back ASAP, to see
-> if it ends in something which makes sense to you. 
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/staging/omap-thermal/omap-bandgap.c       |   39 +++++++++-----------
+ drivers/staging/omap-thermal/omap-bandgap.h       |    8 ++--
+ drivers/staging/omap-thermal/omap4-thermal-data.c |   10 +++--
+ drivers/staging/omap-thermal/omap5-thermal-data.c |    8 +---
+ 4 files changed, 30 insertions(+), 35 deletions(-)
 
-Here's the new suspect:
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index e49a115..963fcaf 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -236,7 +236,6 @@ static irqreturn_t omap_bandgap_tshut_irq_handler(int irq, void *data)
+ /**
+  * omap_bandgap_adc_to_mcelsius() - converts an ADC value to mCelsius scale
+  * @bg_ptr: struct omap_bandgap pointer
+- * @id: sensor id
+  * @adc_val: value in ADC representation
+  * @t: address where to write the resulting temperature in mCelsius
+  *
+@@ -245,35 +244,34 @@ static irqreturn_t omap_bandgap_tshut_irq_handler(int irq, void *data)
+  * The conversion table is indexed by the ADC values.
+  */
+ static
+-int omap_bandgap_adc_to_mcelsius(struct omap_bandgap *bg_ptr, int id,
++int omap_bandgap_adc_to_mcelsius(struct omap_bandgap *bg_ptr,
+ 				 int adc_val, int *t)
+ {
+-	struct temp_sensor_data *ts_data = bg_ptr->conf->sensors[id].ts_data;
++	struct omap_bandgap_data *conf = bg_ptr->conf;
+ 	int ret = 0;
+ 
+ 	/* look up for temperature in the table and return the temperature */
+-	if (adc_val < ts_data->adc_start_val ||
+-	    adc_val > ts_data->adc_end_val) {
++	if (adc_val < conf->adc_start_val || adc_val > conf->adc_end_val) {
+ 		ret = -ERANGE;
+ 		goto exit;
+ 	}
+ 
+-	*t = bg_ptr->conf->conv_table[adc_val - ts_data->adc_start_val];
++	*t = bg_ptr->conf->conv_table[adc_val - conf->adc_start_val];
+ 
+ exit:
+ 	return ret;
+ }
+ 
+ static
+-int omap_bandgap_mcelsius_to_adc(struct omap_bandgap *bg_ptr, int i, long temp,
++int omap_bandgap_mcelsius_to_adc(struct omap_bandgap *bg_ptr, long temp,
+ 				 int *adc)
+ {
+-	struct temp_sensor_data *ts_data = bg_ptr->conf->sensors[i].ts_data;
++	struct omap_bandgap_data *conf = bg_ptr->conf;
+ 	const int *conv_table = bg_ptr->conf->conv_table;
+ 	int high, low, mid, ret = 0;
+ 
+ 	low = 0;
+-	high = ts_data->adc_end_val - ts_data->adc_start_val;
++	high = conf->adc_end_val - conf->adc_start_val;
+ 	mid = (high + low) / 2;
+ 
+ 	if (temp < conv_table[low] || temp > conv_table[high]) {
+@@ -289,7 +287,7 @@ int omap_bandgap_mcelsius_to_adc(struct omap_bandgap *bg_ptr, int i, long temp,
+ 		mid = (low + high) / 2;
+ 	}
+ 
+-	*adc = ts_data->adc_start_val + low;
++	*adc = conf->adc_start_val + low;
+ 
+ exit:
+ 	return ret;
+@@ -323,18 +321,17 @@ static int temp_sensor_unmask_interrupts(struct omap_bandgap *bg_ptr, int id,
+ }
+ 
+ static
+-int add_hyst(int adc_val, int hyst_val, struct omap_bandgap *bg_ptr, int i,
+-	     u32 *sum)
++int add_hyst(int adc_val, int hyst_val, struct omap_bandgap *bg_ptr, u32 *sum)
+ {
+ 	int temp, ret;
+ 
+-	ret = omap_bandgap_adc_to_mcelsius(bg_ptr, i, adc_val, &temp);
++	ret = omap_bandgap_adc_to_mcelsius(bg_ptr, adc_val, &temp);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	temp += hyst_val;
+ 
+-	return omap_bandgap_mcelsius_to_adc(bg_ptr, i, temp, sum);
++	return omap_bandgap_mcelsius_to_adc(bg_ptr, temp, sum);
+ }
+ 
+ /* Talert Thot threshold. Call it only if HAS(TALERT) is set */
+@@ -354,7 +351,7 @@ int temp_sensor_configure_thot(struct omap_bandgap *bg_ptr, int id, int t_hot)
+ 	    __ffs(tsr->threshold_tcold_mask);
+ 	if (t_hot <= cold) {
+ 		/* change the t_cold to t_hot - 5000 millidegrees */
+-		err |= add_hyst(t_hot, -ts_data->hyst_val, bg_ptr, id, &cold);
++		err |= add_hyst(t_hot, -ts_data->hyst_val, bg_ptr, &cold);
+ 		/* write the new t_cold value */
+ 		reg_val = thresh_val & (~tsr->threshold_tcold_mask);
+ 		reg_val |= cold << __ffs(tsr->threshold_tcold_mask);
+@@ -392,7 +389,7 @@ int temp_sensor_configure_tcold(struct omap_bandgap *bg_ptr, int id,
+ 
+ 	if (t_cold >= hot) {
+ 		/* change the t_hot to t_cold + 5000 millidegrees */
+-		err |= add_hyst(t_cold, ts_data->hyst_val, bg_ptr, id, &hot);
++		err |= add_hyst(t_cold, ts_data->hyst_val, bg_ptr, &hot);
+ 		/* write the new t_hot value */
+ 		reg_val = thresh_val & (~tsr->threshold_thot_mask);
+ 		reg_val |= hot << __ffs(tsr->threshold_thot_mask);
+@@ -459,7 +456,7 @@ int omap_bandgap_read_thot(struct omap_bandgap *bg_ptr, int id,
+ 	temp = omap_bandgap_readl(bg_ptr, tsr->bgap_threshold);
+ 	temp = (temp & tsr->threshold_thot_mask) >>
+ 		__ffs(tsr->threshold_thot_mask);
+-	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, id, temp, &temp);
++	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, temp, &temp);
+ 	if (ret) {
+ 		dev_err(bg_ptr->dev, "failed to read thot\n");
+ 		return -EIO;
+@@ -497,7 +494,7 @@ int omap_bandgap_write_thot(struct omap_bandgap *bg_ptr, int id, int val)
+ 
+ 	if (val < ts_data->min_temp + ts_data->hyst_val)
+ 		return -EINVAL;
+-	ret = omap_bandgap_mcelsius_to_adc(bg_ptr, id, val, &t_hot);
++	ret = omap_bandgap_mcelsius_to_adc(bg_ptr, val, &t_hot);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -534,7 +531,7 @@ int omap_bandgap_read_tcold(struct omap_bandgap *bg_ptr, int id,
+ 	temp = omap_bandgap_readl(bg_ptr, tsr->bgap_threshold);
+ 	temp = (temp & tsr->threshold_tcold_mask)
+ 	    >> __ffs(tsr->threshold_tcold_mask);
+-	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, id, temp, &temp);
++	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, temp, &temp);
+ 	if (ret)
+ 		return -EIO;
+ 
+@@ -570,7 +567,7 @@ int omap_bandgap_write_tcold(struct omap_bandgap *bg_ptr, int id, int val)
+ 	if (val > ts_data->max_temp + ts_data->hyst_val)
+ 		return -EINVAL;
+ 
+-	ret = omap_bandgap_mcelsius_to_adc(bg_ptr, id, val, &t_cold);
++	ret = omap_bandgap_mcelsius_to_adc(bg_ptr, val, &t_cold);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -661,7 +658,7 @@ int omap_bandgap_read_temperature(struct omap_bandgap *bg_ptr, int id,
+ 	temp = omap_bandgap_read_temp(bg_ptr, id);
+ 	mutex_unlock(&bg_ptr->bg_mutex);
+ 
+-	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, id, temp, &temp);
++	ret |= omap_bandgap_adc_to_mcelsius(bg_ptr, temp, &temp);
+ 	if (ret)
+ 		return -EIO;
+ 
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.h b/drivers/staging/omap-thermal/omap-bandgap.h
+index 28d9104..edcc965 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.h
++++ b/drivers/staging/omap-thermal/omap-bandgap.h
+@@ -166,8 +166,6 @@ struct temp_sensor_registers {
+  * @max_temp: sensor maximum temperature
+  * @min_temp: sensor minimum temperature
+  * @hyst_val: temperature hysteresis considered while converting ADC values
+- * @adc_start_val: ADC conversion table starting value
+- * @adc_end_val: ADC conversion table ending value
+  * @update_int1: update interval
+  * @update_int2: update interval
+  *
+@@ -185,8 +183,6 @@ struct temp_sensor_data {
+ 	int     max_temp;
+ 	int     min_temp;
+ 	int     hyst_val;
+-	u32     adc_start_val;
+-	u32     adc_end_val;
+ 	u32     update_int1; /* not used */
+ 	u32     update_int2; /* not used */
+ };
+@@ -325,6 +321,8 @@ struct omap_temp_sensor {
+  * struct omap_bandgap_data - omap bandgap data configuration structure
+  * @features: a bitwise flag set to describe the device features
+  * @conv_table: Pointer to ADC to temperature conversion table
++ * @adc_start_val: ADC conversion table starting value
++ * @adc_end_val: ADC conversion table ending value
+  * @fclock_name: clock name of the functional clock
+  * @div_ck_name: clock name of the clock divisor
+  * @sensor_count: count of temperature sensor within this bandgap device
+@@ -342,6 +340,8 @@ struct omap_temp_sensor {
+ struct omap_bandgap_data {
+ 	unsigned int			features;
+ 	const int			*conv_table;
++	u32				adc_start_val;
++	u32				adc_end_val;
+ 	char				*fclock_name;
+ 	char				*div_ck_name;
+ 	int				sensor_count;
+diff --git a/drivers/staging/omap-thermal/omap4-thermal-data.c b/drivers/staging/omap-thermal/omap4-thermal-data.c
+index 7ec5570..88ed014 100644
+--- a/drivers/staging/omap-thermal/omap4-thermal-data.c
++++ b/drivers/staging/omap-thermal/omap4-thermal-data.c
+@@ -45,8 +45,6 @@ static struct temp_sensor_data omap4430_mpu_temp_sensor_data = {
+ 	.max_temp = OMAP4430_MAX_TEMP,
+ 	.min_temp = OMAP4430_MIN_TEMP,
+ 	.hyst_val = OMAP4430_HYST_VAL,
+-	.adc_start_val = OMAP4430_ADC_START_VALUE,
+-	.adc_end_val = OMAP4430_ADC_END_VALUE,
+ };
+ 
+ /*
+@@ -75,6 +73,8 @@ const struct omap_bandgap_data omap4430_data = {
+ 	.fclock_name = "bandgap_fclk",
+ 	.div_ck_name = "bandgap_fclk",
+ 	.conv_table = omap4430_adc_to_temp,
++	.adc_start_val = OMAP4430_ADC_START_VALUE,
++	.adc_end_val = OMAP4430_ADC_END_VALUE,
+ 	.expose_sensor = omap_thermal_expose_sensor,
+ 	.remove_sensor = omap_thermal_remove_sensor,
+ 	.sensors = {
+@@ -142,8 +142,6 @@ static struct temp_sensor_data omap4460_mpu_temp_sensor_data = {
+ 	.max_temp = OMAP4460_MAX_TEMP,
+ 	.min_temp = OMAP4460_MIN_TEMP,
+ 	.hyst_val = OMAP4460_HYST_VAL,
+-	.adc_start_val = OMAP4460_ADC_START_VALUE,
+-	.adc_end_val = OMAP4460_ADC_END_VALUE,
+ 	.update_int1 = 1000,
+ 	.update_int2 = 2000,
+ };
+@@ -214,6 +212,8 @@ const struct omap_bandgap_data omap4460_data = {
+ 	.fclock_name = "bandgap_ts_fclk",
+ 	.div_ck_name = "div_ts_ck",
+ 	.conv_table = omap4460_adc_to_temp,
++	.adc_start_val = OMAP4460_ADC_START_VALUE,
++	.adc_end_val = OMAP4460_ADC_END_VALUE,
+ 	.expose_sensor = omap_thermal_expose_sensor,
+ 	.remove_sensor = omap_thermal_remove_sensor,
+ 	.sensors = {
+@@ -244,6 +244,8 @@ const struct omap_bandgap_data omap4470_data = {
+ 	.fclock_name = "bandgap_ts_fclk",
+ 	.div_ck_name = "div_ts_ck",
+ 	.conv_table = omap4460_adc_to_temp,
++	.adc_start_val = OMAP4460_ADC_START_VALUE,
++	.adc_end_val = OMAP4460_ADC_END_VALUE,
+ 	.expose_sensor = omap_thermal_expose_sensor,
+ 	.remove_sensor = omap_thermal_remove_sensor,
+ 	.sensors = {
+diff --git a/drivers/staging/omap-thermal/omap5-thermal-data.c b/drivers/staging/omap-thermal/omap5-thermal-data.c
+index 3d10704..a48c286 100644
+--- a/drivers/staging/omap-thermal/omap5-thermal-data.c
++++ b/drivers/staging/omap-thermal/omap5-thermal-data.c
+@@ -171,8 +171,6 @@ static struct temp_sensor_data omap5430_mpu_temp_sensor_data = {
+ 	.max_temp = OMAP5430_MPU_MAX_TEMP,
+ 	.min_temp = OMAP5430_MPU_MIN_TEMP,
+ 	.hyst_val = OMAP5430_MPU_HYST_VAL,
+-	.adc_start_val = OMAP5430_ADC_START_VALUE,
+-	.adc_end_val = OMAP5430_ADC_END_VALUE,
+ 	.update_int1 = 1000,
+ 	.update_int2 = 2000,
+ };
+@@ -188,8 +186,6 @@ static struct temp_sensor_data omap5430_gpu_temp_sensor_data = {
+ 	.max_temp = OMAP5430_GPU_MAX_TEMP,
+ 	.min_temp = OMAP5430_GPU_MIN_TEMP,
+ 	.hyst_val = OMAP5430_GPU_HYST_VAL,
+-	.adc_start_val = OMAP5430_ADC_START_VALUE,
+-	.adc_end_val = OMAP5430_ADC_END_VALUE,
+ 	.update_int1 = 1000,
+ 	.update_int2 = 2000,
+ };
+@@ -205,8 +201,6 @@ static struct temp_sensor_data omap5430_core_temp_sensor_data = {
+ 	.max_temp = OMAP5430_CORE_MAX_TEMP,
+ 	.min_temp = OMAP5430_CORE_MIN_TEMP,
+ 	.hyst_val = OMAP5430_CORE_HYST_VAL,
+-	.adc_start_val = OMAP5430_ADC_START_VALUE,
+-	.adc_end_val = OMAP5430_ADC_END_VALUE,
+ 	.update_int1 = 1000,
+ 	.update_int2 = 2000,
+ };
+@@ -325,6 +319,8 @@ const struct omap_bandgap_data omap5430_data = {
+ 	.fclock_name = "l3instr_ts_gclk_div",
+ 	.div_ck_name = "l3instr_ts_gclk_div",
+ 	.conv_table = omap5430_adc_to_temp,
++	.adc_start_val = OMAP5430_ADC_START_VALUE,
++	.adc_end_val = OMAP5430_ADC_END_VALUE,
+ 	.expose_sensor = omap_thermal_expose_sensor,
+ 	.remove_sensor = omap_thermal_remove_sensor,
+ 	.sensors = {
+-- 
+1.7.7.1.488.ge8e1c
 
-f95988de06ea62ef5bd861f06e9ef56cea405ed1 is the first bad commit
-commit f95988de06ea62ef5bd861f06e9ef56cea405ed1
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Mon Jan 7 21:17:02 2013 +0100
-
-     ACPI / scan: Treat power resources in a special way
-
-     Commit 805d410 (ACPI: Separate adding ACPI device objects from
-     probing ACPI drivers) introduced an ACPI power resources management
-     regression, because it didn't ensure that the power resources
-     driver bind to the struct acpi_device objects corresponding
-     to power resources as soon as they were created.  As a result,
-     ACPI power management routines may attempt to access power resource
-     objects before they are ready to use.
-
-     To fix this problem, tell the acpi_add_single_object() in
-     acpi_bus_check_add() to probe the driver for objects of type
-     ACPI_BUS_TYPE_POWER.  This fix has been verified to work on
-     HP nx6325 where the problem was first observed.
-
-     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-     Acked-by: Toshi Kani <toshi.kani@hp.com>
-
-:040000 040000 08e5a8e11fcedcc29ce23883f8362c33d0ea8b3e 
-fb5193b97b2000b40eea39cef794d81aac1367b8 M      drivers
-
-Trying to revert this commit on current Linus master gave me an error.
-For reference here's the bisection log.
-
-git bisect start
-# good: [19f949f52599ba7c3f67a5897ac6be14bfcb1200] Linux 3.8
-git bisect good 19f949f52599ba7c3f67a5897ac6be14bfcb1200
-# bad: [6dbe51c251a327e012439c4772097a13df43c5b8] Linux 3.9-rc1
-git bisect bad 6dbe51c251a327e012439c4772097a13df43c5b8
-# bad: [b274776c54c320763bc12eb035c0e244f76ccb43] Merge tag 'cleanup' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
-git bisect bad b274776c54c320763bc12eb035c0e244f76ccb43
-# bad: [a0b1c42951dd06ec83cc1bc2c9788131d9fefcd8] Merge 
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-git bisect bad a0b1c42951dd06ec83cc1bc2c9788131d9fefcd8
-# good: [98d5fac2330779e6eea6431a90b44c7476260dcc] Merge branch 'master' 
-of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next 
-into for-davem
-git bisect good 98d5fac2330779e6eea6431a90b44c7476260dcc
-# good: [8a3a11f91def34424b1995cb54ccd658efde8568] Merge tag 
-'pinctrl-for-v3.9' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl
-git bisect good 8a3a11f91def34424b1995cb54ccd658efde8568
-# bad: [10baf04e95fbf7eb6089410220a547211dd2ffa7] Merge branch 'release' 
-of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux
-git bisect bad 10baf04e95fbf7eb6089410220a547211dd2ffa7
-# bad: [3757b94802fb65d8f696597a74053cf21738da0b] ACPI / hotplug: Fix 
-concurrency issues and memory leaks
-git bisect bad 3757b94802fb65d8f696597a74053cf21738da0b
-# bad: [64e94e7e0ffb20ee11a596aa04fcdeefb33e000d] Merge branch 
-'acpi-scan' into acpi-cleanup
-git bisect bad 64e94e7e0ffb20ee11a596aa04fcdeefb33e000d
-# bad: [993cbe595dda731471a07f4f65575fadedc570dc] ACPI / PM: Take order 
-attribute of wakeup power resources into account
-git bisect bad 993cbe595dda731471a07f4f65575fadedc570dc
-# good: [e0ebda2ee12c261fb2f2d7abf21489b93d9caa4e] ACPI: Remove unused 
-struct acpi_pci_root.id member
-git bisect good e0ebda2ee12c261fb2f2d7abf21489b93d9caa4e
-# bad: [05404d8f7b5c831e1a2c24bb782f0fe8ea02354c] ACPI / scan: Add 
-second pass to acpi_bus_trim()
-git bisect bad 05404d8f7b5c831e1a2c24bb782f0fe8ea02354c
-# bad: [6af9a803f4d2e4137d9f74a8fc9af4857fbda001] ACPI: Remove the ops 
-field from struct acpi_device
-git bisect bad 6af9a803f4d2e4137d9f74a8fc9af4857fbda001
-# bad: [abe99210e0f624cea39f1dc375ba818b201c0d7f] ACPI / scan: Fix check 
-of device_attach() return value.
-git bisect bad abe99210e0f624cea39f1dc375ba818b201c0d7f
-# bad: [f95988de06ea62ef5bd861f06e9ef56cea405ed1] ACPI / scan: Treat 
-power resources in a special way
-git bisect bad f95988de06ea62ef5bd861f06e9ef56cea405ed1
-
-Hope it's useful.
-R
