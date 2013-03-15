@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab3COEr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 00:47:58 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:32959 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab3COEr5 (ORCPT
+	id S1752178Ab3COEsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 00:48:07 -0400
+Received: from 209-20-75-48.static.cloud-ips.com ([209.20.75.48]:43466 "EHLO
+	shiva.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750903Ab3COEsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 00:47:57 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: plagnioj@jcrosoft.com, linus.walleij@linaro.org, sachin.kamat@linaro.org
-Subject: [PATCH 1/2] pinctrl: at91: Remove duplicate const
-Date: Fri, 15 Mar 2013 10:07:02 +0530
-Message-Id: <1363322223-19850-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 15 Mar 2013 00:48:05 -0400
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 00:48:05 EDT
+Date: Thu, 14 Mar 2013 21:50:04 -0700
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
+ for a NULL pointer
+Message-ID: <20130315045004.GA14747@bwidawsk.net>
+References: <CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com>
+ <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-const declared twice. Fixes the following sparse warning:
-drivers/pinctrl/pinctrl-at91.c:815:21: warning: duplicate const
-drivers/pinctrl/pinctrl-at91.c:849:21: warning: duplicate const
+On Thu, Mar 14, 2013 at 12:59:57PM +0000, Chris Wilson wrote:
+> In order to prevent a potential NULL deference with hostile userspace,
+> we need to check whether the ioctl was passed an invalid args pointer.
+> 
+> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+> Link: http://lkml.kernel.org/r/CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> ---
+>  drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 +++++++++--
+>  1 file changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> index 365e41a..9f5602e 100644
+> --- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> +++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+> @@ -1103,7 +1103,11 @@ i915_gem_execbuffer(struct drm_device *dev, void *data,
+>  	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
+>  	int ret, i;
+>  
+> -	if (args->buffer_count < 1) {
+> +	if (args == NULL)
+> +		return -EINVAL;
+> +
+> +	if (args->buffer_count < 1 ||
+> +	    args->buffer_count > INT_MAX / sizeof(*exec2_list)) {
+>  		DRM_DEBUG("execbuf with %d buffers\n", args->buffer_count);
+>  		return -EINVAL;
+>  	}
+> @@ -1182,8 +1186,11 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
+>  	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
+>  	int ret;
+>  
+> +	if (args == NULL)
+> +		return -EINVAL;
+> +
+>  	if (args->buffer_count < 1 ||
+> -	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
+> +	    args->buffer_count > INT_MAX / sizeof(*exec2_list)) {
+>  		DRM_DEBUG("execbuf2 with %d buffers\n", args->buffer_count);
+>  		return -EINVAL;
+>  	}
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/pinctrl/pinctrl-at91.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Why did you change UINT_MAX to INT_MAX? TBH, I'm confused what we're
+trying to achieve, and why we need anything other than:
+if (!args->buffer_count)
 
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index e50fa5f..353c7bf 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -812,7 +812,7 @@ static int at91_pinctrl_mux_mask(struct at91_pinctrl *info,
- {
- 	int ret = 0;
- 	int size;
--	const const __be32 *list;
-+	const __be32 *list;
- 
- 	list = of_get_property(np, "atmel,mux-mask", &size);
- 	if (!list) {
-@@ -846,7 +846,7 @@ static int at91_pinctrl_parse_groups(struct device_node *np,
- {
- 	struct at91_pmx_pin *pin;
- 	int size;
--	const const __be32 *list;
-+	const __be32 *list;
- 	int i, j;
- 
- 	dev_dbg(info->dev, "group(%d): %s\n", index, np->name);
+I'm also not seeing how the NULL checks are needed since at least it
+seems to be for execbuffer (IOW) we could never have NULL args.
+
+if (cmd & (IOC_IN | IOC_OUT)) {
+	if (asize <= sizeof(stack_kdata)) {
+		kdata = stack_kdata;
+	} else {
+		kdata = kmalloc(asize, GFP_KERNEL);
+		if (!kdata) {
+			retcode = -ENOMEM;
+			goto err_i1;
+		}
+	}
+	if (asize > usize)
+		memset(kdata + usize, 0, asize - usize);
+}
+
+Sorry if these are stupid questions.
+
 -- 
-1.7.4.1
-
+Ben Widawsky, Intel Open Source Technology Center
