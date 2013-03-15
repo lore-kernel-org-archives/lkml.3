@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3COIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:48:09 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:32902
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751965Ab3COIsG (ORCPT
+	id S1753945Ab3COIs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:48:29 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57683 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab3COIs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:48:06 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 04:48:06 EDT
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ahbe9i1155h)
-Subject: [Patch v1] rtc: fix for the DA9052 rtc device registration
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
-        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Mar 2013 13:59:39 +0530
-Message-ID: <1363336179.30613.18.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	Fri, 15 Mar 2013 04:48:27 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: linaro-kernel@lists.linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] DMA: OF: Check properties value before running be32_to_cpup() on it
+Date: Fri, 15 Mar 2013 14:18:20 +0530
+Message-Id: <0a0ef15d47393fe9d24a395c38068b871f913776.1363337257.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 15 Mar 2013 08:48:22.0646 (UTC) FILETIME=[D993A160:01CE2159]
+X-MC-Unique: 113031508482408001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2F8mWiS003172
 
-DA9052/53 MFD core handles only virtual irq therefore rtc driver needs
-to be updated to work on virtual irq. Without this update DA9052/53 rtc 
-driver will fail during its registration.
-Also getting irq by it name is no longer supported in DA9052/53 core.
+In of_dma_controller_register() routine we are calling of_get_property() as an
+parameter to be32_to_cpup(). In case the property doesn't exist we will get a
+crash.
 
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+This patch changes this code to check if we got a valid property first and then
+runs be32_to_cpup() on it.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/rtc/rtc-da9052.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-da9052.c b/drivers/rtc/rtc-da9052.c
-index 60b826e..e22c950 100644
---- a/drivers/rtc/rtc-da9052.c
-+++ b/drivers/rtc/rtc-da9052.c
-@@ -239,10 +239,10 @@ static int da9052_rtc_probe(struct platform_device *pdev)
+My mails are broken, i have pushed this patch here:
+
+http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/dma-of-fix
+
+ drivers/dma/of-dma.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+index 69d04d2..09c7ad1 100644
+--- a/drivers/dma/of-dma.c
++++ b/drivers/dma/of-dma.c
+@@ -93,6 +93,7 @@ int of_dma_controller_register(struct device_node *np,
+ {
+ 	struct of_dma	*ofdma;
+ 	int		nbcells;
++	const __be32	*prop;
  
- 	rtc->da9052 = dev_get_drvdata(pdev->dev.parent);
- 	platform_set_drvdata(pdev, rtc);
--	rtc->irq = platform_get_irq_byname(pdev, "ALM");
--	ret = request_threaded_irq(rtc->irq, NULL, da9052_rtc_irq,
--				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				   "ALM", rtc);
-+	rtc->irq =  DA9052_IRQ_ALARM;
+ 	if (!np || !of_dma_xlate) {
+ 		pr_err("%s: not enough information provided\n", __func__);
+@@ -103,8 +104,11 @@ int of_dma_controller_register(struct device_node *np,
+ 	if (!ofdma)
+ 		return -ENOMEM;
+ 
+-	nbcells = be32_to_cpup(of_get_property(np, "#dma-cells", NULL));
+-	if (!nbcells) {
++	prop = of_get_property(np, "#dma-cells", NULL);
++	if (prop)
++		nbcells = be32_to_cpup(prop);
 +
-+	ret = da9052_request_irq(rtc->da9052, rtc->irq, "ALM",
-+				da9052_rtc_irq, rtc);
- 	if (ret != 0) {
- 		rtc_err(rtc->da9052, "irq registration failed: %d\n", ret);
- 		return ret;
++	if (!prop || !nbcells) {
+ 		pr_err("%s: #dma-cells property is missing or invalid\n",
+ 		       __func__);
+ 		kfree(ofdma);
 -- 
-1.7.1
+1.7.12.rc2.18.g61b472e
 
 
