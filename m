@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab3COSXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:23:18 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:48035 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab3COSXR (ORCPT
+	id S1754767Ab3COS1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 14:27:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42612 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab3COS1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 14:23:17 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] net: dns_resolver: Use kmemdup instead of kmalloc and memcpy
-Date: Fri, 15 Mar 2013 20:21:52 +0200
-Message-Id: <1363371712-11566-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 15 Mar 2013 14:27:03 -0400
+Message-ID: <514367F3.6040909@wwwdotorg.org>
+Date: Fri, 15 Mar 2013 12:26:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/5] ARM: tegra:add aliases and DMA requestor for serial
+ nodes of Tegra114
+References: <1363204194-19487-1-git-send-email-ldewangan@nvidia.com> <1363204194-19487-4-git-send-email-ldewangan@nvidia.com> <5140DB61.3090809@wwwdotorg.org>
+In-Reply-To: <5140DB61.3090809@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace use of kmalloc followed by memcpy with kmemdup.
-Patch found using coccinelle.
+On 03/13/2013 02:02 PM, Stephen Warren wrote:
+> On 03/13/2013 01:49 PM, Laxman Dewangan wrote:
+>> Add APB DMA requestor and serial aliases for serial controller.
+>> There will be two serial driver i.e. 8250 based simple serial driver
+>> and APB DMA based serial driver for higher baudrate and performace.
+>>
+>> The simple serial driver get enabled with compatible "nvidia,tegra114-uart",
+>> "nvidia,tegra20-uart" and APB DMA based driver will get enabled with
+>> compatible "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart".
+> 
+>> +	/*
+>> +	 * There are two serial driver i.e. 8250 based simple serial
+>> +	 * driver and APB DMA based serial driver for higher baudrate
+>> +	 * and performace. To enable the 8250 based driver, the compatible
+>> +	 * is "nvidia,tegra114-uart", "nvidia,tegra20-uart" and to enable
+>> +	 * the APB DMA based serial driver, the comptible is
+>> +	 * "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart".
+>> +	 */
+> 
+> Again, that text says you want either of:
+> 
+> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart";
+> 
+> (note Tegra20-vs-Tegra30 in the second compatible value)
+> 
+> Why isn't it instead:
+> 
+> compatible = "nvidia,tegra114-uart",   "nvidia,tegra20-uart";
+> compatible = "nvidia,tegra114-hsuart", "nvidia,tegra20-hsuart";
+> 
+> (note both second compatible values say Tegra20)
+> 
+> I assume this is a typo.
+> 
+> I suppose I can fix this up when I apply it to avoid a resend, assuming
+> it's wrong.
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- net/dns_resolver/dns_query.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
-index c32be29..4ac62fb 100644
---- a/net/dns_resolver/dns_query.c
-+++ b/net/dns_resolver/dns_query.c
-@@ -146,11 +146,10 @@ int dns_query(const char *type, const char *name, size_t namelen,
- 	len = upayload->datalen;
- 
- 	ret = -ENOMEM;
--	*_result = kmalloc(len + 1, GFP_KERNEL);
-+	*_result = kmemdup(upayload->data, len + 1, GFP_KERNEL);
- 	if (!*_result)
- 		goto put;
- 
--	memcpy(*_result, upayload->data, len + 1);
- 	if (_expiry)
- 		*_expiry = rkey->expiry;
- 
--- 
-1.7.9.5
-
+Since I haven't seen a reply to this, when I apply this, I'm going to
+change the comment I quoted above to match the values I wrote above
+under "why isn't it instead:".
