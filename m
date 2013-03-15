@@ -1,124 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3COVJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:09:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30225 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab3COVJ4 (ORCPT
+	id S932644Ab3COVKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:10:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3839 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316Ab3COVKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:09:56 -0400
-Date: Sat, 16 Mar 2013 00:09:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 07/50] staging: omap-thermal: introduce RMW_BITS macro
-Message-ID: <20130315210946.GK9138@mwanda>
-References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
- <1363352438-15935-8-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363352438-15935-8-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 15 Mar 2013 17:10:13 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-q0REg9GTioA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=1T3LCbpRKtkA:10 a=x30EXVXcAAAA:8 a=WGkvPsVo5tRCZhO3IZIA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=2F0HLYTCHDIA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363381809.25967.64.camel@gandalf.local.home>
+Subject: Re: [PATCH v11 1/3] tracing: Add DEFINE_EVENT_FN() macro
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        "Satoru Moriya (smoriya@redhat.com)" <smoriya@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Paul E. McKenney (paulmck@us.ibm.com)" <paulmck@us.ibm.com>
+Date: Fri, 15 Mar 2013 17:10:09 -0400
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF6A03D@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF6A03D@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 08:59:55AM -0400, Eduardo Valentin wrote:
-> This patch introduce a macro to read, update, write bitfields.
-> It will be specific to bandgap data structures.
+You still need to add:
+
+From: Steven Rostedt <rostedt@goodmis.org>
+
+Otherwise you get the authorship of this patch.
+
+-- Steve
+
+
+On Fri, 2013-03-15 at 20:35 +0000, Seiji Aguchi wrote:
+> Each TRACE_EVENT() adds several helper functions. If two or more trace events
+> share the same structure and print format, they can also share most of these
+> helper functions and save a lot of space from duplicate code. This is why the
+> DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
 > 
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> Some events require a trigger to be called at registering and unregistering of
+> the event and to do so they use TRACE_EVENT_FN().
+> 
+> If multiple events require a trigger, they currently have no choice but to use
+> TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This unfortunately
+> causes a lot of wasted duplicate code created.
+> 
+> By adding a DEFINE_EVENT_FN(), these events can still use a
+> DECLARE_EVENT_CLASS() and then define their own triggers.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 > ---
->  drivers/staging/omap-thermal/omap-bandgap.c |  178 +++++++--------------------
->  1 files changed, 46 insertions(+), 132 deletions(-)
+>  include/linux/tracepoint.h   |    2 ++
+>  include/trace/define_trace.h |    5 +++++
+>  include/trace/ftrace.h       |    4 ++++
+>  3 files changed, 11 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
-> index 9f2d7cc..1c1b905 100644
-> --- a/drivers/staging/omap-thermal/omap-bandgap.c
-> +++ b/drivers/staging/omap-thermal/omap-bandgap.c
-> @@ -52,25 +52,29 @@ static void omap_bandgap_writel(struct omap_bandgap *bg_ptr, u32 val, u32 reg)
->  	writel(val, bg_ptr->base + reg);
->  }
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index 2f322c3..9bf59e5 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
+>  #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
+>  #define DEFINE_EVENT(template, name, proto, args)		\
+>  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+> +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
+> +	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+>  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+>  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+>  #define DEFINE_EVENT_CONDITION(template, name, proto,		\
+> diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
+> index 1905ca8..02e1003 100644
+> --- a/include/trace/define_trace.h
+> +++ b/include/trace/define_trace.h
+> @@ -44,6 +44,10 @@
+>  #define DEFINE_EVENT(template, name, proto, args) \
+>  	DEFINE_TRACE(name)
 >  
-> +/* update bits, value will be shifted */
-> +#define RMW_BITS(bg_ptr, id, reg, mask, val)			\
-> +do {								\
-> +	struct temp_sensor_registers *t;			\
-> +	u32 r;							\
-> +								\
-> +	t = bg_ptr->conf->sensors[(id)].registers;		\
-> +	r = omap_bandgap_readl(bg_ptr, t->reg);			\
-> +	r &= ~t->mask;						\
-> +	r |= (val) << __ffs(t->mask);				\
-> +	omap_bandgap_writel(bg_ptr, r, t->reg);			\
-> +} while (0)
+> +#undef DEFINE_EVENT_FN
+> +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
+> +	DEFINE_TRACE_FN(name, reg, unreg)
 > +
->  static int omap_bandgap_power(struct omap_bandgap *bg_ptr, bool on)
->  {
-> -	struct temp_sensor_registers *tsr;
->  	int i;
-> -	u32 ctrl;
+>  #undef DEFINE_EVENT_PRINT
+>  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+>  	DEFINE_TRACE(name)
+> @@ -91,6 +95,7 @@
+>  #undef TRACE_EVENT_CONDITION
+>  #undef DECLARE_EVENT_CLASS
+>  #undef DEFINE_EVENT
+> +#undef DEFINE_EVENT_FN
+>  #undef DEFINE_EVENT_PRINT
+>  #undef DEFINE_EVENT_CONDITION
+>  #undef TRACE_HEADER_MULTI_READ
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index 40dc5e8..7bab676 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -71,6 +71,10 @@
+>  	static struct ftrace_event_call	__used		\
+>  	__attribute__((__aligned__(4))) event_##name
 >  
->  	if (!OMAP_BANDGAP_HAS(bg_ptr, POWER_SWITCH))
->  		return 0;
->  
-> -	for (i = 0; i < bg_ptr->conf->sensor_count; i++) {
-> -		tsr = bg_ptr->conf->sensors[i].registers;
-> -		ctrl = omap_bandgap_readl(bg_ptr, tsr->temp_sensor_ctrl);
-> -		ctrl &= ~tsr->bgap_tempsoff_mask;
-> +	for (i = 0; i < bg_ptr->conf->sensor_count; i++)
->  		/* active on 0 */
-> -		ctrl |= !on << __ffs(tsr->bgap_tempsoff_mask);
-> -
-> -		/* write BGAP_TEMPSOFF should be reset to 0 */
-> -		omap_bandgap_writel(bg_ptr, ctrl, tsr->temp_sensor_ctrl);
-> -	}
-> +		RMW_BITS(bg_ptr, i, temp_sensor_ctrl, bgap_tempsoff_mask, !on);
->  
->  	return 0;
->  }
-> @@ -78,15 +82,13 @@ static int omap_bandgap_power(struct omap_bandgap *bg_ptr, bool on)
->  static u32 omap_bandgap_read_temp(struct omap_bandgap *bg_ptr, int id)
->  {
-
-This patch is fine and it makes it cleaner than before.
-
-But that said, I don't care for the RMW_BITS() very much as a long
-term thing.  If we just used pointers instead of passing the offset
-into the bg_ptr->conf->sensors[] array then everything would be a
-lot cleaner.
-
-In other words, instead of this:
-
-static u32 omap_bandgap_read_temp(struct omap_bandgap *bg_ptr, int id)
-
-We would have:
-
-static u32 omap_bandgap_read_temp(struct omap_bandgap *bg_ptr,
-				  struct temp_sensor_registers *tsr)
-
-If you have the pointer then it's easy write RMW_BITS() as a
-function.
-
-static void rmw_bits(struct omap_bandgap *bg_ptr, u32 reg, u32 mask, u32 val)
-{
-	u32 r;
-
-	r = omap_bandgap_readl(bg_ptr, reg);
-	r &= ~mask;
-	r |= val << __ffs(mask);
-	omap_bandgap_writel(bg_ptr, r, reg);
-}
-
-It's called like:
-
-	rmw_bits(bg_ptr, tsr->bgap_mask_ctrl, tsr->mask_freeze_mask, 1);
-
-regards,
-dan carpenter
+> +#undef DEFINE_EVENT_FN
+> +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
+> +	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+> +
+>  #undef DEFINE_EVENT_PRINT
+>  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+>  	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+> -- 1.7.1
+> 
 
 
