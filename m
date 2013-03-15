@@ -1,41 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab3COMZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 08:25:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46601 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab3COMZP (ORCPT
+	id S1754372Ab3COM2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 08:28:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54117 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab3COM2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 08:25:15 -0400
-Date: Fri, 15 Mar 2013 08:25:30 -0400 (EDT)
-Message-Id: <20130315.082530.1920500635070584515.davem@davemloft.net>
-To: grantr@vmware.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH] VSOCK: Support VM sockets connected to the hypervisor.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1363117219-21911-1-git-send-email-grantr@vmware.com>
-References: <1363117219-21911-1-git-send-email-grantr@vmware.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 15 Mar 2013 05:25:18 -0700 (PDT)
+	Fri, 15 Mar 2013 08:28:01 -0400
+Date: Fri, 15 Mar 2013 09:27:54 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hverkuil@xs4all.nl, elezegarcia@gmail.com
+Subject: Re: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
+Message-ID: <20130315122753.GD2989@localhost>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+ <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Reilly Grant <grantr@vmware.com>
-Date: Tue, 12 Mar 2013 12:40:19 -0700
-
-> The resource ID used for VM socket control packets (0) is already
-> used for the VMCI_GET_CONTEXT_ID hypercall so a new ID (15) must be
-> used when the guest sends these datagrams to the hypervisor.
+On Thu, Mar 14, 2013 at 03:06:59PM +0100, Jon Arne Jørgensen wrote:
+> This file is responsible for registering the device
+> with the kernel i2c subsystem.
+> v4l2 talks to the saa7113 chip of the device via i2c.
 > 
-> The hypervisor context ID must also be removed from the internal
-> blacklist.
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
+>  1 file changed, 160 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
 > 
-> Signed-off-by: Reilly Grant <grantr@vmware.com>
-> Acked-by: Andy King <acking@vmware.com>
+> diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
+> new file mode 100644
+> index 0000000..5b6f3f5
+> --- /dev/null
+> +++ b/drivers/media/usb/smi2021/smi2021_i2c.c
+> @@ -0,0 +1,160 @@
+> +/*******************************************************************************
+> + * smi2021_i2c.c                                                               *
+> + *                                                                             *
+> + * USB Driver for SMI2021 - EasyCAP                                            *
+> + * USB ID 1c88:003c                                                            *
+> + *                                                                             *
+> + * *****************************************************************************
+> + *
+> + * Copyright 2011-2013 Jon Arne Jørgensen
+> + * <jonjon.arnearne--a.t--gmail.com>
+> + *
+> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
+> + *
+> + * This file is part of SMI2021
+> + * http://code.google.com/p/easycap-somagic-linux/
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> + *
+> + * This driver is heavily influensed by the STK1160 driver.
+> + * Copyright (C) 2012 Ezequiel Garcia
+> + * <elezegarcia--a.t--gmail.com>
+> + *
+> + */
+> +
+> +#include "smi2021.h"
+> +
+> +/* The device will not return the chip_name on address 0x00.
+> + * But the saa7115 i2c driver needs the chip id to match "f7113"
+> + * if we want to use it,
+> + * so we have to fake the return of this value
+> + */
 
-Applied, thanks.
+This comment style is wrong, check Documentation/CodingStyle.
+
+BTW, Did you check the patches with checkpatch.pl?
+(you can add checkpatch.pl as a git pre-commit hook, which I find very useful)
+
+> +
+> +static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
+> +static int id_ptr;
+> +
+> +static unsigned int i2c_debug;
+> +module_param(i2c_debug, int, 0644);
+> +MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
+> +
+> +#define dprint_i2c(fmt, args...)					\
+> +do {									\
+> +	if (i2c_debug)							\
+> +		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
+> +} while (0)
+> +
+> +
+> +static int i2c_xfer(struct i2c_adapter *i2c_adap,
+> +				struct i2c_msg msgs[], int num)
+> +{
+> +	struct smi2021_dev *dev = i2c_adap->algo_data;
+> +
+> +	switch (num) {
+> +	case 2: { /* Read reg */
+
+Do you need a local scope in here?
+
+> +		if (msgs[0].len != 1 || msgs[1].len != 1) {
+> +			dprint_i2c("both messages must be 1 byte\n");
+> +			goto err_out;
+> +
+
+I think you missed a closing } here. And an opening { below...
+
+> +		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
+> +			dprint_i2c("last message should have rd flag\n");
+> +			goto err_out;
+> +		}
+> +
+> +		if (msgs[0].buf[0] == 0) {
+> +			msgs[1].buf[0] = chip_id[id_ptr];
+> +			if (chip_id[id_ptr] != 0)
+> +				id_ptr += 1;
+> +		} else {
+> +			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
+> +						msgs[1].buf);
+> +		}
+> +		break;
+> +	}
+> +	case 1: { /* Write reg */
+> +		if (msgs[0].len == 0) {
+> +			break;
+> +		} else if (msgs[0].len != 2) {
+> +			dprint_i2c("unsupported len\n");
+> +			goto err_out;
+> +		}
+> +		if (msgs[0].buf[0] == 0) {
+> +			/* We don't handle writing to addr 0x00 */
+> +			break;
+> +		}
+> +
+> +		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
+> +						msgs[0].buf[1]);
+> +		break;
+> +	}
+> +	default: {
+> +		dprint_i2c("driver can only handle 1 or 2 messages\n");
+> +		goto err_out;
+> +	}
+> +	}
+> +	return num;
+> +
+> +err_out:
+> +	return -EOPNOTSUPP;
+> +}
+> +
+> +static u32 functionality(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_SMBUS_EMUL;
+> +}
+> +
+> +static struct i2c_algorithm algo = {
+> +	.master_xfer = i2c_xfer,
+> +	.functionality = functionality,
+> +};
+> +
+> +static struct i2c_adapter adap_template = {
+> +	.owner = THIS_MODULE,
+> +	.name = "smi2021_easycap_dc60",
+> +	.algo = &algo,
+> +};
+> +
+> +static struct i2c_client client_template = {
+> +	.name = "smi2021 internal",
+> +};
+> +
+> +int smi2021_i2c_register(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +
+> +	id_ptr = 0;
+
+You don't need to initialize id_ptr here.
+
+> +
+> +	dev->i2c_adap = adap_template;
+> +	dev->i2c_adap.dev.parent = dev->dev;
+> +	strcpy(dev->i2c_adap.name, "smi2021");
+> +	dev->i2c_adap.algo_data = dev;
+> +
+> +	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
+> +
+> +	rc = i2c_add_adapter(&dev->i2c_adap);
+> +	if (rc < 0) {
+> +		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	dev->i2c_client = client_template;
+> +	dev->i2c_client.adapter = &dev->i2c_adap;
+> +
+> +	return 0;
+> +}
+> +
+> +int smi2021_i2c_unregister(struct smi2021_dev *dev)
+> +{
+> +	i2c_del_adapter(&dev->i2c_adap);
+> +	return 0;
+> +}
+> -- 
+> 1.8.1.1
+> 
+
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
