@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab3COQvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:51:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:11227 "EHLO song.cn.fujitsu.com"
+	id S1754753Ab3COQvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:51:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51088 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754052Ab3COQvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:51:20 -0400
+	id S1754547Ab3COQva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:51:30 -0400
 X-IronPort-AV: E=Sophos;i="4.84,852,1355068800"; 
-   d="scan'208";a="6880045"
+   d="scan'208";a="6880046"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 1/9] powerpc,kvm: fix imbalance srcu_read_[un]lock()
-Date: Sat, 16 Mar 2013 00:50:49 +0800
-Message-Id: <1363366257-4886-2-git-send-email-laijs@cn.fujitsu.com>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 2/9] events: use DEFINE_STATIC_SRCU() to define pmus_srcu
+Date: Sat, 16 Mar 2013 00:50:50 +0800
+Message-Id: <1363366257-4886-3-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1363366257-4886-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1363366257-4886-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 00:49:59,
+ 2013/03/16 00:50:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 00:50:00,
-	Serialize complete at 2013/03/16 00:50:00
+ 2013/03/16 00:50:11,
+	Serialize complete at 2013/03/16 00:50:11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the point of up_out label in kvmppc_hv_setup_htab_rma(),
-srcu read lock is still held.
-
-We have to release it before return.
+DEFINE_STATIC_SRCU() defines srcu struct and do init at build time.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: kvm@vger.kernel.org
-Cc: kvm-ppc@vger.kernel.org
 ---
- arch/powerpc/kvm/book3s_hv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/events/core.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
-index 80dcc53..c26740e 100644
---- a/arch/powerpc/kvm/book3s_hv.c
-+++ b/arch/powerpc/kvm/book3s_hv.c
-@@ -1799,7 +1799,7 @@ static int kvmppc_hv_setup_htab_rma(struct kvm_vcpu *vcpu)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b0cd865..c334f26 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -146,7 +146,7 @@ static atomic_t nr_task_events __read_mostly;
  
-  up_out:
- 	up_read(&current->mm->mmap_sem);
--	goto out;
-+	goto out_srcu;
- }
+ static LIST_HEAD(pmus);
+ static DEFINE_MUTEX(pmus_lock);
+-static struct srcu_struct pmus_srcu;
++DEFINE_STATIC_SRCU(pmus_srcu);
  
- int kvmppc_core_init_vm(struct kvm *kvm)
+ /*
+  * perf event paranoia level:
+@@ -7396,7 +7396,6 @@ void __init perf_event_init(void)
+ 	idr_init(&pmu_idr);
+ 
+ 	perf_event_init_all_cpus();
+-	init_srcu_struct(&pmus_srcu);
+ 	perf_pmu_register(&perf_swevent, "software", PERF_TYPE_SOFTWARE);
+ 	perf_pmu_register(&perf_cpu_clock, NULL, -1);
+ 	perf_pmu_register(&perf_task_clock, NULL, -1);
 -- 
 1.7.4.4
 
