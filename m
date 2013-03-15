@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3COHSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 03:18:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48669 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab3COHSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 03:18:35 -0400
-Date: Fri, 15 Mar 2013 08:18:28 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-edac@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        "Mark A. Grondona" <mgrondona@llnl.gov>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [ANNOUNCE] rasdaemon userspace tool v.0.1
-Message-ID: <20130315071828.GA13775@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	linux-edac@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Steven Rostedt <srostedt@redhat.com>,
-	Tony Luck <tony.luck@intel.com>,
-	"Mark A. Grondona" <mgrondona@llnl.gov>,
-	Robert Richter <rric@kernel.org>
-References: <20130314153844.158d817c@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130314153844.158d817c@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752876Ab3COH1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 03:27:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52174 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab3COH1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 03:27:19 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-56-5142cd5431e4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf: Generate EXIT event only once per task context
+Date: Fri, 15 Mar 2013 16:27:13 +0900
+Message-Id: <1363332433-7637-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 03:38:44PM -0300, Mauro Carvalho Chehab wrote:
-> It is still on my TODO list to add a RAS trace event for non-memory
-> related errors that come via the MCA machine check handler (mcelog).
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-That's already there: trace_mce_record.
+perf_event_task_event() iterates pmu list and generate events for each
+eligible pmu context.  But if task_event has task_ctx like in EXIT
+it'll generate events even though the pmu doesn't have an eligible one.
+Fix it by moving the code to proper places.
 
-> While progress made was made at Kernel infrastructure, the needed
-> userspace tools were still lacking. So, I decided to start
-> materializing the userspace counterpart for what it was informally
-> named as rasdaemon on some discussions.
+Before this patch:
 
-Well, I had RAS daemon long before you did:
-http://marc.info/?l=linux-kernel&m=130357637429355&w=2
+  $ perf record -n true
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.006 MB perf.data (~248 samples) ]
 
-And Robert and I have recently restarted work on it so having two
-different RAS daemons will be confusing to people. You probably could
-call it "hermd" or "errord" or something better you can come up with.
+  $ perf report -D | tail
+  Aggregated stats:
+             TOTAL events:         73
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          4
+  cycles stats:
+             TOTAL events:         73
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          4
 
-Thanks.
+After this patch:
 
+  $ perf report -D | tail
+  Aggregated stats:
+             TOTAL events:         70
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          1
+  cycles stats:
+             TOTAL events:         70
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          1
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/events/core.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 53ac21cc4012..73ea6fcacf52 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4432,12 +4432,15 @@ static void perf_event_task_event(struct perf_task_event *task_event)
+ 			if (ctxn < 0)
+ 				goto next;
+ 			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
++			if (ctx)
++				perf_event_task_ctx(ctx, task_event);
+ 		}
+-		if (ctx)
+-			perf_event_task_ctx(ctx, task_event);
+ next:
+ 		put_cpu_ptr(pmu->pmu_cpu_context);
+ 	}
++	if (task_event->task_ctx)
++		perf_event_task_ctx(task_event->task_ctx, task_event);
++
+ 	rcu_read_unlock();
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
