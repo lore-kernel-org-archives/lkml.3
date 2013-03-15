@@ -1,69 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3COKQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:16:24 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:33391 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3COKQW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:16:22 -0400
-Message-ID: <5142F4F1.60006@atmel.com>
-Date: Fri, 15 Mar 2013 11:16:17 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1754112Ab3COKRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:17:34 -0400
+Received: from mail.fidal.it ([94.88.95.180]:42148 "EHLO server1.fidal.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753282Ab3COKRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 06:17:33 -0400
+X-Greylist: delayed 2255 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 06:17:33 EDT
+Message-ID: <52422.41.71.178.40.1363340199.squirrel@webmail.fidal.it>
+Date: Fri, 15 Mar 2013 10:36:39 +0100 (CET)
+Subject: I am Dave Dawes...
+From: "Dave Dawes" <fi@yahoo.cn>
+Reply-To: davedwest@yahoo.cn
+User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Johan Hovold <jhovold@gmail.com>, Olof Johansson <olof@lixom.net>,
-        <FlorianSchandinat@gmx.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <jacmet@sunsite.dk>
-Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
-References: <cover.1360340791.git.nicolas.ferre@atmel.com> <5139B169.7050807@atmel.com> <51405126.3090009@atmel.com> <201303142303.42283.arnd@arndb.de>
-In-Reply-To: <201303142303.42283.arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Scan: VAMS 1.60.2
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 12:03 AM, Arnd Bergmann :
-> On Wednesday 13 March 2013, Nicolas Ferre wrote:
->> In case we end-up with an agreement on the path those fixes should
->> follow, here is the location of my updated material rebased on top of 3.9-rc2:
->>
->> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
->>
->>   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
->>
->> are available in the git repository at:
->>
->>   git://github.com/at91linux/linux-at91.git at91-3.9-fixesLCD
->>
->> for you to fetch changes up to bbd44f6bd9d1aa735b180b29b5719d63a8e87b55:
->>
->>   ARM: at91/avr32/atmel_lcdfb: add platform device-id table (2013-03-13 11:05:12 +0100)
->>
->> ----------------------------------------------------------------
->> Johan Hovold (5):
->>       atmel_lcdfb: fix 16-bpp modes on older SOCs
->>       ARM: at91: fix LCD-wiring mode
->>       ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
->>       atmel_lcdfb: move lcdcon2 register access to compute_hozval
->>       ARM: at91/avr32/atmel_lcdfb: add platform device-id table
->>
-> 
-> I have merged the first two patches into the fixes branch now, from up to commit
-> 67cf9c0a. Please resubmit the remaining ones on top of this commit for 3.10, either
-> through arm-soc or through the framebuffer tree.
+I am Dave Dawes, my fiancee and I won a Jackpot Lottery of £101 million
+pounds ($156 million) and have voluntarily decided to give you and your
+family the sum of £1 million pounds ($1.56 million) as part of our own
+charity project to you and your family. Email my private box for more
+details: davedwest@yahoo.cn
 
-Thanks a lot.
-I have just sent the pull-request for remaining material. Tell me if it
-is what you've expected.
+You can read more about us by visiting the web pages below.
+
+http://www.telegraph.co.uk/news/newstopics/howaboutthat/8820740/101m-lottery-jackpot-winners-Dave-and-Angela-Dawes-to-give-millions-to-friends-and-family.html
 
 Best regards,
--- 
-Nicolas Ferre
+Dave Dawes.
+
