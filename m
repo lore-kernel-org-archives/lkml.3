@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3COQKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:10:08 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.13]:23292 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754310Ab3COQKG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:10:06 -0400
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 12:10:06 EDT
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-127.messagelabs.com!1363363411!5900289!18
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>, Kumar Amit Mehta <gmate.amit@gmail.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 15 Mar 2013 11:03:30 -0500
-Subject: RE: [PATCH] staging: comedi: drivers: ni_atmio.c: Add a missing
- semicolon
-Thread-Topic: [PATCH] staging: comedi: drivers: ni_atmio.c: Add a missing
- semicolon
-Thread-Index: Ac4hYTsoly8fU1oORyGjFTiqtvrrzgANMDiQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020980106B39@AUSP01VMBX24.collaborationhost.net>
-References: <1363335269-14903-1-git-send-email-gmate.amit@gmail.com>
- <5142ECB1.306@mev.co.uk>
-In-Reply-To: <5142ECB1.306@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754908Ab3COQMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:12:09 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:43057 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754310Ab3COQMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:12:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18DyhVO3WaKT0HcUKIjYbPb
+Date: Fri, 15 Mar 2013 09:12:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2 06/23] ARM: OMAP3: 3430SDP: Adapt to ehci-omap
+ changes
+Message-ID: <20130315161201.GA9370@atomide.com>
+References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
+ <1363360604-21368-7-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363360604-21368-7-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 15, 2013 2:41 AM, Ian Abbott wrote:
-> On 2013-03-15 08:14, Kumar Amit Mehta wrote:
->> fix a missing end-of-statement by adding a semicolon.
->>
->> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
->> ---
->>   drivers/staging/comedi/drivers/ni_atmio.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
->> index 279f2cd..37372a1 100644
->> --- a/drivers/staging/comedi/drivers/ni_atmio.c
->> +++ b/drivers/staging/comedi/drivers/ni_atmio.c
->> @@ -467,7 +467,7 @@ static int ni_atmio_attach(struct comedi_device *dev,
->>   		return -EIO;
->>
->>   	dev->board_ptr = ni_boards + board;
->> -	boardtype = comedi_board(dev)
->> +	boardtype = comedi_board(dev);
->>
->>   	printk(" %s", boardtype->name);
->>   	dev->board_name = boardtype->name;
->
-> Ironically, that was introduced by a patch titled "staging: comedi: 
-> ni_atmio: fix build errors". :-)
+Hi,
 
-My only excuse is that the coffee machine was broken...
+I think you can get rid of quite a bit more of the repeated data for
+most boards, see below.
 
-Actually, I just realized that this driver as well as the others that depend
-on ISAPNP were not being compiled on my Debian 6.0 64bit system . I
-hacked my config to build the ones that depend on ISA but missed the
-ISAPNP ones.
+* Roger Quadros <rogerq@ti.com> [130315 08:21]:
+> Add 2 platform devices for 'nop-usb-xceiv'. These will be used
+> as PHYs for HS USB ports 1 and 2 so provide binding information
+> for them.
+> 
+> Use usbhs_init_phys() to register the PHY's RESET regulators.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-3430sdp.c |   47 ++++++++++++++++++++++++++++++----
+>  1 files changed, 41 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+> index ce812de..5584682 100644
+> --- a/arch/arm/mach-omap2/board-3430sdp.c
+> +++ b/arch/arm/mach-omap2/board-3430sdp.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/spi/spi.h>
+>  #include <linux/i2c/twl.h>
+>  #include <linux/regulator/machine.h>
+> +#include <linux/usb/phy.h>
+>  #include <linux/io.h>
+>  #include <linux/gpio.h>
+>  #include <linux/mmc/host.h>
+> @@ -445,16 +446,37 @@ static void enable_board_wakeup_source(void)
+>  		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
+>  }
+>  
+> +/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
+> +static struct platform_device hsusb1_phy_device = {
+> +	.name = "nop_usb_xceiv",
+> +	.id = 1,
+> +};
+> +
+> +/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
+> +static struct platform_device hsusb2_phy_device = {
+> +	.name = "nop_usb_xceiv",
+> +	.id = 2,
+> +};
 
-Sorry about the trouble.
+Please allocate these in the common ehci platform init code
+so you don't have to repeat the same nop_usb_xceiv for each
+board-*.c file. If you need to override these, then you can
+pass something instead of NULL to the init function.
 
-Hartley
+> +static struct usbhs_phy_data phy_data[] __initdata = {
+> +	{
+> +		.port = 1,
+> +		.reset_gpio = 57,
+> +		.vcc_gpio = -EINVAL,
+> +		.phy_id = "nop_usb_xceiv.1",
+> +	},
+> +	{
+> +		.port = 2,
+> +		.reset_gpio = 61,
+> +		.vcc_gpio = -EINVAL,
+> +		.phy_id = "nop_usb_xceiv.2",
+> +	},
+> +};
 
+This is OK as it's the board specific data needed. If it's the
+same for many boards, then you might want to add some init function
+for the default case.
+
+> +static struct platform_device *sdp3430_devices[] __initdata = {
+> +	&hsusb1_phy_device,
+> +	&hsusb2_phy_device,
+> +};
+
+It then seems that this can be in the common ehci platform init
+code for most cases.
+
+>  static void __init omap_3430sdp_init(void)
+>  {
+>  	int gpio_pendown;
+> @@ -606,6 +633,14 @@ static void __init omap_3430sdp_init(void)
+>  	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
+>  	sdp3430_display_init();
+>  	enable_board_wakeup_source();
+> +
+> +	platform_add_devices(sdp3430_devices, ARRAY_SIZE(sdp3430_devices));
+> +	/* PHY on HSUSB Port 1 i.e. index 0 */
+> +	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
+> +	/* PHY on HSUSB Port 2 i.e. index 1 */
+> +	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
+
+And this part too in most cases.
+
+> +	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+>  	usbhs_init(&usbhs_bdata);
+>  }
+
+Regards,
+
+Tony
