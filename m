@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3COQxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:53:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8628 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411Ab3COQxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:53:17 -0400
-X-IronPort-AV: E=Sophos;i="4.84,852,1355068800"; 
-   d="scan'208";a="6880056"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	id S1755172Ab3COQxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:53:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755078Ab3COQxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:53:31 -0400
+Date: Fri, 15 Mar 2013 17:51:31 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Eric Paris <eparis@parisplace.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Adam Buchbinder <adam.buchbinder@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH 9/9] fsnotify: remove fsnotify_init()
-Date: Sat, 16 Mar 2013 00:50:57 +0800
-Message-Id: <1363366257-4886-10-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1363366257-4886-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1363366257-4886-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 00:51:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 00:51:58,
-	Serialize complete at 2013/03/16 00:51:58
+Subject: Re: +
+	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+	.patch added to -mm tree
+Message-ID: <20130315165131.GA32065@redhat.com>
+References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since fsnotify_init() is empty in runtime, remove it.
-The build time test is moved to notification.c
+On 03/15, Ming Lei wrote:
+>
+> On Fri, Mar 15, 2013 at 9:46 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 03/15, Ming Lei wrote:
+> >>
+> >> On Fri, Mar 15, 2013 at 12:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >  static inline int atomic_inc_unless_negative(atomic_t *p)
+> >> >  {
+> >> >         int v, v1;
+> >> > -       for (v = 0; v >= 0; v = v1) {
+> >> > +       for (v = atomic_read(p); v >= 0; v = v1) {
+> >> >                 v1 = atomic_cmpxchg(p, v, v + 1);
+> >>
+> >> Unfortunately, the above will exchange the current value even though
+> >> it is negative, so it isn't correct.
+> >
+> > Hmm, why? We always check "v >= 0" before we try to do
+> > atomic_cmpxchg(old => v) ?
+>
+> Sorry, yes, you are right. But then your patch is basically same with the
+> previous one, isn't it?
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Eric Paris <eparis@parisplace.org>
----
- fs/notify/fsnotify.c     |    8 --------
- fs/notify/notification.c |    2 ++
- 2 files changed, 2 insertions(+), 8 deletions(-)
+Sure, the logic is the same, just the patch (and the code) looks simpler
+and more understandable.
 
-diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
-index eaa0e9e..2ea0c1a 100644
---- a/fs/notify/fsnotify.c
-+++ b/fs/notify/fsnotify.c
-@@ -295,11 +295,3 @@ out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(fsnotify);
--
--static __init int fsnotify_init(void)
--{
--	BUILD_BUG_ON(HWEIGHT32(ALL_FSNOTIFY_EVENTS) != 23);
--
--	return 0;
--}
--core_initcall(fsnotify_init);
-diff --git a/fs/notify/notification.c b/fs/notify/notification.c
-index 7b51b05..80fc0b5 100644
---- a/fs/notify/notification.c
-+++ b/fs/notify/notification.c
-@@ -453,6 +453,8 @@ static __init int fsnotify_notification_init(void)
- 	fsnotify_event_cachep = KMEM_CACHE(fsnotify_event, SLAB_PANIC);
- 	fsnotify_event_holder_cachep = KMEM_CACHE(fsnotify_event_holder, SLAB_PANIC);
- 
-+	BUILD_BUG_ON(HWEIGHT32(ALL_FSNOTIFY_EVENTS) != 23);
-+
- 	q_overflow_event = fsnotify_create_event(NULL, FS_Q_OVERFLOW, NULL,
- 						 FSNOTIFY_EVENT_NONE, NULL, 0,
- 						 GFP_KERNEL);
--- 
-1.7.4.4
+> And has same problem, see below discussion:
+>
+> http://marc.info/?t=136284366900001&r=1&w=2
+
+The lack of the barrier?
+
+I thought about this, this should be fine? atomic_add_unless() has the same
+"problem", but this is documented in atomic_ops.txt:
+
+	atomic_add_unless requires explicit memory barriers around the operation
+	unless it fails (returns 0).
+
+I thought that atomic_add_unless_negative() should have the same
+guarantees?
+
+Paul? Frederic?
+
+Oleg.
 
