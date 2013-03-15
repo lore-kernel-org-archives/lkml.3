@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3COQTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:19:12 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56517 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3COQTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:19:11 -0400
-Message-ID: <514349EA.9070404@linux.vnet.ibm.com>
-Date: Fri, 15 Mar 2013 11:18:50 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1751950Ab3COQVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:21:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42838 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab3COQVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:21:42 -0400
+Date: Fri, 15 Mar 2013 17:21:37 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <greg@kroah.com>
+Cc: Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
+ responses)
+In-Reply-To: <20130315154739.GA1024@kroah.com>
+Message-ID: <alpine.LNX.2.00.1303151720400.9529@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com>
+ <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <20130315153249.GA32425@kroah.com> <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz> <20130315154739.GA1024@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Robert Jennings <rcj@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
-        minchan@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: zsmalloc limitations and related topics
-References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default> <20130313151359.GA3130@linux.vnet.ibm.com> <4ab899f6-208c-4d61-833c-d1e5e8b1e761@default> <514104D5.9020700@linux.vnet.ibm.com> <5141BC5D.9050005@oracle.com> <20130314132046.GA3172@linux.vnet.ibm.com> <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
-In-Reply-To: <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031516-3864-0000-0000-0000074621D8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 01:54 PM, Dan Magenheimer wrote:
->> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
->> Sent: Thursday, March 14, 2013 7:21 AM
->> To: Bob
->> Cc: Seth Jennings; Dan Magenheimer; minchan@kernel.org; Nitin Gupta; Konrad Wilk; linux-mm@kvack.org;
->> linux-kernel@vger.kernel.org; Bob Liu; Luigi Semenzato; Mel Gorman
->> Subject: Re: zsmalloc limitations and related topics
->>
->> * Bob (bob.liu@oracle.com) wrote:
->>> On 03/14/2013 06:59 AM, Seth Jennings wrote:
->>>> On 03/13/2013 03:02 PM, Dan Magenheimer wrote:
->>>>>> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
->>>>>> Subject: Re: zsmalloc limitations and related topics
->>>>>
->> <snip>
->>>>> Yes.  And add pageframe-reclaim to this list of things that
->>>>> zsmalloc should do but currently cannot do.
->>>>
->>>> The real question is why is pageframe-reclaim a requirement?  What
->>>> operation needs this feature?
->>>>
->>>> AFAICT, the pageframe-reclaim requirements is derived from the
->>>> assumption that some external control path should be able to tell
->>>> zswap/zcache to evacuate a page, like the shrinker interface.  But this
->>>> introduces a new and complex problem in designing a policy that doesn't
->>>> shrink the zpage pool so aggressively that it is useless.
->>>>
->>>> Unless there is another reason for this functionality I'm missing.
->>>>.
->>>
->>> Perhaps it's needed if the user want to enable/disable the memory
->>> compression feature dynamically.
->>> Eg, use it as a module instead of recompile the kernel or even
->>> reboot the system.
+On Fri, 15 Mar 2013, Greg KH wrote:
+
+> > > > > I have the same problem on my Lenovo T500. I think the graphics card is
+> > > > > involved.
+> > > > > 
+> > > > > This laptop has "hybrid graphics" - one Intel GMA 4500MHD and one ATI
+> > > > > Mobility Radeon HD 3650. When I boot with the Intel card, I get "irq 16:
+> > > > > nobody cared" during boot, not when I boot with the ATI card.
+> > > > 
+> > > > Confirming this. After a lot of hassle, I have bisected this reliably to
+> > > > 
+> > > > 	commit 28c70f162a315bdcfbe0bf940a740ef8bfb918d6
+> > > > 	Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > > > 	Date:   Sat Dec 1 13:53:45 2012 +0100
+> > > > 
+> > > > 	    drm/i915: use the gmbus irq for waits
+> > > > 
+> > > > Adding Daniel, Imre and Daniel to CC while I will try to figure out what's 
+> > > > happening in parallel.
+> > > 
+> > > Wasn't this fixed by the merge from David
+> > > (2cc79544bd0aabb4b3cf467ead5df526d9134c64)?
+> > 
+> > Why do you think it should, please?
 > 
-> It's worth thinking about: Under what circumstances would a user want
-> to turn off compression?  While unloading a compression module should
-> certainly be allowed if it makes a user comfortable, in my opinion,
-> if a user wants to do that, we have done our job poorly (or there
-> is a bug).
+> The line:
+> 	- Fix PCH irq handling race which resulted in missed gmbus/dp
+> 	  aux irqs and subsequent fallout (Paulo)
+
+Ah, that one. I believe that should be irrelevant for GM chipsets, as they 
+don't have AUX line, right?
+
+> > (I am seeing this with a2362d247 still).
 > 
->> To unload zswap all that is needed is to perform writeback on the pages
->> held in the cache, this can be done by extending the existing writeback
->> code.
-> 
-> Actually, frontswap supports this directly.  See frontswap_shrink.
+> Ok, I guess it isn't still fixed properly, just was guessing :)
 
-frontswap_shrink() is a best-effort attempt to fault in all the pages
-stored in the backend.  However, if there is not enough RAM to hold all
-the pages, then it can not completely evacuate the backend.
+Seems like this is a different issue.
 
-Module exit functions must return void, so there is no way to fail a
-module unload.  If you implement an exit function for your module, you
-must insure that it can always complete successfully.  For this reason
-frontswap_shrink() is unsuitable for module unloading.  You'd need to
-use a mechanism like writeback that could surely evacuate the backend
-(baring I/O failures).
+Thanks,
 
-Seth
-
+-- 
+Jiri Kosina
+SUSE Labs
