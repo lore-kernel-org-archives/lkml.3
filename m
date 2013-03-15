@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab3COElE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 00:41:04 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:55511 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab3COElB (ORCPT
+	id S1751669Ab3COEoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 00:44:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51474 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab3COEoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 00:41:01 -0400
-Date: Fri, 15 Mar 2013 10:10:41 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
-        yrl.pp-manager.tt@hitachi.com, Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v2 2/2] [BUGFIX] kprobes/x86: Check Interrupt Flag
-	modifier when registering probe
-Message-ID: <20130315044041.GC31866@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20130314115230.19690.39387.stgit@mhiramat-M0-7522> <20130314115242.19690.33573.stgit@mhiramat-M0-7522>
+	Fri, 15 Mar 2013 00:44:17 -0400
+Date: Fri, 15 Mar 2013 04:44:11 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+Message-ID: <20130315044411.GW21522@ZenIV.linux.org.uk>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <20130313160854.54ac0491044371b4db214698@linux-foundation.org>
+ <CAJfpeguvhJaoSBDKEXoJFn_C=52aXbC9L2ALJvp6ekwEGyQX_g@mail.gmail.com>
+ <20130315012541.GU21522@ZenIV.linux.org.uk>
+ <19058.1363320936@jrobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130314115242.19690.33573.stgit@mhiramat-M0-7522>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031504-4834-0000-0000-000004BD9E50
+In-Reply-To: <19058.1363320936@jrobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 08:52:43PM +0900, Masami Hiramatsu wrote:
-> Currently kprobes check whether the copied instruction modifies
-> IF (interrupt flag) on each probe hit. This means not only
-> introducing overhead but also involving inat_get_opcode_attribute
-> into kprobes hot path, and it can cause an infinit recursive
-> call (and kernel panic in the end).
-> 
-> Actually, since the copied instruction itself never be modified
-> on the buffer, it is needless to analyze the instruction every
-> probe hit.
-> 
-> To fix this issue, we checks it only once when registering probe
-> and store the result on ainsn->if_modifier.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+On Fri, Mar 15, 2013 at 01:15:36PM +0900, J. R. Okajima wrote:
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> +- whiteout is hardlinked in order to reduce the consumption of inodes
+> +  on branch
 
+*blink* Whiteouts have no inodes at all.  Filesystem has an additional
+kind of directory entries, recognizable as whiteouts.  How they are
+done is up to filesystem in question.
+
+> +- kernel thread for removing the dir who has a plenty of whiteouts
+
+Again, implementation detail for individual filesystem.
+
+> +The whiteout in aufs is very similar to Unionfs's. That is represented
+> +by its filename. UnionMount takes an approach of a file mode, but I am
+> +afraid several utilities (find(1) or something) will have to support it.
+
+Why the devil should find(1) even see them?
+
+I really don't believe that it's a good idea to try making them fs-agnostic;
+it's an implementation detail of filesystem, with things like "is this
+directory empty?" very much belonging to the fs in question...
+
+I don't know; maybe it's my experience of dealing with umsdos that has badly
+soured me on that kind of approach, but IME this kind of schemes tend to
+be brittle as hell ;-/
