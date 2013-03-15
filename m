@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3COBap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 21:30:45 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:11493 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3COBam (ORCPT
+	id S1753452Ab3COBeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 21:34:15 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:41701 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3COBeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 21:30:42 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-dd-514279c1404a
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>
-Cc: "'Olof Johansson'" <olof@lixom.net>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Rob Herring'" <rob.herring@calxeda.com>,
-        "'Rob Landley'" <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1363302046-31684-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1363302046-31684-1-git-send-email-dianders@chromium.org>
-Subject: Re: [PATCH] usb: Document clocks in samsung,exynos4210-ehci/ohci
- bindings
-Date: Fri, 15 Mar 2013 10:30:40 +0900
-Message-id: <005c01ce211c$b45da540$1d18efc0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4hB9HhP6YeGduySqCGIIBtExhuMAAFFF6w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI92DlU6BBqcaBS0Wti1hsbi8aw6b
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBlvjuxkKpjCXbFtYhNbA+MZji5GDg4JAROJHy0FXYyc
-	QKaYxIV769m6GLk4hASWMUo87XrHDpEwkZg95yMLRGIRo8TdV0/YIZxfjBJ/N85nBqliE1CT
-	+PLlMDvIVBGBYIl/5/1BapgFmpgl7s3ZzgpSIyTgKvFpy0lGEJtTwE3iwvKnbCC2sECIxO+J
-	01hBelkEVCXWrHMFCfMK2Eq8e9/DDGELSvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmiGfUJR79
-	1QUJiwgYSTyd1Q9VIiKx78U7RpBzJAQ2sUvMvn8TbC2LgIDEt8mHWCB6ZSU2HWCG+FdS4uCK
-	GywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkAibuIPx
-	/gHrQ4zJQOsnMkuJJucDIzSvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYy94fM8/z41eOEduVWKfe71TvFKh0Qx3pvJ+UsrLKTlO5JPhsSffd29
-	5drsqeea+mRnq2xd81ZSK+zljYtid09sqXb63qDcMmm9zku5UzKhMT22Fks9vqo7HZZYxWTF
-	IjHp7/0nqodlRIIn87Fmzjj1+2jkWzP9myzCOSIxvUcnM080LM6tOqLEUpyRaKjFXFScCAC1
-	67HoxgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd2DlU6BBif+cFssbFvCYnF51xw2
-	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
-	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz3hzZyVQwhbti
-	28QmtgbGMxxdjJwcEgImErPnfGSBsMUkLtxbz9bFyMUhJLCIUeLuqyfsEM4vRom/G+czg1Sx
-	CahJfPlyGCjBwSEiECzx77w/SA2zQBOzxL0521lBaoQEXCU+bTnJCGJzCrhJXFj+lA3EFhYI
-	kfg9cRorSC+LgKrEmnWuIGFeAVuJd+97mCFsQYkfk++BHcQsoCWxfudxJghbXmLzmrfMIK0S
-	AuoSj/7qgoRFBIwkns7qhyoRkdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSe
-	a6hXnJhbXJqXrpecn7uJERzBz6R2MK5ssDjEKMDBqMTDe6DfIVCINbGsuDL3EKMEB7OSCK+n
-	l2OgEG9KYmVValF+fFFpTmrxIcZkoD8nMkuJJucDk0teSbyhsYmZkaWRmYWRibk5acJK4rwH
-	Wq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAe/t0YoPHkiCtD3bcts87vD757ZZ9uq37pmjssr/6t
-	7yte+mXS1JQq84rb9+YtPyZ2UDtb4l1PR09lw1aeNdE35j5kzs95crqiLOX9vJNb+7hOLTl8
-	5JX2lwLR+g0Pvbl0jnj6rnzdmLKfPenU402Oy/KrnRkiPI5snBot/TN6U9o/Q8F/lftalViK
-	MxINtZiLihMBji9YKSQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 14 Mar 2013 21:34:14 -0400
+Message-ID: <514278C2.3020900@gmail.com>
+Date: Fri, 15 Mar 2013 09:26:26 +0800
+From: Shuge <shugelinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Kevin <kevin@allwinnertech.com>,
+        linux-serial@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [BUG]: when printk too more through serial, cpu up is failed.
+References: <5141D5E6.4060001@gmail.com> <20130314140553.GA4895@kroah.com>
+In-Reply-To: <20130314140553.GA4895@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 15, 2013 8:01 AM, Doug Anderson wrote:
-> 
-> The exynox4210-ehci and exynos4210-ohci nodes need a clock specified
-> using the common clock framework.  Document it.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  Documentation/devicetree/bindings/usb/exynos-usb.txt | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> index f66fcdd..d557cf7 100644
-> --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> @@ -10,6 +10,8 @@ Required properties:
->   - reg: physical base address of the controller and length of memory mapped
->     region.
->   - interrupts: interrupt number to the cpu.
-> + - clocks: from common clock binding: handle to adc clock.
-                                                            ^^^
-Is it right? I think that 'adc' can be changed to 'usb host'.
+于 2013年03月14日 22:05, Greg KH 写道:
+> On Thu, Mar 14, 2013 at 09:51:34PM +0800, Shuge wrote:
+>> Hi all,
+>>      When the kernel printk too many log, the cpu is failed to come online.
+>> The problem is this:
+>> For example, cpu0 bring up cpu1:
+>>
+>>        a. cpu0 call cpu_up:
+>>           cpu_up()
+>>           ->_cpu_up()
+>>              ->__cpu_notify(CPU_UP_PREPARE)
+>>              ->__cpu_up()
+>>                 ->boot_secondary()
+>> #       ->wait_for_completion_timeout(&cpu_running, msecs_to_jiffires(1000))
+>>           -> if (!cpu_online(cpu)) {
+>>                    pr_crit("CPU%u: failed to come online\n", cpu);
+>>                    ret = -EIO;
+>>                }
+>>           ->cpu_notify(CPU_ONLINE)
+>>
+>>        b. cpu1 enter kernel:
+>>        secondary_start_kernel()
+>> @   ->printk("CPU%u: Booted secondary processor\n", cpu)
+>> *   ->calibrate_delay()
+>>        ->set_cpu_online()
+>>        ->complete(cpu_running)
+>>          ->cpumask_set_cpu()
+>>
+>>     While cpu0 run to mark #,  which wait that cpu1 complete
+>> cpu_running, and set online.
+>> Generally, cpu0 can get it. But if the __log_buf is too large or
+>> other threads write
+>> it unceasing, then cpu1 come to mark @ or * in this moment. Cpu1 is
+>> busy outputing
+>> buffer, which cost time more than 1s, and cpu1 have not join in
+>> sched, so cpu0 wait it timeout.
+>>     By reading printk.c, I found that can_use_console() always return
+>> true, which be called by
+>> console_trylock_for_printk(). Because, have_callable_console()
+>> return ture always, if the console
+>> driver set CON_ANYTIME flag. I think that cpu should not output the
+>> __log_buf in coming online,
+>> even though have_callable_console() is true.
+>>
+>> /*
+>>   * Can we actually use the console at this time on this cpu?
+>>   *
+>>   * Console drivers may assume that per-cpu resources have
+>>   * been allocated. So unless they're explicitly marked as
+>>   * being able to cope (CON_ANYTIME) don't call them until
+>>   * this CPU is officially up.
+>>   */
+>> static inline int can_use_console(unsigned int cpu)
+>> {
+>>      return cpu_online(cpu) || have_callable_console();
+>> }
+>>
+>> In can_use_console, why not is &&, but ||?
+>>
+>> Kernel Version: 3.3.0
+> Why such an old and obsolete kernel version?  Please try this on 3.8,
+> lots of work have gone into the printk area that should have solved this
+> issue.
+>
+> greg k-h
 
-
-Best regards,
-Jingoo Han
-
-> + - clock-names: from common clock binding: Shall be "usbhost".
-> 
->  Optional properties:
->   - samsung,vbus-gpio:  if present, specifies the GPIO that
-> @@ -22,6 +24,9 @@ Example:
->  		reg = <0x12110000 0x100>;
->  		interrupts = <0 71 0>;
->  		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-> +
-> +		clocks = <&clock 285>;
-> +		clock-names = "usbhost";
->  	};
-
-
+I saw the printk.c in version 3.9, it still check 
+console_trylock_for_printk() to decide to call console_unlock. In 
+vprintk_emit(), cpu1 also have the opportunity to execute 
+console_unlock() at coming online time.
+Once cpu which is coming online can output buffer, nothing can interrupt 
+it until buffer is empty.But we can't ensure that none always write the 
+__log_buf. It is danger! I think, the solution is that we should prevent 
+to use console at coming online.
