@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3COIrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:47:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54319 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab3COIrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:47:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="279910128"
-Message-ID: <5142E04F.1010400@intel.com>
-Date: Fri, 15 Mar 2013 16:48:15 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1753843Ab3COIsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:48:09 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:32902
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751965Ab3COIsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 04:48:06 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 04:48:06 EDT
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ahbe9i1155h)
+Subject: [Patch v1] rtc: fix for the DA9052 rtc device registration
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Mar 2013 13:59:39 +0530
+Message-ID: <1363336179.30613.18.camel@dhruva>
 MIME-Version: 1.0
-To: Danny Baumann <dannybaumann@web.de>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 3/3] ACPI video: Fix applying indexed initial brightness
- value.
-References: <1363257264-15984-1-git-send-email-dannybaumann@web.de> <1363257264-15984-4-git-send-email-dannybaumann@web.de>
-In-Reply-To: <1363257264-15984-4-git-send-email-dannybaumann@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 06:34 PM, Danny Baumann wrote:
-> The value initially read via _BQC also needs to be offset by 2 to
-> compensate for the first 2 special items in _BCL. Introduce a helper
-> function to do the conversion in order to not needlessly duplicate code.
-> ---
->  drivers/acpi/video.c | 23 ++++++++++++++---------
->  1 file changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index d0fade7..562ccc3 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -450,6 +450,16 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
->  	{}
->  };
->  
-> +static unsigned long long
-> +acpi_video_index_to_level(struct acpi_video_device *device,
-> +			  unsigned long long index)
-> +{
-> +	if (device->brightness->flags._BCL_reversed)
-> +		index = device->brightness->count - 3 - index;
-> +
-> +	return device->brightness->levels[index + 2];
-> +}
+DA9052/53 MFD core handles only virtual irq therefore rtc driver needs
+to be updated to work on virtual irq. Without this update DA9052/53 rtc 
+driver will fail during its registration.
+Also getting irq by it name is no longer supported in DA9052/53 core.
 
-What about making this function also take care of the
-bqc_offset_aml_bug_workaround? so that this function serves more like a
-conversion from raw value to fixed value, the function name can perhaps
-be named as: acpi_video_fix_bqc_value, or whatever you think is more
-appropriate.
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+ drivers/rtc/rtc-da9052.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> +
->  static int
->  acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
->  					unsigned long long *level, int init)
-> @@ -472,13 +482,10 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
->  				return 0;
->  			}
->  
-> -			if (device->brightness->flags._BQC_use_index) {
-> -				if (device->brightness->flags._BCL_reversed)
-> -					*level = device->brightness->count
-> -								 - 3 - (*level);
-> -				*level = device->brightness->levels[*level + 2];
-> +			if (device->brightness->flags._BQC_use_index)
-> +				*level = acpi_video_index_to_level(device,
-> +								   *level);
->  
-> -			}
->  			*level += bqc_offset_aml_bug_workaround;
->  			for (i = 2; i < device->brightness->count; i++)
->  				if (device->brightness->levels[i] == *level) {
-> @@ -742,9 +749,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
->  				}
->  		}
->  	} else {
-> -		if (br->flags._BCL_reversed)
-> -			level_old = (br->count - 1) - level_old;
-> -		level = br->levels[level_old];
-> +		level = acpi_video_index_to_level(device, level_old);
+diff --git a/drivers/rtc/rtc-da9052.c b/drivers/rtc/rtc-da9052.c
+index 60b826e..e22c950 100644
+--- a/drivers/rtc/rtc-da9052.c
++++ b/drivers/rtc/rtc-da9052.c
+@@ -239,10 +239,10 @@ static int da9052_rtc_probe(struct platform_device *pdev)
+ 
+ 	rtc->da9052 = dev_get_drvdata(pdev->dev.parent);
+ 	platform_set_drvdata(pdev, rtc);
+-	rtc->irq = platform_get_irq_byname(pdev, "ALM");
+-	ret = request_threaded_irq(rtc->irq, NULL, da9052_rtc_irq,
+-				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				   "ALM", rtc);
++	rtc->irq =  DA9052_IRQ_ALARM;
++
++	ret = da9052_request_irq(rtc->da9052, rtc->irq, "ALM",
++				da9052_rtc_irq, rtc);
+ 	if (ret != 0) {
+ 		rtc_err(rtc->da9052, "irq registration failed: %d\n", ret);
+ 		return ret;
+-- 
+1.7.1
 
-And here, that new function should be used, which also takes care of the
-offset_aml_bug problem(though in theory, the two problems may not happen
-on the same BIOS table).
-
-And the acpi_video_device_lcd_get_level_current's param init can
-probably be renamed as raw, meaning if raw value is desired or fixed
-value, but it's not a big deal.
-
-Thanks,
-Aaron
-
->  	}
->  
->  set_level:
-> 
 
