@@ -1,82 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3COCIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:08:17 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48005 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752574Ab3COCIQ (ORCPT
+	id S1753609Ab3COCMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:12:24 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58310 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3COCMX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:08:16 -0400
-Date: Thu, 14 Mar 2013 22:08:12 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Eric Wong <normalperson@yhbt.net>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
-	Implementation
-Message-ID: <20130315020812.GA25419@Krystal>
-References: <20130311213602.GB9829@Krystal> <1363308584.3194.124.camel@thor.lan>
+	Thu, 14 Mar 2013 22:12:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363308584.3194.124.camel@thor.lan>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120913141841.GC5693@phenom.ffwll.local>
+References: <20120913141841.GC5693@phenom.ffwll.local>
+From: =?ISO-8859-1?Q?St=E9phane_Marchesin?= 
+	<stephane.marchesin@gmail.com>
+Date: Thu, 14 Mar 2013 19:11:42 -0700
+Message-ID: <CACP_E+JZ36SXNU4b4GDFRo9KkW28brEEFDEYhyRqR3S4n6JNQg@mail.gmail.com>
+Subject: Re: [pull] drm-intel-next
+To: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Hurley (peter@hurleysoftware.com) wrote:
-> On Mon, 2013-03-11 at 17:36 -0400, Mathieu Desnoyers wrote:
-> > +/*
-> > + * Do not put head and tail on the same cache-line if concurrent
-> > + * enqueue/dequeue are expected from many CPUs. This eliminates
-> > + * false-sharing between enqueue and dequeue.
-> > + */
-> > +struct wfcq_head {
-> > +	struct wfcq_node node;
-> > +	struct mutex lock;
-> > +};
-> > +
-> > +struct wfcq_tail {
-> > +	struct wfcq_node *p;
-> > +};
-> 
-> 
-> If you want to force separate cachelines for SMP, this would be
-> 
-> struct wfcq_head {
-> 	struct wfcq_node node;
-> 	struct mutex lock;
-> } ____cacheline_aligned_in_smp;
-> 
-> struct wfcq_tail {
-> 	struct wfcq_node *p;
-> } ____cacheline_aligned_in_smp;
+On Thu, Sep 13, 2012 at 7:18 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> Hi Dave,
+>
+> The big ticket item here is the new i915 modeset infrastructure.
+> Shockingly it didn't not blow up all over the place (i.e. I've managed to
+> fix the ugly issues before merging). 1-2 smaller corner cases broke, but
+> we have patches. Also, there's tons of patches on top of this that clean
+> out cruft and fix a few bugs that couldn't be fixed with the crtc helper
+> based stuff. So more stuff to come ;-)
+>
+> Also a few other things:
+> - Tiny fix in the fb helper to go through the official dpms interface
+>   instead of calling the crtc helper code.
+> - forcewake code frobbery from Ben, code should be more in-line with
+>   what Windows does now.
+> - fixes for the render ring flush on hsw (Paulo)
+> - gpu frequency tracepoint
+> - vlv forcewake changes to better align it with our understanding of the
+>   forcewake magic.
+> - a few smaller cleanups
+>
+> Cheers, Daniel
+>
+>
+> The following changes since commit d7c3b937bdf45f0b844400b7bf6fd3ed50bac604:
+>
+>   drm/i915: Remove __GFP_NO_KSWAPD (2012-08-27 17:11:38 +0200)
+>
+> are available in the git repository at:
+>
+>   git://people.freedesktop.org/~danvet/drm-intel tags/drm-intel-next-2012-09-09
+>
+> for you to fetch changes up to e04190e0ecb236c51af181c18c545ea076fb9cca:
+>
+>   drm/fb helper: don't call drm_helper_connector_dpms directly (2012-09-08 00:51:15 +0200)
+>
+> ----------------------------------------------------------------
+>
+> Ben Widawsky (5):
+>       drm/i915: Extract forcewake ack timeout
+>       drm/i915: use cpu_relax() in wait_for_atomic
+>       drm/i915: Change forcewake timeout to 2ms
+>       drm/i915: Never read FORCEWAKE
+>       drm/i915: Enable some sysfs stuff without CONFIG_PM
+>
+> Chris Wilson (1):
+>       drm/i915: Convert remaining debugfs iterators over rings to for_each_ring()
+>
+> Daniel Vetter (66):
+>       drm/ips: move drps/ips/ilk related variables into dev_priv->ips
+>       drm/i915: add a tracepoint for gpu frequency changes
+>       drm/i915: align vlv forcewake with common lore
+>       drm/i915: differ error message between forcwake timeouts
+>       drm/i915: add crtc->enable/disable vfuncs insted of dpms
+>       drm/i915: rip out crtc prepare/commit indirection
+>       drm/i915: add direct encoder disable/enable infrastructure
+>       drm/i915/hdmi: convert to encoder->disable/enable
+>       drm/i915/tv: convert to encoder enable/disable
+>       drm/i915/lvds: convert to encoder disable/enable
+>       drm/i915/dp: convert to encoder disable/enable
+>       drm/i915/crt: convert to encoder disable/enable
+>       drm/i915/sdvo: convert to encoder disable/enable
+>       drm/i915/dvo: convert to encoder disable/enable
+>       drm/i915: convert dpms functions of dvo/sdvo/crt
+>       drm/i915: rip out encoder->disable/enable checks
+>       drm/i915: clean up encoder_prepare/commit
+>       drm/i915: copy&paste drm_crtc_helper_set_config
+>       drm/i915: call set_base directly
+>       drm/i915: inline intel_best_encoder
+>       drm/i915: copy&paste drm_crtc_helper_set_mode
+>       drm/i915: simplify intel_crtc_prepare_encoders
+>       drm/i915: rip out encoder->prepare/commit
+>       drm/i915: call crtc functions directly
+>       drm/i915: WARN when trying to enabled an unused crtc
+>       drm/i915: Add interfaces to read out encoder/connector hw state
+>       drm/i915/dp: implement get_hw_state
+>       drm/i915/hdmi: implement get_hw_state
+>       drm/i915/tv: implement get_hw_state
+>       drm/i915/lvds: implement get_hw_state
+>       drm/i915/crt: implement get_hw_state
+>       drm/i915/sdvo: implement get_hw_state
+>       drm/i915/dvo: implement get_hw_state
+>       drm/i915: read out the modeset hw state at load and resume time
 
-Well, the thing is: I don't want to force it. The queue head and tail
-can be used in a few ways:
+Hi Daniel,
 
-1) tail used by frequent enqueue on one CPU, head used for frequent
-   dequeues on another CPU. In this case, we want head/tail on different
-   cache lines.
-2) same scenario as 1), but head and tail are placed in per-cpu data
-   of the two CPUs. We don't need to align each structure explicitly.
-3) tail and head used locally, e.g. on the stack, as splice destination
-   followed by iteration or dequeue from the same CPU. We don't want to
-   waste precious memory space in this case, so no alignment.
+This commit regresses modeset on the samsung series 5 chromebook (it
+is basically a pineview machine with an lvds panel). I don't seem to
+be able to set any mode on it any longer.
 
-So as you see, only (1) actually requires explicit alignment of head and
-tail.
+Any idea?
 
-Thanks,
+Stéphane
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+>       drm/i915: check connector hw/sw state
+>       drm/i915: rip out intel_crtc->dpms_mode
+>       drm/i915: rip out intel_dp->dpms_mode
+>       drm/i915: ensure the force pipe A quirk is actually followed
+>       drm/i915: introduce struct intel_set_config
+>       drm/i915: extract modeset config save/restore code
+>       drm/i915: extract intel_set_config_compute_mode_changes
+>       drm/i915: extract intel_set_config_update_output_state
+>       drm/i915: implement crtc helper semantics relied upon by the fb helper
+>       drm/i915: don't update the fb base if there is no fb
+>       drm/i915: convert pointless error checks in set_config to BUGs
+>       drm/i915: don't save all the encoder/crtc state in set_config
+>       drm/i915: stage modeset output changes
+>       drm/i915: push crtc->fb update into pipe_set_base
+>       drm/i915: remove crtc disabling special case
+>       drm/i915: move output commit and crtc disabling into set_mode
+>       drm/i915: extract adjusted mode computation
+>       drm/i915: use staged outuput config in tv->mode_fixup
+>       drm/i915: use staged outuput config in lvds->mode_fixup
+>       drm/i915: compute masks of crtcs affected in set_mode
+>       drm/i915: implement new set_mode code flow
+>       drm/i915: push commit_output_state past crtc disabling
+>       drm/i915: s/intel_encoder_disable/intel_encoder_noop
+>       drm/i915: WARN if the pipe won't turn off
+>       drm/i915: switch the load detect code to the staged modeset config
+>       drm/i915: push commit_output_state past the crtc/encoder preparing
+>       drm/i915: disable all crtcs at suspend time
+>       drm/i915: no longer call drm_helper_resume_force_mode
+>       drm/i915: add tons of modeset state checks
+>       drm/i915: improve modeset state checking after dpms calls
+>       Merge the modeset-rework, basic conversion into drm-intel-next
+>       drm/fb helper: don't call drm_helper_connector_dpms directly
+>
+> Jani Nikula (2):
+>       drm/i915: only enable sdvo hotplug irq if needed
+>       drm/i915: fix sdvo hotplug support check and activation
+>
+> Paulo Zanoni (3):
+>       drm/i915: add gen7_render_ring_flush
+>       drm/i915: add workarounds directly to gen6_render_ring_flush
+>       drm/i915: add workarounds to gen7_render_ring_flush
+>
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
