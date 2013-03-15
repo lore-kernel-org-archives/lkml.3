@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab3CONfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:35:52 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:38351 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab3CONft (ORCPT
+	id S1755362Ab3CONhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:37:01 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28839 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab3CONg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:35:49 -0400
+	Fri, 15 Mar 2013 09:36:59 -0400
+Date: Fri, 15 Mar 2013 09:35:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v3 20/27] PCI, xen: Use for_each_pci_resource() with xen
+ pci
+Message-ID: <20130315133556.GK8582@phenom.dumpdata.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+ <1363217302-14383-21-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130315132911.63716E0085@blue.fi.intel.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1363283435-7666-20-git-send-email-kirill.shutemov@linux.intel.com>
-	<CAJd=RBD2jWsMOjwXenbHu_Y3-jRm+=XR+h44Tw4KRKEb79ptqg@mail.gmail.com>
-	<20130315132911.63716E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 21:35:49 +0800
-Message-ID: <CAJd=RBAEOF7qx1=6vUAA7wYKq6i8efz=Mr9BvUHGxgEE4c6rvg@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 19/30] thp, mm: split huge page on mmap file page
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363217302-14383-21-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 9:29 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Hillf Danton wrote:
->> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
->> <kirill.shutemov@linux.intel.com> wrote:
->> >
->> > We are not ready to mmap file-backed tranparent huge pages.
->> >
->> It is not on todo list either.
->
-> Actually, following patches implement mmap for file-backed thp and this
-> split_huge_page() will catch only fallback cases.
->
-I wonder if the effort we pay for THP cache is nuked by mmap.
+On Wed, Mar 13, 2013 at 04:28:15PM -0700, Yinghai Lu wrote:
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+
+Reviewed-by: Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: virtualization@lists.linux-foundation.org
+> ---
+>  drivers/pci/xen-pcifront.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index 966abc6..c90835f 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -395,9 +395,7 @@ static int pcifront_claim_resource(struct pci_dev *dev, void *data)
+>  	int i;
+>  	struct resource *r;
+>  
+> -	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> -		r = &dev->resource[i];
+> -
+> +	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+>  		if (!r->parent && r->start && r->flags) {
+>  			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+>  				pci_name(dev), i);
+> -- 
+> 1.7.10.4
+> 
