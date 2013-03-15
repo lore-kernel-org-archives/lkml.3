@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab3COPO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:14:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39365 "EHLO mx2.suse.de"
+	id S1755441Ab3COPQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:16:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50636 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754556Ab3COPO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:14:26 -0400
-Date: Fri, 15 Mar 2013 16:14:17 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Harald Arnesen <skogtun.linux@gmail.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1303151609480.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754561Ab3COPQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:16:52 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <rogerq@ti.com>
+Subject: [PATCH v2 00/23] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Date: Fri, 15 Mar 2013 17:16:21 +0200
+Message-ID: <1363360604-21368-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Mar 2013, Jiri Kosina wrote:
+Hi Tony,
 
-> > I have the same problem on my Lenovo T500. I think the graphics card is
-> > involved.
-> > 
-> > This laptop has "hybrid graphics" - one Intel GMA 4500MHD and one ATI
-> > Mobility Radeon HD 3650. When I boot with the Intel card, I get "irq 16:
-> > nobody cared" during boot, not when I boot with the ATI card.
-> 
-> Confirming this. After a lot of hassle, I have bisected this reliably to
-> 
-> 	commit 28c70f162a315bdcfbe0bf940a740ef8bfb918d6
-> 	Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 	Date:   Sat Dec 1 13:53:45 2012 +0100
-> 
-> 	    drm/i915: use the gmbus irq for waits
-> 
-> Adding Daniel, Imre and Daniel to CC while I will try to figure out what's 
-> happening in parallel.
-> 
-> Attaching dmesg.txt from the machine with 28c70f162a as head, with 
-> drm.debug=0xe.
+These patches provide the SoC side code required to support
+the changes in the OMAP USB Host drivers done in [1], [2] & [3].
 
-Just a datapoint -- I have put a trivial debugging patch in place, and it 
-reveals that "nobody cared" for irq 16 happens long after last
+Device tree support is added for Beagleboard and Panda.
 
-	I915_WRITE(GMBUS4 + reg_offset, 0);
+NOTE: The first patch needs to be shared between the
+OMAP tree and Felipe's USB tree.
 
-has been performed in gmbus_wait_hw_status(). On the other hand, if I 
-comment out both GMBUS4 register offset writes in gmbus_wait_hw_status(), 
-then it of course falls back to GPIO bit-banging, but the "nobody cared" 
-for irq 16 is gone. 
+v2:
+- Added helper function usbhs_init_phys() that can be used by board files
+to simplify adding of PHY regulators for USB host ports.
 
-So it seems like something gets severely confused by the I915_WRITE to 
-GMBUS4 + reg_offset. So far this seems to have been reported solely on 
-Lenovos as far as I can see (although a completely different types), so it 
-might be some platform-specific quirk?
+[1] MFD side changes to omap-usb-host and omap-usb-tll
+  https://lkml.org/lkml/2013/3/12/179
+[2] USB EHCI side changes to ehci-omap 
+  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86265.html
+[3] USB PHY driver changes
+  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86293.html
 
-Honestly, I still don't understand how all the GMBUS stuff relates to IRQ 
-16 at all. 
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+
+are available in the git repository at:
+  git://github.com/rogerq/linux.git usbhost-arm-next
+
+Roger Quadros (23):
+  usb: phy: nop: Add some parameters to platform data
+  ARM: OMAP2+: omap-usb-host: Add usbhs_init_phys()
+  ARM: OMAP2+: omap4panda: Provide USB Host's PHY platform data
+  ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
+  ARM: OMAP3: Beagle: Adapt to ehci-omap changes
+  ARM: OMAP3: 3430SDP: Adapt to ehci-omap changes
+  ARM: OMAP3: 3630SDP: Adapt to ehci-omap changes
+  ARM: OMAP: AM3517crane: Adapt to ehci-omap changes
+  ARM: OMAP: AM3517evm: Adapt to ehci-omap changes
+  ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
+  ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
+  ARM: OMAP: devkit8000: Adapt to ehci-omap changes
+  ARM: OMAP3: igep0020: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3evm: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3stalker: Adapt to ehci-omap changes
+  ARM: OMAP3: omap3touchbook: Adapt to ehci-omap changes
+  ARM: OMAP3: overo: Adapt to ehci-omap changes
+  ARM: OMAP: zoom: Adapt to ehci-omap changes
+  ARM: dts: OMAP4: Add HS USB Host IP nodes
+  ARM: dts: omap4-panda: Add USB Host support
+  ARM: dts: OMAP3: Add HS USB Host IP nodes
+  ARM: dts: omap3-beagle: Add USB Host support
+
+ arch/arm/boot/dts/omap3-beagle.dts         |   71 ++++++++++++++
+ arch/arm/boot/dts/omap3.dtsi               |   31 ++++++
+ arch/arm/boot/dts/omap4-panda.dts          |   56 +++++++++++
+ arch/arm/boot/dts/omap4.dtsi               |   30 ++++++
+ arch/arm/mach-omap2/board-3430sdp.c        |   47 ++++++++-
+ arch/arm/mach-omap2/board-3630sdp.c        |   48 +++++++++-
+ arch/arm/mach-omap2/board-am3517crane.c    |   38 +++++---
+ arch/arm/mach-omap2/board-am3517evm.c      |   41 +++++++-
+ arch/arm/mach-omap2/board-cm-t35.c         |   45 ++++++++-
+ arch/arm/mach-omap2/board-cm-t3517.c       |   45 ++++++++-
+ arch/arm/mach-omap2/board-devkit8000.c     |   20 +++--
+ arch/arm/mach-omap2/board-igep0020.c       |   66 +++++++++++---
+ arch/arm/mach-omap2/board-omap3beagle.c    |   44 +++++++--
+ arch/arm/mach-omap2/board-omap3evm.c       |   41 ++++++---
+ arch/arm/mach-omap2/board-omap3pandora.c   |   31 +++++--
+ arch/arm/mach-omap2/board-omap3stalker.c   |   29 +++++--
+ arch/arm/mach-omap2/board-omap3touchbook.c |   38 ++++++--
+ arch/arm/mach-omap2/board-omap4panda.c     |   67 +++++++-------
+ arch/arm/mach-omap2/board-overo.c          |   32 +++++-
+ arch/arm/mach-omap2/board-zoom.c           |   32 +++++-
+ arch/arm/mach-omap2/usb-host.c             |  138 +++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/usb.h                  |    9 ++
+ include/linux/usb/nop-usb-xceiv.h          |    5 +
+ 23 files changed, 849 insertions(+), 155 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.4.1
+
