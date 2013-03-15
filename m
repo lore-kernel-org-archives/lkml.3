@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3COQV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:21:59 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:62943 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752362Ab3COQV5 (ORCPT
+	id S1752426Ab3COQ0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:26:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12845 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3COQ0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:21:57 -0400
-Message-ID: <1363364515.1335.125.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] Fix comment typo "CONFIG_MISALIGN_ACCESS"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 15 Mar 2013 17:21:55 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Mar 2013 16:21:55.0732 (UTC) FILETIME=[35D70540:01CE2199]
-X-RcptDomain: vger.kernel.org
+	Fri, 15 Mar 2013 12:26:02 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-17-51434b98e70c
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-iio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de
+Subject: [PATCH 1/2] iio: adc: Kconfig: exynos_adc depends on CONFIG_OF
+Date: Fri, 15 Mar 2013 21:53:40 +0530
+Message-id: <1363364620-23597-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsWyRsSkWneGt3OgQcc+NYuzyw6yWTQvXs9m
+	sWTyfFaLeUfesVhc3jWHzWLG+X1MFou2/Wd2YPeY3XCRxWPnrLvsHvvnrmH3WPLmEKvH501y
+	AaxRXDYpqTmZZalF+nYJXBk/765lLrjGXvH1ww/WBsb1bF2MnBwSAiYSuy8+g7LFJC7cA4lz
+	cQgJLGWU+H9gJ1zR5kmPWSES0xkl7mzfzgjh9DBJ/Ft9hwmkik3ATOLgotXsXYwcHCICshIz
+	u/VAapgFljNKLLn2gR2kRljAXeLdkwtg9SwCqhLvup6DbeAVcJW4v/suE0ivhICCxJxJNiC9
+	EgLN7BIXvj5lhagXkPg2+RALRI2sxKYDzBDHSUocXHGDZQKj4AJGhlWMoqkFyQXFSelFRnrF
+	ibnFpXnpesn5uZsYgWF7+t+zvh2MNw9YH2JMBho3kVlKNDkfGPZ5JfGGxmZGFqYmpsZG5pZm
+	pAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDcWD/Vo6F8bkPBWcF1ma837X/8
+	0XVHVLcLm993qaNNnMK6bt4z6gw/Jqzyvv1AaZ55YsJD1mVeG3YyXXjt4rBdTdjMxO9IaKi7
+	xMvHJ2ew3T25uWhz1Y8OV/0Gj+KPJz7KMHzYt2FJo8sk4dwry59IZcmcvCC3X0t0fn5n37vK
+	Y9qXzs9Plw5QYinOSDTUYi4qTgQABuw7AXECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQd0Z3s6BBlPb5SzOLjvIZtG8eD2b
+	xZLJ81kt5h15x2JxedccNosZ5/cxWSza9p/Zgd1jdsNFFo+ds+6ye+yfu4bdY8mbQ6wenzfJ
+	BbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
+	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM+Hl3LXPBNfaKrx9+sDYw
+	rmfrYuTkkBAwkdg86TErhC0mceEeSJyLQ0hgOqPEne3bGSGcHiaJf6vvMIFUsQmYSRxctJq9
+	i5GDQ0RAVmJmtx5IDbPAckaJJdc+sIPUCAu4S7x7cgGsnkVAVeJd13OwbbwCrhL3d99lAumV
+	EFCQmDPJZgIj9wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwVHxTGoH48oGi0OMAhyM
+	Sjy8CjbOgUKsiWXFlbmHGCU4mJVEeN/pA4V4UxIrq1KL8uOLSnNSiw8xJgMtn8gsJZqcD4zY
+	vJJ4Q2MTc1NjU0sTCxMzS9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgLPG4Kphy3zVr
+	v4jjoyCRd4JPXvkxht1MjqowvnD6XJPP0jdM3zbbTA07NYFH9aRj2taj2RwzOBP/HspLdZ8Q
+	ff2J3PoX2h/82detmrd39QSmg1bLD3q8n5NnHuBY/UkhtopDS+7S+kWVYQaCovGPJPj+KYqa
+	nty+kONKQ/JxoacNW2sTY49fUWIpzkg01GIuKk4EABOA7pjOAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+As the exynos_adc driver only supports device tree registration.
+Making driver depend on CONFIG_OF solves possible errors during probe.
+
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Doug Anderson <dianders@chromium.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
 ---
-Entirely untested.
+Discussion thread for this patch can be found at
+http://www.gossamer-threads.com/lists/linux/kernel/1693284?page=last
 
- arch/arc/kernel/disasm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iio/adc/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arc/kernel/disasm.c b/arch/arc/kernel/disasm.c
-index 2f39028..d14764a 100644
---- a/arch/arc/kernel/disasm.c
-+++ b/arch/arc/kernel/disasm.c
-@@ -535,4 +535,4 @@ int __kprobes disasm_next_pc(unsigned long pc, struct pt_regs *regs,
- 	return instr.is_branch;
- }
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index a40d3c2..9c45c0f 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -105,6 +105,7 @@ config AT91_ADC
  
--#endif /* CONFIG_KGDB || CONFIG_MISALIGN_ACCESS || CONFIG_KPROBES */
-+#endif /* CONFIG_KGDB || CONFIG_ARC_MISALIGN_ACCESS || CONFIG_KPROBES */
+ config EXYNOS_ADC
+ 	bool "Exynos ADC driver support"
++	depends on OF
+ 	help
+ 	  Core support for the ADC block found in the Samsung EXYNOS series
+ 	  of SoCs for drivers such as the touchscreen and hwmon to use to share
 -- 
-1.7.11.7
+1.7.9.5
 
