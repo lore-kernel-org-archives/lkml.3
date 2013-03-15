@@ -1,126 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3COKLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:11:09 -0400
-Received: from mout.web.de ([212.227.17.12]:50758 "EHLO mout.web.de"
+	id S1754173Ab3COKLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:11:21 -0400
+Received: from mout.web.de ([212.227.15.4]:62667 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab3COKLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:11:08 -0400
+	id S1753282Ab3COKLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 06:11:15 -0400
 From: Danny Baumann <dannybaumann@web.de>
 To: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Len Brown <lenb@kernel.org>, Danny Baumann <dannybaumann@web.de>
-Subject: [PATCH v2 1/3] ACPI video: Fix brightness control initialization for some laptops.
-Date: Fri, 15 Mar 2013 11:10:46 +0100
-Message-Id: <1363342248-6496-1-git-send-email-dannybaumann@web.de>
+Subject: [PATCH v2 3/3] ACPI video: Fix applying indexed initial brightness value.
+Date: Fri, 15 Mar 2013 11:10:48 +0100
+Message-Id: <1363342248-6496-3-git-send-email-dannybaumann@web.de>
 X-Mailer: git-send-email 1.8.1.4
-X-Provags-ID: V02:K0:urpPtPey7XNz51emYmMIuYfAkgVijXDrXg3rZNbs/34
- DfwwboboqRWPm3vO8H6BUngCoKpBHkfAwLlCCTUwQg5hvmBeyX
- eIrIoWEal7vi4ekE+jGIn4QvDZoDtyUiETV13fp8MbKGYhOuqv
- m/s/yzcPb8bx86+l3HdbUaiMQgqHp2Ps4cHI5P7/n1x8hJ0Fje
- GGDHBVG2P/Z3wk3d5tlRg==
+In-Reply-To: <1363342248-6496-1-git-send-email-dannybaumann@web.de>
+References: <1363342248-6496-1-git-send-email-dannybaumann@web.de>
+X-Provags-ID: V02:K0:3p0FxyXXfbWIz2nLyo3mkcOn0cQjQVQZimLOyAywifC
+ 8Jr0FzaySblhlPRm+s2VQquD5nL7nXr1DwqQbbntDFV/XTzHZ7
+ IyXgv34QMx0ZZACe6Bj+/hhNL+dkp8Omxtvrd021br60DcnOhg
+ Cgv8Ld7ZEDhwy6hH1ii28OW7kycV297umsH64yBfgoClDaZyX6
+ xawchPyBmr0gxC/RFQSQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In particular, this fixes brightness control initialization for all
-devices that return index values from _BQC and don't happen to have the
-initial index set by the BIOS in their _BCL table. One example for that
-is the Dell Inspiron 15R SE (model number 7520).
-
-What happened for those devices is that acpi_init_brightness queried the
-initial brightness by calling acpi_video_device_lcd_get_level_current.
-This called _BQC, which returned e.g. 13. As _BQC_use_index isn't
-determined at this point (and thus has its initial value of 0), the
-index isn't converted into the actual level. As '13' isn't present in
-the _BCL list, *level is later overwritten with brightness->curr, which
-was initialized to max_level (100) before. Later in
-acpi_init_brightness, level_old (with the value 100) is used as an index
-into the _BCL table, which causes a value outside of the actual table to
-be used as input into acpi_video_device_lcd_set_level(). Depending on
-the (undefined) value of that location, this call will fail, causing the
-brightness control for the device in question not to be enabled.
-
-Fix that by returning the raw value returned by the _BQC call in the
-initialization case.
+The value initially read via _BQC also needs to be offset by 2 to
+compensate for the first 2 special items in _BCL. Introduce a helper
+function that does the BQC-value-to-level conversion in order to not
+needlessly duplicate code.
 
 Signed-off-by: Danny Baumann <dannybaumann@web.de>
 ---
- drivers/acpi/video.c | 33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/acpi/video.c | 52 +++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 313f959..9c33871 100644
+index 5ef329a..8faea35 100644
 --- a/drivers/acpi/video.c
 +++ b/drivers/acpi/video.c
-@@ -222,7 +222,7 @@ static int acpi_video_device_lcd_set_level(struct acpi_video_device *device,
- 			int level);
- static int acpi_video_device_lcd_get_level_current(
- 			struct acpi_video_device *device,
--			unsigned long long *level, int init);
-+			unsigned long long *level, int raw);
- static int acpi_video_get_next_level(struct acpi_video_device *device,
- 				     u32 level_current, u32 event);
- static int acpi_video_switch_brightness(struct acpi_video_device *device,
-@@ -452,7 +452,7 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+@@ -450,6 +450,26 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	{}
+ };
  
++static unsigned long long
++acpi_video_bqc_value_to_level(struct acpi_video_device *device,
++			      unsigned long long bqc_value)
++{
++	unsigned long long level;
++
++	if (device->brightness->flags._BQC_use_index) {
++		if (device->brightness->flags._BCL_reversed)
++			bqc_value = device->brightness->count - 3 - bqc_value;
++
++		level = device->brightness->levels[bqc_value + 2];
++	} else {
++		level = bqc_value;
++	}
++
++	level += bqc_offset_aml_bug_workaround;
++
++	return level;
++}
++
  static int
  acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
--					unsigned long long *level, int init)
-+					unsigned long long *level, int raw)
- {
- 	acpi_status status = AE_OK;
- 	int i;
-@@ -463,6 +463,15 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
- 		status = acpi_evaluate_integer(device->dev->handle, buf,
- 						NULL, level);
- 		if (ACPI_SUCCESS(status)) {
-+			if (raw) {
-+				/*
-+				 * Caller has indicated he wants the raw
-+				 * value returned by _BQC, so don't furtherly
-+				 * mess with the value.
-+				 */
-+				return 0;
-+			}
-+
- 			if (device->brightness->flags._BQC_use_index) {
- 				if (device->brightness->flags._BCL_reversed)
- 					*level = device->brightness->count
-@@ -476,16 +485,14 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
- 					device->brightness->curr = *level;
- 					return 0;
+ 					unsigned long long *level, int raw)
+@@ -472,14 +492,8 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+ 				return 0;
  			}
--			if (!init) {
--				/*
--				 * BQC returned an invalid level.
--				 * Stop using it.
--				 */
--				ACPI_WARNING((AE_INFO,
--					      "%s returned an invalid level",
--					      buf));
--				device->cap._BQC = device->cap._BCQ = 0;
+ 
+-			if (device->brightness->flags._BQC_use_index) {
+-				if (device->brightness->flags._BCL_reversed)
+-					*level = device->brightness->count
+-								 - 3 - (*level);
+-				*level = device->brightness->levels[*level + 2];
++			*level = acpi_video_bqc_value_to_level(device, *level);
+ 
 -			}
+-			*level += bqc_offset_aml_bug_workaround;
+ 			for (i = 2; i < device->brightness->count; i++)
+ 				if (device->brightness->levels[i] == *level) {
+ 					device->brightness->curr = *level;
+@@ -727,24 +741,24 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+ 
+ 	br->flags._BQC_use_index = (level == max_level ? 0 : 1);
+ 
+-	if (!br->flags._BQC_use_index) {
+-		/*
+-		 * Set the backlight to the initial state.
+-		 * On some buggy laptops, _BQC returns an uninitialized value
+-		 * when invoked for the first time, i.e. level_old is invalid.
+-		 * set the backlight to max_level in this case
+-		 */
+-		if (use_bios_initial_backlight) {
++	if (use_bios_initial_backlight) {
++		if (!br->flags._BQC_use_index) {
 +			/*
-+			 * BQC returned an invalid level.
-+			 * Stop using it.
++			 * Set the backlight to the initial state.
++			 * On some buggy laptops, _BQC returns an uninitialized
++			 * value when invoked for the first time, i.e.
++			 * level_old is invalid. Set the backlight to max_level
++			 * in this case.
 +			 */
-+			ACPI_WARNING((AE_INFO,
-+				      "%s returned an invalid level",
-+				      buf));
-+			device->cap._BQC = device->cap._BCQ = 0;
- 		} else {
- 			/* Fixme:
- 			 * should we return an error or ignore this failure?
-@@ -714,7 +721,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	if (result)
- 		goto out_free_levels;
+ 			for (i = 2; i < br->count; i++)
+ 				if (level_old == br->levels[i]) {
+ 					level = level_old;
+ 					break;
+ 				}
++		} else {
++			level = acpi_video_bqc_value_to_level(device,
++							      level_old);
+ 		}
+-	} else {
+-		if (br->flags._BCL_reversed)
+-			level_old = (br->count - 1) - level_old;
+-		level = br->levels[level_old];
+ 	}
  
--	result = acpi_video_device_lcd_get_level_current(device, &level, 0);
-+	result = acpi_video_device_lcd_get_level_current(device, &level, 1);
- 	if (result)
- 		goto out_free_levels;
- 
+ set_level:
 -- 
 1.8.1.4
 
