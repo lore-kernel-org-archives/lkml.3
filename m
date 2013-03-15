@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3COFEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 01:04:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:53406 "EHLO ozlabs.org"
+	id S1752009Ab3COFEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 01:04:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:56553 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab3COFEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751026Ab3COFEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 01:04:05 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH] Allow optional module parameters
-In-Reply-To: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
-References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-next@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-mtd@lists.infradead.org
+Subject: Re: [RFC -next] linux/linkage.h: fix symbol prefix handling
+In-Reply-To: <5141AB3A.2060705@imgtec.com>
+References: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com> <87sj46wyf2.fsf@rustcorp.com.au> <5139AC39.90805@imgtec.com> <874ngiwije.fsf@rustcorp.com.au> <20130311230731.0c610d86569d09f6e23b8e61@canb.auug.org.au> <87ppz5usts.fsf@rustcorp.com.au> <20130312233300.9d86d47bb5369923ad520a21@canb.auug.org.au> <87ehfkuq27.fsf@rustcorp.com.au> <20130313063157.GB19681@merkur.ravnborg.org> <87zjy6tytz.fsf@rustcorp.com.au> <5141AB3A.2060705@imgtec.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 15 Mar 2013 15:33:32 +1030
-Message-ID: <87ehfhtftn.fsf@rustcorp.com.au>
+Date: Fri, 15 Mar 2013 15:07:31 +1030
+Message-ID: <87obelth10.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
-> Current parameter behavior is odd.  Boot parameters that have values
-> and don't match anything become environment variables, with no
-> warning.  Boot parameters without values that don't match anything
-> go into argv_init.  Everything goes into /proc/cmdline.
+James Hogan <james.hogan@imgtec.com> writes:
+> On 14/03/13 04:00, Rusty Russell wrote:
+>> From: Rusty Russell <rusty@rustcorp.com.au>
+>> Subject: CONFIG_SYMBOL_PREFIX: cleanup.
+...
+> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> Tested-by: James Hogan <james.hogan@imgtec.com> (metag)
+
+Thanks.
+
+> The only other special case of symbol prefixing I'm aware of is in
+> scripts/genksyms/genksyms.c. It makes the decision at runtime based
+> on the --arch=$ARCH argument, and is the only use of the arch argument:
 >
-> The init_module and finit_module syscalls, however, are strict:
-> parameters that don't match result in -ENOENT.
+>> 	if ((strcmp(arch, "h8300") == 0) || (strcmp(arch, "blackfin") == 0) ||
+>> 	    (strcmp(arch, "metag") == 0))
+>> 		mod_prefix = "_";
 >
-> kmod (and hence modprobe), when loading a module called foo, look in
-> /proc/cmdline for foo.x or foo.x=y, strip off the foo., and pass the
-> rest to init_module.
+> Does the patch below look reasonable in addition to your patch?
+> (Note: I'm not sure if genksyms is only used internally or whether
+> it's API should be kept stable?).
 >
-> The upshot is that booting with module.nonexistent_parameter=1 is
-> okay if module is built in or missing entirely but prevents module
-> from loading if it's an actual module.  Similarly, option module
-> nonexistent_parameter=1 in /etc/modprobe.d prevents the module from
-> loading the parameter goes away.  This means that removing module
-> parameters unnecessarily breaks things.
+> Thanks
+> James
+>
+> Subject: [PATCH] genksyms: pass symbol-prefix instead of arch
 
-Err, yes.  Don't remove module parameters, they're part of the API.  Do
-you have a particular example?
-
-> With this patch, module parameters can be made explicitly optional.
-> This approach is IMO silly, but it's unlikely to break anything,
-> since I doubt that anyone needs init parameters or init environment
-> variables that end in a tilde.
-
-It's silly for the removal problem: that should be handled in the
-kernel.  How would the poor user know that the option is going away?
-So how about we add a module_param_obsolete(name) macro?
-
-If a parameter were introduced, and the user wanted to specify it *if*
-it was supported, that might justify this approach rather than using
-complex install commands.  But I don't believe that's common, is it?
+Agreed, I've applied this.
 
 Thanks,
 Rusty.
