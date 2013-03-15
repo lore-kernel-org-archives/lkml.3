@@ -1,350 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3COFVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 01:21:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23048 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab3COFUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 01:20:35 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SWNu2VchFoEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=WYzaKqoLUo4A:10 a=VwQbUJbxAAAA:8 a=RpGju85Lc3TszkA24hcA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=WDyI4rXhmYZiYL5ZAZAA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130315052033.210812670@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 01:06:19 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>
-Subject: [PATCH 3/3 v2] tracing: Prevent buffer overwrite disabled for latency tracers
-References: <20130315050616.512983245@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Prevent-buffer-overwrite-disabled-for-latenc.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S1752542Ab3COFWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 01:22:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57669 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751148Ab3COFWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 01:22:24 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>, Paul Walmsley <paul@pwsan.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: RE: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from
+ CFG_CHIP1
+Thread-Topic: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from
+ CFG_CHIP1
+Thread-Index: AQHOIJ/oCqReOjFXuUa9aEooU+VxqZikyr4AgAFe+ND//688AIAAXIAw
+Date: Fri, 15 Mar 2013 05:21:07 +0000
+Deferred-Delivery: Fri, 15 Mar 2013 05:21:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA9742E@DBDE01.ent.ti.com>
+References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com>
+ <1363257453-24747-3-git-send-email-avinashphilip@ti.com>
+ <5141CA40.9010005@ti.com>
+ <518397C60809E147AF5323E0420B992E3EA97355@DBDE01.ent.ti.com>
+ <5142ACEA.4060305@ti.com>
+In-Reply-To: <5142ACEA.4060305@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2F5MOZB002583
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 15, 2013 at 10:38:58, Nori, Sekhar wrote:
+> On 3/15/2013 10:27 AM, Philip, Avinash wrote:
+> > On Thu, Mar 14, 2013 at 18:31:52, Nori, Sekhar wrote:
+> >> On 3/14/2013 4:07 PM, Philip Avinash wrote:
+> >>> da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
+> >>> TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
+> >>> DT node status is set to "okay" DT blob.
+> >>> Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
+> >>> DA8XX_CFGCHIP1_REG.
+> >>
+> >> So there is actually a TBCLK in DA850 - it's just not modeled as a clock
+> >> similar to the way it is done on AM335x? If yes, then instead of adding
+> >> a dummy clock node and doing the TBCLK enable as part of init, why not
+> >> model TBCLK in clock tree even on DA850?
+> > 
+> > 
+> > TBCLK enabling should done from platform specific way. In DA850 it is done at
+> > CFGCHIP1 register. Unfortunately Davinci clock frame work will support only
+> > clock nodes inside PLLC and PSC modules. Handling of CFGCHP1 require
+> 
+> That's true at the moment, but that can be fixed.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+I will check.
 
-The latency tracers require the buffers to be in overwrite mode,
-otherwise they get screwed up. Force the buffers to stay in overwrite
-mode when latency tracers are enabled.
+> 
+> > modifications in clock frame work.
+> > 
+> > Hence handling it as part of initialization.
+> 
+> I am curious as to how this clock is handled in am335x. I searched for
+> tbclk in arch/arm/ of linux-next but could not find any references.
+> Where should I be looking?
 
-Added a flag_changed() method to the tracer structure to allow
-the tracers to see what flags are being changed, and also be able
-to prevent the change from happing.
+Patch is submitted. This patch is not in Paul's tree.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c              |   38 +++++++++++++++++++++++++++++++--=
-----
- kernel/trace/trace.h              |    6 ++++++
- kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
- kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
- 4 files changed, 65 insertions(+), 16 deletions(-)
+[PATCH v2] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
+https://patchwork.kernel.org/patch/2127581/
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 02debab..4f1dade 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2881,11 +2881,25 @@ static int set_tracer_option(struct tracer *trace, =
-char *cmp, int neg)
- 	return -EINVAL;
- }
-=20
--static void set_tracer_flags(unsigned int mask, int enabled)
-+/* Some tracers require overwrite to stay enabled */
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
-+{
-+	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+int set_tracer_flag(unsigned int mask, int enabled)
- {
- 	/* do nothing if flag is already set */
- 	if (!!(trace_flags & mask) =3D=3D !!enabled)
--		return;
-+		return 0;
-+
-+	/* Give the tracer a chance to approve the change */
-+	if (current_trace->flag_changed)
-+		if (current_trace->flag_changed(current_trace, mask, !!enabled))
-+			return -EINVAL;
-=20
- 	if (enabled)
- 		trace_flags |=3D mask;
-@@ -2904,13 +2918,15 @@ static void set_tracer_flags(unsigned int mask, int=
- enabled)
-=20
- 	if (mask =3D=3D TRACE_ITER_PRINTK)
- 		trace_printk_start_stop_comm(enabled);
-+
-+	return 0;
- }
-=20
- static int trace_set_options(char *option)
- {
- 	char *cmp;
- 	int neg =3D 0;
--	int ret =3D 0;
-+	int ret =3D -ENODEV;
- 	int i;
-=20
- 	cmp =3D strstrip(option);
-@@ -2924,7 +2940,7 @@ static int trace_set_options(char *option)
-=20
- 	for (i =3D 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) =3D=3D 0) {
--			set_tracer_flags(1 << i, !neg);
-+			ret =3D set_tracer_flag(1 << i, !neg);
- 			break;
- 		}
- 	}
-@@ -2943,6 +2959,7 @@ tracing_trace_options_write(struct file *filp, const =
-char __user *ubuf,
- 			size_t cnt, loff_t *ppos)
- {
- 	char buf[64];
-+	int ret;
-=20
- 	if (cnt >=3D sizeof(buf))
- 		return -EINVAL;
-@@ -2952,7 +2969,9 @@ tracing_trace_options_write(struct file *filp, const =
-char __user *ubuf,
-=20
- 	buf[cnt] =3D 0;
-=20
--	trace_set_options(buf);
-+	ret =3D trace_set_options(buf);
-+	if (ret < 0)
-+		return ret;
-=20
- 	*ppos +=3D cnt;
-=20
-@@ -3256,6 +3275,9 @@ static int tracing_set_tracer(const char *buf)
- 		goto out;
-=20
- 	trace_branch_disable();
-+
-+	current_trace->enabled =3D false;
-+
- 	if (current_trace->reset)
- 		current_trace->reset(tr);
-=20
-@@ -3300,6 +3322,7 @@ static int tracing_set_tracer(const char *buf)
- 	}
-=20
- 	current_trace =3D t;
-+	current_trace->enabled =3D true;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
-@@ -4788,9 +4811,12 @@ trace_options_core_write(struct file *filp, const ch=
-ar __user *ubuf, size_t cnt,
- 		return -EINVAL;
-=20
- 	mutex_lock(&trace_types_lock);
--	set_tracer_flags(1 << index, val);
-+	ret =3D set_tracer_flag(1 << index, val);
- 	mutex_unlock(&trace_types_lock);
-=20
-+	if (ret < 0)
-+		return ret;
-+
- 	*ppos +=3D cnt;
-=20
- 	return cnt;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 57d7e53..2081971 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -283,11 +283,15 @@ struct tracer {
- 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
- 	/* If you handled the flag setting, return 0 */
- 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
-+	/* Return 0 if OK with change, else return non-zero */
-+	int			(*flag_changed)(struct tracer *tracer,
-+						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
- 	bool			print_max;
- 	bool			use_max_tr;
- 	bool			allocated_snapshot;
-+	bool			enabled;
- };
-=20
-=20
-@@ -943,6 +947,8 @@ extern const char *__stop___trace_bprintk_fmt[];
-=20
- void trace_printk_init_buffers(void);
- void trace_printk_start_comm(void);
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-+int set_tracer_flag(unsigned int mask, int enabled);
-=20
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 713a2ca..443b25b 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -32,7 +32,7 @@ enum {
-=20
- static int trace_type __read_mostly;
-=20
--static int save_lat_flag;
-+static int save_flags;
-=20
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
- static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-@@ -558,8 +558,11 @@ static void stop_irqsoff_tracer(struct trace_array *tr=
-, int graph)
-=20
- static void __irqsoff_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag =3D trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |=3D TRACE_ITER_LATENCY_FMT;
-+	save_flags =3D trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
-=20
- 	tracing_max_latency =3D 0;
- 	irqsoff_trace =3D tr;
-@@ -573,10 +576,13 @@ static void __irqsoff_tracer_init(struct trace_array =
-*tr)
-=20
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag =3D save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag =3D save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_irqsoff_tracer(tr, is_graph());
-=20
--	if (!save_lat_flag)
--		trace_flags &=3D ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
-=20
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -609,6 +615,7 @@ static struct tracer irqsoff_tracer __read_mostly =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_irqsoff,
- #endif
-@@ -642,6 +649,7 @@ static struct tracer preemptoff_tracer __read_mostly =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_preemptoff,
- #endif
-@@ -677,6 +685,7 @@ static struct tracer preemptirqsoff_tracer __read_mostl=
-y =3D
- 	.print_line     =3D irqsoff_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D irqsoff_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_preemptirqsoff,
- #endif
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
-akeup.c
-index 75aa97f..fde652c 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_array *tr);
- static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
- static void wakeup_graph_return(struct ftrace_graph_ret *trace);
-=20
--static int save_lat_flag;
-+static int save_flags;
-=20
- #define TRACE_DISPLAY_GRAPH     1
-=20
-@@ -540,8 +540,11 @@ static void stop_wakeup_tracer(struct trace_array *tr)
-=20
- static int __wakeup_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag =3D trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |=3D TRACE_ITER_LATENCY_FMT;
-+	save_flags =3D trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
-=20
- 	tracing_max_latency =3D 0;
- 	wakeup_trace =3D tr;
-@@ -563,12 +566,15 @@ static int wakeup_rt_tracer_init(struct trace_array *=
-tr)
-=20
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag =3D save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag =3D save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_wakeup_tracer(tr);
- 	/* make sure we put back any tasks we are tracing */
- 	wakeup_reset(tr);
-=20
--	if (!save_lat_flag)
--		trace_flags &=3D ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
-=20
- static void wakeup_tracer_start(struct trace_array *tr)
-@@ -594,6 +600,7 @@ static struct tracer wakeup_tracer __read_mostly =3D
- 	.print_line	=3D wakeup_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D wakeup_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_wakeup,
- #endif
-@@ -615,6 +622,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =3D
- 	.print_line	=3D wakeup_print_line,
- 	.flags		=3D &tracer_flags,
- 	.set_flag	=3D wakeup_set_flag,
-+	.flag_changed	=3D trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    =3D trace_selftest_startup_wakeup,
- #endif
---=20
-1.7.10.4
+Paul,
+Can you accept the above patch.
 
+Thanks
+Avinash
 
+> 
+> Thanks,
+> Sekhar
+> 
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRQq+hAAoJEOdOSU1xswtMFIYH/Rp5MGWAvsgXwdcjtGDiYNYn
-POuyitvzjEO5c8+L54ale5tWMCgE+4kurhXuVa6/j0sYGfrLnunPPeioW+yQM7Jr
-pYrO23KP/Gsh4Tnbq5NvPxEKJt+aI+tPp70hNS8/8KgwuT5bbOGzuTBSek9a/jex
-zJWfiiUmsp6lUBuVTieZVgr8HG+w6RPAC6yO3vDMVEK+6fZkkuuA6XUTQ3HrKRTi
-Rl6cVWJjBXJDiiSwu+RWUTHG2MBG4ZYbj1/bzY+H7mV6Snun4X3RlMSGDQpUZ7de
-LSBqSlHDjinj1DG3pzkHWIjkXyG5fALW9M0dulrWIKM3wBZcnlVf5/haP2jEBsI=
-=39sN
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
