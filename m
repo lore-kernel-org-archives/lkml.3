@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3CONGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:06:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52631 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab3CONGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:06:38 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>,
-        Robert Richter <rric@kernel.org>
-Subject: [RFC PATCH 3/3] MCE: Enable persistent event
-Date: Fri, 15 Mar 2013 14:06:29 +0100
-Message-Id: <1363352789-17991-4-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1363352789-17991-1-git-send-email-bp@alien8.de>
-References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+	id S1755112Ab3CONQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:16:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60362 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab3CONQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:16:18 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 41/50] staging: omap-thermal: document _omap_bandgap_read_threshold function
+Date: Fri, 15 Mar 2013 09:00:29 -0400
+Message-ID: <1363352438-15935-42-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+In-Reply-To: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Add documentation of the function for reading alert thresholds
 
-... for MCEs collection.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/staging/omap-thermal/omap-bandgap.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7bc126346ace..4f44991b38b5 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1987,6 +1987,31 @@ int __init mcheck_init(void)
- 	return 0;
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index 4cacfc1..aa90539 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -510,6 +510,18 @@ exit:
+ 	return ret;
  }
  
-+static struct perf_event_attr pattr = {
-+	.type		= PERF_TYPE_TRACEPOINT,
-+	.size		= sizeof(pattr),
-+	.sample_type	= PERF_SAMPLE_RAW,
-+	.persistent	= 1,
-+};
-+
-+int __init mcheck_init_tp(void)
-+{
-+
-+	pattr.config = event_mce_record.event.type;
-+	pattr.sample_period = 1;
-+	pattr.wakeup_events = 1;
-+
-+	if (perf_add_persistent_event(&pattr, 4))
-+		pr_err("Error adding MCE persistent event.\n");
-+
-+	return 0;
-+}
-+/*
-+ * We can't run earlier because persistent events uses anon_inode_getfile and
-+ * its anon_inode_mnt gets initialized as a fs_initcall.
++/**
++ * _omap_bandgap_read_threshold() - helper to read TALERT t_cold or t_hot
++ * @bg_ptr: struct omap_bandgap pointer
++ * @id: bandgap sensor id
++ * @val: value (mCelsius) of a threshold
++ * @hot: desired threshold to be read. true if threshold hot, false if
++ *       threshold cold
++ *
++ * It will fetch the required thresholds (hot and cold) for TALERT signal.
++ * This function can be used to read t_hot or t_cold, depending on @hot value.
++ * Call this function only if bandgap features HAS(TALERT).
 + */
-+fs_initcall_sync(mcheck_init_tp);
-+
- /*
-  * mce_syscore: PM support
-  */
+ int _omap_bandgap_read_threshold(struct omap_bandgap *bg_ptr, int id,
+ 				 int *val, bool hot)
+ {
 -- 
-1.8.1.3.535.ga923c31
+1.7.7.1.488.ge8e1c
 
