@@ -1,132 +1,1061 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3COVux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:50:53 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35148 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754093Ab3COVuv (ORCPT
+	id S1755389Ab3COV5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:57:15 -0400
+Received: from out3.rolmail.net ([195.254.252.203]:49320 "EHLO
+	out3.rolmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab3COV5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:50:51 -0400
-Message-ID: <51439846.9090201@metafoo.de>
-Date: Fri, 15 Mar 2013 22:53:10 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+	Fri, 15 Mar 2013 17:57:13 -0400
+Message-ID: <51439932.6060209@enas.net>
+Date: Fri, 15 Mar 2013 22:57:06 +0100
+From: Urban Loesch <bind@enas.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, dianders@chromium.org,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com
-Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race
- conditions
-References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
-In-Reply-To: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+CC: bind@enas.net
+Subject: Kernel 3.7.9 rcu_sched detected stalls on CPUs/tasks:
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 05:26 PM, Naveen Krishna Chatradhi wrote:
-> This patch does the following
-> 1. Handle the return values of wait_for_completion_interruptible_timeout
-> 2. Add spin locks to avoid race conditions during ISR.
-> 
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Cc: Doug Anderson <dianders@chromium.org>
-> Cc: Lars-Peter Clausen <lars@metafoo.de>
-> ---
-> Discussion thread for this patch can be found at
-> http://www.gossamer-threads.com/lists/linux/kernel/1693284?page=last
-> 
-> I've not seen any reference to spin lock usage in IIO.
-> Kindly, suggest me if there is a better way to avoid the race.
-> 
-> Thanks,
-> Naveen
->  drivers/iio/adc/exynos_adc.c |   14 ++++++++++++--
->  1 file changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index ed6fdd7..4de28ae 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -91,6 +91,7 @@ struct exynos_adc {
->  
->  	struct completion	completion;
->  
-> +	spinlock_t		reg_lock;
->  	u32			value;
->  	unsigned int            version;
->  };
-> @@ -117,7 +118,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->  				long mask)
->  {
->  	struct exynos_adc *info = iio_priv(indio_dev);
-> -	unsigned long timeout;
-> +	long timeout;
->  	u32 con1, con2;
->  
->  	if (mask != IIO_CHAN_INFO_RAW)
-> @@ -143,15 +144,19 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->  				ADC_V1_CON(info->regs));
->  	}
->  
-> +	INIT_COMPLETION(info->completion);
-> +
+Hi,
 
-This needs to happen before you start the transfer.
+I'm running a new DELL PER420 with 2x Intel Xeon E5-2440 2,40 Ghz and 
+16GB of RAM with Kernel 3.7.9 and Linux vserver patch vs2.3.5.6 from 
+http://linux-vserver.org. Uptime was about 14 days, 8 hours.
+
+Today evening the system has become not responsive and the netconsole 
+got me the following log entries. I had to hard reset the machine to got
+it to work again. There was no output on the screen, too.
+
+Logs entries I got:
+2013-03-15 19:34:01 [1239160.944985] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:34:01
+2013-03-15 19:34:01 [1239160.951430]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:34:01 [1239160.960413]
+2013-03-15 19:34:01 (detected by 6, t=6003 jiffies)
+2013-03-15 19:34:01 [1239160.965429] Pid: 0, comm: swapper/6 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:34:01 [1239160.974516] Call Trace:
+2013-03-15 19:34:01 [1239160.977470]  <IRQ>
+2013-03-15 19:34:01 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:34:01 [1239160.984439]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:34:01 [1239160.991373]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:34:01 [1239160.998307]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:34:01 [1239161.004844]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:34:01 [1239161.011195]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:34:01 [1239161.019993]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:34:01 [1239161.026732]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:34:01 [1239161.034053]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:34:01 [1239161.040985]  <EOI>
+2013-03-15 19:34:01 [<ffffffff8107d937>] ? 
+__hrtimer_start_range_ns+0x1b7/0x400
+2013-03-15 19:34:01 [1239161.049435]  [<ffffffff813d521d>] ? 
+intel_idle+0xed/0x150
+2013-03-15 19:34:01 [1239161.055687]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:34:01 [1239161.061940]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:34:01 [1239161.068192]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:34:01 [1239161.074924]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:34:01 [1239161.080791]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:33:58 kernel: [1239160.944985] INFO: rcu_sched detected 
+stalls on CPUs/tasks:
+2013-03-15 19:33:58 kernel: [1239160.951430]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:33:58 kernel: [1239160.960413]     (detected by 6, t=6003 
+jiffies)
+2013-03-15 19:33:58 kernel: [1239160.965429] Pid: 0, comm: swapper/6 Not 
+tainted 3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:33:58 kernel: [1239160.974516] Call Trace:
+2013-03-15 19:33:58 kernel: [1239160.977470]  <IRQ> 
+[<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:33:58 kernel: [1239160.984439]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:33:58 kernel: [1239160.991373]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:33:58 kernel: [1239160.998307]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:33:58 kernel: [1239161.004844]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:33:58 kernel: [1239161.011195]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:33:58 kernel: [1239161.019993]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:33:58 kernel: [1239161.026732]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:33:58 kernel: [1239161.034053]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:37:01 [1239340.713569] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:37:01
+2013-03-15 19:37:01 [1239340.719931]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:37:01 [1239340.728915]
+2013-03-15 19:37:01 (detected by 6, t=24008 jiffies)
+2013-03-15 19:37:01 [1239340.734016] Pid: 0, comm: swapper/6 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:37:01 [1239340.743103] Call Trace:
+2013-03-15 19:37:01 [1239340.746057]  <IRQ>
+2013-03-15 19:37:01 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:37:01 [1239340.753023]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:37:01 [1239340.759956]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:37:01 [1239340.766888]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:37:01 [1239340.773431]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:37:01 [1239340.779781]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:37:01 [1239340.786615]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:37:01 [1239340.793353]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:37:01 [1239340.800673]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:37:01 [1239340.807604]  <EOI>
+2013-03-15 19:37:01 [<ffffffff8107d937>] ? 
+__hrtimer_start_range_ns+0x1b7/0x400
+2013-03-15 19:37:01 [1239340.816045]  [<ffffffff813d521d>] ? 
+intel_idle+0xed/0x150
+2013-03-15 19:37:01 [1239340.822297]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:37:01 [1239340.828550]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:37:01 [1239340.834801]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:37:01 [1239340.841539]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:37:01 [1239340.847397]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:37:03 [1239342.520795] INFO: task jbd2/sda2-8:416 blocked 
+for more than 120 seconds.
+2013-03-15 19:37:03 [1239342.528610] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:37:03 [1239342.537608] jbd2/sda2-8     D
+2013-03-15 19:37:03 ffff88042fc53c80
+2013-03-15 19:37:03 0   416      2 0x00000000
+2013-03-15 19:37:03 [1239342.545759]  ffff880221ab1ad8
+2013-03-15 19:37:03 0000000000000046
+2013-03-15 19:37:03 ffff880221de9720
+2013-03-15 19:37:03 ffff880221ab1fd8
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.554330]  ffff880221ab1fd8
+2013-03-15 19:37:03 ffff880221ab1fd8
+2013-03-15 19:37:03 ffff8802248cdc80
+2013-03-15 19:37:03 ffff880221de9720
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.562892]  ffff880221ab1aa8
+2013-03-15 19:37:03 ffff880221de9720
+2013-03-15 19:37:03 ffff88042fc544e8
+2013-03-15 19:37:03 0000000000000002
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.571465] Call Trace:
+2013-03-15 19:37:03 [1239342.574426]  [<ffffffff81132440>] ? 
+__lock_page+0x70/0x70
+2013-03-15 19:37:03 [1239342.580684]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:37:03 [1239342.586449]  [<ffffffff816a819f>] 
+io_schedule+0x8f/0xd0
+2013-03-15 19:37:03 [1239342.592510]  [<ffffffff8113244e>] 
+sleep_on_page+0xe/0x20
+2013-03-15 19:37:03 [1239342.598653]  [<ffffffff816a6870>] 
+__wait_on_bit+0x60/0x90
+2013-03-15 19:37:03 [1239342.604907]  [<ffffffff81132b81>] ? 
+find_get_pages_tag+0xd1/0x180
+2013-03-15 19:37:03 [1239342.611937]  [<ffffffff81132580>] 
+wait_on_page_bit+0x80/0x90
+2013-03-15 19:37:03 [1239342.618484]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:37:03 [1239342.625998]  [<ffffffff81132951>] 
+filemap_fdatawait_range+0x101/0x190
+2013-03-15 19:37:03 [1239342.633422]  [<ffffffff8135ba49>] ? 
+submit_bio+0x79/0x160
+2013-03-15 19:37:03 [1239342.639676]  [<ffffffff811c6cd5>] ? 
+bio_alloc_bioset+0x65/0x120
+2013-03-15 19:37:03 [1239342.646512]  [<ffffffff81132a07>] 
+filemap_fdatawait+0x27/0x30
+2013-03-15 19:37:03 [1239342.653160]  [<ffffffff8128b77c>] 
+jbd2_journal_commit_transaction+0xa9c/0x19d0
+2013-03-15 19:37:03 [1239342.661475]  [<ffffffff81042af9>] ? 
+default_spin_lock_flags+0x9/0x10
+2013-03-15 19:37:03 [1239342.668792]  [<ffffffff8129113d>] 
+kjournald2+0xbd/0x240
+2013-03-15 19:37:03 [1239342.674852]  [<ffffffff810799c0>] ? 
+finish_wait+0x80/0x80
+2013-03-15 19:37:03 [1239342.681099]  [<ffffffff81291080>] ? 
+jbd2_journal_release_jbd_inode+0x130/0x130
+2013-03-15 19:37:03 [1239342.689407]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:37:03 [1239342.695080]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:03 [1239342.702596]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:37:03 [1239342.708846]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:03 [1239342.716361] INFO: task jbd2/sda3-8:1930 blocked 
+for more than 120 seconds.
+2013-03-15 19:37:03 [1239342.724259] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:37:03 [1239342.733247] jbd2/sda3-8     D
+2013-03-15 19:37:03 ffff880227c33c80
+2013-03-15 19:37:03 0  1930      2 0x00000000
+2013-03-15 19:37:03 [1239342.741394]  ffff8802234afad8
+2013-03-15 19:37:03 0000000000000046
+2013-03-15 19:37:03 ffff8802234b2e40
+2013-03-15 19:37:03 ffff8802234affd8
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.749960]  ffff8802234affd8
+2013-03-15 19:37:03 ffff8802234affd8
+2013-03-15 19:37:03 ffff8802248c9720
+2013-03-15 19:37:03 ffff8802234b2e40
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.758527]  ffff8802234afaa8
+2013-03-15 19:37:03 ffff8802234b2e40
+2013-03-15 19:37:03 ffff880227c344e8
+2013-03-15 19:37:03 0000000000000002
+2013-03-15 19:37:03
+2013-03-15 19:37:03 [1239342.767097] Call Trace:
+2013-03-15 19:37:03 [1239342.770049]  [<ffffffff81132440>] ? 
+__lock_page+0x70/0x70
+2013-03-15 19:37:03 [1239342.776303]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:37:03 [1239342.782074]  [<ffffffff816a819f>] 
+io_schedule+0x8f/0xd0
+2013-03-15 19:37:03 [1239342.788131]  [<ffffffff8113244e>] 
+sleep_on_page+0xe/0x20
+2013-03-15 19:37:03 [1239342.794288]  [<ffffffff816a6870>] 
+__wait_on_bit+0x60/0x90
+2013-03-15 19:37:03 [1239342.800534]  [<ffffffff81132b81>] ? 
+find_get_pages_tag+0xd1/0x180
+2013-03-15 19:37:03 [1239342.807553]  [<ffffffff81132580>] 
+wait_on_page_bit+0x80/0x90
+2013-03-15 19:37:03 [1239342.814098]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:37:03 [1239342.821612]  [<ffffffff81132951>] 
+filemap_fdatawait_range+0x101/0x190
+2013-03-15 19:37:03 [1239342.829027]  [<ffffffff8135ba49>] ? 
+submit_bio+0x79/0x160
+2013-03-15 19:37:03 [1239342.835282]  [<ffffffff811c6cd5>] ? 
+bio_alloc_bioset+0x65/0x120
+2013-03-15 19:37:03 [1239342.842108]  [<ffffffff81132a07>] 
+filemap_fdatawait+0x27/0x30
+2013-03-15 19:37:03 [1239342.848748]  [<ffffffff8128b77c>] 
+jbd2_journal_commit_transaction+0xa9c/0x19d0
+2013-03-15 19:37:03 [1239342.857059]  [<ffffffff81042af9>] ? 
+default_spin_lock_flags+0x9/0x10
+2013-03-15 19:37:03 [1239342.864377]  [<ffffffff8129113d>] 
+kjournald2+0xbd/0x240
+2013-03-15 19:37:03 [1239342.870438]  [<ffffffff810799c0>] ? 
+finish_wait+0x80/0x80
+2013-03-15 19:37:03 [1239342.876698]  [<ffffffff81291080>] ? 
+jbd2_journal_release_jbd_inode+0x130/0x130
+2013-03-15 19:37:03 [1239342.885013]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:37:03 [1239342.890687]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:03 [1239342.898190]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:37:04 [1239342.904445]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:04 [1239342.911962] INFO: task flush-8:0:3588 blocked 
+for more than 120 seconds.
+2013-03-15 19:37:04 [1239342.919664] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:37:04 [1239342.928652] flush-8:0       D
+2013-03-15 19:37:04 ffff88042fc53c80
+2013-03-15 19:37:04 0  3588      2 0x00000000
+2013-03-15 19:37:04 [1239342.936798]  ffff880221fcf698
+2013-03-15 19:37:04 0000000000000046
+2013-03-15 19:37:04 ffff8802233f5c80
+2013-03-15 19:37:04 ffff880221fcffd8
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239342.945366]  ffff880221fcffd8
+2013-03-15 19:37:04 ffff880221fcffd8
+2013-03-15 19:37:04 ffff8802248cdc80
+2013-03-15 19:37:04 ffff8802233f5c80
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239342.953916]  ffff880221fcf6a8
+2013-03-15 19:37:04 ffff8801ed90daf8
+2013-03-15 19:37:04 ffff8803db412070
+2013-03-15 19:37:04 ffff880423779ca8
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239342.962483] Call Trace:
+2013-03-15 19:37:04 [1239342.965434]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:37:04 [1239342.971206]  [<ffffffff8128a1dd>] 
+do_get_write_access+0x2cd/0x4d0
+2013-03-15 19:37:04 [1239342.978235]  [<ffffffff8137e53e>] ? 
+radix_tree_lookup_slot+0xe/0x10
+2013-03-15 19:37:04 [1239342.985458]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:37:04 [1239342.992976]  [<ffffffff8128a520>] 
+jbd2_journal_get_write_access+0x30/0x50
+2013-03-15 19:37:04 [1239343.000785]  [<ffffffff8126c31d>] 
+__ext4_journal_get_write_access+0x3d/0x80
+2013-03-15 19:37:04 [1239343.008786]  [<ffffffff812354b5>] ? 
+ext4_read_block_bitmap+0x35/0x60
+2013-03-15 19:37:04 [1239343.016106]  [<ffffffff8127279b>] 
+ext4_mb_mark_diskspace_used+0x7b/0x4d0
+2013-03-15 19:37:04 [1239343.023877]  [<ffffffff8117e81f>] ? 
+__kmalloc+0xaf/0x180
+2013-03-15 19:37:04 [1239343.030043]  [<ffffffff8126d7c6>] ? 
+ext4_mb_initialize_context+0x86/0x1b0
+2013-03-15 19:37:04 [1239343.037843]  [<ffffffff81273f5b>] 
+ext4_mb_new_blocks+0x29b/0x550
+2013-03-15 19:37:04 [1239343.044778]  [<ffffffff8126a97f>] 
+ext4_ext_map_blocks+0xc4f/0x1610
+2013-03-15 19:37:04 [1239343.051906]  [<ffffffff8123c035>] 
+ext4_map_blocks+0x1d5/0x270
+2013-03-15 19:37:04 [1239343.058541]  [<ffffffff8124045d>] 
+mpage_da_map_and_submit+0x15d/0x4b0
+2013-03-15 19:37:04 [1239343.065956]  [<ffffffff81241017>] ? 
+ext4_da_writepages+0x317/0x5e0
+2013-03-15 19:37:04 [1239343.073083]  [<ffffffff81241063>] 
+ext4_da_writepages+0x363/0x5e0
+2013-03-15 19:37:04 [1239343.080019]  [<ffffffff8113e3be>] 
+do_writepages+0x1e/0x40
+2013-03-15 19:37:04 [1239343.086269]  [<ffffffff811b977b>] 
+__writeback_single_inode+0x3b/0x160
+2013-03-15 19:37:04 [1239343.093685]  [<ffffffff811ba7d0>] 
+writeback_sb_inodes+0x1a0/0x390
+2013-03-15 19:37:04 [1239343.100714]  [<ffffffff811baa5f>] 
+__writeback_inodes_wb+0x9f/0xd0
+2013-03-15 19:37:04 [1239343.107730]  [<ffffffff811bacdb>] 
+wb_writeback+0x24b/0x2e0
+2013-03-15 19:37:04 [1239343.114080]  [<ffffffff811a9b22>] ? 
+get_nr_inodes+0x52/0x70
+2013-03-15 19:37:04 [1239343.120528]  [<ffffffff811bbf76>] 
+wb_do_writeback+0x1f6/0x200
+2013-03-15 19:37:04 [1239343.127161]  [<ffffffff811bc00b>] 
+bdi_writeback_thread+0x8b/0x230
+2013-03-15 19:37:04 [1239343.134187]  [<ffffffff811bbf80>] ? 
+wb_do_writeback+0x200/0x200
+2013-03-15 19:37:04 [1239343.141023]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:37:04 [1239343.146680]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:04 [1239343.154184]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:37:04 [1239343.160428]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:37:04 [1239343.167940] INFO: task tlsmgr:6983 blocked for 
+more than 120 seconds.
+2013-03-15 19:37:04 [1239343.175352] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:37:04 [1239343.184336] tlsmgr          D
+2013-03-15 19:37:04 ffff88042fc13c80
+2013-03-15 19:37:04 0  6983   6611 0x00000000
+2013-03-15 19:37:04 [1239343.192482]  ffff8804230e3a38
+2013-03-15 19:37:04 0000000000000082
+2013-03-15 19:37:04 ffff880423be5c80
+2013-03-15 19:37:04 ffff8804230e3fd8
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239343.201038]  ffff8804230e3fd8
+2013-03-15 19:37:04 ffff8804230e3fd8
+2013-03-15 19:37:04 ffff8802248c8000
+2013-03-15 19:37:04 ffff880423be5c80
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239343.209601]  ffff8804230e3a48
+2013-03-15 19:37:04 ffff880329d98618
+2013-03-15 19:37:04 ffff88030b96da10
+2013-03-15 19:37:04 ffff880423492b28
+2013-03-15 19:37:04
+2013-03-15 19:37:04 [1239343.218165] Call Trace:
+2013-03-15 19:37:04 [1239343.221119]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:37:04 [1239343.226874]  [<ffffffff8128a1dd>] 
+do_get_write_access+0x2cd/0x4d0
+2013-03-15 19:37:04 [1239343.233903]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:37:04 [1239343.241406]  [<ffffffff8128a520>] 
+jbd2_journal_get_write_access+0x30/0x50
+2013-03-15 19:37:04 [1239343.249206]  [<ffffffff8126c31d>] 
+__ext4_journal_get_write_access+0x3d/0x80
+2013-03-15 19:37:04 [1239343.257204]  [<ffffffff8123f178>] 
+ext4_reserve_inode_write+0x78/0xa0
+2013-03-15 19:37:04 [1239343.264522]  [<ffffffff812417ec>] ? 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:37:04 [1239343.271261]  [<ffffffff8123f1ea>] 
+ext4_mark_inode_dirty+0x4a/0x200
+2013-03-15 19:37:04 [1239343.278373]  [<ffffffff812417ec>] 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:37:04 [1239343.284916]  [<ffffffff811ba433>] 
+__mark_inode_dirty+0x43/0x240
+2013-03-15 19:37:04 [1239343.291751]  [<ffffffff811a9ddb>] 
+update_time+0xab/0xe0
+2013-03-15 19:37:04 [1239343.297807]  [<ffffffff811a9ffa>] 
+touch_atime+0xfa/0x140
+2013-03-15 19:37:04 [1239343.303965]  [<ffffffff8113445e>] 
+generic_file_aio_read+0x4ae/0x6c0
+2013-03-15 19:37:04 [1239343.311191]  [<ffffffff8118f487>] 
+do_sync_read+0xa7/0xe0
+2013-03-15 19:37:04 [1239343.317341]  [<ffffffff8118fba9>] 
+vfs_read+0xa9/0x180
+2013-03-15 19:37:04 [1239343.323208]  [<ffffffff8118fcd2>] 
+sys_read+0x52/0xa0
+2013-03-15 19:37:04 [1239343.328973]  [<ffffffff816b1859>] 
+system_call_fastpath+0x16/0x1b
+2013-03-15 19:39:04 [1239463.141965] INFO: task jbd2/sda3-8:1930 blocked 
+for more than 120 seconds.
+2013-03-15 19:39:04 [1239463.149880] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:39:04 [1239463.158882] jbd2/sda3-8     D
+2013-03-15 19:39:04 ffff880227c33c80
+2013-03-15 19:39:04 0  1930      2 0x00000000
+2013-03-15 19:39:04 [1239463.169000]  ffff8802234afad8
+2013-03-15 19:39:04 0000000000000046
+2013-03-15 19:39:04 ffff8802234b2e40
+2013-03-15 19:39:04 ffff8802234affd8
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.177569]  ffff8802234affd8
+2013-03-15 19:39:04 ffff8802234affd8
+2013-03-15 19:39:04 ffff8802248c9720
+2013-03-15 19:39:04 ffff8802234b2e40
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.186137]  ffff8802234afaa8
+2013-03-15 19:39:04 ffff8802234b2e40
+2013-03-15 19:39:04 ffff880227c344e8
+2013-03-15 19:39:04 0000000000000002
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.194705] Call Trace:
+2013-03-15 19:39:04 [1239463.197661]  [<ffffffff81132440>] ? 
+__lock_page+0x70/0x70
+2013-03-15 19:39:04 [1239463.203918]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:39:04 [1239463.209683]  [<ffffffff816a819f>] 
+io_schedule+0x8f/0xd0
+2013-03-15 19:39:04 [1239463.215744]  [<ffffffff8113244e>] 
+sleep_on_page+0xe/0x20
+2013-03-15 19:39:04 [1239463.221910]  [<ffffffff816a6870>] 
+__wait_on_bit+0x60/0x90
+2013-03-15 19:39:04 [1239463.228160]  [<ffffffff81132b81>] ? 
+find_get_pages_tag+0xd1/0x180
+2013-03-15 19:39:04 [1239463.235189]  [<ffffffff81132580>] 
+wait_on_page_bit+0x80/0x90
+2013-03-15 19:39:04 [1239463.241731]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:39:04 [1239463.249245]  [<ffffffff81132951>] 
+filemap_fdatawait_range+0x101/0x190
+2013-03-15 19:39:04 [1239463.256665]  [<ffffffff8135ba49>] ? 
+submit_bio+0x79/0x160
+2013-03-15 19:39:04 [1239463.262921]  [<ffffffff811c6cd5>] ? 
+bio_alloc_bioset+0x65/0x120
+2013-03-15 19:39:04 [1239463.269753]  [<ffffffff81132a07>] 
+filemap_fdatawait+0x27/0x30
+2013-03-15 19:39:04 [1239463.276404]  [<ffffffff8128b77c>] 
+jbd2_journal_commit_transaction+0xa9c/0x19d0
+2013-03-15 19:39:04 [1239463.284721]  [<ffffffff81042af9>] ? 
+default_spin_lock_flags+0x9/0x10
+2013-03-15 19:39:04 [1239463.292043]  [<ffffffff8129113d>] 
+kjournald2+0xbd/0x240
+2013-03-15 19:39:04 [1239463.298099]  [<ffffffff810799c0>] ? 
+finish_wait+0x80/0x80
+2013-03-15 19:39:04 [1239463.304352]  [<ffffffff81291080>] ? 
+jbd2_journal_release_jbd_inode+0x130/0x130
+2013-03-15 19:39:04 [1239463.312665]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:39:04 [1239463.318332]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:39:04 [1239463.325848]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:39:04 [1239463.332102]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:39:04 [1239463.339604] INFO: task rs:main Q:Reg:3217 
+blocked for more than 120 seconds.
+2013-03-15 19:39:04 [1239463.347719] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:39:04 [1239463.356706] rs:main Q:Reg   D
+2013-03-15 19:39:04 ffff88042fc33c80
+2013-03-15 19:39:04 0  3217      1 0x00000000
+2013-03-15 19:39:04 [1239463.364851]  ffff880221e1b948
+2013-03-15 19:39:04 0000000000000082
+2013-03-15 19:39:04 ffff880223fe5c80
+2013-03-15 19:39:04 ffff880221e1bfd8
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.373422]  ffff880221e1bfd8
+2013-03-15 19:39:04 ffff880221e1bfd8
+2013-03-15 19:39:04 ffff8802248cae40
+2013-03-15 19:39:04 ffff880223fe5c80
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.381992]  ffff880221e1b958
+2013-03-15 19:39:04 ffff8801b1080410
+2013-03-15 19:39:04 ffff880340f3c000
+2013-03-15 19:39:04 ffff88042370fb70
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.390548] Call Trace:
+2013-03-15 19:39:04 [1239463.393505]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:39:04 [1239463.399271]  [<ffffffff8128a1dd>] 
+do_get_write_access+0x2cd/0x4d0
+2013-03-15 19:39:04 [1239463.406311]  [<ffffffff816a92ae>] ? 
+_raw_spin_lock_irqsave+0x2e/0x40
+2013-03-15 19:39:04 [1239463.413640]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:39:04 [1239463.421152]  [<ffffffff8128a520>] 
+jbd2_journal_get_write_access+0x30/0x50
+2013-03-15 19:39:04 [1239463.428959]  [<ffffffff8126c31d>] 
+__ext4_journal_get_write_access+0x3d/0x80
+2013-03-15 19:39:04 [1239463.436961]  [<ffffffff8123f178>] 
+ext4_reserve_inode_write+0x78/0xa0
+2013-03-15 19:39:04 [1239463.444281]  [<ffffffff812417ec>] ? 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:39:04 [1239463.451017]  [<ffffffff8123f1ea>] 
+ext4_mark_inode_dirty+0x4a/0x200
+2013-03-15 19:39:04 [1239463.458146]  [<ffffffff812417ec>] 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:39:04 [1239463.464692]  [<ffffffff811ba433>] 
+__mark_inode_dirty+0x43/0x240
+2013-03-15 19:39:04 [1239463.471531]  [<ffffffff811a9ddb>] 
+update_time+0xab/0xe0
+2013-03-15 19:39:04 [1239463.477585]  [<ffffffff811a9eab>] 
+file_update_time+0x9b/0xf0
+2013-03-15 19:39:04 [1239463.484130]  [<ffffffff81133c70>] 
+__generic_file_aio_write+0x190/0x3d0
+2013-03-15 19:39:04 [1239463.491640]  [<ffffffff8108e0f8>] ? 
+__enqueue_entity+0x78/0x80
+2013-03-15 19:39:04 [1239463.499614]  [<ffffffff81133f2f>] 
+generic_file_aio_write+0x7f/0x100
+2013-03-15 19:39:04 [1239463.506845]  [<ffffffff81236d39>] 
+ext4_file_write+0xa9/0x490
+2013-03-15 19:39:04 [1239463.513391]  [<ffffffff8108aeb0>] ? 
+wake_up_state+0x10/0x20
+2013-03-15 19:39:04 [1239463.519848]  [<ffffffff810bcff6>] ? 
+wake_futex+0x66/0x80
+2013-03-15 19:39:04 [1239463.526006]  [<ffffffff810bd11b>] ? 
+futex_wake+0x10b/0x130
+2013-03-15 19:39:04 [1239463.532359]  [<ffffffff8118f3a7>] 
+do_sync_write+0xa7/0xe0
+2013-03-15 19:39:04 [1239463.538611]  [<ffffffff8118fa2c>] 
+vfs_write+0xac/0x180
+2013-03-15 19:39:04 [1239463.544575]  [<ffffffff8118fd72>] 
+sys_write+0x52/0xa0
+2013-03-15 19:39:04 [1239463.550428]  [<ffffffff816b1859>] 
+system_call_fastpath+0x16/0x1b
+2013-03-15 19:39:04 [1239463.557361] INFO: task flush-8:0:3588 blocked 
+for more than 120 seconds.
+2013-03-15 19:39:04 [1239463.565068] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:39:04 [1239463.574049] flush-8:0       D
+2013-03-15 19:39:04 ffff88042fc53c80
+2013-03-15 19:39:04 0  3588      2 0x00000000
+2013-03-15 19:39:04 [1239463.582190]  ffff880221fcf698
+2013-03-15 19:39:04 0000000000000046
+2013-03-15 19:39:04 ffff8802233f5c80
+2013-03-15 19:39:04 ffff880221fcffd8
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.590757]  ffff880221fcffd8
+2013-03-15 19:39:04 ffff880221fcffd8
+2013-03-15 19:39:04 ffff8802248cdc80
+2013-03-15 19:39:04 ffff8802233f5c80
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.599317]  ffff880221fcf6a8
+2013-03-15 19:39:04 ffff8801ed90daf8
+2013-03-15 19:39:04 ffff8803db412070
+2013-03-15 19:39:04 ffff880423779ca8
+2013-03-15 19:39:04
+2013-03-15 19:39:04 [1239463.607890] Call Trace:
+2013-03-15 19:39:04 [1239463.610842]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:39:04 [1239463.616613]  [<ffffffff8128a1dd>] 
+do_get_write_access+0x2cd/0x4d0
+2013-03-15 19:39:04 [1239463.623644]  [<ffffffff8137e53e>] ? 
+radix_tree_lookup_slot+0xe/0x10
+2013-03-15 19:39:04 [1239463.630866]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:39:04 [1239463.638385]  [<ffffffff8128a520>] 
+jbd2_journal_get_write_access+0x30/0x50
+2013-03-15 19:39:04 [1239463.646192]  [<ffffffff8126c31d>] 
+__ext4_journal_get_write_access+0x3d/0x80
+2013-03-15 19:39:04 [1239463.654193]  [<ffffffff812354b5>] ? 
+ext4_read_block_bitmap+0x35/0x60
+2013-03-15 19:39:04 [1239463.661519]  [<ffffffff8127279b>] 
+ext4_mb_mark_diskspace_used+0x7b/0x4d0
+2013-03-15 19:39:04 [1239463.669225]  [<ffffffff8117e81f>] ? 
+__kmalloc+0xaf/0x180
+2013-03-15 19:39:04 [1239463.675376]  [<ffffffff8126d7c6>] ? 
+ext4_mb_initialize_context+0x86/0x1b0
+2013-03-15 19:39:04 [1239463.683184]  [<ffffffff81273f5b>] 
+ext4_mb_new_blocks+0x29b/0x550
+2013-03-15 19:39:04 [1239463.690113]  [<ffffffff8126a97f>] 
+ext4_ext_map_blocks+0xc4f/0x1610
+2013-03-15 19:39:04 [1239463.697242]  [<ffffffff8123c035>] 
+ext4_map_blocks+0x1d5/0x270
+2013-03-15 19:39:04 [1239463.703887]  [<ffffffff8124045d>] 
+mpage_da_map_and_submit+0x15d/0x4b0
+2013-03-15 19:39:04 [1239463.711310]  [<ffffffff81241017>] ? 
+ext4_da_writepages+0x317/0x5e0
+2013-03-15 19:39:05 [1239463.718435]  [<ffffffff81241063>] 
+ext4_da_writepages+0x363/0x5e0
+2013-03-15 19:39:05 [1239463.725371]  [<ffffffff8113e3be>] 
+do_writepages+0x1e/0x40
+2013-03-15 19:39:05 [1239463.731628]  [<ffffffff811b977b>] 
+__writeback_single_inode+0x3b/0x160
+2013-03-15 19:39:05 [1239463.739043]  [<ffffffff811ba7d0>] 
+writeback_sb_inodes+0x1a0/0x390
+2013-03-15 19:39:05 [1239463.746075]  [<ffffffff811baa5f>] 
+__writeback_inodes_wb+0x9f/0xd0
+2013-03-15 19:39:05 [1239463.753109]  [<ffffffff811bacdb>] 
+wb_writeback+0x24b/0x2e0
+2013-03-15 19:39:05 [1239463.759455]  [<ffffffff811a9b22>] ? 
+get_nr_inodes+0x52/0x70
+2013-03-15 19:39:05 [1239463.765900]  [<ffffffff811bbf76>] 
+wb_do_writeback+0x1f6/0x200
+2013-03-15 19:39:05 [1239463.772539]  [<ffffffff811bc00b>] 
+bdi_writeback_thread+0x8b/0x230
+2013-03-15 19:39:05 [1239463.779562]  [<ffffffff811bbf80>] ? 
+wb_do_writeback+0x200/0x200
+2013-03-15 19:39:05 [1239463.786394]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:39:05 [1239463.792061]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:39:05 [1239463.799569]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:39:05 [1239463.805818]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:39:05 [1239463.813330] INFO: task tlsmgr:6983 blocked for 
+more than 120 seconds.
+2013-03-15 19:39:05 [1239463.820738] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:39:05 [1239463.829726] tlsmgr          D
+2013-03-15 19:39:05 ffff88042fc13c80
+2013-03-15 19:39:05 0  6983   6611 0x00000000
+2013-03-15 19:39:05 [1239463.837917]  ffff8804230e3a38
+2013-03-15 19:39:05 0000000000000082
+2013-03-15 19:39:05 ffff880423be5c80
+2013-03-15 19:39:05 ffff8804230e3fd8
+2013-03-15 19:39:05
+2013-03-15 19:39:05 [1239463.846468]  ffff8804230e3fd8
+2013-03-15 19:39:05 ffff8804230e3fd8
+2013-03-15 19:39:05 ffff8802248c8000
+2013-03-15 19:39:05 ffff880423be5c80
+2013-03-15 19:39:05
+2013-03-15 19:39:05 [1239463.855021]  ffff8804230e3a48
+2013-03-15 19:39:05 ffff880329d98618
+2013-03-15 19:39:05 ffff88030b96da10
+2013-03-15 19:39:05 ffff880423492b28
+2013-03-15 19:39:05
+2013-03-15 19:39:05 [1239463.863572] Call Trace:
+2013-03-15 19:39:05 [1239463.866520]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:39:05 [1239463.872286]  [<ffffffff8128a1dd>] 
+do_get_write_access+0x2cd/0x4d0
+2013-03-15 19:39:05 [1239463.879309]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:39:05 [1239463.886819]  [<ffffffff8128a520>] 
+jbd2_journal_get_write_access+0x30/0x50
+2013-03-15 19:39:05 [1239463.894621]  [<ffffffff8126c31d>] 
+__ext4_journal_get_write_access+0x3d/0x80
+2013-03-15 19:39:05 [1239463.902616]  [<ffffffff8123f178>] 
+ext4_reserve_inode_write+0x78/0xa0
+2013-03-15 19:39:05 [1239463.909929]  [<ffffffff812417ec>] ? 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:39:05 [1239463.916662]  [<ffffffff8123f1ea>] 
+ext4_mark_inode_dirty+0x4a/0x200
+2013-03-15 19:39:05 [1239463.923783]  [<ffffffff812417ec>] 
+ext4_dirty_inode+0x3c/0x60
+2013-03-15 19:39:05 [1239463.930322]  [<ffffffff811ba433>] 
+__mark_inode_dirty+0x43/0x240
+2013-03-15 19:39:05 [1239463.937152]  [<ffffffff811a9ddb>] 
+update_time+0xab/0xe0
+2013-03-15 19:39:05 [1239463.943208]  [<ffffffff811a9ffa>] 
+touch_atime+0xfa/0x140
+2013-03-15 19:39:05 [1239463.949356]  [<ffffffff8113445e>] 
+generic_file_aio_read+0x4ae/0x6c0
+2013-03-15 19:39:05 [1239463.956576]  [<ffffffff8118f487>] 
+do_sync_read+0xa7/0xe0
+2013-03-15 19:39:05 [1239463.962729]  [<ffffffff8118fba9>] 
+vfs_read+0xa9/0x180
+2013-03-15 19:39:05 [1239463.968588]  [<ffffffff8118fcd2>] 
+sys_read+0x52/0xa0
+2013-03-15 19:39:05 [1239463.974343]  [<ffffffff816b1859>] 
+system_call_fastpath+0x16/0x1b
+2013-03-15 19:40:01 [1239520.482156] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:40:01
+2013-03-15 19:40:01 [1239520.488530]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:40:01 [1239520.497520]
+2013-03-15 19:40:01 (detected by 2, t=42013 jiffies)
+2013-03-15 19:40:01 [1239520.502629] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:40:01 [1239520.511717] Call Trace:
+2013-03-15 19:40:01 [1239520.514670]  <IRQ>
+2013-03-15 19:40:01 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:40:01 [1239520.521636]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:40:01 [1239520.528570]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:40:01 [1239520.535502]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:40:01 [1239520.542039]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:40:01 [1239520.548379]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:40:01 [1239520.555213]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:40:01 [1239520.561951]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:40:01 [1239520.569265]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:40:01 [1239520.576195]  <EOI>
+2013-03-15 19:40:01 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:40:01 [1239520.583159]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:40:01 [1239520.589413]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:40:01 [1239520.595665]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:40:01 [1239520.602397]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:40:01 [1239520.608262]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:41:05 [1239583.793109] INFO: task jbd2/sda2-8:416 blocked 
+for more than 120 seconds.
+2013-03-15 19:41:05 [1239583.800926] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:41:05 [1239583.809923] jbd2/sda2-8     D
+2013-03-15 19:41:05 ffff88042fc53c80
+2013-03-15 19:41:05 0   416      2 0x00000000
+2013-03-15 19:41:05 [1239583.818072]  ffff880221ab1ad8
+2013-03-15 19:41:05 0000000000000046
+2013-03-15 19:41:05 ffff880221de9720
+2013-03-15 19:41:05 ffff880221ab1fd8
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239583.826641]  ffff880221ab1fd8
+2013-03-15 19:41:05 ffff880221ab1fd8
+2013-03-15 19:41:05 ffff8802248cdc80
+2013-03-15 19:41:05 ffff880221de9720
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239583.835203]  ffff880221ab1aa8
+2013-03-15 19:41:05 ffff880221de9720
+2013-03-15 19:41:05 ffff88042fc544e8
+2013-03-15 19:41:05 0000000000000002
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239583.843765] Call Trace:
+2013-03-15 19:41:05 [1239583.846718]  [<ffffffff81132440>] ? 
+__lock_page+0x70/0x70
+2013-03-15 19:41:05 [1239583.852983]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:41:05 [1239583.858748]  [<ffffffff816a819f>] 
+io_schedule+0x8f/0xd0
+2013-03-15 19:41:05 [1239583.864809]  [<ffffffff8113244e>] 
+sleep_on_page+0xe/0x20
+2013-03-15 19:41:05 [1239583.870963]  [<ffffffff816a6870>] 
+__wait_on_bit+0x60/0x90
+2013-03-15 19:41:05 [1239583.877218]  [<ffffffff81132b81>] ? 
+find_get_pages_tag+0xd1/0x180
+2013-03-15 19:41:05 [1239583.884249]  [<ffffffff81132580>] 
+wait_on_page_bit+0x80/0x90
+2013-03-15 19:41:05 [1239583.890791]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:41:05 [1239583.898306]  [<ffffffff81132951>] 
+filemap_fdatawait_range+0x101/0x190
+2013-03-15 19:41:05 [1239583.907691]  [<ffffffff8135ba49>] ? 
+submit_bio+0x79/0x160
+2013-03-15 19:41:05 [1239583.913946]  [<ffffffff811c6cd5>] ? 
+bio_alloc_bioset+0x65/0x120
+2013-03-15 19:41:05 [1239583.920776]  [<ffffffff81132a07>] 
+filemap_fdatawait+0x27/0x30
+2013-03-15 19:41:05 [1239583.927419]  [<ffffffff8128b77c>] 
+jbd2_journal_commit_transaction+0xa9c/0x19d0
+2013-03-15 19:41:05 [1239583.935733]  [<ffffffff81042af9>] ? 
+default_spin_lock_flags+0x9/0x10
+2013-03-15 19:41:05 [1239583.943055]  [<ffffffff8129113d>] 
+kjournald2+0xbd/0x240
+2013-03-15 19:41:05 [1239583.949110]  [<ffffffff810799c0>] ? 
+finish_wait+0x80/0x80
+2013-03-15 19:41:05 [1239583.955364]  [<ffffffff81291080>] ? 
+jbd2_journal_release_jbd_inode+0x130/0x130
+2013-03-15 19:41:05 [1239583.963676]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:41:05 [1239583.969345]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:41:05 [1239583.976861]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:41:05 [1239583.983115]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:41:05 [1239583.990627] INFO: task jbd2/sda3-8:1930 blocked 
+for more than 120 seconds.
+2013-03-15 19:41:05 [1239583.998526] "echo 0 > 
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+2013-03-15 19:41:05 [1239584.007514] jbd2/sda3-8     D
+2013-03-15 19:41:05 ffff880227c33c80
+2013-03-15 19:41:05 0  1930      2 0x00000000
+2013-03-15 19:41:05 [1239584.015662]  ffff8802234afad8
+2013-03-15 19:41:05 0000000000000046
+2013-03-15 19:41:05 ffff8802234b2e40
+2013-03-15 19:41:05 ffff8802234affd8
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239584.024223]  ffff8802234affd8
+2013-03-15 19:41:05 ffff8802234affd8
+2013-03-15 19:41:05 ffff8802248c9720
+2013-03-15 19:41:05 ffff8802234b2e40
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239584.032796]  ffff8802234afaa8
+2013-03-15 19:41:05 ffff8802234b2e40
+2013-03-15 19:41:05 ffff880227c344e8
+2013-03-15 19:41:05 0000000000000002
+2013-03-15 19:41:05
+2013-03-15 19:41:05 [1239584.041354] Call Trace:
+2013-03-15 19:41:05 [1239584.044311]  [<ffffffff81132440>] ? 
+__lock_page+0x70/0x70
+2013-03-15 19:41:05 [1239584.050561]  [<ffffffff816a80c9>] 
+schedule+0x29/0x70
+2013-03-15 19:41:05 [1239584.056332]  [<ffffffff816a819f>] 
+io_schedule+0x8f/0xd0
+2013-03-15 19:41:05 [1239584.062386]  [<ffffffff8113244e>] 
+sleep_on_page+0xe/0x20
+2013-03-15 19:41:05 [1239584.068541]  [<ffffffff816a6870>] 
+__wait_on_bit+0x60/0x90
+2013-03-15 19:41:05 [1239584.074795]  [<ffffffff81132b81>] ? 
+find_get_pages_tag+0xd1/0x180
+2013-03-15 19:41:05 [1239584.081820]  [<ffffffff81132580>] 
+wait_on_page_bit+0x80/0x90
+2013-03-15 19:41:05 [1239584.088366]  [<ffffffff81079a00>] ? 
+autoremove_wake_function+0x40/0x40
+2013-03-15 19:41:05 [1239584.095880]  [<ffffffff81132951>] 
+filemap_fdatawait_range+0x101/0x190
+2013-03-15 19:41:05 [1239584.103299]  [<ffffffff8135ba49>] ? 
+submit_bio+0x79/0x160
+2013-03-15 19:41:05 [1239584.109549]  [<ffffffff811c6cd5>] ? 
+bio_alloc_bioset+0x65/0x120
+2013-03-15 19:41:05 [1239584.116385]  [<ffffffff81132a07>] 
+filemap_fdatawait+0x27/0x30
+2013-03-15 19:41:05 [1239584.123028]  [<ffffffff8128b77c>] 
+jbd2_journal_commit_transaction+0xa9c/0x19d0
+2013-03-15 19:41:05 [1239584.131336]  [<ffffffff81042af9>] ? 
+default_spin_lock_flags+0x9/0x10
+2013-03-15 19:41:05 [1239584.138656]  [<ffffffff8129113d>] 
+kjournald2+0xbd/0x240
+2013-03-15 19:41:05 [1239584.144717]  [<ffffffff810799c0>] ? 
+finish_wait+0x80/0x80
+2013-03-15 19:41:05 [1239584.150958]  [<ffffffff81291080>] ? 
+jbd2_journal_release_jbd_inode+0x130/0x130
+2013-03-15 19:41:05 [1239584.159269]  [<ffffffff81079070>] kthread+0xc0/0xd0
+2013-03-15 19:41:05 [1239584.164943]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:41:05 [1239584.172467]  [<ffffffff816b17ac>] 
+ret_from_fork+0x7c/0xb0
+2013-03-15 19:41:05 [1239584.178716]  [<ffffffff81078fb0>] ? 
+kthread_create_on_node+0x130/0x130
+2013-03-15 19:43:01 [1239700.250748] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:43:01
+2013-03-15 19:43:01 [1239700.257116]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:43:01 [1239700.266100]
+2013-03-15 19:43:01 (detected by 2, t=60018 jiffies)
+2013-03-15 19:43:01 [1239700.271202] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:43:01 [1239700.280288] Call Trace:
+2013-03-15 19:43:01 [1239700.283242]  <IRQ>
+2013-03-15 19:43:01 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:43:01 [1239700.290208]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:43:01 [1239700.297141]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:43:01 [1239700.304073]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:43:01 [1239700.310610]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:43:01 [1239700.316956]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:43:01 [1239700.323791]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:43:01 [1239700.330529]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:43:01 [1239700.337851]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:43:01 [1239700.344781]  <EOI>
+2013-03-15 19:43:02 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:43:02 [1239700.351743]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:43:02 [1239700.357997]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:43:02 [1239700.364249]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:43:02 [1239700.370980]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:43:02 [1239700.376846]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:46:01 [1239880.019328] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:46:01
+2013-03-15 19:46:01 [1239880.025693]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:46:01 [1239880.034683]
+2013-03-15 19:46:01 (detected by 2, t=78023 jiffies)
+2013-03-15 19:46:01 [1239880.039784] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:46:01 [1239880.048870] Call Trace:
+2013-03-15 19:46:01 [1239880.051824]  <IRQ>
+2013-03-15 19:46:01 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:46:01 [1239880.058788]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:46:02 [1239880.065722]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:46:02 [1239880.072655]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:46:02 [1239880.079200]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:46:02 [1239880.085540]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:46:02 [1239880.092376]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:46:02 [1239880.099115]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:46:02 [1239880.106435]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:46:02 [1239880.113365]  <EOI>
+2013-03-15 19:46:02 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:46:02 [1239880.120328]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:46:02 [1239880.126581]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:46:02 [1239880.132839]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:46:02 [1239880.139569]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:46:02 [1239880.145428]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:49:02 [1240059.787917] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:49:02
+2013-03-15 19:49:02 [1240059.794279]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:49:02 [1240059.803260]
+2013-03-15 19:49:02 (detected by 2, t=96028 jiffies)
+2013-03-15 19:49:02 [1240059.808354] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:49:02 [1240059.817435] Call Trace:
+2013-03-15 19:49:02 [1240059.820380]  <IRQ>
+2013-03-15 19:49:02 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:49:02 [1240059.827330]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:49:02 [1240059.834255]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:49:02 [1240059.841179]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:49:02 [1240059.847718]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:49:02 [1240059.854060]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:49:02 [1240059.860887]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:49:02 [1240059.867618]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:49:02 [1240059.874997]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:49:02 [1240059.881920]  <EOI>
+2013-03-15 19:49:02 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:49:02 [1240059.888867]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:49:02 [1240059.895112]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:49:02 [1240059.901358]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:49:02 [1240059.908088]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:49:02 [1240059.913948]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:52:02 [1240239.556500] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:52:02
+2013-03-15 19:52:02 [1240239.562862]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:52:02 [1240239.571844]
+2013-03-15 19:52:02 (detected by 2, t=114032 jiffies)
+2013-03-15 19:52:02 [1240239.577042] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:52:02 [1240239.586127] Call Trace:
+2013-03-15 19:52:02 [1240239.589074]  <IRQ>
+2013-03-15 19:52:02 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:52:02 [1240239.596025]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:52:02 [1240239.603044]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:52:02 [1240239.609970]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:52:02 [1240239.616511]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:52:02 [1240239.622854]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:52:02 [1240239.629674]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:52:02 [1240239.636413]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:52:02 [1240239.643719]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:52:02 [1240239.650641]  <EOI>
+2013-03-15 19:52:02 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:52:02 [1240239.657589]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:52:02 [1240239.663834]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:52:02 [1240239.670080]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:52:02 [1240239.676801]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:52:02 [1240239.682660]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+2013-03-15 19:55:02 [1240419.325086] INFO: rcu_sched detected stalls on 
+CPUs/tasks:
+2013-03-15 19:55:02
+2013-03-15 19:55:02 [1240419.331445]     0: (2 GPs behind) 
+idle=d99/140000000000001/0 drain=0 . timer not pending
+2013-03-15 19:55:02 [1240419.340428]
+2013-03-15 19:55:02 (detected by 2, t=132038 jiffies)
+2013-03-15 19:55:02 [1240419.345620] Pid: 0, comm: swapper/2 Not tainted 
+3.7.9-vs2.3.5.6-rol-em64t-tg3+sdfix #3
+2013-03-15 19:55:02 [1240419.354700] Call Trace:
+2013-03-15 19:55:02 [1240419.357647]  <IRQ>
+2013-03-15 19:55:02 [<ffffffff810f8e15>] rcu_pending+0x535/0x550
+2013-03-15 19:55:02 [1240419.364597]  [<ffffffff810facc2>] 
+rcu_check_callbacks+0xe2/0x180
+2013-03-15 19:55:02 [1240419.371521]  [<ffffffff810663b8>] 
+update_process_times+0x48/0x90
+2013-03-15 19:55:02 [1240419.378446]  [<ffffffff810bb4e3>] 
+tick_sched_timer+0x83/0xd0
+2013-03-15 19:55:02 [1240419.384982]  [<ffffffff8107d479>] 
+__run_hrtimer+0x79/0x1d0
+2013-03-15 19:55:02 [1240419.391324]  [<ffffffff810bb460>] ? 
+tick_nohz_handler+0xf0/0xf0
+2013-03-15 19:55:02 [1240419.398156]  [<ffffffff8107dd97>] 
+hrtimer_interrupt+0xf7/0x230
+2013-03-15 19:55:02 [1240419.404888]  [<ffffffff816b3279>] 
+smp_apic_timer_interrupt+0x69/0x99
+2013-03-15 19:55:02 [1240419.412201]  [<ffffffff816b230a>] 
+apic_timer_interrupt+0x6a/0x70
+2013-03-15 19:55:02 [1240419.419123]  <EOI>
+2013-03-15 19:55:02 [<ffffffff813d521d>] ? intel_idle+0xed/0x150
+2013-03-15 19:55:02 [1240419.426072]  [<ffffffff813d51fe>] ? 
+intel_idle+0xce/0x150
+2013-03-15 19:55:02 [1240419.432317]  [<ffffffff8156b559>] 
+cpuidle_enter+0x19/0x20
+2013-03-15 19:55:02 [1240419.438562]  [<ffffffff8156bc22>] 
+cpuidle_idle_call+0xa2/0x1b0
+2013-03-15 19:55:02 [1240419.445294]  [<ffffffff8101d02f>] 
+cpu_idle+0xaf/0x120
+2013-03-15 19:55:02 [1240419.451151]  [<ffffffff81695c9d>] 
+start_secondary+0x1d4/0x1db
+
+Have you any idea what this could be?
+Please CC me, as I'm not a member of the LKML.
+
+Many thanks and regards
+Urban Loesch
 
 
->  	timeout = wait_for_completion_interruptible_timeout
->  			(&info->completion, EXYNOS_ADC_TIMEOUT);
-> +
->  	*val = info->value;
->  
->  	mutex_unlock(&indio_dev->mlock);
->  
->  	if (timeout == 0)
->  		return -ETIMEDOUT;
-> -
-> +	else if (timeout < 0)
-> +		return timeout;
->  	return IIO_VAL_INT;
->  }
->  
-> @@ -159,6 +164,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
->  {
->  	struct exynos_adc *info = (struct exynos_adc *)dev_id;
->  
-> +	spin_lock(&info->reg_lock);
-> +
->  	/* Read value */
->  	info->value = readl(ADC_V1_DATX(info->regs)) &
->  						ADC_DATX_MASK;
-> @@ -170,6 +177,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
->  
->  	complete(&info->completion);
->  
-> +	spin_unlock(&info->reg_lock);
-> +
-
-What exactly is the spinlock protecting against here? Concurrent runs of
-exynos_adc_isr? This is probably not issue in the first place.
-
-What you want to protect against is that completion is completed between the
-call to INIT_COMPLETION() and the start of a new conversion. So the sections
-that need to be under the spinlock are the complete call here and the point
-from INIT_COMPLETION until the transfer is started in exynos_read_raw(). Make
-sure to use spin_lock_irq there.
-
->  	return IRQ_HANDLED;
->  }
->  
-> @@ -327,6 +336,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
->  	else
->  		indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
->  
-> +	spin_lock_init(&info->reg_lock);
->  	ret = iio_device_register(indio_dev);
->  	if (ret)
->  		goto err_irq;
 
