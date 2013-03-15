@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3CORdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 13:33:37 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:34000 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab3CORdf (ORCPT
+	id S1754212Ab3CORfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 13:35:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36359 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753772Ab3CORfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 13:33:35 -0400
-Date: Fri, 15 Mar 2013 10:33:31 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 3/3] serial: tegra: Convert to devm_ioremap_resource()
-Message-ID: <20130315173331.GA22504@kroah.com>
-References: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org>
- <1359627939-2685-3-git-send-email-sachin.kamat@linaro.org>
- <510AA318.5060208@wwwdotorg.org>
- <CAK9yfHzSq8SpKXQYtFd1Ds+N-AoH+H+BdWrPsPT=OwSPdst1WA@mail.gmail.com>
- <510B436A.20808@wwwdotorg.org>
- <CAK9yfHzJvOC_wvsxvapi7rATq97QX-6exOyqjNTSguhh3RLVvQ@mail.gmail.com>
- <510BF8EC.7090801@wwwdotorg.org>
- <CAK9yfHx1jLPpdCHAb-pC-C7wt81gQLgTnpuvK+0aNKkhuXHcDQ@mail.gmail.com>
- <20130315163803.GA29113@kroah.com>
- <514356D9.2020708@wwwdotorg.org>
+	Fri, 15 Mar 2013 13:35:15 -0400
+Date: Fri, 15 Mar 2013 17:34:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: kpark3469@gmail.com
+Cc: keun-o.park@windriver.com, dave.martin@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] arm: fix a wrong value returned from CALLER_ADDRn
+Message-ID: <20130315173452.GQ4977@n2100.arm.linux.org.uk>
+References: <1363235701-21342-1-git-send-email-kpark3469@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <514356D9.2020708@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363235701-21342-1-git-send-email-kpark3469@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 11:14:01AM -0600, Stephen Warren wrote:
-> On 03/15/2013 10:38 AM, gregkh@linuxfoundation.org wrote:
-> > On Sat, Feb 02, 2013 at 10:22:16AM +0530, Sachin Kamat wrote:
-> >>
-> >>
-> >> On Friday, 1 February 2013, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >>> On 02/01/2013 02:49 AM, Sachin Kamat wrote:
-> >>>> On 1 February 2013 09:54, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >>>>>>
-> >>>>>> The entire series is merged in Greg's driver-core tree [1] and I
-> >>>>>> presume all other associated patches would also be picked up by him.
-> >>>>>> Isn't it Greg?
-> >>>>>>
-> >>>>>> [1] git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
-> >>>>>
-> >>>>> The Tegra serial driver went through Greg's TTY tree. I assume that goes
-> >>>>> direct to Linus not through driver-core.git first.
-> >>>>
-> >>>> Right. But AFAIK for this specific change he has carried the patches
-> >>>> in the device-core tree irrespective of the subsystem.
-> >>>
-> >>> Yes, but the Tegra serial driver is new for 3.9, and hence does not yet
-> >>> exist in driver-core.git.
-> >>>
-> >>
-> >> Oh ok. Then probably we can have this patch only after 3.9-rc1 is out.
-> > 
-> > Yes, Stephen can take this patch now.
+On Thu, Mar 14, 2013 at 01:35:01PM +0900, kpark3469@gmail.com wrote:
+> From: Sahara <keun-o.park@windriver.com>
 > 
-> There's no need for me to take the patch I think; now that 3.9-rc1 is
-> out, the serial and driver core trees all have whatever dependencies
-> this series needed, so any patches can go through their usual trees, I
-> think... (Sorry, the context of this discussion was little while ago).
+> This makes return_address() return a correct value for CALLER_ADDRn.
+> To have a correct value from CALLER_ADDRn, we need to fix three points.
+> 
+> * The unwind_frame() does not update frame->lr but frame->pc for backtrace.
+> So frame->pc is meaningful for backtrace.
+> 
+> * data.level should be adjusted by adding 2 additional iteration levels.
+> With the current +1 level adjustment, the result of CALLER_ADDR1 will
+> be the same return address with CALLER_ADDR0.
+> 
+> * The initialization of data.addr to NULL is needed.
+> When unwind_fame() fails right after data.level reaches zero,
+> the routine returns data.addr which has uninitialized garbage value.
+> 
+> Signed-off-by: Sahara <keun-o.park@windriver.com>
+> Reviewed-by: Dave Martin <dave.martin@linaro.org>
 
-Ok, can someone please resend the serial patch then?  I dropped it.
-
-thanks,
-
-greg k-h
+Please send this to the patch system.  I think we should let this sit
+in -next for a bit (which we'll get anyway) to see what the effect is.
