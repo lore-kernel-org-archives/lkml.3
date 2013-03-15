@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab3COCfP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:35:15 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50229 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab3COCfL (ORCPT
+	id S1753682Ab3COCf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:35:27 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49840 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3COCfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:35:11 -0400
+	Thu, 14 Mar 2013 22:35:24 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -15,63 +15,39 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 1/5] introduce zero filled pages handler
-Date: Fri, 15 Mar 2013 10:34:16 +0800
-Message-Id: <1363314860-22731-2-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 5/5] clean TODO list
+Date: Fri, 15 Mar 2013 10:34:20 +0800
+Message-Id: <1363314860-22731-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031502-3568-0000-0000-0000034AE702
+x-cbid: 13031502-5564-0000-0000-0000070CB32B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce zero-filled pages handler to capture and handle zero pages.
+Cleanup TODO list since support zero-filled pages more efficiently has 
+already done by this patchset.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/zcache-main.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ drivers/staging/zcache/TODO |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 328898e..d73dd4b 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -460,6 +460,32 @@ static void zcache_obj_free(struct tmem_obj *obj, struct tmem_pool *pool)
- 	kmem_cache_free(zcache_obj_cache, obj);
- }
+diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
+index c1e26d4..9e755d3 100644
+--- a/drivers/staging/zcache/TODO
++++ b/drivers/staging/zcache/TODO
+@@ -65,5 +65,4 @@ ZCACHE FUTURE NEW FUNCTIONALITY
  
-+static bool page_is_zero_filled(void *ptr)
-+{
-+	unsigned int pos;
-+	unsigned long *page;
-+
-+	page = (unsigned long *)ptr;
-+
-+	for (pos = 0; pos < PAGE_SIZE / sizeof(*page); pos++) {
-+		if (page[pos])
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
-+static void handle_zero_filled_page(void *page)
-+{
-+	void *user_mem;
-+
-+	user_mem = kmap_atomic(page);
-+	memset(user_mem, 0, PAGE_SIZE);
-+	kunmap_atomic(user_mem);
-+
-+	flush_dcache_page(page);
-+}
-+
- static struct tmem_hostops zcache_hostops = {
- 	.obj_alloc = zcache_obj_alloc,
- 	.obj_free = zcache_obj_free,
+ A. Support zsmalloc as an alternative high-density allocator
+     (See https://lkml.org/lkml/2013/1/23/511)
+-B. Support zero-filled pages more efficiently
+-C. Possibly support three zbuds per pageframe when space allows
++B. Possibly support three zbuds per pageframe when space allows
 -- 
 1.7.7.6
 
