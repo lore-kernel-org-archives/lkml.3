@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3CODTC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 23:19:02 -0400
-Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:25680
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753718Ab3CODS7 (ORCPT
+	id S1753774Ab3CODYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 23:24:44 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63483 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab3CODYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 23:18:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <artem.bityutskiy@linux.intel.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 3/3] mtd: add 4 Toshiba nand chips for the full-id case
-Date: Fri, 15 Mar 2013 11:01:01 +0800
-Message-ID: <1363316461-10592-4-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1363316461-10592-1-git-send-email-b32955@freescale.com>
-References: <1363316461-10592-1-git-send-email-b32955@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 14 Mar 2013 23:24:43 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Thu, 14 Mar 2013 22:24:42 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH 0/2] fs: sysfs: Add devres support
+Date: Thu, 14 Mar 2013 20:24:45 -0700
+Message-Id: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have 4 Toshiba nand chips which can not be parsed out by the
-id data. We can not get the oob size from the id data. So add them
-as the full-id nand chips in the first of nand_flash_ids.
+Provide devres functions for device_create_file, sysfs_create_file,
+and sysfs_create_group plus the respective remove functions.
 
-The comment for the full-id items is from Brian.
+Idea is to be able to drop calls to the remove functions from the various
+drivers using those calls.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/nand/nand_ids.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+Potential savings are substantial. There are more than 700 calls to
+device_remove_file in the kernel, more than 500 calls to sysfs_remove_group,
+and some 50 calls to sysfs_remove_file (though not all of those use dev->kobj
+as parameter). Expanding the API to sysfs_create_bin_file would add another 80+
+opportunities, and adding sysfs_create_link would create another 100 or so.
 
-diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
-index 625bc89..1c242cc 100644
---- a/drivers/mtd/nand/nand_ids.c
-+++ b/drivers/mtd/nand/nand_ids.c
-@@ -10,6 +10,7 @@
-  */
- #include <linux/module.h>
- #include <linux/mtd/nand.h>
-+#include <linux/sizes.h>
- 
- #define LP_OPTIONS NAND_SAMSUNG_LP_OPTIONS
- #define LP_OPTIONS16 (LP_OPTIONS | NAND_BUSWIDTH_16)
-@@ -22,6 +23,24 @@
-  * extended chip ID.
-  */
- struct nand_flash_dev nand_flash_ids[] = {
-+	/*
-+	 * Some incompatible NAND chips share device ID's and so must be
-+	 * listed by full ID. We list them first so that we can easily identify
-+	 * the most specific match.
-+	 */
-+	{"TC58NVG2S0F 4G 3.3V 8-bit",
-+		{ .id = {0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08} },
-+			SZ_4K, SZ_512, SZ_256K, 0, 8, 224},
-+	{"TC58NVG3S0F 8G 3.3V 8-bit",
-+		{ .id = {0x98, 0xd3, 0x90, 0x26, 0x76, 0x15, 0x02, 0x08} },
-+			SZ_4K, SZ_1K, SZ_256K, 0, 8, 232},
-+	{"TC58NVG5D2 32G 3.3V 8-bit",
-+		{ .id = {0x98, 0xd7, 0x94, 0x32, 0x76, 0x56, 0x09, 0x00} },
-+			SZ_8K, SZ_4K, SZ_1M, 0, 8, 640},
-+	{"TC58NVG6D2 64G 3.3V 8-bit",
-+		{ .id = {0x98, 0xde, 0x94, 0x82, 0x76, 0x56, 0x04, 0x20} },
-+			SZ_8K, SZ_8K, SZ_2M, 0, 8, 640},
-+
- 	LEGACY_ID_NAND("NAND 4MiB 5V 8-bit",   0x6B, 512, 4, 0x2000, 0),
- 	LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE3, 512, 4, 0x2000, 0),
- 	LEGACY_ID_NAND("NAND 4MiB 3,3V 8-bit", 0xE5, 512, 4, 0x2000, 0),
--- 
-1.7.1
+The approach used in this patch set is one possible solution.
+Another possibility would be to not bother with sysfs and provide
+devm_device_create_file, devm_device_create_group, and its remove functions
+in drivers/base/core.c instead.
 
+I am not sure which approach is better. The solution presented here is more
+aligned with other devm_ functions (I think) and does not require changing
+function parameters besides the first one. Providing functions in the driver
+core code would mean parameter changes [sysfs_create_file(dev, attr) ->
+devm_device_create_file(dev, device_attr)] and thus be more invasive and thus a
+bit more risky. It would also create devres data entries even if sysfs
+is not configured (if that is even possible nowadays).
 
+One question with the presented API is how the API should look like.
+Should it be
+
+int devm_sysfs_create_file(struct device *dev, const struct attribute *attr)
+
+or
+
+int devm_sysfs_create_file(struct device *dev,
+			   struct kobject *kobj,
+			   const struct attribute *attr)
+
+The latter would be more consistent with other devm_ functions, but the
+additional parameter seems like a waste, as the kobj would presumably
+always be &dev->kobj anyway.
+
+Before I go much further with this, I would like to get some feedback from the
+community if this all makes sense or not.
+
+Note that the code is compile tested only at this time - I don't want to spend
+too much time on it if turns out to be a bad idea.
