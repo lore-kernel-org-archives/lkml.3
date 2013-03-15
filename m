@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab3COVXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:23:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36354 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3COVXP (ORCPT
+	id S932688Ab3COVZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:25:01 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:35945 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab3COVY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:23:15 -0400
-Date: Sat, 16 Mar 2013 00:22:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 09/50] staging: omap-thermal: make a omap_bandgap_power
- with only one exit point
-Message-ID: <20130315212241.GL9138@mwanda>
-References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
- <1363352438-15935-10-git-send-email-eduardo.valentin@ti.com>
+	Fri, 15 Mar 2013 17:24:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363352438-15935-10-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20130315203010.GA25081@kroah.com>
+References: <1362360907-4439-1-git-send-email-grant.likely@secretlab.ca> <20130315203010.GA25081@kroah.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 15 Mar 2013 21:24:38 +0000
+X-Google-Sender-Auth: nz0tXpbHCT5sdeqY9o5NujWscE4
+Message-ID: <CACxGe6twB3fSkQ97Jq-+zSn7wen9axS=5fB4uSs08etfREJaPQ@mail.gmail.com>
+Subject: Re: [PATCH] tty/serial: Fix uninitialized variable warning
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 08:59:57AM -0400, Eduardo Valentin wrote:
-> Change the way the omap_bandgap_power is written so that it has only
-> one exit entry (Documentation/CodingStyle).
-> 
+On Fri, Mar 15, 2013 at 8:30 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Mar 04, 2013 at 09:35:07AM +0800, Grant Likely wrote:
+>> drivers/tty/serial/8250/8250.c: In function 'serial_unlink_irq_chain':
+>> drivers/tty/serial/8250/8250.c:1676:19: warning: 'i' may be used uninitialized in this function
+>>
+>> There isn't an actual bug here since the function tests the condition
+>> that would cause i to be uninitialized before dereferencing i. However,
+>> at least some versions of GCC complain as shown above. (in my case,
+>> powerpc gcc 2.5.2). Initializing i to NULL makes it clear to GCC and the
+>> casual code reviewer that i will not be dereferenced to a random
+>> address.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
+>> Greg, some may argue that this is a tool problem, not a kernel problem,
+>> but it is useful to me. If anyone objects I'm not going to spend any
+>> time championing for this patch.
+>
+> Upgrade your tools to ones that work properly :)
 
-It's only if there is an unlock or something that you should do
-this.  Otherwise the pointless bunny hop is misleading and annoying.
+FWIW, it's still a toolchain that a lot of people use for embedded
+powerpc development.
 
-regards,
-dan carpenter
-
+g.
