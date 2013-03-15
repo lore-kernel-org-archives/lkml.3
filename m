@@ -1,123 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab3COUis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 16:38:48 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:51976 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab3COUiq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 16:38:46 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        "Satoru Moriya (smoriya@redhat.com)" <smoriya@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Paul E. McKenney (paulmck@us.ibm.com)" <paulmck@us.ibm.com>
-Subject: [PATCH v11 1/3] tracing: Add DEFINE_EVENT_FN() macro
-Thread-Topic: [PATCH v11 1/3] tracing: Add DEFINE_EVENT_FN() macro
-Thread-Index: Ac4hvKsIqtw+PLhySdSgBEALskgvmQ==
-Date: Fri, 15 Mar 2013 20:35:52 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF6A03D@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-03-15_08:2013-03-15,2013-03-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=inbound_policy_notspam policy=inbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1303150154
+	id S932461Ab3COUlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 16:41:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932313Ab3COUlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 16:41:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dmitry.kasatkin@intel.com
+Cc: akpm@linux-foundation.org, ebiederm@xmission.com, vgoyal@redhat.com
+Subject: [PATCH 1/4] integrity: Identify asymmetric digital signature using new type
+Date: Fri, 15 Mar 2013 16:35:55 -0400
+Message-Id: <1363379758-10071-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
+References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each TRACE_EVENT() adds several helper functions. If two or more trace events
-share the same structure and print format, they can also share most of these
-helper functions and save a lot of space from duplicate code. This is why the
-DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
+Currently there seem to be two types of digital signatures. Old one and
+that is RSA and new one which is being called asymmetric. Right now they
+both fall in the categorty of EVM_IMA_XATTR_DIGSIG and one differentiates
+between two using signature version. Version 1 is old type and version 2
+is new type.
 
-Some events require a trigger to be called at registering and unregistering of
-the event and to do so they use TRACE_EVENT_FN().
+How about asymmetric signature using a new type say
+EVM_IMA_XATTR_DIGSIG_ASYMMETRIC. And version numbering can be used for
+structure variation with-in signature type.
 
-If multiple events require a trigger, they currently have no choice but to use
-TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This unfortunately
-causes a lot of wasted duplicate code created.
+This can allow to export signature type to other subsystems. And these
+subsystems will call into ima/integrity for verification only if signature
+are of certain type.
 
-By adding a DEFINE_EVENT_FN(), these events can still use a
-DECLARE_EVENT_CLASS() and then define their own triggers.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/tracepoint.h   |    2 ++
- include/trace/define_trace.h |    5 +++++
- include/trace/ftrace.h       |    4 ++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+ security/integrity/digsig.c           |   11 +++++++----
+ security/integrity/evm/evm_main.c     |    4 +++-
+ security/integrity/ima/ima_appraise.c |    7 +++++--
+ security/integrity/integrity.h        |   14 +++++---------
+ 4 files changed, 20 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 2f322c3..9bf59e5 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -378,6 +378,8 @@ static inline void tracepoint_synchronize_unregister(void)
- #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
- #define DEFINE_EVENT(template, name, proto, args)		\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
-+	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
- #define DEFINE_EVENT_CONDITION(template, name, proto,		\
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index 1905ca8..02e1003 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -44,6 +44,10 @@
- #define DEFINE_EVENT(template, name, proto, args) \
- 	DEFINE_TRACE(name)
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 0b759e1..268c4cc 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -27,7 +27,8 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+ 	"_ima",
+ };
  
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
-+	DEFINE_TRACE_FN(name, reg, unreg)
-+
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_TRACE(name)
-@@ -91,6 +95,7 @@
- #undef TRACE_EVENT_CONDITION
- #undef DECLARE_EVENT_CLASS
- #undef DEFINE_EVENT
-+#undef DEFINE_EVENT_FN
- #undef DEFINE_EVENT_PRINT
- #undef DEFINE_EVENT_CONDITION
- #undef TRACE_HEADER_MULTI_READ
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 40dc5e8..7bab676 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -71,6 +71,10 @@
- 	static struct ftrace_event_call	__used		\
- 	__attribute__((__aligned__(4))) event_##name
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
++int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
++			const unsigned int id, const char *sig, int siglen,
+ 					const char *digest, int digestlen)
+ {
+ 	if (id >= INTEGRITY_KEYRING_MAX)
+@@ -44,13 +45,15 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 		}
+ 	}
  
-+#undef DEFINE_EVENT_FN
-+#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
-+	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-+
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
--- 1.7.1
-
+-	switch (sig[0]) {
+-	case 1:
++	switch (sig_type) {
++	case EVM_IMA_XATTR_DIGSIG:
+ 		return digsig_verify(keyring[id], sig, siglen,
+ 				     digest, digestlen);
+-	case 2:
++	case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+ 		return asymmetric_verify(keyring[id], sig, siglen,
+ 					 digest, digestlen);
++	default:
++		break;
+ 	}
+ 
+ 	return -EOPNOTSUPP;
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index cdbde17..cf798cb 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -134,11 +134,13 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 			rc = -EINVAL;
+ 		break;
+ 	case EVM_IMA_XATTR_DIGSIG:
++	case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+ 		rc = evm_calc_hash(dentry, xattr_name, xattr_value,
+ 				xattr_value_len, calc.digest);
+ 		if (rc)
+ 			break;
+-		rc = integrity_digsig_verify(INTEGRITY_KEYRING_EVM,
++		rc = integrity_digsig_verify(xattr_data->type,
++					INTEGRITY_KEYRING_EVM,
+ 					xattr_data->digest, xattr_len,
+ 					calc.digest, sizeof(calc.digest));
+ 		if (!rc) {
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 2d4beca..9bc0723 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -169,8 +169,10 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+ 		status = INTEGRITY_PASS;
+ 		break;
+ 	case EVM_IMA_XATTR_DIGSIG:
++	case EVM_IMA_XATTR_DIGSIG_ASYMMETRIC:
+ 		iint->flags |= IMA_DIGSIG;
+-		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
++		rc = integrity_digsig_verify(xattr_value->type,
++					     INTEGRITY_KEYRING_IMA,
+ 					     xattr_value->digest, rc - 1,
+ 					     iint->ima_xattr.digest,
+ 					     IMA_DIGEST_SIZE);
+@@ -193,7 +195,8 @@ out:
+ 	if (status != INTEGRITY_PASS) {
+ 		if ((ima_appraise & IMA_APPRAISE_FIX) &&
+ 		    (!xattr_value ||
+-		     xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
++		     (xattr_value->type != EVM_IMA_XATTR_DIGSIG &&
++		      xattr_value->type != EVM_IMA_XATTR_DIGSIG_ASYMMETRIC))) {
+ 			if (!ima_fix_xattr(dentry, iint))
+ 				status = INTEGRITY_PASS;
+ 		}
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 84c37c4..8392d18 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -50,12 +50,6 @@
+ #define IMA_APPRAISED_SUBMASK	(IMA_FILE_APPRAISED | IMA_MMAP_APPRAISED | \
+ 				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED)
+ 
+-enum evm_ima_xattr_type {
+-	IMA_XATTR_DIGEST = 0x01,
+-	EVM_XATTR_HMAC,
+-	EVM_IMA_XATTR_DIGSIG,
+-};
+-
+ struct evm_ima_xattr_data {
+ 	u8 type;
+ 	u8 digest[SHA1_DIGEST_SIZE];
+@@ -88,12 +82,14 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+ 
+ #ifdef CONFIG_INTEGRITY_SIGNATURE
+ 
+-int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+-					const char *digest, int digestlen);
++int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
++	const unsigned int id, const char *sig, int siglen,
++	const char *digest, int digestlen);
+ 
+ #else
+ 
+-static inline int integrity_digsig_verify(const unsigned int id,
++static inline int integrity_digsig_verify(enum evm_ima_xattr_type sig_type,
++					  const unsigned int id,
+ 					  const char *sig, int siglen,
+ 					  const char *digest, int digestlen)
+ {
+-- 
+1.7.7.6
 
