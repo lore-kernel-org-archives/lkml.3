@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab3COVBe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:01:34 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56977 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3COVBd (ORCPT
+	id S932586Ab3COVCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:02:48 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:33698 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab3COVCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:01:33 -0400
-Message-ID: <51438C2A.9000302@free-electrons.com>
-Date: Fri, 15 Mar 2013 22:01:30 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 15 Mar 2013 17:02:47 -0400
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org
-CC: linux-doc@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
-        kevin@allwinnertech.com
-Subject: Re: [PATCH 1/5] net: Add davicom wemac ethernet driver found on Allwinner
- A10 SoC's
-References: <1363380605-6577-1-git-send-email-maxime.ripard@free-electrons.com> <1363380605-6577-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1363380605-6577-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <51437FEA.20807@epfl.ch>
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch>
+ <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch>
+ <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de>
+ <512E2F98.6070404@epfl.ch> <51347B06.8090604@epfl.ch> <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de>
+ <513EFE17.6030203@epfl.ch> <CAK5ve-+TfHmvx8fiim2yyZhKbhgieO-WDqd+HG7ViLm=Fk3zNA@mail.gmail.com>
+ <20130315185953.GA11351@avionic-0098.mockup.avionic-design.de> <51437FEA.20807@epfl.ch>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 15 Mar 2013 14:02:24 -0700
+Message-ID: <CAK5ve-+auZKGr30oyx3=0iE5zq526jks-vxW=47CDey_zZQoWg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can sleep
+To: florian.vaussard@epfl.ch
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/03/2013 21:50, Maxime Ripard a écrit :
-> From: Stefan Roese <sr@denx.de>
-> 
-> The Allwinner A10 has an ethernet controller that is advertised as
-> coming from Davicom.
-> 
-> The exact feature set of this controller is unknown, since there is no
-> public documentation for this IP, and this driver is mostly the one
-> published by Allwinner that has been heavily cleaned up.
-> 
-> Signed-off-by: Stefan Roese <sr@denx.de>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  .../devicetree/bindings/net/davicom-wemac.txt      |   20 +
->  drivers/net/ethernet/Makefile                      |    2 +-
->  drivers/net/ethernet/davicom/Kconfig               |   31 +
->  drivers/net/ethernet/davicom/Makefile              |    1 +
->  drivers/net/ethernet/davicom/wemac.c               | 1033 ++++++++++++++++++++
->  drivers/net/ethernet/davicom/wemac.h               |  130 +++
->  6 files changed, 1216 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/net/davicom-wemac.txt
->  create mode 100644 drivers/net/ethernet/davicom/wemac.c
->  create mode 100644 drivers/net/ethernet/davicom/wemac.h
-> 
-> diff --git a/Documentation/devicetree/bindings/net/davicom-wemac.txt b/Documentation/devicetree/bindings/net/davicom-wemac.txt
-> new file mode 100644
-> index 0000000..516cf31
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/davicom-wemac.txt
-> @@ -0,0 +1,20 @@
-> +* Marvell Armada 370 / Armada XP Ethernet Controller (NETA)
-> +
-> +Required properties:
-> +- compatible: should be "marvell,armada-370-neta".
+On Fri, Mar 15, 2013 at 1:09 PM, Florian Vaussard
+<florian.vaussard@epfl.ch> wrote:
+> Hi,
+>
+>
+> On 03/15/2013 07:59 PM, Thierry Reding wrote:
+>>>
+>>>
+>>> Hi Florian and Thierry,
+>>>
+>>> Sorry, guys. My bad! I'm using GMAIL filtering my emails. This email
+>>> goes into my arm-linux mail list archive and I totally missed it.
+>>>
+>>> I can merge this patch into my for-next branch, but it will be in 3.10
+>>> not 3.9-rcX.
+>>>
+>>> Or Thierry, can you merge that to 3.9-rcX through your tree with my Ack?
+>>
+>>
+>> I think 3.10 would be fine. We missed the merge window on this one and
+>> it isn't really a fix so it's a bit late for 3.9 now.
+>>
+>> If Florian really absolutely needs this it can probably be done, but if
+>> he can wait another few weeks it's certainly worth taking it through
+>> linux-next for a while just to be safe.
+>>
+>
+> I agree, another few weeks is not a problem :) Bryan, I let you merge this,
+> ok?
+>
 
-It looks like I've been a bit too quick to send this one... I'll change
-in v2, obviously.
+Cool, I merged it into my for-next branch and it will be in linux-next soon.
 
-Maxime
-
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks,
+-Bryan
