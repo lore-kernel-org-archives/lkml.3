@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab3COCfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:35:23 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39979 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3COCfU (ORCPT
+	id S1753809Ab3COCgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:36:04 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45912 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609Ab3COCgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:35:20 -0400
+	Thu, 14 Mar 2013 22:36:02 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -15,87 +15,222 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 4/5] introduce zero-filled page stat count
-Date: Fri, 15 Mar 2013 10:34:19 +0800
-Message-Id: <1363314860-22731-5-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 2/5] zero-filled pages awareness
+Date: Fri, 15 Mar 2013 10:34:17 +0800
+Message-Id: <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031502-6102-0000-0000-0000032863A5
+x-cbid: 13031502-5140-0000-0000-000002E51110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce zero-filled page statistics to monitor the number of
-zero-filled pages.
+Compression of zero-filled pages can unneccessarily cause internal
+fragmentation, and thus waste memory. This special case can be
+optimized.
+
+This patch captures zero-filled pages, and marks their corresponding
+zcache backing page entry as zero-filled. Whenever such zero-filled
+page is retrieved, we fill the page frame with zero.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/zcache-main.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/staging/zcache/zcache-main.c |   81 +++++++++++++++++++++++++++++++---
+ 1 files changed, 75 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index ef8c960..bc7ccbb 100644
+index d73dd4b..6c35c7d 100644
 --- a/drivers/staging/zcache/zcache-main.c
 +++ b/drivers/staging/zcache/zcache-main.c
-@@ -197,6 +197,7 @@ static ssize_t zcache_eph_nonactive_puts_ignored;
- static ssize_t zcache_pers_nonactive_puts_ignored;
- static ssize_t zcache_writtenback_pages;
- static ssize_t zcache_outstanding_writeback_pages;
-+static ssize_t zcache_zero_filled_pages;
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
-@@ -258,6 +259,7 @@ static int zcache_debugfs_init(void)
- 	zdfs("outstanding_writeback_pages", S_IRUGO, root,
- 				&zcache_outstanding_writeback_pages);
- 	zdfs("writtenback_pages", S_IRUGO, root, &zcache_writtenback_pages);
-+	zdfs("zero_filled_pages", S_IRUGO, root, &zcache_zero_filled_pages);
- 	return 0;
- }
- #undef	zdebugfs
-@@ -327,6 +329,7 @@ void zcache_dump(void)
- 	pr_info("zcache: outstanding_writeback_pages=%zd\n",
- 				zcache_outstanding_writeback_pages);
- 	pr_info("zcache: writtenback_pages=%zd\n", zcache_writtenback_pages);
-+	pr_info("zcache: zero_filled_pages=%zd\n", zcache_zero_filled_pages);
+@@ -59,6 +59,12 @@ static inline void frontswap_tmem_exclusive_gets(bool b)
  }
  #endif
  
-@@ -563,6 +566,7 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- 		kunmap_atomic(user_mem);
- 		clen = 0;
- 		zero_filled = true;
-+		zcache_zero_filled_pages++;
- 		goto got_pampd;
- 	}
- 	kunmap_atomic(user_mem);
-@@ -646,6 +650,7 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- 		kunmap_atomic(user_mem);
- 		clen = 0;
- 		zero_filled = true;
-+		zcache_zero_filled_pages++;
- 		goto got_pampd;
- 	}
- 	kunmap_atomic(user_mem);
-@@ -867,6 +872,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 		zpages = 1;
- 		if (!raw)
- 			*sizep = PAGE_SIZE;
-+		zcache_zero_filled_pages--;
- 		goto zero_fill;
- 	}
++/*
++ * mark pampd to special value in order that later
++ * retrieve will identify zero-filled pages
++ */
++#define ZERO_FILLED 0x2
++
+ /* enable (or fix code) when Seth's patches are accepted upstream */
+ #define zcache_writeback_enabled 0
  
-@@ -923,6 +929,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		zero_filled = true;
- 		zsize = 0;
- 		zpages = 1;
-+		zcache_zero_filled_pages--;
- 	}
+@@ -543,7 +549,23 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
+ {
+ 	void *pampd = NULL, *cdata = data;
+ 	unsigned clen = size;
++	bool zero_filled = false;
+ 	struct page *page = (struct page *)(data), *newpage;
++	char *user_mem;
++
++	user_mem = kmap_atomic(page);
++
++	/*
++	 * Compressing zero-filled pages will waste memory and introduce
++	 * serious fragmentation, skip it to avoid overhead
++	 */
++	if (page_is_zero_filled(user_mem)) {
++		kunmap_atomic(user_mem);
++		clen = 0;
++		zero_filled = true;
++		goto got_pampd;
++	}
++	kunmap_atomic(user_mem);
  
- 	if (pampd_is_remote(pampd) && !zero_filled) {
+ 	if (!raw) {
+ 		zcache_compress(page, &cdata, &clen);
+@@ -592,6 +614,8 @@ got_pampd:
+ 		zcache_eph_zpages_max = zcache_eph_zpages;
+ 	if (ramster_enabled && raw)
+ 		ramster_count_foreign_pages(true, 1);
++	if (zero_filled)
++		pampd = (void *)ZERO_FILLED;
+ out:
+ 	return pampd;
+ }
+@@ -601,14 +625,31 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
+ {
+ 	void *pampd = NULL, *cdata = data;
+ 	unsigned clen = size;
++	bool zero_filled = false;
+ 	struct page *page = (struct page *)(data), *newpage;
+ 	unsigned long zbud_mean_zsize;
+ 	unsigned long curr_pers_zpages, total_zsize;
++	char *user_mem;
+ 
+ 	if (data == NULL) {
+ 		BUG_ON(!ramster_enabled);
+ 		goto create_pampd;
+ 	}
++
++	user_mem = kmap_atomic(page);
++
++	/*
++	 * Compressing zero-filled pages will waste memory and introduce
++	 * serious fragmentation, skip it to avoid overhead
++	 */
++	if (page_is_zero_filled(page)) {
++		kunmap_atomic(user_mem);
++		clen = 0;
++		zero_filled = true;
++		goto got_pampd;
++	}
++	kunmap_atomic(user_mem);
++
+ 	curr_pers_zpages = zcache_pers_zpages;
+ /* FIXME CONFIG_RAMSTER... subtract atomic remote_pers_pages here? */
+ 	if (!raw)
+@@ -674,6 +715,8 @@ got_pampd:
+ 		zcache_pers_zbytes_max = zcache_pers_zbytes;
+ 	if (ramster_enabled && raw)
+ 		ramster_count_foreign_pages(false, 1);
++	if (zero_filled)
++		pampd = (void *)ZERO_FILLED;
+ out:
+ 	return pampd;
+ }
+@@ -735,7 +778,8 @@ out:
+  */
+ void zcache_pampd_create_finish(void *pampd, bool eph)
+ {
+-	zbud_create_finish((struct zbudref *)pampd, eph);
++	if (pampd != (void *)ZERO_FILLED)
++		zbud_create_finish((struct zbudref *)pampd, eph);
+ }
+ 
+ /*
+@@ -780,6 +824,14 @@ static int zcache_pampd_get_data(char *data, size_t *sizep, bool raw,
+ 	BUG_ON(preemptible());
+ 	BUG_ON(eph);	/* fix later if shared pools get implemented */
+ 	BUG_ON(pampd_is_remote(pampd));
++
++	if (pampd == (void *)ZERO_FILLED) {
++		handle_zero_filled_page(data);
++		if (!raw)
++			*sizep = PAGE_SIZE;
++		return 0;
++	}
++
+ 	if (raw)
+ 		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
+ 						sizep, eph);
+@@ -801,12 +853,21 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
+ 					struct tmem_oid *oid, uint32_t index)
+ {
+ 	int ret;
+-	bool eph = !is_persistent(pool);
++	bool eph = !is_persistent(pool), zero_filled = false;
+ 	struct page *page = NULL;
+ 	unsigned int zsize, zpages;
+ 
+ 	BUG_ON(preemptible());
+ 	BUG_ON(pampd_is_remote(pampd));
++
++	if (pampd == (void *)ZERO_FILLED) {
++		handle_zero_filled_page(data);
++		zero_filled = true;
++		if (!raw)
++			*sizep = PAGE_SIZE;
++		goto zero_fill;
++	}
++
+ 	if (raw)
+ 		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
+ 						sizep, eph);
+@@ -818,6 +879,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
+ 	}
+ 	page = zbud_free_and_delist((struct zbudref *)pampd, eph,
+ 					&zsize, &zpages);
++zero_fill:
+ 	if (eph) {
+ 		if (page)
+ 			zcache_eph_pageframes =
+@@ -837,7 +899,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
+ 	}
+ 	if (!is_local_client(pool->client))
+ 		ramster_count_foreign_pages(eph, -1);
+-	if (page)
++	if (page && !zero_filled)
+ 		zcache_free_page(page);
+ 	return ret;
+ }
+@@ -851,16 +913,23 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+ {
+ 	struct page *page = NULL;
+ 	unsigned int zsize, zpages;
++	bool zero_filled = false;
+ 
+ 	BUG_ON(preemptible());
+-	if (pampd_is_remote(pampd)) {
++
++	if (pampd == (void *)ZERO_FILLED)
++		zero_filled = true;
++
++	if (pampd_is_remote(pampd) && !zero_filled) {
++
+ 		BUG_ON(!ramster_enabled);
+ 		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
+ 		if (pampd == NULL)
+ 			return;
+ 	}
+ 	if (is_ephemeral(pool)) {
+-		page = zbud_free_and_delist((struct zbudref *)pampd,
++		if (!zero_filled)
++			page = zbud_free_and_delist((struct zbudref *)pampd,
+ 						true, &zsize, &zpages);
+ 		if (page)
+ 			zcache_eph_pageframes =
+@@ -883,7 +952,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+ 	}
+ 	if (!is_local_client(pool->client))
+ 		ramster_count_foreign_pages(is_ephemeral(pool), -1);
+-	if (page)
++	if (page && !zero_filled)
+ 		zcache_free_page(page);
+ }
+ 
 -- 
 1.7.7.6
 
