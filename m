@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab3CON3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:29:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59240 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754735Ab3CON3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:29:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="302739426"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBBPdKfc7i5bkMAzOTtyfUX2FrbYgRAc2c45D04AhZv+eg@mail.gmail.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-26-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBBPdKfc7i5bkMAzOTtyfUX2FrbYgRAc2c45D04AhZv+eg@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 25/30] thp, mm: basic huge_fault implementation for
- generic_file_vm_ops
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130315133042.E6B31E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 15:30:42 +0200 (EET)
+	id S1755228Ab3CON3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:29:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60972 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab3CON3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:29:04 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <notasas@gmail.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 3/4] usb: otg: twl4030: use devres API for regulator get and request irq
+Date: Fri, 15 Mar 2013 18:58:51 +0530
+Message-ID: <1363354132-27523-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363354132-27523-1-git-send-email-kishon@ti.com>
+References: <1363354132-27523-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> >
-> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> > +static int filemap_huge_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > +{
-> > +       struct file *file = vma->vm_file;
-> > +       struct address_space *mapping = file->f_mapping;
-> > +       struct inode *inode = mapping->host;
-> > +       pgoff_t size, offset = vmf->pgoff;
-> > +       unsigned long address = (unsigned long) vmf->virtual_address;
-> > +       struct page *page;
-> > +       int ret = 0;
-> > +
-> > +       BUG_ON(((address >> PAGE_SHIFT) & HPAGE_CACHE_INDEX_MASK) !=
-> > +                       (offset & HPAGE_CACHE_INDEX_MASK));
-> > +
-> > +retry:
-> > +       page = find_get_page(mapping, offset);
-> > +       if (!page) {
-> > +               gfp_t gfp_mask = mapping_gfp_mask(mapping) | __GFP_COLD;
-> > +               page = alloc_pages(gfp_mask, HPAGE_PMD_ORDER);
-> s/pages/pages_vma/ ?
+Used devres APIs devm_request_threaded_irq and devm_regulator_get for
+requesting irq and for getting regulator respectively.
 
-Fixed. Thanks.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Tested-by: Grazvydas Ignotas <notasas@gmail.com>
+---
+ drivers/usb/phy/phy-twl4030-usb.c |   28 ++++++++--------------------
+ 1 file changed, 8 insertions(+), 20 deletions(-)
 
-> > +               if (!page) {
-> > +                       count_vm_event(THP_FAULT_FALLBACK);
-> > +                       return VM_FAULT_OOM;
-> > +               }
-
+diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
+index a994715..e14b03e 100644
+--- a/drivers/usb/phy/phy-twl4030-usb.c
++++ b/drivers/usb/phy/phy-twl4030-usb.c
+@@ -432,7 +432,7 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+ 	/* Initialize 3.1V regulator */
+ 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB3V1_DEV_GRP);
+ 
+-	twl->usb3v1 = regulator_get(twl->dev, "usb3v1");
++	twl->usb3v1 = devm_regulator_get(twl->dev, "usb3v1");
+ 	if (IS_ERR(twl->usb3v1))
+ 		return -ENODEV;
+ 
+@@ -441,18 +441,18 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+ 	/* Initialize 1.5V regulator */
+ 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_DEV_GRP);
+ 
+-	twl->usb1v5 = regulator_get(twl->dev, "usb1v5");
++	twl->usb1v5 = devm_regulator_get(twl->dev, "usb1v5");
+ 	if (IS_ERR(twl->usb1v5))
+-		goto fail1;
++		return -ENODEV;
+ 
+ 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V5_TYPE);
+ 
+ 	/* Initialize 1.8V regulator */
+ 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_DEV_GRP);
+ 
+-	twl->usb1v8 = regulator_get(twl->dev, "usb1v8");
++	twl->usb1v8 = devm_regulator_get(twl->dev, "usb1v8");
+ 	if (IS_ERR(twl->usb1v8))
+-		goto fail2;
++		return -ENODEV;
+ 
+ 	twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
+ 
+@@ -461,14 +461,6 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+ 			 TWL4030_PM_MASTER_PROTECT_KEY);
+ 
+ 	return 0;
+-
+-fail2:
+-	regulator_put(twl->usb1v5);
+-	twl->usb1v5 = NULL;
+-fail1:
+-	regulator_put(twl->usb3v1);
+-	twl->usb3v1 = NULL;
+-	return -ENODEV;
+ }
+ 
+ static ssize_t twl4030_usb_vbus_show(struct device *dev,
+@@ -640,9 +632,9 @@ static int twl4030_usb_probe(struct platform_device *pdev)
+ 	 * need both handles, otherwise just one suffices.
+ 	 */
+ 	twl->irq_enabled = true;
+-	status = request_threaded_irq(twl->irq, NULL, twl4030_usb_irq,
+-			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
+-			IRQF_ONESHOT, "twl4030_usb", twl);
++	status = devm_request_threaded_irq(twl->dev, twl->irq, NULL,
++			twl4030_usb_irq, IRQF_TRIGGER_FALLING |
++			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "twl4030_usb", twl);
+ 	if (status < 0) {
+ 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 			twl->irq, status);
+@@ -663,7 +655,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
+ 	struct twl4030_usb *twl = platform_get_drvdata(pdev);
+ 	int val;
+ 
+-	free_irq(twl->irq, twl);
+ 	device_remove_file(twl->dev, &dev_attr_vbus);
+ 
+ 	/* set transceiver mode to power on defaults */
+@@ -685,9 +676,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
+ 
+ 	if (!twl->asleep)
+ 		twl4030_phy_power(twl, 0);
+-	regulator_put(twl->usb1v5);
+-	regulator_put(twl->usb1v8);
+-	regulator_put(twl->usb3v1);
+ 
+ 	return 0;
+ }
 -- 
- Kirill A. Shutemov
+1.7.10.4
+
