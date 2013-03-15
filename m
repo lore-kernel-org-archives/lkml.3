@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3COT5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:57:23 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34059 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3COT5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 15:57:21 -0400
-Date: Fri, 15 Mar 2013 12:57:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon fixes for 3.9-rc3
-Message-ID: <20130315195718.GA27736@kroah.com>
-References: <51410B25.907@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51410B25.907@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932096Ab3COUAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 16:00:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754844Ab3COUAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 16:00:33 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH] hpet, allow user controlled mmap for user processes
+Date: Fri, 15 Mar 2013 16:00:10 -0400
+Message-Id: <1363377610-19196-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 08:26:29AM +0900, Chanwoo Choi wrote:
-> Hi Greg,
-> 
-> This is extcon fixes for 3.9-rc3.
-> Please pull extcon with following updates.
-> 
-> Best Regards,
-> Chanwoo Choi
-> 
-> The following changes since commit
-> f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-> 
->   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git
-> tags/extcon-3.9-rc3
-> 
-> for you to fetch changes up to 0ec83bd2460ed6aed0e7f29f9e0633b054621c02:
-> 
->   extcon: max77693: Initialize register of MUIC device to bring up
-> it without platform data (2013-03-13 17:38:57 +0900)
-> 
-> ----------------------------------------------------------------
-> extcon fixes for 3.9-rc3
-> 
-> This is small fixes against 3.9-rc2.
-> 
-> Fix to max77693 extcon driver:
-> - Set default value of MUIC register to bring up it.
-> Fix to max8997 extcon driver:
-> - Fix null pointer error duing probe when platform data
-> isn't used.
-> 
-> ----------------------------------------------------------------
-> Chanwoo Choi (3):
->       extcon: max8997: Check the pointer of platform data to protect
-> null pointer error
->       extcon: max77693: Fix bug of wrong pointer when platform data
-> is not used
->       extcon: max77693: Initialize register of MUIC device to bring
-> up it without platform data
-> 
->  drivers/extcon/extcon-max77693.c     | 103
-> +++++++++++++++++++++++++++--------
->  drivers/extcon/extcon-max8997.c      |  56 +++++++++++--------
->  include/linux/mfd/max77693-private.h |  23 ++++++++
->  3 files changed, 137 insertions(+), 45 deletions(-)
+The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
+registers to userspace.  The Kconfig help points out that in some cases this
+can be a security risk as some systems may erroneously configure the map such
+that additional data is exposed to userspace.
 
-I've pulled and pushed out, but note your emails are still getting
-line-wrapped, which is a pain...
+This is a problem for distributions -- some users want the MMAP functionality
+can verify that their systems are secure, but it comes with a significant
+security risk for those who do not want the functionality.  In an effort
+to mitigate this risk, and due to the low number of users of the MMAP
+functionality I've introduced a kernel parameter, hpet_mmap_enable, that
+is required in order to actually have the HPET MMAP exposed.
 
-greg k-h
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+---
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/char/hpet.c                 |   20 ++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e567af3..dbf0d81 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -962,6 +962,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				VIA, nVidia)
+ 			verbose: show contents of HPET registers during setup
+ 
++	hpet_mmap_enable [X86, HPET_MMAP] option to expose HPET MMAP to
++			 userspace.  By default this is disabled.
++
+ 	hugepages=	[HW,X86-32,IA-64] HugeTLB pages to allocate at boot.
+ 	hugepagesz=	[HW,IA-64,PPC,X86-64] The size of the HugeTLB pages.
+ 			On x86-64 and powerpc, this option can be specified
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index e3f9a99..de770ab 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -367,12 +367,25 @@ static unsigned int hpet_poll(struct file *file, poll_table * wait)
+ 	return 0;
+ }
+ 
++#ifdef	CONFIG_HPET_MMAP
++static int hpet_mmap_enabled;
++
++static __init int hpet_mmap_enable(char *str)
++{
++	pr_info(KERN_INFO "HPET MMAP enabled\n");
++	hpet_mmap_enabled = 1;
++	return 1;
++}
++__setup("hpet_mmap_enable", hpet_mmap_enable);
++
+ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+-#ifdef	CONFIG_HPET_MMAP
+ 	struct hpet_dev *devp;
+ 	unsigned long addr;
+ 
++	if (!hpet_mmap_enabled)
++		return -EACCES;
++
+ 	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+ 		return -EINVAL;
+ 
+@@ -393,10 +406,13 @@ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
+ 	}
+ 
+ 	return 0;
++}
+ #else
++static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
++{
+ 	return -ENOSYS;
+-#endif
+ }
++#endif
+ 
+ static int hpet_fasync(int fd, struct file *file, int on)
+ {
+-- 
+1.7.9.3
+
