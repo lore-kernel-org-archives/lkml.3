@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab3COKye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:54:34 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:60209 "EHLO
+	id S1754065Ab3COKyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:54:40 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41196 "EHLO
 	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3COKyd (ORCPT
+	with ESMTP id S1753956Ab3COKyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:54:33 -0400
+	Fri, 15 Mar 2013 06:54:35 -0400
 From: Michel Lespinasse <walken@google.com>
 To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         David Howells <dhowells@redhat.com>,
@@ -17,114 +17,178 @@ To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Peter Hurley <peter@hurleysoftware.com>,
         Dave Chinner <david@fromorbit.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 00/13] rwsem fast-path write lock stealing
-Date: Fri, 15 Mar 2013 03:54:16 -0700
-Message-Id: <1363344869-15732-1-git-send-email-walken@google.com>
+Subject: [PATCH v2 01/13] rwsem: make the waiter type an enumeration rather than a bitmask
+Date: Fri, 15 Mar 2013 03:54:17 -0700
+Message-Id: <1363344869-15732-2-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363344869-15732-1-git-send-email-walken@google.com>
+References: <1363344869-15732-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches extend Alex Shi's work (which added write lock stealing
-on the rwsem slow path) in order to provide rwsem write lock stealing
-on the fast path (that is, without taking the rwsem's wait_lock).
+We are not planning to add some new waiter flags, so we can convert the
+waiter type into an enumeration.
 
-I initially sent a shorter series shortly before v3.9, however some
-patches were doing too much at once which made them confusing to
-review. I have now split the series at a smaller granularity;
-hope this will help :)
+Background: David Howells suggested I do this back when I tried adding
+a new waiter type for unfair readers. However, I believe the cleanup
+applies regardless of that use case.
 
-Patches 1-2 are for cleanups:
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-- Patch 1 replaces the waiter type bitmask with an enumeration
-  (as we don't have any other planned uses for the bitmap)
+---
+ lib/rwsem-spinlock.c | 19 +++++++++++--------
+ lib/rwsem.c          | 23 +++++++++++++----------
+ 2 files changed, 24 insertions(+), 18 deletions(-)
 
-- Patch 2 shortens critical sections in rwsem_down_failed_common() so
-  they don't cover more than what is absolutely necessary
-
-Patches 3-5 splits rwsem_down_failed_common() into separate functions
-for the read and write sides:
-
-- Patch 3 simply puts two identical copies of rwsem_down_failed_common()
-  into rwsem_down_{read,write}_failed (no code changes, in order to
-  make the review easier)
-
-- Patch 4 does easy simplifications in rwsem_down_read_failed():
-  - We don't need to wake readers queued before us;
-  - We don't need to try to steal the lock, and thus we don't need to
-    acquire the wait_lock after sleeping.
-
-- Patch 5 does easy simplifications in rwsem_down_write_failed():
-  - We don't need to check for !waiter.task since __rwsem_do_wake()
-    doesn't remove writers from the wait_list;
-  - Since the only way to exit the wait loop is by stealing the write lock,
-    the corresponding exit code can be moved after the loop;
-  - There is no point releaseing the wait_lock before entering the
-    wait loop, as we will need to reacquire it immediately;
-  - We don't need to get a reference on the task structure, since the task
-    is responsible for removing itself from the wait_list;
-
-Patches 6-9 apply additional optimizations to rwsem_down_write_failed():
-
-- Patch 6 tries write lock stealing more aggressively in order to avoid
-  extra checks;
-
-- Patch 7 uses cmpxchg to implement the write lock stealing, instead of
-  doing an additive adjustment that might need to be backed out;
-
-- Patch 8 avoids taking the wait_lock if there are already active locks
-  when we wake up;
-
-- Patch 9 avoids the initial trylock if there were already active locks
-  when we entered rwsem_down_write_failed()
-
-Patches 10-11 are updates to the __rwsem_do_wake function:
-
-- Patch 10 has simple structure cleanups that don't change the code behavior
-
-- Patch 11 adds generic support for fastpath write lock stealing, by
-  removing assumptions the function did about rwsem acquisitions being
-  prevented when the rwsem count value indicates there are queued waiters.
-
-Patch 12 fixes a race condition Peter Hurley noticed in reviewing v1 of
-this patch series, which resulted in readers sometimes blocking instead
-of executing in parallel with other existing readers.
-
-Patch 13 finally implements rwsem fast path lock stealing for x86 arch.
-
-Michel Lespinasse (13):
-  rwsem: make the waiter type an enumeration rather than a bitmask
-  rwsem: shorter spinlocked section in rwsem_down_failed_common()
-  rwsem: move rwsem_down_failed_common code into rwsem_down_{read,write}_failed
-  rwsem: simplify rwsem_down_read_failed
-  rwsem: simplify rwsem_down_write_failed
-  rwsem: more agressive lock stealing in rwsem_down_write_failed
-  rwsem: use cmpxchg for trying to steal write lock
-  rwsem: avoid taking wait_lock in rwsem_down_write_failed
-  rwsem: skip initial trylock in rwsem_down_write_failed
-  rwsem: simplify __rwsem_do_wake
-  rwsem: implement support for write lock stealing on the fastpath
-  rwsem: do not block readers at head of queue if other readers are active
-  x86 rwsem: avoid taking slow path when stealing write lock
-
- arch/x86/include/asm/rwsem.h |  28 +++--
- lib/rwsem-spinlock.c         |  40 +++-----
- lib/rwsem.c                  | 239 +++++++++++++++++++++----------------------
- 3 files changed, 154 insertions(+), 153 deletions(-)
-
-Changes since v1:
-
-- Patches 1-9 are unchanged and Patch 13 are unchanged from prior submission.
-
-- v1 series made a change to ordering of reader wakeups which proved more
-  controversial than I had anticipated. I reverted this part of the series.
-  Patches 10-11 are new and imlement (well, in Patch 11) the minimal changes
-  required for supporting fastpath write lock stealing without modifying the
-  ordering of reader wakeups (This results in longer code than with the
-  prior proposal, though).
-
-- Patch 12 is new, fixing a race condition Peter Hurley noticed while
-  reviewing v1 which could result in reduced parallelism between readers.
-
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 7542afbb22b3..5f117f37ac0a 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -9,12 +9,15 @@
+ #include <linux/sched.h>
+ #include <linux/export.h>
+ 
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ
++};
++
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
++	enum rwsem_waiter_type type;
+ };
+ 
+ int rwsem_is_locked(struct rw_semaphore *sem)
+@@ -68,7 +71,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 
+ 	if (!wakewrite) {
+-		if (waiter->flags & RWSEM_WAITING_FOR_WRITE)
++		if (waiter->type == RWSEM_WAITING_FOR_WRITE)
+ 			goto out;
+ 		goto dont_wake_writers;
+ 	}
+@@ -78,7 +81,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	 * to -1 here to indicate we get the lock. Instead, we wake it up
+ 	 * to let it go get it again.
+ 	 */
+-	if (waiter->flags & RWSEM_WAITING_FOR_WRITE) {
++	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+ 		wake_up_process(waiter->task);
+ 		goto out;
+ 	}
+@@ -86,7 +89,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	/* grant an infinite number of read locks to the front of the queue */
+  dont_wake_writers:
+ 	woken = 0;
+-	while (waiter->flags & RWSEM_WAITING_FOR_READ) {
++	while (waiter->type == RWSEM_WAITING_FOR_READ) {
+ 		struct list_head *next = waiter->list.next;
+ 
+ 		list_del(&waiter->list);
+@@ -144,7 +147,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 
+ 	/* set up my own style of waitqueue */
+ 	waiter.task = tsk;
+-	waiter.flags = RWSEM_WAITING_FOR_READ;
++	waiter.type = RWSEM_WAITING_FOR_READ;
+ 	get_task_struct(tsk);
+ 
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+@@ -201,7 +204,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	/* set up my own style of waitqueue */
+ 	tsk = current;
+ 	waiter.task = tsk;
+-	waiter.flags = RWSEM_WAITING_FOR_WRITE;
++	waiter.type = RWSEM_WAITING_FOR_WRITE;
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* wait for someone to release the lock */
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index ad5e0df16ab4..672eb33218ac 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -30,12 +30,15 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 
+ EXPORT_SYMBOL(__init_rwsem);
+ 
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ
++};
++
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
++	enum rwsem_waiter_type type;
+ };
+ 
+ /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
+@@ -65,7 +68,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	signed long woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		goto readers_only;
+ 
+ 	if (wake_type == RWSEM_WAKE_READ_OWNED)
+@@ -112,10 +115,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		waiter = list_entry(waiter->list.next,
+ 					struct rwsem_waiter, list);
+ 
+-	} while (waiter->flags & RWSEM_WAITING_FOR_READ);
++	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 
+ 	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
+-	if (waiter->flags & RWSEM_WAITING_FOR_READ)
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		/* hit end of list above */
+ 		adjustment -= RWSEM_WAITING_BIAS;
+ 
+@@ -148,7 +151,7 @@ static int try_get_writer_sem(struct rw_semaphore *sem,
+ 
+ 	/* only steal when first waiter is writing */
+ 	fwaiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(fwaiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (fwaiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		return 0;
+ 
+ 	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
+@@ -179,7 +182,7 @@ try_again_write:
+  */
+ static struct rw_semaphore __sched *
+ rwsem_down_failed_common(struct rw_semaphore *sem,
+-			 unsigned int flags, signed long adjustment)
++			 enum rwsem_waiter_type type, signed long adjustment)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
+@@ -190,7 +193,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	/* set up my own style of waitqueue */
+ 	raw_spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+-	waiter.flags = flags;
++	waiter.type = type;
+ 	get_task_struct(tsk);
+ 
+ 	if (list_empty(&sem->wait_list))
+@@ -221,7 +224,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 
+ 		raw_spin_lock_irq(&sem->wait_lock);
+ 		/* Try to get the writer sem, may steal from the head writer: */
+-		if (flags == RWSEM_WAITING_FOR_WRITE)
++		if (type == RWSEM_WAITING_FOR_WRITE)
+ 			if (try_get_writer_sem(sem, &waiter)) {
+ 				raw_spin_unlock_irq(&sem->wait_lock);
+ 				return sem;
 -- 
 1.8.1.3
