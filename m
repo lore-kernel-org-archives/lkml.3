@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab3CODDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 23:03:51 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:40733 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752536Ab3CODDu (ORCPT
+	id S1753551Ab3CODGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 23:06:05 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47971 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3CODGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 23:03:50 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <artem.bityutskiy@linux.intel.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 0/3] mtd: use the full-id as the keyword for some nand chips
-Date: Fri, 15 Mar 2013 11:00:58 +0800
-Message-ID: <1363316461-10592-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 14 Mar 2013 23:06:02 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-48-51429019caa1
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+Cc: "'Olof Johansson'" <olof@lixom.net>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Rob Herring'" <rob.herring@calxeda.com>,
+        "'Rob Landley'" <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1363302046-31684-1-git-send-email-dianders@chromium.org>
+ <1363316303-12736-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1363316303-12736-1-git-send-email-dianders@chromium.org>
+Subject: Re: [PATCH v2] usb: Document clocks in samsung,exynos4210-ehci/ohci
+ bindings
+Date: Fri, 15 Mar 2013 12:06:00 +0900
+Message-id: <007c01ce212a$059e3340$10da99c0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4hKP0ou9rx4cJmRtaXjhtfU7dHGQAAF2IQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Zvq7kBKdAg62bOC0OzH7IanF22UE2
+	i7YrB9ktXp3ZyGZxeeElVoveBVfZLBa2LWGxuLxrDpvFqeuf2SwOrzjAZLHu5XQWi2MzljA6
+	8Hgs+HyF3WN2w0UWj1erZ7J63Lm2h83j/IyFjB5XTjSxevRtWcXo8fOljsfnTXIBnFFcNimp
+	OZllqUX6dglcGV0f3zMVXOSvmPJoAmsD4yqeLkZODgkBE4k9rZMZIWwxiQv31rN1MXJxCAks
+	Y5RY/O4oO0zRgl/drBCJ6YwSm/euYIdwfjFKzF32jhmkik1ATeLLl8NACQ4OEYFgiX/n/UFq
+	mAWamCXuzdnOClIjJNDIKPGuRwjE5hRwk1hz7j8LiC0sEC5x6OJRZpBeFgFViU+HlEDCvAK2
+	Eifu3WaHsAUlfky+B1bOLKAlsX7ncSYIW15i85q3YK0SAuoSj/7qgoRFBIwkLs+cB1UuIrHv
+	xTtGkHMkBLZwSGzZsxvsZBYBAYlvkw+xQPTKSmw6wAzxr6TEwRU3WCYwSsxCsnkWks2zkGye
+	hWTFAkaWVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxghSaFvB+PNA9aHGJOB1k9klhJNzgcm
+	lbySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MFqu
+	sGZruuxWqH6y5ernP2d25jiLWd29uWXi0ovnJz/9Jm+TW/0q9kDOBWVOgZ9nCgVVIibO9P43
+	X+noEvYXb5bPMHYvqVxiK/T4QN3ZxT4qhryfla6eK1MT2Pe+aMtPkcl/n9zUufhy/ebsz4n2
+	ZtFmdwpPe961nXQ+d8rKV2u/+HsYp3LFWD1XYinOSDTUYi4qTgQA+SXskCADAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t9jQV3JCU6BBrvmMFscmP2Q1eLssoNs
+	Fm1XDrJbvDqzkc3i8sJLrBa9C66yWSxsW8JicXnXHDaLU9c/s1kcXnGAyWLdy+ksFsdmLGF0
+	4PFY8PkKu8fshossHq9Wz2T1uHNtD5vH+RkLGT2unGhi9ejbsorR4+dLHY/Pm+QCOKMaGG0y
+	UhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgG5WUihLzCkF
+	CgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZ0fXzPVHCRv2LKowmsDYyreLoYOTkk
+	BEwkFvzqZoWwxSQu3FvP1sXIxSEkMJ1RYvPeFewQzi9GibnL3jGDVLEJqEl8+XIYKMHBISIQ
+	LPHvvD9IDbNAE7PEvTnbwSYJCTQySrzrEQKxOQXcJNac+88CYgsLhEscuniUGaSXRUBV4tMh
+	JZAwr4CtxIl7t9khbEGJH5PvgZUzC2hJrN95nAnClpfYvOYtWKuEgLrEo7+6IGERASOJyzPn
+	QZWLSOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93E
+	CE45z6R2MK5ssDjEKMDBqMTDe6DfIVCINbGsuDL3EKMEB7OSCK+nl2OgEG9KYmVValF+fFFp
+	TmrxIcZkoD8nMkuJJucD02FeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KL
+	YLYwcXBKNTA2rzwjNHnzkc0r+kOehDFL3/xsuV565f7AK8f8XY//f8ZwUizW4Zls7RGxxONB
+	mgZKOw/ZL932sZfhTQT7j4ANH9pXxf7ksX/4IUEhMepAhMtCm+da5047v1Jy2LtyR4jmSk9V
+	kZaI23x5shpCDncXX1Ja5M5xOfTzCkPDotV/j/1PPrc49s1MJZbijERDLeai4kQAqhOIRH0D	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As time goes on, we begin to meet the situation that we can not
-get enough information from some nand chips's id data.
-Take some Toshiba's nand chips for example.
-I have 4 Toshiba's nand chips in my hand:
-	TC58NVG2S0F, TC58NVG3S0F, TC58NVG5D2, TC58NVG6D2
+On Friday, March 15, 2013 8:01 AM, Doug Anderson wrote:
+> 
+> The exynox4210-ehci and exynos4210-ohci nodes need a clock specified
+> using the common clock framework.  Document it.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-When we read these chips' datasheets, we will get the geometry of these chips:
-	TC58NVG2S0F : 4096 + 224
-	TC58NVG3S0F : 4096 + 232
-	TC58NVG5D2  : 8192 + 640
-	TC58NVG6D2  : 8192 + 640
+It looks good.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-But we can not parse out the correct oob size for these chips from the id data.
-So it is time to add some new fields to the nand_flash_dev{},
-and update the detection mechanisms.
 
-v5 --> v6:
-	[1] add back the id_len as Brian's suggest.
-	[2] use id_len to check the full id nand or not.
-	[3] change the new fields oob_size/id_len to "uint16_t" type.
-	[4] misc
+Best regards,
+Jingoo Han
 
-v4 --> v5:
-	[1] remove the id_len field.
-	[2] based on Artem "mtd: nand: use more reasonable integer types"
-	[3] add more comments.
-
-v3 --> v4:
-	[1] rewrite the code based on the latest l2-mtd.
-	[2] add the full-id nand in the nand_flash_lds.
-
-v2 --> v3:
-	[1] remove the duplicated header.
-	[2] remove the field "ecc_len" in nand_flash_dev{}.
-	[3] fix some coding style warnings.
-	[4] add more comments
-
-Huang Shijie (3):
-  mtd: add new fields to nand_flash_dev{}
-  mtd: add the support to parse out the full-id nand type
-  mtd: add 4 Toshiba nand chips for the full-id case
-
- drivers/mtd/nand/nand_base.c |   35 ++++++++++++++++++++++++++++++++---
- drivers/mtd/nand/nand_ids.c  |   19 +++++++++++++++++++
- include/linux/mtd/nand.h     |    4 ++++
- 3 files changed, 55 insertions(+), 3 deletions(-)
-
+> ---
+> Changes in v2:
+> - Fixed embarrassing typo adc=>usb.  Thanks Jingoo!
+> 
+>  Documentation/devicetree/bindings/usb/exynos-usb.txt | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> index f66fcdd..b3abde7 100644
+> --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> @@ -10,6 +10,8 @@ Required properties:
+>   - reg: physical base address of the controller and length of memory mapped
+>     region.
+>   - interrupts: interrupt number to the cpu.
+> + - clocks: from common clock binding: handle to usb clock.
+> + - clock-names: from common clock binding: Shall be "usbhost".
+> 
+>  Optional properties:
+>   - samsung,vbus-gpio:  if present, specifies the GPIO that
+> @@ -22,6 +24,9 @@ Example:
+>  		reg = <0x12110000 0x100>;
+>  		interrupts = <0 71 0>;
+>  		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
+> +
+> +		clocks = <&clock 285>;
+> +		clock-names = "usbhost";
+>  	};
+> 
+>  OHCI
+> @@ -31,10 +36,15 @@ Required properties:
+>   - reg: physical base address of the controller and length of memory mapped
+>     region.
+>   - interrupts: interrupt number to the cpu.
+> + - clocks: from common clock binding: handle to usb clock.
+> + - clock-names: from common clock binding: Shall be "usbhost".
+> 
+>  Example:
+>  	usb@12120000 {
+>  		compatible = "samsung,exynos4210-ohci";
+>  		reg = <0x12120000 0x100>;
+>  		interrupts = <0 71 0>;
+> +
+> +		clocks = <&clock 285>;
+> +		clock-names = "usbhost";
+>  	};
+> --
+> 1.8.1.3
 
