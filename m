@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab3COQQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:16:24 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:56019 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750920Ab3COQQX (ORCPT
+	id S1754885Ab3COQRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:17:11 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53019 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920Ab3COQRK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:16:23 -0400
-Message-ID: <1363364177.1335.123.camel@x61.thuisdomein>
-Subject: [PATCH] arc: remove #ifdef-ed out include of dead header
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Vineet Gupta <vgupta@synopsys.com>
-Cc: linux-snps-arc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 15 Mar 2013 17:16:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Mar 2013 16:16:18.0042 (UTC) FILETIME=[6C8F9DA0:01CE2198]
-X-RcptDomain: vger.kernel.org
+	Fri, 15 Mar 2013 12:17:10 -0400
+Subject: Re: [PATCH] powerpc/qe: remove useless Kconfig default
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1363124951.3137.156.camel@x61.thuisdomein>
+Date: Fri, 15 Mar 2013 11:16:38 -0500
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <61AABF0B-0F3F-4E85-98F8-4445E469EE86@kernel.crashing.org>
+References: <1363124951.3137.156.camel@x61.thuisdomein>
+To: Paul Bolle <pebolle@tiscali.nl>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no (Kconfig) macro CONFIG_BLOCK_DEV_RAM. (CONFIG_BLK_DEV_RAM
-does exist though.) But linux/blk.h got killed in 2005 anyway (in a
-patch titled "kill blk.h"), so these three lines can be removed.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested (no relevant hardware or compiler).
+On Mar 12, 2013, at 4:49 PM, Paul Bolle wrote:
 
- arch/arc/mm/init.c | 3 ---
- 1 file changed, 3 deletions(-)
+> The Kconfig entry for QE_USB contains
+> 	default y if USB_GADGET_FSL_QE
+> 
+> But USB_GADGET_FSL_QE got removed in commit
+> 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b ("usb: gadget: allow multiple
+> gadgets to be built"). This default will therefor never be set and can
+> be removed.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Tested with "make ARCH=powerpc menuconfig" and "make ARCH=powerpc
+> oldconfig" (before and after the patch). Enough to see this patch didn't
+> obviously break stuff.
+> 
+> 1) I don't really understand commit
+> 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b. Was its point that we replace
+> USB_GADGET_FSL_QE with USB_FSL_QE? I couldn't tell and chose not to
+> actually change any behavior.
+> 
+> arch/powerpc/sysdev/qe_lib/Kconfig | 1 -
+> 1 file changed, 1 deletion(-)
+> 
 
-diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
-index caf797d..6634cf5 100644
---- a/arch/arc/mm/init.c
-+++ b/arch/arc/mm/init.c
-@@ -10,9 +10,6 @@
- #include <linux/mm.h>
- #include <linux/bootmem.h>
- #include <linux/memblock.h>
--#ifdef CONFIG_BLOCK_DEV_RAM
--#include <linux/blk.h>
--#endif
- #include <linux/swap.h>
- #include <linux/module.h>
- #include <asm/page.h>
--- 
-1.7.11.7
+You're correct that this isn't quite right, I've posted a proper patch that should fix this correctly.
 
+thanks for pointing it out.
+
+- k
