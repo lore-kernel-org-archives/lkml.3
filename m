@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3COPQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:16:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50636 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab3COPQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:16:52 -0400
+	id S1755517Ab3COPRD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:17:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40411 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3COPRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:17:00 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <rogerq@ti.com>
-Subject: [PATCH v2 00/23] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
-Date: Fri, 15 Mar 2013 17:16:21 +0200
-Message-ID: <1363360604-21368-1-git-send-email-rogerq@ti.com>
+Subject: [PATCH v2 04/23] ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
+Date: Fri, 15 Mar 2013 17:16:25 +0200
+Message-ID: <1363360604-21368-5-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1363360604-21368-1-git-send-email-rogerq@ti.com>
+References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Use usbhs_init_phys() to register the PHY's VCC and RESET
+regulators.
 
-These patches provide the SoC side code required to support
-the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+The VCC and RESET will then be managed by the PHY driver.
 
-Device tree support is added for Beagleboard and Panda.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/board-omap4panda.c |   37 +++++++++----------------------
+ 1 files changed, 11 insertions(+), 26 deletions(-)
 
-NOTE: The first patch needs to be shared between the
-OMAP tree and Felipe's USB tree.
-
-v2:
-- Added helper function usbhs_init_phys() that can be used by board files
-to simplify adding of PHY regulators for USB host ports.
-
-[1] MFD side changes to omap-usb-host and omap-usb-tll
-  https://lkml.org/lkml/2013/3/12/179
-[2] USB EHCI side changes to ehci-omap 
-  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86265.html
-[3] USB PHY driver changes
-  http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86293.html
-
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-
-are available in the git repository at:
-  git://github.com/rogerq/linux.git usbhost-arm-next
-
-Roger Quadros (23):
-  usb: phy: nop: Add some parameters to platform data
-  ARM: OMAP2+: omap-usb-host: Add usbhs_init_phys()
-  ARM: OMAP2+: omap4panda: Provide USB Host's PHY platform data
-  ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
-  ARM: OMAP3: Beagle: Adapt to ehci-omap changes
-  ARM: OMAP3: 3430SDP: Adapt to ehci-omap changes
-  ARM: OMAP3: 3630SDP: Adapt to ehci-omap changes
-  ARM: OMAP: AM3517crane: Adapt to ehci-omap changes
-  ARM: OMAP: AM3517evm: Adapt to ehci-omap changes
-  ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
-  ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
-  ARM: OMAP: devkit8000: Adapt to ehci-omap changes
-  ARM: OMAP3: igep0020: Adapt to ehci-omap changes
-  ARM: OMAP3: omap3evm: Adapt to ehci-omap changes
-  ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
-  ARM: OMAP3: omap3stalker: Adapt to ehci-omap changes
-  ARM: OMAP3: omap3touchbook: Adapt to ehci-omap changes
-  ARM: OMAP3: overo: Adapt to ehci-omap changes
-  ARM: OMAP: zoom: Adapt to ehci-omap changes
-  ARM: dts: OMAP4: Add HS USB Host IP nodes
-  ARM: dts: omap4-panda: Add USB Host support
-  ARM: dts: OMAP3: Add HS USB Host IP nodes
-  ARM: dts: omap3-beagle: Add USB Host support
-
- arch/arm/boot/dts/omap3-beagle.dts         |   71 ++++++++++++++
- arch/arm/boot/dts/omap3.dtsi               |   31 ++++++
- arch/arm/boot/dts/omap4-panda.dts          |   56 +++++++++++
- arch/arm/boot/dts/omap4.dtsi               |   30 ++++++
- arch/arm/mach-omap2/board-3430sdp.c        |   47 ++++++++-
- arch/arm/mach-omap2/board-3630sdp.c        |   48 +++++++++-
- arch/arm/mach-omap2/board-am3517crane.c    |   38 +++++---
- arch/arm/mach-omap2/board-am3517evm.c      |   41 +++++++-
- arch/arm/mach-omap2/board-cm-t35.c         |   45 ++++++++-
- arch/arm/mach-omap2/board-cm-t3517.c       |   45 ++++++++-
- arch/arm/mach-omap2/board-devkit8000.c     |   20 +++--
- arch/arm/mach-omap2/board-igep0020.c       |   66 +++++++++++---
- arch/arm/mach-omap2/board-omap3beagle.c    |   44 +++++++--
- arch/arm/mach-omap2/board-omap3evm.c       |   41 ++++++---
- arch/arm/mach-omap2/board-omap3pandora.c   |   31 +++++--
- arch/arm/mach-omap2/board-omap3stalker.c   |   29 +++++--
- arch/arm/mach-omap2/board-omap3touchbook.c |   38 ++++++--
- arch/arm/mach-omap2/board-omap4panda.c     |   67 +++++++-------
- arch/arm/mach-omap2/board-overo.c          |   32 +++++-
- arch/arm/mach-omap2/board-zoom.c           |   32 +++++-
- arch/arm/mach-omap2/usb-host.c             |  138 +++++++++++++++++++++++++++-
- arch/arm/mach-omap2/usb.h                  |    9 ++
- include/linux/usb/nop-usb-xceiv.h          |    5 +
- 23 files changed, 849 insertions(+), 155 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index feffde6..1c22880 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -147,6 +147,16 @@ static struct platform_device hsusb1_phy_device = {
+ 	},
+ };
+ 
++static struct usbhs_phy_data phy_data[] __initdata = {
++	{
++		.port = 1,
++		.reset_gpio = GPIO_HUB_NRESET,
++		.vcc_gpio = GPIO_HUB_POWER,
++		.vcc_polarity = 1,
++		.phy_id = "nop_usb_xceiv.1",
++	},
++};
++
+ static struct platform_device *panda_devices[] __initdata = {
+ 	&leds_gpio,
+ 	&wl1271_device,
+@@ -158,35 +168,12 @@ static struct platform_device *panda_devices[] __initdata = {
+ 
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[1] = OMAP_USBHS_PORT_MODE_UNUSED,
+-	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+-	.phy_reset  = false,
+-	.reset_gpio_port[0]  = -EINVAL,
+-	.reset_gpio_port[1]  = -EINVAL,
+-	.reset_gpio_port[2]  = -EINVAL
+-};
+-
+-static struct gpio panda_ehci_gpios[] __initdata = {
+-	{ GPIO_HUB_POWER,	GPIOF_OUT_INIT_LOW,  "hub_power"  },
+-	{ GPIO_HUB_NRESET,	GPIOF_OUT_INIT_LOW,  "hub_nreset" },
+ };
+ 
+ static void __init omap4_ehci_init(void)
+ {
+ 	int ret;
+ 
+-	/* disable the power to the usb hub prior to init and reset phy+hub */
+-	ret = gpio_request_array(panda_ehci_gpios,
+-				 ARRAY_SIZE(panda_ehci_gpios));
+-	if (ret) {
+-		pr_err("Unable to initialize EHCI power/reset\n");
+-		return;
+-	}
+-
+-	gpio_export(GPIO_HUB_POWER, 0);
+-	gpio_export(GPIO_HUB_NRESET, 0);
+-	gpio_set_value(GPIO_HUB_NRESET, 1);
+-
+ 	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
+ 	ret = clk_add_alias("main_clk", "nop_usb_xceiv.1", "auxclk3_ck", NULL);
+ 	if (ret)
+@@ -195,10 +182,8 @@ static void __init omap4_ehci_init(void)
+ 	/* PHY on HS USB Port 1 i.e. index 0 */
+ 	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
+ 
++	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+ 	usbhs_init(&usbhs_bdata);
+-
+-	/* enable power to hub */
+-	gpio_set_value(GPIO_HUB_POWER, 1);
+ }
+ 
+ static struct omap_musb_board_data musb_board_data = {
 -- 
 1.7.4.1
 
