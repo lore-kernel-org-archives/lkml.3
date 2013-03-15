@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3COHiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 03:38:24 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64666 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab3COHiX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 03:38:23 -0400
+	id S1753110Ab3COHnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 03:43:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56066 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab3COHnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 03:43:11 -0400
+Date: Fri, 15 Mar 2013 09:42:53 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
+        <thomas.abraham@linaro.org>, <dianders@chromium.org>,
+        kishon <kishon@ti.com>
+Subject: Re: [PATCH 2/2] usb: dwc3: exynos: use clk_prepare_enable and
+ clk_disable_unprepare
+Message-ID: <20130315074253.GE5074@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363257898-17504-1-git-send-email-gautam.vivek@samsung.com>
+ <1363257898-17504-3-git-send-email-gautam.vivek@samsung.com>
+ <20130314105320.GH32369@arwen.pp.htv.fi>
+ <CAFp+6iEHVi4W-be4t1k3K=Yz8OP150rtBmNKXR0xnFiA3Oa3qg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5142ABD3.4040106@gmail.com>
-References: <20130307052854.GA23745@redhat.com>
-	<20130307060230.GA31738@kroah.com>
-	<20130307062626.GA25095@redhat.com>
-	<51429D7A.30906@gmail.com>
-	<5142ABD3.4040106@gmail.com>
-Date: Fri, 15 Mar 2013 15:38:22 +0800
-Message-ID: <CACVXFVOZ=3WwnTPbi66Crgg1azqHMMYiRQ9YcEgrh_e65MLH1Q@mail.gmail.com>
-Subject: Re: use after free in sysfs_find_dirent
-From: Ming Lei <tom.leiming@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6e7ZaeXHKrTJCxdu"
+Content-Disposition: inline
+In-Reply-To: <CAFp+6iEHVi4W-be4t1k3K=Yz8OP150rtBmNKXR0xnFiA3Oa3qg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--6e7ZaeXHKrTJCxdu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi,
 
-On Fri, Mar 15, 2013 at 1:04 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On 03/15/2013 12:03 AM, Sasha Levin wrote:
->>
->> [  350.140100] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [  350.141468] Dumping ftrace buffer:
->> [  350.142048]    (ftrace buffer empty)
->> [  350.142619] Modules linked in:
->> [  350.143128] CPU 0
->> [  350.143434] Pid: 25064, comm: trinity-child14 Tainted: G        W    3.9.0-rc2-next-20130314-sasha-00046-g3897511 #295
->> [  350.145415] RIP: 0010:[<ffffffff819ebfb3>]  [<ffffffff819ebfb3>] rb_next+0x23/0x60
->> [  350.146680] RSP: 0018:ffff88007b9dde48  EFLAGS: 00010202
->> [  350.147528] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800b8524b70 RCX: ffff8800b8524b70
->> [  350.148738] RDX: 6b6b6b6b6b6b6b6b RSI: ffff8800b63b96e0 RDI: ffff8800b8524bb8
->> [  350.149939] RBP: ffff88007b9dde48 R08: 2222222222222222 R09: 2222222222222222
->> [  350.150035] R10: 2222222222222222 R11: 0000000000000000 R12: ffff88008c5cb180
->> [  350.150035] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000010
->> [  350.150035] FS:  00007fec4eae2700(0000) GS:ffff8800bb800000(0000) knlGS:0000000000000000
->> [  350.150035] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  350.150035] CR2: 0000000000000001 CR3: 000000007c32d000 CR4: 00000000000406f0
->> [  350.150035] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [  350.150035] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> [  350.150035] Process trinity-child14 (pid: 25064, threadinfo ffff88007b9dc000, task ffff880096413000)
->> [  350.150035] Stack:
->> [  350.150035]  ffff88007b9ddeb8 ffffffff812fa959 2222222222222222 2222222200000008
->> [  350.150035]  000000000000293e ffffffff8128cca0 ffff88007b9ddf28 ffff8800b63b96e0
->> [  350.150035]  ffff8800a14e9b78 ffff88008c5cb180 ffff88007b9ddf28 ffffffff8128cca0
->> [  350.150035] Call Trace:
->> [  350.150035]  [<ffffffff812fa959>] sysfs_readdir+0x219/0x280
->> [  350.150035]  [<ffffffff8128cca0>] ? filldir+0x100/0x100
->> [  350.150035]  [<ffffffff8128cca0>] ? filldir+0x100/0x100
->> [  350.150035]  [<ffffffff8128cf18>] vfs_readdir+0x78/0xc0
->> [  350.150035]  [<ffffffff8117ad3d>] ? trace_hardirqs_on+0xd/0x10
->> [  350.150035]  [<ffffffff8128d190>] SyS_getdents64+0x90/0x120
->> [  350.150035]  [<ffffffff83d946d8>] tracesys+0xe1/0xe6
->> [  350.150035] Code: 85 d2 75 f4 5d c3 66 90 55 31 c0 48 8b 17 48 89 e5 48 39 d7 74 4a 48 8b 47 08 48 85 c0 75 0c eb 17 0f 1f 80
->> 00 00 00 00 48 89 d0 <48> 8b 50 10 48 85 d2 75 f4 eb 2a 66 90 48 89 d1 48 83 e1 fc 74
->> [  350.150035] RIP  [<ffffffff819ebfb3>] rb_next+0x23/0x60
->> [  350.150035]  RSP <ffff88007b9dde48>
->> [  350.179705] ---[ end trace a39f58a515b594d5 ]---
->
-> And on the bright side, unlike in Dave's case, similar issues reproduce rather easily
-> over here:
+On Fri, Mar 15, 2013 at 11:36:00AM +0530, Vivek Gautam wrote:
+> >> Convert clk_enable/clk_disable to clk_prepare_enable/clk_disable_unpre=
+pare
+> >> calls as required by common clock framework.
+> >>
+> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> >> CC: Felipe Balbi <balbi@ti.com>
+> >> CC: Kukjin Kim <kgene.kim@samsung.com>
+> >> ---
+> >>  drivers/usb/dwc3/dwc3-exynos.c |    6 +++---
+> >>  1 files changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-ex=
+ynos.c
+> >> index 66ca9ac..b03f609 100644
+> >> --- a/drivers/usb/dwc3/dwc3-exynos.c
+> >> +++ b/drivers/usb/dwc3/dwc3-exynos.c
+> >> @@ -129,7 +129,7 @@ static int dwc3_exynos_probe(struct platform_devic=
+e *pdev)
+> >>       exynos->dev     =3D dev;
+> >>       exynos->clk     =3D clk;
+> >>
+> >> -     clk_enable(exynos->clk);
+> >> +     clk_prepare_enable(exynos->clk);
+> >
+> > eventually we need to pass this clock handling to dwc3/core.c. Just make
+> > sure it's optional since not all platforms need it.
+> >
+> True, as of now i could see only exynos platform getting a device
+> clock for dwc3-glue.
+> So, if not all platforms need to do this, why should we plan to move
+> this to dwc3/core.c ?
 
-Could you share how to reproduce that easily?
+what if dwc3.ko's probe fail ? Clock will be left enabled ;-)
 
-Thanks,
--- 
-Ming Lei
+> > I guess the best way would be to handle clocks via
+> > ->runtime_suspend()/->runtime_resume() ??
+>=20
+> Right, but there was a doubt actually if you can please clear that.
+> In device probe, after enabling runtime_pm we would need to
+> 'pm_runtime_get_sync' the device.
+> Thereby, in runtime_resume the clocks will be enabled.
+> Now as soon as the device probe finishes, the device will go in
+> suspend state, calling runtime_suspend
+> and the clocks would be disabled.
+> Now would it be possible for the controller to detect any
+> connect/disconnect.
+
+it depends on how you have configured your core in coreConsultant and
+how you're implementing the actual IP. If you have retention flip-flops
+then gating clocks (but not cutting Vcc) will not loose context and, if
+PHYs are still enabled, you will see new connect events.
+
+But that part of PM optimization has to be done as a last step, as it
+tends to break things apart.
+
+--=20
+balbi
+
+--6e7ZaeXHKrTJCxdu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQtD9AAoJEIaOsuA1yqREFOkQAKCmOlnp7INARIevLDAXxWyb
+OPJz/CVvS8gF9WtBhokKWbi/3/bkkLzNiEYm3oYQaI2P6XQ3AGz4YyG1RbbtH04C
++fIjXey6xrmI2gvYGLwp+vD8X2FoBCwdVjkG52v9A0wPt39W2X759e27sZdodP73
+RaGeCHFivEI6M6hoNzqg8JSxdMmwbncIlplRp6no6NaIdlrhIS4PkH1jxkMPSJxl
+kP0tvVue4W/N4iUrHK/LjIQb21r/Bzeo4LkwT02lRttMLKP6T0WAI7orXE/klLea
+cLT3ST+seQfEGNfZGTJS+E7Tf/hseyibmO8yKJY/slDfiRRcjfpnVegWCpKfH5M7
+hMYRw6KaYguTKFELbCIChMfmZ2mxiWeeCdkve4lkTH7QLn/VMyKDdCV40Kah7Ziz
+NkEZgEyCo8my9fdjaviB48RsfzJsXv+P7Rn4EAHIg4i0uWh61sRMx0Kui5bMYjwC
+oAstZK7mxS/i7YFKlPeA0sh/aiKByLaH8mgohRvIx06SxJP8B/69Kzh5M9Tav19I
+z8v/wTw6AcEJvkAd9tj2qlUsXgDG3/BAu8R4E7Es/w6Sh+fuN674wXarX8m4MBsi
+uj69fRe+RKzSmSNDiJmggVdBwt9CblZFGCUKetAtN+SI8Ku5jCSBZR9vyytfgPmX
+sqcNRx889bRiBQupY3Rx
+=VjjP
+-----END PGP SIGNATURE-----
+
+--6e7ZaeXHKrTJCxdu--
