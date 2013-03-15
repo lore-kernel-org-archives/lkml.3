@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab3COTKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:10:44 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:38964 "EHLO ns.iliad.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab3COTKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 15:10:43 -0400
-Message-ID: <51437232.8000509@freebox.fr>
-Date: Fri, 15 Mar 2013 20:10:42 +0100
-From: Nicolas Schichan <nschichan@freebox.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755474Ab3COTLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:11:24 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:54889 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab3COTLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 15:11:23 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+In-Reply-To: <20079.1363324154@jrobl>
+References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<20130313160854.54ac0491044371b4db214698@linux-foundation.org>
+	<CAJfpeguvhJaoSBDKEXoJFn_C=52aXbC9L2ALJvp6ekwEGyQX_g@mail.gmail.com>
+	<20130315012541.GU21522@ZenIV.linux.org.uk>
+	<19058.1363320936@jrobl>
+	<20130315044411.GW21522@ZenIV.linux.org.uk>
+	<20079.1363324154@jrobl>
+Date: Fri, 15 Mar 2013 12:11:21 -0700
+X-Google-Sender-Auth: 5T9SglnIhd73Lm_oanjQjAZK7g8
+Message-ID: <CA+55aFxd_jSc75pfhNQ6jTbwcQkDfNqALMNThYtgBsH0Z7tA4Q@mail.gmail.com>
+Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 1/3] seccomp: add generic code for jitted seccomp
- filters.
-References: <1363372123-8861-1-git-send-email-nschichan@freebox.fr> <1363372123-8861-2-git-send-email-nschichan@freebox.fr> <CAGXu5jLMPFoeAD5uXaMf-CS9yz_8_1zRJEkzxT7R6U4HruJSjQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jLMPFoeAD5uXaMf-CS9yz_8_1zRJEkzxT7R6U4HruJSjQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Robo Bot <apw@canonical.com>,
+        Felix Fietkau <nbd@openwrt.org>, Neil Brown <neilb@suse.de>,
+        Jordi Pujol <jordipujolp@gmail.com>, ezk@fsl.cs.sunysb.edu,
+        David Howells <dhowells@redhat.com>,
+        Sedat Dilek <sedat.dilek@googlemail.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 07:45 PM, Kees Cook wrote:
-> On Fri, Mar 15, 2013 at 11:28 AM, Nicolas Schichan <nschichan@freebox.fr> wrote:
->> +/**
->> + * struct seccomp_filter - container for seccomp BPF programs
->> + *
->> + * @usage: reference count to manage the object lifetime.
->> + *         get/put helpers should be used when accessing an instance
->> + *         outside of a lifetime-guarded section.  In general, this
->> + *         is only needed for handling filters shared across tasks.
->> + * @prev: points to a previously installed, or inherited, filter
->> + * @len: the number of instructions in the program
->> + * @insns: the BPF program instructions to evaluate
+On Thu, Mar 14, 2013 at 10:09 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
 >
-> This should be updated to include the new bpf_func field.
+> "no inodes at all"?
+> Are you assuming the implementation in dcache only (with a new d_type
+> flag)? And it is up to the real fs (layer or branch) whether it consumes
+> inode or not?
 
-Sure, I'll fix this in a re-spin of the patch serie.
+Yes. That would be lovely. And trivial for most filesystems to support.
 
-> Regardless, it'd be better to not expose this structure to userspace.
+Sure, you could have an inode if you need to (not all filesystems may
+have a flag in the directory entry), so it would look like "mknod()"
+for the filesystem. But the filesystem might decide to never actually
+create the inode at all if it reconizes the node as a whiteout node.
 
-Yes, I did not realise that this header was exported to userspace. Do you know 
-any place not exported to userspace where the structure definition would be 
-appropriate ?
+I think we should do this. Yes, it requires filesystem work, but in
+the long run it's the right thing to do, and the filesystem work is
+likely very very simple. Besides, we probably only need to support a
+few filesystems for it to be already useful. What filesystems do the
+people who use unionfs actually use today?
 
->> @@ -213,7 +185,7 @@ static u32 seccomp_run_filters(int syscall)
->>           * value always takes priority (ignoring the DATA).
->>           */
->>          for (f = current->seccomp.filter; f; f = f->prev) {
->> -               u32 cur_ret = sk_run_filter(NULL, f->insns);
->> +               u32 cur_ret = f->bpf_func(NULL, f->insns);
->
-> This will make bpf_func a rather attractive target inside the kernel.
-> I wonder if there could be ways to harden it against potential attack.
+Also note that it's only the "upper layer" filesystem that needs
+whiteout nodes. So it's not "all filesystems involved with overlayfs",
+it's only the upper ones. And they have to already support xattr, so
+I'm assuming in practice we're talking only a few cases, right? Just
+tmpfs, ext3, ext4 probably covers most cases..
 
-I'm not sure I follow, but is it because any user can install a SECCOMP filter 
-which will trigger JIT code generation with potential JIT spraying attack 
-payload ?
+And it would get rid of all the horrible security check changes for
+xattrs, no? So we'd really end up with a noticeably cleaner model.
 
-In that case, the same problem exists with struct sk_filter->bpf_func, as 
-SO_ATTACH_FILTER, with BPT JIT enabled, does not require any particular 
-privilege AFAICS.
-
-Regarding JIT spraying, I believe ARM is actually worse than x86 in that 
-regard, since the values appearing in the literal pool can be quite easily 
-controlled by an attacker.
-
-Thanks for the review.
-
-Regards,
-
--- 
-Nicolas Schichan
-Freebox SAS
+              Linus
