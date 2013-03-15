@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3CORpY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 13:45:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab3CORpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 13:45:23 -0400
-Date: Fri, 15 Mar 2013 18:42:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] epoll: fix sparse error on RCU assignment
-Message-ID: <20130315174240.GA1069@redhat.com>
-References: <20130310113559.GA16551@dcvr.yhbt.net> <20130310182358.GA686@redhat.com> <20130314024559.GA19856@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130314024559.GA19856@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754856Ab3CORqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 13:46:08 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46593 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab3CORqG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 13:46:06 -0400
+Date: Fri, 15 Mar 2013 18:45:50 +0100
+From: Anisse Astier <anisse@astier.eu>
+To: linux-kernel@vger.kernel.org
+Cc: zhenzhong.duan@oracle.com, akpm@linux-foundation.org, khali@linux-fr.org,
+        Feng Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH 1/2] Check dmi version when get system uuid
+Message-ID: <20130315184550.2255e71b@serenity>
+In-Reply-To: <500FD2D9.4050007@oracle.com>
+References: <500FD2D9.4050007@oracle.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14, Eric Wong wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 03/10, Eric Wong wrote:
-> > >
-> > > This fixes the following sparse error when using
-> > > CONFIG_SPARSE_RCU_POINTER=y and "make C=2 fs/eventpoll.o"
-> > >
-> > >   fs/eventpoll.c:514:17: error: incompatible types in comparison expression (different address spaces)
-> >
-> > ep_remove_wait_queue() does rcu_dereference(pwq->whead) and
-> > rcu_dereference_sparse(__rcu) complains, I guess.
-> >
-> > > --- a/fs/eventpoll.c
-> > > +++ b/fs/eventpoll.c
-> > > @@ -228,7 +228,7 @@ struct eppoll_entry {
-> > >  	wait_queue_t wait;
-> > >
-> > >  	/* The wait queue head that linked the "wait" wait queue item */
-> > > -	wait_queue_head_t *whead;
-> > > +	wait_queue_head_t __rcu *whead;
-> >
-> > Well, perhaps this change is fine... but otoh this this a bit misleading.
-> > It is not actually __rcu. The special case is sighand->signalfd_wqh, and
-> > the commemt in ep_remove_wait_queue() means: if ->whead is not stable then
-> > we can only race with signalfd_cleanup(), and rcu_read_lock() ensures this
-> > memory can't go away.
-> >
-> > We do not even need smp_read_barrier_depends() here, ACCESS_ONCE() should
-> > be enough.
-> >
-> > Perhaps it would be better to simply shut up this warning somehow...
->
-> Hi, I've been hoping others would give a reply and offer a better
-> solution than min.
+On Wed, 25 Jul 2012 19:04:57 +0800, "zhenzhong.duan" <zhenzhong.duan@oracle.com> wrote :
 
-Me too ;)
+> As of version 2.6 of the SMBIOS specification, the first 3
+> fields of the UUID are supposed to be encoded on little-endian.
+> 
+> Also a minor fix to match variable meaning and mute checkpatch.pl
+> 
 
-OK, probably we should use your patch, although personally I'd prefer
-to simply shut up the warning, say
+I'm late to the party, as this patch went into 3.8, mimicking a patch
+sent in 2011:
+https://lkml.org/lkml/2011/1/19/260
 
-	- whead = rcu_dereference(pwq->whead);
-	+ whead = rcu_dereference((void __rcu*)pwq->whead);
+Only problem: it breaks the ABI. By changing the value of the DMI UUID
+previously sent by the kernel, any application relying on this UUID is
+likely to break with 3.8.
 
-> Without my proposed patch, sparse _errors_ out on me,
+I don't know if I should be happy I finally can drop this patch from my 
+tree, or sad that a different process let it through.
 
-it is only sparse...
+Regards,
 
-But OK, I won't argue with you patch.
-
-Oleg.
-
+Anisse
