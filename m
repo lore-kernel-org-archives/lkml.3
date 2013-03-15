@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab3COOae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 10:30:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55448 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754771Ab3COOad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 10:30:33 -0400
-Date: Fri, 15 Mar 2013 16:30:24 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <notasas@gmail.com>
-Subject: Re: [PATCH 2/4] usb: musb: gadget: do *unmap_dma_buffer* only for
- valid DMA addr
-Message-ID: <20130315143023.GB23930@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363354132-27523-1-git-send-email-kishon@ti.com>
- <1363354132-27523-2-git-send-email-kishon@ti.com>
+	id S1755280Ab3COOal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 10:30:41 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55443 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755147Ab3COOai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 10:30:38 -0400
+Date: Fri, 15 Mar 2013 10:30:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Soeren Moch <smoch@web.de>
+cc: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        <linux-mm@kvack.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+In-Reply-To: <51426484.3000609@web.de>
+Message-ID: <Pine.LNX.4.44L0.1303151028100.1414-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
-Content-Disposition: inline
-In-Reply-To: <1363354132-27523-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 15 Mar 2013, Soeren Moch wrote:
 
-On Fri, Mar 15, 2013 at 06:58:50PM +0530, Kishon Vijay Abraham I wrote:
-> musb does not use DMA buffer for ep0 but it uses the same giveback
-> function *musb_g_giveback* for all endpoints (*musb_g_ep0_giveback* calls
-> *musb_g_giveback*). So for ep0 case request.dma will be '0'
-> and will result in kernel OOPS if tried to *unmap_dma_buffer* for request=
-s in
-> ep0. Fixed it by doing *unmap_dma_buffer* only for valid DMA addr.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/usb/musb/musb_gadget.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadge=
-t.c
-> index c454375..ec3cf29 100644
-> --- a/drivers/usb/musb/musb_gadget.c
-> +++ b/drivers/usb/musb/musb_gadget.c
-> @@ -107,7 +107,10 @@ __acquires(ep->musb->lock)
-> =20
->  	ep->busy =3D 1;
->  	spin_unlock(&musb->lock);
-> -	unmap_dma_buffer(req, musb);
-> +
-> +	if (request->dma)
+> > The log shows a 1-1 match between allocations and deallocations, except
+> > for three excess allocations about 45 lines before the end.  I have no
+> > idea what's up with those.  They may be an artifact arising from where
+> > you stopped copying the log data.
+> >
+> > There are as many as 400 iTDs being allocated before any are freed.
+> > That seems like a lot.  Are they all for the same isochronous endpoint?
+> > What's the endpoint's period?  How often are URBs submitted?
+> 
+> I use 2 dvb sticks, capturing digital TV. For each stick 5 URBs on a 
+> single endpoint are used, I think. I'm not sure, which endpoint in which 
+> alternateSetting is active. I attached the output of 'lsusb -v' for the 
+> sticks.
+> How can I track down the other information you need?
 
-I have changed to if (!dma_mapping_error(request->dma)), is it alright ?
+Use usbmon (see Documentation/usb/usbmon.txt).
 
---=20
-balbi
+Alan Stern
 
---xXmbgvnjoT4axfJE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRQzB/AAoJEIaOsuA1yqREFvMQAKEXjKgh7XGRRfzvKeGI5nZd
-f+n3tTFpOyUN4weTsvafIofY0mqbiEuQSN6iPcOKz1mPnfJemXTlmLLSNNR/tMO+
-tok6MKEkPFrFeaoDHJyLdestQDFfMDMR7y2TwntoZXLiKkGxrW72WMkRG/p/931T
-WH2mG64OpxDjKHQrngTG9fF39zPBAQjGGSD0laYT2lWg1RL0b7tEqMMLmP9xN4tm
-gMG6Ka+Su64odhcqLoyHZNVoD5vkCCXNiGoXi7heZY5IQ/uNqTjMHA4mhQaHD6A0
-18mM2QmGfbo0lZbpwwLc4fQ2pxGv8ceD4cubnlmZj7oGMfQ2yZPaDhuRdncrlLf7
-MqdzBQUxFjp+M34+S4RThJM0ZlmMQyBjbOHviMcEYIdAgImPc8BVrx2iiFqyoMWl
-5XpIi22s+eGaS9VIiO1gKDojnH9nVAQHV8DslfLzkVJVmoRrcPIeIu7lwI24vCCT
-9MejX1yHoGtvpGN8oTErlTzrzS/Ph5uBloohXi7n9Ebm5E8nLpSOLqI4YxDJQKsI
-RO/39K1/u7nGV563049PJOZ8BMhqaxetYxL0esZqVMMjtkUPleTNjYmNtwXeEPbi
-ONoMTesJJIODzeImifZdrkliuxhL26Ldkngl7MRrxNaUEqDJPQwaMavq28wgyIUk
-55czBhehZELNO0w9RNkr
-=1tik
------END PGP SIGNATURE-----
-
---xXmbgvnjoT4axfJE--
