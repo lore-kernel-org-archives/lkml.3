@@ -1,94 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab3COWsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 18:48:55 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:37325 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab3COWsy (ORCPT
+	id S932250Ab3COWuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 18:50:46 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:64381 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab3COWuo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 18:48:54 -0400
+	Fri, 15 Mar 2013 18:50:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6QLeo5Qjq=sNBYZ4ism1ck5e2+toPpOjS+P6Y-5y37Gg@mail.gmail.com>
-References: <51016937.1020202@googlemail.com> <5104427D.2050002@googlemail.com>
- <510494D6.1010000@gmail.com> <51050D43.2050703@googlemail.com>
- <51051B1B.3080105@gmail.com> <51052DB2.4090702@googlemail.com>
- <51053917.6060400@fold.natur.cuni.cz> <5105491E.9050907@googlemail.com>
- <510558CE.9000600@fold.natur.cuni.cz> <5105AFDB.9000200@googlemail.com>
- <5105E51D.2020606@huawei.com> <51064F1A.1020909@googlemail.com>
- <51065FA6.4070208@googlemail.com> <51066B46.10409@fold.natur.cuni.cz>
- <5106CD6C.4070009@googlemail.com> <5106E770.9070602@fold.natur.cuni.cz>
- <510A5F0E.6010100@googlemail.com> <CAErSpo4x8pb7J8MnokXiFTE=01-TffCk6CKC0VS7CEf3X1bSBw@mail.gmail.com>
- <5138C03C.8080600@googlemail.com> <CAErSpo4nyRgUf8hsbNKBTzW+eqzyNTrLFYFaJ6v=sSVQg7CBPw@mail.gmail.com>
- <5138F6B6.8050208@googlemail.com> <CAErSpo6=Fkfi2TTyoDCXpvnmvyYgio1PQjscwn66vHN4FF2X2g@mail.gmail.com>
- <5139C0F7.9030907@googlemail.com> <CAErSpo4PZYK=AaEnFqEOPaopLF8_b_x8YwNhVbRMoNk21aZf4Q@mail.gmail.com>
- <513AFECB.40409@googlemail.com> <CAErSpo6QLeo5Qjq=sNBYZ4ism1ck5e2+toPpOjS+P6Y-5y37Gg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 15 Mar 2013 16:48:33 -0600
-Message-ID: <CAErSpo7ybiSM=xgtjoc0hD=rtoJ7whVeHkbTLU7ZpnrpxR8Ezg@mail.gmail.com>
-Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
-To: Chris Clayton <chris2553@googlemail.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 15 Mar 2013 15:50:21 -0700
+X-Google-Sender-Auth: NWKFqqWyp28yZHs00GyoAvFeqOk
+Message-ID: <CAB=NE6WLTeBfCo9n-48mp8VgbPBzRgqpU3osHStJADiOQrucGw@mail.gmail.com>
+Subject: compat-drivers based on v3.8.3
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 4:20 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Mar 9, 2013 at 2:20 AM, Chris Clayton <chris2553@googlemail.com> wrote:
->> On 03/08/13 22:57, Bjorn Helgaas wrote:
+Greg has blessed Linux v3.8.3 so we get to backport drivers for this
+release for usage on older kernels through compat-drivers, you can
+either visit the v3.8.3 release page [0] or the temporary release page
+[1]. This release has been test compiled against vanilla Linux kernel
+releases v2.6.24 - v3.7. Below I provide the ChangeLog for this
+release for the changes made to compat and compat-drivers, for the
+full ChangeLog that includes Linux kernel changes you can refer to the
+upstream full ChangeLog [2].
 
->>> Thanks.  I opened this bug report:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=54981 to keep track of
->>> your logs.
+We have 5 type of releases based on v3.8.3, there is a vanilla release
+and then 4 releases which incorporate additional patches from sources
+on their way to get upstream to the Linux kernel. The additional
+releases are designed to ensure we prioritize Linux upstream
+development but at the same time allow OEMs / users / mothers to get
+releases with additional patches vendors deem important for
+functionality, we simply categorize where those patches are on their
+way upstream to the Linux kernel. For more information on this see the
+additional-patches documentation on the backports wiki [3].
 
-Hi Chris,
+Thanks to everyone who has contributed to this release!
 
-The current Linux acpiphp driver doesn't do anything unless it finds
-devices with _EJ0 or _RMV methods, and your DSDT has neither.  But I
-think that implementation is incorrect because I'm not convinced that
-those methods are required in order to do hotplug via ACPI.  For
-example, your DSDT *does* have an _L01 method that does notifications
-to the root ports.  I suspect that hotplug events on your box generate
-an SCI that invokes that method.  Linux basically ignores the
-resulting notify events, and I suspect that hotplug works on Windows
-because it is paying attention to them.
+[0] https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.8.3/
+[1] http://drvbp1.linux-foundation.org/~mcgrof/rel-html/compat-drivers/
+[2] https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.8.3/ChangeLog-3.8.3-2
+[3] https://backports.wiki.kernel.org/index.php/Documentation/compat-drivers/additional-patches
 
-Can you build a kernel with CONFIG_ACPI_DEBUG=y, do the following, and
-attach all the output to the bugzilla?
+================================================================
+ChangeLog for compat-drivers-v3.8.3-2 based on linux-3.8.3
+================================================================
 
-1) Boot with empty ExpressCard slot (without using "pcie_ports=native")
-2) # echo 0x00010004 > /sys/module/acpi/parameters/debug_layer
-3) # echo 0x08000004 > /sys/module/acpi/parameters/debug_level
-4) # lspci -vv
-5) # setpci -s 1c.3 0x42.w
-6) # setpci -s 1c.3 0x5a.w
-7) # setpci -s 1c.3 0xd8.l
-8) Insert ExpressCard
-9) # setpci -s 1c.3 0x5a.w
-10) # dmesg
+This is the ChangeLog for the Linux kernel project compat-drivers.
+It provides a backport of a few Linux kernel subsystems down to
+older kernels:
 
-Here's what I think we'll see:
+  * 802.11
+  * Bluetooth
+  * Ethernet
+  * DRM
 
-- Slot Implemented (bit 8 of XCAP at 0x42) set, indicating a slot is
-implemented below this root port
-- Hot Plug SCI Enable (bit 30 of MPC at 0xd8) set, indicating that the
-root port should generate an SCI whenever a hotplug event is detected
-- Presence Detect State (bit 6 of SLTSTS at 0x5a) change from 0 with
-the slot empty to 1 with the slot occupied
-- pciehp doing nothing (since _OSC didn't grant the OS permission to
-use PCIe native hotplug)
-- dmesg indication of the SCI, leading to a Bus Check notification to
-\_SB.PCI0.RP04, which is the 1c.3 root port leading to the ExpressCard
-slot
+For more details refer to the home pages:
 
-A Bus Check notification means we're supposed to re-enumerate starting
-at that device.  If we *did* re-enumerate, we would find the new
-ExpressCard.
+https://backports.wiki.kernel.org
 
-Thanks,
-  Bjorn
+The compat-drivers project consists of code from three projects:
+
+  * The Linux kernel: linux-stable.git
+  * Compat-wirelesS: compat-drivers.git
+  * Compat: compat.git
+
+The compat-drivers stable releases incorporates code from from
+each of these git trees for the respective upstream Linux kernel
+stable release. A branch called linux-3.x.y exists for each
+stable release. Below we provide the ChangeLog of changes from
+the previous branched release to the new branched release.
+
+Release: linux-3.8
+
+
+Updates from the compat.git project:
+====================================
+
+git shortlog linux-3.7.y..linux-3.8.y
+
+Felix Fietkau (1):
+      compat: fix compile errors when assembly is built into modules
+
+Hauke Mehrtens (21):
+      compat: update list of kernel headers
+      compat: add USB_SUBCLASS_VENDOR_SPEC
+      compat: make compat load without CONFIG_CPU_FREQ
+      compat: add eth_zero_addr()
+      compat: add kref_get_unless_zero()
+      compat: move config_enabled to compat-3.4.h
+      compat: fix compiler warning in nla_get_s64()
+      compat: export platform_device_register_data()
+      compat: fix warning of missing struct netdev_queue
+      compat: add missing return value to netif_set_real_num_tx_queues
+      compat: add simple_write_to_buffer
+      compat: add ETHTOOL_FWVERS_LEN
+      compat: fix warning in usb_autopm_get_interface_no_{resume,suspend}
+      compat: do not access default_ethtool_ops
+      compat: ckmake: make return code 2 is error
+      compat: ckmake: remove lots of warning spam for the log
+      compat: ckmake: do not start all build at the same time
+      compat: add efi_enabled()
+      compat: netdev_set_default_ethtool_ops() is not in kernel 3.7.5
+      compat: check if efi_enabled() was already backported
+      compat: deactivate netdev_set_default_ethtool_ops() for some 3.7 kernels
+
+Johannes Berg (1):
+      compat: backport unsigned netlink attribute accessors
+
+Luis R. Rodriguez (42):
+      compat: fix libc dependency on bin/get-compat-kernels
+      compat: fix typo in bin/get-compat-kernels
+      compat: run ckmake with num cpu threads
+      compat: fix get-compat-kernels for libc issue again
+      compat: change count to 4 for glibc kernel fix
+      compat: add gpio header for kernels older than 2.6.24
+      compat: backport ethtool_rxfh_indir_default()
+      compat: backport ethtool to mii advertisment conversion helpers
+      compat: backport BQL helpers
+      compat: define NETIF_F_RXCSUM
+      compat: fix addition of NETIF_F_RXCSUM
+      compat: backport PCI MSI-X entry definitions
+      compat: backport alloc_etherdev_mqs()
+      compat: backport definition of PCI_MSIX_ENTRY_CTRL_MASKBIT
+      compat: backport PTR_RET()
+      compat: backport netif_set_real_num_tx_queues()
+      compat: backport netif_set_real_num_rx_queues()
+      compat: rename MDIO exported symbols
+      compat: backplane mode negotiation ethtool definitions
+      compat: backport napi_gro_receive()
+      compat: generate CONFIG_COMPAT_KERNEL_3_8
+      compat: backport hid_ignore()
+      compat: backport PCI_EXP_LNKCTL_ASPM_L0S and PCI_EXP_LNKCTL_ASPM_L1
+      compat: backport definition of HID_TYPE_USBNONE
+      compat: add HID_QUIRK_HIDDEV_FORCE and HID_QUIRK_NO_IGNORE
+      compat: add HID_QUIRK_IGNORE
+      compat: backport HID_USB_DEVICE() and HID_BLUETOOTH_DEVICE()
+      compat: backport struct hid_device_id
+      compat: fix compilation on hid_ignore()
+      compat: backport platform_device_register_data()
+      compat: adjust get-compat-kernels for root usage
+      compat: adjust get-compat-kernels for root users
+      compat: add v3.7 to get-compat-kernels
+      compat: add support for forcing get-compat-kernels
+      compat: fix get-compat-kernels for rebuilding kernel headers
+      compat: add 3.2 and 3.3 kernels to rebuild headers
+      compat: rewrite ckmake in Python
+      compat: add ionice to ckmake again
+      compat: move HID_USB_DEVICE and HID_BLUETOOTH_DEVICE
+      compat: backport netdev_set_default_ethtool_ops()
+      compat: remove trailing erroneous semicolon from compat-3.8.c
+      compat: fix ckmake to skip same base kernels
+
+Updates from the compat-drivers.git project:
+=============================================
+
+git shortlog linux-3.7.y..linux-3.8.y
+
+Hauke Mehrtens (36):
+      compat-drivers: make patches apply again
+      compat-drivers: deactivate cfg80211 tracing for kernels <= 2.6.32
+      compat-drivers: add ar5523 driver
+      compat-drivers: refresh patches
+      compat-drivers: remove CONFIG_ATH9K_PKTLOG form config.mk
+      compat-drivers: activate CONFIG_BT_HCIUART_3WIRE in config.mk
+      compat-drivers: add CONFIG_BT_WILINK in config.mk
+      compat-drviers: remove CONFIG_IWM from config.mk
+      compat-drivers: remove CONFIG_WIL6210 from config.mk
+      compat-drivers: add CONFIG_RT2800PCI_RT3290 in config.mk
+      compat-drivers: add CONFIG_MWIFIEX_USB in config.mk
+      compat-drivers: rename drm config symbols
+      compat-drivers: make patches apply again
+      compat-drivers: remove option for alx driver
+      compat-drivers: build RTL8723AE
+      compat-drivers: refresh patches
+      compat-drivers: add import to fix compile error
+      compat-drivers: do not use struct spinlock
+      compat-drivers: print original name and path of patch in refresh
+      compat-drivers: remove copy of README in refresh
+      compat-drivers: prevent mixing patches from different
+directories in refresh
+      compat-drivers: run refresh for all patches
+      compat-drivers: do not apply patches in natural sort order
+      compat-drivers: make patches apply again
+      compat-drivers: make patches apply again
+      compat-drivers: add old suspend/resume handlers only when
+function is available
+      compat-drivers: fix section mismatch in ath5k
+      compat-drivers: add wil6210 driver
+      compat-drivers: remove devinit and devexit from alx driver
+      compat-drivers: deactivate loopback testing for older kernels
+      compat-drivers: do not treat a warning as error
+      compat-drivers: refresh patches
+      compat-drivers: update genlog-3.8 for rc5
+      compat-drivers: refresh patches
+      compat-drivers: move disable_drm
+      compat-drivers: refresh patches
+
+Luis R. Rodriguez (69):
+      compat-drivers: fix sed for gen-release.sh
+      compat-drivers: add support for uploading stable releases
+      compat-drivers: add / to target stable release end dir
+      compat-drivers: add genlog
+      compat-drivers: fix ChangeLog file name
+      compat-drivers: add target path for ChangeLog file
+      compat-drivers: fix admin-update.sh network
+      compat-drivers: add rtl8723ae code
+      compat-drivers: disable mwifiex for kernels older than 2.6.27
+      compat-drivers: refresh patches for next-20121129
+      compat-drivers: move all patch types under patches/
+      compat-drivers: add support for unified drivers
+      compat-drivers: update refresh-compat scripts
+      compat-drivers: add Debian to scripts/update-initramfs
+      compat-drivers: split up admin-update.sh
+      compat-drivers: add disable_drm to driver-select
+      compat-drivers: fix typo on 0002-enable-alx.patch
+      compat-drivers: fix alx backport on netdev features
+      compat-drivers: fix typo which removed entries on Makefile
+      compat-drivers: fix 11-dev-pm-ops.patch
+      compat-drivers: add the MDIO module
+      compat-drivers: fix alx suspend/resume calls for old kernels
+      compat-drivers: modify release script to support unified drivers
+      compat-drivers: remove ksize() ifdef on scan.c
+      compat-drivers: remove __devexit_p() from 11-dev-pm-ops.patch
+      compat-drivers: fix 45-remove-platform-id-table.patch
+      compat-drivers: fix 62-usb_driver_lpm.patch
+      compat-drivers: remove 67-use_spinlock_t.patch
+      compat-drivers: ship include/linux/bcm47xx_wdt.h
+      compat-drivers: refresh patches for next-20121211
+      compat-drivers: refresh patches for next-20121214
+      compat-drivers: refresh -u patches
+      compat-drivers: allow git-paranoia to work on current directory
+      compat-drivers: refresh patches for next-20121218
+      compat-drivers: fix alx backport patch
+      compat-drivers: update 0001-backport-alx.patch context
+      compat-drivers: refresh patch 0001-backport-alx.patch
+      compat-drivers: refresh 0001-backport-alx.patch
+      compat-drivers: add __devexit_p() for bmca driver
+      compat-drivers: add genlog-3.8
+      compat-drivers: update genlog-3.8
+      compat-drivers: trim 'v' prefix from ChangeLog file
+      compat-drivers: remove 'v' prefix from version on ChangeLog
+      compat-drivers: fix 11-dev-pm-ops.patch
+      compat-drivers: refresh patches for v3.8-rc3
+      compat-drivers: refresh patches for v3.8-rc4
+      compat-drivers: update genlog-3.8 for rc4
+      compat-drivers: disable DRM drivers for 802.11 drivers
+      compat-drivers: do not call make clean for unified drivers
+      compat-drivers: fix driver-select for atheros drivers
+      compat-drivers: refresh patches for v3.8.2
+      compat-drivers: fix processing pending-stable patches
+      compat-drivers: fix removal of tmp pending-stable files
+      compat-drivers: fix copying of pending-stable patches
+      compat-drivers: skip already appplied patches
+      compat-drivers: skip pending stable mac80211 patch
+      compat-drivers: backport rt2x00 pending-stable fix
+      compat-drivers: skip DRM udl stable fix
+      compat-drivers: skip another DRM udl stable fix
+      compat-drivers: ignore drm i915 brightness quirk stable fix
+      compat-drivers: add pending-stable patches
+      compat-drivers: update genlog for 3.8
+      compat-drivers: fix commend for genlog
+      compat-drivers: refresh patches for v3.8.3
+      compat-drivers: refresh unified patches for v3.8.3
+      compat-drivers: refresh pending-stable patches for v3.8.3
+      compat-drivers: add linux-next-pending patches
+      compat-drivers: add first set of linux-next-cherry-picks patches
+      compat-drivers: update genlog-3.8 for v3.8.3
+
+Ozan Çağlayan (16):
+      compat-drivers: Separate code metrics for each subsystem
+      compat-drivers: Enable CONFIG_DRM_LOAD_EDID_FIRMWARE
+      compat-drivers: Copy core/ subdir of nouveau driver
+      compat-drivers: Handle int's when generating compat_autoconf.h
+      compat-drivers: Rename CONFIG_* vars in nouveau driver
+      compat-drivers: Add missing config check
+      compat-drivers: Rename CONFIG_DRM_NOUVEAU_BACKLIGHT
+      compat-drivers: Fix comments
+      compat-drivers: Enable nouveau DRM driver for kernels >= 3.3
+      compat-drivers: Update README
+      compat-drivers: Rename CONFIG_DRM_RADEON_KMS
+      compat-drivers: drm: Revert ACPI table size check for < 3.6
+      compat-drivers: Enable ATI/AMD Radeon for kernels >= 3.2
+      update-initramfs: Update comments, fix some typos
+      update-initramfs: Silence lsb_release output
+      update-initramfs: Add support for Fedora
