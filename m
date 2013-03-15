@@ -1,115 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab3COPDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:03:45 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55979 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab3COPDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:03:42 -0400
-X-Greylist: delayed 65469 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 11:03:42 EDT
-Date: Fri, 15 Mar 2013 08:03:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuge <shugelinux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kevin <kevin@allwinnertech.com>,
-        linux-serial@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [BUG]: when printk too more through serial, cpu up is failed.
-Message-ID: <20130315150339.GB31650@kroah.com>
-References: <5141D5E6.4060001@gmail.com>
- <20130314140553.GA4895@kroah.com>
- <514278C2.3020900@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <514278C2.3020900@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755454Ab3COPDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:03:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53629 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754349Ab3COPDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:03:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
+   d="scan'208";a="302777096"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAJd=RBBL7VV50zHP2obJ7_CzOekgH9i-E3Fz3PO5YXk5f=B2Kw@mail.gmail.com>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAJd=RBAH1+YaDvL9=ayx2j6b4jx0CzBZGrAL9LVwPMx4Y=s3Rg@mail.gmail.com>
+ <20130315132333.B8205E0085@blue.fi.intel.com>
+ <CAJd=RBAh7-qBYhCxtj56V5sez1HSek9TNVeu9V=+mW0qNpxEWA@mail.gmail.com>
+ <20130315135026.32B58E0085@blue.fi.intel.com>
+ <CAJd=RBBL7VV50zHP2obJ7_CzOekgH9i-E3Fz3PO5YXk5f=B2Kw@mail.gmail.com>
+Subject: Re: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked()
+ to support huge pages
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130315150522.8BF97E0085@blue.fi.intel.com>
+Date: Fri, 15 Mar 2013 17:05:22 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 09:26:26AM +0800, Shuge wrote:
-> 于 2013年03月14日 22:05, Greg KH 写道:
-> >On Thu, Mar 14, 2013 at 09:51:34PM +0800, Shuge wrote:
-> >>Hi all,
-> >>     When the kernel printk too many log, the cpu is failed to come online.
-> >>The problem is this:
-> >>For example, cpu0 bring up cpu1:
-> >>
-> >>       a. cpu0 call cpu_up:
-> >>          cpu_up()
-> >>          ->_cpu_up()
-> >>             ->__cpu_notify(CPU_UP_PREPARE)
-> >>             ->__cpu_up()
-> >>                ->boot_secondary()
-> >>#       ->wait_for_completion_timeout(&cpu_running, msecs_to_jiffires(1000))
-> >>          -> if (!cpu_online(cpu)) {
-> >>                   pr_crit("CPU%u: failed to come online\n", cpu);
-> >>                   ret = -EIO;
-> >>               }
-> >>          ->cpu_notify(CPU_ONLINE)
-> >>
-> >>       b. cpu1 enter kernel:
-> >>       secondary_start_kernel()
-> >>@   ->printk("CPU%u: Booted secondary processor\n", cpu)
-> >>*   ->calibrate_delay()
-> >>       ->set_cpu_online()
-> >>       ->complete(cpu_running)
-> >>         ->cpumask_set_cpu()
-> >>
-> >>    While cpu0 run to mark #,  which wait that cpu1 complete
-> >>cpu_running, and set online.
-> >>Generally, cpu0 can get it. But if the __log_buf is too large or
-> >>other threads write
-> >>it unceasing, then cpu1 come to mark @ or * in this moment. Cpu1 is
-> >>busy outputing
-> >>buffer, which cost time more than 1s, and cpu1 have not join in
-> >>sched, so cpu0 wait it timeout.
-> >>    By reading printk.c, I found that can_use_console() always return
-> >>true, which be called by
-> >>console_trylock_for_printk(). Because, have_callable_console()
-> >>return ture always, if the console
-> >>driver set CON_ANYTIME flag. I think that cpu should not output the
-> >>__log_buf in coming online,
-> >>even though have_callable_console() is true.
-> >>
-> >>/*
-> >>  * Can we actually use the console at this time on this cpu?
-> >>  *
-> >>  * Console drivers may assume that per-cpu resources have
-> >>  * been allocated. So unless they're explicitly marked as
-> >>  * being able to cope (CON_ANYTIME) don't call them until
-> >>  * this CPU is officially up.
-> >>  */
-> >>static inline int can_use_console(unsigned int cpu)
-> >>{
-> >>     return cpu_online(cpu) || have_callable_console();
-> >>}
-> >>
-> >>In can_use_console, why not is &&, but ||?
-> >>
-> >>Kernel Version: 3.3.0
-> >Why such an old and obsolete kernel version?  Please try this on 3.8,
-> >lots of work have gone into the printk area that should have solved this
-> >issue.
+Hillf Danton wrote:
+> On Fri, Mar 15, 2013 at 9:50 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > Hillf Danton wrote:
+> >> On Fri, Mar 15, 2013 at 9:23 PM, Kirill A. Shutemov
+> >> <kirill.shutemov@linux.intel.com> wrote:
+> >> > Hillf Danton wrote:
+> >> >> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
+> >> >> <kirill.shutemov@linux.intel.com> wrote:
+> >> >> > +       page_cache_get(page);
+> >> >> > +       spin_lock_irq(&mapping->tree_lock);
+> >> >> > +       page->mapping = mapping;
+> >> >> > +       page->index = offset;
+> >> >> > +       error = radix_tree_insert(&mapping->page_tree, offset, page);
+> >> >> > +       if (unlikely(error))
+> >> >> > +               goto err;
+> >> >> > +       if (PageTransHuge(page)) {
+> >> >> > +               int i;
+> >> >> > +               for (i = 1; i < HPAGE_CACHE_NR; i++) {
+> >> >>                       struct page *tail = page + i; to easy reader
+> >> >>
+> >> >> > +                       page_cache_get(page + i);
+> >> >> s/page_cache_get/get_page_foll/ ?
+> >> >
+> >> > Why?
+> >> >
+> >> see follow_trans_huge_pmd() please.
 > >
-> >greg k-h
+> > Sorry, I fail to see how follow_trans_huge_pmd() is relevant here.
+> > Could you elaborate?
+> >
+> Lets see the code
 > 
-> I saw the printk.c in version 3.9, it still check
-> console_trylock_for_printk() to decide to call console_unlock. In
-> vprintk_emit(), cpu1 also have the opportunity to execute
-> console_unlock() at coming online time.
-> Once cpu which is coming online can output buffer, nothing can
-> interrupt it until buffer is empty.But we can't ensure that none
-> always write the __log_buf. It is danger!
+> 	page += (addr & ~HPAGE_PMD_MASK) >> PAGE_SHIFT;
+> //page is tail now
+> 	VM_BUG_ON(!PageCompound(page));
+> 	if (flags & FOLL_GET)
+> 		get_page_foll(page);
+> //raise page count with the foll function
+> 
+> thus I raised question.
 
-Do you really hit this with a real system?  Is your cpu just really slow
-in initializing?  What is the actual time it takes?
+get_page_foll() is designed to be part of follow_page*() call chain.
+get_page() can handle compound pages properly.
 
-> I think, the solution is that we should prevent to use console at
-> coming online.
-
-Ok, what would be your proposed patch to solve this?
-
-greg k-h
+-- 
+ Kirill A. Shutemov
