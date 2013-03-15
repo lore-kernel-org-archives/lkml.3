@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3COQRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:17:11 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53019 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab3COQRK convert rfc822-to-8bit (ORCPT
+	id S1751419Ab3COQTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:19:12 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56517 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab3COQTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:17:10 -0400
-Subject: Re: [PATCH] powerpc/qe: remove useless Kconfig default
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1363124951.3137.156.camel@x61.thuisdomein>
-Date: Fri, 15 Mar 2013 11:16:38 -0500
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <61AABF0B-0F3F-4E85-98F8-4445E469EE86@kernel.crashing.org>
-References: <1363124951.3137.156.camel@x61.thuisdomein>
-To: Paul Bolle <pebolle@tiscali.nl>
-X-Mailer: Apple Mail (2.1278)
+	Fri, 15 Mar 2013 12:19:11 -0400
+Message-ID: <514349EA.9070404@linux.vnet.ibm.com>
+Date: Fri, 15 Mar 2013 11:18:50 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Robert Jennings <rcj@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        minchan@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: zsmalloc limitations and related topics
+References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default> <20130313151359.GA3130@linux.vnet.ibm.com> <4ab899f6-208c-4d61-833c-d1e5e8b1e761@default> <514104D5.9020700@linux.vnet.ibm.com> <5141BC5D.9050005@oracle.com> <20130314132046.GA3172@linux.vnet.ibm.com> <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
+In-Reply-To: <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031516-3864-0000-0000-0000074621D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mar 12, 2013, at 4:49 PM, Paul Bolle wrote:
-
-> The Kconfig entry for QE_USB contains
-> 	default y if USB_GADGET_FSL_QE
+On 03/14/2013 01:54 PM, Dan Magenheimer wrote:
+>> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
+>> Sent: Thursday, March 14, 2013 7:21 AM
+>> To: Bob
+>> Cc: Seth Jennings; Dan Magenheimer; minchan@kernel.org; Nitin Gupta; Konrad Wilk; linux-mm@kvack.org;
+>> linux-kernel@vger.kernel.org; Bob Liu; Luigi Semenzato; Mel Gorman
+>> Subject: Re: zsmalloc limitations and related topics
+>>
+>> * Bob (bob.liu@oracle.com) wrote:
+>>> On 03/14/2013 06:59 AM, Seth Jennings wrote:
+>>>> On 03/13/2013 03:02 PM, Dan Magenheimer wrote:
+>>>>>> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
+>>>>>> Subject: Re: zsmalloc limitations and related topics
+>>>>>
+>> <snip>
+>>>>> Yes.  And add pageframe-reclaim to this list of things that
+>>>>> zsmalloc should do but currently cannot do.
+>>>>
+>>>> The real question is why is pageframe-reclaim a requirement?  What
+>>>> operation needs this feature?
+>>>>
+>>>> AFAICT, the pageframe-reclaim requirements is derived from the
+>>>> assumption that some external control path should be able to tell
+>>>> zswap/zcache to evacuate a page, like the shrinker interface.  But this
+>>>> introduces a new and complex problem in designing a policy that doesn't
+>>>> shrink the zpage pool so aggressively that it is useless.
+>>>>
+>>>> Unless there is another reason for this functionality I'm missing.
+>>>>.
+>>>
+>>> Perhaps it's needed if the user want to enable/disable the memory
+>>> compression feature dynamically.
+>>> Eg, use it as a module instead of recompile the kernel or even
+>>> reboot the system.
 > 
-> But USB_GADGET_FSL_QE got removed in commit
-> 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b ("usb: gadget: allow multiple
-> gadgets to be built"). This default will therefor never be set and can
-> be removed.
+> It's worth thinking about: Under what circumstances would a user want
+> to turn off compression?  While unloading a compression module should
+> certainly be allowed if it makes a user comfortable, in my opinion,
+> if a user wants to do that, we have done our job poorly (or there
+> is a bug).
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Tested with "make ARCH=powerpc menuconfig" and "make ARCH=powerpc
-> oldconfig" (before and after the patch). Enough to see this patch didn't
-> obviously break stuff.
+>> To unload zswap all that is needed is to perform writeback on the pages
+>> held in the cache, this can be done by extending the existing writeback
+>> code.
 > 
-> 1) I don't really understand commit
-> 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b. Was its point that we replace
-> USB_GADGET_FSL_QE with USB_FSL_QE? I couldn't tell and chose not to
-> actually change any behavior.
-> 
-> arch/powerpc/sysdev/qe_lib/Kconfig | 1 -
-> 1 file changed, 1 deletion(-)
-> 
+> Actually, frontswap supports this directly.  See frontswap_shrink.
 
-You're correct that this isn't quite right, I've posted a proper patch that should fix this correctly.
+frontswap_shrink() is a best-effort attempt to fault in all the pages
+stored in the backend.  However, if there is not enough RAM to hold all
+the pages, then it can not completely evacuate the backend.
 
-thanks for pointing it out.
+Module exit functions must return void, so there is no way to fail a
+module unload.  If you implement an exit function for your module, you
+must insure that it can always complete successfully.  For this reason
+frontswap_shrink() is unsuitable for module unloading.  You'd need to
+use a mechanism like writeback that could surely evacuate the backend
+(baring I/O failures).
 
-- k
+Seth
+
