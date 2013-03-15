@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab3COV3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:29:49 -0400
-Received: from mail-ia0-f202.google.com ([209.85.210.202]:59099 "EHLO
-	mail-ia0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3COV3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:29:47 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Will Newton <will.newton@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Bing Zhao <bzhao@marvell.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Ashok Nagarajan <asnagarajan@chromium.org>,
-        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from STATE_DATA_ERROR
-Date: Fri, 15 Mar 2013 14:29:16 -0700
-Message-Id: <1363382956-14557-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	id S932712Ab3COVat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:30:49 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:55075 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932453Ab3COVar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 17:30:47 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] usb: cdc-acm: fix error handling in acm_probe()
+Date: Sat, 16 Mar 2013 01:30:32 +0400
+Message-Id: <1363383032-13257-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a flaky piece of hardware that seems good at generating CRC errors,
-we have found that often times the CRC errors don't get reported
-properly when using CONFIG_MMC_DW_IDMAC (they get reported OK when
-using pio).
+acm_probe() ignores errors in tty_port_register_device()
+and leaves intfdata pointing to freed memory on alloc_fail7
+error path. The patch fixes the both issues.
 
-The flow that happens is:
-1. dw_mci_interrupt() fires and status=80b8, pending=8088 so that
-   we hit (pending & DW_MCI_DATA_ERROR_FLAGS).  We store 8088 in
-   data_status and set EVENT_DATA_ERROR in host->pending_events
-2. We schedule the tasklet and it runs.
-3. We're in STATE_SENDING_DATA in the tasklet and see
-   EVENT_DATA_ERROR so we dw_mci_stop_dma().
-4. dw_mci_stop_dma() calls dw_mci_idmac_stop_dma() and
-   dw_mci_dma_cleanup().  These stop dma but _don't_ set
-   EVENT_XFER_COMPLETE (since we're host->using_dma).
-5. data->stop is NULL so we don't send a stop command.
-6. We move onto STATE_DATA_ERROR and loop again in the tasklet.
-7. We hit STATE_DATA_ERROR but the transfer isn't done, so the tasklet
-   stops.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-We never seem to get any additional DMA interrupts that cause
-EVENT_XFER_COMPLETE and restart the tasklet so we just hang.  That
-doesn't seem surprising given that we've stopped DMA.
-
-We did put a print at the end of dw_mci_interrupt() to show the result
-of the "mci_readl(host, IDSTS)" and saw 0xa000 in the case of the
-above CRC error.
-
-A proposed fix for this is to ignore (but still clear) the
-EVENT_XFER_COMPLETE in STATE_DATA_ERROR in the tasklet.
-
-Reported-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/mmc/host/dw_mmc.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/usb/class/cdc-acm.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 9834221..696b3bb 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1137,10 +1137,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 			goto unlock;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 8ac25ad..c125b61 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -977,6 +977,8 @@ static int acm_probe(struct usb_interface *intf,
+ 	int num_rx_buf;
+ 	int i;
+ 	int combined_interfaces = 0;
++	struct device *tty_dev;
++	int rv = -ENOMEM;
  
- 		case STATE_DATA_ERROR:
--			if (!test_and_clear_bit(EVENT_XFER_COMPLETE,
--						&host->pending_events))
--				break;
--
-+			clear_bit(EVENT_XFER_COMPLETE, &host->pending_events);
- 			state = STATE_DATA_BUSY;
- 			break;
- 		}
+ 	/* normal quirks */
+ 	quirks = (unsigned long)id->driver_info;
+@@ -1339,11 +1341,24 @@ skip_countries:
+ 	usb_set_intfdata(data_interface, acm);
+ 
+ 	usb_get_intf(control_interface);
+-	tty_port_register_device(&acm->port, acm_tty_driver, minor,
++	tty_dev = tty_port_register_device(&acm->port, acm_tty_driver, minor,
+ 			&control_interface->dev);
++	if (IS_ERR(tty_dev)) {
++		rv = PTR_ERR(tty_dev);
++		goto alloc_fail8;
++	}
+ 
+ 	return 0;
++alloc_fail8:
++	if (acm->country_codes) {
++		device_remove_file(&acm->control->dev,
++				&dev_attr_wCountryCodes);
++		device_remove_file(&acm->control->dev,
++				&dev_attr_iCountryCodeRelDate);
++	}
++	device_remove_file(&acm->control->dev, &dev_attr_bmCapabilities);
+ alloc_fail7:
++	usb_set_intfdata(intf, NULL);
+ 	for (i = 0; i < ACM_NW; i++)
+ 		usb_free_urb(acm->wb[i].urb);
+ alloc_fail6:
+@@ -1359,7 +1374,7 @@ alloc_fail2:
+ 	acm_release_minor(acm);
+ 	kfree(acm);
+ alloc_fail:
+-	return -ENOMEM;
++	return rv;
+ }
+ 
+ static void stop_data_traffic(struct acm *acm)
 -- 
-1.8.1.3
+1.7.9.5
 
