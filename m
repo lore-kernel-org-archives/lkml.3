@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3CORqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 13:46:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36379 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3CORqL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 13:46:11 -0400
-Date: Fri, 15 Mar 2013 17:45:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: mturquette@linaro.org, patches@linaro.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC v2 1/1] clk: Add notifier support in
-	clk_prepare/clk_unprepare
-Message-ID: <20130315174558.GS4977@n2100.arm.linux.org.uk>
-References: <1363253464-3200-1-git-send-email-bilhuang@nvidia.com>
+	id S1754967Ab3CORzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 13:55:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58498 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754688Ab3CORzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 13:55:09 -0400
+Date: Fri, 15 Mar 2013 18:51:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+	.patch added to -mm tree
+Message-ID: <20130315175117.GA2462@redhat.com>
+References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <CAFTL4hxNh5qMZyyrLc8_yG5-i7UoS_nan22pO8o1fb8yS7Vz3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363253464-3200-1-git-send-email-bilhuang@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAFTL4hxNh5qMZyyrLc8_yG5-i7UoS_nan22pO8o1fb8yS7Vz3w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 02:31:04AM -0700, Bill Huang wrote:
-> Add the below two notifier events so drivers which are interested in
-> knowing the clock status can act accordingly. This is extremely useful
-> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
-> 
-> CLK_PREPARED
-> CLK_UNPREPARED
-> 
-> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> ---
->  drivers/clk/clk.c   |    3 +++
->  include/linux/clk.h |    2 ++
->  2 files changed, 5 insertions(+)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index ed87b24..3292cec 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -550,6 +550,7 @@ void clk_unprepare(struct clk *clk)
->  {
->  	mutex_lock(&prepare_lock);
->  	__clk_unprepare(clk);
-> +	__clk_notify(clk, CLK_UNPREPARED, clk->rate, clk->rate);
->  	mutex_unlock(&prepare_lock);
->  }
->  EXPORT_SYMBOL_GPL(clk_unprepare);
-> @@ -598,6 +599,8 @@ int clk_prepare(struct clk *clk)
->  
->  	mutex_lock(&prepare_lock);
->  	ret = __clk_prepare(clk);
-> +	if (!ret)
-> +		__clk_notify(clk, CLK_PREPARED, clk->rate, clk->rate);
+On 03/15, Frederic Weisbecker wrote:
+>
+> > The lack of the barrier?
+> >
+> > I thought about this, this should be fine? atomic_add_unless() has the same
+> > "problem", but this is documented in atomic_ops.txt:
+> >
+> >         atomic_add_unless requires explicit memory barriers around the operation
+> >         unless it fails (returns 0).
+> >
+> > I thought that atomic_add_unless_negative() should have the same
+> > guarantees?
+>
+> I feel very uncomfortable with that. The memory barrier is needed
+> anyway to make sure we don't deal with a stale value of the atomic val
+> (wrt. ordering against another object).
+> The following should really be expected to work without added barrier:
+>
+> void put_object(foo *obj)
+> {
+>       if (atomic_dec_return(obj->ref) == -1)
+>           free_rcu(obj);
+> }
+>
+> bool try_get_object(foo *obj)
+> {
+>       if (atomic_add_unless_negative(obj, 1))
+>            return true;
+>       return false;
+> }
+>
+> = CPU 0 =                = CPU 1
+>                                 rcu_read_lock()
+> put_object(obj0);
+>                                 obj = rcu_derefr(obj0);
+> rcu_assign_ptr(obj0, NULL);
 
-So, on prepare, we notify after we've prepared the clock.  On unprepare,
-we notify after the clock has been shut down.  Are you sure that's the
-correct ordering?  Would it not be better to view it in a stack-like
-fashion, iow:
+(I guess you meant rcu_assign_ptr() then put_object())
 
-get
-	prepare
-		notify-prepare
-			enable
-			disable
-		notify-unprepare
-	unprepare
-put
+>                                 if (try_get_object(obj))
+>                                      do_something...
+>                                 else
+>                                      object is dying
+>                                 rcu_read_unlock()
 
-?
+I must have missed something.
 
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index b3ac22d..16c1d92 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -43,6 +43,8 @@ struct clk;
->  #define PRE_RATE_CHANGE			BIT(0)
->  #define POST_RATE_CHANGE		BIT(1)
->  #define ABORT_RATE_CHANGE		BIT(2)
-> +#define CLK_PREPARED			BIT(3)
-> +#define CLK_UNPREPARED			BIT(4)
+do_something() looks fine, if atomic_add_unless_negative() succeeds
+we do have a barrier?
 
-This implies that we're only going to have a maximum of 32 reason codes
-here.  Is that enough?
+Anyway, I understand that it is possible to write the code which
+won't work without the uncoditional mb().
+
+My point was: should we fix atomic_add_unless() then? If not, why
+should atomic_add_unless_negative() differ?
+
+Oleg.
+
