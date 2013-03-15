@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3COQI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:08:58 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:59959 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab3COQI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:08:56 -0400
+	id S1754873Ab3COQKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:10:08 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.13]:23292 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754310Ab3COQKG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:10:06 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 12:10:06 EDT
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-127.messagelabs.com!1363363411!5900289!18
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>, Kumar Amit Mehta <gmate.amit@gmail.com>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 15 Mar 2013 11:03:30 -0500
+Subject: RE: [PATCH] staging: comedi: drivers: ni_atmio.c: Add a missing
+ semicolon
+Thread-Topic: [PATCH] staging: comedi: drivers: ni_atmio.c: Add a missing
+ semicolon
+Thread-Index: Ac4hYTsoly8fU1oORyGjFTiqtvrrzgANMDiQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020980106B39@AUSP01VMBX24.collaborationhost.net>
+References: <1363335269-14903-1-git-send-email-gmate.amit@gmail.com>
+ <5142ECB1.306@mev.co.uk>
+In-Reply-To: <5142ECB1.306@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Sat, 16 Mar 2013 00:08:54 +0800
-Message-ID: <CAM16m2=6S11d+eSSwQJ2f=nO6dM4K-dGKf3TR-z0nyBUyw=YxQ@mail.gmail.com>
-Subject: udelay function delays the wrong time interval in multiprocessor
- system, if ARCH_HAS_READ_CURRENT_TIMER is not defined and on current timer is used.
-From: chpoph <chpoph@gmail.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, will.deacon@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If ARCH_HAS_READ_CURRENT_TIMER is not defined and on current timer is
-used for udelay, then __loop_delay and __loop_const_udelay is used to
-delay a specific time interval.  but in delay-loop.S, loops_per_jiffy
-(not per cpu data) is used to calculate the number of loops. in SMP
-system, udelay delays the wrong time interval if two cpus running at
-different frequency.
+On Friday, March 15, 2013 2:41 AM, Ian Abbott wrote:
+> On 2013-03-15 08:14, Kumar Amit Mehta wrote:
+>> fix a missing end-of-statement by adding a semicolon.
+>>
+>> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+>> ---
+>>   drivers/staging/comedi/drivers/ni_atmio.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
+>> index 279f2cd..37372a1 100644
+>> --- a/drivers/staging/comedi/drivers/ni_atmio.c
+>> +++ b/drivers/staging/comedi/drivers/ni_atmio.c
+>> @@ -467,7 +467,7 @@ static int ni_atmio_attach(struct comedi_device *dev,
+>>   		return -EIO;
+>>
+>>   	dev->board_ptr = ni_boards + board;
+>> -	boardtype = comedi_board(dev)
+>> +	boardtype = comedi_board(dev);
+>>
+>>   	printk(" %s", boardtype->name);
+>>   	dev->board_name = boardtype->name;
+>
+> Ironically, that was introduced by a patch titled "staging: comedi: 
+> ni_atmio: fix build errors". :-)
 
+My only excuse is that the coffee machine was broken...
 
-In arch/arm/lib/delay.c arm_delay_ops is set to arm_delay_ops.
-/*
- * Default to the loop-based delay implementation.
- */
-struct arm_delay_ops arm_delay_ops = {
-        .delay          = __loop_delay,
-        .const_udelay   = __loop_const_udelay,
-        .udelay         = __loop_udelay,
-};
+Actually, I just realized that this driver as well as the others that depend
+on ISAPNP were not being compiled on my Debian 6.0 64bit system . I
+hacked my config to build the ones that depend on ISA but missed the
+ISAPNP ones.
+
+Sorry about the trouble.
+
+Hartley
+
