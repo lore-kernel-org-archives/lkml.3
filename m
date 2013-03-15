@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3COQrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:47:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:31821 "EHLO mga03.intel.com"
+	id S1754248Ab3COQr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:47:26 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52190 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab3COQrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:47:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,852,1355126400"; 
-   d="scan'208";a="215187337"
-Date: Fri, 15 Mar 2013 17:46:25 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: New MFD tree for linux-next
-Message-ID: <20130315164625.GA29531@zurbaran>
-References: <20130314000201.GA4425@zurbaran>
-MIME-Version: 1.0
+	id S1750920Ab3COQrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:47:25 -0400
+Subject: Re: [PATCH] powerpc: remove "config 8260_PCI9"
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130314000201.GA4425@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1363274097.1335.83.camel@x61.thuisdomein>
+Date: Fri, 15 Mar 2013 11:17:11 -0500
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <5EB0C1E1-F71E-4B3C-8471-BA899FEC2DFD@kernel.crashing.org>
+References: <1363274097.1335.83.camel@x61.thuisdomein>
+To: Paul Bolle <pebolle@tiscali.nl>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
 
-On Thu, Mar 14, 2013 at 01:02:01AM +0100, Samuel Ortiz wrote:
-> Hi Stephen,
+On Mar 14, 2013, at 10:14 AM, Paul Bolle wrote:
+
+> The last user of Kconfig symbol 8260_PCI9 got removed in release v3.2.
+> Remove this symbol too.
 > 
-> I am moving the MFD development from mfd-2.6.git/for-next to a new mfd-next
-> tree:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Untested.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git
+> 1) This probably is a second order effect of my commit
+> 6805ab6daa2b589fe3242d05ddc47a9dbb0c4eb1 ("powerpc: drop unused Kconfig
+> symbols"). Not sure how I missed that.
 > 
-> Could you please point linux-next at it ? Many thanks in advance.
-I'm also carrying MFD fixes through the mfd-fixes tree:
+> arch/powerpc/Kconfig | 5 -----
+> 1 file changed, 5 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-fixes.git
+applied to next
 
-Could you please also add it to linux-next ?
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+- k
