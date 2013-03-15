@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3CONdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:33:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34021 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab3CONdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:33:19 -0400
-Date: Fri, 15 Mar 2013 14:33:13 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Harald Arnesen <skogtun.linux@gmail.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <5142E7F0.4020002@gmail.com>
-Message-ID: <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
- <5142E7F0.4020002@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755358Ab3CONdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:33:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32984 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab3CONdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:33:39 -0400
+Message-ID: <51432310.7050201@ti.com>
+Date: Fri, 15 Mar 2013 19:03:04 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Benoit Cousson <b-cousson@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <balbi@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jon Hunter <jon-hunter@ti.com>
+Subject: Re: [PATCH v3 0/7] ARM: dts: omap: Add dts data for USB
+References: <1362663320-23799-1-git-send-email-kishon@ti.com> <514316FA.1090002@ti.com>
+In-Reply-To: <514316FA.1090002@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Mar 2013, Harald Arnesen wrote:
+On Friday 15 March 2013 06:11 PM, Benoit Cousson wrote:
+> + Jon
+>
+> Hi Kishon,
+>
+> On 03/07/2013 02:35 PM, Kishon Vijay Abraham I wrote:
+>> Hi Benoit,
+>>
+>> Here are the dt data patches to get usb device functional in OMAP platforms.
+>>
+>> All the patches deal with modifying arch/arm/boot except one which modifies
+>> Documentation/../usb/omap-usb.txt
+>>
+>> Changes from v2:
+>> * squashed the dt data for dwc3-omap with dwc3 core into a single patch.
+>>
+>> Changes from v1:
+>> Patch *ARM: dts: omap: Add usb_otg and glue data* has some properties with
+>> names that has "_". It's replaced with a "-" here.
+>>
+>> This patch is developed on Linux 3.9-rc1.
+>
+> The patches looks really good. I've just had to rebase on top of my HEAD due to some conflict with GPMC patch already applied.
+>
+> I cleaned as well some subject and changelog for consistency.
 
-> I have the same problem on my Lenovo T500. I think the graphics card is
-> involved.
-> 
-> This laptop has "hybrid graphics" - one Intel GMA 4500MHD and one ATI
-> Mobility Radeon HD 3650. When I boot with the Intel card, I get "irq 16:
-> nobody cared" during boot, not when I boot with the ATI card.
+Ok. Thanks :-)
 
-Confirming this. After a lot of hassle, I have bisected this reliably to
-
-	commit 28c70f162a315bdcfbe0bf940a740ef8bfb918d6
-	Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-	Date:   Sat Dec 1 13:53:45 2012 +0100
-
-	    drm/i915: use the gmbus irq for waits
-
-Adding Daniel, Imre and Daniel to CC while I will try to figure out what's 
-happening in parallel.
-
-Attaching dmesg.txt from the machine with 28c70f162a as head, with 
-drm.debug=0xe.
-
--- 
-Jiri Kosina
-SUSE Labs
+Regards
+Kishon
