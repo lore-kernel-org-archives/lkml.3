@@ -1,126 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab3COPSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:18:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59334 "EHLO arroyo.ext.ti.com"
+	id S932174Ab3COPSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:18:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59326 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932150Ab3COPRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:17:37 -0400
+	id S1755658Ab3COPRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:17:31 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <rogerq@ti.com>, =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>
-Subject: [PATCH v2 21/23] ARM: dts: omap4-panda: Add USB Host support
-Date: Fri, 15 Mar 2013 17:16:42 +0200
-Message-ID: <1363360604-21368-22-git-send-email-rogerq@ti.com>
+        <rogerq@ti.com>
+Subject: [PATCH v2 19/23] ARM: OMAP: zoom: Adapt to ehci-omap changes
+Date: Fri, 15 Mar 2013 17:16:40 +0200
+Message-ID: <1363360604-21368-20-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363360604-21368-1-git-send-email-rogerq@ti.com>
 References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the RESET and Power regulators for the USB PHY,
-the USB Host port mode and the PHY device.
+Add platform device for 'nop-usb-xceiv'. This will be used as a
+PHY for HS USB Port 2, so provide binding information for it.
 
-Also provide pin multiplexer information for the USB host
-pins.
+Use usbhs_init_phys() to register the PHY's RESET regulator.
 
-CC: Benoît Cousson <b-cousson@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap4-panda.dts |   56 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 56 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/board-zoom.c |   32 ++++++++++++++++++++++++++------
+ 1 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 4122efe..cfc7683 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -57,6 +57,36 @@
- 			"AFML", "Line In",
- 			"AFMR", "Line In";
- 	};
-+
-+	/* HS USB Port 1 RESET */
-+	hsusb1_reset: hsusb1_reset_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_reset";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio2 30 0>;	/* gpio_62 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
-+
-+	/* HS USB Port 1 Power */
-+	hsusb1_power: hsusb1_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb1_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio1 1 0>;	/* gpio_1 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
-+
-+	/* HS USB Host PHY on PORT 1 */
-+	hsusb1_phy: hsusb1_phy {
-+		compatible = "usb-nop-xceiv";
-+		reset-supply = <&hsusb1_reset>;
-+		vcc-supply = <&hsusb1_power>;
-+		clock-frequency = <19200000>;
-+	};
+diff --git a/arch/arm/mach-omap2/board-zoom.c b/arch/arm/mach-omap2/board-zoom.c
+index 5e4d4c9..220e07c 100644
+--- a/arch/arm/mach-omap2/board-zoom.c
++++ b/arch/arm/mach-omap2/board-zoom.c
+@@ -17,6 +17,7 @@
+ #include <linux/gpio.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/mtd/nand.h>
++#include <linux/usb/phy.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -92,14 +93,27 @@ static struct mtd_partition zoom_nand_partitions[] = {
+ 	},
  };
  
- &omap4_pmx_core {
-@@ -67,6 +97,7 @@
- 			&mcbsp1_pins
- 			&dss_hdmi_pins
- 			&tpd12s015_pins
-+			&hsusbb1_pins
- 	>;
- 
- 	twl6040_pins: pinmux_twl6040_pins {
-@@ -110,6 +141,23 @@
- 			0x58 0x10b	/* hdmi_hpd.gpio_63 INPUT PULLDOWN | MODE3 */
- 		>;
- 	};
-+
-+	hsusbb1_pins: pinmux_hsusbb1_pins {
-+		pinctrl-single,pins = <
-+			0x82 0x10C	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_clk INPUT | PULLDOWN */
-+			0x84 0x4	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_stp OUTPUT */
-+			0x86 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dir INPUT | PULLDOWN */
-+			0x88 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_nxt INPUT | PULLDOWN */
-+			0x8a 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat0 INPUT | PULLDOWN */
-+			0x8c 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat1 INPUT | PULLDOWN */
-+			0x8e 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat2 INPUT | PULLDOWN */
-+			0x90 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat3 INPUT | PULLDOWN */
-+			0x92 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat4 INPUT | PULLDOWN */
-+			0x94 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat5 INPUT | PULLDOWN */
-+			0x96 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat6 INPUT | PULLDOWN */
-+			0x98 0x104	/* USBB1_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat7 INPUT | PULLDOWN */
-+		>;
-+	    };
- };
- 
- &i2c1 {
-@@ -206,3 +254,11 @@
- &twl_usb_comparator {
- 	usb-supply = <&vusb>;
- };
-+
-+&usbhshost {
-+	port1-mode = "ehci-phy";
++/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
++static struct platform_device hsusb2_phy_device = {
++	.name = "nop_usb_xceiv",
++	.id = 2,
 +};
 +
-+&usbhsehci {
-+	phys = <&hsusb1_phy>;
++static struct usbhs_phy_data phy_data[] __initdata = {
++	{
++		.port = 2,
++		.reset_gpio = ZOOM3_EHCI_RESET_GPIO,
++		.vcc_gpio = -EINVAL,
++		.phy_id = "nop_usb_xceiv.2",
++	},
 +};
++
++static struct platform_device *zoom3_devices[] __initdata = {
++	&hsusb2_phy_device,
++};
++
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+-	.port_mode[0]		= OMAP_USBHS_PORT_MODE_UNUSED,
+ 	.port_mode[1]		= OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[2]		= OMAP_USBHS_PORT_MODE_UNUSED,
+-	.phy_reset		= true,
+-	.reset_gpio_port[0]	= -EINVAL,
+-	.reset_gpio_port[1]	= ZOOM3_EHCI_RESET_GPIO,
+-	.reset_gpio_port[2]	= -EINVAL,
+ };
+ 
+ static void __init omap_zoom_init(void)
+@@ -109,6 +123,12 @@ static void __init omap_zoom_init(void)
+ 	} else if (machine_is_omap_zoom3()) {
+ 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
+ 		omap_mux_init_gpio(ZOOM3_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
++
++		platform_add_devices(zoom3_devices, ARRAY_SIZE(zoom3_devices));
++		/* PHY on HSUSB Port 2 i.e. index 1 */
++		usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
++
++		usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+ 		usbhs_init(&usbhs_bdata);
+ 	}
+ 
 -- 
 1.7.4.1
 
