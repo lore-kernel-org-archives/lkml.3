@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750824Ab3COE0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 00:26:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51375 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3COE0e (ORCPT
+	id S1751148Ab3COEkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 00:40:46 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:39461 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab3COEkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 00:26:34 -0400
-Date: Fri, 15 Mar 2013 04:26:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: vfs: lockdep splat with prepare_bprm_creds
-Message-ID: <20130315042628.GV21522@ZenIV.linux.org.uk>
-References: <51429E72.7090405@oracle.com>
+	Fri, 15 Mar 2013 00:40:45 -0400
+Date: Fri, 15 Mar 2013 10:10:00 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v2 1/2] [BUGFIX] kprobes: make hash_64() as always
+	inlined
+Message-ID: <20130315044000.GB31866@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20130314115230.19690.39387.stgit@mhiramat-M0-7522>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51429E72.7090405@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130314115230.19690.39387.stgit@mhiramat-M0-7522>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031504-7282-0000-0000-0000152F1483
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 12:07:14AM -0400, Sasha Levin wrote:
-> Hi all,
+On Thu, Mar 14, 2013 at 08:52:30PM +0900, Masami Hiramatsu wrote:
+> Because hash_64() is called from the get_kprobe() inside
+> int3 handler, kernel causes int3 recursion and crashes if
+> kprobes user puts a probe on it.
 > 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel
-> I've stumbled on the following.
+> Usually hash_64() is inlined into caller function, but in
+> some cases, it has instances by gcc's interprocedural
+> constant propagation.
 > 
-> Dave Jones reported something similar, but that seemed to involve cgroup's mutex
-> and didn't seem like it was the same issue as this one.
+> This patch uses __always_inline instead of inline to
+> prevent gcc from doing such things.
+> 
+> Changes in v2:
+>  - Use __always_inline instead of using __kprobes
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reported-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
 
-Lovely...  It's an execve() attempt on a "binary" that is, in fact, a procfs
-file (/proc/<pid>/stack), with its ->read() trying to grab ->cred_guard_mutex.
-The fact that it's seq_file-based is irrelevant here - all that matters is
-that we have ->read() for some file trying to grab ->cred_guard_mutex.
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-It's not *quite* a deadlock, though - all these guys are using
-mutex_lock_killable()...
