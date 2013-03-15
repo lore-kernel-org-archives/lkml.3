@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3COTv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:51:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18130 "EHLO
+	id S932126Ab3COTyf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:54:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27896 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3COTvZ (ORCPT
+	with ESMTP id S1755359Ab3COTv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 15:51:25 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=l3YSjOqmpswA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=TUdi6mUyijAA:10 a=ifY9Kg6_1U6U20D1ojwA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=38vPdKtYg7c_gRUIETIA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 15 Mar 2013 15:51:26 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=GfYQo16ec8oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=uGPwiYSE3TUA:10 a=VwQbUJbxAAAA:8 a=k5FiPARZpzFLQR7o2d8A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=8FXVZGi3qsC3N9340mUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195122.506438048@goodmis.org>
+Message-Id: <20130315195124.731069893@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:38 -0400
+Date: Fri, 15 Mar 2013 15:39:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH 03/20] ftrace: Separate unlimited probes from count limited probes
+        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>
+Subject: [for-next][PATCH 14/20] tracing: Use stack of calling function for stack tracer
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0003-ftrace-Separate-unlimited-probes-from-count-limited-.patch
+Content-Disposition: inline; filename=0014-tracing-Use-stack-of-calling-function-for-stack-trac.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,106 +32,74 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The function tracing probes that trigger traceon or traceoff can be
-set to unlimited, or given a count of # of times to execute.
+Use the stack of stack_trace_call() instead of check_stack() as
+the test pointer for max stack size. It makes it a bit cleaner
+and a little more accurate.
 
-By separating these two types of probes, we can then use the dynamic
-ftrace function filtering directly, and remove the brute force
-"check if this function called is my probe" routines in ftrace.
+Adding stable, as a later fix depends on this patch.
 
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions.c |   38 +++++++++++++++++++++++++++++++++---=
---
- 1 file changed, 33 insertions(+), 5 deletions(-)
+ kernel/trace/trace_stack.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index a88a3e0..043b242 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -228,7 +228,7 @@ static int update_count(void **data)
- }
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 42ca822..dc02e29 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
 =20
- static void
--ftrace_traceon(unsigned long ip, unsigned long parent_ip, void **data)
-+ftrace_traceon_count(unsigned long ip, unsigned long parent_ip, void **dat=
-a)
+-static inline void check_stack(void)
++static inline void
++check_stack(unsigned long *stack)
  {
- 	if (tracing_is_on())
- 		return;
-@@ -238,7 +238,7 @@ ftrace_traceon(unsigned long ip, unsigned long parent_i=
-p, void **data)
- }
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+ 	int i;
 =20
- static void
--ftrace_traceoff(unsigned long ip, unsigned long parent_ip, void **data)
-+ftrace_traceoff_count(unsigned long ip, unsigned long parent_ip, void **da=
-ta)
+-	this_size =3D ((unsigned long)&this_size) & (THREAD_SIZE-1);
++	this_size =3D ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size =3D THREAD_SIZE - this_size;
+=20
+ 	if (this_size <=3D max_stack_size)
+ 		return;
+=20
+ 	/* we do not handle interrupt stacks yet */
+-	if (!object_is_on_stack(&this_size))
++	if (!object_is_on_stack(stack))
+ 		return;
+=20
+ 	local_irq_save(flags);
+@@ -73,7 +74,7 @@ static inline void check_stack(void)
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i =3D 0;
+-	start =3D &this_size;
++	start =3D stack;
+ 	top =3D (unsigned long *)
+ 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
+=20
+@@ -113,6 +114,7 @@ static void
+ stack_trace_call(unsigned long ip, unsigned long parent_ip,
+ 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
  {
- 	if (!tracing_is_on())
- 		return;
-@@ -247,10 +247,38 @@ ftrace_traceoff(unsigned long ip, unsigned long paren=
-t_ip, void **data)
- 		tracing_off();
- }
++	unsigned long stack;
+ 	int cpu;
 =20
-+static void
-+ftrace_traceon(unsigned long ip, unsigned long parent_ip, void **data)
-+{
-+	if (tracing_is_on())
-+		return;
-+
-+	tracing_on();
-+}
-+
-+static void
-+ftrace_traceoff(unsigned long ip, unsigned long parent_ip, void **data)
-+{
-+	if (!tracing_is_on())
-+		return;
-+
-+	tracing_off();
-+}
-+
- static int
- ftrace_trace_onoff_print(struct seq_file *m, unsigned long ip,
- 			 struct ftrace_probe_ops *ops, void *data);
+ 	preempt_disable_notrace();
+@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsigned long parent=
+_ip,
+ 	if (per_cpu(trace_active, cpu)++ !=3D 0)
+ 		goto out;
 =20
-+static struct ftrace_probe_ops traceon_count_probe_ops =3D {
-+	.func			=3D ftrace_traceon_count,
-+	.print			=3D ftrace_trace_onoff_print,
-+};
-+
-+static struct ftrace_probe_ops traceoff_count_probe_ops =3D {
-+	.func			=3D ftrace_traceoff_count,
-+	.print			=3D ftrace_trace_onoff_print,
-+};
-+
- static struct ftrace_probe_ops traceon_probe_ops =3D {
- 	.func			=3D ftrace_traceon,
- 	.print			=3D ftrace_trace_onoff_print,
-@@ -269,7 +297,7 @@ ftrace_trace_onoff_print(struct seq_file *m, unsigned l=
-ong ip,
+-	check_stack();
++	check_stack(&stack);
 =20
- 	seq_printf(m, "%ps:", (void *)ip);
-=20
--	if (ops =3D=3D &traceon_probe_ops)
-+	if (ops =3D=3D &traceon_probe_ops || ops =3D=3D &traceon_count_probe_ops)
- 		seq_printf(m, "traceon");
- 	else
- 		seq_printf(m, "traceoff");
-@@ -297,9 +325,9 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
-=20
- 	/* we register both traceon and traceoff to this callback */
- 	if (strcmp(cmd, "traceon") =3D=3D 0)
--		ops =3D &traceon_probe_ops;
-+		ops =3D param ? &traceon_count_probe_ops : &traceon_probe_ops;
- 	else
--		ops =3D &traceoff_probe_ops;
-+		ops =3D param ? &traceoff_count_probe_ops : &traceoff_probe_ops;
-=20
- 	if (glob[0] =3D=3D '!') {
- 		unregister_ftrace_function_probe_func(glob+1, ops);
+  out:
+ 	per_cpu(trace_active, cpu)--;
 --=20
 1.7.10.4
 
@@ -144,13 +112,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u6AAoJEOdOSU1xswtMtTQH/2mfq2xQEkuy/Ar/cRpP5n1d
-TcD0umWFLAGLlYkZUIkGOpdPSZB+KQu1r8l2r3h3JBgZx/YntktOA1R0fMdDBWPM
-us6YH57hHnQBMuPi5WldNrROBJJpv3mi/NUeDBo+7WOpJ12gdDo3SMDTPgNa95RW
-ppcW81wRahVPGbilI/EaWjKGGuUlUbqJ6ejcd/t65qaibkYg0syLwRUY4yS36XIj
-oYMXsbVQbTfr2kQESDxqSyci7GBSv/Yv08xomPUnnXS+AIa4ctA01UzS8hGwetOd
-4NpAt7HsMx9vxg1YK8RYQXEjppVZD0o7alAthpE4s9I92pBQPbnMa2gQ4e8/2sk=
-=am7t
+iQEcBAABAgAGBQJRQ3u8AAoJEOdOSU1xswtMmacH+wSeDZqrhiAXpDBRfn6D8v0L
+dgzzFxAjICV+KEDo/LxqHxwCl/xY3AC7WAHAq/RdABL2+TeGz5Qa1XMoqfhxU7b+
+Ie5jiTT7Tvuwhgaxe0ZXXcmV3LEfS2gMbJVHoxDeYUQV8jU9lLTiip1D31UD3x/Q
+9CQHr52ejSO6Om+ustWoxssLkTcSVXl6WRZUOAsEnlX18+c3MlfN9+wvQVHxzmdD
+8voGuKUY/bEnF++DEaixR208w+RScnVKbp+3KC41N+HF6kqJADlMqazfycFUgE5X
+6nRe8htq/VQ1QWXU6hsR5A8AT/YQwwEciT0M7isHr4RyaP7QCBXp80CKhLFq3w4=
+=Vu8f
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
