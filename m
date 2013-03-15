@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab3COPAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:00:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53664 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256Ab3COPAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:00:37 -0400
-Date: Fri, 15 Mar 2013 11:00:22 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Lenky Gao <lenky.gao@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Inactive memory keep growing and how to release it?
-Message-ID: <20130315150022.GD7403@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Simon Jeons <simon.jeons@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-	Lenky Gao <lenky.gao@gmail.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-	"olaf@aepfle.de" <olaf@aepfle.de>,
-	"apw@canonical.com" <apw@canonical.com>,
-	"andi@firstfloor.org" <andi@firstfloor.org>,
-	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>
-References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
- <20130314101403.GB11636@dhcp22.suse.cz>
- <5142DEC5.7010206@gmail.com>
+	id S1755254Ab3COPBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:01:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46924 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754256Ab3COPBp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:01:45 -0400
+X-Sasl-enc: Q9Tmkh909FjFowoUPoDmZmJ0MgFFPXQ3MsIiQcjOpGGe 1363359703
+Date: Fri, 15 Mar 2013 08:01:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
+Message-ID: <20130315150142.GA31650@kroah.com>
+References: <20130315151334.2b52f63ab7f6b1efb893bf3e@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5142DEC5.7010206@gmail.com>
+In-Reply-To: <20130315151334.2b52f63ab7f6b1efb893bf3e@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 04:41:41PM +0800, Simon Jeons wrote:
-> >This is really an old kernel and also a distribution one which might
-> >contain a lot of patches on top of the core kernel. I would suggest to
-> >contact Redhat or try to reproduce the issue with the vanilla and
+On Fri, Mar 15, 2013 at 03:13:34PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> What's the meaning of vanilla?
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/ccg/f_fs.c between commit 7f78e0351394 ("fs: Limit
+> sys_mount to only request filesystem modules") from Linus' tree and
+> commit 515e6dd20b3f ("Staging: ccg: delete it from the tree") from the
+> staging tree.
+> 
+> The latter deleted the file, so I did that and can carry the fix as
+> necessary (no action is required).
 
-Vanilla means an up-to-date (i.e., non-prehistoric) kernel from
-kernel.org, without any "Value Added" patches from a distribution.
+Thanks, that's the correct fix :)
 
-See: https://www.kernel.org/
-
-Regards,
-
-					- Ted
+greg k-h
