@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab3COTxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:53:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22900 "EHLO
+	id S1755510Ab3COTxH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:53:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21975 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab3COTv1 (ORCPT
+	with ESMTP id S1755461Ab3COTv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 15:51:27 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=EfiBAIpdEIIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ozJkY-_bxT8A:10 a=VwQbUJbxAAAA:8 a=GtmIaYBfFRQAWf7-H48A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=BUsvTIOplOozriQ6ulcA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=BRV1MMiLyRcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_DyCmw44UswA:10 a=VwQbUJbxAAAA:8 a=lovj1sxnkMUORCeWAFwA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=eC4tpAxUevF3uSev:21 a=K8I1YNCabqzuXedR:21 a=AD_TEC0H4u0k7bLoA4kA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195124.960288283@goodmis.org>
+Message-Id: <20130315195125.143863964@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:50 -0400
+Date: Fri, 15 Mar 2013 15:39:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>
-Subject: [for-next][PATCH 15/20] tracing: Fix stack tracer with fentry use
+Subject: [for-next][PATCH 16/20] tracing: Remove most or all of stack tracer stack size from
+ stack_max_size
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0015-tracing-Fix-stack-tracer-with-fentry-use.patch
+Content-Disposition: inline; filename=0016-tracing-Remove-most-or-all-of-stack-tracer-stack-siz.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,120 +33,173 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-When gcc 4.6 on x86 is used, the function tracer will use the new
-option -mfentry which does a call to "fentry" at every function
-instead of "mcount". The significance of this is that fentry is
-called as the first operation of the function instead of the mcount
-usage of being called after the stack.
+Currently, the depth reported in the stack tracer stack_trace file
+does not match the stack_max_size file. This is because the stack_max_size
+includes the overhead of stack tracer itself while the depth does not.
 
-This causes the stack tracer to show some bogus results for the size
-of the last function traced, as well as showing "ftrace_call" instead
-of the function. This is due to the stack frame not being set up
-by the function that is about to be traced.
+The first time a max is triggered, a calculation is not performed that
+figures out the overhead of the stack tracer and subtracts it from
+the stack_max_size variable. The overhead is stored and is subtracted
+from the reported stack size for comparing for a new max.
+
+Now the stack_max_size corresponds to the reported depth:
+
+ # cat stack_max_size
+4640
 
  # cat stack_trace
         Depth    Size   Location    (48 entries)
         -----    ----   --------
-  0)     4824     216   ftrace_call+0x5/0x2f
+  0)     4640      32   _raw_spin_lock+0x18/0x24
   1)     4608     112   ____cache_alloc+0xb7/0x22d
   2)     4496      80   kmem_cache_alloc+0x63/0x12f
+  3)     4416      16   mempool_alloc_slab+0x15/0x17
+[...]
 
-The 216 size for ftrace_call includes both the ftrace_call stack
-(which includes the saving of registers it does), as well as the
-stack size of the parent.
-
-To fix this, if CC_USING_FENTRY is defined, then the stack_tracer
-will reserve the first item in stack_dump_trace[] array when
-calling save_stack_trace(), and it will fill it in with the parent ip.
-Then the code will look for the parent pointer on the stack and
-give the real size of the parent's stack pointer:
-
- # cat stack_trace
-        Depth    Size   Location    (14 entries)
-        -----    ----   --------
-  0)     2640      48   update_group_power+0x26/0x187
-  1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
-  2)     2368     160   find_busiest_group+0x31/0x1f1
-  3)     2208     256   load_balance+0xd9/0x662
-
-I'm Cc'ing stable, although it's not urgent, as it only shows bogus
-size for item #0, the rest of the trace is legit. It should still be
-corrected in previous stable releases.
+While testing against and older gcc on x86 that uses mcount instead
+of fentry, I found that pasing in ip + MCOUNT_INSN_SIZE let the
+stack trace show one more function deep which was missing before.
 
 Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_stack.c |   33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
+ kernel/trace/trace_stack.c |   75 +++++++++++++++++++++++++++++++---------=
+----
+ 1 file changed, 54 insertions(+), 21 deletions(-)
 
 diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index dc02e29..ea28e4b 100644
+index ea28e4b..aab277b 100644
 --- a/kernel/trace/trace_stack.c
 +++ b/kernel/trace/trace_stack.c
-@@ -20,13 +20,27 @@
+@@ -20,27 +20,24 @@
 =20
  #define STACK_TRACE_ENTRIES 500
 =20
-+/*
-+ * If fentry is used, then the function being traced will
-+ * jump to fentry directly before it sets up its stack frame.
-+ * We need to ignore that one and record the parent. Since
-+ * the stack frame for the traced function wasn't set up yet,
-+ * the stack_trace wont see the parent. That needs to be added
-+ * manually to stack_dump_trace[] as the first element.
-+ */
-+#ifdef CC_USING_FENTRY
-+# define add_func	1
-+#else
-+# define add_func	0
-+#endif
-+
+-/*
+- * If fentry is used, then the function being traced will
+- * jump to fentry directly before it sets up its stack frame.
+- * We need to ignore that one and record the parent. Since
+- * the stack frame for the traced function wasn't set up yet,
+- * the stack_trace wont see the parent. That needs to be added
+- * manually to stack_dump_trace[] as the first element.
+- */
+ #ifdef CC_USING_FENTRY
+-# define add_func	1
++# define fentry		1
+ #else
+-# define add_func	0
++# define fentry		0
+ #endif
+=20
  static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =3D
  	 { [0 ... (STACK_TRACE_ENTRIES)] =3D ULONG_MAX };
  static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
 =20
++/*
++ * Reserve one entry for the passed in ip. This will allow
++ * us to remove most or all of the stack size overhead
++ * added by the stack tracer itself.
++ */
  static struct stack_trace max_stack_trace =3D {
--	.max_entries		=3D STACK_TRACE_ENTRIES,
--	.entries		=3D stack_dump_trace,
-+	.max_entries		=3D STACK_TRACE_ENTRIES - add_func,
-+	.entries		=3D &stack_dump_trace[add_func],
+-	.max_entries		=3D STACK_TRACE_ENTRIES - add_func,
+-	.entries		=3D &stack_dump_trace[add_func],
++	.max_entries		=3D STACK_TRACE_ENTRIES - 1,
++	.entries		=3D &stack_dump_trace[1],
  };
 =20
  static unsigned long max_stack_size;
-@@ -40,7 +54,7 @@ int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
-=20
- static inline void
--check_stack(unsigned long *stack)
-+check_stack(unsigned long ip, unsigned long *stack)
+@@ -58,10 +55,14 @@ check_stack(unsigned long ip, unsigned long *stack)
  {
  	unsigned long this_size, flags;
  	unsigned long *p, *top, *start;
-@@ -71,6 +85,17 @@ check_stack(unsigned long *stack)
++	static int tracer_frame;
++	int frame_size =3D ACCESS_ONCE(tracer_frame);
+ 	int i;
+=20
+ 	this_size =3D ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size =3D THREAD_SIZE - this_size;
++	/* Remove the frame of the tracer */
++	this_size -=3D frame_size;
+=20
+ 	if (this_size <=3D max_stack_size)
+ 		return;
+@@ -73,6 +74,10 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 	local_irq_save(flags);
+ 	arch_spin_lock(&max_stack_lock);
+=20
++	/* In case another CPU set the tracer_frame on us */
++	if (unlikely(!frame_size))
++		this_size -=3D tracer_frame;
++
+ 	/* a race could have already updated it */
+ 	if (this_size <=3D max_stack_size)
+ 		goto out;
+@@ -85,15 +90,12 @@ check_stack(unsigned long ip, unsigned long *stack)
  	save_stack_trace(&max_stack_trace);
 =20
  	/*
-+	 * When fentry is used, the traced function does not get
-+	 * its stack frame set up, and we lose the parent.
-+	 * Add that one in manally. We set up save_stack_trace()
-+	 * to not touch the first element in this case.
-+	 */
-+	if (add_func) {
-+		stack_dump_trace[0] =3D ip;
-+		max_stack_trace.nr_entries++;
-+	}
-+
-+	/*
- 	 * Now find where in the stack these are.
+-	 * When fentry is used, the traced function does not get
+-	 * its stack frame set up, and we lose the parent.
+-	 * Add that one in manally. We set up save_stack_trace()
+-	 * to not touch the first element in this case.
++	 * Add the passed in ip from the function tracer.
++	 * Searching for this on the stack will skip over
++	 * most of the overhead from the stack tracer itself.
  	 */
- 	i =3D 0;
-@@ -124,7 +149,7 @@ stack_trace_call(unsigned long ip, unsigned long parent=
-_ip,
+-	if (add_func) {
+-		stack_dump_trace[0] =3D ip;
+-		max_stack_trace.nr_entries++;
+-	}
++	stack_dump_trace[0] =3D ip;
++	max_stack_trace.nr_entries++;
+=20
+ 	/*
+ 	 * Now find where in the stack these are.
+@@ -123,6 +125,18 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 				found =3D 1;
+ 				/* Start the search from here */
+ 				start =3D p + 1;
++				/*
++				 * We do not want to show the overhead
++				 * of the stack tracer stack in the
++				 * max stack. If we haven't figured
++				 * out what that is, then figure it out
++				 * now.
++				 */
++				if (unlikely(!tracer_frame) && i =3D=3D 1) {
++					tracer_frame =3D (p - stack) *
++						sizeof(unsigned long);
++					max_stack_size -=3D tracer_frame;
++				}
+ 			}
+ 		}
+=20
+@@ -149,7 +163,26 @@ stack_trace_call(unsigned long ip, unsigned long paren=
+t_ip,
  	if (per_cpu(trace_active, cpu)++ !=3D 0)
  		goto out;
 =20
--	check_stack(&stack);
-+	check_stack(parent_ip, &stack);
+-	check_stack(parent_ip, &stack);
++	/*
++	 * When fentry is used, the traced function does not get
++	 * its stack frame set up, and we lose the parent.
++	 * The ip is pretty useless because the function tracer
++	 * was called before that function set up its stack frame.
++	 * In this case, we use the parent ip.
++	 *
++	 * By adding the return address of either the parent ip
++	 * or the current ip we can disregard most of the stack usage
++	 * caused by the stack tracer itself.
++	 *
++	 * The function tracer always reports the address of where the
++	 * mcount call was, but the stack will hold the return address.
++	 */
++	if (fentry)
++		ip =3D parent_ip;
++	else
++		ip +=3D MCOUNT_INSN_SIZE;
++
++	check_stack(ip, &stack);
 =20
   out:
  	per_cpu(trace_active, cpu)--;
@@ -161,13 +215,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u9AAoJEOdOSU1xswtMRrEH/3T4PS45wNaviyz8atB6nLrL
-H0KNAqP+0u3DpKdblVfs1Mh2M6oIbEdG8KTbR4KOUgwaH8+kcLl2RtwpckYx5Ul+
-RHn5ICBWMCQxbLk+jDUH5RCoRnfYJu/ONXKaYQZn/pvRychFBlf77m3yriV16RB9
-/9fs/9bqhDUIFADJFv++WuGq9c8CqTmURyvm1ql5i2nlGieawewsz2rAvWceiZB5
-V8fVoMDTPL62UVCsHozypx9af37pqa1U2+EZHGV/oyb/XLHhkWhQh715BQlwgApT
-RcnkeoTVeX3zB3X7TufpELMLxol0a52xdCg6NK1pM+BwfgLDJyvGIPaqazROY84=
-=RAQ1
+iQEcBAABAgAGBQJRQ3u9AAoJEOdOSU1xswtMlCUIAL1GEMwdZ/zgGB/3t1vD5Pl8
+RzhkHIzhYE+re4s5PGSIhkoWrEoH/mV7lpTUT+aDi4N+F7icRDZ3B3rbmrAuhCq9
+mEspHv5WoXuu87+RWdxWwuv7J0L0KhPQrDYUIiIh3f2djgf1e02WTSRX4aKrPXWZ
+9SOLjv+LSh/oiVeEuL1N/zUI5HIqNA9Ub+GnP4+3STY58q+iqVu1ie4OhaVRcYuY
+qMZBjvWWGoNjit41U5EPfM2SAqXSFmpiKph0QA5rF6L9h+IhhYgh5rIM9cF8Bq+/
+kAZGpKkfu7MpRDwCb5VQlQrM1LcTRo7vzj9KIQD5lCwDGYYZ5m9ibFxBxThqNbo=
+=/OBj
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
