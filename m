@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3COFnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 01:43:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58564 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3COFno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 01:43:44 -0400
-Message-ID: <5142B501.7020204@ti.com>
-Date: Fri, 15 Mar 2013 11:13:29 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1752021Ab3COFon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 01:44:43 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5000 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3COFom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 01:44:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 14 Mar 2013 22:44:41 -0700
+Message-ID: <1363326713.3311.50.camel@bilhuang-vm1>
+Subject: Re: [PATCH 1/1] mfd: palmas: Add power off control
+From: Bill Huang <bilhuang@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Mar 2013 22:51:53 -0700
+In-Reply-To: <5142AF55.80708@nvidia.com>
+References: <1363258680-12600-1-git-send-email-bilhuang@nvidia.com>
+	 <5142AF55.80708@nvidia.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-To: "Philip, Avinash" <avinashphilip@ti.com>
-CC: Paul Walmsley <paul@pwsan.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: Re: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
-References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com> <1363257453-24747-3-git-send-email-avinashphilip@ti.com> <5141CA40.9010005@ti.com> <518397C60809E147AF5323E0420B992E3EA97355@DBDE01.ent.ti.com> <5142ACEA.4060305@ti.com> <518397C60809E147AF5323E0420B992E3EA9742E@DBDE01.ent.ti.com>
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EA9742E@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="ISO-8859-9"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/15/2013 10:51 AM, Philip, Avinash wrote:
-> On Fri, Mar 15, 2013 at 10:38:58, Nori, Sekhar wrote:
->> On 3/15/2013 10:27 AM, Philip, Avinash wrote:
->>> On Thu, Mar 14, 2013 at 18:31:52, Nori, Sekhar wrote:
->>>> On 3/14/2013 4:07 PM, Philip Avinash wrote:
->>>>> da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
->>>>> TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
->>>>> DT node status is set to "okay" DT blob.
->>>>> Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
->>>>> DA8XX_CFGCHIP1_REG.
->>>>
->>>> So there is actually a TBCLK in DA850 - it's just not modeled as a clock
->>>> similar to the way it is done on AM335x? If yes, then instead of adding
->>>> a dummy clock node and doing the TBCLK enable as part of init, why not
->>>> model TBCLK in clock tree even on DA850?
->>>
->>>
->>> TBCLK enabling should done from platform specific way. In DA850 it is done at
->>> CFGCHIP1 register. Unfortunately Davinci clock frame work will support only
->>> clock nodes inside PLLC and PSC modules. Handling of CFGCHP1 require
->>
->> That's true at the moment, but that can be fixed.
+On Fri, 2013-03-15 at 13:19 +0800, Stephen Warren wrote:
+> On 03/14/2013 04:58 AM, Bill Huang wrote:
+> > Hook up "pm_power_off" to palmas power off routine if there is DT
+> > property "ti,system-power-controller" defined, so platform which is
+> > powered by this regulator can be powered off properly.
 > 
-> I will check.
-
-For an example of non-PLL non-PSC clock on davinci, you can look at cdce
-clock registration in board-dm646x-evm.c
-
+> > diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
 > 
->>
->>> modifications in clock frame work.
->>>
->>> Hence handling it as part of initialization.
->>
->> I am curious as to how this clock is handled in am335x. I searched for
->> tbclk in arch/arm/ of linux-next but could not find any references.
->> Where should I be looking?
+> > +	pdata->pm_off = of_property_read_bool(node,
+> > +			"ti,system-power-controller");
 > 
-> Patch is submitted. This patch is not in Paul's tree.
-> 
-> [PATCH v2] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-> https://patchwork.kernel.org/patch/2127581/
+> You would need to add that property to the DT binding documentation for
+> this device.
+Does it work that some time later Laxmain helps to add it when he
+submits his pmic bindings for Palmas?
 
-Thanks!
 
-~Sekhar
