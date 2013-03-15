@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab3COC6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:58:36 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:40552 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab3COC6f (ORCPT
+	id S1753469Ab3CODCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 23:02:55 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:60659 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab3CODCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:58:35 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jingoo Han <jg1.han@samsung.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usb: Document clocks in samsung,exynos4210-ehci/ohci bindings
-Date: Thu, 14 Mar 2013 19:58:23 -0700
-Message-Id: <1363316303-12736-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1363302046-31684-1-git-send-email-dianders@chromium.org>
-References: <1363302046-31684-1-git-send-email-dianders@chromium.org>
+	Thu, 14 Mar 2013 23:02:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPgLHd9BkPUDrgg5jsexFD08=d_ExujMSQmDQd0=9sX5CbPpDg@mail.gmail.com>
+References: <CAPgLHd9BkPUDrgg5jsexFD08=d_ExujMSQmDQd0=9sX5CbPpDg@mail.gmail.com>
+Date: Fri, 15 Mar 2013 07:02:52 +0400
+Message-ID: <CAMo8BfLuOix9uaUM9xmMBmZBwT0X4A_MSr9Ne7t2Nj--UBYdww@mail.gmail.com>
+Subject: Re: [PATCH] xtensa: net: fix invalid use of sizeof in iss_net_setup()
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: chris@zankel.net, yongjun_wei@trendmicro.com.cn,
+        linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exynox4210-ehci and exynos4210-ohci nodes need a clock specified
-using the common clock framework.  Document it.
+On Thu, Mar 14, 2013 at 6:06 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> sizeof() when applied to a pointer typed expression gives the
+> size of the pointer, not that of the pointed data.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  arch/xtensa/platforms/iss/network.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Fixed embarrassing typo adc=>usb.  Thanks Jingoo!
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
 
- Documentation/devicetree/bindings/usb/exynos-usb.txt | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-index f66fcdd..b3abde7 100644
---- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-@@ -10,6 +10,8 @@ Required properties:
-  - reg: physical base address of the controller and length of memory mapped
-    region.
-  - interrupts: interrupt number to the cpu.
-+ - clocks: from common clock binding: handle to usb clock.
-+ - clock-names: from common clock binding: Shall be "usbhost".
- 
- Optional properties:
-  - samsung,vbus-gpio:  if present, specifies the GPIO that
-@@ -22,6 +24,9 @@ Example:
- 		reg = <0x12110000 0x100>;
- 		interrupts = <0 71 0>;
- 		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
-+
-+		clocks = <&clock 285>;
-+		clock-names = "usbhost";
- 	};
- 
- OHCI
-@@ -31,10 +36,15 @@ Required properties:
-  - reg: physical base address of the controller and length of memory mapped
-    region.
-  - interrupts: interrupt number to the cpu.
-+ - clocks: from common clock binding: handle to usb clock.
-+ - clock-names: from common clock binding: Shall be "usbhost".
- 
- Example:
- 	usb@12120000 {
- 		compatible = "samsung,exynos4210-ohci";
- 		reg = <0x12120000 0x100>;
- 		interrupts = <0 71 0>;
-+
-+		clocks = <&clock 285>;
-+		clock-names = "usbhost";
- 	};
 -- 
-1.8.1.3
-
+Thanks.
+-- Max
