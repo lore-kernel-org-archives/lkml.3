@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab3COVWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:22:03 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:58401 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442Ab3COVWC (ORCPT
+	id S932667Ab3COVW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:22:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43624 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932531Ab3COVWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:22:02 -0400
+	Fri, 15 Mar 2013 17:22:55 -0400
+Date: Fri, 15 Mar 2013 21:22:51 +0000
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Remove __attribute__ ((packed))
+Message-ID: <20130315212251.GA28907@opensource.wolfsonmicro.com>
+References: <1363274779-20671-1-git-send-email-dp@opensource.wolfsonmicro.com> <20130315013640.GG4931@opensource.wolfsonmicro.com> <20130315111602.GB30777@opensource.wolfsonmicro.com> <20130315165351.GA8988@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd-xJ4+5e5UMMeF4G6RtWAb=xxDZ_JKE9tNZn057Eym8jw@mail.gmail.com>
-References: <CAPgLHd-xJ4+5e5UMMeF4G6RtWAb=xxDZ_JKE9tNZn057Eym8jw@mail.gmail.com>
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Fri, 15 Mar 2013 16:21:30 -0500
-Message-ID: <CAM0nabF3Bzw9mE39m605WA+pg8q2s_xAA2iTa44t-Q8fiz0UKA@mail.gmail.com>
-Subject: Re: [PATCH -next] char/tpm/tpm_i2c_stm_st33: remove duplicated
- include from tpm_i2c_stm_st33.c
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: key@linux.vnet.ibm.com, mail@srajiv.net, tpmdd@selhorst.net,
-        tpmdd@sirrix.com, yongjun_wei@trendmicro.com.cn,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130315165351.GA8988@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 9:20 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Remove duplicated include.
+On Fri, Mar 15, 2013 at 04:53:51PM +0000, Mark Brown wrote:
+> On Fri, Mar 15, 2013 at 11:16:02AM +0000, Dimitris Papastamos wrote:
+> 
+> > On my system there was no benefit of using it, it just happens
+> > that the struct is aligned properly and needs no padding.
+> 
+> OK, so which system was that and is it not possible that other systems
+> will get something useful from this?
 
- HI Wei, thanks for the patch. I've already staged the same patch for
-inclusion in the next pull request for TPM drivers here:
-
-https://github.com/shpedoikal/linux/commit/6c09a9f5fcb3955afbae2e5a279c5d23481aab77
+Well I guess it has to do with the gcc cross compiler version that
+I've got and the actual data layout of the linking rbtree node.
+The data seems to be aligned on a 4-byte boundary anyhow and
+that should be ok for many systems.
 
 Thanks,
-Kent
-
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/char/tpm/tpm_i2c_stm_st33.c | 2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> index 1f5f71e..4e42c62 100644
-> --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-> +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> @@ -36,7 +36,6 @@
->  #include <linux/i2c.h>
->  #include <linux/fs.h>
->  #include <linux/miscdevice.h>
-> -#include <linux/module.h>
->  #include <linux/kernel.h>
->  #include <linux/delay.h>
->  #include <linux/init.h>
-> @@ -50,7 +49,6 @@
->  #include <linux/uaccess.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> -#include <linux/sched.h>
->
->  #include "tpm.h"
->  #include "tpm_i2c_stm_st33.h"
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Dimitris
