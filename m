@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab3COIlG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:41:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6135 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256Ab3COIlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:41:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="279908645"
-Message-ID: <1363336921.11441.119.camel@sauron.fi.intel.com>
-Subject: Re: MTD : Kernel oops when remounting ubifs as read/write
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Mark Jackson <mpfj-list@mimc.co.uk>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, adrian.hunter@intel.com
-Date: Fri, 15 Mar 2013 10:42:01 +0200
-In-Reply-To: <1363252425.11441.94.camel@sauron.fi.intel.com>
-References: <5134CEF9.5070502@mimc.co.uk>
-	 <1363087506.3348.62.camel@sauron.fi.intel.com>
-	 <51405F3A.3090901@mimc.co.uk>
-	 <1363252425.11441.94.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
+	id S1753874Ab3COIly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:41:54 -0400
+Received: from mail-gh0-f171.google.com ([209.85.160.171]:38699 "EHLO
+	mail-gh0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3COIlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 04:41:52 -0400
+Message-ID: <5142DEC5.7010206@gmail.com>
+Date: Fri, 15 Mar 2013 16:41:41 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Lenky Gao <lenky.gao@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Inactive memory keep growing and how to release it?
+References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com> <20130314101403.GB11636@dhcp22.suse.cz>
+In-Reply-To: <20130314101403.GB11636@dhcp22.suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 11:13 +0200, Artem Bityutskiy wrote:
-> On Wed, 2013-03-13 at 11:12 +0000, Mark Jackson wrote:
-> > Sorry ... this just locks up the unit.
-> 
-> OK, I've reproduced the issue with 3.9-rc2 in nandsim, see the details
-> below. The patch I proposed did not get the error path correctly, but it
-> does fix the issue.
-> 
-> I think what you treat as "lockup" is the fixup process. UBIFS basically
-> reads the entire UBI volume and writes it back. And it uses the atomic
-> change UBI service, which means it also calculates CRC of everything it
-> writes. And this all just takes a lot of time. This has to be done only
-> once on the first mount.
-> 
-> I've attached the following:
-> 
-> 1. The patch which fixes the issue when I use nandsim. It is also
->    inlined in the end. Please, give it a try and be more patient -
->    wait longer. Please, do report your results back.
+On 03/14/2013 06:14 PM, Michal Hocko wrote:
+> On Mon 04-03-13 17:52:22, Lenky Gao wrote:
+>> Hi,
+>>
+>> When i just run a test on Centos 6.2 as follows:
+>>
+>> #!/bin/bash
+>>
+>> while true
+>> do
+>>
+>> 	file="/tmp/filetest"
+>>
+>> 	echo $file
+>>
+>> 	dd if=/dev/zero of=${file} bs=512 count=204800 &> /dev/null
+>>
+>> 	sleep 5
+>> done
+>>
+>> the inactive memory keep growing:
+>>
+>> #cat /proc/meminfo | grep Inactive\(fi
+>> Inactive(file):   420144 kB
+>> ...
+>> #cat /proc/meminfo | grep Inactive\(fi
+>> Inactive(file):   911912 kB
+>> ...
+>> #cat /proc/meminfo | grep Inactive\(fi
+>> Inactive(file):  1547484 kB
+>> ...
+>>
+>> and i cannot reclaim it:
+> How did you try to reclaim the memory? How much memory is still free?
+> Are you above watermaks (/proc/zoneinfo will tell you more)
+>
+>> # cat /proc/meminfo | grep Inactive\(fi
+>> Inactive(file):  1557684 kB
+>> # echo 3 > /proc/sys/vm/drop_caches
+>> # cat /proc/meminfo | grep Inactive\(fi
+>> Inactive(file):  1520832 kB
+>>
+>> I have tested on other version kernel, such as 2.6.30 and .6.11, the
+>> problom also exists.
+>>
+>> When in the final situation, i cannot kmalloc a larger contiguous
+>> memory, especially in interrupt context.
+> This could be related to the memory fragmentation and your kernel seem
+> to be too large to have memory compaction which helps a lot in that
+> area.
+>
+>> Can you give some tips to avoid this?
+> One way would be to increase /proc/sys/vm/min_free_kbytes which will
+> enlarge watermaks so the reclaim starts sooner.
+>   
+>> PS:
+>> # uname -a
+>> Linux localhost.localdomain 2.6.32-220.el6.x86_64 #1 SMP Tue Dec 6
+>> 19:48:22 GMT 2011 x86_64 x86_64 x86_64 GNU/Linux
+> This is really an old kernel and also a distribution one which might
+> contain a lot of patches on top of the core kernel. I would suggest to
+> contact Redhat or try to reproduce the issue with the vanilla and
 
->From your last e-mail I see that the patch solves the issue for you if
-the CRC32 problem is worked-around. I am pushing this fix to the ubifs
-git tree. Thanks for the report.
+What's the meaning of vanilla?
 
--- 
-Best Regards,
-Artem Bityutskiy
+> up-to-date kernel and report here.
 
