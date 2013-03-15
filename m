@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3COQxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:53:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755078Ab3COQxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:53:31 -0400
-Date: Fri, 15 Mar 2013 17:51:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ming Lei <tom.leiming@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
-	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
-	.patch added to -mm tree
-Message-ID: <20130315165131.GA32065@redhat.com>
-References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
+	id S1754840Ab3COQx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:53:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52379 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753655Ab3COQx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:53:57 -0400
+Date: Fri, 15 Mar 2013 16:53:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Remove __attribute__ ((packed))
+Message-ID: <20130315165351.GA8988@opensource.wolfsonmicro.com>
+References: <1363274779-20671-1-git-send-email-dp@opensource.wolfsonmicro.com>
+ <20130315013640.GG4931@opensource.wolfsonmicro.com>
+ <20130315111602.GB30777@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130315111602.GB30777@opensource.wolfsonmicro.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15, Ming Lei wrote:
->
-> On Fri, Mar 15, 2013 at 9:46 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 03/15, Ming Lei wrote:
-> >>
-> >> On Fri, Mar 15, 2013 at 12:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> >  static inline int atomic_inc_unless_negative(atomic_t *p)
-> >> >  {
-> >> >         int v, v1;
-> >> > -       for (v = 0; v >= 0; v = v1) {
-> >> > +       for (v = atomic_read(p); v >= 0; v = v1) {
-> >> >                 v1 = atomic_cmpxchg(p, v, v + 1);
-> >>
-> >> Unfortunately, the above will exchange the current value even though
-> >> it is negative, so it isn't correct.
-> >
-> > Hmm, why? We always check "v >= 0" before we try to do
-> > atomic_cmpxchg(old => v) ?
->
-> Sorry, yes, you are right. But then your patch is basically same with the
-> previous one, isn't it?
 
-Sure, the logic is the same, just the patch (and the code) looks simpler
-and more understandable.
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> And has same problem, see below discussion:
->
-> http://marc.info/?t=136284366900001&r=1&w=2
+On Fri, Mar 15, 2013 at 11:16:02AM +0000, Dimitris Papastamos wrote:
 
-The lack of the barrier?
+> On my system there was no benefit of using it, it just happens
+> that the struct is aligned properly and needs no padding.
 
-I thought about this, this should be fine? atomic_add_unless() has the same
-"problem", but this is documented in atomic_ops.txt:
+OK, so which system was that and is it not possible that other systems
+will get something useful from this?
 
-	atomic_add_unless requires explicit memory barriers around the operation
-	unless it fails (returns 0).
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I thought that atomic_add_unless_negative() should have the same
-guarantees?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Paul? Frederic?
+iQIcBAEBAgAGBQJRQ1IYAAoJELSic+t+oim9rpcQAJ5Sm/AwYdXwUtxk9bsDs9dK
+NS0ZU8gfkmAB4M7GCdXneITEENx6LGBUo760EVuVvFqpULWzti5xUS/T8/YWCpKR
+H6cWyonmATP4jpRBI70T0dn7yiW5lVXlJbwJfElpUpzwx14ln01NWkh1zmJwsoTP
+MTxFrwHT9Y4WwTyGqlcUdLkIPAqLBJ9nCMPMimo80EXeVGVeWNDV6NUbTWYj3YXp
+O4DCITn6FmsJU802j7XXC/syXIm583r6leLKn+542U5jti9mjbSXOTwNJr2VAabu
+cJmQUJf/s65WOuAbMxx5XBN6WYEyziWujbvFjYUozATnO/rTL7SU5KOz64Rml6xm
+OVUhuV/gWtwxsAsuEKlCuHnUrwo6M3zYsAcZ9pibKEPOdTcORpLBNSTu76Kk399y
+x8gvOf8adoidRs8HZvaBkVZbBLwbeih/33vbOatAWjWri+3nyio3UhPLw6PQOy1A
+UBpT4/VAnKcf0OlGpNQ3M7ymceX/gRWAmM2PXWfURGa4uu/TZRoJ7tJwW6XK/I1l
+4bpXodcTehZEebBh3raK1wxSl9GGVsSToU3U5KgslJi3oUZC1Dy9AjdO3yb2DV75
+X1PUsMIDIXI5R+vy7EjzOnog6pRol1QT/o9Pep6UxlVOCDfl3I6tBjV8ch3lhu5c
+UkD8StYPBxfXpLjbMOCQ
+=8HNj
+-----END PGP SIGNATURE-----
 
-Oleg.
-
+--ew6BAiZeqk4r7MaW--
