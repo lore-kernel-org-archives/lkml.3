@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3COCvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:51:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:40366 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3COCvI (ORCPT
+	id S1753429Ab3COC6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:58:36 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:40552 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3COC6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:51:08 -0400
-X-Spam-Score: -100.8
-Message-ID: <51428C81.6000204@asianux.com>
-Date: Fri, 15 Mar 2013 10:50:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>, mikey@neuling.org,
-        matt@ozlabs.org, imunsie@au1.ibm.com
-CC: linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 22:58:35 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jingoo Han <jg1.han@samsung.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] usb: Document clocks in samsung,exynos4210-ehci/ohci bindings
+Date: Thu, 14 Mar 2013 19:58:23 -0700
+Message-Id: <1363316303-12736-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363302046-31684-1-git-send-email-dianders@chromium.org>
+References: <1363302046-31684-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+The exynox4210-ehci and exynos4210-ohci nodes need a clock specified
+using the common clock framework.  Document it.
 
-  do next-* tree support powerpc POWER7 with allmodconfig ?
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2:
+- Fixed embarrassing typo adc=>usb.  Thanks Jingoo!
 
-  I met an issue, can we bear it (or I need additional trying) ?
+ Documentation/devicetree/bindings/usb/exynos-usb.txt | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-
-Compiling:
-  make V=1 EXTRA_CFLAGS=-W ARCH=powerpc allmodconfig
-    set cpu type POWER7 in menuconfig.
-    set cross-compiler in menuconfig.
-      under Fedora 16 x86_64 laptop
-      /usr/bin/powerpc64-linux-gnu-gcc -v
-        gcc version 4.7.1 20120606 (Red Hat 4.7.1-0.1.20120606) (GCC)
-
-Issue:
-  error:
-    /android/public-kernel/linux-next/arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-    /android/public-kernel/linux-next/arch/powerpc/kernel/exceptions-64s.S:1304: Error: attempt to move .org backwards
-
-  command:
-    powerpc64-linux-gnu-gcc -m64 -Wp,-MD,arch/powerpc/kernel/.head_64.o.d  -nostdinc -isystem /usr/lib/gcc/powerpc64-linux-gnu/4.7.1/include -I/android/public-kernel/linux-next/arch/powerpc/include -Iarch/powerpc/include/generated  -I/android/public-kernel/linux-next/include -Iinclude -I/android/public-kernel/linux-next/arch/powerpc/include/uapi -Iarch/powerpc/include/generated/uapi -I/android/public-kernel/linux-next/include/uapi -Iinclude/generated/uapi -include /android/public-kernel/linux-next/include/linux/kconfig.h -D__KERNEL__  -I/android/public-kernel/linux-next/arch/powerpc -Iarch/powerpc -D__ASSEMBLY__  -I/android/public-kernel/linux-next/arch/powerpc -Iarch/powerpc -Wa,-maltivec -gdwarf-2   -c -o arch/powerpc/kernel/head_64.o /android/public-kernel/linux-next/arch/powerpc/kernel/head_64.S
-
-  (head_64.S includes exceptions-64.S)
-
-
-  thanks.
-
+diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+index f66fcdd..b3abde7 100644
+--- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
++++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+@@ -10,6 +10,8 @@ Required properties:
+  - reg: physical base address of the controller and length of memory mapped
+    region.
+  - interrupts: interrupt number to the cpu.
++ - clocks: from common clock binding: handle to usb clock.
++ - clock-names: from common clock binding: Shall be "usbhost".
+ 
+ Optional properties:
+  - samsung,vbus-gpio:  if present, specifies the GPIO that
+@@ -22,6 +24,9 @@ Example:
+ 		reg = <0x12110000 0x100>;
+ 		interrupts = <0 71 0>;
+ 		samsung,vbus-gpio = <&gpx2 6 1 3 3>;
++
++		clocks = <&clock 285>;
++		clock-names = "usbhost";
+ 	};
+ 
+ OHCI
+@@ -31,10 +36,15 @@ Required properties:
+  - reg: physical base address of the controller and length of memory mapped
+    region.
+  - interrupts: interrupt number to the cpu.
++ - clocks: from common clock binding: handle to usb clock.
++ - clock-names: from common clock binding: Shall be "usbhost".
+ 
+ Example:
+ 	usb@12120000 {
+ 		compatible = "samsung,exynos4210-ohci";
+ 		reg = <0x12120000 0x100>;
+ 		interrupts = <0 71 0>;
++
++		clocks = <&clock 285>;
++		clock-names = "usbhost";
+ 	};
 -- 
-Chen Gang
+1.8.1.3
 
-Asianux Corporation
