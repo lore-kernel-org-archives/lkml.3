@@ -1,236 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3COCgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:36:04 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45912 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab3COCgC (ORCPT
+	id S1752909Ab3COCi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:38:26 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:48027 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751409Ab3COCiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:36:02 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 2/5] zero-filled pages awareness
-Date: Fri, 15 Mar 2013 10:34:17 +0800
-Message-Id: <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
-x-cbid: 13031502-5140-0000-0000-000002E51110
+	Thu, 14 Mar 2013 22:38:25 -0400
+Date: Thu, 14 Mar 2013 22:38:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
+	Implementation
+Message-ID: <20130315023821.GB25419@Krystal>
+References: <20130311213602.GB9829@Krystal> <20130314042227.GA15675@dcvr.yhbt.net> <20130314131855.GA9155@Krystal> <20130314190746.GA16120@dcvr.yhbt.net> <20130314194853.GA22198@Krystal> <20130314213209.GA15771@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314213209.GA15771@dcvr.yhbt.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compression of zero-filled pages can unneccessarily cause internal
-fragmentation, and thus waste memory. This special case can be
-optimized.
+* Eric Wong (normalperson@yhbt.net) wrote:
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > * Eric Wong (normalperson@yhbt.net) wrote:
+> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > > The advantage of using splice() over dequeue() is that you will reduce
+> > > > the amount of interactions between concurrent enqueue and dequeue
+> > > > operations on the head and tail of the same queue.
+> > > 
+> > > I wanted to use splice here originally, but epoll_wait(2) may not
+> > > consume the entire queue, as it's limited to maxevents specified by the
+> > > user calling epoll_wait.
+> > 
+> > I see,
+> > 
+> > > 
+> > > With unconsumed elements, I need to preserve ordering of the queue to
+> > > avoid starvation.  So I would either need to:
+> > > 
+> > > a) splice the unconsumed portion back to the head of the shared queue.
+> > >    I'm not sure if this is possible while elements are being enqueued...
+> > 
+> > That would be a double-ended queue. I haven't thought this problem
+> > through yet.
+> > 
+> > >    Using a mutex for splicing back to unconsumed elements is OK, and
+> > >    probably required anyways since we need to keep EPOLLONESHOT
+> > >    unmasking synced with dequeue.
+> > > 
+> > > b) preserve the unconsumed spliced queue across epoll_wait invocations
+> > >    but that requires checking both queues for event availability...
+> > 
+> > I think b) should be preferred over a).
+> > 
+> > Basically, instead of having the "unconsumed element" queue on the stack
+> > as I suggested, you might want to keep it across epoll_wait invocations.
+> > 
+> > Before you start digging in the unconsumed element queue, you just start
+> > by splicing the content of the shared queue into the tail of unconsumed
+> > queue. Then, you simply dequeue the unconsumed queue elements until you
+> > either reach the end or the max nr.
+> > 
+> > You should note that with this scheme, you'll have to dequeue items from
+> > the unconsumed queue rather than just iterating over the elements. The
+> > nice side of consuming all the elements (in the temp queue on the local
+> > stack) is that you don't care about dequeuing, since the entire queue
+> > will vanish. However, in this case, since you care about keeping the
+> > queue after a partial iteration, you need to dequeue from it.
+> > 
+> > And yes, this approach involves checking both queues for event
+> > availability. Hopefully none of this will be too much of an issue
+> > performance-wise.
+> 
+> Right.  I will try this, I don't think the check will be too expensive.
+> 
+> When dequeuing from the unconsumed queue, perhaps there should be a
+> "dequeue_local" function which omits the normal barriers required
+> for the shared queue.
+> 
+> With a splice and without needing barriers for iteration, this sounds good.
 
-This patch captures zero-filled pages, and marks their corresponding
-zcache backing page entry as zero-filled. Whenever such zero-filled
-page is retrieved, we fill the page frame with zero.
+Well actually, __wfcq_dequeue() is really not that expensive. In terms
+of synchronization, here is what it typically does:
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |   81 +++++++++++++++++++++++++++++++---
- 1 files changed, 75 insertions(+), 6 deletions(-)
+node = ___wfcq_node_sync_next(&head->node);
+  -> busy wait if node->next is NULL. This check is needed even if we
+     work on a "local" queue, because the O(1) splice operation does not
+     walk over every node to check for NULL next pointer: this is left
+     to the dequeue/iteration operations.
+if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+  -> only taken if we are getting the last node of the queue. Happens
+     at most once per batch.
+}
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index d73dd4b..6c35c7d 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -59,6 +59,12 @@ static inline void frontswap_tmem_exclusive_gets(bool b)
- }
- #endif
- 
-+/*
-+ * mark pampd to special value in order that later
-+ * retrieve will identify zero-filled pages
-+ */
-+#define ZERO_FILLED 0x2
-+
- /* enable (or fix code) when Seth's patches are accepted upstream */
- #define zcache_writeback_enabled 0
- 
-@@ -543,7 +549,23 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- {
- 	void *pampd = NULL, *cdata = data;
- 	unsigned clen = size;
-+	bool zero_filled = false;
- 	struct page *page = (struct page *)(data), *newpage;
-+	char *user_mem;
-+
-+	user_mem = kmap_atomic(page);
-+
-+	/*
-+	 * Compressing zero-filled pages will waste memory and introduce
-+	 * serious fragmentation, skip it to avoid overhead
-+	 */
-+	if (page_is_zero_filled(user_mem)) {
-+		kunmap_atomic(user_mem);
-+		clen = 0;
-+		zero_filled = true;
-+		goto got_pampd;
-+	}
-+	kunmap_atomic(user_mem);
- 
- 	if (!raw) {
- 		zcache_compress(page, &cdata, &clen);
-@@ -592,6 +614,8 @@ got_pampd:
- 		zcache_eph_zpages_max = zcache_eph_zpages;
- 	if (ramster_enabled && raw)
- 		ramster_count_foreign_pages(true, 1);
-+	if (zero_filled)
-+		pampd = (void *)ZERO_FILLED;
- out:
- 	return pampd;
- }
-@@ -601,14 +625,31 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- {
- 	void *pampd = NULL, *cdata = data;
- 	unsigned clen = size;
-+	bool zero_filled = false;
- 	struct page *page = (struct page *)(data), *newpage;
- 	unsigned long zbud_mean_zsize;
- 	unsigned long curr_pers_zpages, total_zsize;
-+	char *user_mem;
- 
- 	if (data == NULL) {
- 		BUG_ON(!ramster_enabled);
- 		goto create_pampd;
- 	}
-+
-+	user_mem = kmap_atomic(page);
-+
-+	/*
-+	 * Compressing zero-filled pages will waste memory and introduce
-+	 * serious fragmentation, skip it to avoid overhead
-+	 */
-+	if (page_is_zero_filled(page)) {
-+		kunmap_atomic(user_mem);
-+		clen = 0;
-+		zero_filled = true;
-+		goto got_pampd;
-+	}
-+	kunmap_atomic(user_mem);
-+
- 	curr_pers_zpages = zcache_pers_zpages;
- /* FIXME CONFIG_RAMSTER... subtract atomic remote_pers_pages here? */
- 	if (!raw)
-@@ -674,6 +715,8 @@ got_pampd:
- 		zcache_pers_zbytes_max = zcache_pers_zbytes;
- 	if (ramster_enabled && raw)
- 		ramster_count_foreign_pages(false, 1);
-+	if (zero_filled)
-+		pampd = (void *)ZERO_FILLED;
- out:
- 	return pampd;
- }
-@@ -735,7 +778,8 @@ out:
-  */
- void zcache_pampd_create_finish(void *pampd, bool eph)
- {
--	zbud_create_finish((struct zbudref *)pampd, eph);
-+	if (pampd != (void *)ZERO_FILLED)
-+		zbud_create_finish((struct zbudref *)pampd, eph);
- }
- 
- /*
-@@ -780,6 +824,14 @@ static int zcache_pampd_get_data(char *data, size_t *sizep, bool raw,
- 	BUG_ON(preemptible());
- 	BUG_ON(eph);	/* fix later if shared pools get implemented */
- 	BUG_ON(pampd_is_remote(pampd));
-+
-+	if (pampd == (void *)ZERO_FILLED) {
-+		handle_zero_filled_page(data);
-+		if (!raw)
-+			*sizep = PAGE_SIZE;
-+		return 0;
-+	}
-+
- 	if (raw)
- 		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
- 						sizep, eph);
-@@ -801,12 +853,21 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 					struct tmem_oid *oid, uint32_t index)
- {
- 	int ret;
--	bool eph = !is_persistent(pool);
-+	bool eph = !is_persistent(pool), zero_filled = false;
- 	struct page *page = NULL;
- 	unsigned int zsize, zpages;
- 
- 	BUG_ON(preemptible());
- 	BUG_ON(pampd_is_remote(pampd));
-+
-+	if (pampd == (void *)ZERO_FILLED) {
-+		handle_zero_filled_page(data);
-+		zero_filled = true;
-+		if (!raw)
-+			*sizep = PAGE_SIZE;
-+		goto zero_fill;
-+	}
-+
- 	if (raw)
- 		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
- 						sizep, eph);
-@@ -818,6 +879,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 	}
- 	page = zbud_free_and_delist((struct zbudref *)pampd, eph,
- 					&zsize, &zpages);
-+zero_fill:
- 	if (eph) {
- 		if (page)
- 			zcache_eph_pageframes =
-@@ -837,7 +899,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(eph, -1);
--	if (page)
-+	if (page && !zero_filled)
- 		zcache_free_page(page);
- 	return ret;
- }
-@@ -851,16 +913,23 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- {
- 	struct page *page = NULL;
- 	unsigned int zsize, zpages;
-+	bool zero_filled = false;
- 
- 	BUG_ON(preemptible());
--	if (pampd_is_remote(pampd)) {
-+
-+	if (pampd == (void *)ZERO_FILLED)
-+		zero_filled = true;
-+
-+	if (pampd_is_remote(pampd) && !zero_filled) {
-+
- 		BUG_ON(!ramster_enabled);
- 		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
- 		if (pampd == NULL)
- 			return;
- 	}
- 	if (is_ephemeral(pool)) {
--		page = zbud_free_and_delist((struct zbudref *)pampd,
-+		if (!zero_filled)
-+			page = zbud_free_and_delist((struct zbudref *)pampd,
- 						true, &zsize, &zpages);
- 		if (page)
- 			zcache_eph_pageframes =
-@@ -883,7 +952,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(is_ephemeral(pool), -1);
--	if (page)
-+	if (page && !zero_filled)
- 		zcache_free_page(page);
- }
- 
+head->node.next = next;
+  -> a simple store.
+
+smp_read_barrier_depends();
+  -> no-op on everything but Alpha.
+
+return node;
+
+So my recommendation would be to be careful before trying to come up
+with flavors that remove barriers if those are not actually hurting the
+fast-path significantly. By dequeue fast-path, I mean what needs to be
+executed for dequeue of each node.
+
+> 
+> > Another approach could be to let you work directly on the shared queue:
+> > 
+> > I could possibly implement a
+> > 
+> > void __wfcq_snapshot(struct wfcq_head *head,
+> >                 struct wfcq_tail *tail);
+> > 
+> > That would save a tail shapshot that would then be used to stop
+> > iteration, dequeue and splice at the location of the tail snapshot. And
+> > 
+> > void __wfcq_snapshot_reset(struct wfcq_head *head,
+> >                 struct wfcq_tail *tail);
+> > 
+> > would set the tail snapshot pointer back to NULL.
+> > 
+> > This would require a few extra checks, but nothing very expensive I
+> > expect.
+> > 
+> > Thoughts ?
+> 
+> I'm not sure I follow, would using it be something like this?
+> 
+> 	snapshot
+> 	iterate (read-only, no dequeue)
+> 	splice(discard_head, discard_tail, shared_head, iter_stop_point)
+> 	snapshot_reset
+
+My idea was more like:
+
+snapshot
+__wfcq_dequeue until returns NULL or reach max
+snapshot_reset
+
+But I would really prefer the splice approach unless there is a very
+significant performance gain to do otherwise, because I don't want to
+clutter the API with various ways of performing the same thing
+needlessly.
+
+> 
+> I also use an atomic state variable to prevent an item from being queued
+> twice, and I unset that while iterating+dequeueing.
+> 
+> I change the state to IDLE while iterating and ep_poll_callback sets
+> state READY on any item before being spliced out, that would cause the
+> event to be lost when it's spliced out.
+> 
+> So I think dequeue/state IDLE while iterating is required for epoll_wait,
+> I'll try the private queue.
+
+Yep. Just to summarize the private queue approach:
+
+within your epoll queue structure:
+
+struct wfcq_tail queue_tail;       /* enqueue fast-path */
+
+/* Below only touched by splice and dequeue */
+struct wfcq_head queue_head;
+struct wfcq_tail unconsumed_tail;
+struct wfcq_head unconsumed_head ____cacheline_aligned;  /* dequeue fast-path */
+
+In fact, what we really, really care about is that enqueue and dequeue
+fast-paths don't touch the same cache-line. For the other fields, we
+don't really care.
+
+Then, when you need to handle the batch:
+
+/* Hold dequeue mutex */
+
+(void) __wfcq_splice(&epoll_queue->unconsumed_head,
+        &epoll_queue->unconsumed_tail,
+        &epoll_queue->queue_head,
+        &epoll_queue->queue_tail);
+/* You don't care about the return value here. */
+
+for (i = 0; i < max_ev; i++) {
+        struct wfcq_node *node;
+
+        node = __wfcq_dequeue(&epoll_queue->unconsumed_head,
+                        &epoll_queue->unconsumed_tail);
+        if (!node)
+                break;
+        /* Deal with node, free node's container */
+}
+
+/* Release dequeue mutex */
+
+You don't need to do an extra check for empty queues, because these
+checks are embedded into splice and dequeue operations.
+
+Thanks,
+
+Mathieu
+
+
 -- 
-1.7.7.6
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
