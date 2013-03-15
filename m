@@ -1,127 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab3COUGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 16:06:45 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56675 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab3COUGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 16:06:38 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] serial: 8250_dw: add support for clk api
-Date: Fri, 15 Mar 2013 21:06:23 +0100
-Message-Id: <1363377988-4966-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363377988-4966-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1363377988-4966-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S932108Ab3COUJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 16:09:26 -0400
+Received: from smtp0.epfl.ch ([128.178.224.218]:39387 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753522Ab3COUJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 16:09:25 -0400
+Message-ID: <51437FEA.20807@epfl.ch>
+Date: Fri, 15 Mar 2013 21:09:14 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
+ sleep
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch> <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de> <512E2F98.6070404@epfl.ch> <51347B06.8090604@epfl.ch> <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de> <513EFE17.6030203@epfl.ch> <CAK5ve-+TfHmvx8fiim2yyZhKbhgieO-WDqd+HG7ViLm=Fk3zNA@mail.gmail.com> <20130315185953.GA11351@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130315185953.GA11351@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
+Hi,
 
-This commit implements support for using the clk api; this lets us use
-the "clocks" property with device tree, instead of having to use
-clock-frequency.
+On 03/15/2013 07:59 PM, Thierry Reding wrote:
+>>
+>> Hi Florian and Thierry,
+>>
+>> Sorry, guys. My bad! I'm using GMAIL filtering my emails. This email
+>> goes into my arm-linux mail list archive and I totally missed it.
+>>
+>> I can merge this patch into my for-next branch, but it will be in 3.10
+>> not 3.9-rcX.
+>>
+>> Or Thierry, can you merge that to 3.9-rcX through your tree with my Ack?
+>
+> I think 3.10 would be fine. We missed the merge window on this one and
+> it isn't really a fix so it's a bit late for 3.9 now.
+>
+> If Florian really absolutely needs this it can probably be done, but if
+> he can wait another few weeks it's certainly worth taking it through
+> linux-next for a while just to be safe.
+>
 
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/tty/serial/8250/8250_dw.c |   33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+I agree, another few weeks is not a problem :) Bryan, I let you merge 
+this, ok?
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index db0e66f..9a834a1 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -26,6 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/acpi.h>
-+#include <linux/clk.h>
- 
- #include "8250.h"
- 
-@@ -55,8 +56,9 @@
- 
- 
- struct dw8250_data {
--	int	last_lcr;
--	int	line;
-+	int		last_lcr;
-+	int		line;
-+	struct clk	*clk;
- };
- 
- static void dw8250_serial_out(struct uart_port *p, int offset, int value)
-@@ -136,8 +138,13 @@ static int dw8250_probe_of(struct uart_port *p)
- 	if (!of_property_read_u32(np, "reg-shift", &val))
- 		p->regshift = val;
- 
-+	/* clock got configured through clk api, all done */
-+	if (p->uartclk)
-+		return 0;
-+
-+	/* try to find out clock frequency from DT as fallback */
- 	if (of_property_read_u32(np, "clock-frequency", &val)) {
--		dev_err(p->dev, "no clock-frequency property set\n");
-+		dev_err(p->dev, "clk or clock-frequency not defined\n");
- 		return -EINVAL;
- 	}
- 	p->uartclk = val;
-@@ -294,9 +301,21 @@ static int dw8250_probe(struct platform_device *pdev)
- 	if (!uart.port.membase)
- 		return -ENOMEM;
- 
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(data->clk))
-+		data->clk = NULL;
-+	else
-+		clk_prepare_enable(data->clk);
-+
- 	uart.port.iotype = UPIO_MEM;
- 	uart.port.serial_in = dw8250_serial_in;
- 	uart.port.serial_out = dw8250_serial_out;
-+	uart.port.private_data = data;
-+	uart.port.uartclk = clk_get_rate(data->clk);
- 
- 	dw8250_setup_port(&uart);
- 
-@@ -312,12 +331,6 @@ static int dw8250_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--
--	uart.port.private_data = data;
--
- 	data->line = serial8250_register_8250_port(&uart);
- 	if (data->line < 0)
- 		return data->line;
-@@ -333,6 +346,8 @@ static int dw8250_remove(struct platform_device *pdev)
- 
- 	serial8250_unregister_port(data->line);
- 
-+	clk_disable_unprepare(data->clk);
-+
- 	return 0;
- }
- 
--- 
-1.7.10.4
+Thank you,
 
+Florian
