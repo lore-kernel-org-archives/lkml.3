@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab3COQ5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:57:42 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:41412 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab3COQ5l (ORCPT
+	id S1755121Ab3COQ6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:58:03 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36298 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab3COQ6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:57:41 -0400
-Date: Fri, 15 Mar 2013 09:57:38 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
-Subject: [GIT PATCH] char/misc fixes for 3.9-rc2
-Message-ID: <20130315165738.GA20639@kroah.com>
+	Fri, 15 Mar 2013 12:58:01 -0400
+Date: Fri, 15 Mar 2013 16:57:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bill Huang <bilhuang@nvidia.com>
+Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+	clk_prepare_enable/clk_disable_unprepare
+Message-ID: <20130315165744.GK4977@n2100.arm.linux.org.uk>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com> <20130312134032.GU4977@n2100.arm.linux.org.uk> <1363139273.21694.11.camel@bilhuang-vm1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363139273.21694.11.camel@bilhuang-vm1>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+On Tue, Mar 12, 2013 at 06:47:53PM -0700, Bill Huang wrote:
+> On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
+> > On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> > > Add the below four notifier events so drivers which are interested in
+> > > knowing the clock status can act accordingly. This is extremely useful
+> > > in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+> > > 
+> > > PRE_CLK_ENABLE
+> > > POST_CLK_ENABLE
+> > > PRE_CLK_DISABLE
+> > > POST_CLK_DISABLE
+> > > 
+> > > Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+> > 
+> > NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
+> > 
+> > The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
+> > *EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
+> > clk_unprepare().  Those two functions are *merely* helpers for drivers
+> > who don't wish to make the individual calls.
+> > 
+> > Drivers are still completely free to call the individual functions, at
+> > which point your proposal breaks horribly - and they _do_ call the
+> > individual functions.
+>
+> I'm proposing to give device driver a choice when it knows that some
+> driver might be interested in knowing its clock's enabled/disabled state
+> change at runtime, this is very important for centralized DVFS core
+> driver. It is not meant to be covering all cases especially for drivers
+> which is not part of the DVFS, so we don't care if it is calling
+> clk_enable/disable directly or not.
 
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+But you're not giving drivers a choice.  You're giving them an ultimatum.
+Either they use clk_prepare_enable() which must only be called from non-
+atomic contexts and have the notifiers, or if they need to use the
+individual functions (which is what they _should_ be doing but people
+are too lazy to properly convert stuff) they don't get the option of
+the notifiers at all.
 
-are available in the git repository at:
+This sucks totally, design wise.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.9-rc2
-
-for you to fetch changes up to 3d374d09f16f64ab4d71704cbe621514d36cd0b1:
-
-  final removal of CONFIG_EXPERIMENTAL (2013-03-12 16:30:27 -0700)
-
-----------------------------------------------------------------
-Char/misc fixes for 3.9-rc2
-
-Here are some tiny fixes for the w1 drivers and the final removal patch
-for getting rid of CONFIG_EXPERIMENTAL (all users of it are now gone
-from your tree, this just drops the Kconfig item itself.)
-
-All have been in the linux-next tree for a while.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Johan Hovold (3):
-      ARM: w1-gpio: fix erroneous gpio requests
-      w1-gpio: remove erroneous __exit and __exit_p()
-      w1-gpio: fix unused variable warning
-
-Kees Cook (1):
-      final removal of CONFIG_EXPERIMENTAL
-
-Marcin Jurkowski (1):
-      w1: fix oops when w1_search is called from netlink connector
-
- arch/arm/mach-at91/board-foxg20.c    | 1 +
- arch/arm/mach-at91/board-stamp9g20.c | 1 +
- arch/arm/mach-ixp4xx/vulcan-setup.c  | 1 +
- arch/arm/mach-pxa/raumfeld.c         | 1 +
- drivers/w1/masters/w1-gpio.c         | 6 ++++--
- drivers/w1/w1.c                      | 3 ++-
- init/Kconfig                         | 4 ----
- 7 files changed, 10 insertions(+), 7 deletions(-)
+The whole point of clk_prepare_enable() is that it is a helper function
+to _only_ do the clk_prepare() call followed by a clk_enable() call and
+_nothing_ _else_ _what_ _so_ _ever_.
