@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab3COEPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 00:15:44 -0400
-Received: from mail05-md.ns.itscom.net ([175.177.155.115]:37665 "EHLO
-	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab3COEPl (ORCPT
+	id S1751262Ab3COE00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 00:26:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36858 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3COE0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 00:15:41 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 0/9] overlay filesystem: request for inclusion (v17)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        mszeredi@suse.cz
-In-Reply-To: <20130315012541.GU21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <20130313160854.54ac0491044371b4db214698@linux-foundation.org> <CAJfpeguvhJaoSBDKEXoJFn_C=52aXbC9L2ALJvp6ekwEGyQX_g@mail.gmail.com> <20130315012541.GU21522@ZenIV.linux.org.uk>
-Date: Fri, 15 Mar 2013 13:15:36 +0900
-Message-ID: <19058.1363320936@jrobl>
+	Fri, 15 Mar 2013 00:26:24 -0400
+Message-ID: <5142A2D5.5090009@ti.com>
+Date: Fri, 15 Mar 2013 09:55:57 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Peter Korsgaard <jacmet@sunsite.dk>
+CC: Philip Avinash <avinashphilip@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        <prakash.pm@ti.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] pwm: pwm-tiecap: Add device-tree binding support
+ for da850 SOC
+References: <1363257158-11615-1-git-send-email-avinashphilip@ti.com> <1363257158-11615-3-git-send-email-avinashphilip@ti.com> <5141B7CC.7000700@ti.com> <87txoe56lk.fsf@dell.be.48ers.dk>
+In-Reply-To: <87txoe56lk.fsf@dell.be.48ers.dk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3/14/2013 9:14 PM, Peter Korsgaard wrote:
+>>>>>> "Sekhar" == Sekhar Nori <nsekhar@ti.com> writes:
+> 
+>  >> Required properties:
+>  >> -- compatible: Must be "ti,am33xx-ecap"
+>  >> +- compatible: Must be "ti,am33xx-ecap" or "ti,da850-ecap"
+>  >> - #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
+>  >> First cell specifies the per-chip index of the PWM to use, the second
+>  >> cell is the period in nanoseconds and bit 0 in the third cell is used to
+>  >> diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+>  >> index 22e96e2..e0d96c8 100644
+>  >> --- a/drivers/pwm/pwm-tiecap.c
+>  >> +++ b/drivers/pwm/pwm-tiecap.c
+>  >> @@ -197,6 +197,7 @@ static const struct pwm_ops ecap_pwm_ops = {
+>  >> 
+>  >> static const struct of_device_id ecap_of_match[] = {
+>  >> { .compatible	= "ti,am33xx-ecap" },
+>  >> +	{ .compatible	= "ti,da850-ecap" },
+>  >> {},
+> 
+>  Sekhar> You add a new compatible, but don't really show any changes in
+>  Sekhar> driver in this series. So why can't we simply use
+>  Sekhar> ti,am33xx-ecap on DA850 too?
+> 
+> Indeed, if the hardware block is identical the dts should simply list:
+> 
+> compatible = "ti,da850-ecap", "ti,am33xx-ecap"
+> 
+> And the driver only bind to ti,am33xx-ecap (unless there ever needs to
+> be a da850 specific workarounde.
 
-Al Viro:
-> Umm...  I would prefer it to go through vfs.git, with serious modifications.
-> I really don't like the idea of xattr-based whiteouts, for example.
+Okay, so this is to future proof the DA850 DT blob. Makes sense. Thanks!
 
-I'd ask you how do you think another whiteout approach?
-Here is a part of a posts which describes about aufs2 in 2009
-<http://marc.info/?l=linux-kernel&m=123934927611907&w=2>
-
-	:::
-+- whiteout is hardlinked in order to reduce the consumption of inodes
-+  on branch
-	:::
-+- kernel thread for removing the dir who has a plenty of whiteouts
-	:::
-+The whiteout is for hiding files on lower branches. Also it is applied
-+to stop readdir going lower branches.
-+The latter case is called \[oq]opaque directory.\[cq] Any
-+whiteout is an empty file, it means whiteout is just an mark.
-+In the case of hiding lower files, the name of whiteout is
-+\[oq]\*[AUFS_WH_PFX]<filename>.\[cq]
-+And in the case of stopping readdir, the name is
-+\[oq]\*[AUFS_WH_PFX]\*[AUFS_WH_PFX].opq\[cq] or
-+\[oq]\*[AUFS_WH_PFX]__dir_opaque.\[cq] The name depends upon your compile
-+configuration
-+CONFIG_AUFS_COMPAT.
-+.\" All of newly created or renamed directory will be opaque.
-+All whiteouts are hardlinked,
-+including \[oq]<writable branch top dir>/\*[AUFS_WH_BASE].\[cq]
-	:::
-+The whiteout in aufs is very similar to Unionfs's. That is represented
-+by its filename. UnionMount takes an approach of a file mode, but I am
-+afraid several utilities (find(1) or something) will have to support it.
-+
-+Basically the whiteout represents "logical deletion" which stops aufs to
-+lookup further, but also it represents "dir is opaque" which also stop
-+lookup.
-+
-+In aufs, rmdir(2) and rename(2) for dir uses whiteout alternatively.
-+In order to make several functions in a single systemcall to be
-+revertible, aufs adopts an approach to rename a directory to a temporary
-+unique whiteouted name.
-+For example, in rename(2) dir where the target dir already existed, aufs
-+renames the target dir to a temporary unique whiteouted name before the
-+actual rename on a branch and then handles other actions (make it opaque,
-+update the attributes, etc). If an error happens in these actions, aufs
-+simply renames the whiteouted name back and returns an error. If all are
-+succeeded, aufs registers a function to remove the whiteouted unique
-+temporary name completely and asynchronously to the system global
-+workqueue.
-	:::
-
-Latest version is aufs3 (for linux-3.x series), there is no essential
-changes about whiteout since aufs2.
-
-
-J. R. Okajima
+~Sekhar
