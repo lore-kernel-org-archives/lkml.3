@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3COGjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 02:39:19 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:50946 "EHLO kirsi1.inet.fi"
+	id S1753034Ab3COGog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 02:44:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:23504 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab3COGjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 02:39:18 -0400
-Date: Fri, 15 Mar 2013 08:39:13 +0200
-From: Timo Kokkonen <timo.t.kokkonen@iki.fi>
+	id S1750903Ab3COGoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 02:44:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,849,1355126400"; 
+   d="scan'208";a="215022991"
+Date: Fri, 15 Mar 2013 07:43:31 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] [media] ir: IR_RX51 only works on OMAP2
-Message-ID: <20130315063913.GC1638@itanic.dhcp.inet.fi>
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/3] mfd: remove __exit_p annotation for
+ twl4030_madc_remove
+Message-ID: <20130315064331.GC12559@zurbaran>
 References: <1363298204-8014-1-git-send-email-arnd@arndb.de>
- <1363298204-8014-7-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363298204-8014-7-git-send-email-arnd@arndb.de>
+In-Reply-To: <1363298204-8014-1-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.14 2013 22:56:44, Arnd Bergmann wrote:
-> This driver can be enabled on OMAP1 at the moment, which breaks
-> allyesconfig for that platform. Let's mark it OMAP2PLUS-only
-> in Kconfig, since that is the only thing it builds on.
+Hi Arnd,
+
+On Thu, Mar 14, 2013 at 10:56:38PM +0100, Arnd Bergmann wrote:
+> 4740f73fe5 "mfd: remove use of __devexit" removed the __devexit annotation
+> on the twl4030_madc_remove function, but left an __exit_p() present on the
+> pointer to this function. Using __exit_p was as wrong with the devexit in
+> place as it is now, but now we get a gcc warning about an unused function.
 > 
-
-Acked-by: Timo Kokkonen <timo.t.kokkonen@iki.fi>
-
-Thanks!
-
+> In order for the twl4030_madc_remove to work correctly in built-in code, we
+> have to remove the __exit_p.
+> 
+> Cc: Bill Pemberton <wfp5p@virginia.edu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Timo Kokkonen <timo.t.kokkonen@iki.fi>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: linux-media@vger.kernel.org
 > ---
-> Mauro, please apply for 3.9
 > 
->  drivers/media/rc/Kconfig | 2 +-
+> Please apply to MFD tree for 3.9
+> 
+>  drivers/mfd/twl4030-madc.c | 2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
-> index 19f3563..5a79c33 100644
-> --- a/drivers/media/rc/Kconfig
-> +++ b/drivers/media/rc/Kconfig
-> @@ -291,7 +291,7 @@ config IR_TTUSBIR
->  
->  config IR_RX51
->  	tristate "Nokia N900 IR transmitter diode"
-> -	depends on OMAP_DM_TIMER && LIRC && !ARCH_MULTIPLATFORM
-> +	depends on OMAP_DM_TIMER && ARCH_OMAP2PLUS && LIRC && !ARCH_MULTIPLATFORM
->  	---help---
->  	   Say Y or M here if you want to enable support for the IR
->  	   transmitter diode built in the Nokia N900 (RX51) device.
-> -- 
-> 1.8.1.2
-> 
+Applied to mfd-fixes.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
