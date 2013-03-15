@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3COKYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:24:47 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:62011 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3COKYq (ORCPT
+	id S1753707Ab3COK1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:27:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52607 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab3COK1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:24:46 -0400
+	Fri, 15 Mar 2013 06:27:14 -0400
+Message-ID: <5142F76B.2010907@ti.com>
+Date: Fri, 15 Mar 2013 11:26:51 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <1363207202-10858-5-git-send-email-dianders@chromium.org>
-References: <1363129994-10438-1-git-send-email-dianders@chromium.org>
- <1363207202-10858-1-git-send-email-dianders@chromium.org> <1363207202-10858-5-git-send-email-dianders@chromium.org>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 15 Mar 2013 15:54:25 +0530
-Message-ID: <CAHfPSqDmu52D42qiGM4rT3qeYWu0b5jxOOCNOXLa=1JZH4j9rw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: dts: Add adc and thermistors for exynos5250-snow
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jonathan Cameron <jic23@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: kishon <kishon@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <balbi@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/7] ARM: dts: omap: Add dts data for USB
+References: <1362663320-23799-1-git-send-email-kishon@ti.com> <514042BF.2090207@ti.com>
+In-Reply-To: <514042BF.2090207@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug,
+Hi Kishon,
 
-On 14 March 2013 02:10, Doug Anderson <dianders@chromium.org> wrote:
-> Hook up the exynos5250-snow thermistors via the device tree now that
-> there's a driver available to use them.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Match 'uV' -> 'uv' change in Naveen's bindings.
->
->  arch/arm/boot/dts/cros5250-common.dtsi |  4 ++++
->  arch/arm/boot/dts/exynos5250-snow.dts  | 31 +++++++++++++++++++++++++++++++
->  2 files changed, 35 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/cros5250-common.dtsi b/arch/arm/boot/dts/cros5250-common.dtsi
-> index 46c0980..f7cc835 100644
-> --- a/arch/arm/boot/dts/cros5250-common.dtsi
-> +++ b/arch/arm/boot/dts/cros5250-common.dtsi
-> @@ -167,6 +167,10 @@
->                 status = "disabled";
->         };
->
-> +       adc@12D10000 {
-> +               vdd-supply = <&buck5_reg>;
-> +       };
-> +
->         hdmi {
->                 hpd-gpio = <&gpx3 7 0xf 1 3>;
->         };
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index 17dd951..b78da7c 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -40,4 +40,35 @@
->                                 <&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
->                 };
->         };
-> +
-> +       adc@12D10000 {
-> +               ncp15wb473@3 {
-> +                       compatible = "ntc,ncp15wb473";
-> +                       pullup-uv = <1800000>;
-> +                       pullup-ohm = <47000>;
-> +                       pulldown-ohm = <0>;
-> +                       io-channels = <&adc 3>;
-> +               };
-> +               ncp15wb473@4 {
-> +                       compatible = "ntc,ncp15wb473";
-> +                       pullup-uv = <1800000>;
-> +                       pullup-ohm = <47000>;
-> +                       pulldown-ohm = <0>;
-> +                       io-channels = <&adc 4>;
-> +               };
-> +               ncp15wb473@5 {
-> +                       compatible = "ntc,ncp15wb473";
-> +                       pullup-uv = <1800000>;
-> +                       pullup-ohm = <47000>;
-> +                       pulldown-ohm = <0>;
-> +                       io-channels = <&adc 5>;
-> +               };
-> +               ncp15wb473@6 {
-> +                       compatible = "ntc,ncp15wb473";
-> +                       pullup-uv = <1800000>;
-> +                       pullup-ohm = <47000>;
-> +                       pulldown-ohm = <0>;
-> +                       io-channels = <&adc 6>;
-> +               };
-> +       };
->  };
-Thanks for the upload, i've tested with a similar changes.
-> --
-> 1.8.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 03/13/2013 10:11 AM, kishon wrote:
+> Benoit,
+> 
+> Will you be queuing this patch series?
 
+I'm reviewing them right now.
 
+Regards,
+Benoit
 
--- 
-Shine bright,
-(: Nav :)
+> 
+> Thanks
+> Kishon
+> 
+> On Thursday 07 March 2013 07:05 PM, Kishon Vijay Abraham I wrote:
+>> Hi Benoit,
+>>
+>> Here are the dt data patches to get usb device functional in OMAP
+>> platforms.
+>>
+>> All the patches deal with modifying arch/arm/boot except one which
+>> modifies
+>> Documentation/../usb/omap-usb.txt
+>>
+>> Changes from v2:
+>> * squashed the dt data for dwc3-omap with dwc3 core into a single patch.
+>>
+>> Changes from v1:
+>> Patch *ARM: dts: omap: Add usb_otg and glue data* has some properties
+>> with
+>> names that has "_". It's replaced with a "-" here.
+>>
+>> This patch is developed on Linux 3.9-rc1.
+>>
+>> Kishon Vijay Abraham I (7):
+>>    ARM: dts: omap: Add omap control usb data
+>>    ARM: dts: omap: Add omap-usb2 dt data
+>>    ARM: dts: omap: Add usb_otg and glue data
+>>    ARM: dts: omap5: Add omap control usb data
+>>    ARM: dts: omap5: Add ocp2scp data
+>>    ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
+>>    ARM: dts: omap5: add dwc3 omap and dwc3 core dt data
+>>
+>>   Documentation/devicetree/bindings/usb/omap-usb.txt |    1 +
+>>   arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 +++
+>>   arch/arm/boot/dts/omap3-evm.dts                    |    6 +++
+>>   arch/arm/boot/dts/omap3-overo.dtsi                 |    6 +++
+>>   arch/arm/boot/dts/omap3.dtsi                       |   12 +++++
+>>   arch/arm/boot/dts/omap4-panda.dts                  |    6 +++
+>>   arch/arm/boot/dts/omap4-sdp.dts                    |    6 +++
+>>   arch/arm/boot/dts/omap4.dtsi                       |   26 +++++++++++
+>>   arch/arm/boot/dts/omap5.dtsi                       |   48
+>> ++++++++++++++++++++
+>>   arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
+>>   10 files changed, 118 insertions(+), 1 deletion(-)
+>>
+> 
+
