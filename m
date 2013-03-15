@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3CONGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:06:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52637 "EHLO mail.skyhub.de"
+	id S1754808Ab3CONGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:06:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50310 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695Ab3CONGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:06:38 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Robert Richter <rric@kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [RFC PATCH 1/3] perf: Add persistent events
-Date: Fri, 15 Mar 2013 14:06:27 +0100
-Message-Id: <1363352789-17991-2-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1363352789-17991-1-git-send-email-bp@alien8.de>
-References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+	id S1754788Ab3CONGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:06:48 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 15/50] staging: omap-thermal: remove duplicated code
+Date: Fri, 15 Mar 2013 09:00:03 -0400
+Message-ID: <1363352438-15935-16-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+In-Reply-To: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the needed pieces for persistent events which makes them
-process-agnostic. Also, make their buffers read-only when mmaping them
-from userspace.
+There is no need to assign twice the same variable with the very same value.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- include/uapi/linux/perf_event.h | 3 ++-
- kernel/events/core.c            | 8 +++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/staging/omap-thermal/omap-bandgap.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9fa9c622a7f4..4a4ae56195e1 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -270,8 +270,9 @@ struct perf_event_attr {
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index d0db361..531e853 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -164,7 +164,6 @@ static irqreturn_t omap_bandgap_talert_irq_handler(int irq, void *data)
+ 	u32 t_hot = 0, t_cold = 0, ctrl;
+ 	int i;
  
- 				exclude_callchain_kernel : 1, /* exclude kernel callchains */
- 				exclude_callchain_user   : 1, /* exclude user callchains */
-+				persistent     :  1, /* always-on event */
- 
--				__reserved_1   : 41;
-+				__reserved_1   : 40;
- 
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b0cd86501c30..7c712b0c3b9a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3560,6 +3560,9 @@ static void perf_mmap_close(struct vm_area_struct *vma)
- {
- 	struct perf_event *event = vma->vm_file->private_data;
- 
-+	if (event->attr.persistent)
-+		return atomic_dec(&event->mmap_count);
-+
- 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
- 		unsigned long size = perf_data_size(event->rb);
- 		struct user_struct *user = event->mmap_user;
-@@ -3603,7 +3606,10 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	if (event->cpu == -1 && event->attr.inherit)
- 		return -EINVAL;
- 
--	if (!(vma->vm_flags & VM_SHARED))
-+	if (!(vma->vm_flags & VM_SHARED) && !event->attr.persistent)
-+		return -EINVAL;
-+
-+	if (event->attr.persistent && (vma->vm_flags & VM_WRITE))
- 		return -EINVAL;
- 
- 	vma_size = vma->vm_end - vma->vm_start;
+-	bg_ptr = data;
+ 	/* Read the status of t_hot */
+ 	for (i = 0; i < bg_ptr->conf->sensor_count; i++) {
+ 		tsr = bg_ptr->conf->sensors[i].registers;
 -- 
-1.8.1.3.535.ga923c31
+1.7.7.1.488.ge8e1c
 
