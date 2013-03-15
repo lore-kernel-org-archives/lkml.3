@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3COK4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:56:32 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:58141 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3COKym (ORCPT
+	id S1754190Ab3COK4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:56:50 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:57624 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3COKyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:54:42 -0400
+	Fri, 15 Mar 2013 06:54:39 -0400
 From: Michel Lespinasse <walken@google.com>
 To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         David Howells <dhowells@redhat.com>,
@@ -17,9 +17,9 @@ To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Peter Hurley <peter@hurleysoftware.com>,
         Dave Chinner <david@fromorbit.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/13] rwsem: more agressive lock stealing in rwsem_down_write_failed
-Date: Fri, 15 Mar 2013 03:54:22 -0700
-Message-Id: <1363344869-15732-7-git-send-email-walken@google.com>
+Subject: [PATCH v2 04/13] rwsem: simplify rwsem_down_read_failed
+Date: Fri, 15 Mar 2013 03:54:20 -0700
+Message-Id: <1363344869-15732-5-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1363344869-15732-1-git-send-email-walken@google.com>
 References: <1363344869-15732-1-git-send-email-walken@google.com>
@@ -27,56 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some small code simplifications can be achieved by doing more agressive
-lock stealing:
+When trying to acquire a read lock, the RWSEM_ACTIVE_READ_BIAS adjustment
+doesn't cause other readers to block, so we never have to worry about waking
+them back after canceling this adjustment in rwsem_down_read_failed().
 
-- When rwsem_down_write_failed() notices that there are no active locks
-  (and thus no thread to wake us if we decided to sleep), it used to wake
-  the first queued process. However, stealing the lock is also sufficient
-  to deal with this case, so we don't need this check anymore.
-
-- In try_get_writer_sem(), we can steal the lock even when the first waiter
-  is a reader. This is correct because the code path that wakes readers is
-  protected by the wait_lock. As to the performance effects of this change,
-  they are expected to be minimal: readers are still granted the lock
-  (rather than having to acquire it themselves) when they reach the front
-  of the wait queue, so we have essentially the same behavior as in
-  rwsem-spinlock.
+We also never want to steal the lock in rwsem_down_read_failed(), so we
+don't have to grab the wait_lock either.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- lib/rwsem.c | 29 ++++++++---------------------
- 1 file changed, 8 insertions(+), 21 deletions(-)
+ lib/rwsem.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
 diff --git a/lib/rwsem.c b/lib/rwsem.c
-index c73bd96dc30c..2360bf204098 100644
+index fb658af1c12c..66f307e90761 100644
 --- a/lib/rwsem.c
 +++ b/lib/rwsem.c
-@@ -143,20 +143,12 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
- }
- 
- /* Try to get write sem, caller holds sem->wait_lock: */
--static int try_get_writer_sem(struct rw_semaphore *sem,
--					struct rwsem_waiter *waiter)
-+static int try_get_writer_sem(struct rw_semaphore *sem)
+@@ -182,7 +182,6 @@ try_again_write:
+  */
+ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  {
--	struct rwsem_waiter *fwaiter;
- 	long oldcount, adjustment;
+-	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_READ;
+ 	signed long adjustment = -RWSEM_ACTIVE_READ_BIAS;
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
+@@ -190,7 +189,7 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  
--	/* only steal when first waiter is writing */
--	fwaiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
--	if (fwaiter->type != RWSEM_WAITING_FOR_WRITE)
--		return 0;
--
- 	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
--	/* Only one waiter in the queue: */
--	if (fwaiter == waiter && waiter->list.next == &sem->wait_list)
-+	if (list_is_singular(&sem->wait_list))
- 		adjustment -= RWSEM_WAITING_BIAS;
+ 	/* set up my own style of waitqueue */
+ 	waiter.task = tsk;
+-	waiter.type = type;
++	waiter.type = RWSEM_WAITING_FOR_READ;
+ 	get_task_struct(tsk);
  
- try_again_write:
-@@ -233,23 +225,18 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 	raw_spin_lock_irq(&sem->wait_lock);
+@@ -201,17 +200,9 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  	/* we're now waiting on the lock, but no longer actively locking */
  	count = rwsem_atomic_update(adjustment, sem);
  
@@ -86,25 +71,30 @@ index c73bd96dc30c..2360bf204098 100644
 -	 * were already threads queued before us and there are no active
 -	 * writers, the lock must be read owned; so we try to wake any read
 -	 * locks that were queued ahead of us. */
--	if (count == RWSEM_WAITING_BIAS)
--		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
++	/* If there are no active locks, wake the front queued process(es). */
+ 	if (count == RWSEM_WAITING_BIAS)
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
 -	else if (count > RWSEM_WAITING_BIAS &&
 -		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
-+	/* If there were already threads queued before us and there are no
-+	 * active writers, the lock must be read owned; so we try to wake
-+	 * any read locks that were queued ahead of us. */
-+	if (count > RWSEM_WAITING_BIAS &&
-+	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+-		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
  
- 	/* wait until we successfully acquire the lock */
- 	while (true) {
+ 	raw_spin_unlock_irq(&sem->wait_lock);
+ 
+@@ -220,15 +211,6 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 
--		if (try_get_writer_sem(sem, &waiter))
-+		if (try_get_writer_sem(sem))
+ 		if (!waiter.task)
  			break;
+-
+-		raw_spin_lock_irq(&sem->wait_lock);
+-		/* Try to get the writer sem, may steal from the head writer: */
+-		if (type == RWSEM_WAITING_FOR_WRITE)
+-			if (try_get_writer_sem(sem, &waiter)) {
+-				raw_spin_unlock_irq(&sem->wait_lock);
+-				return sem;
+-			}
+-		raw_spin_unlock_irq(&sem->wait_lock);
+ 		schedule();
+ 	}
  
- 		raw_spin_unlock_irq(&sem->wait_lock);
 -- 
 1.8.1.3
