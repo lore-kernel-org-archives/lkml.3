@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab3COE0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 00:26:38 -0400
-Received: from f228.mail.ru ([94.100.178.214]:35086 "EHLO f228.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab3COE0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 00:26:35 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
-        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
-        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>
-Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCB2NyAyLzJdIG1mZDogc3lzY29uOiBBZGQgbm9uLURU?=
- =?UTF-8?B?IHN1cHBvcnQ=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Fri, 15 Mar 2013 08:26:30 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1363321590.65573886@f228.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-References: <1363196060-1149-1-git-send-email-shc_work@mail.ru> <1363196060-1149-2-git-send-email-shc_work@mail.ru>
+	id S1750824Ab3COE0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 00:26:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51375 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3COE0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 00:26:34 -0400
+Date: Fri, 15 Mar 2013 04:26:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: vfs: lockdep splat with prepare_bprm_creds
+Message-ID: <20130315042628.GV21522@ZenIV.linux.org.uk>
+References: <51429E72.7090405@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51429E72.7090405@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2F4QmhL002395
 
-> On 14 March 2013 01:34, Alexander Shiyan <shc_work@mail.ru> wrote:
-> > This patch allow using syscon driver from the platform data, i.e.
-> > possibility using driver on systems without oftree support.
-> > For search syscon device from the client drivers,
-> > "syscon_regmap_lookup_by_pdevname" function was added.
-> >
-> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+On Fri, Mar 15, 2013 at 12:07:14AM -0400, Sasha Levin wrote:
+> Hi all,
 > 
-> Actually i've acked this series before, usually you can send out the
-> updated series
-> with my tag if no other big changes except the minor comments fix i pointed out.
-> Here again, for this series:
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-...
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel
+> I've stumbled on the following.
+> 
+> Dave Jones reported something similar, but that seemed to involve cgroup's mutex
+> and didn't seem like it was the same issue as this one.
 
-There remains only one question. Who can commit the patch to the kernel...
+Lovely...  It's an execve() attempt on a "binary" that is, in fact, a procfs
+file (/proc/<pid>/stack), with its ->read() trying to grab ->cred_guard_mutex.
+The fact that it's seq_file-based is irrelevant here - all that matters is
+that we have ->read() for some file trying to grab ->cred_guard_mutex.
 
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It's not *quite* a deadlock, though - all these guys are using
+mutex_lock_killable()...
