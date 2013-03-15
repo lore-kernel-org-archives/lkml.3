@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab3COTyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:54:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27896 "EHLO
+	id S932202Ab3COTyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:54:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21975 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359Ab3COTv0 (ORCPT
+	with ESMTP id S1755347Ab3COTv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 15:51:26 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=GfYQo16ec8oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=uGPwiYSE3TUA:10 a=VwQbUJbxAAAA:8 a=k5FiPARZpzFLQR7o2d8A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=8FXVZGi3qsC3N9340mUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=guyCOh2Yuq4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PbW-_u9AgwYA:10 a=QkVQ0ZFHCCHtdhyH1GIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Rhe1xRMX558Nhtpn:21 a=xpD5dui0MVuGsmnu:21 a=18UkYpfgWqeSIxeOdmoA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195124.731069893@goodmis.org>
+Message-Id: <20130315195123.090834565@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:49 -0400
+Date: Fri, 15 Mar 2013 15:39:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>
-Subject: [for-next][PATCH 14/20] tracing: Use stack of calling function for stack tracer
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [for-next][PATCH 06/20] tracing: Add snapshot trigger to function probes
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0014-tracing-Use-stack-of-calling-function-for-stack-trac.patch
+Content-Disposition: inline; filename=0006-tracing-Add-snapshot-trigger-to-function-probes.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,74 +32,164 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+ echo 'schedule:snapshot:1' > /debug/tracing/set_ftrace_filter
 
-Adding stable, as a later fix depends on this patch.
+This will cause the scheduler to trigger a snapshot the next time
+it's called (you can use any function that's not called by NMI).
 
-Cc: stable@vger.kernel.org
+Even though it triggers only once, you still need to remove it with:
+
+ echo '!schedule:snapshot:0' > /debug/tracing/set_ftrace_filter
+
+The :1 can be left off for the first command:
+
+ echo 'schedule:snapshot' > /debug/tracing/set_ftrace_filter
+
+But this will cause all calls to schedule to trigger a snapshot.
+This must be removed without the ':0'
+
+ echo '!schedule:snapshot' > /debug/tracing/set_ftrace_filter
+
+As adding a "count" is a different operation (internally).
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ kernel/trace/trace.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++=
++++-
+ 1 file changed, 110 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 42ca822..dc02e29 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 906049c..c5b8446 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5086,7 +5086,114 @@ static const struct file_operations tracing_dyn_inf=
+o_fops =3D {
+ 	.read		=3D tracing_read_dyn_info,
+ 	.llseek		=3D generic_file_llseek,
+ };
+-#endif
++#endif /* CONFIG_DYNAMIC_FTRACE */
++
++#if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
++static void
++ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
++{
++	tracing_snapshot();
++}
++
++static void
++ftrace_count_snapshot(unsigned long ip, unsigned long parent_ip, void **da=
+ta)
++{
++	unsigned long *count =3D (long *)data;
++
++	if (!*count)
++		return;
++
++	if (*count !=3D -1)
++		(*count)--;
++
++	tracing_snapshot();
++}
++
++static int
++ftrace_snapshot_print(struct seq_file *m, unsigned long ip,
++		      struct ftrace_probe_ops *ops, void *data)
++{
++	long count =3D (long)data;
++
++	seq_printf(m, "%ps:", (void *)ip);
++
++	seq_printf(m, "snapshot");
++
++	if (count =3D=3D -1)
++		seq_printf(m, ":unlimited\n");
++	else
++		seq_printf(m, ":count=3D%ld\n", count);
++
++	return 0;
++}
++
++static struct ftrace_probe_ops snapshot_probe_ops =3D {
++	.func			=3D ftrace_snapshot,
++	.print			=3D ftrace_snapshot_print,
++};
++
++static struct ftrace_probe_ops snapshot_count_probe_ops =3D {
++	.func			=3D ftrace_count_snapshot,
++	.print			=3D ftrace_snapshot_print,
++};
++
++static int
++ftrace_trace_snapshot_callback(struct ftrace_hash *hash,
++			       char *glob, char *cmd, char *param, int enable)
++{
++	struct ftrace_probe_ops *ops;
++	void *count =3D (void *)-1;
++	char *number;
++	int ret;
++
++	/* hash funcs only work with set_ftrace_filter */
++	if (!enable)
++		return -EINVAL;
++
++	ops =3D param ? &snapshot_count_probe_ops :  &snapshot_probe_ops;
++
++	if (glob[0] =3D=3D '!') {
++		unregister_ftrace_function_probe_func(glob+1, ops);
++		return 0;
++	}
++
++	if (!param)
++		goto out_reg;
++
++	number =3D strsep(&param, ":");
++
++	if (!strlen(number))
++		goto out_reg;
++
++	/*
++	 * We use the callback data field (which is a pointer)
++	 * as our counter.
++	 */
++	ret =3D kstrtoul(number, 0, (unsigned long *)&count);
++	if (ret)
++		return ret;
++
++ out_reg:
++	ret =3D register_ftrace_function_probe(glob, ops, count);
++
++	if (ret >=3D 0)
++		alloc_snapshot(&global_trace);
++
++	return ret < 0 ? ret : 0;
++}
++
++static struct ftrace_func_command ftrace_snapshot_cmd =3D {
++	.name			=3D "snapshot",
++	.func			=3D ftrace_trace_snapshot_callback,
++};
++
++static int register_snapshot_cmd(void)
++{
++	return register_ftrace_command(&ftrace_snapshot_cmd);
++}
++#else
++static inline int register_snapshot_cmd(void) { return 0; }
++#endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE=
+) */
 =20
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
+ struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
  {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
+@@ -6076,6 +6183,8 @@ __init static int tracer_alloc_buffers(void)
+ 		trace_set_options(&global_trace, option);
+ 	}
 =20
--	this_size =3D ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size =3D ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size =3D THREAD_SIZE - this_size;
++	register_snapshot_cmd();
++
+ 	return 0;
 =20
- 	if (this_size <=3D max_stack_size)
- 		return;
-=20
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
-=20
- 	local_irq_save(flags);
-@@ -73,7 +74,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i =3D 0;
--	start =3D &this_size;
-+	start =3D stack;
- 	top =3D (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
-=20
-@@ -113,6 +114,7 @@ static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip,
- 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
-+	unsigned long stack;
- 	int cpu;
-=20
- 	preempt_disable_notrace();
-@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsigned long parent=
-_ip,
- 	if (per_cpu(trace_active, cpu)++ !=3D 0)
- 		goto out;
-=20
--	check_stack();
-+	check_stack(&stack);
-=20
-  out:
- 	per_cpu(trace_active, cpu)--;
+ out_free_cpumask:
 --=20
 1.7.10.4
 
@@ -112,13 +202,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u8AAoJEOdOSU1xswtMmacH+wSeDZqrhiAXpDBRfn6D8v0L
-dgzzFxAjICV+KEDo/LxqHxwCl/xY3AC7WAHAq/RdABL2+TeGz5Qa1XMoqfhxU7b+
-Ie5jiTT7Tvuwhgaxe0ZXXcmV3LEfS2gMbJVHoxDeYUQV8jU9lLTiip1D31UD3x/Q
-9CQHr52ejSO6Om+ustWoxssLkTcSVXl6WRZUOAsEnlX18+c3MlfN9+wvQVHxzmdD
-8voGuKUY/bEnF++DEaixR208w+RScnVKbp+3KC41N+HF6kqJADlMqazfycFUgE5X
-6nRe8htq/VQ1QWXU6hsR5A8AT/YQwwEciT0M7isHr4RyaP7QCBXp80CKhLFq3w4=
-=Vu8f
+iQEcBAABAgAGBQJRQ3u7AAoJEOdOSU1xswtMXBkH/1yuqabTrF02HhrgUtfugRyv
+xFii2HdJ0IsDT+axls4grsXPoWD8demRxz9TjRodhvQhsgbGbKbxp4Ih7MTP8yHZ
+Q0RhQ/nOIU3d0XlAoC/uN6v5QRouN0CEqrXO85/Lrnd4EQnlhiSe9lER9aIc1i9G
++GZO3s7xFrRQEhM3VHEPI1RLZgvi8gTT00UDHfaXOMNPomlrtQDqeFOPm9l6od7u
+w3HsLxd5JKqagkNyBjgQfSsyaTtfwUPEYDODx+kGmwYqE+z6Kyi3+uCiRc8TmO7t
+q+a4yIdOQvFZ95rHdn0NrKoy2gYBR7gSWI2en5i8MTB/pLYHbRVzRB4HI8h7nUw=
+=oqFS
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
