@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3COQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:47:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52190 "EHLO gate.crashing.org"
+	id S1754431Ab3COQrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:47:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3708 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab3COQrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:47:25 -0400
-Subject: Re: [PATCH] powerpc: remove "config 8260_PCI9"
-Mime-Version: 1.0 (Apple Message framework v1278)
+	id S1754310Ab3COQrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 12:47:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,852,1355126400"; 
+   d="scan'208";a="271384371"
+Date: Fri, 15 Mar 2013 17:46:57 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Axel Lin <axel.lin@ingics.com>
+Subject: Re: [PATCH 2/3] mfd: Make AB8500_CORE select POWER_SUPPLY to fix
+ build error
+Message-ID: <20130315164657.GA29606@zurbaran>
+References: <1363298204-8014-1-git-send-email-arnd@arndb.de>
+ <1363298204-8014-2-git-send-email-arnd@arndb.de>
+ <20130315064436.GD12559@zurbaran>
+ <201303151018.13518.arnd@arndb.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1363274097.1335.83.camel@x61.thuisdomein>
-Date: Fri, 15 Mar 2013 11:17:11 -0500
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <5EB0C1E1-F71E-4B3C-8471-BA899FEC2DFD@kernel.crashing.org>
-References: <1363274097.1335.83.camel@x61.thuisdomein>
-To: Paul Bolle <pebolle@tiscali.nl>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <201303151018.13518.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd,
 
-On Mar 14, 2013, at 10:14 AM, Paul Bolle wrote:
-
-> The last user of Kconfig symbol 8260_PCI9 got removed in release v3.2.
-> Remove this symbol too.
+On Fri, Mar 15, 2013 at 10:18:13AM +0000, Arnd Bergmann wrote:
+> On Friday 15 March 2013, Samuel Ortiz wrote:
+> > On Thu, Mar 14, 2013 at 10:56:39PM +0100, Arnd Bergmann wrote:
+> > > 
+> > > Please apply to MFD tree for 3.9
+> > Already applied to mfd-fixes.
+> > 
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Untested.
+> For some reason I did not see it when I rebased my patches on top of linux-next
+> to make sure I don't send any patches again that are already queued up.
 > 
-> 1) This probably is a second order effect of my commit
-> 6805ab6daa2b589fe3242d05ddc47a9dbb0c4eb1 ("powerpc: drop unused Kconfig
-> symbols"). Not sure how I missed that.
-> 
-> arch/powerpc/Kconfig | 5 -----
-> 1 file changed, 5 deletions(-)
+> Is there a reason why mfd-fixes is not part of linux-next?
+No valid reasons, you're right. I'll ping Stephen about it.
 
-applied to next
+Cheers,
+Samuel.
 
-- k
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
