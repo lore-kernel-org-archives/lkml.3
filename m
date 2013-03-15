@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3COQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 12:12:09 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:43057 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754310Ab3COQMG (ORCPT
+	id S1754888Ab3COQOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 12:14:55 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:40564 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab3COQOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 12:12:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18DyhVO3WaKT0HcUKIjYbPb
-Date: Fri, 15 Mar 2013 09:12:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: balbi@ti.com, linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2 06/23] ARM: OMAP3: 3430SDP: Adapt to ehci-omap
- changes
-Message-ID: <20130315161201.GA9370@atomide.com>
-References: <1363360604-21368-1-git-send-email-rogerq@ti.com>
- <1363360604-21368-7-git-send-email-rogerq@ti.com>
+	Fri, 15 Mar 2013 12:14:54 -0400
+Message-ID: <514348DD.2070801@linux.vnet.ibm.com>
+Date: Fri, 15 Mar 2013 11:14:21 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363360604-21368-7-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Robert Jennings <rcj@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        minchan@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: zsmalloc limitations and related topics
+References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default> <20130313151359.GA3130@linux.vnet.ibm.com> <4ab899f6-208c-4d61-833c-d1e5e8b1e761@default> <514104D5.9020700@linux.vnet.ibm.com> <5141BC5D.9050005@oracle.com> <20130314132046.GA3172@linux.vnet.ibm.com> <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
+In-Reply-To: <006139fe-542e-46f0-8b6c-b05efeb232d6@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031516-3864-0000-0000-000007461E66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I think you can get rid of quite a bit more of the repeated data for
-most boards, see below.
-
-* Roger Quadros <rogerq@ti.com> [130315 08:21]:
-> Add 2 platform devices for 'nop-usb-xceiv'. These will be used
-> as PHYs for HS USB ports 1 and 2 so provide binding information
-> for them.
+On 03/14/2013 01:54 PM, Dan Magenheimer wrote:
+>> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
+>> Sent: Thursday, March 14, 2013 7:21 AM
+>> To: Bob
+>> Cc: Seth Jennings; Dan Magenheimer; minchan@kernel.org; Nitin Gupta; Konrad Wilk; linux-mm@kvack.org;
+>> linux-kernel@vger.kernel.org; Bob Liu; Luigi Semenzato; Mel Gorman
+>> Subject: Re: zsmalloc limitations and related topics
+>>
+>> * Bob (bob.liu@oracle.com) wrote:
+>>> On 03/14/2013 06:59 AM, Seth Jennings wrote:
+>>>> On 03/13/2013 03:02 PM, Dan Magenheimer wrote:
+>>>>>> From: Robert Jennings [mailto:rcj@linux.vnet.ibm.com]
+>>>>>> Subject: Re: zsmalloc limitations and related topics
+>>>>>
+>> <snip>
+>>>>> Yes.  And add pageframe-reclaim to this list of things that
+>>>>> zsmalloc should do but currently cannot do.
+>>>>
+>>>> The real question is why is pageframe-reclaim a requirement?  What
+>>>> operation needs this feature?
+>>>>
+>>>> AFAICT, the pageframe-reclaim requirements is derived from the
+>>>> assumption that some external control path should be able to tell
+>>>> zswap/zcache to evacuate a page, like the shrinker interface.  But this
+>>>> introduces a new and complex problem in designing a policy that doesn't
+>>>> shrink the zpage pool so aggressively that it is useless.
+>>>>
+>>>> Unless there is another reason for this functionality I'm missing.
+>>>>.
+>>>
+>>> Perhaps it's needed if the user want to enable/disable the memory
+>>> compression feature dynamically.
+>>> Eg, use it as a module instead of recompile the kernel or even
+>>> reboot the system.
 > 
-> Use usbhs_init_phys() to register the PHY's RESET regulators.
+> It's worth thinking about: Under what circumstances would a user want
+> to turn off compression?  While unloading a compression module should
+> certainly be allowed if it makes a user comfortable, in my opinion,
+> if a user wants to do that, we have done our job poorly (or there
+> is a bug).
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/mach-omap2/board-3430sdp.c |   47 ++++++++++++++++++++++++++++++----
->  1 files changed, 41 insertions(+), 6 deletions(-)
+>> To unload zswap all that is needed is to perform writeback on the pages
+>> held in the cache, this can be done by extending the existing writeback
+>> code.
 > 
-> diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
-> index ce812de..5584682 100644
-> --- a/arch/arm/mach-omap2/board-3430sdp.c
-> +++ b/arch/arm/mach-omap2/board-3430sdp.c
-> @@ -21,6 +21,7 @@
->  #include <linux/spi/spi.h>
->  #include <linux/i2c/twl.h>
->  #include <linux/regulator/machine.h>
-> +#include <linux/usb/phy.h>
->  #include <linux/io.h>
->  #include <linux/gpio.h>
->  #include <linux/mmc/host.h>
-> @@ -445,16 +446,37 @@ static void enable_board_wakeup_source(void)
->  		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
->  }
->  
-> +/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
-> +static struct platform_device hsusb1_phy_device = {
-> +	.name = "nop_usb_xceiv",
-> +	.id = 1,
-> +};
-> +
-> +/* PHY device on HS USB Port 2 i.e. nop_usb_xceiv.2 */
-> +static struct platform_device hsusb2_phy_device = {
-> +	.name = "nop_usb_xceiv",
-> +	.id = 2,
-> +};
+> Actually, frontswap supports this directly.  See frontswap_shrink.
 
-Please allocate these in the common ehci platform init code
-so you don't have to repeat the same nop_usb_xceiv for each
-board-*.c file. If you need to override these, then you can
-pass something instead of NULL to the init function.
+frontswap_shrink() is a best-effort attempt to fault in all the pages
+stored in the backend.  However, if there is not enough RAM to hold all
+the pages, then it can not completely evacuate the backend.
 
-> +static struct usbhs_phy_data phy_data[] __initdata = {
-> +	{
-> +		.port = 1,
-> +		.reset_gpio = 57,
-> +		.vcc_gpio = -EINVAL,
-> +		.phy_id = "nop_usb_xceiv.1",
-> +	},
-> +	{
-> +		.port = 2,
-> +		.reset_gpio = 61,
-> +		.vcc_gpio = -EINVAL,
-> +		.phy_id = "nop_usb_xceiv.2",
-> +	},
-> +};
+Module exit functions must return void, so there is no way to fail a
+module unload.  If you implement an exit function for your module, you
+must insure that it can always complete successfully.  For this reason
+frontswap_shrink() is unsuitable for module unloading.  You'd need to
+use a mechanism like writeback that could surely evacuate the backend
+(baring I/O failures).
 
-This is OK as it's the board specific data needed. If it's the
-same for many boards, then you might want to add some init function
-for the default case.
+Seth
 
-> +static struct platform_device *sdp3430_devices[] __initdata = {
-> +	&hsusb1_phy_device,
-> +	&hsusb2_phy_device,
-> +};
-
-It then seems that this can be in the common ehci platform init
-code for most cases.
-
->  static void __init omap_3430sdp_init(void)
->  {
->  	int gpio_pendown;
-> @@ -606,6 +633,14 @@ static void __init omap_3430sdp_init(void)
->  	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
->  	sdp3430_display_init();
->  	enable_board_wakeup_source();
-> +
-> +	platform_add_devices(sdp3430_devices, ARRAY_SIZE(sdp3430_devices));
-> +	/* PHY on HSUSB Port 1 i.e. index 0 */
-> +	usb_bind_phy("ehci-omap.0", 0, "nop_usb_xceiv.1");
-> +	/* PHY on HSUSB Port 2 i.e. index 1 */
-> +	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
-
-And this part too in most cases.
-
-> +	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
->  	usbhs_init(&usbhs_bdata);
->  }
-
-Regards,
-
-Tony
