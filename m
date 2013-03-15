@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab3COUTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 16:19:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56804 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab3COUTA (ORCPT
+	id S932156Ab3COUZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 16:25:00 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52174 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab3COUY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 16:19:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
-Date: Fri, 15 Mar 2013 20:18:08 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Fabio Porcedda <fabio.porcedda@gmail.com>,
+	Fri, 15 Mar 2013 16:24:57 -0400
+Date: Fri, 15 Mar 2013 13:24:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jamie Iles <jamie@jamieiles.com>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <201303141358.05616.arnd@arndb.de> <ADE657CA350FB648AAC2C43247A983F0020980106B9E@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020980106B9E@AUSP01VMBX24.collaborationhost.net>
+        linux-serial@vger.kernel.org
+Subject: Re: Serial port initialization broken on Armada 370/XP due to
+ "serial: 8250_dw: Don't use UPF_FIXED_TYPE"
+Message-ID: <20130315202452.GA15617@kroah.com>
+References: <512E1AD9.4090403@free-electrons.com>
+ <512E2F64.2010706@free-electrons.com>
+ <20130228092602.GA5688@xps8300>
+ <512F428E.3080400@free-electrons.com>
+ <20130228123421.GC5688@xps8300>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303152018.09094.arnd@arndb.de>
-X-Provags-ID: V02:K0:aCc15neEDS50y3S5YBE5itPp1Uw6+JCvQ0aoukTSFIe
- w1NIrOS8Rjvr3gWouY/IPRX9AzcxGS4oLicrnhp+xpLIwGrS9O
- kAC31gW2MUfRLGMaFabqrZ3ouKz+K7UNJ2uAlt54TsEEaYwvuZ
- RAhok8rkZxB4io0FjP/Xj9f0jLL29uPHaGKPKQqTmV5x/TRCS/
- zGCDdTYx4NkPe3ZHRuvWZnuiiY8LlJwdWEGDsk5YSL3reCEXY/
- lrkAQdygFNQWG8wImlnghe/OlcQnv71ZnFdid+BjHmL7ffjA0J
- kZqp/eIAk3gYaXCWlsuoVpf9h89fxEMyDrJlZAwrH7NC8Ex6G1
- nuvf5//W3YRD1S0Rzx30=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130228123421.GC5688@xps8300>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 March 2013, H Hartley Sweeten wrote:
-> Arnd,
+On Thu, Feb 28, 2013 at 02:34:21PM +0200, Heikki Krogerus wrote:
+> Hi,
 > 
-> Ill look at converting the ep93xx pwm driver to the PWM subsystem. The only issue is
-> the current driver exposes a sysfs interface that I think is not available in that subsystem.
-
-You can probably keep providing that interface if you have active users.
-
-> >* Regarding the use of module_platform_driver_probe, I'm a little worried about
-> >  the interactions with deferred probing. I don't think there are any regressions,
-> >  but we should probably make people aware that one cannot return -EPROBE_DEFER
-> >  from a platform_driver_probe function.
+> On Thu, Feb 28, 2013 at 12:42:06PM +0100, Gregory CLEMENT wrote:
+> > >> Would you agree with this kind of patch to fix the issue?
+> > >>
+> > >> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+> > >> index e2ac25a..0b284c6 100644
+> > >> --- a/drivers/tty/serial/8250/8250.c
+> > >> +++ b/drivers/tty/serial/8250/8250.c
+> > >> @@ -1119,7 +1119,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+> > >>         serial_out(up, UART_LCR, 0);
+> > >>
+> > >>         serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO);
+> > >> -       scratch = serial_in(up, UART_IIR) >> 6;
+> > >> +       scratch = (serial_in(up, UART_IIR) & 0xFF) >> 6;
+> > >>
+> > >>         switch (scratch) {
+> > >>         case 0:
+> > > 
+> > > Instead, can you test if it's enough for you to set the reg-io-width
+> > > to 1 instead of 4:
+> > 
+> > Yes indeed it worked and it seems to be the correct description of my
+> > hardware. So I will fix the dtsi file.
+> > 
+> > However isn't buggy to use a function as it returned a char whereas
+> > it returns an int?
 > 
-> The ep93xx pwm driver does not need to use platform_driver_probe(). It can be changed
-> to use module_platform_driver() by just moving the .probe to the platform_driver. This
-> driver was added before module_platform_driver() was available and I used the
-> platform_driver_probe() thinking it would save a couple lines of code.
+> Yes, the driver should probable be cleaned.
 > 
-> I'll change this in a bit. Right now I'm trying to work out why kernel 3.8 is not booting
-> on the ep93xx. I had 3.6.6 on my development board and 3.7 works fine but 3.8 hangs
-> without uncompressing the kernel.
+> It seems to be happening in quite a few places in 8250.c.
+> autoconfig_16550a() has pretty much identical code in it, where
+> UART_IIR is read to unsigned char and shifted without a mask.
 
-Ok, thanks!
+Can someone send me the correct fix here, if they want it included in
+3.9-final?
 
-	Arnd
+thanks,
+
+greg k-h
