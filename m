@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab3COAWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 20:22:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28342 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab3COAWC convert rfc822-to-8bit (ORCPT
+	id S1751970Ab3COAYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 20:24:04 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:45443 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab3COAYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 20:22:02 -0400
-X-IronPort-AV: E=Sophos;i="4.84,848,1355068800"; 
-   d="scan'208";a="6874650"
-Subject: Re: [PATCH 2/2] task_work: check callback if it's NULL
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: viro@zeniv.linux.org.uk, edumazet@google.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20130314144307.GB16136@redhat.com>
-References: <1363247865-3531-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <1363247865-3531-2-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <20130314144307.GB16136@redhat.com>
-Date: Fri, 15 Mar 2013 08:20:34 +0800
-Message-ID: <1363306834.21129.121.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/15 08:20:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/15 08:20:44,
-	Serialize complete at 2013/03/15 08:20:44
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 14 Mar 2013 20:24:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBRuKzbxTr73LDpgLnq4WhadZf9VErjjcTMHoMWRwzhDGw@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+	<CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+	<CA+55aFzDMwHyPxqxNKRz0Y3vFhZOqtHMvPbvNXAD6C+-_=UAhg@mail.gmail.com>
+	<CABPqkBTTY7RBSXJw4kqdd0c07Ykz-Wy8TFUQ+hzBSn=5v2yz2w@mail.gmail.com>
+	<CABPqkBTh1Fph=GTOzN_2Q9coqLpiR3hcqVk1PBubUUEO7D=zsA@mail.gmail.com>
+	<CABPqkBTQCce3ve9cP-Ajbtb7FSVggB_bL7Dmpq8KeG_7Gfx0Og@mail.gmail.com>
+	<CABPqkBRuKzbxTr73LDpgLnq4WhadZf9VErjjcTMHoMWRwzhDGw@mail.gmail.com>
+Date: Fri, 15 Mar 2013 01:24:00 +0100
+Message-ID: <CABPqkBRvgCsZGkS=9CO_cRLBMG7XSiaxKz8moMW6Yp3CwTXEyQ@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Stephane Eranian <eranian@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-03-14四的 15:43 +0100，Oleg Nesterov写道：
-> On 03/14, liguang wrote:
-> >
-> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > ---
-> >  kernel/task_work.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/kernel/task_work.c b/kernel/task_work.c
-> > index 0bf4258..f458b08 100644
-> > --- a/kernel/task_work.c
-> > +++ b/kernel/task_work.c
-> > @@ -75,7 +75,8 @@ void task_work_run(void)
-> >
-> >  		do {
-> >  			next = work->next;
-> > -			work->func(work);
-> > +			if (unlikely(work->func))
-> > +				work->func(work);
-> 
-> Why?
-> 
-> Oleg.
-> 
+Linus,
 
-can we believe a callback always be call-able?
-can it happened to be 0? e.g. wrong initialized.
-of course, we can complain the caller, be why don't
-we easily make it more safer?
+I bet if you force the affinity of your perf record to be on
+a CPU other than CPU0, you will not get the crash.
 
+This is what I am seeing now. I appears on resume,
+CPU0 hotplug callbacks for perf_events are not invoked
+leaving DS_AREA MSR to 0.
+
+Can you confirm on your machine?
+
+
+
+On Fri, Mar 15, 2013 at 12:11 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Mar 14, 2013 at 11:53 PM, Stephane Eranian <eranian@google.com> wrote:
+>> On Thu, Mar 14, 2013 at 11:42 PM, Stephane Eranian <eranian@google.com> wrote:
+>>> On Thu, Mar 14, 2013 at 11:19 PM, Stephane Eranian <eranian@google.com> wrote:
+>>>> On Thu, Mar 14, 2013 at 11:17 PM, Linus Torvalds
+>>>> <torvalds@linux-foundation.org> wrote:
+>>>>> On Thu, Mar 14, 2013 at 3:09 PM, Stephane Eranian <eranian@google.com> wrote:
+>>>>>>
+>>>>>> Could be related to suspend/resume. But were you running perf across
+>>>>>> that resume/suspend cycle?
+>>>>>
+>>>>> No.
+>>>>>
+>>>>> In most cases I was running a perf record before and after (but not
+>>>>> *while* suspending)
+>>>>>
+>>>>> In at least one other crash, I didn't run perf before at all, so the
+>>>>> first time I used perf was after the resume.
+>>>>>
+>>>>> So in no cases did I actually have any perf stuff active over the
+>>>>> suspend itself.
+>>>>>
+>>>> Ok, simpler test case then.
+>>>>
+>>>>>> Let's see if we can reproduce the problem on the same ChromeBook you
+>>>>>> have. Don't have one myself.
+>>>>>
+>>>>> I don't imagine it should be about chromebook per se, because afaik
+>>>>> all of pmu suspend/resume is done by the kernel, no firmware involved.
+>>>>>
+>>>>> So I'd assume it should happen with any IvyBridge.
+>>>>>
+>>>> Will try on a desktop IvyBridge too.
+>>>
+>>> Ok, it happens on my IVB desktop too, so I can investigate...
+>>
+>> It's not specific to IVB either, it hangs on my Nehalem desktop as well.
+>
+> Looks related to PEBS. If I drop the :pp the machine does not hang. Even
+> a single :p hangs it. So it is possible something is not properly
+> restored in the
+> DS state after a resume or is corrupted by the suspend.
