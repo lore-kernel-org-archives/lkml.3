@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab3CODiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 23:38:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3478 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3CODix (ORCPT
+	id S1753818Ab3CODqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 23:46:46 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:36120 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3CODqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 23:38:53 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Oso-87ONFSEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=fSY8Htx590UA:10 a=zyKqqGipxnzneC5GG7gA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363318731.25967.42.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] [GIT PULL][3.9] tracing: Fixes with flags and
- latency tracers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 14 Mar 2013 23:38:51 -0400
-In-Reply-To: <20130314213303.302538352@goodmis.org>
-References: <20130314213303.302538352@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Mar 2013 23:46:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130314162413.GA21344@redhat.com>
+References: <20130314162413.GA21344@redhat.com>
+Date: Fri, 15 Mar 2013 11:46:44 +0800
+Message-ID: <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com>
+Subject: Re: + atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+ .patch added to -mm tree
+From: Ming Lei <tom.leiming@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-14 at 17:33 -0400, Steven Rostedt wrote:
+On Fri, Mar 15, 2013 at 12:24 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> From: Ming Lei <tom.leiming@gmail.com>
+>> Subject: atomic: improve atomic_inc_unless_negative/atomic_dec_unless_positive
+>>
+>> Generally, both atomic_inc_unless_negative() and
+>> atomic_dec_unless_positive() need at least two atomic_cmpxchg() to
+>> complete the atomic operation.  In fact, the 1st atomic_cmpxchg() is just
+>> used to read current value of the atomic variable at most times.
+>
+> Agreed, this looks ugly...
+>
+> But can't we make a simpler patch and keep the code simple/readable ?
+>
+> Oleg.
+>
+> --- x/include/linux/atomic.h
+> +++ x/include/linux/atomic.h
+> @@ -64,7 +64,7 @@ static inline int atomic_inc_not_zero_hi
+>  static inline int atomic_inc_unless_negative(atomic_t *p)
+>  {
+>         int v, v1;
+> -       for (v = 0; v >= 0; v = v1) {
+> +       for (v = atomic_read(p); v >= 0; v = v1) {
+>                 v1 = atomic_cmpxchg(p, v, v + 1);
 
-> Anyway, here's hopefully my final series of changes for 3.9.
-> (Famous last words)
+Unfortunately, the above will exchange the current value even though
+it is negative, so it isn't correct.
 
-And there's a bug in this patch set. Thanks to Fangguang's auto tests,
-it showed a bug in my new work, which points out a bug in this patch
-set. The following change is needed to patch 2:
+>                 if (likely(v1 == v))
+>                         return 1;
+> @@ -77,7 +77,7 @@ static inline int atomic_inc_unless_nega
+>  static inline int atomic_dec_unless_positive(atomic_t *p)
+>  {
+>         int v, v1;
+> -       for (v = 0; v <= 0; v = v1) {
+> +       for (v = atomic_read(p); v <= 0; v = v1) {
+>                 v1 = atomic_cmpxchg(p, v, v - 1);
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index eaaccd8..02debab 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2897,7 +2897,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
- 
- 	if (mask == TRACE_ITER_OVERWRITE) {
- 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
-+#ifdef CONFIG_TRACER_MAX_TRACE
- 		ring_buffer_change_overwrite(max_tr.buffer, enabled);
-+#endif
- 	}
- 
- 	if (mask == TRACE_ITER_PRINTK)
+Similar with above.
+
+>                 if (likely(v1 == v))
+>                         return 1;
+>
 
 
-But this bug is worse than the one in my new code. As the new code wont
-compile here, this code will, but "max_tr.buffer" will be NULL if
-CONFIG_MAX_TRACER_MAX_TRACE is not defined and will cause a NULL pointer
-dereference.
-
-I'll update the patch series, test it and push it out again.
-
-Thanks!
-
--- Steve
-
-
+Thanks,
+-- 
+Ming Lei
