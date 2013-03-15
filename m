@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab3COGUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 02:20:13 -0400
-Received: from mail.southpole.se ([37.247.8.11]:50178 "EHLO mail.southpole.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab3COGUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 02:20:11 -0400
-Message-ID: <5142BDC7.5060804@southpole.se>
-Date: Fri, 15 Mar 2013 07:20:55 +0100
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1753001Ab3COGYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 02:24:41 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39307 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab3COGYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 02:24:39 -0400
+Message-ID: <5142BE99.4070001@linux.vnet.ibm.com>
+Date: Fri, 15 Mar 2013 14:24:25 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] OpenRISC bug fixes for 3.9
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wakeup buddy
+References: <5136EB06.2050905@linux.vnet.ibm.com> <1362677252.10972.26.camel@laptop> <5139520C.1060109@linux.vnet.ibm.com> <1362998219.14933.9.camel@laptop> <513E9FC6.4060507@linux.vnet.ibm.com> <1363082932.14933.19.camel@laptop> <513FED85.8030603@linux.vnet.ibm.com> <1363258711.26965.16.camel@laptop>
+In-Reply-To: <1363258711.26965.16.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.2.2(12343) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
-X-Assp-ID: assp.southpole.se 28401-07018
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031506-5564-0000-0000-0000070E2DE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 03/14/2013 06:58 PM, Peter Zijlstra wrote:
+> On Wed, 2013-03-13 at 11:07 +0800, Michael Wang wrote:
+> 
+>> However, we already figure out the logical that wakeup related task
+>> could benefit from closely running, this could promise us somewhat
+>> reliable benefit.
+> 
+> I'm not convinced that the 2 task wakeup scenario is the only sane
+> scenario. Imagine a ring of 3 tasks that wakes each other, if the
+> machine is loaded enough, those 3 tasks might fit a single cpu just
+> fine -- esp. if one of those is always idle.
+> 
+> But your strict 1:1 wakeup relation thing will completely fail to
+> detect this.
 
-Here are 3 patches to fix OpenRISC build issues for 3.9.  2 of them are 
-essential as the build is broken without them; the third patch, removing 
-VIRT_TO_BUS, isn't strictly essential, but is harmless enough and 
-removes an invalid config setting introduced during this cycle.
+Hmm...yeah, I see your point here, some optimize timing will always
+be missed whatever how we twiddle the knob besides 0.
 
-Thanks,
-Jonas
+You are right, that's a problem, although currently there are no
+workload to prove it, but we have the theory...
 
-The following changes since commit 6c23cbbd5056b155401b0a2b5567d530e6c750c4:
+> 
+>> IMHO, that sounds a little easier for users than to make the decision on
+>> tell me how long to pull tasks together, they may be confused...
+> 
+> Users shouldn't ever need/want/etc.. rely on this. They should just run
+> their programs and be (reasonably) happy.
+> 
+>> In summary, I think we have two point here need to be considered:
+>>
+>> 1. what about the missed optimize timing, that may benefit
+>>    some workload (although we haven't found such workload yet).
+> 
+> Missed optimize; as in not calling wake_affine() due to the throttle?
+> If we're calling it at such a high frequency it is very likely the next
+> call isn't very far away.
+> 
+>> 2. how many benefit could wake_affine() stuff bring to us,
+>>    if limit rate benefit us, why don't we remove it?
+> 
+> It could bring the same benefit but at lower overhead, what's the point
+> of computing the same value over and over again? Also, the rate limit
+> thing naturally works for the soft/hard-irq case.
 
-   futex: fix kernel-doc notation and spello (2013-03-12 20:42:10 -0700)
+Just try to confirm my understanding, so we are going to do something
+like:
 
-are available in the git repository at:
+	if (now - wakee->last > time_limit) && wakeup_affine()
+		wakee->last = now
+		select_idle_sibling(curr_cpu)
+	else
+		select_idle_sibling(prev_cpu)
 
-   git://openrisc.net/jonas/linux tags/for-3.9-rc3
+And time_limit is some static value respect to the rate of load balance,
+is that correct?
 
-for you to fetch changes up to 6af609515d788bd4c94116344f00601b058f75a6:
+Currently I haven't found regression by reduce the rate, but if we found
+such benchmark, we may still need a way (knob or CONFIG) to disable this
+limitation.
 
-   openrisc: remove HAVE_VIRT_TO_BUS (2013-03-13 06:12:39 +0100)
+> 
+> Now, there's another detail I thought up, one could only limit the
+> wake_affine() calls once it starts returning false.
 
-----------------------------------------------------------------
-OpenRISC bug fixes for 3.9
+Hmm..if wake_affine() keep succeed, then there will be no difference?
 
-* The GPIO descriptor work has exposed how broken the non-GPIOLIB
-   bits for OpenRISC were.  We now require GPIOLIB as this is the
-   preferred way forward.
+I do believe pgbench match the case, since wake_affine() stuff make it
+suffered...and the more it suffered, means the more often wake_affine()
+succeed and pull none related tasks together.
 
-* The system.h split introduced a bug in llist.h for arches using
-   asm-generic/cmpxchg.h directly, which is currently only OpenRISC.
-   The patch here moves two defines from asm-generic/atomic.h to
-   asm-generic/cmpxchg.h to make things work as they should.
+I really can't see how could it do help... did I miss something?
 
-* The VIRT_TO_BUS selector was added for OpenRISC, but OpenRISC does
-   not have the virt_to_bus methods, so there's a patch to remove it
-   again.
+Regards,
+Michael Wang
 
-----------------------------------------------------------------
-Jonas Bonn (3):
-       openrisc: require gpiolib
-       asm-generic: move cmpxchg*_local defs to cmpxchg.h
-       openrisc: remove HAVE_VIRT_TO_BUS
-
-  arch/openrisc/Kconfig         |  3 +--
-  include/asm-generic/atomic.h  |  6 ------
-  include/asm-generic/cmpxchg.h | 10 ++++++++++
-  3 files changed, 11 insertions(+), 8 deletions(-)
+> 
 
