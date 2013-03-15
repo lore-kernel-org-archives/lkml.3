@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab3COSef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:34:35 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:36489 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab3COSed (ORCPT
+	id S1755182Ab3COSe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 14:34:57 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45061 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754965Ab3COSez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 14:34:33 -0400
+	Fri, 15 Mar 2013 14:34:55 -0400
+Date: Fri, 15 Mar 2013 11:34:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Hannes Reinecke <hare@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>, Frederik Himpe <fhimpe@vub.ac.be>,
+        David Haerdeman <david@hardeman.nu>, sarah.a.sharp@linux.intel.com,
+        balbi@ti.com
+Subject: Re: [PATCH][v3] xhci: correctly enable interrupts
+Message-ID: <20130315183451.GA17907@kroah.com>
+References: <Pine.LNX.4.44L0.1303041025470.1750-100000@iolanthe.rowland.org>
+ <1742014.AbCVskUi8i@skinner.arch.suse.de>
+ <2543963.ytZ3mOsUVV@skinner.arch.suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20130315175117.GA2462@redhat.com>
-References: <20130314162413.GA21344@redhat.com>
-	<CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com>
-	<20130315134632.GA18335@redhat.com>
-	<CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
-	<20130315165131.GA32065@redhat.com>
-	<CAFTL4hxNh5qMZyyrLc8_yG5-i7UoS_nan22pO8o1fb8yS7Vz3w@mail.gmail.com>
-	<20130315175117.GA2462@redhat.com>
-Date: Fri, 15 Mar 2013 19:34:32 +0100
-Message-ID: <CAFTL4hwZQcN_sO0SN8bJqEsQdC8ArDvJhFPg62Kh8OQyUe=MUw@mail.gmail.com>
-Subject: Re: + atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
- .patch added to -mm tree
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2543963.ytZ3mOsUVV@skinner.arch.suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/15 Oleg Nesterov <oleg@redhat.com>:
-> On 03/15, Frederic Weisbecker wrote:
->>
->> > The lack of the barrier?
->> >
->> > I thought about this, this should be fine? atomic_add_unless() has the same
->> > "problem", but this is documented in atomic_ops.txt:
->> >
->> >         atomic_add_unless requires explicit memory barriers around the operation
->> >         unless it fails (returns 0).
->> >
->> > I thought that atomic_add_unless_negative() should have the same
->> > guarantees?
->>
->> I feel very uncomfortable with that. The memory barrier is needed
->> anyway to make sure we don't deal with a stale value of the atomic val
->> (wrt. ordering against another object).
->> The following should really be expected to work without added barrier:
->>
->> void put_object(foo *obj)
->> {
->>       if (atomic_dec_return(obj->ref) == -1)
->>           free_rcu(obj);
->> }
->>
->> bool try_get_object(foo *obj)
->> {
->>       if (atomic_add_unless_negative(obj, 1))
->>            return true;
->>       return false;
->> }
->>
->> = CPU 0 =                = CPU 1
->>                                 rcu_read_lock()
->> put_object(obj0);
->>                                 obj = rcu_derefr(obj0);
->> rcu_assign_ptr(obj0, NULL);
->
-> (I guess you meant rcu_assign_ptr() then put_object())
+On Tue, Mar 05, 2013 at 11:45:28AM +0100, Thomas Renninger wrote:
+> On Monday, March 04, 2013 05:14:43 PM Thomas Renninger wrote:
+> > From: Hannes Reinecke <hare@suse.de>
+> > 
+> > xhci has its own interrupt enabling routine, which will try to
+> > use MSI-X/MSI if present. So the usb core shouldn't try to enable
+> > legacy interrupts; on some machines the xhci legacy IRQ setting
+> > is invalid.
+> > 
+> > v3: Be careful to not break XHCI_BROKEN_MSI workaround (by trenn)
+> > 
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Oliver Neukum <oneukum@suse.de>
+> > Cc: Thomas Renninger <trenn@suse.de>
+> > Cc: Yinghai Lu <yinghai@kernel.org>
+> > Cc: Frederik Himpe <fhimpe@vub.ac.be>
+> > Cc: David Haerdeman <david@hardeman.nu>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > 
+> > Reviewed-by: Thomas Renninger <trenn@suse.de>
+> > Signed-off-by: Hannes Reinecke <hare@suse.de>
+> 
+> Argh, I should have added:
+> CC: stable@kernel.org
 
-Right.
+You mean "stable@vger.kernel.org" :)
 
->
->>                                 if (try_get_object(obj))
->>                                      do_something...
->>                                 else
->>                                      object is dying
->>                                 rcu_read_unlock()
->
-> I must have missed something.
->
-> do_something() looks fine, if atomic_add_unless_negative() succeeds
-> we do have a barrier?
+I'll go do it...
 
-Ok, I guess the guarantee of a barrier in case of failure is probably
-not needed. But since the only way to safely read the atomic value is
-a cmpxchg like operation, I guess a barrier must be involved in any
-case.
+thanks,
 
-Using atomic_read() may return some stale value.
-
->
-> Anyway, I understand that it is possible to write the code which
-> won't work without the uncoditional mb().
-
-Yeah that's my fear.
-
->
-> My point was: should we fix atomic_add_unless() then? If not, why
-> should atomic_add_unless_negative() differ?
-
-They shouldn't differ I guess.
+greg k-h
