@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab3COMwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 08:52:21 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:60193 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab3COMwU (ORCPT
+	id S1754529Ab3COMxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 08:53:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46965 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab3COMxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 08:52:20 -0400
-Message-ID: <1363351927.16666.2.camel@phoenix>
-Subject: [PATCH] gpio: pl061: Add pl061_gpio_free()
-From: Axel Lin <axel.lin@ingics.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>, linux-kernel@vger.kernel.org
-Date: Fri, 15 Mar 2013 20:52:07 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Mar 2013 08:53:08 -0400
+Date: Fri, 15 Mar 2013 08:53:21 -0400 (EDT)
+Message-Id: <20130315.085321.1047694772636447477.davem@davemloft.net>
+To: florian@openwrt.org
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        jason@lakedaemon.net, andrew@lunn.ch, linux@arm.linux.org.uk,
+        benh@kernel.crashing.org, paulus@samba.org, buytenh@wantstofly.org,
+        thomas.petazzoni@free-electrons.com, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/4] mv643xx_eth: use mvmdio MDIO bus driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1363284515-9865-1-git-send-email-florian@openwrt.org>
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
+	<1363284515-9865-1-git-send-email-florian@openwrt.org>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 15 Mar 2013 05:53:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 39b70ee051 "gpio: pl061: bind pinctrl by gpio request"
-adds pl061_gpio_request() to request pinctrl.
-Thus we need to add corresponding pl061_gpio_free() to free the pin.
+From: Florian Fainelli <florian@openwrt.org>
+Date: Thu, 14 Mar 2013 19:08:31 +0100
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/gpio/gpio-pl061.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+> This patch converts the mv643xx_eth driver to use the mvmdio MDIO bus driver
+> instead of rolling its own implementation. As a result, all users of this
+> mv643xx_eth driver are converted to register an "orion-mdio" platform_device.
+> The mvmdio driver is also updated to support an interrupt line which reports
+> SMI error/completion, and to allow traditionnal platform device registration
+> instead of just device tree.
+> 
+> David, I think it makes sense for you to merge all of this, since we do
+> not want the architecture files to be desynchronized from the mv643xx_eth to
+> avoid runtime breakage. The potential for merge conflicts should be very small.
 
-diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-index 06ed257..d7008df 100644
---- a/drivers/gpio/gpio-pl061.c
-+++ b/drivers/gpio/gpio-pl061.c
-@@ -72,6 +72,13 @@ static int pl061_gpio_request(struct gpio_chip *chip, unsigned offset)
- 	return pinctrl_request_gpio(gpio);
- }
- 
-+static void pl061_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	int gpio = chip->base + offset;
-+
-+	pinctrl_free_gpio(gpio);
-+}
-+
- static int pl061_direction_input(struct gpio_chip *gc, unsigned offset)
- {
- 	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
-@@ -287,6 +294,7 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
- 	spin_lock_init(&chip->lock);
- 
- 	chip->gc.request = pl061_gpio_request;
-+	chip->gc.free = pl061_gpio_free;
- 	chip->gc.direction_input = pl061_direction_input;
- 	chip->gc.direction_output = pl061_direction_output;
- 	chip->gc.get = pl061_get_value;
--- 
-1.7.9.5
-
-
-
+All applied to net-next, thanks.
