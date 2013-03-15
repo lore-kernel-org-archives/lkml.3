@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab3COU5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 16:57:04 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:46065 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab3COU5C (ORCPT
+	id S932511Ab3COVA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:00:26 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:54627 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab3COVAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 16:57:02 -0400
-Date: Fri, 15 Mar 2013 13:56:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH] perf,x86: fix kernel crash with PEBS/BTS after
- suspend/resume
-Message-ID: <20130315205659.GA26155@kroah.com>
-References: <20130315132607.GA4565@quad>
- <20130315203123.GA28128@kroah.com>
- <CABPqkBSp8jMUzsq3yg8uWkxyf7_HGjyJuuXt-VHhnjh0as-57w@mail.gmail.com>
+	Fri, 15 Mar 2013 17:00:25 -0400
+Message-ID: <51439A3C.1010505@cogentembedded.com>
+Date: Sat, 16 Mar 2013 01:01:32 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSp8jMUzsq3yg8uWkxyf7_HGjyJuuXt-VHhnjh0as-57w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: linux-arm-kernel@lists.infradead.org, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        kevin@allwinnertech.com, sunny@allwinnertech.com
+Subject: Re: [PATCH 4/6] ARM: sunxi: dt: Add uart3 dt node
+References: <1363377988-4966-1-git-send-email-maxime.ripard@free-electrons.com> <1363377988-4966-5-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1363377988-4966-5-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 09:49:00PM +0100, Stephane Eranian wrote:
-> On Fri, Mar 15, 2013 at 9:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> > On Fri, Mar 15, 2013 at 02:26:07PM +0100, Stephane Eranian wrote:
-> > >
-> > > This patch fixes a kernel crash when using precise sampling (PEBS)
-> > > after a suspend/resume. Turns out the CPU notifier code is not invoked
-> > > on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
-> > > by the kernel and keeps it power-on/resume value of 0 causing any PEBS
-> > > measurement to crash when running on CPU0.
-> > >
-> > > The workaround is to add a hook in the actual resume code to restore
-> > > the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
-> > > the DS_AREA will be restored twice but this is harmless.
-> > >
-> > > Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Signed-off-by: Stephane Eranian <eranian@google.com>
-> > > ---
-> >
-> > Is this needed for the 3.8 or older kernels as well?
-> >
-> I suspect so. If CPU0 is not covered by the cpu notifiers
-> then yes, the patch is needed.
+Hello.
 
-Ok, thanks, I've queued it up now there.
+On 03/15/2013 11:06 PM, Maxime Ripard wrote:
 
-greg k-h
+> Both A10 and A13 Allwinner SoCs have a Synopsys APB uart3 device
+> available, so add it to the sunxi.dtsi file
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Acked-by: Emilio López <emilio@elopez.com.ar>
+> ---
+>   arch/arm/boot/dts/sunxi.dtsi |   10 ++++++++++
+>   1 file changed, 10 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/sunxi.dtsi b/arch/arm/boot/dts/sunxi.dtsi
+> index 4f78ef7..324da45 100644
+> --- a/arch/arm/boot/dts/sunxi.dtsi
+> +++ b/arch/arm/boot/dts/sunxi.dtsi
+> @@ -68,5 +68,15 @@
+>   			clocks = <&osc>;
+>   			status = "disabled";
+>   		};
+> +
+> +		uart3: uart@01c28c00 {
+
+    IIRC, historically, the property name should be "serial", not "uart".
+
+WBR, Sergei
+
