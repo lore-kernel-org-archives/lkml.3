@@ -1,270 +1,580 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3COPa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:30:26 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50375 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419Ab3COPaY (ORCPT
+	id S932230Ab3COPan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:30:43 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54818 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab3COPai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:30:24 -0400
-Message-ID: <51433E71.2070107@linux.vnet.ibm.com>
-Date: Fri, 15 Mar 2013 23:29:53 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 15 Mar 2013 11:30:38 -0400
+Date: Fri, 15 Mar 2013 11:16:49 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2013-03-15
+Message-ID: <20130315151649.GA25956@tuxdriver.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
-References: <51433D98.4050605@linux.vnet.ibm.com>
-In-Reply-To: <51433D98.4050605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031515-2674-0000-0000-000008380EF9
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tries to introduce a very simple and scale way to invalid all
-mmio sptes - it need not walk any shadow pages and hold mmu-lock
 
-KVM maintains a global mmio invalid generation-number which is stored in
-kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
-generation-number into his available bits when it is created
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When KVM need zap all mmio sptes, it just simply increase the global
-generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-then it walks the shadow page table and get the mmio spte. If the
-generation-number on the spte does not equal the global generation-number,
-it will go to the normal #PF handler to update the mmio spte
+Dave,
 
-Since 19 bits are used to store generation-number on mmio spte, the
-generation-number can be round after 33554432 times. It is large enough
-for nearly all most cases, but making the code be more strong, we zap all
-shadow pages when the number is round
+Please pull these fixes for the 3.9 stream.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+On the NFC bits, Samuel says:
+
+"With this one we have:
+
+- A fix for properly decreasing socket ack log.
+- A timer and works cleanup upon NFC device removal.
+- A monitoroing socket cleanup round from llcp_socket_release.
+- A proper error report to pending sockets upon NFC device removal."
+
+Regarding the Bluetooth bits, Gustavo says:
+
+"I have these two patches for 3.9, these add support for two more devices to
+the bluetooth drivers."
+
+Along with those, we have a few wireless driver fixes...
+
+Bing Zhao provides an mwifiex to prevent an out-of-bounds memory
+access.
+
+John Crispin offers a Kconfig fix to enable some otherwise dead code
+in rt2x00.  The correct symbols were added in -rc1 through a different
+tree, but the symbols for enabling the wireless driver didn't match.
+
+Larry Finger brings an rtlwifi fix for a scheduling while atomic bug,
+and another fix for a reassociation problem caused by failing to
+clear the BSSID after a disconnect.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
 ---
- arch/x86/include/asm/kvm_host.h |    2 +
- arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
- arch/x86/kvm/mmutrace.h         |   17 +++++++++++
- arch/x86/kvm/paging_tmpl.h      |    7 +++-
- arch/x86/kvm/vmx.c              |    4 ++
- arch/x86/kvm/x86.c              |    6 +--
- 6 files changed, 82 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ef7f4a5..572398e 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -529,6 +529,7 @@ struct kvm_arch {
- 	unsigned int n_requested_mmu_pages;
- 	unsigned int n_max_mmu_pages;
- 	unsigned int indirect_shadow_pages;
-+	unsigned int mmio_invalid_gen;
- 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
- 	/*
- 	 * Hash table of struct kvm_mmu_page.
-@@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
- void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 				     struct kvm_memory_slot *slot,
- 				     gfn_t gfn_offset, unsigned long mask);
-+void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
- void kvm_mmu_zap_all(struct kvm *kvm);
- unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
- void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 13626f4..7093a92 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
- static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
- 			   unsigned access)
+The following changes since commit aaa0c23cb90141309f5076ba5e3bfbd39544b985:
+
+  Fix dst_neigh_lookup/dst_neigh_lookup_skb return value handling bug (2013=
+-03-15 09:06:58 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+for you to fetch changes up to f3a3440063d6b01470507ecde9cf8ed0b033362a:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2013-03-15 10:44:36 -0400)
+
+----------------------------------------------------------------
+
+Bing Zhao (1):
+      mwifiex: fix potential out-of-boundary access to ibss rate table
+
+John Crispin (1):
+      rt2x00: fix rt2x00 to work with the new ralink SoC config symbols
+
+John W. Linville (3):
+      Merge tag 'nfc-fixes-3.9-1' of git://git.kernel.org/.../sameo/nfc-fix=
+es
+      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/blu=
+etooth
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Josh Boyer (1):
+      Bluetooth: Add support for atheros 04ca:3004 device to ath3k
+
+Larry Finger (2):
+      rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
+      rtlwifi: rtl8192cu: Fix problem that prevents reassociation
+
+Samuel Ortiz (4):
+      NFC: llcp: Decrease socket ack log when accepting a connection
+      NFC: llcp: Clean local timers and works when removing a device
+      NFC: llcp: Clean raw sockets from nfc_llcp_socket_release
+      NFC: llcp: Report error to pending sockets when a device is removed
+
+Sunguk Lee (1):
+      Bluetooth: Device 0cf3:3008 should map AR 3012
+
+ drivers/bluetooth/ath3k.c                   |  4 ++
+ drivers/bluetooth/btusb.c                   |  2 +
+ drivers/net/wireless/mwifiex/join.c         |  7 +--
+ drivers/net/wireless/rt2x00/Kconfig         |  4 +-
+ drivers/net/wireless/rt2x00/rt2800pci.c     | 14 ++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 89 ++++++++++++-------------=
+----
+ net/nfc/llcp/llcp.c                         | 62 +++++++++++++++++---
+ net/nfc/llcp/sock.c                         |  2 +
+ 8 files changed, 108 insertions(+), 76 deletions(-)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index a8a41e07..b282af1 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -74,8 +74,10 @@ static struct usb_device_id ath3k_table[] =3D {
+=20
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
++	{ USB_DEVICE(0x0CF3, 0x3008) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
++	{ USB_DEVICE(0x04CA, 0x3004) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x04CA, 0x3006) },
+ 	{ USB_DEVICE(0x04CA, 0x3008) },
+@@ -106,8 +108,10 @@ static struct usb_device_id ath3k_blist_tbl[] =3D {
+=20
+ 	/* Atheros AR3012 with sflash firmware*/
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info =3D BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info =3D BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3004), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info =3D BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 7e351e3..e547851 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -132,8 +132,10 @@ static struct usb_device_id blacklist_table[] =3D {
+=20
+ 	/* Atheros 3012 with sflash firmware */
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info =3D BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info =3D BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3004), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info =3D BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info =3D BTUSB_ATH3012 },
+diff --git a/drivers/net/wireless/mwifiex/join.c b/drivers/net/wireless/mwi=
+fiex/join.c
+index 246aa62..2fe0ceb 100644
+--- a/drivers/net/wireless/mwifiex/join.c
++++ b/drivers/net/wireless/mwifiex/join.c
+@@ -1117,10 +1117,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mwifiex_privat=
+e *priv,
+ 		adhoc_join->bss_descriptor.bssid,
+ 		adhoc_join->bss_descriptor.ssid);
+=20
+-	for (i =3D 0; bss_desc->supported_rates[i] &&
+-			i < MWIFIEX_SUPPORTED_RATES;
+-			i++)
+-			;
++	for (i =3D 0; i < MWIFIEX_SUPPORTED_RATES &&
++		    bss_desc->supported_rates[i]; i++)
++		;
+ 	rates_size =3D i;
+=20
+ 	/* Copy Data Rates from the Rates recorded in scan response */
+diff --git a/drivers/net/wireless/rt2x00/Kconfig b/drivers/net/wireless/rt2=
+x00/Kconfig
+index 44d6ead..2bf4efa 100644
+--- a/drivers/net/wireless/rt2x00/Kconfig
++++ b/drivers/net/wireless/rt2x00/Kconfig
+@@ -55,10 +55,10 @@ config RT61PCI
+=20
+ config RT2800PCI
+ 	tristate "Ralink rt27xx/rt28xx/rt30xx (PCI/PCIe/PCMCIA) support"
+-	depends on PCI || RALINK_RT288X || RALINK_RT305X
++	depends on PCI || SOC_RT288X || SOC_RT305X
+ 	select RT2800_LIB
+ 	select RT2X00_LIB_PCI if PCI
+-	select RT2X00_LIB_SOC if RALINK_RT288X || RALINK_RT305X
++	select RT2X00_LIB_SOC if SOC_RT288X || SOC_RT305X
+ 	select RT2X00_LIB_FIRMWARE
+ 	select RT2X00_LIB_CRYPTO
+ 	select CRC_CCITT
+diff --git a/drivers/net/wireless/rt2x00/rt2800pci.c b/drivers/net/wireless=
+/rt2x00/rt2800pci.c
+index 48a01aa..ded73da 100644
+--- a/drivers/net/wireless/rt2x00/rt2800pci.c
++++ b/drivers/net/wireless/rt2x00/rt2800pci.c
+@@ -89,7 +89,7 @@ static void rt2800pci_mcu_status(struct rt2x00_dev *rt2x0=
+0dev, const u8 token)
+ 	rt2x00pci_register_write(rt2x00dev, H2M_MAILBOX_CID, ~0);
+ }
+=20
+-#if defined(CONFIG_RALINK_RT288X) || defined(CONFIG_RALINK_RT305X)
++#if defined(CONFIG_SOC_RT288X) || defined(CONFIG_SOC_RT305X)
+ static int rt2800pci_read_eeprom_soc(struct rt2x00_dev *rt2x00dev)
  {
--	u64 mask = generation_mmio_spte_mask(0);
-+	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
-+	u64 mask = generation_mmio_spte_mask(gen);
-
- 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
- 	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
-
--	trace_mark_mmio_spte(sptep, gfn, access, 0);
-+	trace_mark_mmio_spte(sptep, gfn, access, gen);
- 	mmu_spte_set(sptep, mask);
+ 	void __iomem *base_addr =3D ioremap(0x1F040000, EEPROM_SIZE);
+@@ -107,7 +107,7 @@ static inline int rt2800pci_read_eeprom_soc(struct rt2x=
+00_dev *rt2x00dev)
+ {
+ 	return -ENOMEM;
  }
-
-@@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
- 	return false;
+-#endif /* CONFIG_RALINK_RT288X || CONFIG_RALINK_RT305X */
++#endif /* CONFIG_SOC_RT288X || CONFIG_SOC_RT305X */
+=20
+ #ifdef CONFIG_PCI
+ static void rt2800pci_eepromregister_read(struct eeprom_93cx6 *eeprom)
+@@ -1177,7 +1177,7 @@ MODULE_DEVICE_TABLE(pci, rt2800pci_device_table);
+ #endif /* CONFIG_PCI */
+ MODULE_LICENSE("GPL");
+=20
+-#if defined(CONFIG_RALINK_RT288X) || defined(CONFIG_RALINK_RT305X)
++#if defined(CONFIG_SOC_RT288X) || defined(CONFIG_SOC_RT305X)
+ static int rt2800soc_probe(struct platform_device *pdev)
+ {
+ 	return rt2x00soc_probe(pdev, &rt2800pci_ops);
+@@ -1194,7 +1194,7 @@ static struct platform_driver rt2800soc_driver =3D {
+ 	.suspend	=3D rt2x00soc_suspend,
+ 	.resume		=3D rt2x00soc_resume,
+ };
+-#endif /* CONFIG_RALINK_RT288X || CONFIG_RALINK_RT305X */
++#endif /* CONFIG_SOC_RT288X || CONFIG_SOC_RT305X */
+=20
+ #ifdef CONFIG_PCI
+ static int rt2800pci_probe(struct pci_dev *pci_dev,
+@@ -1217,7 +1217,7 @@ static int __init rt2800pci_init(void)
+ {
+ 	int ret =3D 0;
+=20
+-#if defined(CONFIG_RALINK_RT288X) || defined(CONFIG_RALINK_RT305X)
++#if defined(CONFIG_SOC_RT288X) || defined(CONFIG_SOC_RT305X)
+ 	ret =3D platform_driver_register(&rt2800soc_driver);
+ 	if (ret)
+ 		return ret;
+@@ -1225,7 +1225,7 @@ static int __init rt2800pci_init(void)
+ #ifdef CONFIG_PCI
+ 	ret =3D pci_register_driver(&rt2800pci_driver);
+ 	if (ret) {
+-#if defined(CONFIG_RALINK_RT288X) || defined(CONFIG_RALINK_RT305X)
++#if defined(CONFIG_SOC_RT288X) || defined(CONFIG_SOC_RT305X)
+ 		platform_driver_unregister(&rt2800soc_driver);
+ #endif
+ 		return ret;
+@@ -1240,7 +1240,7 @@ static void __exit rt2800pci_exit(void)
+ #ifdef CONFIG_PCI
+ 	pci_unregister_driver(&rt2800pci_driver);
+ #endif
+-#if defined(CONFIG_RALINK_RT288X) || defined(CONFIG_RALINK_RT305X)
++#if defined(CONFIG_SOC_RT288X) || defined(CONFIG_SOC_RT305X)
+ 	platform_driver_unregister(&rt2800soc_driver);
+ #endif
  }
-
-+static bool check_mmio_spte(struct kvm *kvm, u64 spte)
-+{
-+	return get_mmio_spte_generation(spte) ==
-+		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
-+}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wire=
+less/rtlwifi/rtl8192cu/hw.c
+index b1ccff4..c08d0f4 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1377,74 +1377,57 @@ void rtl92cu_card_disable(struct ieee80211_hw *hw)
+=20
+ void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+ {
+-	/* dummy routine needed for callback from rtl_op_configure_filter() */
+-}
+-
+-/*=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+ */
+-
+-static void _rtl92cu_set_check_bssid(struct ieee80211_hw *hw,
+-			      enum nl80211_iftype type)
+-{
+ 	struct rtl_priv *rtlpriv =3D rtl_priv(hw);
+-	u32 reg_rcr =3D rtl_read_dword(rtlpriv, REG_RCR);
+ 	struct rtl_hal *rtlhal =3D rtl_hal(rtlpriv);
+-	struct rtl_phy *rtlphy =3D &(rtlpriv->phy);
+-	u8 filterout_non_associated_bssid =3D false;
++	u32 reg_rcr =3D rtl_read_dword(rtlpriv, REG_RCR);
+=20
+-	switch (type) {
+-	case NL80211_IFTYPE_ADHOC:
+-	case NL80211_IFTYPE_STATION:
+-		filterout_non_associated_bssid =3D true;
+-		break;
+-	case NL80211_IFTYPE_UNSPECIFIED:
+-	case NL80211_IFTYPE_AP:
+-	default:
+-		break;
+-	}
+-	if (filterout_non_associated_bssid) {
++	if (rtlpriv->psc.rfpwr_state !=3D ERFON)
++		return;
 +
-+/*
-+ * The caller should protect concurrent access on
-+ * kvm->arch.mmio_invalid_gen. Currently, it is used by
-+ * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
-+ */
-+void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
-+{
-+	/* Ensure update memslot has been completed. */
-+	smp_mb();
++	if (check_bssid) {
++		u8 tmp;
+ 		if (IS_NORMAL_CHIP(rtlhal->version)) {
+-			switch (rtlphy->current_io_type) {
+-			case IO_CMD_RESUME_DM_BY_SCAN:
+-				reg_rcr |=3D (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
+-				rtlpriv->cfg->ops->set_hw_reg(hw,
+-						 HW_VAR_RCR, (u8 *)(&reg_rcr));
+-				/* enable update TSF */
+-				_rtl92cu_set_bcn_ctrl_reg(hw, 0, BIT(4));
+-				break;
+-			case IO_CMD_PAUSE_DM_BY_SCAN:
+-				reg_rcr &=3D ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
+-				rtlpriv->cfg->ops->set_hw_reg(hw,
+-						 HW_VAR_RCR, (u8 *)(&reg_rcr));
+-				/* disable update TSF */
+-				_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
+-				break;
+-			}
++			reg_rcr |=3D (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
++			tmp =3D BIT(4);
+ 		} else {
+-			reg_rcr |=3D (RCR_CBSSID);
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, 0, (BIT(4)|BIT(5)));
++			reg_rcr |=3D RCR_CBSSID;
++			tmp =3D BIT(4) | BIT(5);
+ 		}
+-	} else if (filterout_non_associated_bssid =3D=3D false) {
++		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
++					      (u8 *) (&reg_rcr));
++		_rtl92cu_set_bcn_ctrl_reg(hw, 0, tmp);
++	} else {
++		u8 tmp;
+ 		if (IS_NORMAL_CHIP(rtlhal->version)) {
+-			reg_rcr &=3D (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
++			reg_rcr &=3D ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
++			tmp =3D BIT(4);
+ 		} else {
+-			reg_rcr &=3D (~RCR_CBSSID);
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, (BIT(4)|BIT(5)), 0);
++			reg_rcr &=3D ~RCR_CBSSID;
++			tmp =3D BIT(4) | BIT(5);
+ 		}
++		reg_rcr &=3D (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
++		rtlpriv->cfg->ops->set_hw_reg(hw,
++					      HW_VAR_RCR, (u8 *) (&reg_rcr));
++		_rtl92cu_set_bcn_ctrl_reg(hw, tmp, 0);
+ 	}
+ }
+=20
++/*=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+ */
 +
-+	 trace_kvm_mmu_invalid_mmio_spte(kvm);
+ int rtl92cu_set_network_type(struct ieee80211_hw *hw, enum nl80211_iftype =
+type)
+ {
++	struct rtl_priv *rtlpriv =3D rtl_priv(hw);
++
+ 	if (_rtl92cu_set_media_status(hw, type))
+ 		return -EOPNOTSUPP;
+-	_rtl92cu_set_check_bssid(hw, type);
++
++	if (rtlpriv->mac80211.link_state =3D=3D MAC80211_LINKED) {
++		if (type !=3D NL80211_IFTYPE_AP)
++			rtl92cu_set_check_bssid(hw, true);
++	} else {
++		rtl92cu_set_check_bssid(hw, false);
++	}
++
+ 	return 0;
+ }
+=20
+@@ -2058,8 +2041,6 @@ void rtl92cu_update_hal_rate_table(struct ieee80211_h=
+w *hw,
+ 			       (shortgi_rate << 4) | (shortgi_rate);
+ 	}
+ 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
+-	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
+-		 rtl_read_dword(rtlpriv, REG_ARFR0));
+ }
+=20
+ void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
+diff --git a/net/nfc/llcp/llcp.c b/net/nfc/llcp/llcp.c
+index 7f8266d..b530afa 100644
+--- a/net/nfc/llcp/llcp.c
++++ b/net/nfc/llcp/llcp.c
+@@ -68,7 +68,8 @@ static void nfc_llcp_socket_purge(struct nfc_llcp_sock *s=
+ock)
+ 	}
+ }
+=20
+-static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool lis=
+ten)
++static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool lis=
+ten,
++				    int err)
+ {
+ 	struct sock *sk;
+ 	struct hlist_node *tmp;
+@@ -100,7 +101,10 @@ static void nfc_llcp_socket_release(struct nfc_llcp_lo=
+cal *local, bool listen)
+=20
+ 				nfc_llcp_accept_unlink(accept_sk);
+=20
++				if (err)
++					accept_sk->sk_err =3D err;
+ 				accept_sk->sk_state =3D LLCP_CLOSED;
++				accept_sk->sk_state_change(sk);
+=20
+ 				bh_unlock_sock(accept_sk);
+=20
+@@ -123,7 +127,10 @@ static void nfc_llcp_socket_release(struct nfc_llcp_lo=
+cal *local, bool listen)
+ 			continue;
+ 		}
+=20
++		if (err)
++			sk->sk_err =3D err;
+ 		sk->sk_state =3D LLCP_CLOSED;
++		sk->sk_state_change(sk);
+=20
+ 		bh_unlock_sock(sk);
+=20
+@@ -133,6 +140,36 @@ static void nfc_llcp_socket_release(struct nfc_llcp_lo=
+cal *local, bool listen)
+ 	}
+=20
+ 	write_unlock(&local->sockets.lock);
 +
 +	/*
-+	 * The very rare case: if the generation-number is round,
-+	 * zap all shadow pages.
++	 * If we want to keep the listening sockets alive,
++	 * we don't touch the RAW ones.
 +	 */
-+	if (unlikely(kvm->arch.mmio_invalid_gen++ == MAX_GEN)) {
-+		kvm->arch.mmio_invalid_gen = 0;
-+		return kvm_mmu_zap_all(kvm);
++	if (listen =3D=3D true)
++		return;
++
++	write_lock(&local->raw_sockets.lock);
++
++	sk_for_each_safe(sk, tmp, &local->raw_sockets.head) {
++		llcp_sock =3D nfc_llcp_sock(sk);
++
++		bh_lock_sock(sk);
++
++		nfc_llcp_socket_purge(llcp_sock);
++
++		if (err)
++			sk->sk_err =3D err;
++		sk->sk_state =3D LLCP_CLOSED;
++		sk->sk_state_change(sk);
++
++		bh_unlock_sock(sk);
++
++		sock_orphan(sk);
++
++		sk_del_node_init(sk);
 +	}
++
++	write_unlock(&local->raw_sockets.lock);
+ }
+=20
+ struct nfc_llcp_local *nfc_llcp_local_get(struct nfc_llcp_local *local)
+@@ -142,20 +179,25 @@ struct nfc_llcp_local *nfc_llcp_local_get(struct nfc_=
+llcp_local *local)
+ 	return local;
+ }
+=20
+-static void local_release(struct kref *ref)
++static void local_cleanup(struct nfc_llcp_local *local, bool listen)
+ {
+-	struct nfc_llcp_local *local;
+-
+-	local =3D container_of(ref, struct nfc_llcp_local, ref);
+-
+-	list_del(&local->list);
+-	nfc_llcp_socket_release(local, false);
++	nfc_llcp_socket_release(local, listen, ENXIO);
+ 	del_timer_sync(&local->link_timer);
+ 	skb_queue_purge(&local->tx_queue);
+ 	cancel_work_sync(&local->tx_work);
+ 	cancel_work_sync(&local->rx_work);
+ 	cancel_work_sync(&local->timeout_work);
+ 	kfree_skb(local->rx_pending);
 +}
 +
- static inline u64 rsvd_bits(int s, int e)
- {
- 	return ((1ULL << (e - s + 1)) - 1) << s;
-@@ -3183,9 +3212,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
++static void local_release(struct kref *ref)
++{
++	struct nfc_llcp_local *local;
++
++	local =3D container_of(ref, struct nfc_llcp_local, ref);
++
++	list_del(&local->list);
++	local_cleanup(local, false);
+ 	kfree(local);
  }
-
- /*
-- * If it is a real mmio page fault, return 1 and emulat the instruction
-- * directly, return 0 to let CPU fault again on the address, -1 is
-- * returned if bug is detected.
-+ * Return value:
-+ * 2: invalid spte is detected then let the real page fault path
-+ *    update the mmio spte.
-+ * 1: it is a real mmio page fault, emulate the instruction directly.
-+ * 0: let CPU fault again on the address.
-+ * -1: bug is detected.
-  */
- int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
- {
-@@ -3200,6 +3232,9 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
- 		gfn_t gfn = get_mmio_spte_gfn(spte);
- 		unsigned access = get_mmio_spte_access(spte);
-
-+		if (unlikely(!check_mmio_spte(vcpu->kvm, spte)))
-+			return 2;
-+
- 		if (direct)
- 			addr = 0;
-
-@@ -3241,8 +3276,12 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
-
- 	pgprintk("%s: gva %lx error %x\n", __func__, gva, error_code);
-
--	if (unlikely(error_code & PFERR_RSVD_MASK))
--		return handle_mmio_page_fault(vcpu, gva, error_code, true);
-+	if (unlikely(error_code & PFERR_RSVD_MASK)) {
-+		r = handle_mmio_page_fault(vcpu, gva, error_code, true);
-+
-+		if (likely(r != 2))
-+			return r;
-+	}
-
- 	r = mmu_topup_memory_caches(vcpu);
- 	if (r)
-@@ -3318,8 +3357,12 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
- 	ASSERT(vcpu);
- 	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
-
--	if (unlikely(error_code & PFERR_RSVD_MASK))
--		return handle_mmio_page_fault(vcpu, gpa, error_code, true);
-+	if (unlikely(error_code & PFERR_RSVD_MASK)) {
-+		r = handle_mmio_page_fault(vcpu, gpa, error_code, true);
-+
-+		if (likely(r != 2))
-+			return r;
-+	}
-
- 	r = mmu_topup_memory_caches(vcpu);
- 	if (r)
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index f5b62a7..811254c 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -276,6 +276,23 @@ TRACE_EVENT(
- 		  __spte_satisfied(old_spte), __spte_satisfied(new_spte)
- 	)
- );
-+
-+TRACE_EVENT(
-+	kvm_mmu_invalid_mmio_spte,
-+	TP_PROTO(struct kvm *kvm),
-+	TP_ARGS(kvm),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned int, mmio_invalid_gen)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mmio_invalid_gen = kvm->arch.mmio_invalid_gen;
-+	),
-+
-+	TP_printk("mmio_invalid_gen %x", __entry->mmio_invalid_gen
-+	)
-+);
- #endif /* _TRACE_KVMMMU_H */
-
- #undef TRACE_INCLUDE_PATH
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 2c48e5f..c81f949 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -552,9 +552,12 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-
- 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
-
--	if (unlikely(error_code & PFERR_RSVD_MASK))
--		return handle_mmio_page_fault(vcpu, addr, error_code,
-+	if (unlikely(error_code & PFERR_RSVD_MASK)) {
-+		r = handle_mmio_page_fault(vcpu, addr, error_code,
- 					      mmu_is_nested(vcpu));
-+		if (likely(r != 2))
-+			return r;
-+	};
-
- 	r = mmu_topup_memory_caches(vcpu);
- 	if (r)
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 54fdb76..ca8e9a3 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5159,6 +5159,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
- 	if (likely(ret == 1))
- 		return x86_emulate_instruction(vcpu, gpa, 0, NULL, 0) ==
- 					      EMULATE_DONE;
-+
-+	if (unlikely(ret == 2))
-+		return kvm_mmu_page_fault(vcpu, gpa, 0, NULL, 0);
-+
- 	if (unlikely(!ret))
- 		return 1;
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 81fb3c3..5b6d2a0 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6996,10 +6996,8 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	 * If memory slot is created, or moved, we need to clear all
- 	 * mmio sptes.
- 	 */
--	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE)) {
--		kvm_mmu_zap_all(kvm);
--		kvm_reload_remote_mmus(kvm);
--	}
-+	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE))
-+		kvm_mmu_invalid_mmio_spte(kvm);
+=20
+@@ -1348,7 +1390,7 @@ void nfc_llcp_mac_is_down(struct nfc_dev *dev)
+ 		return;
+=20
+ 	/* Close and purge all existing sockets */
+-	nfc_llcp_socket_release(local, true);
++	nfc_llcp_socket_release(local, true, 0);
  }
+=20
+ void nfc_llcp_mac_is_up(struct nfc_dev *dev, u32 target_idx,
+@@ -1427,6 +1469,8 @@ void nfc_llcp_unregister_device(struct nfc_dev *dev)
+ 		return;
+ 	}
+=20
++	local_cleanup(local, false);
++
+ 	nfc_llcp_local_put(local);
+ }
+=20
+diff --git a/net/nfc/llcp/sock.c b/net/nfc/llcp/sock.c
+index 5332751..5c7cdf3 100644
+--- a/net/nfc/llcp/sock.c
++++ b/net/nfc/llcp/sock.c
+@@ -278,6 +278,8 @@ struct sock *nfc_llcp_accept_dequeue(struct sock *paren=
+t,
+=20
+ 			pr_debug("Returning sk state %d\n", sk->sk_state);
+=20
++			sk_acceptq_removed(parent);
++
+ 			return sk;
+ 		}
+=20
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
 
- void kvm_arch_flush_shadow_all(struct kvm *kvm)
--- 
-1.7.7.6
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRQzthAAoJEJctW/TcYTgGRu8P/AmPKay1aNp1989QrAzBOfNl
+EVu5htMnFa1lXmr7k5Op/jMWRNIcLCk/dfJbexM56vgkxsHcdBAmYm38R51S7Lbf
+hbS9NHSt29Xd1Jy82Lrmq1P5mUe+x7s7o1KMkuvr6kO57kOkdkvjqci4U7j3QMCj
+WPNg2OnP3wEBFbfZ4XzUuzrRhcETP8e48bomqluZT+L9EECJWrbBiRybRMtshMx/
+tzqhXy92ttrZjfq5drO3+BEGiFfmJJslUnn77twI+lo9CwqKCR+ariI28C/Z8D4b
+eoFN3dAtObw8PV2msHswBNRNMJuTG3wHGmpMsU0mv1b5zA4A0IJMDEzm0BaWYYfk
+1hIGN678Xcb5VDwGX0WBuUmBsJRTIDg/EqXaV2uTqwCEMAudXn4RDQpG1rIroTLA
+UjZsCOtQo9yQxhJfcjCezNGkGZ8BI2323dRTnpNyoqKQuFs5Z4C2QP1oWt2RdMn7
+kWL3fGZdgNfjIgwBZAeAns0w1rrsNeR5Wy5jPi276BN0dqKRH8nJnr9xOL3NMl+3
+HWKuz7EfsZnsSxE7xyGvHcfle0jydBw9XNzaG04PnraR1hUJUg5Ty0eDFZjGShZ3
+pfDJurJojFMzM+JiRKrPy/xqtjDDx+Ej9iufmF+jwHtEHyIYQTmfamHwk+vL1S7F
+4U7125y31J03fct+7ALg
+=WVIs
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
