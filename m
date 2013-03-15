@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3COTv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:51:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21520 "EHLO
+	id S932245Ab3COTwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:52:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27896 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3COTvY (ORCPT
+	with ESMTP id S1755302Ab3COTv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 15:51:24 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=r3PqfY-RzMEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=pnMHTUkj5g8A:10 a=Uut2Z0_hVRInUPtnOAUA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rzmPpaZA1KNtYzkDr4kA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 15 Mar 2013 15:51:28 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=s_RgK2cmG0wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=WukFj3UbrbAA:10 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=h1MK9b_5XSt2kY3lgxsA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=MSl-tDqOz04A:10 a=C6ltGn-DcIJCmzeQ65oA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195123.285355451@goodmis.org>
+Message-Id: <20130315195125.537300562@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:42 -0400
+Date: Fri, 15 Mar 2013 15:39:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH 07/20] tracing: Fix comments for ftrace_event_file/call flags
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [for-next][PATCH 18/20] tracing: Add "uptime" trace clock that uses jiffies
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Fix-comments-for-ftrace_event_file-call-flag.patch
+Content-Disposition: inline; filename=0018-tracing-Add-uptime-trace-clock-that-uses-jiffies.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,57 +34,67 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Most of the flags for the struct ftrace_event_file were moved over
-to the flags of the struct ftrace_event_call, but the comments were
-never updated.
+Add a simple trace clock called "uptime" for those that are
+interested in the uptime of the trace. It uses jiffies as that's
+the safest method, as other uptime clocks grab seq locks, which could
+cause a deadlock if taken from an event or function tracer.
 
+Requested-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ include/linux/trace_clock.h |    1 +
+ kernel/trace/trace.c        |    1 +
+ kernel/trace/trace_clock.c  |   10 ++++++++++
+ 3 files changed, 12 insertions(+)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index d84c4a5..4cb6cd8 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -230,6 +230,13 @@ struct ftrace_event_call {
- 	struct list_head	*files;
- 	void			*mod;
- 	void			*data;
-+	/*
-+	 *   bit 0:		filter_active
-+	 *   bit 1:		allow trace by non root (cap any)
-+	 *   bit 2:		failed to apply filter
-+	 *   bit 3:		ftrace internal event (do not enable)
-+	 *   bit 4:		Event was enabled by module
-+	 */
- 	int			flags; /* static flags of different events */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index d563f37..1d7ca27 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -16,6 +16,7 @@
 =20
- #ifdef CONFIG_PERF_EVENTS
-@@ -248,7 +255,7 @@ enum {
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
++extern u64 notrace trace_clock_jiffies(void);
+ extern u64 notrace trace_clock_global(void);
+ extern u64 notrace trace_clock_counter(void);
+=20
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index f90ca16..8eabfbb 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -647,6 +647,7 @@ static struct {
+ 	{ trace_clock_local,	"local",	1 },
+ 	{ trace_clock_global,	"global",	1 },
+ 	{ trace_clock_counter,	"counter",	0 },
++	{ trace_clock_jiffies,	"uptime",	1 },
+ 	ARCH_TRACE_CLOCKS
+ };
+=20
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index aa8f5f4..26dc348 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -57,6 +57,16 @@ u64 notrace trace_clock(void)
+ 	return local_clock();
+ }
+=20
++/*
++ * trace_jiffy_clock(): Simply use jiffies as a clock counter.
++ */
++u64 notrace trace_clock_jiffies(void)
++{
++	u64 jiffy =3D jiffies - INITIAL_JIFFIES;
++
++	/* Return nsecs */
++	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
++}
 =20
  /*
-  * Ftrace event file flags:
-- *  ENABELD	  - The event is enabled
-+ *  ENABLED	  - The event is enabled
-  *  RECORDED_CMD  - The comms should be recorded at sched_switch
-  */
- enum {
-@@ -265,12 +272,8 @@ struct ftrace_event_file {
-=20
- 	/*
- 	 * 32 bit flags:
--	 *   bit 1:		enabled
--	 *   bit 2:		filter_active
--	 *   bit 3:		enabled cmd record
--	 *   bit 4:		allow trace by non root (cap any)
--	 *   bit 5:		failed to apply filter
--	 *   bit 6:		ftrace internal event (do not enable)
-+	 *   bit 0:		enabled
-+	 *   bit 1:		enabled cmd record
- 	 *
- 	 * Changes to flags must hold the event_mutex.
- 	 *
+  * trace_clock_global(): special globally coherent trace clock
 --=20
 1.7.10.4
 
@@ -95,13 +107,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u7AAoJEOdOSU1xswtMxsMH/1yS8N0k8f2Oxc3A+JTPGSdS
-f+r+0U7pzjNB0Qv7NmpGqobTTID/Vzs5UTo/S/9T/5k3atnk7+n3/oKlPAxzyYZC
-8//2TibizBsUAmG5xm5x1pSfQulOl/uBpBSdnY8hqPxjC5UCK1oFNSWnc7q6v8r9
-YMdLa8H0gbu7nWdS3+a+uUH/inEZuLEBjaolPsC+RqI2L4ekh3kFEV9BltK8EG+T
-y5PM0RnsKdUWm0DJg92ZDHY3Md4iUoJ0TP8RMxNhzbaIHe+o1Wv6E0Boj2wlORDx
-fyPLgQnuuYaBvnoKKJQy+tm+wecd6Y+iRb7V7JWtAl2FAlRJo8eDgFSvMV3T5YM=
-=nq0m
+iQEcBAABAgAGBQJRQ3u9AAoJEOdOSU1xswtM4H4IAJ/hhqY1RHvlUanIzVGDXT8f
+kZodVWCEacPmyTTRJ205TXVZOY2FG+x5mzZvgikAzsHTVuqUi9n3ouYrWXu3UQiI
+3N91Zs2hYS7jqkORJRBPQY7VmBB7GQbnkSnJfbdS6lidUa/NnGZi7KY8dBgpgq47
+urBnhISd5N8lNUwRp2V/rnA9kQAdZLzKO4mkuwpHWa1Lx4ROVDLkLdlZYR48oqBD
+qUihdeGLNkD7IuHDvncFDhPuk25n6v1zi6dW5JS4C2np8wSeRDnPqNq4se9039Rc
+CWFSQvhLK9i6iuDZycP6jm3NBWmQ+BjFTbG9EH9iZoO/49bWsSgu3fnhLkyn3qM=
+=ecJE
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
