@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab3COMvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 08:51:21 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46932 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab3COMvU (ORCPT
+	id S1754522Ab3COMvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 08:51:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20203 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab3COMvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 08:51:20 -0400
-Date: Fri, 15 Mar 2013 08:51:35 -0400 (EDT)
-Message-Id: <20130315.085135.1979138622322564611.davem@davemloft.net>
-To: joe@perches.com
-Cc: kapranoff@inbox.ru, netdev@vger.kernel.org, bhutchings@solarflare.com,
-        peppe.cavallaro@st.com, bruce.w.allan@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] phy: Elimination the forced speed reduction algorithm.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1363351729.2433.4.camel@joe-AO722>
-References: <1363257652-8255-1-git-send-email-kapranoff@inbox.ru>
-	<20130315.083524.1244515166306242265.davem@davemloft.net>
-	<1363351729.2433.4.camel@joe-AO722>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 15 Mar 2013 08:51:31 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XS9J8YfiqEIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=djQqxrKAXsQA:10 a=VwQbUJbxAAAA:8 a=TzdKjkQojqi4YbfccNUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363351889.25967.51.camel@gandalf.local.home>
+Subject: Re: [PATCH v2] tracing: Expose event tracing infrastructure
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Fri, 15 Mar 2013 08:51:29 -0400
+In-Reply-To: <CACV3sb+DqAsQtvK0d+vNHCyeJYCqWD29AyikRCV6g-rZp3A8nQ@mail.gmail.com>
+References: <514057BF.6040804@huawei.com>
+	 <CACV3sb+DqAsQtvK0d+vNHCyeJYCqWD29AyikRCV6g-rZp3A8nQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 15 Mar 2013 05:51:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri, 15 Mar 2013 05:48:49 -0700
+On Fri, 2013-03-15 at 20:31 +0800, Jovi Zhang wrote:
 
-> The phy code also uses non standard kernel style tests like
-> 	if (CONSTANT == variable)
-> instead of
-> 	if (variable == CONSTANT)
+> Hi steven,
+> 
+> Would you please give some comments? patch works normally on my box.
 
-Right, to trigger compile time errors when "=" is accidently used
-instead of "==".
+Yeah, I planned on it today ;-)  Actually, I've been a busy beaver
+lately. The last couple of weeks I have:
 
-But the whole driver is like this already.
+  32 files changed, 5239 insertions(+), 1805 deletions(-)
+
+(Although some of that work started back last August)
+
+I still have to finish backporting the patches I said I would take from
+you from earlier this week.
+
+Anyway, a quick scan of the patch looks fine, and I don't see any major
+issues with it. The only problem is that the changes I've made have
+touched this code a bit and your patch won't apply, with my new work.
+
+I'm just about finished, the final tests I'm doing on my code are
+looking good and I'm hoping to push my final version to linux-next
+today. If you want to have a head start, you can look at the current
+code (no guarantee that it wont rebase), at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+ trace/tip/perf/core-5
+
+-- Steve
+
+
