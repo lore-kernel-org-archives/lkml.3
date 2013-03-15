@@ -1,91 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3COJAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 05:00:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30152 "EHLO mga02.intel.com"
+	id S1753984Ab3COJD6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 05:03:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65146 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753922Ab3COJA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 05:00:27 -0400
+	id S1752408Ab3COJDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 05:03:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="302654223"
-Message-ID: <5142E373.1020006@intel.com>
-Date: Fri, 15 Mar 2013 17:01:39 +0800
+   d="scan'208";a="279915518"
 From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Danny Baumann <dannybaumann@web.de>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 3/3] ACPI video: Fix applying indexed initial brightness
- value.
-References: <1363257264-15984-1-git-send-email-dannybaumann@web.de> <1363257264-15984-4-git-send-email-dannybaumann@web.de> <5142E04F.1010400@intel.com> <5142E20C.40805@web.de>
-In-Reply-To: <5142E20C.40805@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
+        Shane Huang <shane.huang@amd.com>, Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH RESEND v11 0/4] block layer runtime pm
+Date: Fri, 15 Mar 2013 17:05:01 +0800
+Message-Id: <1363338305-4987-1-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 04:55 PM, Danny Baumann wrote:
-> Hi,
-> 
->  >> +static unsigned long long
->>> +acpi_video_index_to_level(struct acpi_video_device *device,
->>> +			  unsigned long long index)
->>> +{
->>> +	if (device->brightness->flags._BCL_reversed)
->>> +		index = device->brightness->count - 3 - index;
->>> +
->>> +	return device->brightness->levels[index + 2];
->>> +}
->>
->> What about making this function also take care of the
->> bqc_offset_aml_bug_workaround? so that this function serves more like a
->> conversion from raw value to fixed value, the function name can perhaps
->> be named as: acpi_video_fix_bqc_value, or whatever you think is more
->> appropriate.
-> 
-> Makes sense to me. How about acpi_video_bqc_to_level? I'd suggest 
-> acpi_video_bqc_value_to_level, but that makes it hard to keep the 80 
-> char limit in acpi_video_device_lcd_get_level_current.
+In August 2010, Jens and Alan discussed about "Runtime PM and the block
+layer". http://marc.info/?t=128259108400001&r=1&w=2
+And then Alan has given a detailed implementation guide:
+http://marc.info/?l=linux-scsi&m=133727953625963&w=2
 
-Right, so let's go with acpi_video_bqc_to_level.
+To test:
+# ls -l /sys/block/sda
+/sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
 
-> 
->>> @@ -742,9 +749,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
->>>   				}
->>>   		}
->>>   	} else {
->>> -		if (br->flags._BCL_reversed)
->>> -			level_old = (br->count - 1) - level_old;
->>> -		level = br->levels[level_old];
->>> +		level = acpi_video_index_to_level(device, level_old);
->>
->> And here, that new function should be used, which also takes care of the
->> offset_aml_bug problem(though in theory, the two problems may not happen
->> on the same BIOS table).
-> 
-> But that new function (whatever it's named) is already used here?
+# echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
+# echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
+Then you'll see sda is suspended after 10secs idle.
 
-Yes, I mean the new function that also takes care of offset_aml_bug :-)
+[ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+[ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
 
-> 
-> BTW, shouldn't the use_bios_initial_backlight also be respected for the 
-> BQC-returns-index case? Currently it's only used for the 
-> BQC-returns-level case.
+And if you do some IO, it will resume immediately.
+[ 1791.052438] sd 2:0:0:0: [sda] Starting disk
 
-Definitely, we should care that.
+For test, I often set the autosuspend time to 1 second. If you are using
+a GUI, the 10 seconds delay may be too long that the disk can not enter
+runtime suspended state.
 
-> 
->> And the acpi_video_device_lcd_get_level_current's param init can
->> probably be renamed as raw, meaning if raw value is desired or fixed
->> value, but it's not a big deal.
-> 
-> Agreed. I'll send a new patch set (this time with signed-off-by) once I 
-> get opinion on the question above.
+Note that sd's runtime suspend callback will dump some kernel messages
+and the syslog daemon will write kernel message to /var/log/messages,
+making the disk instantly resume after suspended. So for test, the
+syslog daemon should better be temporarily stopped.
 
-Cool, thanks.
+A git repo for it, on top of v3.9-rc1:
+https://github.com/aaronlu/linux.git blockpm
 
--Aaron
+v11:
+- Add Alan Stern's Acked-by tag.
+
+v10:
+- Add link of Alan Stern's ideas on block layer runtime PM to patch 2
+  and 3's changelog;
+- Add back code to schdule device suspend if scsi driver return -EBUSY.
+
+v9:
+- No need to mark last busy and autosuspend in blk_pm_runtime_init as
+  suggested by Alan Stern;
+- mark last busy in blk_runtime_post_suspend if driver failed to runtime
+  suspend the device, so that PM core can try to autosuspend it some
+  time later;
+- Update scsi bus layer runtime callback to handle scsi devices which
+  use request based runtime PM and which don't.
+
+v8:
+- Set default autosuspend delay to -1 to avoid suspend till an updated
+  value is set as suggested by Alan Stern;
+- Always check the dev field of the queue structure, as it is incorrect
+  and meaningless to do any operation on devices that do not use block
+  layer runtime PM as reminded by Alan Stern;
+- Update scsi bus level runtime PM callback to take care of scsi devices
+  that use block layer runtime PM and that don't.
+
+v7:
+- Add kernel doc for block layer runtime PM API as suggested by
+  Alan Stern;
+
+- Add back check for q->dev, as that serves as a flag if driver
+  is using block layer runtime PM;
+
+- Do not auto suspend when last request is finished, as that's a hot
+  path and auto suspend is not a trivial function. Instead, mark last
+  busy in pre_suspend so that runtim PM core will retry suspend some
+  time later to solve the 1st problem demostrated in v6, suggested by
+  Alan Stern.
+
+- Move block layer runtime PM strtegy functions to where they are
+  needed instead of in include/linux/blkdev.h as suggested by Alan
+  Stern since clients of block layer do not need to know those
+  functions.
+
+v6:
+Take over from Lin Ming.
+
+- Instead of put the device into autosuspend state in
+  blk_post_runtime_suspend, do it when the last request is finished.
+  This can also solve the problem illustrated below:
+
+      thread A				      thread B
+|suspend timer expired			|
+|  ... ...				|a new request comes in,
+|  ... ...				|blk_pm_add_request
+|  ... ...				|skip request_resume due to
+|  ... ...				|q->status is still RPM_ACTIVE
+|  rpm_suspend				|  ... ...
+|    scsi_runtime_suspend		|  ... ...
+|      blk_pre_runtime_suspend		|  ... ...
+|      return -EBUSY due to nr_pending	|  ... ...
+|  rpm_suspend done			|  ... ...
+|					|    blk_pm_put_request, mark last busy
+
+But no more trigger point, and the device will stay at RPM_ACTIVE state.
+Run pm_runtime_autosuspend after the last request is finished solved
+this problem.
+
+- Requests which have the REQ_PM flag should not involve nr_pending
+  counting, or we may lose the condition to resume the device:
+  Suppose queue is active and nr_pending is 0. Then a REQ_PM request
+  comes and nr_pending will be increased to 1, but since the request has
+  REQ_PM flag, it will not cause resume. Before it is finished, a normal
+  request comes in, and since nr_pending is 1 now, it will not trigger
+  the resume of the device either. Bug.
+
+- Do not quiesce the device in scsi bus level runtime suspend callback.
+  Since the only reason the device is to be runtime suspended is due to
+  no more requests pending for it, quiesce it is pointless.
+
+- Remove scsi_autopm_* from sd_check_events as we are request driven.
+
+- Call blk_pm_runtime_init in scsi_sysfs_initialize_dev, so that we do
+  not need to check queue's device in blk_pm_add/put_request.
+
+- Do not mark last busy and initiate an autosuspend for the device in
+  blk_pm_runtime_init function.
+
+- Do not mark last busy and initiate an autosuspend for the device in
+  block_post_runtime_resume, as when the request that triggered the
+  resume finished, the blk_pm_put_request will mark last busy and
+  initiate an autosuspend.
+
+v5:
+- rename scsi_execute_req to scsi_execute_req_flags
+  and wrap scsi_execute_req around it.
+- add detail function descriptions in patch 2 log
+- define static helper functions to do runtime pm work on block layer
+  and put the definitions inside a #ifdef block
+
+v4:
+- add CONFIG_PM_RUNTIME check
+- update queue runtime pm status after system resume
+- use pm_runtime_autosuspend instead of pm_request_autosuspend in scsi_runtime_idle
+- always count PM request
+
+v3:
+- remove block layer suspend/resume callbacks
+- add block layer runtime pm helper functions
+
+v2:
+- remove queue idle timer, use runtime pm core's auto suspend
+
+Lin Ming (4):
+  block: add a flag to identify PM request
+  block: add runtime pm helpers
+  block: implement runtime pm strategy
+  sd: change to auto suspend mode
+
+ block/blk-core.c           | 183 +++++++++++++++++++++++++++++++++++++++++++++
+ block/elevator.c           |  26 +++++++
+ drivers/scsi/scsi_lib.c    |   9 +--
+ drivers/scsi/scsi_pm.c     |  84 +++++++++++++++++----
+ drivers/scsi/sd.c          |  22 ++----
+ include/linux/blk_types.h  |   2 +
+ include/linux/blkdev.h     |  27 +++++++
+ include/scsi/scsi_device.h |  16 +++-
+ 8 files changed, 331 insertions(+), 38 deletions(-)
+
+-- 
+1.8.1.4
 
