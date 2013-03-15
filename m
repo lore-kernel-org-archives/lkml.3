@@ -1,216 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3COCi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Mar 2013 22:38:26 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48027 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751409Ab3COCiZ (ORCPT
+	id S1753569Ab3COCv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Mar 2013 22:51:28 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45839 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab3COCvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Mar 2013 22:38:25 -0400
-Date: Thu, 14 Mar 2013 22:38:21 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
-	Implementation
-Message-ID: <20130315023821.GB25419@Krystal>
-References: <20130311213602.GB9829@Krystal> <20130314042227.GA15675@dcvr.yhbt.net> <20130314131855.GA9155@Krystal> <20130314190746.GA16120@dcvr.yhbt.net> <20130314194853.GA22198@Krystal> <20130314213209.GA15771@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130314213209.GA15771@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 14 Mar 2013 22:51:18 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-97-51428ca2da3c
+Message-id: <51428CAA.5000302@samsung.com>
+Date: Fri, 15 Mar 2013 11:51:22 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Sergey Yanovich <ynvich@gmail.com>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+ <1363224194-7366-1-git-send-email-ynvich@gmail.com>
+ <CAKYAXd_v5TsMJ+h3Zk4FRDB0jAfF04t4Z65D1kmB1ziOk65+Vg@mail.gmail.com>
+In-reply-to: <CAKYAXd_v5TsMJ+h3Zk4FRDB0jAfF04t4Z65D1kmB1ziOk65+Vg@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zTd1FPU6BBmc2c1psf72RzaJ58Xo2
+	i+t3bzFbTPmznMni8q45bBZH/vczWhxfG27Rf1nNgcNj56y77B6Hrqxl9LhzbQ+bx/65a9g9
+	Pm+SC2CN4rJJSc3JLEst0rdL4Mo4dGABc8EWroo3vRuYGxi/sncxcnJICJhITPk5iQ3CFpO4
+	cG89kM3FISSwjFHiwPpdLF2MHGBF764wQsSnM0qsbb/DAtIgJPCSUeLEHGYQm1dAS2L+yj9g
+	NouAqsTJLcvBatgEdCS2fzvOBGKLCoRJrJx+hQWiXlDix+R7YPNFBNQkJjxLBZnPLNDKJLHw
+	zhOwg4QFPCSeP1jLDrF4D6PEx+tzwa7mFAiWeHftJtgyZgF1iUnzFkHZ8hKb17xlBmmQELjF
+	LnFtznQ2iIsEJL5NPgT1jazEpgPMEB9LShxccYNlAqPYLCQ3zUIydhaSsQsYmVcxiqYWJBcU
+	J6UXGesVJ+YWl+al6yXn525ihERf/w7GuwesDzEmA62cyCwlmpwPjN68knhDYzMjC1MTU2Mj
+	c0sz0oSVxHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTB6X7JJ+/qlW/pRv/rDp3r+
+	Vw4kuP7MyirvXrGqPsV+yc55F3V+eXpNf2U2bUZS5Ofj5dYO95dzprIwJi1bo/p97TO3fcfM
+	yxYnTBStDZB9seIy/wR17v1nZxVf5W/RfSmQKHiWX/G26gmHXVf3Vc24ujRJJv/t5z6jh2fE
+	3H5YHClvP9pfMMlbiaU4I9FQi7moOBEA/vTWbNQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd1FPU6BBhenMVtsf72RzaJ58Xo2
+	i+t3bzFbTPmznMni8q45bBZH/vczWhxfG27Rf1nNgcNj56y77B6Hrqxl9LhzbQ+bx/65a9g9
+	Pm+SC2CNamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
+	zAE6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcejAAuaCLVwVb3o3
+	MDcwfmXvYuTgkBAwkXh3hbGLkRPIFJO4cG89WxcjF4eQwHRGibXtd1hAEkICLxklTsxhBrF5
+	BbQk5q/8A2azCKhKnNyyHKyGTUBHYvu340wgtqhAmMTK6VdYIOoFJX5MvscCsktEQE1iwrNU
+	kPnMAq1MEgvvPGEDqREW8JB4/mAtO8TiPYwSH6/PZQdJcAoES7y7dhNsGbOAusSkeYugbHmJ
+	zWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc28+kdjCu
+	bLA4xCjAwajEw3ug3yFQiDWxrLgy9xCjBAezkgivp5djoBBvSmJlVWpRfnxRaU5q8SHGZGAQ
+	TGSWEk3OB6advJJ4Q2MTMyNLIzNjE3NjY9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg
+	9OFoYr8r8fHG1oYUvvqqzfUajn3SXw/op25eF+21aEo81+RPX5ju7vq4PXVDEvvWqKZpzev9
+	H++c6PUv2/yF3fbmLNuzvsIuzCsbo/bsYf6mGCy3fs71imRh1Yq4buX8naYMLx7rcXV/Czbb
+	0THNODD5ErOrzLa5X3/JrPtfeEp8paz0qqVblFiKMxINtZiLihMBZbEA8zEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > * Eric Wong (normalperson@yhbt.net) wrote:
-> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > > The advantage of using splice() over dequeue() is that you will reduce
-> > > > the amount of interactions between concurrent enqueue and dequeue
-> > > > operations on the head and tail of the same queue.
-> > > 
-> > > I wanted to use splice here originally, but epoll_wait(2) may not
-> > > consume the entire queue, as it's limited to maxevents specified by the
-> > > user calling epoll_wait.
-> > 
-> > I see,
-> > 
-> > > 
-> > > With unconsumed elements, I need to preserve ordering of the queue to
-> > > avoid starvation.  So I would either need to:
-> > > 
-> > > a) splice the unconsumed portion back to the head of the shared queue.
-> > >    I'm not sure if this is possible while elements are being enqueued...
-> > 
-> > That would be a double-ended queue. I haven't thought this problem
-> > through yet.
-> > 
-> > >    Using a mutex for splicing back to unconsumed elements is OK, and
-> > >    probably required anyways since we need to keep EPOLLONESHOT
-> > >    unmasking synced with dequeue.
-> > > 
-> > > b) preserve the unconsumed spliced queue across epoll_wait invocations
-> > >    but that requires checking both queues for event availability...
-> > 
-> > I think b) should be preferred over a).
-> > 
-> > Basically, instead of having the "unconsumed element" queue on the stack
-> > as I suggested, you might want to keep it across epoll_wait invocations.
-> > 
-> > Before you start digging in the unconsumed element queue, you just start
-> > by splicing the content of the shared queue into the tail of unconsumed
-> > queue. Then, you simply dequeue the unconsumed queue elements until you
-> > either reach the end or the max nr.
-> > 
-> > You should note that with this scheme, you'll have to dequeue items from
-> > the unconsumed queue rather than just iterating over the elements. The
-> > nice side of consuming all the elements (in the temp queue on the local
-> > stack) is that you don't care about dequeuing, since the entire queue
-> > will vanish. However, in this case, since you care about keeping the
-> > queue after a partial iteration, you need to dequeue from it.
-> > 
-> > And yes, this approach involves checking both queues for event
-> > availability. Hopefully none of this will be too much of an issue
-> > performance-wise.
+On 03/14/2013 01:08 PM, Namjae Jeon wrote:
+> 2013/3/14, Sergey Yanovich <ynvich@gmail.com>:
+>> MMC hosts are added asynchronously. We need to wait until detect returns to
+>> avoid failed root filesystem mounts.
+>> ---8<---
+>> VFS: Cannot open root device "mmcblk0p1" or unknown-block(0,0): error -6
+>> Please append a correct "root=" boot option; here are the available
+>> partitions:
+>> mmc0: host does not support reading read-only switch. assuming
+>> write-enable.
+>> 1f00             256 mtdblock0  (driver?)
+>> 1f01             256 mtdblock1  (driver?)
+>> 1f02            2560 mtdblock2 mmc0: new SDHC card at address b368
+>>  (driver?)
+>> 1f03           29696 mtdblock3  (driver?)
+>> 1f04           16384 mtdblock4 mmcblk0: mmc0:b368 USD   3.72 GiB
+>>  (driver?)
+>>  mmcblk0: p1
+>> b300         3910656 mmcblk0  driver: mmcblk
+>>   b301         3906560 mmcblk0p1 00000000-01
+>> Kernel panic - not syncing: VFS: Unable to mount root fs on
+>> unknown-block(0,0)
+>> ---8<---
+>>
+>> Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
+>> ---
+> Hi.
+> Have you ever tried to use rootwait or rootdelay on command line ?
+> If no, You can use them.
+I agreed the Namjae's suggestion..if you use the rootwait or rootdelay, it's waiting for mounting rootfs.
+
+Best Regards,
+Jaehoon Chung
 > 
-> Right.  I will try this, I don't think the check will be too expensive.
+> Thanks.
 > 
-> When dequeuing from the unconsumed queue, perhaps there should be a
-> "dequeue_local" function which omits the normal barriers required
-> for the shared queue.
-> 
-> With a splice and without needing barriers for iteration, this sounds good.
 
-Well actually, __wfcq_dequeue() is really not that expensive. In terms
-of synchronization, here is what it typically does:
-
-node = ___wfcq_node_sync_next(&head->node);
-  -> busy wait if node->next is NULL. This check is needed even if we
-     work on a "local" queue, because the O(1) splice operation does not
-     walk over every node to check for NULL next pointer: this is left
-     to the dequeue/iteration operations.
-if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
-  -> only taken if we are getting the last node of the queue. Happens
-     at most once per batch.
-}
-
-head->node.next = next;
-  -> a simple store.
-
-smp_read_barrier_depends();
-  -> no-op on everything but Alpha.
-
-return node;
-
-So my recommendation would be to be careful before trying to come up
-with flavors that remove barriers if those are not actually hurting the
-fast-path significantly. By dequeue fast-path, I mean what needs to be
-executed for dequeue of each node.
-
-> 
-> > Another approach could be to let you work directly on the shared queue:
-> > 
-> > I could possibly implement a
-> > 
-> > void __wfcq_snapshot(struct wfcq_head *head,
-> >                 struct wfcq_tail *tail);
-> > 
-> > That would save a tail shapshot that would then be used to stop
-> > iteration, dequeue and splice at the location of the tail snapshot. And
-> > 
-> > void __wfcq_snapshot_reset(struct wfcq_head *head,
-> >                 struct wfcq_tail *tail);
-> > 
-> > would set the tail snapshot pointer back to NULL.
-> > 
-> > This would require a few extra checks, but nothing very expensive I
-> > expect.
-> > 
-> > Thoughts ?
-> 
-> I'm not sure I follow, would using it be something like this?
-> 
-> 	snapshot
-> 	iterate (read-only, no dequeue)
-> 	splice(discard_head, discard_tail, shared_head, iter_stop_point)
-> 	snapshot_reset
-
-My idea was more like:
-
-snapshot
-__wfcq_dequeue until returns NULL or reach max
-snapshot_reset
-
-But I would really prefer the splice approach unless there is a very
-significant performance gain to do otherwise, because I don't want to
-clutter the API with various ways of performing the same thing
-needlessly.
-
-> 
-> I also use an atomic state variable to prevent an item from being queued
-> twice, and I unset that while iterating+dequeueing.
-> 
-> I change the state to IDLE while iterating and ep_poll_callback sets
-> state READY on any item before being spliced out, that would cause the
-> event to be lost when it's spliced out.
-> 
-> So I think dequeue/state IDLE while iterating is required for epoll_wait,
-> I'll try the private queue.
-
-Yep. Just to summarize the private queue approach:
-
-within your epoll queue structure:
-
-struct wfcq_tail queue_tail;       /* enqueue fast-path */
-
-/* Below only touched by splice and dequeue */
-struct wfcq_head queue_head;
-struct wfcq_tail unconsumed_tail;
-struct wfcq_head unconsumed_head ____cacheline_aligned;  /* dequeue fast-path */
-
-In fact, what we really, really care about is that enqueue and dequeue
-fast-paths don't touch the same cache-line. For the other fields, we
-don't really care.
-
-Then, when you need to handle the batch:
-
-/* Hold dequeue mutex */
-
-(void) __wfcq_splice(&epoll_queue->unconsumed_head,
-        &epoll_queue->unconsumed_tail,
-        &epoll_queue->queue_head,
-        &epoll_queue->queue_tail);
-/* You don't care about the return value here. */
-
-for (i = 0; i < max_ev; i++) {
-        struct wfcq_node *node;
-
-        node = __wfcq_dequeue(&epoll_queue->unconsumed_head,
-                        &epoll_queue->unconsumed_tail);
-        if (!node)
-                break;
-        /* Deal with node, free node's container */
-}
-
-/* Release dequeue mutex */
-
-You don't need to do an extra check for empty queues, because these
-checks are embedded into splice and dequeue operations.
-
-Thanks,
-
-Mathieu
-
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
