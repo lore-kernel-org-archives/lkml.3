@@ -1,192 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab3COSok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:44:40 -0400
-Received: from mout.gmx.net ([212.227.17.20]:60834 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab3COSoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 14:44:39 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19PSRseuP5P5X4rhtaynDmP+SAbXoWYvicrKExIvj
-	W0/X/wgRU7OirN
-Message-ID: <51436C12.1040400@gmx.de>
-Date: Fri, 15 Mar 2013 19:44:34 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+	id S1755353Ab3COSou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 14:44:50 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:61624 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab3COSot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 14:44:49 -0400
+Date: Fri, 15 Mar 2013 14:44:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Bill Huang <bilhuang@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+In-Reply-To: <20130315165744.GK4977@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.03.1303151435470.3069@syhkavp.arg>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com> <20130312134032.GU4977@n2100.arm.linux.org.uk> <1363139273.21694.11.camel@bilhuang-vm1> <20130315165744.GK4977@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-        user-mode-linux-user@lists.sourceforge.net,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Davi Arnaut <davi.arnaut@gmail.com>
-Subject: Re: SLUB + UML : WARNING: at mm/page_alloc.c:2386
-References: <51422008.3020208@gmx.de> <CAFLxGvyzkSsUJQMefeB2PcVBykZNqCQe5k19k0MqyVr111848w@mail.gmail.com> <514239F7.3050704@gmx.de> <20130314212107.GA23056@redhat.com> <51424000.1030309@gmx.de> <CAFLxGvzcy_+2exNbbCGZ460Y417MjoChY39FPXvqaEOZTq8ofQ@mail.gmail.com>
-In-Reply-To: <CAFLxGvzcy_+2exNbbCGZ460Y417MjoChY39FPXvqaEOZTq8ofQ@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 12:10 AM, richard -rw- weinberger wrote:
-> Time to look at UML's __get_user().
+On Fri, 15 Mar 2013, Russell King - ARM Linux wrote:
+
+> On Tue, Mar 12, 2013 at 06:47:53PM -0700, Bill Huang wrote:
+> > On Tue, 2013-03-12 at 21:40 +0800, Russell King - ARM Linux wrote:
+> > > On Tue, Mar 12, 2013 at 05:37:41AM -0700, Bill Huang wrote:
+> > > > Add the below four notifier events so drivers which are interested in
+> > > > knowing the clock status can act accordingly. This is extremely useful
+> > > > in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+> > > > 
+> > > > PRE_CLK_ENABLE
+> > > > POST_CLK_ENABLE
+> > > > PRE_CLK_DISABLE
+> > > > POST_CLK_DISABLE
+> > > > 
+> > > > Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+> > > 
+> > > NAK.  *Sigh* NO, this is the wrong level to be doing stuff like this.
+> > > 
+> > > The *ONLY* thing that clk_prepare_enable() and clk_prepare_disable() should
+> > > *EVER* be doing is calling clk_prepare(), clk_enable(), clk_disable() and
+> > > clk_unprepare().  Those two functions are *merely* helpers for drivers
+> > > who don't wish to make the individual calls.
+> > > 
+> > > Drivers are still completely free to call the individual functions, at
+> > > which point your proposal breaks horribly - and they _do_ call the
+> > > individual functions.
+> >
+> > I'm proposing to give device driver a choice when it knows that some
+> > driver might be interested in knowing its clock's enabled/disabled state
+> > change at runtime, this is very important for centralized DVFS core
+> > driver. It is not meant to be covering all cases especially for drivers
+> > which is not part of the DVFS, so we don't care if it is calling
+> > clk_enable/disable directly or not.
+> 
+> But you're not giving drivers a choice.  You're giving them an ultimatum.
+> Either they use clk_prepare_enable() which must only be called from non-
+> atomic contexts and have the notifiers, or if they need to use the
+> individual functions (which is what they _should_ be doing but people
+> are too lazy to properly convert stuff) they don't get the option of
+> the notifiers at all.
+> 
+> This sucks totally, design wise.
+> 
+> The whole point of clk_prepare_enable() is that it is a helper function
+> to _only_ do the clk_prepare() call followed by a clk_enable() call and
+> _nothing_ _else_ _what_ _so_ _ever_.
+
+If people are too lazy and start abusing clk_prepare_enable() then this 
+helper function becomes counter-productive and should simply be removed.
+Same issue as with IS_ERR_OR_NULL().
 
 
-Just FWIW the "memdup_user:" debug-patch-line is not only triggered by trinity.
-It happens even if I regularly boot a UML guest (stable Gentoo x86):
-
-
-
-$ /usr/local/bin/linux-v3.9-rc2-292-ga2362d2 earlyprintk ubda=/home/tfoerste/virtual/uml/trinity ubdb=/mnt/ramdisk/swap_trinity eth0=tuntap,tap0,72:ef:3d:9f:c3:5a mem=768M con=pts con0=fd:0,fd:1 umid=uml 
-Locating the bottom of the address space ... 0x1000
-Locating the top of the address space ... 0xc0000000
-Core dump limits :
-        soft - NONE
-        hard - NONE
-Checking that ptrace can change system call numbers...OK
-Checking syscall emulation patch for ptrace...OK
-Checking advanced syscall emulation patch for ptrace...OK
-Checking for tmpfs mount on /dev/shm...OK
-Checking PROT_EXEC mmap in /dev/shm/...OK
-Checking for the skas3 patch in the host:
-  - /proc/mm...not found: No such file or directory
-  - PTRACE_FAULTINFO...not found
-  - PTRACE_LDT...not found
-UML running in SKAS0 mode
-Adding 9842688 bytes to physical memory to account for exec-shield gap
-bootconsole [earlycon0] enabled
-PID hash table entries: 4096 (order: 2, 16384 bytes)
-Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
-Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
-Memory: 768308k available
-SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-NR_IRQS:15
-Calibrating delay loop... 3461.12 BogoMIPS (lpj=17305600)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 512
-Checking for host processor cmov support...Yes
-Checking that host ptys support output SIGIO...Yes
-Checking that host ptys support SIGIO on close...No, enabling workaround
-memdup_user: 9
-memdup_user: 9
-devtmpfs: initialized
-Using 2.6 host AIO
-NET: Registered protocol family 16
-bio: create slab <bio-0> at 0
-Switching to clocksource itimer
-NET: Registered protocol family 2
-TCP established hash table entries: 8192 (order: 4, 65536 bytes)
-TCP bind hash table entries: 8192 (order: 3, 32768 bytes)
-TCP: Hash tables configured (established 8192 bind 8192)
-TCP: reno registered
-UDP hash table entries: 512 (order: 1, 8192 bytes)
-UDP-Lite hash table entries: 512 (order: 1, 8192 bytes)
-NET: Registered protocol family 1
-RPC: Registered named UNIX socket transport module.
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-mconsole (version 2) initialized on /home/tfoerste/.uml/uml/mconsole
-Checking host MADV_REMOVE support...OK
-UML Audio Relay (host dsp = /dev/sound/dsp, host mixer = /dev/sound/mixer)
-Host TLS support detected
-Detected host type: i386 (GDT indexes 6 to 9)
-audit: initializing netlink socket (disabled)
-type=2000 audit(1363372747.842:1): initialized
-NFS: Registering the id_resolver key type
-Key type id_resolver registered
-Key type id_legacy registered
-nfs4filelayout_init: NFSv4 File Layout Driver Registering...
-Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-msgmni has been set to 1500
-alg: No test for stdrng (krng)
-Block layer SCSI generic (bsg) driver version 0.4 loaded (major 254)
-io scheduler noop registered (default)
-tun: Universal TUN/TAP device driver, 1.6
-tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-device-mapper: uevent: version 1.0.3
-device-mapper: ioctl: 4.24.0-ioctl (2013-01-15) initialised: dm-devel@redhat.com
-TCP: cubic registered
-NET: Registered protocol family 17
-Key type dns_resolver registered
-Initialized stdio console driver
-Console initialized on /dev/tty0
-                                console [tty0] enabled, bootconsole disabled
-console [tty0] enabled, bootconsole disabled
-                                            Initializing software serial port version 1
-console [mc-1] enabled
- ubda: unknown partition table
- ubdb: unknown partition table
-Netdevice 0 (72:ef:3d:9f:c3:5a) : 
-TUN/TAP backend - 
-memdup_user: 5
-memdup_user: 10
-EXT3-fs (ubda): error: couldn't mount because of unsupported optional features (240)
-memdup_user: 5
-memdup_user: 10
-EXT2-fs (ubda): error: couldn't mount because of unsupported optional features (244)
-memdup_user: 5
-memdup_user: 10
-EXT4-fs (ubda): INFO: recovery required on readonly filesystem
-EXT4-fs (ubda): write access will be enabled during recovery
-EXT4-fs (ubda): orphan cleanup on readonly fs
-EXT4-fs (ubda): 60 orphan inodes deleted
-EXT4-fs (ubda): recovery complete
-EXT4-fs (ubda): mounted filesystem with ordered data mode. Opts: (null)
-VFS: Mounted root (ext4 filesystem) readonly on device 98:0.
-memdup_user: 9
-memdup_user: 9
-devtmpfs: mounted
-memdup_user: 2
-INIT: version 2.88 booting
-
-   OpenRC 0.11.8 is starting up Gentoo Linux (i686) [UML]
-
- * Mounting /proc ...
-memdup_user: 5
-memdup_user: 5
- [ ok ]
- * Mounting /run ...
-memdup_user: 6
-memdup_user: 6
- * /run/openrc: creating directory
- * /run/lock: creating directory
- * /run/lock: correcting owner
- * Using /dev mounted from kernel ...
- [ ok ]
- * Mounting /dev/pts ...
-memdup_user: 7
-memdup_user: 7
- [ ok ]
- * Mounting /dev/shm ...
-memdup_user: 6
-memdup_user: 4
- [ ok ]
- * Mounting /sys ...
- [ ok ]
- * Mounting cgroup filesystem ...
- [ ok ]
- * Starting udev ...
- [ ok ]
- * Populating /dev with existing devices through uevents ...
- [ ok ]
- * Waiting for uevents to be processed ...
- [ ok ]
- * Setting up dm-crypt mappings ...
- *   crypt-swap using: -c aes -h sha1 -d /dev/urandom create crypt-swap /dev/ubdb ...
- [ ok ]
- *     pre_mount: mkswap ${dev} ...
- [ ok ]
- [ ok ]
- * Checking local filesystems  ...
-stable: clean, 93039/122160 files, 318314/488281 blocks
- [ ok ]
- * Remounting root filesystem read/write ...
-
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Nicolas
