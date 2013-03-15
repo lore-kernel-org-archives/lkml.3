@@ -1,125 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3COVMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:12:53 -0400
-Received: from nm25-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.191]:45554
-	"EHLO nm25-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754610Ab3COVMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:12:52 -0400
-X-Yahoo-Newman-Id: 604779.52923.bm@smtp104.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Ctt6M7kVM1n.WD6D0OeNMIrIbaBUpfomZyEA7MJnj2hDEo0
- kTChIcRplF5daoZZmiALNBbK3lGCrJVWhK.TxTOdMLccCqtAOBEKUiOgtA.v
- xKDm5BeproAc.5YB0lVNI156T12GbycYeoqfMQN85t3B4S97jijXbAfTCzfM
- k_eymTGP5KxCw2EwUcMxVAv6q2yhuQBWDNdZCI2KHik5H2GDFP6JwYY6Ae1h
- wlxmWybkAKzNSmoJHGEmw8E7rMatQXxxgd.7ptOkJ6cxWLU1nClNmghdywW1
- AcF2is5wpMKnGLRizhVKguQcOz1WX73pn5MgB_N02yapPpErfi74pzQDwOBY
- XPAUB_BcIx6fE_IfQ0dgWHfDs6yp5dEeECy_.I9ErmCdFPOnxf.pV.PkvCTt
- 4.Rfa8joTmQsfHV7DqFMwKu0LJWNyKzGY1TwSzsEudllJw4DCQiDbaiMQRlH
- QG6Id
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@50.131.111.212 with plain)
-        by smtp104.biz.mail.bf1.yahoo.com with SMTP; 15 Mar 2013 14:12:50 -0700 PDT
-Message-ID: <51438EDB.3050300@schaufler-ca.com>
-Date: Fri, 15 Mar 2013 14:12:59 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S932559Ab3COVQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:16:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754873Ab3COVQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 17:16:15 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: x86@kernel.org, hpa@zytor.com, keescook@chromium.org
+Cc: linux-kernel@vger.kernel.org, coreyb@linux.vnet.ibm.com, wad@chromium.org
+Subject: Re: [PATCH] x86: remove the x32 syscall bitmask from syscall_get_nr()
+Date: Fri, 15 Mar 2013 17:15:43 -0400
+Message-ID: <1674827.FAh5HIjCC0@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.10 (Linux/3.7.9-gentoo; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <2012624.RMfkAO316Z@sifl>
+References: <20130215172143.12549.10292.stgit@localhost> <2012624.RMfkAO316Z@sifl>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        zohar@linux.vnet.ibm.com, dmitry.kasatkin@intel.com,
-        akpm@linux-foundation.org, ebiederm@xmission.com,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 3/4] capability: Create a new capability CAP_SIGNED
-References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com> <1363379758-10071-4-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1363379758-10071-4-git-send-email-vgoyal@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/15/2013 1:35 PM, Vivek Goyal wrote:
-> Create a new capability CAP_SIGNED which can be given to signed executables.
+On Tuesday, February 26, 2013 03:58:23 PM Paul Moore wrote:
+> On Friday, February 15, 2013 12:21:43 PM Paul Moore wrote:
+> > Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
+> > implementation by creating a syscall bitmask, equal to 0x40000000, that
+> > could be applied to x32 syscalls such that the masked syscall number
+> > would be the same as a x86_64 syscall.  While that patch was a nice
+> > way to simplify the code, it went a bit too far by adding the mask to
+> > syscall_get_nr(); returning the masked syscall numbers can cause
+> > confusion with callers that expect syscall numbers matching the x32
+> > ABI, e.g. unmasked syscall numbers.
+> > 
+> > This patch fixes this by simply removing the mask from syscall_get_nr()
+> > while preserving the other changes from the original commit.  While
+> > there are several syscall_get_nr() callers in the kernel, most simply
+> > check that the syscall number is greater than zero, in this case this
+> > patch will have no effect.  Of those remaining callers, they appear
+> > to be few, seccomp and ftrace, and from my testing of seccomp without
+> > this patch the original commit definitely breaks things; the seccomp
+> > filter does not correctly filter the syscalls due to the difference in
+> > syscall numbers in the BPF filter and the value from syscall_get_nr().
+> > Applying this patch restores the seccomp BPF filter functionality on
+> > x32.
+> > 
+> > I've tested this patch with the seccomp BPF filters as well as ftrace
+> > and everything looks reasonable to me; needless to say general usage
+> > seemed fine as well.
+> 
+> I just wanted to check and see where things stood with this patch.  I'm not
+> overly concerned about how this problem is solved, just that it is solved. 
+> If someone else has a better approach that is fine with me; I'll even make
+> the offer to do additional testing if needed.
 
-This would drive anyone who is trying to use
-capabilities as the privilege mechanism it is
-intended to be absolutely crazy.
+Anyone?  The seccomp filter bits are completely broken on x32 and I'd like to 
+get this fixed, if not with this patch then something else - I'm more than 
+happy to test/verify/etc whatever solution is deemed best ...
 
-Capabilities aren't just random attribute bits. They
-indicate that a task has permission to violate a
-system policy (e.g. change the mode bits of a file
-the user doesn't own). Think about how this will
-interact with programs using file based capabilities.
-
->
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  include/uapi/linux/capability.h |   12 +++++++++++-
->  kernel/cred.c                   |    7 +++++++
->  security/commoncap.c            |    2 ++
->  3 files changed, 20 insertions(+), 1 deletions(-)
->
-> diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
-> index ba478fa..1bbe671 100644
-> --- a/include/uapi/linux/capability.h
-> +++ b/include/uapi/linux/capability.h
-> @@ -343,7 +343,17 @@ struct vfs_cap_data {
->  
->  #define CAP_BLOCK_SUSPEND    36
->  
-> -#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
-> +/*
-> + * Allow certain kernel services with secureboot enabled. One of such
-> + * service is sys_kexec() which can be invoked by process only if it
-> + * has CAP_SIGNED capability (with secureboot enabled).
-> + *
-> + * This capability is given by kernel automatically if executable
-> + * file is validly signed.
-> + */
-> +#define CAP_SIGNED    37
-> +
-> +#define CAP_LAST_CAP         CAP_SIGNED
->  
->  #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
->  
-> diff --git a/kernel/cred.c b/kernel/cred.c
-> index e0573a4..f554d1b 100644
-> --- a/kernel/cred.c
-> +++ b/kernel/cred.c
-> @@ -555,6 +555,12 @@ void revert_creds(const struct cred *old)
->  }
->  EXPORT_SYMBOL(revert_creds);
->  
-> +static void remove_cap_signed_init_cred(void)
-> +{
-> +	cap_lower((&init_cred)->cap_bset, CAP_SIGNED);
-> +	cap_lower((&init_cred)->cap_permitted, CAP_SIGNED);
-> +}
-> +
->  /*
->   * initialise the credentials stuff
->   */
-> @@ -563,6 +569,7 @@ void __init cred_init(void)
->  	/* allocate a slab in which we can store credentials */
->  	cred_jar = kmem_cache_create("cred_jar", sizeof(struct cred),
->  				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
-> +	remove_cap_signed_init_cred();
->  }
->  
->  /**
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index c44b6fe..4190eb9 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -272,6 +272,8 @@ int cap_capset(struct cred *new,
->  	new->cap_effective   = *effective;
->  	new->cap_inheritable = *inheritable;
->  	new->cap_permitted   = *permitted;
-> +	if (cap_raised(old->cap_effective, CAP_SIGNED))
-> +		cap_raise(new->cap_effective, CAP_SIGNED);
->  	return 0;
->  }
->  
+> > Signed-off-by: Paul Moore <pmoore@redhat.com>
+> > Cc: stable@vger.kernel.org
+> > Cc: Will Drewry <wad@chromium.org>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > ---
+> > 
+> >  arch/x86/include/asm/syscall.h |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/x86/include/asm/syscall.h
+> > b/arch/x86/include/asm/syscall.h index 1ace47b..2e188d6 100644
+> > --- a/arch/x86/include/asm/syscall.h
+> > +++ b/arch/x86/include/asm/syscall.h
+> > @@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
+> > 
+> >   */
+> >  
+> >  static inline int syscall_get_nr(struct task_struct *task, struct pt_regs
+> > 
+> > *regs) {
+> > -	return regs->orig_ax & __SYSCALL_MASK;
+> > +	return regs->orig_ax;
+> > 
+> >  }
+> >  
+> >  static inline void syscall_rollback(struct task_struct *task,
+> >  
+> >  				    struct pt_regs *regs)
+> >  
+> >  {
+> > 
+> > -	regs->ax = regs->orig_ax & __SYSCALL_MASK;
+> > +	regs->ax = regs->orig_ax;
+> > 
+> >  }
+> >  
+> >  static inline long syscall_get_error(struct task_struct *task,
+-- 
+paul moore
+security and virtualization @ redhat
 
