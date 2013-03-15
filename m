@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab3COS4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 14:56:08 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:59166
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	id S1755347Ab3COS4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 14:56:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33438 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab3COSzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 14:55:44 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3/6] Drivers: hv: balloon: Execute hot-add code in a separate context
-Date: Fri, 15 Mar 2013 12:25:41 -0700
-Message-Id: <1363375544-19901-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363375544-19901-1-git-send-email-kys@microsoft.com>
-References: <1363375509-19860-1-git-send-email-kys@microsoft.com>
- <1363375544-19901-1-git-send-email-kys@microsoft.com>
+	id S1753999Ab3COS4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 14:56:34 -0400
+Date: Fri, 15 Mar 2013 14:56:29 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: Rename cERROR and cFYI to cifs_dbg
+Message-ID: <20130315145629.2e1a04c5@tlielax.poochiereds.net>
+In-Reply-To: <1363289077.2146.19.camel@joe-AO722>
+References: <1363128287.23052.21.camel@joe-AO722>
+	<1363174614.2031.9.camel@joe-AO722>
+	<20130313075155.7464a34a@tlielax.poochiereds.net>
+	<1363178421.2031.29.camel@joe-AO722>
+	<1363289077.2146.19.camel@joe-AO722>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Execute the hot-add operation in a separate work context.
-This allows us to decouple the pressure reporting activity from the
-"hot-add" activity. Testing has shown that this makes the guest more
-responsive to hot add requests.
+On Thu, 14 Mar 2013 12:24:37 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/hv_balloon.c |   41 +++++++++++++++++++++++------------------
- 1 files changed, 23 insertions(+), 18 deletions(-)
+> It's not obvious from reading the macro names that these macros
+> are for debugging.  Convert the names to a single more typical
+> kernel style cifs_dbg macro.
+> 
+> 	cERROR(1, ...)   -> cifs_dbg(VFS, ...)
+> 	cFYI(1, ...)     -> cifs_dbg(FYI, ...)
+> 	cFYI(DBG2, ...)  -> cifs_dbg(NOISY, ...)
+> 
+> Move the terminating format newline from the macro to the call site.
+> 
+> Add CONFIG_CIFS_DEBUG function cifs_vfs_err to emit the
+> "CIFS VFS: " prefix for VFS messages.
+> 
+> Size is reduced ~ 1% when CONFIG_CIFS_DEBUG is set (default y)
+> 
+> $ size fs/cifs/cifs.ko*
+>    text    data     bss     dec     hex filename
+>  265245	   2525	    132	 267902	  4167e	fs/cifs/cifs.ko.new
+>  268359    2525     132  271016   422a8 fs/cifs/cifs.ko.old
+> 
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 8dc406c..13fda38 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -417,6 +417,11 @@ struct balloon_state {
- 	struct work_struct wrk;
- };
- 
-+struct hot_add_wrk {
-+	union dm_mem_page_range ha_page_range;
-+	struct work_struct wrk;
-+};
-+
- static bool hot_add;
- static bool do_hot_add;
- /*
-@@ -469,6 +474,11 @@ struct hv_dynmem_device {
- 	struct balloon_state balloon_wrk;
- 
- 	/*
-+	 * State to execute the "hot-add" operation.
-+	 */
-+	struct hot_add_wrk ha_wrk;
-+
-+	/*
- 	 * This thread handles hot-add
- 	 * requests from the host as well as notifying
- 	 * the host with regards to memory pressure in
-@@ -486,7 +496,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
--static void hot_add_req(struct hv_dynmem_device *dm, struct dm_hot_add *msg)
-+static void hot_add_req(struct work_struct *dummy)
- {
- 
- 	struct dm_hot_add_response resp;
-@@ -509,8 +519,8 @@ static void hot_add_req(struct hv_dynmem_device *dm, struct dm_hot_add *msg)
- 	resp.page_count = 0;
- 	resp.result = 0;
- 
--	dm->state = DM_INITIALIZED;
--	vmbus_sendpacket(dm->dev->channel, &resp,
-+	dm_device.state = DM_INITIALIZED;
-+	vmbus_sendpacket(dm_device.dev->channel, &resp,
- 			sizeof(struct dm_hot_add_response),
- 			(unsigned long)NULL,
- 			VM_PKT_DATA_INBAND, 0);
-@@ -771,7 +781,6 @@ static int dm_thread_func(void *dm_dev)
- {
- 	struct hv_dynmem_device *dm = dm_dev;
- 	int t;
--	unsigned long  scan_start;
- 
- 	while (!kthread_should_stop()) {
- 		t = wait_for_completion_timeout(&dm_device.config_event, 1*HZ);
-@@ -783,19 +792,6 @@ static int dm_thread_func(void *dm_dev)
- 		if (t == 0)
- 			post_status(dm);
- 
--		scan_start = jiffies;
--		switch (dm->state) {
--
--		case DM_HOT_ADD:
--			hot_add_req(dm, (struct dm_hot_add *)recv_buffer);
--			break;
--		default:
--			break;
--		}
--
--		if (!time_in_range(jiffies, scan_start, scan_start + HZ))
--			post_status(dm);
--
- 	}
- 
- 	return 0;
-@@ -869,6 +865,8 @@ static void balloon_onchannelcallback(void *context)
- 	struct dm_header *dm_hdr;
- 	struct hv_dynmem_device *dm = hv_get_drvdata(dev);
- 	struct dm_balloon *bal_msg;
-+	struct dm_hot_add *ha_msg;
-+	union dm_mem_page_range *ha_pg_range;
- 
- 	memset(recv_buffer, 0, sizeof(recv_buffer));
- 	vmbus_recvpacket(dev->channel, recv_buffer,
-@@ -905,8 +903,13 @@ static void balloon_onchannelcallback(void *context)
- 			break;
- 
- 		case DM_MEM_HOT_ADD_REQUEST:
-+			if (dm->state == DM_HOT_ADD)
-+				pr_warn("Currently hot-adding\n");
- 			dm->state = DM_HOT_ADD;
--			complete(&dm->config_event);
-+			ha_msg = (struct dm_hot_add *)recv_buffer;
-+			ha_pg_range = &ha_msg->range;
-+			dm_device.ha_wrk.ha_page_range = *ha_pg_range;
-+			schedule_work(&dm_device.ha_wrk.wrk);
- 			break;
- 
- 		case DM_INFO_MESSAGE:
-@@ -950,6 +953,7 @@ static int balloon_probe(struct hv_device *dev,
- 	init_completion(&dm_device.host_event);
- 	init_completion(&dm_device.config_event);
- 	INIT_WORK(&dm_device.balloon_wrk.wrk, balloon_up);
-+	INIT_WORK(&dm_device.ha_wrk.wrk, hot_add_req);
- 
- 	dm_device.thread =
- 		 kthread_run(dm_thread_func, &dm_device, "hv_balloon");
-@@ -1062,6 +1066,7 @@ static int balloon_remove(struct hv_device *dev)
- 		pr_warn("Ballooned pages: %d\n", dm->num_pages_ballooned);
- 
- 	cancel_work_sync(&dm->balloon_wrk.wrk);
-+	cancel_work_sync(&dm->ha_wrk.wrk);
- 	vmbus_close(dev->channel);
- 	kthread_stop(dm->thread);
- 	kfree(send_buffer);
+
+This all looks like good stuff. I am a bit concerned about mashing all
+of these cleanups into the same patch though.
+> Other miscellaneous changes around these conversions:
+> 
+> o Miscellaneous typo fixes
+> o Add terminating \n's to almost all formats and remove them
+>   from the macros to be more kernel style like.  A few formats
+>   previously had defective \n's
+> o Remove unnecessary OOM messages as kmalloc() calls dump_stack
+> o Coalesce formats to make grep easier,
+>   added missing spaces when coalescing formats
+> o Use %s, __func__ instead of embedded function name
+> o Removed unnecessary "cifs: " prefixes
+> o Convert kzalloc with multiply to kcalloc
+> o Remove unused cifswarn macro
+> 
+
+
 -- 
-1.7.4.1
-
+Jeff Layton <jlayton@redhat.com>
