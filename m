@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab3COWBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 18:01:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51876 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab3COWBu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 18:01:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [GIT PULL] clocksource cleanup for 3.10
-Date: Fri, 15 Mar 2013 22:01:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <513E38BD.4080407@gmail.com>
-In-Reply-To: <513E38BD.4080407@gmail.com>
+	id S1755463Ab3COWGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 18:06:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31112 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754610Ab3COWGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 18:06:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,854,1355126400"; 
+   d="scan'208";a="271501196"
+Date: Fri, 15 Mar 2013 22:06:19 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ben Widawsky <ben@bwidawsk.net>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
+ for a NULL pointer
+Message-ID: <20130315220619.GA17405@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Ben Widawsky <ben@bwidawsk.net>,
+	Tommi Rantala <tt.rantala@gmail.com>,
+	David Airlie <airlied@linux.ie>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+References: <CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com>
+ <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+ <20130315045004.GA14747@bwidawsk.net>
+ <20130315082403.GA29916@cantiga.alporthouse.com>
+ <20130315163606.GA17773@bwidawsk.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303152201.44785.arnd@arndb.de>
-X-Provags-ID: V02:K0:PYnNiIWiKK7r/FYPmxee26vV7ewlHkxTZfT59JnBPx9
- RN6J9xOvedcaE3Lv3DrT3QCEo3mbpgLi9b40UHCKyfYlkQhKQr
- RhnOFB9kJkdrnTN3knw3j1VGWWUKxy8l2UKeoYp92xbCoMszam
- Qgjn4ezadhrMlZd5GcbJuKCrjpm2mWnwMPgt2uR2FpsbLoKsv8
- Gd7iOuY8BJpNfCZeSfrS/vOGhvanr0uR+UsYHIDOhtXQPky38l
- OzAcS974wHa6yBmNNHPQ1uWsSCNTFn5B7Nyor7b8L64OEIXOWQ
- fJfwi3HmNTMs3awvqoTzRa8yi9HDYwclar1PgALhh01OVZcKG/
- bIgBeANHgb6iWTZgNMJo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130315163606.GA17773@bwidawsk.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013, Rob Herring wrote:
-> Please pull. This improves the clocksource init to avoid double matching
-> to the DT device node. The clocksource init function changes are needed
-> for any other clocksource conversions to CLKSRC_OF, so we need to make
-> sure any other conversions use this branch (It happens to silently work
-> without warnings, but there would be a mismatch in function ptrs). I'm
-> including the twd_smp timer support for CLKSRC_OF here because of the
-> dependency on this change.
+On Fri, Mar 15, 2013 at 09:36:07AM -0700, Ben Widawsky wrote:
+> On Fri, Mar 15, 2013 at 08:24:03AM +0000, Chris Wilson wrote:
+> > That's what I thought too. Looking at the stack trace, the empirical
+> > evidence is that we need the check.
+> > -Chris
 > 
+> I think we need to investigate the issue more then, or put a BUG_ON() in
+> the drm code and run it through trinity. We have other places where arg
+> can't/shouldn't be NULL and we don't check.
 
-Pulled into next/cleanup branch, thanks!
+Actually we are both wrong. drm_ioctl() does not validate that the
+user struct matches the expected size, just ensures that if that user
+cmd specifies that the arg is to be used that it only up to the known
+size is copied.
 
-	Arnd
+A hostile userspace can bludgen a NULL pointer through drm_ioctl() into
+the driver->ioctl->func().
+
+If we used driver->ioctl->cmd instead of the user supplied cmd, we would
+have a whole other can of worms to deal with (as we suddenly get a
+struct of zeroes). However, those worms should already be treated as
+invalid. Choose your poison.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
