@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab3COTyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 15:54:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21975 "EHLO
+	id S932293Ab3COTzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 15:55:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27573 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab3COTv0 (ORCPT
+	with ESMTP id S1755339Ab3COTv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 15:51:26 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=guyCOh2Yuq4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PbW-_u9AgwYA:10 a=QkVQ0ZFHCCHtdhyH1GIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Rhe1xRMX558Nhtpn:21 a=xpD5dui0MVuGsmnu:21 a=18UkYpfgWqeSIxeOdmoA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=JP022jk4P9cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0WPqNNFPD2kA:10 a=yPCof4ZbAAAA:8 a=QyXUC8HyAAAA:8 a=-X0QEFTSqc3jGzQ7ngcA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=7DSvI1NPTFQA:10 a=MVqWu5Xp-pxdh7hSTyUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130315195123.090834565@goodmis.org>
+Message-Id: <20130315195123.872190653@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 15:39:41 -0400
+Date: Fri, 15 Mar 2013 15:39:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH 06/20] tracing: Add snapshot trigger to function probes
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [for-next][PATCH 10/20] tracing: Add a way to soft disable trace events
 References: <20130315193935.359219613@goodmis.org>
-Content-Disposition: inline; filename=0006-tracing-Add-snapshot-trigger-to-function-probes.patch
+Content-Disposition: inline; filename=0010-tracing-Add-a-way-to-soft-disable-trace-events.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,164 +34,254 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
- echo 'schedule:snapshot:1' > /debug/tracing/set_ftrace_filter
+In order to let triggers enable or disable events, we need a 'soft'
+method for doing so. For example, if a function probe is added that
+lets a user enable or disable events when a function is called, that
+change must be done without taking locks or a mutex, and definitely
+it can't sleep. But the full enabling of a tracepoint is expensive.
 
-This will cause the scheduler to trigger a snapshot the next time
-it's called (you can use any function that's not called by NMI).
+By adding a 'SOFT_DISABLE' flag, and converting the flags to be updated
+without the protection of a mutex (using set/clear_bit()), this soft
+disable flag can be used to allow critical sections to enable or disable
+events from being traced (after the event has been placed into "SOFT_MODE").
 
-Even though it triggers only once, you still need to remove it with:
+Some caveats though: The comm recorder (to map pids with a comm) can not
+be soft disabled (yet). If you disable an event with with a "soft"
+disable and wait a while before reading the trace, the comm cache may be
+replaced and you'll get a bunch of <...> for comms in the trace.
 
- echo '!schedule:snapshot:0' > /debug/tracing/set_ftrace_filter
+Reading the "enable" file for an event that is disabled will now give
+you "0*" where the '*' denotes that the tracepoint is still active but
+the event itself is "disabled".
 
-The :1 can be left off for the first command:
+[ fixed _BIT used in & operation : thanks to Dan Carpenter and smatch ]
 
- echo 'schedule:snapshot' > /debug/tracing/set_ftrace_filter
-
-But this will cause all calls to schedule to trigger a snapshot.
-This must be removed without the ':0'
-
- echo '!schedule:snapshot' > /debug/tracing/set_ftrace_filter
-
-As adding a "count" is a different operation (internally).
-
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++=
-+++-
- 1 file changed, 110 insertions(+), 1 deletion(-)
+ include/linux/ftrace_event.h |   20 +++++++----
+ include/trace/ftrace.h       |    8 +++++
+ kernel/trace/trace_events.c  |   75 ++++++++++++++++++++++++++++++++++----=
+----
+ 3 files changed, 84 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 906049c..c5b8446 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5086,7 +5086,114 @@ static const struct file_operations tracing_dyn_inf=
-o_fops =3D {
- 	.read		=3D tracing_read_dyn_info,
- 	.llseek		=3D generic_file_llseek,
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4cb6cd8..4e28b01 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -251,16 +251,23 @@ struct ftrace_subsystem_dir;
+ enum {
+ 	FTRACE_EVENT_FL_ENABLED_BIT,
+ 	FTRACE_EVENT_FL_RECORDED_CMD_BIT,
++	FTRACE_EVENT_FL_SOFT_MODE_BIT,
++	FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
  };
--#endif
-+#endif /* CONFIG_DYNAMIC_FTRACE */
-+
-+#if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
-+static void
-+ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
-+{
-+	tracing_snapshot();
-+}
-+
-+static void
-+ftrace_count_snapshot(unsigned long ip, unsigned long parent_ip, void **da=
-ta)
-+{
-+	unsigned long *count =3D (long *)data;
-+
-+	if (!*count)
-+		return;
-+
-+	if (*count !=3D -1)
-+		(*count)--;
-+
-+	tracing_snapshot();
-+}
-+
-+static int
-+ftrace_snapshot_print(struct seq_file *m, unsigned long ip,
-+		      struct ftrace_probe_ops *ops, void *data)
-+{
-+	long count =3D (long)data;
-+
-+	seq_printf(m, "%ps:", (void *)ip);
-+
-+	seq_printf(m, "snapshot");
-+
-+	if (count =3D=3D -1)
-+		seq_printf(m, ":unlimited\n");
-+	else
-+		seq_printf(m, ":count=3D%ld\n", count);
-+
-+	return 0;
-+}
-+
-+static struct ftrace_probe_ops snapshot_probe_ops =3D {
-+	.func			=3D ftrace_snapshot,
-+	.print			=3D ftrace_snapshot_print,
-+};
-+
-+static struct ftrace_probe_ops snapshot_count_probe_ops =3D {
-+	.func			=3D ftrace_count_snapshot,
-+	.print			=3D ftrace_snapshot_print,
-+};
-+
-+static int
-+ftrace_trace_snapshot_callback(struct ftrace_hash *hash,
-+			       char *glob, char *cmd, char *param, int enable)
-+{
-+	struct ftrace_probe_ops *ops;
-+	void *count =3D (void *)-1;
-+	char *number;
-+	int ret;
-+
-+	/* hash funcs only work with set_ftrace_filter */
-+	if (!enable)
-+		return -EINVAL;
-+
-+	ops =3D param ? &snapshot_count_probe_ops :  &snapshot_probe_ops;
-+
-+	if (glob[0] =3D=3D '!') {
-+		unregister_ftrace_function_probe_func(glob+1, ops);
-+		return 0;
-+	}
-+
-+	if (!param)
-+		goto out_reg;
-+
-+	number =3D strsep(&param, ":");
-+
-+	if (!strlen(number))
-+		goto out_reg;
-+
-+	/*
-+	 * We use the callback data field (which is a pointer)
-+	 * as our counter.
-+	 */
-+	ret =3D kstrtoul(number, 0, (unsigned long *)&count);
-+	if (ret)
-+		return ret;
-+
-+ out_reg:
-+	ret =3D register_ftrace_function_probe(glob, ops, count);
-+
-+	if (ret >=3D 0)
-+		alloc_snapshot(&global_trace);
-+
-+	return ret < 0 ? ret : 0;
-+}
-+
-+static struct ftrace_func_command ftrace_snapshot_cmd =3D {
-+	.name			=3D "snapshot",
-+	.func			=3D ftrace_trace_snapshot_callback,
-+};
-+
-+static int register_snapshot_cmd(void)
-+{
-+	return register_ftrace_command(&ftrace_snapshot_cmd);
-+}
-+#else
-+static inline int register_snapshot_cmd(void) { return 0; }
-+#endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE=
-) */
 =20
- struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
+ /*
+  * Ftrace event file flags:
+  *  ENABLED	  - The event is enabled
+  *  RECORDED_CMD  - The comms should be recorded at sched_switch
++ *  SOFT_MODE     - The event is enabled/disabled by SOFT_DISABLED
++ *  SOFT_DISABLED - When set, do not trace the event (even though its
++ *                   tracepoint may be enabled)
+  */
+ enum {
+ 	FTRACE_EVENT_FL_ENABLED		=3D (1 << FTRACE_EVENT_FL_ENABLED_BIT),
+ 	FTRACE_EVENT_FL_RECORDED_CMD	=3D (1 << FTRACE_EVENT_FL_RECORDED_CMD_BIT),
++	FTRACE_EVENT_FL_SOFT_MODE	=3D (1 << FTRACE_EVENT_FL_SOFT_MODE_BIT),
++	FTRACE_EVENT_FL_SOFT_DISABLED	=3D (1 << FTRACE_EVENT_FL_SOFT_DISABLED_BIT=
+),
+ };
+=20
+ struct ftrace_event_file {
+@@ -274,17 +281,18 @@ struct ftrace_event_file {
+ 	 * 32 bit flags:
+ 	 *   bit 0:		enabled
+ 	 *   bit 1:		enabled cmd record
++	 *   bit 2:		enable/disable with the soft disable bit
++	 *   bit 3:		soft disabled
+ 	 *
+-	 * Changes to flags must hold the event_mutex.
+-	 *
+-	 * Note: Reads of flags do not hold the event_mutex since
+-	 * they occur in critical sections. But the way flags
++	 * Note: The bits must be set atomically to prevent races
++	 * from other writers. Reads of flags do not need to be in
++	 * sync as they occur in critical sections. But the way flags
+ 	 * is currently used, these changes do not affect the code
+ 	 * except that when a change is made, it may have a slight
+ 	 * delay in propagating the changes to other CPUs due to
+-	 * caching and such.
++	 * caching and such. Which is mostly OK ;-)
+ 	 */
+-	unsigned int		flags;
++	unsigned long		flags;
+ };
+=20
+ #define __TRACE_EVENT_FLAGS(name, value)				\
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index bbf09c2..4bda044 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -413,6 +413,10 @@ static inline notrace int ftrace_get_offsets_##call(		=
+	\
+  *	int __data_size;
+  *	int pc;
+  *
++ *	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
++ *		     &ftrace_file->flags))
++ *		return;
++ *
+  *	local_save_flags(irq_flags);
+  *	pc =3D preempt_count();
+  *
+@@ -518,6 +522,10 @@ ftrace_raw_event_##call(void *__data, proto)				\
+ 	int __data_size;						\
+ 	int pc;								\
+ 									\
++	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
++		     &ftrace_file->flags))				\
++		return;							\
++									\
+ 	local_save_flags(irq_flags);					\
+ 	pc =3D preempt_count();						\
+ 									\
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 38b54c5..106640b 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -205,37 +205,77 @@ void trace_event_enable_cmd_record(bool enable)
+=20
+ 		if (enable) {
+ 			tracing_start_cmdline_record();
+-			file->flags |=3D FTRACE_EVENT_FL_RECORDED_CMD;
++			set_bit(FTRACE_EVENT_FL_RECORDED_CMD_BIT, &file->flags);
+ 		} else {
+ 			tracing_stop_cmdline_record();
+-			file->flags &=3D ~FTRACE_EVENT_FL_RECORDED_CMD;
++			clear_bit(FTRACE_EVENT_FL_RECORDED_CMD_BIT, &file->flags);
+ 		}
+ 	} while_for_each_event_file();
+ 	mutex_unlock(&event_mutex);
+ }
+=20
+-static int ftrace_event_enable_disable(struct ftrace_event_file *file,
+-				       int enable)
++static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
++					 int enable, int soft_disable)
  {
-@@ -6076,6 +6183,8 @@ __init static int tracer_alloc_buffers(void)
- 		trace_set_options(&global_trace, option);
- 	}
+ 	struct ftrace_event_call *call =3D file->event_call;
+ 	int ret =3D 0;
++	int disable;
 =20
-+	register_snapshot_cmd();
+ 	switch (enable) {
+ 	case 0:
+-		if (file->flags & FTRACE_EVENT_FL_ENABLED) {
+-			file->flags &=3D ~FTRACE_EVENT_FL_ENABLED;
++		/*
++		 * When soft_disable is set and enable is cleared, we want
++		 * to clear the SOFT_DISABLED flag but leave the event in the
++		 * state that it was. That is, if the event was enabled and
++		 * SOFT_DISABLED isn't set, then do nothing. But if SOFT_DISABLED
++		 * is set we do not want the event to be enabled before we
++		 * clear the bit.
++		 *
++		 * When soft_disable is not set but the SOFT_MODE flag is,
++		 * we do nothing. Do not disable the tracepoint, otherwise
++		 * "soft enable"s (clearing the SOFT_DISABLED bit) wont work.
++		 */
++		if (soft_disable) {
++			disable =3D file->flags & FTRACE_EVENT_FL_SOFT_DISABLED;
++			clear_bit(FTRACE_EVENT_FL_SOFT_MODE_BIT, &file->flags);
++		} else
++			disable =3D !(file->flags & FTRACE_EVENT_FL_SOFT_MODE);
 +
- 	return 0;
++		if (disable && (file->flags & FTRACE_EVENT_FL_ENABLED)) {
++			clear_bit(FTRACE_EVENT_FL_ENABLED_BIT, &file->flags);
+ 			if (file->flags & FTRACE_EVENT_FL_RECORDED_CMD) {
+ 				tracing_stop_cmdline_record();
+-				file->flags &=3D ~FTRACE_EVENT_FL_RECORDED_CMD;
++				clear_bit(FTRACE_EVENT_FL_RECORDED_CMD_BIT, &file->flags);
+ 			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER, file);
+ 		}
++		/* If in SOFT_MODE, just set the SOFT_DISABLE_BIT */
++		if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
++			set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
+ 		break;
+ 	case 1:
++		/*
++		 * When soft_disable is set and enable is set, we want to
++		 * register the tracepoint for the event, but leave the event
++		 * as is. That means, if the event was already enabled, we do
++		 * nothing (but set SOFT_MODE). If the event is disabled, we
++		 * set SOFT_DISABLED before enabling the event tracepoint, so
++		 * it still seems to be disabled.
++		 */
++		if (!soft_disable)
++			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
++		else
++			set_bit(FTRACE_EVENT_FL_SOFT_MODE_BIT, &file->flags);
++
+ 		if (!(file->flags & FTRACE_EVENT_FL_ENABLED)) {
++
++			/* Keep the event disabled, when going to SOFT_MODE. */
++			if (soft_disable)
++				set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
++
+ 			if (trace_flags & TRACE_ITER_RECORD_CMD) {
+ 				tracing_start_cmdline_record();
+-				file->flags |=3D FTRACE_EVENT_FL_RECORDED_CMD;
++				set_bit(FTRACE_EVENT_FL_RECORDED_CMD_BIT, &file->flags);
+ 			}
+ 			ret =3D call->class->reg(call, TRACE_REG_REGISTER, file);
+ 			if (ret) {
+@@ -244,7 +284,7 @@ static int ftrace_event_enable_disable(struct ftrace_ev=
+ent_file *file,
+ 					"%s\n", call->name);
+ 				break;
+ 			}
+-			file->flags |=3D FTRACE_EVENT_FL_ENABLED;
++			set_bit(FTRACE_EVENT_FL_ENABLED_BIT, &file->flags);
 =20
- out_free_cpumask:
+ 			/* WAS_ENABLED gets set but never cleared. */
+ 			call->flags |=3D TRACE_EVENT_FL_WAS_ENABLED;
+@@ -255,6 +295,12 @@ static int ftrace_event_enable_disable(struct ftrace_e=
+vent_file *file,
+ 	return ret;
+ }
+=20
++static int ftrace_event_enable_disable(struct ftrace_event_file *file,
++				       int enable)
++{
++	return __ftrace_event_enable_disable(file, enable, 0);
++}
++
+ static void ftrace_clear_events(struct trace_array *tr)
+ {
+ 	struct ftrace_event_file *file;
+@@ -547,12 +593,15 @@ event_enable_read(struct file *filp, char __user *ubu=
+f, size_t cnt,
+ 	struct ftrace_event_file *file =3D filp->private_data;
+ 	char *buf;
+=20
+-	if (file->flags & FTRACE_EVENT_FL_ENABLED)
+-		buf =3D "1\n";
+-	else
++	if (file->flags & FTRACE_EVENT_FL_ENABLED) {
++		if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED)
++			buf =3D "0*\n";
++		else
++			buf =3D "1\n";
++	} else
+ 		buf =3D "0\n";
+=20
+-	return simple_read_from_buffer(ubuf, cnt, ppos, buf, 2);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, strlen(buf));
+ }
+=20
+ static ssize_t
 --=20
 1.7.10.4
 
@@ -202,13 +294,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ3u7AAoJEOdOSU1xswtMXBkH/1yuqabTrF02HhrgUtfugRyv
-xFii2HdJ0IsDT+axls4grsXPoWD8demRxz9TjRodhvQhsgbGbKbxp4Ih7MTP8yHZ
-Q0RhQ/nOIU3d0XlAoC/uN6v5QRouN0CEqrXO85/Lrnd4EQnlhiSe9lER9aIc1i9G
-+GZO3s7xFrRQEhM3VHEPI1RLZgvi8gTT00UDHfaXOMNPomlrtQDqeFOPm9l6od7u
-w3HsLxd5JKqagkNyBjgQfSsyaTtfwUPEYDODx+kGmwYqE+z6Kyi3+uCiRc8TmO7t
-q+a4yIdOQvFZ95rHdn0NrKoy2gYBR7gSWI2en5i8MTB/pLYHbRVzRB4HI8h7nUw=
-=oqFS
+iQEcBAABAgAGBQJRQ3u7AAoJEOdOSU1xswtMtysIAKo/3h2R05MR1D03D4y6QTV6
+Bud9C5AwmFeFWlLo4eprD1myAU2HojYKSGDRTEajPoCW7PHXjzjj/SZMIlgAtOx/
+Gn7dj/tOyZY4yftiRnNJD5ngTdrWchpf5jqmque8SSGmMwDsvXil9j1f4cOmKNiu
+iJscvSOpeGFZTRNT9afe+qEEDcB5YT75cTXMItyHsq3omvwTHDcX50hE73ocH40V
+Ybv7GjLNH0V9nb2a+0WXigZnv0cpHHQ2m8x6jUbKRP1fw4Fj9kPfu+If2nVkVvE5
+1dylNSMi+014Ub8A6yv/M5f85deidI5FxbsEn8G5WqVMKJCWPcLpV/4ht76rlcg=
+=17kb
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
