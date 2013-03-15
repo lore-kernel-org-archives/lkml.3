@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3COPmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:42:44 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:54172 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab3COPmn (ORCPT
+	id S1754561Ab3COPnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:43:17 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:41964 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154Ab3COPnP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:42:43 -0400
+	Fri, 15 Mar 2013 11:43:15 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH]Skip unnecessary WARN_ON in panic case
+Thread-Topic: [PATCH]Skip unnecessary WARN_ON in panic case
+Thread-Index: Ac4anDzq+rG7ySZjS3KQDJuvdM1EoADt7+6AAM8YOUA=
+Date: Fri, 15 Mar 2013 15:39:30 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF699D7@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF5CB8B@USINDEM103.corp.hds.com>
+ <20130311082851.GC12742@gmail.com>
+In-Reply-To: <20130311082851.GC12742@gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAHfPSqDmu52D42qiGM4rT3qeYWu0b5jxOOCNOXLa=1JZH4j9rw@mail.gmail.com>
-References: <1363129994-10438-1-git-send-email-dianders@chromium.org>
- <1363207202-10858-1-git-send-email-dianders@chromium.org> <1363207202-10858-5-git-send-email-dianders@chromium.org>
- <CAHfPSqDmu52D42qiGM4rT3qeYWu0b5jxOOCNOXLa=1JZH4j9rw@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 15 Mar 2013 21:12:22 +0530
-Message-ID: <CAHfPSqDnbfmHVeuDeDFZearm1sSVA9YsJ5668iwtKHUt_gEDRw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: dts: Add adc and thermistors for exynos5250-snow
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jonathan Cameron <jic23@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-03-15_06:2013-03-15,2013-03-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=inbound_policy_notspam policy=inbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1303150102
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 March 2013 15:54, Naveen Krishna Ch <naveenkrishna.ch@gmail.com> wrote:
-> Doug,
->
-> On 14 March 2013 02:10, Doug Anderson <dianders@chromium.org> wrote:
->> Hook up the exynos5250-snow thermistors via the device tree now that
->> there's a driver available to use them.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-used these changes to test on snow before submitting the ADC and NTC
-driver changes.
->> ---
->> Changes in v2:
->> - Match 'uV' -> 'uv' change in Naveen's bindings.
->>
->>  arch/arm/boot/dts/cros5250-common.dtsi |  4 ++++
->>  arch/arm/boot/dts/exynos5250-snow.dts  | 31 +++++++++++++++++++++++++++++++
->>  2 files changed, 35 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/cros5250-common.dtsi b/arch/arm/boot/dts/cros5250-common.dtsi
->> index 46c0980..f7cc835 100644
->> --- a/arch/arm/boot/dts/cros5250-common.dtsi
->> +++ b/arch/arm/boot/dts/cros5250-common.dtsi
->> @@ -167,6 +167,10 @@
->>                 status = "disabled";
->>         };
->>
->> +       adc@12D10000 {
->> +               vdd-supply = <&buck5_reg>;
->> +       };
->> +
->>         hdmi {
->>                 hpd-gpio = <&gpx3 7 0xf 1 3>;
->>         };
->> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
->> index 17dd951..b78da7c 100644
->> --- a/arch/arm/boot/dts/exynos5250-snow.dts
->> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
->> @@ -40,4 +40,35 @@
->>                                 <&gpc4 5 2 3 0>, <&gpc4 6 2 3 0>;
->>                 };
->>         };
->> +
->> +       adc@12D10000 {
->> +               ncp15wb473@3 {
->> +                       compatible = "ntc,ncp15wb473";
->> +                       pullup-uv = <1800000>;
->> +                       pullup-ohm = <47000>;
->> +                       pulldown-ohm = <0>;
->> +                       io-channels = <&adc 3>;
->> +               };
->> +               ncp15wb473@4 {
->> +                       compatible = "ntc,ncp15wb473";
->> +                       pullup-uv = <1800000>;
->> +                       pullup-ohm = <47000>;
->> +                       pulldown-ohm = <0>;
->> +                       io-channels = <&adc 4>;
->> +               };
->> +               ncp15wb473@5 {
->> +                       compatible = "ntc,ncp15wb473";
->> +                       pullup-uv = <1800000>;
->> +                       pullup-ohm = <47000>;
->> +                       pulldown-ohm = <0>;
->> +                       io-channels = <&adc 5>;
->> +               };
->> +               ncp15wb473@6 {
->> +                       compatible = "ntc,ncp15wb473";
->> +                       pullup-uv = <1800000>;
->> +                       pullup-ohm = <47000>;
->> +                       pulldown-ohm = <0>;
->> +                       io-channels = <&adc 6>;
->> +               };
->> +       };
->>  };
-> Thanks for the upload, i've tested with a similar changes.
->> --
->> 1.8.1.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
-> --
-> Shine bright,
-> (: Nav :)
+Thank you for giving me the feedback.
 
+> 
+> So it appears the problem occurs because the other CPUs are not offlined correctly, and still have pending work which may generate
+> wakeup IPIs to them?
 
+Right.
 
---
-Shine bright,
-(: Nav :)
+> 
+> The fix would be to either offline them properly - or, if we don't want to do that to keep panicking simple, why do we mark them
+> offline? They aren't really offline in a proper way.
+
+To offline cpus properly, it should be done with threads like stop_machine().
+But I don't think it is reasonable to kick the threads in panic case.
+Therefore, I will make a patch keeping cpus online.
+Also, to inform a panicked cpu that other cpus stopped surely,
+ I will  introduce a new cpu_mask like cpu_stopped_mask.
+
+Seiji
