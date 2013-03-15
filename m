@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab3COH7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 03:59:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48096 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab3COH7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 03:59:13 -0400
-Date: Fri, 15 Mar 2013 08:59:06 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <5657408.cYX6iimiA4@vostro.rjw.lan>
-Message-ID: <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753739Ab3COIBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:01:34 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:55431 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab3COIBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 04:01:32 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+55aFxhFbFmUnCVg=be_e+c_GEr9KizMt_7cGwJz__E9o7MJg@mail.gmail.com>
+References: <20130226070247.GA14094@gmail.com>
+	<CA+55aFxdR6_8734T9y2Edyotf0u-SgPPgjazFuQa1atSUGK9LA@mail.gmail.com>
+	<CA+55aFziwaP21NVyVb_UP3okiX7fXoo4DQ7zudhxAwPM10_Tuw@mail.gmail.com>
+	<CABPqkBR2HeDmuTVg5RA=5D0xXJbXxqSxMDf7MW0iCGnurQb7jw@mail.gmail.com>
+	<CA+55aFzDMwHyPxqxNKRz0Y3vFhZOqtHMvPbvNXAD6C+-_=UAhg@mail.gmail.com>
+	<CABPqkBTTY7RBSXJw4kqdd0c07Ykz-Wy8TFUQ+hzBSn=5v2yz2w@mail.gmail.com>
+	<CABPqkBTh1Fph=GTOzN_2Q9coqLpiR3hcqVk1PBubUUEO7D=zsA@mail.gmail.com>
+	<CABPqkBTQCce3ve9cP-Ajbtb7FSVggB_bL7Dmpq8KeG_7Gfx0Og@mail.gmail.com>
+	<CABPqkBRuKzbxTr73LDpgLnq4WhadZf9VErjjcTMHoMWRwzhDGw@mail.gmail.com>
+	<CABPqkBRvgCsZGkS=9CO_cRLBMG7XSiaxKz8moMW6Yp3CwTXEyQ@mail.gmail.com>
+	<CA+55aFxhFbFmUnCVg=be_e+c_GEr9KizMt_7cGwJz__E9o7MJg@mail.gmail.com>
+Date: Fri, 15 Mar 2013 09:01:29 +0100
+Message-ID: <CABPqkBRHt=84gZ2-g-CC2jmV5_pnZ9qJA2bne_oXsLmrFhOomw@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Stephane Eranian <eranian@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Mar 2013, Rafael J. Wysocki wrote:
+On Fri, Mar 15, 2013 at 2:06 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Mar 14, 2013 at 5:24 PM, Stephane Eranian <eranian@google.com> wrote:
+>>
+>> I bet if you force the affinity of your perf record to be on
+>> a CPU other than CPU0, you will not get the crash.
+>>
+>> This is what I am seeing now. I appears on resume,
+>> CPU0 hotplug callbacks for perf_events are not invoked
+>> leaving DS_AREA MSR to 0.
+>>
+>> Can you confirm on your machine?
+>
+> I'm not even going to bother confirming it, because I think you're
+> right, and I think the reason is clear: the DS initialization code
+> uses the CPU_UP notifiers.
+>
+Ok, I instrumented the pebs_enable() function and I confirm that
+DS_AREA=0 on resume.
 
-> > > commit 181380b702eee1a9aca51354d7b87c7b08541fcf
-> > > Author: Yinghai Lu <yinghai@kernel.org>
-> > > Date:   Sat Feb 16 11:58:34 2013 -0700
-> > > 
-> > >     PCI/ACPI: Don't cache _PRT, and don't associate them with bus numbers
-> > 
-> > This patch __fixed__ this problem for me in linux-next back in February.
-> > 
-> > Rafael, did you hold back some ACPI patches from 3.9 that would have
-> > made fix no longer applicable?
-> 
-> No, I didn't.
-> 
-> I'm afraid, though, that the fix might not be effective on some systems for a
-> reason that's unclear at the moment.
-> 
-> So in fact the one to check is commit 4f535093cf ("PCI: Put pci_dev in device
-> tree as early as possible") and if the problem doesn't appear before that, we
-> need to figure out why the fix may not be sufficient.
+So what seems broken here for me is that on suspend, the cpu notifier
+ends up calling fini_debug_store() to clear DS_AREA for CPU0. But
+on resume, the same notifier does NOT call the init_debug_store().
+I don't understand this asymmetry. You either do neither or you do
+both.
 
-With either 4f535093cf or 181380b702 I do *not* see the problem, i.e. 
-these commits are not the culprit and it was caused by some later change.
 
-I will proceed with bisect now, hopefully it'll produce a meaningful 
-result.
-
--- 
-Jiri Kosina
-SUSE Labs
+> And that's sufficient for CPU hotplug, which is what suspend/resume
+> ends up doing for all but the boot CPU. But the boot CPU is not
+> hotplugged.
+>
+> Using CPU_UP notifiers is wrong, and they get called too late anyway.
+>
+> The code should use a real resume method. Or, better yet, just do it
+> right, and do it from __restore_processor_state().
+>
+> Those f*cking CPU notifiers are a pain in the ass, and the tend to be
+> invariably broken, and they have their own idiotic hacks that are
+> equally broken (ie that x86_pmu_notifier() thing seems to make up its
+> own suspend/resume with
+> "x86_pmu.cpu_prepare/cpu_starting/cpu_dying/cpu_dead" things.
+>
+> I guess we could make the BP do a fake cpu notifier thing around the
+> suspend of the boot processor as well, but most of the per-CPU stuff
+> seems to be perfectly fine without it (ie mtrr, apic, etc etc all use
+> the suspend/resume infrastructure) and doesn't need that kind of
+> stuff.
+>
+>                 Linus
