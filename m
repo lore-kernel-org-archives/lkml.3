@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab3COPiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:38:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40914 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753906Ab3COPiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:38:03 -0400
-Date: Fri, 15 Mar 2013 16:37:56 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Harald Arnesen <skogtun.linux@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <20130315153249.GA32425@kroah.com>
-Message-ID: <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <20130315153249.GA32425@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754281Ab3COPiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:38:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59458 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab3COPiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:38:17 -0400
+Date: Fri, 15 Mar 2013 10:38:11 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Vasily Kulikov <segoon@openwall.com>
+Subject: Re: For review: user_namespaces(7) man page
+Message-ID: <20130315153811.GD24305@sergelap>
+References: <CAKgNAkh1TEkQiQ2g2jhbNzVTwpDYOreJt3rAukZCP9H1wh0mLQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkh1TEkQiQ2g2jhbNzVTwpDYOreJt3rAukZCP9H1wh0mLQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Mar 2013, Greg KH wrote:
+Hi,
 
-> > > I have the same problem on my Lenovo T500. I think the graphics card is
-> > > involved.
-> > > 
-> > > This laptop has "hybrid graphics" - one Intel GMA 4500MHD and one ATI
-> > > Mobility Radeon HD 3650. When I boot with the Intel card, I get "irq 16:
-> > > nobody cared" during boot, not when I boot with the ATI card.
-> > 
-> > Confirming this. After a lot of hassle, I have bisected this reliably to
-> > 
-> > 	commit 28c70f162a315bdcfbe0bf940a740ef8bfb918d6
-> > 	Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > 	Date:   Sat Dec 1 13:53:45 2012 +0100
-> > 
-> > 	    drm/i915: use the gmbus irq for waits
-> > 
-> > Adding Daniel, Imre and Daniel to CC while I will try to figure out what's 
-> > happening in parallel.
-> 
-> Wasn't this fixed by the merge from David
-> (2cc79544bd0aabb4b3cf467ead5df526d9134c64)?
+you mention that after creating a new user namespace you at first have
+all capabilities in the new ns.  You don't explicitly mention (or I
+missed it - I did see the mention of securebits) that if you want to
+keep those capabilities after doing an exec, you need to first have
+something mapped to uid 0 in the userns, and do setuid(0).
 
-Why do you think it should, please?
+You might not want to list manpages from other projects, but Eric's
+shadow patches introduce some good new manpages as well.  Those aren't yet
+accepted upstream, but if/when they are then mention at least of
+subuid(5), subgid(5), and newuidmap(1) and newgidmap(1) might be good.
 
-(I am seeing this with a2362d247 still).
-
--- 
-Jiri Kosina
-SUSE Labs
+thanks,
+-serge
