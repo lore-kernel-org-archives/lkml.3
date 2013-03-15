@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab3COIly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 04:41:54 -0400
-Received: from mail-gh0-f171.google.com ([209.85.160.171]:38699 "EHLO
-	mail-gh0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3COIlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 04:41:52 -0400
-Message-ID: <5142DEC5.7010206@gmail.com>
-Date: Fri, 15 Mar 2013 16:41:41 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753919Ab3COIrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 04:47:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54319 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753593Ab3COIrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 04:47:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
+   d="scan'208";a="279910128"
+Message-ID: <5142E04F.1010400@intel.com>
+Date: Fri, 15 Mar 2013 16:48:15 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Lenky Gao <lenky.gao@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Inactive memory keep growing and how to release it?
-References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com> <20130314101403.GB11636@dhcp22.suse.cz>
-In-Reply-To: <20130314101403.GB11636@dhcp22.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Danny Baumann <dannybaumann@web.de>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 3/3] ACPI video: Fix applying indexed initial brightness
+ value.
+References: <1363257264-15984-1-git-send-email-dannybaumann@web.de> <1363257264-15984-4-git-send-email-dannybaumann@web.de>
+In-Reply-To: <1363257264-15984-4-git-send-email-dannybaumann@web.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 06:14 PM, Michal Hocko wrote:
-> On Mon 04-03-13 17:52:22, Lenky Gao wrote:
->> Hi,
->>
->> When i just run a test on Centos 6.2 as follows:
->>
->> #!/bin/bash
->>
->> while true
->> do
->>
->> 	file="/tmp/filetest"
->>
->> 	echo $file
->>
->> 	dd if=/dev/zero of=${file} bs=512 count=204800 &> /dev/null
->>
->> 	sleep 5
->> done
->>
->> the inactive memory keep growing:
->>
->> #cat /proc/meminfo | grep Inactive\(fi
->> Inactive(file):   420144 kB
->> ...
->> #cat /proc/meminfo | grep Inactive\(fi
->> Inactive(file):   911912 kB
->> ...
->> #cat /proc/meminfo | grep Inactive\(fi
->> Inactive(file):  1547484 kB
->> ...
->>
->> and i cannot reclaim it:
-> How did you try to reclaim the memory? How much memory is still free?
-> Are you above watermaks (/proc/zoneinfo will tell you more)
->
->> # cat /proc/meminfo | grep Inactive\(fi
->> Inactive(file):  1557684 kB
->> # echo 3 > /proc/sys/vm/drop_caches
->> # cat /proc/meminfo | grep Inactive\(fi
->> Inactive(file):  1520832 kB
->>
->> I have tested on other version kernel, such as 2.6.30 and .6.11, the
->> problom also exists.
->>
->> When in the final situation, i cannot kmalloc a larger contiguous
->> memory, especially in interrupt context.
-> This could be related to the memory fragmentation and your kernel seem
-> to be too large to have memory compaction which helps a lot in that
-> area.
->
->> Can you give some tips to avoid this?
-> One way would be to increase /proc/sys/vm/min_free_kbytes which will
-> enlarge watermaks so the reclaim starts sooner.
->   
->> PS:
->> # uname -a
->> Linux localhost.localdomain 2.6.32-220.el6.x86_64 #1 SMP Tue Dec 6
->> 19:48:22 GMT 2011 x86_64 x86_64 x86_64 GNU/Linux
-> This is really an old kernel and also a distribution one which might
-> contain a lot of patches on top of the core kernel. I would suggest to
-> contact Redhat or try to reproduce the issue with the vanilla and
+On 03/14/2013 06:34 PM, Danny Baumann wrote:
+> The value initially read via _BQC also needs to be offset by 2 to
+> compensate for the first 2 special items in _BCL. Introduce a helper
+> function to do the conversion in order to not needlessly duplicate code.
+> ---
+>  drivers/acpi/video.c | 23 ++++++++++++++---------
+>  1 file changed, 14 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> index d0fade7..562ccc3 100644
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -450,6 +450,16 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+>  	{}
+>  };
+>  
+> +static unsigned long long
+> +acpi_video_index_to_level(struct acpi_video_device *device,
+> +			  unsigned long long index)
+> +{
+> +	if (device->brightness->flags._BCL_reversed)
+> +		index = device->brightness->count - 3 - index;
+> +
+> +	return device->brightness->levels[index + 2];
+> +}
 
-What's the meaning of vanilla?
+What about making this function also take care of the
+bqc_offset_aml_bug_workaround? so that this function serves more like a
+conversion from raw value to fixed value, the function name can perhaps
+be named as: acpi_video_fix_bqc_value, or whatever you think is more
+appropriate.
 
-> up-to-date kernel and report here.
+> +
+>  static int
+>  acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+>  					unsigned long long *level, int init)
+> @@ -472,13 +482,10 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
+>  				return 0;
+>  			}
+>  
+> -			if (device->brightness->flags._BQC_use_index) {
+> -				if (device->brightness->flags._BCL_reversed)
+> -					*level = device->brightness->count
+> -								 - 3 - (*level);
+> -				*level = device->brightness->levels[*level + 2];
+> +			if (device->brightness->flags._BQC_use_index)
+> +				*level = acpi_video_index_to_level(device,
+> +								   *level);
+>  
+> -			}
+>  			*level += bqc_offset_aml_bug_workaround;
+>  			for (i = 2; i < device->brightness->count; i++)
+>  				if (device->brightness->levels[i] == *level) {
+> @@ -742,9 +749,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
+>  				}
+>  		}
+>  	} else {
+> -		if (br->flags._BCL_reversed)
+> -			level_old = (br->count - 1) - level_old;
+> -		level = br->levels[level_old];
+> +		level = acpi_video_index_to_level(device, level_old);
+
+And here, that new function should be used, which also takes care of the
+offset_aml_bug problem(though in theory, the two problems may not happen
+on the same BIOS table).
+
+And the acpi_video_device_lcd_get_level_current's param init can
+probably be renamed as raw, meaning if raw value is desired or fixed
+value, but it's not a big deal.
+
+Thanks,
+Aaron
+
+>  	}
+>  
+>  set_level:
+> 
 
