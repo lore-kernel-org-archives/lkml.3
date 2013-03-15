@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab3COVat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:30:49 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:55075 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932453Ab3COVar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:30:47 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] usb: cdc-acm: fix error handling in acm_probe()
-Date: Sat, 16 Mar 2013 01:30:32 +0400
-Message-Id: <1363383032-13257-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S932749Ab3COVax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:30:53 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:65073 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab3COVau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 17:30:50 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Will Newton <will.newton@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Bing Zhao <bzhao@marvell.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] RFC: mmc: dw_mmc: Don't clear errors we aren't handling
+Date: Fri, 15 Mar 2013 14:30:47 -0700
+Message-Id: <1363383047-15285-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acm_probe() ignores errors in tty_port_register_device()
-and leaves intfdata pointing to freed memory on alloc_fail7
-error path. The patch fixes the both issues.
+Although there are no known cases of this being a problem (and it may
+be technically impossible for the hardware to report more errors once
+already in the error state), it seems unwise for us to be clearing
+error interrupts that we didn't actually read.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/usb/class/cdc-acm.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/mmc/host/dw_mmc.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 8ac25ad..c125b61 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -977,6 +977,8 @@ static int acm_probe(struct usb_interface *intf,
- 	int num_rx_buf;
- 	int i;
- 	int combined_interfaces = 0;
-+	struct device *tty_dev;
-+	int rv = -ENOMEM;
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 9834221..84ae704 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1583,7 +1583,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+ 			break;
  
- 	/* normal quirks */
- 	quirks = (unsigned long)id->driver_info;
-@@ -1339,11 +1341,24 @@ skip_countries:
- 	usb_set_intfdata(data_interface, acm);
+ 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
+-			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
++			mci_writel(host, RINTSTS,
++				   pending & DW_MCI_CMD_ERROR_FLAGS);
+ 			host->cmd_status = pending;
+ 			smp_wmb();
+ 			set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
+@@ -1591,7 +1592,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
  
- 	usb_get_intf(control_interface);
--	tty_port_register_device(&acm->port, acm_tty_driver, minor,
-+	tty_dev = tty_port_register_device(&acm->port, acm_tty_driver, minor,
- 			&control_interface->dev);
-+	if (IS_ERR(tty_dev)) {
-+		rv = PTR_ERR(tty_dev);
-+		goto alloc_fail8;
-+	}
- 
- 	return 0;
-+alloc_fail8:
-+	if (acm->country_codes) {
-+		device_remove_file(&acm->control->dev,
-+				&dev_attr_wCountryCodes);
-+		device_remove_file(&acm->control->dev,
-+				&dev_attr_iCountryCodeRelDate);
-+	}
-+	device_remove_file(&acm->control->dev, &dev_attr_bmCapabilities);
- alloc_fail7:
-+	usb_set_intfdata(intf, NULL);
- 	for (i = 0; i < ACM_NW; i++)
- 		usb_free_urb(acm->wb[i].urb);
- alloc_fail6:
-@@ -1359,7 +1374,7 @@ alloc_fail2:
- 	acm_release_minor(acm);
- 	kfree(acm);
- alloc_fail:
--	return -ENOMEM;
-+	return rv;
- }
- 
- static void stop_data_traffic(struct acm *acm)
+ 		if (pending & DW_MCI_DATA_ERROR_FLAGS) {
+ 			/* if there is an error report DATA_ERROR */
+-			mci_writel(host, RINTSTS, DW_MCI_DATA_ERROR_FLAGS);
++			mci_writel(host, RINTSTS,
++				   pending & DW_MCI_DATA_ERROR_FLAGS);
+ 			host->data_status = pending;
+ 			smp_wmb();
+ 			set_bit(EVENT_DATA_ERROR, &host->pending_events);
 -- 
-1.7.9.5
+1.8.1.3
 
