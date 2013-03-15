@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3COKPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 06:15:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54300 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3COKPM (ORCPT
+	id S1754146Ab3COKQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 06:16:24 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:33391 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab3COKQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 06:15:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] isdn: hisax: netjet requires VIRT_TO_BUS
-Date: Fri, 15 Mar 2013 10:15:00 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-References: <1363298204-8014-1-git-send-email-arnd@arndb.de> <1363298204-8014-4-git-send-email-arnd@arndb.de> <CAMuHMdVhjnX_hag5Y5VvDWVcjPK8tMM-qx-TQ2x=M88yTZQwYg@mail.gmail.com>
-In-Reply-To: <CAMuHMdVhjnX_hag5Y5VvDWVcjPK8tMM-qx-TQ2x=M88yTZQwYg@mail.gmail.com>
+	Fri, 15 Mar 2013 06:16:22 -0400
+Message-ID: <5142F4F1.60006@atmel.com>
+Date: Fri, 15 Mar 2013 11:16:17 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Johan Hovold <jhovold@gmail.com>, Olof Johansson <olof@lixom.net>,
+        <FlorianSchandinat@gmx.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <jacmet@sunsite.dk>
+Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is removal
+References: <cover.1360340791.git.nicolas.ferre@atmel.com> <5139B169.7050807@atmel.com> <51405126.3090009@atmel.com> <201303142303.42283.arnd@arndb.de>
+In-Reply-To: <201303142303.42283.arnd@arndb.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303151015.00746.arnd@arndb.de>
-X-Provags-ID: V02:K0:KYrjk10tcGityumB7JplWJAAngfc5qa+f7QCwkhf7oe
- jqbNlxzi25BpwNPg5WvCEcIBBaWvygj+YtEVAYpXJHq0i5MV5i
- bEkPdR5RSJI3zK/PAjT8hj3KUxlCn8TVKNct05ccp+BHI4FQm9
- N1kvhKaGInaqQxnnBtPsFzKxpE1wZ5Y7jM4vBGGTuEPhQZXtwx
- 8y3gj98FLCtzVY5+xTOliGNO1L6evF+d3W6EcSrFTsiAqUNfAg
- rB6WK/DUPiqyBKChtNg/t4EIGUMd550Fp8Sn7mI3IpxehBWNgB
- gIofII6aLn59lLpgdZdgu7QHI5hzQREyrS+NPyQxMnxsvq851P
- +hbq0N5k80aBoIRTwjuA=
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 March 2013, Geert Uytterhoeven wrote:
-> On Thu, Mar 14, 2013 at 10:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > Disabling CONFIG_VIRT_TO_BUS on ARM showed that the hisax netjet
-> > driver depends on this deprecated functionality but is not
-> > marked so in Kconfig.
-> >
-> > Rather than adding ARM to the already long list of architectures
-> > that this driver is broken on, this patch adds 'depends on
-> > VIRT_TO_BUS' and removes the dependency on !SPARC, which is
-> > also implied by that.
+On 03/15/2013 12:03 AM, Arnd Bergmann :
+> On Wednesday 13 March 2013, Nicolas Ferre wrote:
+>> In case we end-up with an agreement on the path those fixes should
+>> follow, here is the location of my updated material rebased on top of 3.9-rc2:
+>>
+>> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+>>
+>>   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+>>
+>> are available in the git repository at:
+>>
+>>   git://github.com/at91linux/linux-at91.git at91-3.9-fixesLCD
+>>
+>> for you to fetch changes up to bbd44f6bd9d1aa735b180b29b5719d63a8e87b55:
+>>
+>>   ARM: at91/avr32/atmel_lcdfb: add platform device-id table (2013-03-13 11:05:12 +0100)
+>>
+>> ----------------------------------------------------------------
+>> Johan Hovold (5):
+>>       atmel_lcdfb: fix 16-bpp modes on older SOCs
+>>       ARM: at91: fix LCD-wiring mode
+>>       ARM: at91/avr32/atmel_lcdfb: add bus-clock entry
+>>       atmel_lcdfb: move lcdcon2 register access to compute_hozval
+>>       ARM: at91/avr32/atmel_lcdfb: add platform device-id table
+>>
 > 
-> IIRC, the real "arch" dependency for this driver is !BIG_ENDIAN, but
-> unfortunately
-> we don't have a generic Kconfig symbol for that.
-> Perhaps we may want to introduce that?
-> Of course we prefer to make drivers work on all endianness instead...
+> I have merged the first two patches into the fixes branch now, from up to commit
+> 67cf9c0a. Please resubmit the remaining ones on top of this commit for 3.10, either
+> through arm-soc or through the framebuffer tree.
 
-CONFIG_VIRT_TO_BUS is certainly also a dependency, since it fails
-to build without that. I think we can address the two problems separately.
+Thanks a lot.
+I have just sent the pull-request for remaining material. Tell me if it
+is what you've expected.
 
-David Howells brought up the topic of endian checks recently, noting
-that the way we define __BIG_ENDIAN and __LITTLE_ENDIAN in the kernel
-is incompatible to how do it in user space, and not much better either.
-
-A few architectures that are bi-endian (arc, arm, c6x, mips, sh) already
-have CONFIG_CPU_IS_LITTLE_ENDIAN and CONFIG_CPU_IS_BIG_ENDIAN. I guess
-it would be a good idea to provide these on all architectures.
-
-	Arnd
+Best regards,
+-- 
+Nicolas Ferre
