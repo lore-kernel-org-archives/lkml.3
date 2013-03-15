@@ -1,140 +1,629 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3COMdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 08:33:11 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:38081 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab3COMdK (ORCPT
+	id S1754454Ab3COMda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 08:33:30 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54153 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3COMd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 08:33:10 -0400
+	Fri, 15 Mar 2013 08:33:28 -0400
+Date: Fri, 15 Mar 2013 09:33:20 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hverkuil@xs4all.nl, elezegarcia@gmail.com
+Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
+Message-ID: <20130315123319.GE2989@localhost>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+ <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-In-Reply-To: <1363349206.5827.10.camel@bilhuang-vm1>
-References: <1363151317.3311.9.camel@bilhuang-vm1>
-	<51400D9D.9060305@wwwdotorg.org>
-	<1363153204.3311.14.camel@bilhuang-vm1>
-	<5140C12A.4060900@wwwdotorg.org>
-	<1363227311.3311.30.camel@bilhuang-vm1>
-	<20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
-	<1363253287.3311.32.camel@bilhuang-vm1>
-	<51420EBB.7080503@wwwdotorg.org>
-	<1363310454.3311.44.camel@bilhuang-vm1>
-	<5142B027.4040403@wwwdotorg.org>
-	<20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
-	<CAPDyKFoBJpraMz8i1FmFqG7=Zsv0DTQ0PKVOQJ-+iEsKpb3Hdg@mail.gmail.com>
-	<1363349206.5827.10.camel@bilhuang-vm1>
-Date: Fri, 15 Mar 2013 13:33:08 +0100
-Message-ID: <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
-Subject: Re: [RFC 1/1] clk: Add notifier support in clk_prepare_enable/clk_disable_unprepare
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 March 2013 13:06, Bill Huang <bilhuang@nvidia.com> wrote:
-> On Fri, 2013-03-15 at 18:08 +0800, Ulf Hansson wrote:
->> On 15 March 2013 10:39, Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
->> > On Fri, Mar 15, 2013 at 06:22:47AM +0100, Stephen Warren wrote:
->> >> On 03/14/2013 07:20 PM, Bill Huang wrote:
->> >> > On Fri, 2013-03-15 at 01:54 +0800, Stephen Warren wrote:
->> >> >> On 03/14/2013 03:28 AM, Bill Huang wrote:
->> >> >>> On Thu, 2013-03-14 at 17:21 +0800, Peter De Schrijver wrote:
->> >> >>>> On Thu, Mar 14, 2013 at 03:15:11AM +0100, Bill Huang wrote:
->> >> >>>>
->> >> >>>>> I don't think deferring will work either, considering the usage of DVFS,
->> >> >>>>> device voltage is tightly coupled with frequency, when clock rate is
->> >> >>>>> about to increase, we have to boost voltage first and we can lower the
->> >> >>>>> voltage after the clock rate has decreased. All the above sequence have
->> >> >>>>> to be guaranteed or you might crash, so deferring not only make thing
->> >> >>>>> complicated in controlling the order but also hurt performance.
->> >> >>>>
->> >> >>>> But we could use notifiers in clk_prepare/clk_unprepare to set the voltage no?
->> >> >>>> As clk_prepare/clk_unprepare have to be called before clk_enable or after
->> >> >>>> clk_disable, the voltage can be raised to a safe level, before the clock
->> >> >>>> becomes active.
->> >> >>>
->> >> >>> Thanks Peter, actually I'm just about to propose my v2 RFC which add
->> >> >>> notifier in clk_prepare/clk_unprepare.
->> >> >>
->> >> >> Can't clk_set_rate() be called while the clock is prepared, or even
->> >> >> enabled? I don't see how your proposal would work.
->> >> >
->> >> > I think it works with just a little sacrifice on saving more power but
->> >> > that's related minor. Taking clk_prepare as an indicator on that clock
->> >> > will be enabled later, so we can raise the voltage to a safe level
->> >> > (according to the current rate or maybe default rate when clk_prepare is
->> >> > called, some time late when clk_set_rate() is called we can adjust again
->> >> > according to the requested rate change)
->> >>
->> >> Is clk_set_rate() only legal to call in non-atomic contexts then? The
->> >> header file doesn't say, although I guess since many other functions
->> >> explicitly say they can't, then by omission it can...
->> >
->> > Yes. Only clk_enable() and clk_disable() can be called in an atomic context.
->> >
->> > Cheers,
->> >
->> > Peter.
->> >
->> > _______________________________________________
->> > linaro-dev mailing list
->> > linaro-dev@lists.linaro.org
->> > http://lists.linaro.org/mailman/listinfo/linaro-dev
->>
->> Just wanted to add my reflection on this topic;
->>
->> Some prerequisites; I think am in favor of using the clk API to
->> trigger DVFS changes and then I agree on that clk_prepare|unprepare
->> needs to be possible to track from a DVFS perspective. clk_set_rate is
->> not enough.
->>
->> So if we decide to do the above (using the clk API to trigger DVFS
->> changes), I believe we should discuss two possible solutions;
->> - clk notifiers or..
->> - dvfs clock type.
->>
->> I am trying to make up my mind of what I think is the best solution.
->> Have you considered "dvfs clock type"?
->> I put some comments about this for "[PATCH 2/5] clk: notifier handler
->> for dynamic voltage scaling" recently as well.
->>
->> What could the advantages/disadvantages be between the two options?
->
-> I personally prefer clk notifiers since that's easy and all the existing
-> device drivers don't need to be modified, a new clock or API might be
-> more thoroughly considered (and hence maybe more graceful) but that
-> means we need more time to cook and many drivers need to plug into that
-> API when it comes out, a lot of test/verification or maybe chaos
-> follows, I'm not sure will that be a little overkill.
+On Thu, Mar 14, 2013 at 03:07:00PM +0100, Jon Arne Jørgensen wrote:
+> This file is responsible for registering the device with the v4l2 subsystem,
+> and the communication with v4l2.
+> Most of the v4l2 ioctls are just passed on to vidbuf2.
+> 
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
+>  1 file changed, 566 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
+> 
+> diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> new file mode 100644
+> index 0000000..d402093
+> --- /dev/null
+> +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> @@ -0,0 +1,566 @@
+> +/*******************************************************************************
+> + * smi2021_v4l2.c                                                              *
+> + *                                                                             *
+> + * USB Driver for smi2021 - EasyCap                                            *
+> + * USB ID 1c88:003c                                                            *
+> + *                                                                             *
+> + * *****************************************************************************
+> + *
+> + * Copyright 2011-2013 Jon Arne Jørgensen
+> + * <jonjon.arnearne--a.t--gmail.com>
+> + *
+> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
+> + *
+> + * This file is part of SMI2021
+> + * http://code.google.com/p/easycap-somagic-linux/
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> + *
+> + * This driver is heavily influensed by the STK1160 driver.
+> + * Copyright (C) 2012 Ezequiel Garcia
+> + * <elezegarcia--a.t--gmail.com>
+> + *
+> + */
+> +
+> +#include "smi2021.h"
+> +
+> +static struct smi2021_fmt format[] = {
+> +	{
+> +		.name = "16bpp YU2, 4:2:2, packed",
+> +		.fourcc = V4L2_PIX_FMT_UYVY,
+> +		.depth = 16,
+> +	}
+> +};
+> +
+> +static const int inputs = 2;
 
-I guess you did not fully got what I meant with "dvfs clock type". It
-will not affect the clock API. But instead the dvfs is handled by
-implementing a specific clk hw type. So the same thing is accomplished
-as with clk notifiers, no changes should be needed to device drivers.
+You could use ARRAY_SIZE on inputs as well?
+Hardcoded values in general are a good way to have future bugs.
 
-The difference is only that no notifiers will be needed, and all the
-dvfs stuff will be handled in the clk hw instead. It will mean that we
-will bundle dvfs stuff into the clock drivers, instead of separating
-the code outside the clock drivers. But, on the other hand no
-notifiers will be needed.
+> +static struct smi2021_input input[] = {
+> +	{
+> +		.name = "Composite",
+> +		.type = SAA7115_COMPOSITE0,
+> +	},
+> +	{
+> +		.name = "S-Video",
+> +		.type = SAA7115_SVIDEO1,
+> +	}
+> +};
+> +
+> +static void smi2021_set_input(struct smi2021_dev *dev)
+> +{
+> +	if (dev->udev == NULL)
+> +		return;
+> +
+> +	if (dev->ctl_input >= inputs) {
+> +		smi2021_err("BUG: ctl_input to big!\n");
+> +		return;
+> +	}
 
->
-> I'm not against designing a more robust API, I'm just suggesting before
-> we have that defined we should at least let clk notifiers work.
->>
->> Kind regards
->> Ulf Hansson
->
->
+Aren't you already checking for this? See vidioc_s_input.
 
-Kind regards
-Ulf Hansson
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_routing,
+> +		input[dev->ctl_input].type, 0, 0);
+> +}
+> +
+> +static int smi2021_start_streaming(struct smi2021_dev *dev)
+> +{
+> +	u8 data[2];
+> +	int i, rc = 0;
+> +	data[0] = 0x01;
+> +	data[1] = 0x05;
+> +
+> +	if (!dev->udev)
+> +		return -ENODEV;
+> +
+> +	dev->sync_state = HSYNC;
+> +	dev->buf_count = 0;
+> +
+> +	if (mutex_lock_interruptible(&dev->v4l2_lock))
+> +		return -ERESTARTSYS;
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 1);
+> +
+> +	/* The saa 7115 driver sets these wrong,
+> +	 * this leads to sync issues.
+> +	 * V_GATE1_START
+> +	 * V_GATE1_STOP
+> +	 * V_GATE1_MSB
+> +	 * All these should be 0x00 for this device.
+> +	 */
+> +	smi2021_write_reg(dev, 0x4a, 0x15, 0x00);
+> +	smi2021_write_reg(dev, 0x4a, 0x16, 0x00);
+> +	smi2021_write_reg(dev, 0x4a, 0x17, 0x00);
+
+Oops, magic numbers!
+
+> +
+> +	rc = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
+> +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0x01, 0x00, data, sizeof(data), 1000);
+> +	if (rc < 0) {
+> +		smi2021_err("Could not start device!\n");
+> +		goto out_unlock;
+> +	}
+> +
+> +	/* It's mandatory to set alt interface before allocating isoc buffer */
+> +	usb_set_interface(dev->udev, 0, 2);
+> +
+> +	smi2021_write_reg(dev, 0, 0x1740, 0x1d);
+> +
+> +	if (!dev->isoc_ctl.num_bufs) {
+> +		rc = smi2021_alloc_isoc(dev);
+> +		if (rc < 0)
+> +			goto out_stop_hw;
+> +	}
+> +
+> +	/* submit urbs and enable IRQ */
+> +	for (i = 0; i < dev->isoc_ctl.num_bufs; i++) {
+> +		rc = usb_submit_urb(dev->isoc_ctl.urb[i], GFP_KERNEL);
+> +		if (rc) {
+> +			smi2021_err("cannot submit urb[%d] (%d)\n", i, rc);
+> +			goto out_uninit;
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&dev->v4l2_lock);
+> +
+> +	smi2021_dbg("Streaming started!");
+> +	return 0;
+> +
+> +out_uninit:
+> +	smi2021_uninit_isoc(dev);
+> +out_stop_hw:
+> +	usb_set_interface(dev->udev, 0, 0);
+> +	smi2021_clear_queue(dev);
+> +
+> +out_unlock:
+> +	mutex_unlock(&dev->v4l2_lock);
+> +
+> +	return rc;
+> +}
+> +
+> +/* Must be called with v4l2_lock hold */
+> +static void smi2021_stop_hw(struct smi2021_dev *dev)
+> +{
+> +	int rc = 0;
+> +	u8 data[] = { 0x01, 0x03 };
+> +
+> +	if (!dev->udev)
+> +		return;
+> +
+> +	usb_set_interface(dev->udev, 0, 0);
+> +
+> +	rc = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
+> +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0x01, 0x00, data, sizeof(data), 1000);
+> +	if (rc < 0)
+> +		smi2021_err("Could not stop device!\n");
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
+> +}
+> +
+> +static int smi2021_stop_streaming(struct smi2021_dev *dev)
+> +{
+> +	/* HACK: Stop the audio subsystem,
+> +	 * without this, the pcm middle-layer will hang waiting for more data.
+> +	 *
+> +	 * Is there a better way to do this?
+> +	 */
+> +	if (dev->pcm_substream && dev->pcm_substream->runtime) {
+> +		struct snd_pcm_runtime *runtime = dev->pcm_substream->runtime;
+> +		if (runtime->status) {
+> +			runtime->status->state = SNDRV_PCM_STATE_DRAINING;
+> +			wake_up(&runtime->sleep);
+> +		}
+> +	}
+> +
+> +	if (mutex_lock_interruptible(&dev->v4l2_lock))
+> +		return -ERESTARTSYS;
+> +
+> +	smi2021_cancel_isoc(dev);
+> +	smi2021_free_isoc(dev);
+> +	smi2021_stop_hw(dev);
+> +	smi2021_clear_queue(dev);
+> +
+> +	smi2021_dbg("Streaming stopped!\n");
+> +
+> +	mutex_unlock(&dev->v4l2_lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct v4l2_file_operations smi2021_fops = {
+> +	.owner = THIS_MODULE,
+> +	.open = v4l2_fh_open,
+> +	.release = vb2_fop_release,
+> +	.read = vb2_fop_read,
+> +	.poll = vb2_fop_poll,
+> +	.mmap = vb2_fop_mmap,
+> +	.unlocked_ioctl = video_ioctl2,
+> +};
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          Vidioc IOCTLS                                                     */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +
+> +static int vidioc_enum_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_fmtdesc *f)
+> +{
+> +	if (f->index != 0)
+> +		return -EINVAL;
+> +
+> +	strlcpy(f->description, format[f->index].name, sizeof(f->description));
+> +	f->pixelformat = format[f->index].fourcc;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_querycap(struct file *file, void *priv,
+> +			struct v4l2_capability *cap)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	strcpy(cap->driver, "smi2021");
+> +	strcpy(cap->card, "smi2021");
+> +	usb_make_path(dev->udev, cap->bus_info, sizeof(cap->bus_info));
+> +	cap->device_caps =
+> +		V4L2_CAP_VIDEO_CAPTURE |
+> +		V4L2_CAP_STREAMING |
+> +		V4L2_CAP_READWRITE;
+> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	f->fmt.pix.pixelformat = dev->fmt->fourcc;
+> +	f->fmt.pix.width = dev->width;
+> +	f->fmt.pix.height = dev->height;
+> +	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
+> +	f->fmt.pix.bytesperline = dev->width * 2;
+> +	f->fmt.pix.sizeimage = dev->height * f->fmt.pix.bytesperline;
+> +	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
+> +	f->fmt.pix.priv = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	f->fmt.pix.pixelformat = dev->fmt->fourcc;
+> +	f->fmt.pix.width = dev->width;
+> +	f->fmt.pix.height = dev->height;
+> +	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
+> +	f->fmt.pix.bytesperline = dev->width * 2;
+> +	f->fmt.pix.sizeimage = dev->height * f->fmt.pix.bytesperline;
+> +	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
+> +	f->fmt.pix.priv = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +	struct vb2_queue *q = &dev->vb_vidq;
+> +
+> +	if (vb2_is_busy(q))
+> +		return -EBUSY;
+> +
+> +	vidioc_try_fmt_vid_cap(file, priv, f);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_querystd(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, querystd, norm);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_std(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	*norm = dev->norm;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +	struct vb2_queue *q = &dev->vb_vidq;
+> +
+> +	if (vb2_is_busy(q))
+> +		return -EBUSY;
+> +
+> +	if (!dev->udev)
+> +		return -ENODEV;
+> +
+> +	dev->norm = *norm;
+> +	if (dev->norm & V4L2_STD_525_60) {
+> +		dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +		dev->height = SMI2021_NTSC_LINES;
+> +	} else if (dev->norm & V4L2_STD_625_50) {
+> +		dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +		dev->height =  SMI2021_PAL_LINES;
+> +	} else {
+> +		smi2021_err("Invalid standard\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_std, dev->norm);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_enum_input(struct file *file, void *priv,
+> +				struct v4l2_input *i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	if (i->index >= inputs)
+> +		return -EINVAL;
+> +
+> +	strlcpy(i->name, input[i->index].name, sizeof(i->name));
+> +	i->type = V4L2_INPUT_TYPE_CAMERA;
+> +	i->std = dev->vdev.tvnorms;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_input(struct file *file, void *priv, unsigned int *i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +	*i = dev->ctl_input;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	if (i >= inputs)
+> +		return -EINVAL;
+> +
+> +	dev->ctl_input = i;
+> +	smi2021_set_input(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_chip_ident(struct file *file, void *priv,
+> +			struct v4l2_dbg_chip_ident *chip)
+> +{
+> +	switch (chip->match.type) {
+> +	case V4L2_CHIP_MATCH_HOST:
+> +		chip->ident = V4L2_IDENT_NONE;
+> +		chip->revision = 0;
+> +		return 0;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static const struct v4l2_ioctl_ops smi2021_ioctl_ops = {
+> +	.vidioc_querycap		= vidioc_querycap,
+> +	.vidioc_enum_fmt_vid_cap	= vidioc_enum_fmt_vid_cap,
+> +	.vidioc_g_fmt_vid_cap		= vidioc_g_fmt_vid_cap,
+> +	.vidioc_try_fmt_vid_cap		= vidioc_try_fmt_vid_cap,
+> +	.vidioc_s_fmt_vid_cap		= vidioc_s_fmt_vid_cap,
+> +	.vidioc_querystd		= vidioc_querystd,
+> +	.vidioc_g_std			= vidioc_g_std,
+> +	.vidioc_s_std			= vidioc_s_std,
+> +	.vidioc_enum_input		= vidioc_enum_input,
+> +	.vidioc_g_input			= vidioc_g_input,
+> +	.vidioc_s_input			= vidioc_s_input,
+> +
+> +	/* vb2 handle these */
+> +	.vidioc_reqbufs			= vb2_ioctl_reqbufs,
+> +	.vidioc_create_bufs		= vb2_ioctl_create_bufs,
+> +	.vidioc_querybuf		= vb2_ioctl_querybuf,
+> +	.vidioc_qbuf			= vb2_ioctl_qbuf,
+> +	.vidioc_dqbuf			= vb2_ioctl_dqbuf,
+> +	.vidioc_streamon		= vb2_ioctl_streamon,
+> +	.vidioc_streamoff		= vb2_ioctl_streamoff,
+> +
+> +	.vidioc_log_status		= v4l2_ctrl_log_status,
+> +	.vidioc_subscribe_event		= v4l2_ctrl_subscribe_event,
+> +	.vidioc_unsubscribe_event	= v4l2_event_unsubscribe,
+> +	.vidioc_g_chip_ident		= vidioc_g_chip_ident,
+> +
+> +};
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          Videobuf2 operations                                              */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +static int queue_setup(struct vb2_queue *vq,
+> +				const struct v4l2_format *v4l2_fmt,
+> +				unsigned int *nbuffers, unsigned int *nplanes,
+> +				unsigned int sizes[], void *alloc_ctxs[])
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+> +	unsigned long size;
+> +
+> +	size = dev->width * dev->height * 2;
+> +
+> +	*nbuffers = clamp_t(unsigned int, *nbuffers, 2, 4);
+> +
+> +	/* Packed color format */
+> +	*nplanes = 1;
+> +	sizes[0] = size;
+> +
+> +	return 0;
+> +}
+> +
+> +static void buffer_queue(struct vb2_buffer *vb)
+> +{
+> +	unsigned long flags;
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
+> +	struct smi2021_buffer *buf = container_of(vb, struct smi2021_buffer,
+> +							vb);
+> +
+> +	spin_lock_irqsave(&dev->buf_lock, flags);
+> +	if (!dev->udev) {
+> +		/*
+> +		 * If the device is disconnected return the buffer to userspace
+> +		 * directly. The next QBUF call will fail with -ENODEV.
+> +		 */
+> +		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +	} else {
+> +		buf->mem = vb2_plane_vaddr(vb, 0);
+> +		buf->length = vb2_plane_size(vb, 0);
+> +
+> +		buf->pos = 0;
+> +		buf->trc_av = 0;
+> +		buf->in_blank = true;
+> +		buf->second_field = false;
+> +
+> +		if (buf->length < dev->width * dev->height * 2)
+> +			vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +		else
+> +			list_add_tail(&buf->list, &dev->avail_bufs);
+> +	}
+> +	spin_unlock_irqrestore(&dev->buf_lock, flags);
+> +}
+> +
+> +static int start_streaming(struct vb2_queue *vq, unsigned int count)
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+> +	return smi2021_start_streaming(dev);
+> +}
+> +
+> +static int stop_streaming(struct vb2_queue *vq)
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+> +	return smi2021_stop_streaming(dev);
+> +}
+> +
+> +static struct vb2_ops smi2021_video_qops = {
+> +	.queue_setup		= queue_setup,
+> +	.buf_queue		= buffer_queue,
+> +	.start_streaming	= start_streaming,
+> +	.stop_streaming		= stop_streaming,
+> +	.wait_prepare		= vb2_ops_wait_prepare,
+> +	.wait_finish		= vb2_ops_wait_finish,
+> +};
+> +
+> +static struct video_device v4l2_template = {
+> +	.name			= "easycap_smi2021_dc60",
+> +	.tvnorms		= V4L2_STD_625_50 | V4L2_STD_525_60,
+> +	.fops			= &smi2021_fops,
+> +	.ioctl_ops		= &smi2021_ioctl_ops,
+> +	.release		= video_device_release_empty,
+> +};
+> +
+> +/* Must be called with both v4l2_lock and vb_queue_lock hold */
+> +void smi2021_clear_queue(struct smi2021_dev *dev)
+> +{
+> +	struct smi2021_buffer *buf;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&dev->buf_lock, flags);
+> +	while (!list_empty(&dev->avail_bufs)) {
+> +		buf = list_first_entry(&dev->avail_bufs,
+> +			struct smi2021_buffer, list);
+> +		list_del(&buf->list);
+> +		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +	}
+> +	dev->isoc_ctl.buf = NULL;
+> +	spin_unlock_irqrestore(&dev->buf_lock, flags);
+> +}
+> +
+> +int smi2021_vb2_setup(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +	struct vb2_queue *q;
+> +
+> +	q = &dev->vb_vidq;
+> +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
+> +	q->drv_priv = dev;
+> +	q->buf_struct_size = sizeof(struct smi2021_buffer);
+> +	q->ops = &smi2021_video_qops;
+> +	q->mem_ops = &vb2_vmalloc_memops;
+> +
+> +	rc = vb2_queue_init(q);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	/* Initialize video dma queue */
+> +	INIT_LIST_HEAD(&dev->avail_bufs);
+> +
+> +	return 0;
+> +}
+> +
+> +int smi2021_video_register(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +
+> +	dev->vdev = v4l2_template;
+> +	dev->vdev.debug = 0;
+> +	dev->vdev.queue = &dev->vb_vidq;
+> +
+> +	dev->vdev.lock = &dev->v4l2_lock;
+> +	dev->vdev.queue->lock = &dev->vb_queue_lock;
+> +
+> +	dev->vdev.v4l2_dev = &dev->v4l2_dev;
+> +	set_bit(V4L2_FL_USE_FH_PRIO, &dev->vdev.flags);
+> +
+> +	/* PAL is default */
+> +	dev->norm = V4L2_STD_PAL;
+> +	dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +	dev->height = SMI2021_PAL_LINES;
+> +
+> +	dev->fmt = &format[0];
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_std, dev->norm);
+> +	smi2021_set_input(dev);
+> +
+> +	video_set_drvdata(&dev->vdev, dev);
+> +	rc = video_register_device(&dev->vdev, VFL_TYPE_GRABBER, -1);
+> +	if (rc < 0) {
+> +		smi2021_err("video_register_device failed %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	v4l2_info(&dev->v4l2_dev, "V4L2 device registered as %s\n",
+> +		video_device_node_name(&dev->vdev));
+> +
+> +	return 0;
+> +}
+> -- 
+> 1.8.1.1
+> 
+
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
