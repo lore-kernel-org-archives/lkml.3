@@ -1,106 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3COVqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 17:46:25 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:49821 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab3COVqX (ORCPT
+	id S1755333Ab3COVux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 17:50:53 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35148 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754093Ab3COVuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 17:46:23 -0400
+	Fri, 15 Mar 2013 17:50:51 -0400
+Message-ID: <51439846.9090201@metafoo.de>
+Date: Fri, 15 Mar 2013 22:53:10 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAH2r5mvW29FV+stH5CsjY5S2FdaHn48TfiSEk_beC=NzHC7-MQ@mail.gmail.com>
-References: <1363128287.23052.21.camel@joe-AO722>
-	<1363174614.2031.9.camel@joe-AO722>
-	<20130313075155.7464a34a@tlielax.poochiereds.net>
-	<1363178421.2031.29.camel@joe-AO722>
-	<1363289077.2146.19.camel@joe-AO722>
-	<20130315150136.7f7a262a@tlielax.poochiereds.net>
-	<CAH2r5mvW29FV+stH5CsjY5S2FdaHn48TfiSEk_beC=NzHC7-MQ@mail.gmail.com>
-Date: Fri, 15 Mar 2013 16:46:22 -0500
-Message-ID: <CAH2r5msj-Mei76ZX8Hjg5uWwCUcn_PLWuSpAorGROV3nRsX=Zg@mail.gmail.com>
-Subject: Fwd: [PATCH] cifs: Rename cERROR and cFYI to cifs_dbg
-From: Steve French <smfrench@gmail.com>
-To: linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dianders@chromium.org,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com
+Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race
+ conditions
+References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 2:01 PM, Jeff Layton <jlayton@redhat.com> wrote:
->
-> On Thu, 14 Mar 2013 12:24:37 -0700
-> Joe Perches <joe@perches.com> wrote:
->
-> > It's not obvious from reading the macro names that these macros
-> > are for debugging.  Convert the names to a single more typical
-> > kernel style cifs_dbg macro.
-> >
-> >       cERROR(1, ...)   -> cifs_dbg(VFS, ...)
-> >       cFYI(1, ...)     -> cifs_dbg(FYI, ...)
-> >       cFYI(DBG2, ...)  -> cifs_dbg(NOISY, ...)
-> >
-> > Move the terminating format newline from the macro to the call site.
-> >
-> > Add CONFIG_CIFS_DEBUG function cifs_vfs_err to emit the
-> > "CIFS VFS: " prefix for VFS messages.
-> >
-> > Size is reduced ~ 1% when CONFIG_CIFS_DEBUG is set (default y)
-> >
-> > $ size fs/cifs/cifs.ko*
-> >    text    data     bss     dec     hex filename
-> >  265245          2525     132  267902   4167e fs/cifs/cifs.ko.new
-> >  268359    2525     132  271016   422a8 fs/cifs/cifs.ko.old
-> >
->
-> (my apologies -- my MUA has a mind of its own sometimes)
->
-> This all looks like good stuff. I am a bit concerned about mashing all
-> of these cleanups into the same patch though.
->
-> > Other miscellaneous changes around these conversions:
-> >
-> > o Miscellaneous typo fixes
-> > o Add terminating \n's to almost all formats and remove them
-> >   from the macros to be more kernel style like.  A few formats
-> >   previously had defective \n's
-> > o Remove unnecessary OOM messages as kmalloc() calls dump_stack
-> > o Coalesce formats to make grep easier,
-> >   added missing spaces when coalescing formats
-> > o Use %s, __func__ instead of embedded function name
-> > o Removed unnecessary "cifs: " prefixes
->
-> > o Convert kzalloc with multiply to kcalloc
->         ^^^
-> Things like this really ought to be a separate patch, even though it is
-> a trivial change. That's a minor nit though...
->
-> > o Remove unused cifswarn macro
-> >
->
-> I think we ought to go ahead and take this for 3.10. I do have some
-> minor concern about having to deal with backports of later patches to
-> kernels that don't have these changes, but hey, that's the price of
-> dealing with old kernels.
->
-> The sooner Steve merges this into his for-next tree, the better. This
-> bound to give us all sorts of merge conflicts for the 3.10 window, so
-> we want to make sure that people know what to base their work on.
+On 03/15/2013 05:26 PM, Naveen Krishna Chatradhi wrote:
+> This patch does the following
+> 1. Handle the return values of wait_for_completion_interruptible_timeout
+> 2. Add spin locks to avoid race conditions during ISR.
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Cc: Doug Anderson <dianders@chromium.org>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+> Discussion thread for this patch can be found at
+> http://www.gossamer-threads.com/lists/linux/kernel/1693284?page=last
+> 
+> I've not seen any reference to spin lock usage in IIO.
+> Kindly, suggest me if there is a better way to avoid the race.
+> 
+> Thanks,
+> Naveen
+>  drivers/iio/adc/exynos_adc.c |   14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index ed6fdd7..4de28ae 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -91,6 +91,7 @@ struct exynos_adc {
+>  
+>  	struct completion	completion;
+>  
+> +	spinlock_t		reg_lock;
+>  	u32			value;
+>  	unsigned int            version;
+>  };
+> @@ -117,7 +118,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>  				long mask)
+>  {
+>  	struct exynos_adc *info = iio_priv(indio_dev);
+> -	unsigned long timeout;
+> +	long timeout;
+>  	u32 con1, con2;
+>  
+>  	if (mask != IIO_CHAN_INFO_RAW)
+> @@ -143,15 +144,19 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>  				ADC_V1_CON(info->regs));
+>  	}
+>  
+> +	INIT_COMPLETION(info->completion);
+> +
 
-I would like to merge the three we have (one still has to be put in for-next
-- the one from Jeff) for for-next in the next three or fouir days - but I
-can create another temporary branch for the ones for 3.10 - but ... I would
-like to simplify things by merging the other cleanup patches we already have
-first.  I agree that we are going to have to let people know to rebase
-everything for cifs for 3.10 on this big cleanup patch.
-
---
-Thanks,
-
-Steve
+This needs to happen before you start the transfer.
 
 
+>  	timeout = wait_for_completion_interruptible_timeout
+>  			(&info->completion, EXYNOS_ADC_TIMEOUT);
+> +
+>  	*val = info->value;
+>  
+>  	mutex_unlock(&indio_dev->mlock);
+>  
+>  	if (timeout == 0)
+>  		return -ETIMEDOUT;
+> -
+> +	else if (timeout < 0)
+> +		return timeout;
+>  	return IIO_VAL_INT;
+>  }
+>  
+> @@ -159,6 +164,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+>  {
+>  	struct exynos_adc *info = (struct exynos_adc *)dev_id;
+>  
+> +	spin_lock(&info->reg_lock);
+> +
+>  	/* Read value */
+>  	info->value = readl(ADC_V1_DATX(info->regs)) &
+>  						ADC_DATX_MASK;
+> @@ -170,6 +177,8 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+>  
+>  	complete(&info->completion);
+>  
+> +	spin_unlock(&info->reg_lock);
+> +
 
---
-Thanks,
+What exactly is the spinlock protecting against here? Concurrent runs of
+exynos_adc_isr? This is probably not issue in the first place.
 
-Steve
+What you want to protect against is that completion is completed between the
+call to INIT_COMPLETION() and the start of a new conversion. So the sections
+that need to be under the spinlock are the complete call here and the point
+from INIT_COMPLETION until the transfer is started in exynos_read_raw(). Make
+sure to use spin_lock_irq there.
+
+>  	return IRQ_HANDLED;
+>  }
+>  
+> @@ -327,6 +336,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  	else
+>  		indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
+>  
+> +	spin_lock_init(&info->reg_lock);
+>  	ret = iio_device_register(indio_dev);
+>  	if (ret)
+>  		goto err_irq;
+
