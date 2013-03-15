@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab3COFlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 01:41:24 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4823 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab3COFlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 01:41:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 14 Mar 2013 22:41:10 -0700
-Message-ID: <1363326500.3311.47.camel@bilhuang-vm1>
-Subject: Re: [RFC 1/1] clk: Add notifier support in
- clk_prepare_enable/clk_disable_unprepare
-From: Bill Huang <bilhuang@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 14 Mar 2013 22:48:20 -0700
-In-Reply-To: <5142B027.4040403@wwwdotorg.org>
-References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
-	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
-	 <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>
-	 <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org>
-	 <1363153204.3311.14.camel@bilhuang-vm1> <5140C12A.4060900@wwwdotorg.org>
-	 <1363227311.3311.30.camel@bilhuang-vm1>
-	 <20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
-	 <1363253287.3311.32.camel@bilhuang-vm1> <51420EBB.7080503@wwwdotorg.org>
-	 <1363310454.3311.44.camel@bilhuang-vm1> <5142B027.4040403@wwwdotorg.org>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1751922Ab3COFnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 01:43:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58564 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab3COFno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 01:43:44 -0400
+Message-ID: <5142B501.7020204@ti.com>
+Date: Fri, 15 Mar 2013 11:13:29 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: Paul Walmsley <paul@pwsan.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: Re: [PATCH 2/3] ARM: davinci: da850: Enable EHRPWM TBCLK from CFG_CHIP1
+References: <1363257453-24747-1-git-send-email-avinashphilip@ti.com> <1363257453-24747-3-git-send-email-avinashphilip@ti.com> <5141CA40.9010005@ti.com> <518397C60809E147AF5323E0420B992E3EA97355@DBDE01.ent.ti.com> <5142ACEA.4060305@ti.com> <518397C60809E147AF5323E0420B992E3EA9742E@DBDE01.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EA9742E@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-15 at 13:22 +0800, Stephen Warren wrote:
-> On 03/14/2013 07:20 PM, Bill Huang wrote:
-> > On Fri, 2013-03-15 at 01:54 +0800, Stephen Warren wrote:
-> >> On 03/14/2013 03:28 AM, Bill Huang wrote:
-> >>> On Thu, 2013-03-14 at 17:21 +0800, Peter De Schrijver wrote:
-> >>>> On Thu, Mar 14, 2013 at 03:15:11AM +0100, Bill Huang wrote:
-> >>>>
-> >>>>> I don't think deferring will work either, considering the usage of DVFS,
-> >>>>> device voltage is tightly coupled with frequency, when clock rate is
-> >>>>> about to increase, we have to boost voltage first and we can lower the
-> >>>>> voltage after the clock rate has decreased. All the above sequence have
-> >>>>> to be guaranteed or you might crash, so deferring not only make thing
-> >>>>> complicated in controlling the order but also hurt performance.
-> >>>>
-> >>>> But we could use notifiers in clk_prepare/clk_unprepare to set the voltage no?
-> >>>> As clk_prepare/clk_unprepare have to be called before clk_enable or after
-> >>>> clk_disable, the voltage can be raised to a safe level, before the clock
-> >>>> becomes active.
-> >>>
-> >>> Thanks Peter, actually I'm just about to propose my v2 RFC which add
-> >>> notifier in clk_prepare/clk_unprepare.
-> >>
-> >> Can't clk_set_rate() be called while the clock is prepared, or even
-> >> enabled? I don't see how your proposal would work.
-> >
-> > I think it works with just a little sacrifice on saving more power but
-> > that's related minor. Taking clk_prepare as an indicator on that clock
-> > will be enabled later, so we can raise the voltage to a safe level
-> > (according to the current rate or maybe default rate when clk_prepare is
-> > called, some time late when clk_set_rate() is called we can adjust again
-> > according to the requested rate change)
+On 3/15/2013 10:51 AM, Philip, Avinash wrote:
+> On Fri, Mar 15, 2013 at 10:38:58, Nori, Sekhar wrote:
+>> On 3/15/2013 10:27 AM, Philip, Avinash wrote:
+>>> On Thu, Mar 14, 2013 at 18:31:52, Nori, Sekhar wrote:
+>>>> On 3/14/2013 4:07 PM, Philip Avinash wrote:
+>>>>> da850 platforms require TBCLK synchronization in CFG_CHIP1 register for
+>>>>> TBCLK enable in EHRPWM modules. Enabling of TBCLK is done only if EHRPWM
+>>>>> DT node status is set to "okay" DT blob.
+>>>>> Also adds macro definitions for DA8XX_EHRPWM_TBCLKSYNC and
+>>>>> DA8XX_CFGCHIP1_REG.
+>>>>
+>>>> So there is actually a TBCLK in DA850 - it's just not modeled as a clock
+>>>> similar to the way it is done on AM335x? If yes, then instead of adding
+>>>> a dummy clock node and doing the TBCLK enable as part of init, why not
+>>>> model TBCLK in clock tree even on DA850?
+>>>
+>>>
+>>> TBCLK enabling should done from platform specific way. In DA850 it is done at
+>>> CFGCHIP1 register. Unfortunately Davinci clock frame work will support only
+>>> clock nodes inside PLLC and PSC modules. Handling of CFGCHP1 require
+>>
+>> That's true at the moment, but that can be fixed.
 > 
-> Is clk_set_rate() only legal to call in non-atomic contexts then? The
-> header file doesn't say, although I guess since many other functions
-> explicitly say they can't, then by omission it can...
+> I will check.
 
-I think clk_set_rate can only be called in non-atomic contexts since
-there are existing non-atomic clock notifier hooked in it.
+For an example of non-PLL non-PSC clock on davinci, you can look at cdce
+clock registration in board-dm646x-evm.c
 
+> 
+>>
+>>> modifications in clock frame work.
+>>>
+>>> Hence handling it as part of initialization.
+>>
+>> I am curious as to how this clock is handled in am335x. I searched for
+>> tbclk in arch/arm/ of linux-next but could not find any references.
+>> Where should I be looking?
+> 
+> Patch is submitted. This patch is not in Paul's tree.
+> 
+> [PATCH v2] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
+> https://patchwork.kernel.org/patch/2127581/
 
+Thanks!
+
+~Sekhar
