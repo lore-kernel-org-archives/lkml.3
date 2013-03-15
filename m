@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3CONed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 09:34:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56115 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754919Ab3CONeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 09:34:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="302741820"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBAMTOX=h5jodjNNbY=25rX8BxvEyVdWVYe-U=qDeow76A@mail.gmail.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-14-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBCHLigJBWiBt==wjjm7HA3CYSSyS6odKy0BgoudVxN80g@mail.gmail.com>
- <20130315132440.C4DF8E0085@blue.fi.intel.com>
- <CAJd=RBAMTOX=h5jodjNNbY=25rX8BxvEyVdWVYe-U=qDeow76A@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 13/30] thp, mm: implement
- grab_cache_huge_page_write_begin()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130315133543.E0865E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 15:35:43 +0200 (EET)
+	id S1755384Ab3CONfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 09:35:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12736 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab3CONfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 09:35:38 -0400
+X-AuditID: cbfee61a-b7fa86d0000045ae-ef-514323a9fbe4
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping updates for v3.9-rc3
+Date: Fri, 15 Mar 2013 14:35:29 +0100
+Message-id: <1363354529-1430-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jAd2Vys6BBjvv8Fhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MlosPWQo2cVR0HellbmD8zNbFyMkhIWAi0TdhGSOELSZx4d56
+	oDgXh5DAIkaJuSsvQzkrmCS2Nz4E62ATMJToetsFZosIGEl8fnGFFcRmFvCVuPNqFQuILQw0
+	ddmZr0wgNouAqsTiHy/BangF3CXWzPwC1MsBtE1BYs4kmwmM3AsYGVYxiqYWJBcUJ6XnGuoV
+	J+YWl+al6yXn525iBHvwmdQOxpUNFocYBTgYlXh4D/Q7BAqxJpYVV+YeYpTgYFYS4fX0cgwU
+	4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwFg8vdRq5pbJ
+	q6anmnp4Xj7Gtfhs/P/wtRJNf/v/cX8Rml7kJZ5lfE9LQnuL69G8oKelnL5v4m69qmvw5JSf
+	Vaq9sOA4c0Gkwyzpyu9iNw7ctzuj/V93i1bjpvUiO5KdnuocXNt+LnLH4TyL2g17Jsyv2mq/
+	7Vqa7bafxsW7pNZy2ERtKf0ZvV2JpTgj0VCLuag4EQByBmE73AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Fri, Mar 15, 2013 at 9:24 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Hillf Danton wrote:
-> >> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
-> >> <kirill.shutemov@linux.intel.com> wrote:
-> >> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> >> > +struct page *grab_cache_huge_page_write_begin(struct address_space *mapping,
-> >> > +                       pgoff_t index, unsigned flags);
-> >> > +#else
-> >> > +static inline struct page *grab_cache_huge_page_write_begin(
-> >> > +               struct address_space *mapping, pgoff_t index, unsigned flags)
-> >> > +{
-> >> build bug?
-> >
-> > Hm?. No. Why?
-> >
-> Stop build if THP not configured?
+Hi Linus,
 
-No. I've tested it without CONFIG_TRANSPARENT_HUGEPAGE.
+I would like to ask You for pulling a fix for ARM dma-mapping subsystem
+for v3.9-rc3.
 
--- 
- Kirill A. Shutemov
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-3.9
+
+for you to fetch changes up to 9d1400cf79afb49584b4873eb22cd5130cb341db:
+
+  ARM: DMA-mapping: add missing GFP_DMA flag for atomic buffer allocation (2013-03-14 09:25:19 +0100)
+
+----------------------------------------------------------------
+
+This pull contains an important fix for all ARM architectures which use
+ZONE_DMA. Without it dma_alloc_* calls with GFP_ATOMIC flag might have
+allocated buffers outsize DMA zone.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Patch summary:
+
+Marek Szyprowski (1):
+      ARM: DMA-mapping: add missing GFP_DMA flag for atomic buffer allocation
+
+ arch/arm/mm/dma-mapping.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
