@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3COPDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:03:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53629 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab3COPDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:03:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,850,1355126400"; 
-   d="scan'208";a="302777096"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBBL7VV50zHP2obJ7_CzOekgH9i-E3Fz3PO5YXk5f=B2Kw@mail.gmail.com>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBAH1+YaDvL9=ayx2j6b4jx0CzBZGrAL9LVwPMx4Y=s3Rg@mail.gmail.com>
- <20130315132333.B8205E0085@blue.fi.intel.com>
- <CAJd=RBAh7-qBYhCxtj56V5sez1HSek9TNVeu9V=+mW0qNpxEWA@mail.gmail.com>
- <20130315135026.32B58E0085@blue.fi.intel.com>
- <CAJd=RBBL7VV50zHP2obJ7_CzOekgH9i-E3Fz3PO5YXk5f=B2Kw@mail.gmail.com>
-Subject: Re: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked()
- to support huge pages
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130315150522.8BF97E0085@blue.fi.intel.com>
-Date: Fri, 15 Mar 2013 17:05:22 +0200 (EET)
+	id S1755147Ab3COPFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:05:35 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:48574 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754401Ab3COPFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 11:05:34 -0400
+Date: Fri, 15 Mar 2013 11:05:31 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Rob Landley <rob@landley.net>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: Remove text on tracepoint samples
+Message-ID: <20130315150531.GA1382@Krystal>
+References: <1363359483.1335.110.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363359483.1335.110.camel@x61.thuisdomein>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Fri, Mar 15, 2013 at 9:50 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Hillf Danton wrote:
-> >> On Fri, Mar 15, 2013 at 9:23 PM, Kirill A. Shutemov
-> >> <kirill.shutemov@linux.intel.com> wrote:
-> >> > Hillf Danton wrote:
-> >> >> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
-> >> >> <kirill.shutemov@linux.intel.com> wrote:
-> >> >> > +       page_cache_get(page);
-> >> >> > +       spin_lock_irq(&mapping->tree_lock);
-> >> >> > +       page->mapping = mapping;
-> >> >> > +       page->index = offset;
-> >> >> > +       error = radix_tree_insert(&mapping->page_tree, offset, page);
-> >> >> > +       if (unlikely(error))
-> >> >> > +               goto err;
-> >> >> > +       if (PageTransHuge(page)) {
-> >> >> > +               int i;
-> >> >> > +               for (i = 1; i < HPAGE_CACHE_NR; i++) {
-> >> >>                       struct page *tail = page + i; to easy reader
-> >> >>
-> >> >> > +                       page_cache_get(page + i);
-> >> >> s/page_cache_get/get_page_foll/ ?
-> >> >
-> >> > Why?
-> >> >
-> >> see follow_trans_huge_pmd() please.
-> >
-> > Sorry, I fail to see how follow_trans_huge_pmd() is relevant here.
-> > Could you elaborate?
-> >
-> Lets see the code
+* Paul Bolle (pebolle@tiscali.nl) wrote:
+> The tracepoint sample code got removed. Remove a few lines on its usage
+> too.
 > 
-> 	page += (addr & ~HPAGE_PMD_MASK) >> PAGE_SHIFT;
-> //page is tail now
-> 	VM_BUG_ON(!PageCompound(page));
-> 	if (flags & FOLL_GET)
-> 		get_page_foll(page);
-> //raise page count with the foll function
-> 
-> thus I raised question.
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-get_page_foll() is designed to be part of follow_page*() call chain.
-get_page() can handle compound pages properly.
+Thanks!
+
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+> ---
+>  Documentation/trace/tracepoints.txt | 15 ---------------
+>  1 file changed, 15 deletions(-)
+> 
+> diff --git a/Documentation/trace/tracepoints.txt b/Documentation/trace/tracepoints.txt
+> index c0e1cee..da49437 100644
+> --- a/Documentation/trace/tracepoints.txt
+> +++ b/Documentation/trace/tracepoints.txt
+> @@ -81,7 +81,6 @@ tracepoint_synchronize_unregister() must be called before the end of
+>  the module exit function to make sure there is no caller left using
+>  the probe. This, and the fact that preemption is disabled around the
+>  probe call, make sure that probe removal and module unload are safe.
+> -See the "Probe example" section below for a sample probe module.
+>  
+>  The tracepoint mechanism supports inserting multiple instances of the
+>  same tracepoint, but a single definition must be made of a given
+> @@ -100,17 +99,3 @@ core kernel image or in modules.
+>  If the tracepoint has to be used in kernel modules, an
+>  EXPORT_TRACEPOINT_SYMBOL_GPL() or EXPORT_TRACEPOINT_SYMBOL() can be
+>  used to export the defined tracepoints.
+> -
+> -* Probe / tracepoint example
+> -
+> -See the example provided in samples/tracepoints
+> -
+> -Compile them with your kernel.  They are built during 'make' (not
+> -'make modules') when CONFIG_SAMPLE_TRACEPOINTS=m.
+> -
+> -Run, as root :
+> -modprobe tracepoint-sample (insmod order is not important)
+> -modprobe tracepoint-probe-sample
+> -cat /proc/tracepoint-sample (returns an expected error)
+> -rmmod tracepoint-sample tracepoint-probe-sample
+> -dmesg
+> -- 
+> 1.7.11.7
+> 
 
 -- 
- Kirill A. Shutemov
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
