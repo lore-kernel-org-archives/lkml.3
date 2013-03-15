@@ -1,194 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab3COPaE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 11:30:04 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56199 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3COPaB (ORCPT
+	id S1755739Ab3COPa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 11:30:26 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50375 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755419Ab3COPaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 11:30:01 -0400
-Message-ID: <51433E43.60900@linux.vnet.ibm.com>
-Date: Fri, 15 Mar 2013 23:29:07 +0800
+	Fri, 15 Mar 2013 11:30:24 -0400
+Message-ID: <51433E71.2070107@linux.vnet.ibm.com>
+Date: Fri, 15 Mar 2013 23:29:53 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 4/5] KVM: MMU: store generation-number into mmio spte
+Subject: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
 References: <51433D98.4050605@linux.vnet.ibm.com>
 In-Reply-To: <51433D98.4050605@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031515-8878-0000-0000-0000064C4FA9
+x-cbid: 13031515-2674-0000-0000-000008380EF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store the generation-number into bit3 ~ bit11 and bit52 ~ bit61, totally
-19 bits can be used, it should be enough for nearly all most common cases
+This patch tries to introduce a very simple and scale way to invalid all
+mmio sptes - it need not walk any shadow pages and hold mmu-lock
 
-In this patch, the generation-number is always 0, it will be changed in
-the later patch
+KVM maintains a global mmio invalid generation-number which is stored in
+kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+generation-number into his available bits when it is created
+
+When KVM need zap all mmio sptes, it just simply increase the global
+generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+then it walks the shadow page table and get the mmio spte. If the
+generation-number on the spte does not equal the global generation-number,
+it will go to the normal #PF handler to update the mmio spte
+
+Since 19 bits are used to store generation-number on mmio spte, the
+generation-number can be round after 33554432 times. It is large enough
+for nearly all most cases, but making the code be more strong, we zap all
+shadow pages when the number is round
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c         |   57 +++++++++++++++++++++++++++++++++++++-------
- arch/x86/kvm/mmutrace.h    |   10 ++++---
- arch/x86/kvm/paging_tmpl.h |    3 +-
- 3 files changed, 56 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +
+ arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
+ arch/x86/kvm/mmutrace.h         |   17 +++++++++++
+ arch/x86/kvm/paging_tmpl.h      |    7 +++-
+ arch/x86/kvm/vmx.c              |    4 ++
+ arch/x86/kvm/x86.c              |    6 +--
+ 6 files changed, 82 insertions(+), 15 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index ef7f4a5..572398e 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -529,6 +529,7 @@ struct kvm_arch {
+ 	unsigned int n_requested_mmu_pages;
+ 	unsigned int n_max_mmu_pages;
+ 	unsigned int indirect_shadow_pages;
++	unsigned int mmio_invalid_gen;
+ 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+ 	/*
+ 	 * Hash table of struct kvm_mmu_page.
+@@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
+ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+ 				     struct kvm_memory_slot *slot,
+ 				     gfn_t gfn_offset, unsigned long mask);
++void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
+ void kvm_mmu_zap_all(struct kvm *kvm);
+ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index fdacabb..13626f4 100644
+index 13626f4..7093a92 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -197,12 +197,50 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
-
--static void mark_mmio_spte(u64 *sptep, u64 gfn, unsigned access)
-+/*
-+ * spte bits of bit 3 ~ bit 11 are used as low 9 bits of
-+ * generation, the bits of bits 52 ~ bit 61 are used as
-+ * high 12 bits of generation.
-+ */
-+#define MMIO_SPTE_GEN_LOW_SHIFT	3
-+#define MMO_SPTE_GEN_HIGH_SHIFT	52
-+
-+#define GEN_LOW_SHIFT	9
-+#define GEN_LOW_MASK	((1 << GEN_LOW_SHIFT) - 1)
-+#define MAX_GEN		((1 << 19) - 1)
-+
-+static u64 generation_mmio_spte_mask(unsigned int gen)
+@@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+ static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+ 			   unsigned access)
  {
-+	u64 mask;
-+
-+	WARN_ON(gen > MAX_GEN);
-+
-+	mask = (gen & GEN_LOW_MASK) << MMIO_SPTE_GEN_LOW_SHIFT;
-+	mask |= ((u64)gen >> GEN_LOW_SHIFT) << MMO_SPTE_GEN_HIGH_SHIFT;
-+	return mask;
-+}
-+
-+static unsigned int get_mmio_spte_generation(u64 spte)
-+{
-+	unsigned int gen;
-+
-+	spte &= ~shadow_mmio_mask;
-+
-+	gen = (spte >> MMIO_SPTE_GEN_LOW_SHIFT) & GEN_LOW_MASK;
-+	gen |= (spte >> MMO_SPTE_GEN_HIGH_SHIFT) << GEN_LOW_SHIFT;
-+	return gen;
-+}
-+
-+static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
-+			   unsigned access)
-+{
-+	u64 mask = generation_mmio_spte_mask(0);
-+
+-	u64 mask = generation_mmio_spte_mask(0);
++	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
++	u64 mask = generation_mmio_spte_mask(gen);
+
  	access &= ACC_WRITE_MASK | ACC_USER_MASK;
-+	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+ 	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
 
--	trace_mark_mmio_spte(sptep, gfn, access);
--	mmu_spte_set(sptep, shadow_mmio_mask | access | gfn << PAGE_SHIFT);
-+	trace_mark_mmio_spte(sptep, gfn, access, 0);
-+	mmu_spte_set(sptep, mask);
+-	trace_mark_mmio_spte(sptep, gfn, access, 0);
++	trace_mark_mmio_spte(sptep, gfn, access, gen);
+ 	mmu_spte_set(sptep, mask);
  }
 
- static bool is_mmio_spte(u64 spte)
-@@ -220,10 +258,11 @@ static unsigned get_mmio_spte_access(u64 spte)
- 	return (spte & ~shadow_mmio_mask) & ~PAGE_MASK;
+@@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
+ 	return false;
  }
 
--static bool set_mmio_spte(u64 *sptep, gfn_t gfn, pfn_t pfn, unsigned access)
-+static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
-+			  pfn_t pfn, unsigned access)
++static bool check_mmio_spte(struct kvm *kvm, u64 spte)
++{
++	return get_mmio_spte_generation(spte) ==
++		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
++}
++
++/*
++ * The caller should protect concurrent access on
++ * kvm->arch.mmio_invalid_gen. Currently, it is used by
++ * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
++ */
++void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
++{
++	/* Ensure update memslot has been completed. */
++	smp_mb();
++
++	 trace_kvm_mmu_invalid_mmio_spte(kvm);
++
++	/*
++	 * The very rare case: if the generation-number is round,
++	 * zap all shadow pages.
++	 */
++	if (unlikely(kvm->arch.mmio_invalid_gen++ == MAX_GEN)) {
++		kvm->arch.mmio_invalid_gen = 0;
++		return kvm_mmu_zap_all(kvm);
++	}
++}
++
+ static inline u64 rsvd_bits(int s, int e)
  {
- 	if (unlikely(is_noslot_pfn(pfn))) {
--		mark_mmio_spte(sptep, gfn, access);
-+		mark_mmio_spte(kvm, sptep, gfn, access);
- 		return true;
- 	}
-
-@@ -2327,7 +2366,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 	u64 spte;
- 	int ret = 0;
-
--	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
-+	if (set_mmio_spte(vcpu->kvm, sptep, gfn, pfn, pte_access))
- 		return 0;
-
- 	spte = PT_PRESENT_MASK;
-@@ -3386,8 +3425,8 @@ static inline void protect_clean_gpte(unsigned *access, unsigned gpte)
- 	*access &= mask;
+ 	return ((1ULL << (e - s + 1)) - 1) << s;
+@@ -3183,9 +3212,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
  }
 
--static bool sync_mmio_spte(u64 *sptep, gfn_t gfn, unsigned access,
--			   int *nr_present)
-+static bool sync_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
-+			   unsigned access, int *nr_present)
+ /*
+- * If it is a real mmio page fault, return 1 and emulat the instruction
+- * directly, return 0 to let CPU fault again on the address, -1 is
+- * returned if bug is detected.
++ * Return value:
++ * 2: invalid spte is detected then let the real page fault path
++ *    update the mmio spte.
++ * 1: it is a real mmio page fault, emulate the instruction directly.
++ * 0: let CPU fault again on the address.
++ * -1: bug is detected.
+  */
+ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
  {
- 	if (unlikely(is_mmio_spte(*sptep))) {
- 		if (gfn != get_mmio_spte_gfn(*sptep)) {
-@@ -3396,7 +3435,7 @@ static bool sync_mmio_spte(u64 *sptep, gfn_t gfn, unsigned access,
- 		}
+@@ -3200,6 +3232,9 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+ 		gfn_t gfn = get_mmio_spte_gfn(spte);
+ 		unsigned access = get_mmio_spte_access(spte);
 
- 		(*nr_present)++;
--		mark_mmio_spte(sptep, gfn, access);
-+		mark_mmio_spte(kvm, sptep, gfn, access);
- 		return true;
- 	}
++		if (unlikely(!check_mmio_spte(vcpu->kvm, spte)))
++			return 2;
++
+ 		if (direct)
+ 			addr = 0;
 
+@@ -3241,8 +3276,12 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+
+ 	pgprintk("%s: gva %lx error %x\n", __func__, gva, error_code);
+
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, gva, error_code, true);
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, gva, error_code, true);
++
++		if (likely(r != 2))
++			return r;
++	}
+
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+@@ -3318,8 +3357,12 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	ASSERT(vcpu);
+ 	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
+
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, gpa, error_code, true);
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, gpa, error_code, true);
++
++		if (likely(r != 2))
++			return r;
++	}
+
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
 diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index b8f6172..f5b62a7 100644
+index f5b62a7..811254c 100644
 --- a/arch/x86/kvm/mmutrace.h
 +++ b/arch/x86/kvm/mmutrace.h
-@@ -197,23 +197,25 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
-
- TRACE_EVENT(
- 	mark_mmio_spte,
--	TP_PROTO(u64 *sptep, gfn_t gfn, unsigned access),
--	TP_ARGS(sptep, gfn, access),
-+	TP_PROTO(u64 *sptep, gfn_t gfn, unsigned access, unsigned int gen),
-+	TP_ARGS(sptep, gfn, access, gen),
-
- 	TP_STRUCT__entry(
- 		__field(void *, sptep)
- 		__field(gfn_t, gfn)
- 		__field(unsigned, access)
-+		__field(unsigned int, gen)
- 	),
-
- 	TP_fast_assign(
- 		__entry->sptep = sptep;
- 		__entry->gfn = gfn;
- 		__entry->access = access;
-+		__entry->gen = gen;
- 	),
-
--	TP_printk("sptep:%p gfn %llx access %x", __entry->sptep, __entry->gfn,
--		  __entry->access)
-+	TP_printk("sptep:%p gfn %llx access %x gen %x", __entry->sptep,
-+		  __entry->gfn, __entry->access, __entry->gen)
+@@ -276,6 +276,23 @@ TRACE_EVENT(
+ 		  __spte_satisfied(old_spte), __spte_satisfied(new_spte)
+ 	)
  );
++
++TRACE_EVENT(
++	kvm_mmu_invalid_mmio_spte,
++	TP_PROTO(struct kvm *kvm),
++	TP_ARGS(kvm),
++
++	TP_STRUCT__entry(
++		__field(unsigned int, mmio_invalid_gen)
++	),
++
++	TP_fast_assign(
++		__entry->mmio_invalid_gen = kvm->arch.mmio_invalid_gen;
++	),
++
++	TP_printk("mmio_invalid_gen %x", __entry->mmio_invalid_gen
++	)
++);
+ #endif /* _TRACE_KVMMMU_H */
 
- TRACE_EVENT(
+ #undef TRACE_INCLUDE_PATH
 diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 105dd5b..2c48e5f 100644
+index 2c48e5f..c81f949 100644
 --- a/arch/x86/kvm/paging_tmpl.h
 +++ b/arch/x86/kvm/paging_tmpl.h
-@@ -792,7 +792,8 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 		pte_access &= gpte_access(vcpu, gpte);
- 		protect_clean_gpte(&pte_access, gpte);
+@@ -552,9 +552,12 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
 
--		if (sync_mmio_spte(&sp->spt[i], gfn, pte_access, &nr_present))
-+		if (sync_mmio_spte(vcpu->kvm, &sp->spt[i], gfn, pte_access,
-+		      &nr_present))
- 			continue;
+ 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
 
- 		if (gfn != sp->gfns[i]) {
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, addr, error_code,
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, addr, error_code,
+ 					      mmu_is_nested(vcpu));
++		if (likely(r != 2))
++			return r;
++	};
+
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 54fdb76..ca8e9a3 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5159,6 +5159,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
+ 	if (likely(ret == 1))
+ 		return x86_emulate_instruction(vcpu, gpa, 0, NULL, 0) ==
+ 					      EMULATE_DONE;
++
++	if (unlikely(ret == 2))
++		return kvm_mmu_page_fault(vcpu, gpa, 0, NULL, 0);
++
+ 	if (unlikely(!ret))
+ 		return 1;
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 81fb3c3..5b6d2a0 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6996,10 +6996,8 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 	 * If memory slot is created, or moved, we need to clear all
+ 	 * mmio sptes.
+ 	 */
+-	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE)) {
+-		kvm_mmu_zap_all(kvm);
+-		kvm_reload_remote_mmus(kvm);
+-	}
++	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE))
++		kvm_mmu_invalid_mmio_spte(kvm);
+ }
+
+ void kvm_arch_flush_shadow_all(struct kvm *kvm)
 -- 
 1.7.7.6
 
