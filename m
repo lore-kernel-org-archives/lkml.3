@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3CPSdy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 14:33:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab3CPSdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 14:33:53 -0400
-Date: Sat, 16 Mar 2013 19:30:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ming Lei <tom.leiming@gmail.com>,
-        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+	id S1754243Ab3CPTVY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 15:21:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24773 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab3CPTVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 15:21:23 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=2s8qfAZQTSAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rUnzm6ZD3sEA:10 a=Cxs8l86nFTuuujnqJi8A:9 a=PUjeQqilurYA:10 a=R1ORBWAdiSl-Xi4k:21 a=j_EV8MX9MOrVHnyr:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363461681.25967.114.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
+ format with no args
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>, Bjorn Helgaas <bhelgaas@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
-	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
-	.patch added to -mm tree
-Message-ID: <20130316183022.GB7560@redhat.com>
-References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <CAFTL4hxNh5qMZyyrLc8_yG5-i7UoS_nan22pO8o1fb8yS7Vz3w@mail.gmail.com> <20130315175117.GA2462@redhat.com> <CAFTL4hwZQcN_sO0SN8bJqEsQdC8ArDvJhFPg62Kh8OQyUe=MUw@mail.gmail.com> <20130315201739.GK3656@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130315201739.GK3656@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 16 Mar 2013 15:21:21 -0400
+In-Reply-To: <20130316180141.GB21522@ZenIV.linux.org.uk>
+References: <1363441844.2023.17.camel@joe-AO722>
+	 <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
+	 <1363456278.2023.40.camel@joe-AO722>
+	 <20130316180141.GB21522@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15, Paul E. McKenney wrote:
->
-> On Fri, Mar 15, 2013 at 07:34:32PM +0100, Frederic Weisbecker wrote:
-> > 2013/3/15 Oleg Nesterov <oleg@redhat.com>:
-> > >
-> > > My point was: should we fix atomic_add_unless() then? If not, why
-> > > should atomic_add_unless_negative() differ?
-> >
-> > They shouldn't differ I guess.
->
-> Completely agreed.  It is not like memory ordering is simple, so we should
-> keep the rules simple.
+On Sat, 2013-03-16 at 18:01 +0000, Al Viro wrote:
+> On Sat, Mar 16, 2013 at 10:51:18AM -0700, Joe Perches wrote:
+> > > This is certainly a neat trick.
+> > > 
+> > > But I don't really like the fact that it complicates things for every
+> > > future code reader, especially when a trivial change in the caller
+> > > would accomplish the same thing.  Do you have any idea how much
+> > > performance we would gain in exchange for the complication?
+> > 
+> > Nope.  I believe it's trivial in any case.
+> > I just saw Steven's trace hack and thought of seq_printk.
+> > 
+> > Is there a real performance sensitive seq_printf anywhere?
+> 
+> ... and _that_ is the question that should've been asked first.
 
-It is hardly possible to argue with this ;)
+I totally agree with you. I've been avoiding the "performance
+sensitivity" question because of my narcissistic enjoyment of my macro
+cleverness ;-)
+And also because I have no "F"'n life.
 
-> The rule is that if an atomic primitive returns non-void, then there is
-> a full memory barrier before and after.
+I just figured someone else will point out the lack of clothes the
+Emperor has on.
 
-This case is documented...
+> 
+> > It's trivial to replace seq_printf("constant") with
+> > seq_puts but there are over a thousand of them.
+> > 
+> > It may be better to just leave everything as-is.
+> 
+> Quite.  Note that it's not equivalent to gcc treatment of printf/puts -
+> there we have cases when it *is* a real hotpath (and I seriously suspect
+> that it's in part driven by desire to discourage people from uglifying
+> source by manual equivalents of that micro-optimization).  Moreover,
+> glibc printf at least used to be heavy; kernel-side we are nowhere near
+> that bad.
 
-> This applies to primitives
-> returning boolean as well, with atomic_dec_and_test() setting this
-> precedent from what I can see.
+It's also a very hot path in tracing. One reason I only implemented the
+macro trick with trace_printk() and not printk() nor seq_printk() is
+because I knew those were not hot paths. The reason I created
+trace_puts() in the first place, is because I had a bug I was trying to
+debug where a trace_printk() would actually make the bug go away. It
+added too much of an impact to get the race to trigger. But the
+trace_puts() was able to do the trace and still have the bug trigger,
+and I was able to debug the problem.
 
-I don't think this is the "fair" comparison. Unlike atomic_add_unless(),
-atomic_dec_and_test() always changes the memory even if it "fails".
+But I enjoyed this conversation while it lasted. Sorry it took up your
+time. But it did call to attention that these macros that create
+variables should probably have a naming policy to avoid macro traps.
 
-If atomic_add_unless() returns 0, nothing was changed and if we add
-the barrier it is not clear what it should be paired with.
+-- Steve
 
-
-But OK. I have to agree that "keep the rules simple" makes sense, so
-we should change atomic_add_unless() as well.
-
-Oleg.
 
