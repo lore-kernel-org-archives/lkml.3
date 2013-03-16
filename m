@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3CPNdq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 09:33:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59185 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743Ab3CPNdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 09:33:45 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 16 Mar 2013 06:33:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [ 11/21] hwmon: (sht15) Check return value of regulator_enable()
-Message-ID: <20130316133352.GA25567@roeck-us.net>
-References: <20130312223245.109098379@linuxfoundation.org>
- <20130312223246.431610777@linuxfoundation.org>
- <1363407324.3937.169.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363407324.3937.169.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755854Ab3CPNux (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 09:50:53 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59191 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755638Ab3CPNuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 09:50:51 -0400
+Message-ID: <1363441844.2023.17.camel@joe-AO722>
+Subject: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
+ format with no args
+From: Joe Perches <joe@perches.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 16 Mar 2013 06:50:44 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 04:15:24AM +0000, Ben Hutchings wrote:
-> On Tue, 2013-03-12 at 15:44 -0700, Greg Kroah-Hartman wrote:
-> > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > 
-> > commit 3e78080f81481aa8340374d5a37ae033c1cf4272 upstream.
-> > 
-> > Not having power is a pretty serious error so check that we are able to
-> > enable the supply and error out if we can't.
-> > 
-> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> 
-> > ---
-> >  drivers/hwmon/sht15.c |    8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > --- a/drivers/hwmon/sht15.c
-> > +++ b/drivers/hwmon/sht15.c
-> > @@ -926,7 +926,13 @@ static int __devinit sht15_probe(struct
-> >  		if (voltage)
-> >  			data->supply_uV = voltage;
-> >  
-> > -		regulator_enable(data->reg);
-> > +		ret = regulator_enable(data->reg);
-> > +		if (ret != 0) {
-> > +			dev_err(&pdev->dev,
-> > +				"failed to enable regulator: %d\n", ret);
-> > +			return ret;
-> > +		}
-> > +
-> >  		/*
-> >  		 * Setup a notifier block to update this if another device
-> >  		 * causes the voltage to change
-> 
-> Since this has now been released, I think you need this follow-up fix in
-> 3.0.y and 3.4.y:
-> 
-Excellent catch. I submitted your patch to -stable.
+Instead of converting the 800 or so uses of seq_printf with
+a constant format (without a % substitution) to seq_puts,
+maybe there's another way to slightly speed up these outputs.
 
-Thanks,
-Guenter
+Taking a similar approach to commit abd84d60eb
+("tracing: Optimize trace_printk() with one arg to use trace_puts()")
+use the preprocessor to convert seq_printf(seq, "string constant")
+to seq_puts(seq, "string constant")
+
+By stringifying __VA_ARGS__, we can, at compile time, determine
+the number of args that are being passed to seq_printf() and
+call seq_puts or seq_printf appropriately.
+
+The actual function definition for seq_printf must now
+be enclosed in parenthesis to avoid further macro expansion.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/seq_file.c            |  7 ++++++-
+ include/linux/seq_file.h | 24 ++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 38bb59f..d3a957d 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -405,7 +405,12 @@ int seq_vprintf(struct seq_file *m, const char *f, va_list args)
+ }
+ EXPORT_SYMBOL(seq_vprintf);
+ 
+-int seq_printf(struct seq_file *m, const char *f, ...)
++/*
++ * seq_printf is also a macro that expands to seq_printf or seq_puts.
++ * This means that the actual function definition must be in parenthesis
++ * to prevent the preprocessor from expanding this function name again.
++ */
++int (seq_printf)(struct seq_file *m, const char *f, ...)
+ {
+ 	int ret;
+ 	va_list args;
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 68a04a3..7255f01 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -7,6 +7,7 @@
+ #include <linux/mutex.h>
+ #include <linux/cpumask.h>
+ #include <linux/nodemask.h>
++#include <linux/stringify.h>
+ 
+ struct seq_operations;
+ struct file;
+@@ -92,6 +93,29 @@ int seq_write(struct seq_file *seq, const void *data, size_t len);
+ __printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
+ __printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
+ 
++/*
++ * A little optimization trick is done here. If there's only one
++ * argument, there's no need to scan the string for printf formats.
++ * seq_puts() will suffice. But how can we take advantage of
++ * using seq_puts() when seq_printf() has only one argument?
++ * By stringifying the args and checking the size we can tell
++ * whether or not there are args. __stringify(__VA_ARGS__) will
++ * turn into "" with a size of 1 when there are no args, anything
++ * else will be bigger. All we need to do is define a string to this,
++ * and then take its size and compare to 1. If it's bigger, use
++ * seq_printf() otherwise, optimize it to seq_puts(). Then just
++ * let gcc optimize the rest.  The actual function definition of
++ * seq_printf must be (seq_printf) to prevent further macro expansion.
++ */
++#define seq_printf(seq, fmt, ...)				\
++do {								\
++	char va_args[] = __stringify(__VA_ARGS__);		\
++	if (sizeof(va_args) > 1)				\
++		seq_printf(seq, fmt, ##__VA_ARGS__);		\
++	else							\
++		seq_puts(seq, fmt);				\
++} while (0)
++
+ int seq_path(struct seq_file *, const struct path *, const char *);
+ int seq_dentry(struct seq_file *, struct dentry *, const char *);
+ int seq_path_root(struct seq_file *m, const struct path *path,
+
+
