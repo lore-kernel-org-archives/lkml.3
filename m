@@ -1,260 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3CPL0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 07:26:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9105 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab3CPL0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 07:26:32 -0400
-X-IronPort-AV: E=Sophos;i="4.84,856,1355068800"; 
-   d="scan'208";a="6882784"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
-        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
-        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
-        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
-        mina86@mina86.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linfeng@cn.fujitsu.com,
-        jiang.liu@huawei.com, kosaki.motohiro@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH v1 3/9] x86, mm, numa, acpi: Add movable_memmap boot option.
-Date: Sat, 16 Mar 2013 18:35:36 +0800
-Message-Id: <1363430142-14563-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 18:31:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 18:31:59,
-	Serialize complete at 2013/03/16 18:31:59
+	id S1755613Ab3CPLpP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 07:45:15 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:34572 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab3CPLpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 07:45:13 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] pinctrl: mvebu: prevent walking off the end of group array
+Date: Sat, 16 Mar 2013 12:44:32 +0100
+Message-Id: <1363434272-23172-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363196884-20193-1-git-send-email-jason@lakedaemon.net>
+References: <1363196884-20193-1-git-send-email-jason@lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions to parse movablemem_map boot option. Since the option
-could be specified more then once, all the maps will be stored in the
-global array movablemem_map.map[].
+From: David Woodhouse <dwmw2@infradead.org>
 
-And also, we keep the array in monotonic increasing order by start_pfn.
-And merge all overlapped ranges.
+While investigating (ab)use of krealloc, David found this bug.  It's
+unlikely to occur, but now we detect the condition and error out
+appropriately.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- Documentation/kernel-parameters.txt |   21 ++++++
- include/linux/mm.h                  |   11 +++
- mm/page_alloc.c                     |  131 +++++++++++++++++++++++++++++++++++
- 3 files changed, 163 insertions(+), 0 deletions(-)
+Jason, David,
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4609e81..dd3a36a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1649,6 +1649,27 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
+I tested the patch on Dove and fixed all remaining issues.
+
+Thomas, Gregory, Andrew should test on their platforms, too.
+
+Sebastian
+
+Changes from v2:
+ - fix counting of available array space
+ - fix return code handling
+
+Changes from v1:
+ - correct typo (s/ nt / int /) I should've caught before sending.
+
+ drivers/pinctrl/mvebu/pinctrl-mvebu.c |   33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Cc: linux-kernel@vger.kernel.org
+---
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+index c689c04..aa77fb7a 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+@@ -478,8 +478,12 @@ static struct pinctrl_ops mvebu_pinctrl_ops = {
+ 	.dt_free_map = mvebu_pinctrl_dt_free_map,
+ };
  
-+	movablemem_map=nn[KMG]@ss[KMG]
-+			[KNL,X86,IA-64,PPC] This parameter is similar to
-+			memmap except it specifies the memory map of
-+			ZONE_MOVABLE.
-+			If user specifies memory ranges, the info in SRAT will
-+			be ingored. And it works like the following:
-+			- If more ranges are all within one node, then from
-+			  lowest ss to the end of the node will be ZONE_MOVABLE.
-+			- If a range is within a node, then from ss to the end
-+			  of the node will be ZONE_MOVABLE.
-+			- If a range covers two or more nodes, then from ss to
-+			  the end of the 1st node will be ZONE_MOVABLE, and all
-+			  the rest nodes will only have ZONE_MOVABLE.
-+			If memmap is specified at the same time, the
-+			movablemem_map will be limited within the memmap
-+			areas. If kernelcore or movablecore is also specified,
-+			movablemem_map will have higher priority to be
-+			satisfied. So the administrator should be careful that
-+			the amount of movablemem_map areas are not too large.
-+			Otherwise kernel won't have enough memory to start.
+-static int _add_function(struct mvebu_pinctrl_function *funcs, const char *name)
++static int _add_function(struct mvebu_pinctrl_function *funcs, int *funcsize,
++			const char *name)
+ {
++	if (*funcsize <= 0)
++		return -EOVERFLOW;
 +
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
+ 	while (funcs->num_groups) {
+ 		/* function already there */
+ 		if (strcmp(funcs->name, name) == 0) {
+@@ -488,8 +492,12 @@ static int _add_function(struct mvebu_pinctrl_function *funcs, const char *name)
+ 		}
+ 		funcs++;
+ 	}
++
++	/* append new unique function */
+ 	funcs->name = name;
+ 	funcs->num_groups = 1;
++	(*funcsize)--;
++
+ 	return 0;
+ }
  
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1c79b10..9c068d5 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1332,6 +1332,17 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- extern void sparse_memory_present_with_active_regions(int nid);
+@@ -497,12 +505,12 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
+ 					 struct mvebu_pinctrl *pctl)
+ {
+ 	struct mvebu_pinctrl_function *funcs;
+-	int num = 0;
++	int num = 0, funcsize = pctl->desc.npins;
+ 	int n, s;
  
-+#define MOVABLEMEM_MAP_MAX MAX_NUMNODES
-+struct movablemem_entry {
-+	unsigned long start_pfn;    /* start pfn of memory segment */
-+	unsigned long end_pfn;      /* end pfn of memory segment (exclusive) */
-+};
+ 	/* we allocate functions for number of pins and hope
+-	 * there are less unique functions than pins available */
+-	funcs = devm_kzalloc(&pdev->dev, pctl->desc.npins *
++	 * there are fewer unique functions than pins available */
++	funcs = devm_kzalloc(&pdev->dev, funcsize *
+ 			     sizeof(struct mvebu_pinctrl_function), GFP_KERNEL);
+ 	if (!funcs)
+ 		return -ENOMEM;
+@@ -510,26 +518,27 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
+ 	for (n = 0; n < pctl->num_groups; n++) {
+ 		struct mvebu_pinctrl_group *grp = &pctl->groups[n];
+ 		for (s = 0; s < grp->num_settings; s++) {
++			int ret;
 +
-+struct movablemem_map {
-+	int nr_map;
-+	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
-+};
-+
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 			/* skip unsupported settings on this variant */
+ 			if (pctl->variant &&
+ 			    !(pctl->variant & grp->settings[s].variant))
+ 				continue;
  
- #if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f368db4..27fcd29 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -202,6 +202,9 @@ static unsigned long __meminitdata nr_all_pages;
- static unsigned long __meminitdata dma_reserve;
+ 			/* check for unique functions and count groups */
+-			if (_add_function(funcs, grp->settings[s].name))
++			ret = _add_function(funcs, &funcsize,
++					    grp->settings[s].name);
++			if (ret == -EOVERFLOW)
++				dev_err(&pdev->dev,
++					"More functions than pins(%d)\n",
++					pctl->desc.npins);
++			if (ret < 0)
+ 				continue;
  
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-+/* Movable memory ranges, will also be used by memblock subsystem. */
-+struct movablemem_map movablemem_map;
-+
- static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
- static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
- static unsigned long __initdata required_kernelcore;
-@@ -5061,6 +5064,134 @@ static int __init cmdline_parse_movablecore(char *p)
- early_param("kernelcore", cmdline_parse_kernelcore);
- early_param("movablecore", cmdline_parse_movablecore);
+ 			num++;
+ 		}
+ 	}
  
-+/**
-+ * insert_movablemem_map - Insert a memory range in to movablemem_map.map.
-+ * @start_pfn:	start pfn of the range
-+ * @end_pfn:	end pfn of the range
-+ *
-+ * This function will also merge the overlapped ranges, and sort the array
-+ * by start_pfn in monotonic increasing order.
-+ */
-+static void __init insert_movablemem_map(unsigned long start_pfn,
-+					  unsigned long end_pfn)
-+{
-+	int pos, overlap;
-+
-+	/*
-+	 * pos will be at the 1st overlapped range, or the position
-+	 * where the element should be inserted.
-+	 */
-+	for (pos = 0; pos < movablemem_map.nr_map; pos++)
-+		if (start_pfn <= movablemem_map.map[pos].end_pfn)
-+			break;
-+
-+	/* If there is no overlapped range, just insert the element. */
-+	if (pos == movablemem_map.nr_map ||
-+	    end_pfn < movablemem_map.map[pos].start_pfn) {
-+		/*
-+		 * If pos is not the end of array, we need to move all
-+		 * the rest elements backward.
-+		 */
-+		if (pos < movablemem_map.nr_map)
-+			memmove(&movablemem_map.map[pos+1],
-+				&movablemem_map.map[pos],
-+				sizeof(struct movablemem_entry) *
-+				(movablemem_map.nr_map - pos));
-+		movablemem_map.map[pos].start_pfn = start_pfn;
-+		movablemem_map.map[pos].end_pfn = end_pfn;
-+		movablemem_map.nr_map++;
-+		return;
-+	}
-+
-+	/* overlap will be at the last overlapped range */
-+	for (overlap = pos + 1; overlap < movablemem_map.nr_map; overlap++)
-+		if (end_pfn < movablemem_map.map[overlap].start_pfn)
-+			break;
-+
-+	/*
-+	 * If there are more ranges overlapped, we need to merge them,
-+	 * and move the rest elements forward.
-+	 */
-+	overlap--;
-+	movablemem_map.map[pos].start_pfn = min(start_pfn,
-+					movablemem_map.map[pos].start_pfn);
-+	movablemem_map.map[pos].end_pfn = max(end_pfn,
-+					movablemem_map.map[overlap].end_pfn);
-+
-+	if (pos != overlap && overlap + 1 != movablemem_map.nr_map)
-+		memmove(&movablemem_map.map[pos+1],
-+			&movablemem_map.map[overlap+1],
-+			sizeof(struct movablemem_entry) *
-+			(movablemem_map.nr_map - overlap - 1));
-+
-+	movablemem_map.nr_map -= overlap - pos;
-+}
-+
-+/**
-+ * movablemem_map_add_region - Add a memory range into movablemem_map.
-+ * @start:	physical start address of range
-+ * @end:	physical end address of range
-+ *
-+ * This function transform the physical address into pfn, and then add the
-+ * range into movablemem_map by calling insert_movablemem_map().
-+ */
-+static void __init movablemem_map_add_region(u64 start, u64 size)
-+{
-+	unsigned long start_pfn, end_pfn;
-+
-+	/* In case size == 0 or start + size overflows */
-+	if (start + size <= start)
-+		return;
-+
-+	if (movablemem_map.nr_map >= ARRAY_SIZE(movablemem_map.map)) {
-+		pr_err("movablemem_map: too many entries; "
-+		       "ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long) start,
-+		       (unsigned long long) (start + size - 1));
-+		return;
-+	}
-+
-+	start_pfn = PFN_DOWN(start);
-+	end_pfn = PFN_UP(start + size);
-+	insert_movablemem_map(start_pfn, end_pfn);
-+}
-+
-+/*
-+ * cmdline_parse_movablemem_map - Parse boot option movablemem_map.
-+ * @p:	The boot option of the following format:
-+ *	movablemem_map=nn[KMG]@ss[KMG]
-+ *
-+ * This option sets the memory range [ss, ss+nn) to be used as movable memory.
-+ *
-+ * Return: 0 on success or -EINVAL on failure.
-+ */
-+static int __init cmdline_parse_movablemem_map(char *p)
-+{
-+	char *oldp;
-+	u64 start_at, mem_size;
-+
-+	if (!p)
-+		goto err;
-+
-+	oldp = p;
-+	mem_size = memparse(p, &p);
-+	if (p == oldp)
-+		goto err;
-+
-+	if (*p == '@') {
-+		oldp = ++p;
-+		start_at = memparse(p, &p);
-+		if (p == oldp || *p != '\0')
-+			goto err;
-+
-+		movablemem_map_add_region(start_at, mem_size);
-+		return 0;
-+	}
-+err:
-+	return -EINVAL;
-+}
-+early_param("movablemem_map", cmdline_parse_movablemem_map);
-+
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-	/* with the number of unique functions and it's groups known,
+-	   reallocate functions and assign group names */
+-	funcs = krealloc(funcs, num * sizeof(struct mvebu_pinctrl_function),
+-			 GFP_KERNEL);
+-	if (!funcs)
+-		return -ENOMEM;
+-
+ 	pctl->num_functions = num;
+ 	pctl->functions = funcs;
  
- /**
 -- 
-1.7.1
+1.7.10.4
 
