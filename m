@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab3CPCCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 22:02:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19965 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab3CPCCb (ORCPT
+	id S932215Ab3CPCGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:06:21 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:45714 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab3CPCGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 22:02:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 15 Mar 2013 18:55:32 -0700
-Message-ID: <1363399371.2879.10.camel@bilhuang-vm1>
-Subject: Re: [PATCH 1/1] mfd: palmas: Add power off control
-From: Bill Huang <bilhuang@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "Laxman Dewangan" <ldewangan@nvidia.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 15 Mar 2013 19:02:51 -0700
-In-Reply-To: <514358BC.4030600@wwwdotorg.org>
-References: <1363258680-12600-1-git-send-email-bilhuang@nvidia.com>
-	 <5142AF55.80708@nvidia.com> <1363326713.3311.50.camel@bilhuang-vm1>
-	 <514358BC.4030600@wwwdotorg.org>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
+	Fri, 15 Mar 2013 22:06:19 -0400
+Date: Sat, 16 Mar 2013 11:06:12 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/5] KVM: MMU: fast invalid all mmio sptes
+Message-Id: <20130316110612.453447e6a1a5bfa7088aefcb@gmail.com>
+In-Reply-To: <51433D98.4050605@linux.vnet.ibm.com>
+References: <51433D98.4050605@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 01:22 +0800, Stephen Warren wrote:
-> On 03/14/2013 11:51 PM, Bill Huang wrote:
-> > On Fri, 2013-03-15 at 13:19 +0800, Stephen Warren wrote:
-> >> On 03/14/2013 04:58 AM, Bill Huang wrote:
-> >>> Hook up "pm_power_off" to palmas power off routine if there is DT
-> >>> property "ti,system-power-controller" defined, so platform which is
-> >>> powered by this regulator can be powered off properly.
-> >>
-> >>> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> >>
-> >>> +	pdata->pm_off = of_property_read_bool(node,
-> >>> +			"ti,system-power-controller");
-> >>
-> >> You would need to add that property to the DT binding documentation for
-> >> this device.
-> >
-> > Does it work that some time later Laxmain helps to add it when he
-> > submits his pmic bindings for Palmas?
-> 
-> I'll note that Ian Lartey and Graeme Gregory actually seem to be the
-> people defining the PMIC bindings for Palmas. See:
-> 
-> http://comments.gmane.org/gmane.linux.documentation/9948
-> 
-> Or is Laxman planning to send some updates to that?
-> 
-> But irrespective of that no, I don't think that influences this at all;
-> if you introduce driver support for new DT content, then either that DT
-> content should already be documented in the binding, or this patch
-> should add it to the documentation.
+Still reading, but sounds great if this works!
 
-Thanks, here I just need to add a property into the DT bindings but
-currently there is no any Palmas binding document exist so that means I
-have to hold off the patch.
+I did not like the idea of mmio-rmap based approach so much, but this
+would be really/perfectly scalable.
+
+Thanks,
+	Takuya
+
+On Fri, 15 Mar 2013 23:26:16 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+
+> The current way is holding hot mmu-lock and walking all shadow pages, this
+> is not scale. This patchset tries to introduce a very simple and scale way
+> to fast invalid all mmio sptes - it need not walk any shadow pages and hold
+> any locks.
+> 
+> The idea is simple:
+> KVM maintains a global mmio invalid generation-number which is stored in
+> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+> generation-number into his available bits when it is created.
+> 
+> When KVM need zap all mmio sptes, it just simply increase the global
+> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+> then it walks the shadow page table and get the mmio spte. If the
+> generation-number on the spte does not equal the global generation-number,
+> it will go to the normal #PF handler to update the mmio spte.
+> 
+> Since 19 bits are used to store generation-number on mmio spte, the
+> generation-number can be round after 33554432 times. It is large enough
+> for nearly all most cases, but making the code be more strong, we zap all
+> shadow pages when the number is round.
+> 
+> Note: after my patchset that fast zap all shadow pages, kvm_mmu_zap_all is
+> not a problem any more. The scalability is the same as zap mmio shadow page
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
+-- 
+Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
