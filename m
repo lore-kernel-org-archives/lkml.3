@@ -1,154 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab3CPLUY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 07:20:24 -0400
-Received: from server.atrad.com.au ([150.101.241.2]:47600 "EHLO
-	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab3CPLUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 07:20:23 -0400
-X-Greylist: delayed 1072 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Mar 2013 07:20:22 EDT
-Date: Sat, 16 Mar 2013 21:32:11 +1030
-From: Jonathan Woithe <jwoithe@atrad.com.au>
-To: Raymond Jennings <shentino@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jonathan Woithe <jwoithe@atrad.com.au>
-Subject: Re: OOM triggered with plenty of memory free
-Message-ID: <20130316110211.GA30445@marvin.atrad.com.au>
-References: <CAJd=RBDHwgtm=to3WUj73d7q6cjJ7oG6capjUxvcpVk0wH-fbQ@mail.gmail.com>
- <CAGDaZ_ryxdMBm44kotjKyCeFEFk3OURjHav3zVOcQNGwP_ZwAQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGDaZ_ryxdMBm44kotjKyCeFEFk3OURjHav3zVOcQNGwP_ZwAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755659Ab3CPL0d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 07:26:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9105 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753615Ab3CPL0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 07:26:32 -0400
+X-IronPort-AV: E=Sophos;i="4.84,856,1355068800"; 
+   d="scan'208";a="6882784"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
+        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
+        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
+        mina86@mina86.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linfeng@cn.fujitsu.com,
+        jiang.liu@huawei.com, kosaki.motohiro@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v1 3/9] x86, mm, numa, acpi: Add movable_memmap boot option.
+Date: Sat, 16 Mar 2013 18:35:36 +0800
+Message-Id: <1363430142-14563-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/16 18:31:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/16 18:31:59,
+	Serialize complete at 2013/03/16 18:31:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 02:33:23AM -0700, Raymond Jennings wrote:
-> On Sat, Mar 16, 2013 at 2:25 AM, Hillf Danton <dhillf@gmail.com> wrote:
-> >> Some system specifications:
-> >> - CPU: i7 860 at 2.8 GHz
-> >> - Mainboard: Advantech AIMB-780
-> >> - RAM: 4 GB
-> >> - Kernel: 2.6.35.11 SMP, 32 bit (kernel.org kernel, no patches applied)
-> 
-> > The highmem no longer holds memory with 64-bit kernel.
-> 
-> I don't really think that's a valid reason to dismiss problems with
-> 32-bit though, as I still use it myself.
-> 
-> Anyway, to the parent poster, could you tell us more, such as how much
-> ram you had left free?
-> 
-> A printout of /proc/meminfo might help here.
+Add functions to parse movablemem_map boot option. Since the option
+could be specified more then once, all the maps will be stored in the
+global array movablemem_map.map[].
 
-Sure.  Here is the contents of /proc/meminfo as it was just before the
-machine was rebooted:
+And also, we keep the array in monotonic increasing order by start_pfn.
+And merge all overlapped ranges.
 
-MemTotal:        3048988 kB
-MemFree:         1930548 kB
-Buffers:               0 kB
-Cached:            56876 kB
-SwapCached:            0 kB
-Active:            78016 kB
-Inactive:          53500 kB
-Active(anon):      57220 kB
-Inactive(anon):    22888 kB
-Active(file):      20796 kB
-Inactive(file):    30612 kB
-Unevictable:      127172 kB
-Mlocked:          127172 kB
-HighTotal:       2194952 kB
-HighFree:        1923040 kB
-LowTotal:         854036 kB
-LowFree:            7508 kB
-SwapTotal:       8393924 kB
-SwapFree:        8393924 kB
-Dirty:                52 kB
-Writeback:           684 kB
-AnonPages:        202204 kB
-Mapped:            25208 kB
-Shmem:              2600 kB
-Slab:             818868 kB
-SReclaimable:       6240 kB
-SUnreclaim:       812628 kB
-KernelStack:        2608 kB
-PageTables:         1388 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:     9918416 kB
-Committed_AS:     433632 kB
-VmallocTotal:     122880 kB
-VmallocUsed:       24952 kB
-VmallocChunk:      56908 kB
-DirectMap4k:       16376 kB
-DirectMap4M:      892928 kB
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |   21 ++++++
+ include/linux/mm.h                  |   11 +++
+ mm/page_alloc.c                     |  131 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 163 insertions(+), 0 deletions(-)
 
-"free" reported this:
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4609e81..dd3a36a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1649,6 +1649,27 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
++	movablemem_map=nn[KMG]@ss[KMG]
++			[KNL,X86,IA-64,PPC] This parameter is similar to
++			memmap except it specifies the memory map of
++			ZONE_MOVABLE.
++			If user specifies memory ranges, the info in SRAT will
++			be ingored. And it works like the following:
++			- If more ranges are all within one node, then from
++			  lowest ss to the end of the node will be ZONE_MOVABLE.
++			- If a range is within a node, then from ss to the end
++			  of the node will be ZONE_MOVABLE.
++			- If a range covers two or more nodes, then from ss to
++			  the end of the 1st node will be ZONE_MOVABLE, and all
++			  the rest nodes will only have ZONE_MOVABLE.
++			If memmap is specified at the same time, the
++			movablemem_map will be limited within the memmap
++			areas. If kernelcore or movablecore is also specified,
++			movablemem_map will have higher priority to be
++			satisfied. So the administrator should be careful that
++			the amount of movablemem_map areas are not too large.
++			Otherwise kernel won't have enough memory to start.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1c79b10..9c068d5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1332,6 +1332,17 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ extern void sparse_memory_present_with_active_regions(int nid);
+ 
++#define MOVABLEMEM_MAP_MAX MAX_NUMNODES
++struct movablemem_entry {
++	unsigned long start_pfn;    /* start pfn of memory segment */
++	unsigned long end_pfn;      /* end pfn of memory segment (exclusive) */
++};
++
++struct movablemem_map {
++	int nr_map;
++	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
++};
++
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ #if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f368db4..27fcd29 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -202,6 +202,9 @@ static unsigned long __meminitdata nr_all_pages;
+ static unsigned long __meminitdata dma_reserve;
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++/* Movable memory ranges, will also be used by memblock subsystem. */
++struct movablemem_map movablemem_map;
++
+ static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __initdata required_kernelcore;
+@@ -5061,6 +5064,134 @@ static int __init cmdline_parse_movablecore(char *p)
+ early_param("kernelcore", cmdline_parse_kernelcore);
+ early_param("movablecore", cmdline_parse_movablecore);
+ 
++/**
++ * insert_movablemem_map - Insert a memory range in to movablemem_map.map.
++ * @start_pfn:	start pfn of the range
++ * @end_pfn:	end pfn of the range
++ *
++ * This function will also merge the overlapped ranges, and sort the array
++ * by start_pfn in monotonic increasing order.
++ */
++static void __init insert_movablemem_map(unsigned long start_pfn,
++					  unsigned long end_pfn)
++{
++	int pos, overlap;
++
++	/*
++	 * pos will be at the 1st overlapped range, or the position
++	 * where the element should be inserted.
++	 */
++	for (pos = 0; pos < movablemem_map.nr_map; pos++)
++		if (start_pfn <= movablemem_map.map[pos].end_pfn)
++			break;
++
++	/* If there is no overlapped range, just insert the element. */
++	if (pos == movablemem_map.nr_map ||
++	    end_pfn < movablemem_map.map[pos].start_pfn) {
++		/*
++		 * If pos is not the end of array, we need to move all
++		 * the rest elements backward.
++		 */
++		if (pos < movablemem_map.nr_map)
++			memmove(&movablemem_map.map[pos+1],
++				&movablemem_map.map[pos],
++				sizeof(struct movablemem_entry) *
++				(movablemem_map.nr_map - pos));
++		movablemem_map.map[pos].start_pfn = start_pfn;
++		movablemem_map.map[pos].end_pfn = end_pfn;
++		movablemem_map.nr_map++;
++		return;
++	}
++
++	/* overlap will be at the last overlapped range */
++	for (overlap = pos + 1; overlap < movablemem_map.nr_map; overlap++)
++		if (end_pfn < movablemem_map.map[overlap].start_pfn)
++			break;
++
++	/*
++	 * If there are more ranges overlapped, we need to merge them,
++	 * and move the rest elements forward.
++	 */
++	overlap--;
++	movablemem_map.map[pos].start_pfn = min(start_pfn,
++					movablemem_map.map[pos].start_pfn);
++	movablemem_map.map[pos].end_pfn = max(end_pfn,
++					movablemem_map.map[overlap].end_pfn);
++
++	if (pos != overlap && overlap + 1 != movablemem_map.nr_map)
++		memmove(&movablemem_map.map[pos+1],
++			&movablemem_map.map[overlap+1],
++			sizeof(struct movablemem_entry) *
++			(movablemem_map.nr_map - overlap - 1));
++
++	movablemem_map.nr_map -= overlap - pos;
++}
++
++/**
++ * movablemem_map_add_region - Add a memory range into movablemem_map.
++ * @start:	physical start address of range
++ * @end:	physical end address of range
++ *
++ * This function transform the physical address into pfn, and then add the
++ * range into movablemem_map by calling insert_movablemem_map().
++ */
++static void __init movablemem_map_add_region(u64 start, u64 size)
++{
++	unsigned long start_pfn, end_pfn;
++
++	/* In case size == 0 or start + size overflows */
++	if (start + size <= start)
++		return;
++
++	if (movablemem_map.nr_map >= ARRAY_SIZE(movablemem_map.map)) {
++		pr_err("movablemem_map: too many entries; "
++		       "ignoring [mem %#010llx-%#010llx]\n",
++		       (unsigned long long) start,
++		       (unsigned long long) (start + size - 1));
++		return;
++	}
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = PFN_UP(start + size);
++	insert_movablemem_map(start_pfn, end_pfn);
++}
++
++/*
++ * cmdline_parse_movablemem_map - Parse boot option movablemem_map.
++ * @p:	The boot option of the following format:
++ *	movablemem_map=nn[KMG]@ss[KMG]
++ *
++ * This option sets the memory range [ss, ss+nn) to be used as movable memory.
++ *
++ * Return: 0 on success or -EINVAL on failure.
++ */
++static int __init cmdline_parse_movablemem_map(char *p)
++{
++	char *oldp;
++	u64 start_at, mem_size;
++
++	if (!p)
++		goto err;
++
++	oldp = p;
++	mem_size = memparse(p, &p);
++	if (p == oldp)
++		goto err;
++
++	if (*p == '@') {
++		oldp = ++p;
++		start_at = memparse(p, &p);
++		if (p == oldp || *p != '\0')
++			goto err;
++
++		movablemem_map_add_region(start_at, mem_size);
++		return 0;
++	}
++err:
++	return -EINVAL;
++}
++early_param("movablemem_map", cmdline_parse_movablemem_map);
++
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ /**
+-- 
+1.7.1
 
-             total       used       free     shared    buffers     cached
-Mem:       3048988    1101120    1947868          0          0      48780
--/+ buffers/cache:    1052340    1996648
-Swap:      8393924          0    8393924
-
-Earlier posts in this thread (at that point only in linux-mm) concentrated
-on the /proc/slabinfo output which was retrieved from a similar system to
-the faulting one (with only about 100 days uptime this was not yet OOMing),
-This included the following:
-
-  kmalloc-128       1234556 1235168    128   32    1 : tunables    0    0    0 : slabdata  38599  38599      0
-  kmalloc-64        1238117 1238144     64   64    1 : tunables    0    0    0 : slabdata  19346  19346      0
-  kmalloc-32        1236600 1236608     32  128    1 : tunables    0    0    0 : slabdata   9661   9661      0
-
-which pointed to a kernel memory leak.  This was subsequently confirmed
-using kmemleak which threw many detections similar to the following example:
-
-  unreferenced object 0xf5d3b500 (size 128):
-  comm "udevd", pid 1382, jiffies 4294676664 (age 15504.596s)
-  hex dump (first 32 bytes):
-    01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<c19734ec>] kmemleak_alloc+0x2c/0x60
-    [<c10e70ba>] kmem_cache_alloc+0xaa/0x130
-    [<c106095c>] prepare_creds+0x2c/0xb0
-    [<c1060a5d>] copy_creds+0x7d/0x1f0
-    [<c103e2ea>] copy_process+0x23a/0xe00
-    [<c103ef33>] do_fork+0x83/0x3a0
-    [<c100a8b4>] sys_clone+0x34/0x40
-    [<c1003139>] ptregs_clone+0x15/0x1c
-    [<ffffffff>] 0xffffffff
-
-Dave Hansen then noted:
-> Your kmemleak data shows that the leaks are always from either 'struct
-> cred', or 'struct pid'.  Those are _generally_ tied to tasks, but you
-> only have a couple thousand task_structs.
-> 
-> My suspicion would be that something is allocating those structures, but
-> a refcount got leaked somewhere.
-
-For details refer to past posts in this thread to linux-mm.
-
-At this point I was able to test 3.7.9 (the latest stable available then)
-and the above leak did not appear to be occurring.  3.4.x and 3.0.x are also
-ok, so it seems that somewhere between 2.6.35.11 and 3.0 it went away. 
-[An aside: unfortunately 3.7.9 has an unrelated bug in the network card
-driver we're using (introduced in 3.3) which hits us in other ways.  A git
-bisect has isolated the offending commit, but until that's fixed we can't
-move to anything newer than a 3.2 kernel.]
-
-Since it's relatively easy to tell whether the memory leak is present using
-kmemleak and I now have access to some off-line hardware to permit testing,
-I am thinking of running a git bisect to see if I can identify which commit
-fixed the leak.  Even if it turns out to be of academic interest only, it
-would be good to know that it was fixed rather than somehow being avoided
-for the moment due to another change.
-
-Let me know if there's anything more I could do.
-
-Regards
-  jonathan
