@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab3CPCUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 22:20:16 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49171 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab3CPCUO (ORCPT
+	id S932275Ab3CPCXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:23:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14417 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3CPCXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 22:20:14 -0400
-Message-ID: <5143D6C4.9060503@gmail.com>
-Date: Sat, 16 Mar 2013 13:19:48 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 15 Mar 2013 22:23:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 15 Mar 2013 19:22:51 -0700
+Message-ID: <1363400599.2879.18.camel@bilhuang-vm1>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 15 Mar 2013 19:23:19 -0700
+In-Reply-To: <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
+References: <1363151317.3311.9.camel@bilhuang-vm1>
+	 <51400D9D.9060305@wwwdotorg.org>	<1363153204.3311.14.camel@bilhuang-vm1>
+	 <5140C12A.4060900@wwwdotorg.org>	<1363227311.3311.30.camel@bilhuang-vm1>
+	 <20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
+	 <1363253287.3311.32.camel@bilhuang-vm1>	<51420EBB.7080503@wwwdotorg.org>
+	 <1363310454.3311.44.camel@bilhuang-vm1>	<5142B027.4040403@wwwdotorg.org>
+	 <20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
+	 <CAPDyKFoBJpraMz8i1FmFqG7=Zsv0DTQ0PKVOQJ-+iEsKpb3Hdg@mail.gmail.com>
+	 <1363349206.5827.10.camel@bilhuang-vm1>
+	 <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
-        rpurdie@rpsys.net, FlorianSchandinat@gmx.de
-Subject: Re: [PATCH 1/3] backlight: ep93xx_bl: fix section mismatch
-References: <201303151803.08774.hartleys@visionengravers.com>
-In-Reply-To: <201303151803.08774.hartleys@visionengravers.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="ISO-8859-9"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/03/13 12:03, H Hartley Sweeten wrote:
-
-> Remove the __init tag from ep93xxbl_probe() to fix the section
-> mismatch warning.
+On Fri, 2013-03-15 at 20:33 +0800, Ulf Hansson wrote:
+> I guess you did not fully got what I meant with "dvfs clock type". It
+> will not affect the clock API. But instead the dvfs is handled by
+> implementing a specific clk hw type. So the same thing is accomplished
+> as with clk notifiers, no changes should be needed to device drivers.
 > 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-
-
-There is a patch for this already queued in Andrew Morton's tree.
-
-~Ryan
-
-> ---
->  drivers/video/backlight/ep93xx_bl.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> The difference is only that no notifiers will be needed, and all the
+> dvfs stuff will be handled in the clk hw instead. It will mean that we
+> will bundle dvfs stuff into the clock drivers, instead of separating
+> the code outside the clock drivers. But, on the other hand no
+> notifiers will be needed.
 > 
-> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
-> index ef3e21e..17b8abb 100644
-> --- a/drivers/video/backlight/ep93xx_bl.c
-> +++ b/drivers/video/backlight/ep93xx_bl.c
-> @@ -60,7 +60,7 @@ static const struct backlight_ops ep93xxbl_ops = {
->  	.get_brightness	= ep93xxbl_get_brightness,
->  };
->  
-> -static int __init ep93xxbl_probe(struct platform_device *dev)
-> +static int ep93xxbl_probe(struct platform_device *dev)
->  {
->  	struct ep93xxbl *ep93xxbl;
->  	struct backlight_device *bl;
-> @@ -145,7 +145,6 @@ static struct platform_driver ep93xxbl_driver = {
->  	.suspend	= ep93xxbl_suspend,
->  	.resume		= ep93xxbl_resume,
->  };
-> -
->  module_platform_driver(ep93xxbl_driver);
->  
->  MODULE_DESCRIPTION("EP93xx Backlight Driver");
+Oh yes I misunderstand your origin point, but my thought is using
+existing devfreq framework as frequency/voltage policy driver instead of
+creating another one in clock driver and that's why I think we need the
+notifier work. 
+
+By the way, some centralized DVFS implementation like Tegra's VDD_CORE
+rail has association with tens of clocks which will need to be taken
+care specially if we're doing those in clock driver I think.
+
+> Kind regards
+> Ulf Hansson
 
 
