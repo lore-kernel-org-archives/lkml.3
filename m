@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab3CPESZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 00:18:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36881 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750848Ab3CPESY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 00:18:24 -0400
-Message-ID: <1363407501.2030.1.camel@joe-AO722>
-Subject: Re: [PATCH net-next] drivers:net: dma_alloc_coherent: use
- __GFP_ZERO instead of memset(, 0)
-From: Joe Perches <joe@perches.com>
-To: "Abodunrin, Akeem G" <akeem.g.abodunrin@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "b43-dev@lists.infradead.org" <b43-dev@lists.infradead.org>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Date: Fri, 15 Mar 2013 21:18:21 -0700
-In-Reply-To: <CFEEE81102D91947B9CC368106979EBA3CF55939@ORSMSX102.amr.corp.intel.com>
-References: <dbbfc5e66dba7d2b63549d218407fb0c4031f2ed.1363367992.git.joe@perches.com>
-	 <CFEEE81102D91947B9CC368106979EBA3CF55939@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1752181Ab3CPEVh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 00:21:37 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61261 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3CPEVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 00:21:36 -0400
+Message-ID: <1363407672.3898.1.camel@phoenix>
+Subject: [PATCH RESEND] gpio: samsung: Add terminating entry for
+ exynos_pinctrl_ids
+From: Axel Lin <axel.lin@ingics.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
+Date: Sat, 16 Mar 2013 12:21:12 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-15 at 22:51 +0000, Abodunrin, Akeem G wrote:
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On Behalf Of Joe Perches
-[]
-> Reduce the number of calls required to alloc a zeroed block of memory.
-[]
-> diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-[]
-> @@ -488,7 +487,6 @@ int igbvf_setup_rx_resources(struct igbvf_adapter *adapter,
->  
->  	rx_ring->desc = dma_alloc_coherent(&pdev->dev, rx_ring->size,
->  					   &rx_ring->dma, GFP_KERNEL);
-> -
->  	if (!rx_ring->desc)
->  		goto err;
-> 
-> Hi Joe,
+The of_device_id table is supposed to be zero-terminated.
 
-Hello Akeem.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+---
+This patch was sent on https://lkml.org/lkml/2012/12/9/135
+Re-generate the patch against linux-next and resend.
 
-> Your changes did not seem to make it to igbvf/netdev.c - I think
-> instead of removing an extra line added for code clarity, you
-> want to add:
-> "tx_ring->desc = dma_alloc_coherent(&pdev->dev, tx_ring->size,
->  					   &tx_ring->dma, GFP_KERNEL| __GFP_ZERO);"
+ drivers/gpio/gpio-samsung.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Not really, there's no memset here so this
-bit is just a whitespace neatening.
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index 99e0fa4..b22ca79 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -3030,6 +3030,7 @@ static __init int samsung_gpiolib_init(void)
+ 		{ .compatible = "samsung,exynos4x12-pinctrl", },
+ 		{ .compatible = "samsung,exynos5250-pinctrl", },
+ 		{ .compatible = "samsung,exynos5440-pinctrl", },
++		{ }
+ 	};
+ 	for_each_matching_node(pctrl_np, exynos_pinctrl_ids)
+ 		if (pctrl_np && of_device_is_available(pctrl_np))
+-- 
+1.7.9.5
+
 
 
