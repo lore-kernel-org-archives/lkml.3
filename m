@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3CPLMB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 07:12:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50166 "EHLO song.cn.fujitsu.com"
+	id S932184Ab3CPLMY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 07:12:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50161 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755650Ab3CPLLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 07:11:39 -0400
+	id S1755594Ab3CPLLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 07:11:38 -0400
 X-IronPort-AV: E=Sophos;i="4.84,856,1355068800"; 
-   d="scan'208";a="6882743"
+   d="scan'208";a="6882742"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
@@ -20,252 +20,207 @@ To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH v1 6/9] x86, mm, numa, acpi: Support getting hotplug info from SRAT.
-Date: Sat, 16 Mar 2013 18:35:39 +0800
-Message-Id: <1363430142-14563-7-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v1 part1 0/9] Introduce movablemem_map boot option.
+Date: Sat, 16 Mar 2013 18:35:33 +0800
+Message-Id: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1363430142-14563-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 18:31:49,
+ 2013/03/16 18:31:48,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/16 18:31:59,
-	Serialize complete at 2013/03/16 18:31:59
+ 2013/03/16 18:31:58,
+	Serialize complete at 2013/03/16 18:31:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now provide an option for users who don't want to specify physical
-memory address in kernel commandline.
+Hi Yinghai, all,
 
-        /*
-         * For movablemem_map=acpi:
+As Yinghai have implemented parsing numa info early more considerately,
+I think we can introduce the movablemem_map boot option again.
+
+This patch-set is based on Linux 3.9 rc-2, but need to apply Yinghai's
+"x86, ACPI, numa: Parse numa info early" patch-set first.
+Please refer to:
+v1: https://lkml.org/lkml/2013/3/7/642
+v2: https://lkml.org/lkml/2013/3/10/47
+
+
+In this part1 patch-set, we reimplemented movablemem_map boot option
+based on Yinghai's SRAT work. The path is like this:
+1) parse SRAT, fill only existing memory into numa_meminfo, like:
+   numa_cleanup_meminfo() {
+ 251         const u64 low = 0;
+ 252         const u64 high = PFN_PHYS(max_pfn);
+......
+ 255         /* first, trim all entries */
+ 256         for (i = 0; i < mi->nr_blks; i++) {
+ 257                 struct numa_memblk *bi = &mi->blk[i];
+ 258 
+ 259                 /* make sure all blocks are inside the limits */
+ 260                 bi->start = max(bi->start, low);
+ 261                 bi->end = min(bi->end, high);
+ 262 
+ 263                 /* and there's no empty block */
+ 264                 if (bi->start >= bi->end)
+ 265                         numa_remove_memblk_from(i--, mi);
+ 266         }
+......
+   }
+
+   Those non-existing memory, such as memory not added yet, won't be
+   stored in numa_meminfo.
+
+2) initialize memory mapping for the existing memory, putting pagetables
+   and vmemmap on local node.
+
+Since not all memory info is kept, we have to sanitize movablemem_map.map[]
+when we parse SRAT, so we may prevent allocating pagetables or vmemmap on
+local node if user specified the whole node as movable.
+
+To avoid this problem, here is my idea:
+1) Store not only existing memory ranges in numa_mem_info, but all the
+   memory info from SRAT; 
+2) Map only existing memory as before;
+3) Do memblock limitation after memory mapping initialization using
+   numa_meminfo, so that movablemem_map will be able to exclude pagetables
+   and vmemmap ranges on local node.
+
+This will be done in part2 soon.
+
+How do you think?
+
+Part2 of this patch-set is under development.
+
+========================================================================
+[What we are doing]
+This patchset introduces a boot option for user to specify ZONE_MOVABLE
+memory map for each node in the system. Users can use it in two ways:
+
+1. movablecore_map=nn[KMG]@ss[KMG]
+   In this way, the kernel will make sure memory range from ss to ss+nn is
+   on ZONE_MOVABLE. The hotplug info provided by SRAT will be ignored.
+
+2. movablecore_map=acpi
+   In this way, the kernel will use memory hotplug info in SRAT to determine
+   ZONE_MOVABLE for each node. All the ranges user has specified will be
+   ignored.
+
+
+[Why we do this]
+If we hot remove a memroy device, it cannot have kernel memory,
+because Linux cannot migrate kernel memory currently. Therefore,
+we have to guarantee that the hot removed memory has only movable
+memoroy.
+(Here is an exception: When we implement the node hotplug functionality,
+for those kernel memory whose life cycle is the same as the node, such as
+pagetables, vmemmap and so on, although the kernel cannot migrate them,
+we can still put them on local node because we can free them before we
+hot-remove the node. This is not implemented yet.)
+
+Linux has two boot options, kernelcore= and movablecore=, for
+creating movable memory. These boot options can specify the amount
+of memory use as kernel or movable memory. Using them, we can
+create ZONE_MOVABLE which has only movable memory.
+(NOTE: doing this will cause NUMA performance because the kernel won't
+ be able to distribute kernel memory evenly to each node.)
+
+But it does not fulfill a requirement of memory hot remove, because
+even if we specify the boot options, movable memory is distributed
+in each node evenly. So when we want to hot remove memory which
+memory range is 0x80000000-0c0000000, we have no way to specify
+the memory as movable memory.
+
+Furthermore, even if we can use SRAT, users still need an interface
+to enable/disable this functionality if they don't want to lose their
+NUMA performance.  So I think, a user interface is always needed.
+
+So we proposed this new feature which specifies memory range to use as
+movable memory.
+
+
+[Ways to do this]
+There may be 2 ways to specify movable memory.
+1. use firmware information
+2. use boot option
+
+1. use firmware information
+  According to ACPI spec 5.0, SRAT table has memory affinity structure
+  and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
+  Affinity Structure". If we use the information, we might be able to
+  specify movable memory by firmware. For example, if Hot Pluggable
+  Filed is enabled, Linux sets the memory as movable memory.
+
+2. use boot option
+  This is our proposal. New boot option can specify memory range to use
+  as movable memory.
+
+
+[How we do this]
+We chose second way, because if we use first way, users cannot change
+memory range to use as movable memory easily. We think if we create
+movable memory, performance regression may occur by NUMA. In this case,
+user can turn off the feature easily if we prepare the boot option.
+And if we prepare the boot optino, the user can select which memory
+to use as movable memory easily. 
+
+
+[How to use]
+1. For movablecore_map=nn[KMG]@ss[KMG]:
+         *
+         * SRAT:                |_____| |_____| |_________| |_________| ......
+         * node id:                0       1         1           2
+         * user specified:                |__|                 |___|
+         * ZONE_MOVABLE:                  |___| |_________|    |______| ......
+         *
+   NOTE: 1) User can specify this option more than once, but at most MAX_NUMNODES
+            times. The extra options will be ignored.
+         2) In this case, SRAT info will be ingored.
+
+2. For movablemem_map=acpi:
          *
          * SRAT:                |_____| |_____| |_________| |_________| ......
          * node id:                0       1         1           2
          * hotpluggable:           n       y         y           n
-         * movablemem_map:              |_____| |_________|
+         * ZONE_MOVABLE:                |_____| |_________|
          *
-         * Using movablemem_map, we can prevent memblock from allocating memory
-         * on ZONE_MOVABLE at boot time.
-         */
+   NOTE: 1) Before parsing SRAT, memblock has already reserve some memory ranges
+            for other purposes, such as for kernel image. We cannot prevent
+            kernel from using these memory, so we need to exclude these memory
+            even if it is hotpluggable.
+            Furthermore, to ensure the kernel has enough memory to boot, we make
+            all the memory on the node which the kernel resides in should be
+            un-hotpluggable.
+         2) In this case, all the user specified memory ranges will be ingored.
 
-So user just specify movablemem_map=acpi, and the kernel will use hotpluggable
-info in SRAT to determine which memory ranges should be set as ZONE_MOVABLE.
+We also need to consider the following points:
+1) Using this boot option could cause NUMA performance down because the kernel
+   memory will not be distributed on each node evenly. So for users who don't
+   want to lose their NUMA performance, just don't use it.
+2) If kernelcore or movablecore is also specified, movablecore_map will have
+   higher priority to be satisfied.
+3) This option has no conflict with memmap option.
 
-NOTE: Using this way will cause NUMA performance down because the whole node
-      will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
-      If users don't want to lose NUMA performance, just don't use it.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- Documentation/kernel-parameters.txt |   15 +++++++
- arch/x86/mm/srat.c                  |   74 +++++++++++++++++++++++++++++++++--
- include/linux/mm.h                  |    2 +
- mm/page_alloc.c                     |   22 ++++++++++-
- 4 files changed, 108 insertions(+), 5 deletions(-)
+Tang Chen (8):
+  acpi: Print hotplug info in SRAT.
+  x86, mm, numa, acpi: Add movable_memmap boot option.
+  x86, mm, numa, acpi: Introduce zone_movable_limit[] to store start
+    pfn of ZONE_MOVABLE.
+  x86, mm, numa, acpi: Extend movablemem_map to the end of each node.
+  x86, mm, numa, acpi: Support getting hotplug info from SRAT.
+  x86, mm, numa, acpi: Sanitize zone_movable_limit[].
+  x86, mm, numa, acpi: make movablemem_map have higher priority
+  x86, mm, numa, acpi: Memblock limit with movablemem_map
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index dd3a36a..40387a2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1649,6 +1649,17 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that the amount of memory usable for all allocations
- 			is not too small.
- 
-+	movablemem_map=acpi
-+			[KNL,X86,IA-64,PPC] This parameter is similar to
-+			memmap except it specifies the memory map of
-+			ZONE_MOVABLE.
-+			This option inform the kernel to use Hot Pluggable bit
-+			in flags from SRAT from ACPI BIOS to determine which
-+			memory devices could be hotplugged. The corresponding
-+			memory ranges will be set as ZONE_MOVABLE.
-+			NOTE: Whatever node the kernel resides in will always
-+			      be un-hotpluggable.
-+
- 	movablemem_map=nn[KMG]@ss[KMG]
- 			[KNL,X86,IA-64,PPC] This parameter is similar to
- 			memmap except it specifies the memory map of
-@@ -1669,6 +1680,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			satisfied. So the administrator should be careful that
- 			the amount of movablemem_map areas are not too large.
- 			Otherwise kernel won't have enough memory to start.
-+			NOTE: We don't stop users specifying the node the
-+			      kernel resides in as hotpluggable so that this
-+			      option can be used as a workaround of firmware
-+			      bugs.
- 
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index ee888a2..fd3d4c8 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -142,15 +142,78 @@ static inline int save_add_info(void) {return 0;}
- #endif
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
--static void __init sanitize_movablemem_map(int nid, u64 start, u64 end)
-+static void __init sanitize_movablemem_map(int nid, u64 start, u64 end,
-+					   bool hotpluggable)
- {
--	int overlap;
-+	int overlap, i;
- 	unsigned long start_pfn, end_pfn;
- 
- 	start_pfn = PFN_DOWN(start);
- 	end_pfn = PFN_UP(end);
- 
- 	/*
-+	 * For movablemem_map=acpi:
-+	 *
-+	 * SRAT:                |_____| |_____| |_________| |_________| ......
-+	 * node id:                0       1         1           2
-+	 * hotpluggable:           n       y         y           n
-+	 * movablemem_map:              |_____| |_________|
-+	 *
-+	 * Using movablemem_map, we can prevent memblock from allocating memory
-+	 * on ZONE_MOVABLE at boot time.
-+	 *
-+	 * Before parsing SRAT, memblock has already reserve some memory ranges
-+	 * for other purposes, such as for kernel image. We cannot prevent
-+	 * kernel from using these memory, so we need to exclude these memory
-+	 * even if it is hotpluggable.
-+	 * Furthermore, to ensure the kernel has enough memory to boot, we make
-+	 * all the memory on the node which the kernel resides in should be
-+	 * un-hotpluggable.
-+	 */
-+	if (hotpluggable && movablemem_map.acpi) {
-+		/* Exclude ranges reserved by memblock. */
-+		struct memblock_type *rgn = &memblock.reserved;
-+
-+		for (i = 0; i < rgn->cnt; i++) {
-+			if (end <= rgn->regions[i].base ||
-+			    start >= rgn->regions[i].base +
-+			    rgn->regions[i].size)
-+				continue;
-+
-+			/*
-+			 * If the memory range overlaps the memory reserved by
-+			 * memblock, then the kernel resides in this node.
-+			 */
-+			node_set(nid, movablemem_map.numa_nodes_kernel);
-+			zone_movable_limit[nid] = 0;
-+
-+			return;
-+		}
-+
-+		/*
-+		 * If the kernel resides in this node, then the whole node
-+		 * should not be hotpluggable.
-+		 */
-+		if (node_isset(nid, movablemem_map.numa_nodes_kernel)) {
-+			zone_movable_limit[nid] = 0;
-+			return;
-+		}
-+
-+		/*
-+		 * Otherwise, if the range is hotpluggable, and the kernel is
-+		 * not on this node, insert it into movablemem_map.
-+		 */
-+		insert_movablemem_map(start_pfn, end_pfn);
-+		if (zone_movable_limit[nid])
-+			zone_movable_limit[nid] = min(zone_movable_limit[nid],
-+						      start_pfn);
-+		else
-+			zone_movable_limit[nid] = start_pfn;
-+
-+		return;
-+	}
-+
-+	/*
- 	 * For movablecore_map=nn[KMG]@ss[KMG]:
- 	 *
- 	 * SRAT:                |_____| |_____| |_________| |_________| ......
-@@ -160,6 +223,8 @@ static void __init sanitize_movablemem_map(int nid, u64 start, u64 end)
- 	 *
- 	 * Using movablemem_map, we can prevent memblock from allocating memory
- 	 * on ZONE_MOVABLE at boot time.
-+	 *
-+	 * NOTE: In this case, SRAT info will be ingored.
- 	 */
- 	overlap = movablemem_map_overlap(start_pfn, end_pfn);
- 	if (overlap >= 0) {
-@@ -189,7 +254,8 @@ static void __init sanitize_movablemem_map(int nid, u64 start, u64 end)
- 	}
- }
- #else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
--static inline void sanitize_movablemem_map(int nid, u64 start, u64 end)
-+static inline void sanitize_movablemem_map(int nid, u64 start, u64 end,
-+					   bool hotpluggable)
- {
- }
- #endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-@@ -234,7 +300,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 	       (unsigned long long) start, (unsigned long long) end - 1,
- 	       hotpluggable ? "Hot Pluggable" : "");
- 
--	sanitize_movablemem_map(node, start, end);
-+	sanitize_movablemem_map(node, start, end, hotpluggable);
- 
- 	return 0;
- out_err_bad_srat:
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d2c5fec..37cf1d7 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1339,8 +1339,10 @@ struct movablemem_entry {
- };
- 
- struct movablemem_map {
-+	bool acpi;	/* True if using SRAT info. */
- 	int nr_map;
- 	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
-+	nodemask_t numa_nodes_kernel;   /* on which nodes kernel resides in */
- };
- 
- extern struct movablemem_map movablemem_map;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f451ded..31d27af 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -203,7 +203,10 @@ static unsigned long __meminitdata dma_reserve;
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- /* Movable memory ranges, will also be used by memblock subsystem. */
--struct movablemem_map movablemem_map;
-+struct movablemem_map movablemem_map = {
-+	.acpi = false,
-+	.nr_map = 0,
-+};
- 
- static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
- static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
-@@ -5204,6 +5207,23 @@ static int __init cmdline_parse_movablemem_map(char *p)
- 	if (!p)
- 		goto err;
- 
-+	if (!strcmp(p, "acpi"))
-+		movablemem_map.acpi = true;
-+
-+	/*
-+	 * If user decide to use info from BIOS, all the other user specified
-+	 * ranges will be ingored.
-+	 */
-+	if (movablemem_map.acpi) {
-+		if (movablemem_map.nr_map) {
-+			memset(movablemem_map.map, 0,
-+			       sizeof(struct movablemem_entry) *
-+			       movablemem_map.nr_map);
-+			movablemem_map.nr_map = 0;
-+		}
-+		return 0;
-+	}
-+
- 	oldp = p;
- 	mem_size = memparse(p, &p);
- 	if (p == oldp)
--- 
-1.7.1
+Yasuaki Ishimatsu (1):
+  x86: get pg_data_t's memory from other node
+
+ Documentation/kernel-parameters.txt |   36 +++++
+ arch/x86/mm/numa.c                  |    5 +-
+ arch/x86/mm/srat.c                  |  130 +++++++++++++++++-
+ include/linux/memblock.h            |    2 +
+ include/linux/mm.h                  |   22 +++
+ mm/memblock.c                       |   50 +++++++
+ mm/page_alloc.c                     |  265 ++++++++++++++++++++++++++++++++++-
+ 7 files changed, 500 insertions(+), 10 deletions(-)
 
