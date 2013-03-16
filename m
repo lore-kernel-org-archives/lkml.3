@@ -1,102 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab3CPQLs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 12:11:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29445 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868Ab3CPQLh (ORCPT
+	id S1755789Ab3CPQL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 12:11:29 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:51635 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3CPQL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 12:11:37 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=2s8qfAZQTSAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rUnzm6ZD3sEA:10 a=fEJfqa3HAKIpWj7Fv_gA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363450295.25967.89.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
- format with no args
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Joe Perches <joe@perches.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Mar 2013 12:11:35 -0400
-In-Reply-To: <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
-References: <1363441844.2023.17.camel@joe-AO722>
-	 <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Mar 2013 12:11:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130315132607.GA4565@quad>
+References: <20130315132607.GA4565@quad>
+Date: Sat, 16 Mar 2013 12:11:26 -0400
+Message-ID: <CAOULuObGX24KK+i88WT1PSN4_o3zFYuyyyZAcQPXqm-3xGrW0g@mail.gmail.com>
+Subject: Re: [PATCH] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
+From: Parag Warudkar <parag.lkml@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de,
+        akpm@linux-foundation.org, acme@redhat.com, jolsa@redhat.com,
+        ak@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 09:43 -0600, Bjorn Helgaas wrote:
+On Fri, Mar 15, 2013 at 9:26 AM, Stephane Eranian <eranian@google.com> wrote:
+>
+> This patch fixes a kernel crash when using precise sampling (PEBS)
+> after a suspend/resume. Turns out the CPU notifier code is not invoked
+> on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
+> by the kernel and keeps it power-on/resume value of 0 causing any PEBS
+> measurement to crash when running on CPU0.
+>
+> The workaround is to add a hook in the actual resume code to restore
+> the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
+> the DS_AREA will be restored twice but this is harmless.
+>
+> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 826054a..0e9bdd3 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -729,3 +729,11 @@ void intel_ds_init(void)
+>                 }
+>         }
+>  }
+> +
+> +void perf_restore_debug_store(void)
+> +{
+> +       if (!x86_pmu.bts && !x86_pmu.pebs)
+> +               return;
+> +
+> +       init_debug_store_on_cpu(smp_processor_id());
+> +}
 
-> This is certainly a neat trick.
+This seems to trigger a WARN_ON during suspend/resume.
 
-Thank you ;-)
+[ 1479.919313] WARNING: at kernel/smp.c:244
+smp_call_function_single+0x11b/0x170()
+[ 1479.919314] Hardware name: iMac12,1
+[ 1479.919347] Modules linked in: nfsd auth_rpcgss nfs_acl lockd
+sunrpc ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE
+iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+xt_conntrack nf_conntrack xt_CHECKSUM iptable_mangle bridge stp llc
+be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3
+mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core
+iscsi_tcp libiscsi_tcp libiscsi rfcomm bnep scsi_transport_iscsi
+nls_utf8 hfsplus arc4 ath9k ath9k_common ath9k_hw ath mac80211
+snd_hda_codec_hdmi snd_hda_codec_cirrus snd_hda_intel snd_hda_codec
+snd_hwdep vhost_net uvcvideo cfg80211 btusb tun macvtap macvlan
+snd_seq snd_seq_device snd_pcm coretemp bluetooth tg3 snd_page_alloc
+kvm_intel videobuf2_vmalloc videobuf2_memops snd_timer videobuf2_core
+snd crc32c_intel
+[ 1479.919361]  kvm iTCO_wdt iTCO_vendor_support videodev rfkill ptp
+media ghash_clmulni_intel joydev soundcore lpc_ich pcspkr applesmc
+input_polldev mfd_core i2c_i801 microcode pps_core apple_bl
+binfmt_misc uinput hid_logitech_dj usb_storage radeon i915 ttm
+i2c_algo_bit drm_kms_helper drm firewire_ohci firewire_core crc_itu_t
+i2c_core video
+[ 1479.919364] Pid: 3246, comm: pm-suspend Not tainted 3.9.0-rc2+ #2
+[ 1479.919364] Call Trace:
+[ 1479.919370]  [<ffffffff8105e9df>] warn_slowpath_common+0x7f/0xc0
+[ 1479.919374]  [<ffffffff8131ed40>] ? __rdmsr_on_cpu+0x50/0x50
+[ 1479.919376]  [<ffffffff8105ea3a>] warn_slowpath_null+0x1a/0x20
+[ 1479.919377]  [<ffffffff810be0eb>] smp_call_function_single+0x11b/0x170
+[ 1479.919379]  [<ffffffff8131efd3>] wrmsr_on_cpu+0x43/0x50
+[ 1479.919382]  [<ffffffff81028d59>] init_debug_store_on_cpu+0x39/0x40
+[ 1479.919384]  [<ffffffff81029731>] perf_restore_debug_store+0x21/0x30
+[ 1479.919387]  [<ffffffff815363a5>] restore_processor_state+0x225/0x230
+[ 1479.919390]  [<ffffffff81036da7>] acpi_suspend_lowlevel+0xf7/0x120
+[ 1479.919393]  [<ffffffff8136075b>] acpi_suspend_enter+0x3b/0xb7
+[ 1479.919395]  [<ffffffff810a84ef>] suspend_devices_and_enter+0x37f/0x430
+[ 1479.919397]  [<ffffffff810a873a>] pm_suspend+0x19a/0x230
+[ 1479.919399]  [<ffffffff810a7577>] state_store+0x87/0xf0
+[ 1479.919402]  [<ffffffff812fba7f>] kobj_attr_store+0xf/0x20
+[ 1479.919405]  [<ffffffff81210078>] sysfs_write_file+0xd8/0x150
+[ 1479.919408]  [<ffffffff8119bccc>] vfs_write+0xac/0x180
+[ 1479.919410]  [<ffffffff8119c012>] sys_write+0x52/0xa0
+[ 1479.919412]  [<ffffffff8166369e>] ? do_page_fault+0xe/0x10
+[ 1479.919414]  [<ffffffff81667cd9>] system_call_fastpath+0x16/0x1b
+[ 1479.919415] ---[ end trace 2af7ebe5ffee87a9 ]---
+[ 1479.919416] ACPI: Low-level resume complete
 
-> 
-> But I don't really like the fact that it complicates things for every
-> future code reader, especially when a trivial change in the caller
-> would accomplish the same thing.  Do you have any idea how much
-> performance we would gain in exchange for the complication?
-
-Yeah, it does complicate things a little, but that's what comments are
-for. With the comment above the code explaining *exactly* what is
-happening, it shouldn't make it difficult for future readers. It may
-even inspire them.
-
-It is a trivial change to fix seq_printf("fmt") to seq_puts("fmt"), but
-also a maintenance burden. I also find reading "printf" much easier to
-read in code than seeing "puts". Imagine:
-
-	seq_printf(m "Format this %s\n", fmt);
-	seq_puts(m, "for the following line\n");
-	seq_printf(m, "followed by this %d\n", cnt);
-
-It makes it rather ugly to read in the code. Having all users just
-default to seq_printf() actually makes the code *easier* to read and to
-understand.
-
-Yes, it is complex in one little location that seldom ever changes, and
-people seldom even look at. But the result of this change can make it
-much more readable throughout the rest of the kernel. When you include
-all of the kernel, I think the balance is towards the macro in making
-the code easier to read and review. 
-
-I always say, add more complexity in a location that is self contained
-and seldom changes, to make things that are all over the place and
-changes constantly, less complex.
-
-That was my philosophy for TRACE_EVENT() and my NMI handling. Two very
-complex pieces of code, but both self contained, and seldom change.
-
-Also, gcc does this conversion too in userspace. Compile the following
-program:
-
-#include <stdio.h>
-int main() {
-	printf("hello world\n");
-	return 0;
-}
-
-and do an objdump on it:
-
-  4004c4:       55                      push   %rbp
-  4004c5:       48 89 e5                mov    %rsp,%rbp
-  4004c8:       48 83 ec 10             sub    $0x10,%rsp
-  4004cc:       89 7d fc                mov    %edi,-0x4(%rbp)
-  4004cf:       48 89 75 f0             mov    %rsi,-0x10(%rbp)
-  4004d3:       bf e8 05 40 00          mov    $0x4005e8,%edi
-  4004d8:       e8 db fe ff ff          callq  4003b8 <puts@plt>
-  4004dd:       b8 00 00 00 00          mov    $0x0,%eax
-  4004e2:       c9                      leaveq 
-  4004e3:       c3                      retq   
-
-It converts it to puts!
-
--- Steve
-
-
+--Parag
