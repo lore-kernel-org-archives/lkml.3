@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3CPJ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 05:56:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59126 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753754Ab3CPJ4O (ORCPT
+	id S1755333Ab3CPKRr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 06:17:47 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:62590 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab3CPKRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 05:56:14 -0400
-X-Sasl-enc: OJrmWcQrybW7mukOPG/WCWiM6gxNvyL/GAZ0pRNO0lMh 1363427773
-Message-ID: <51444171.1080905@ladisch.de>
-Date: Sat, 16 Mar 2013 10:54:57 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
-References: <1363377610-19196-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1363377610-19196-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Mar 2013 06:17:46 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 0/2] ARM: davinci: dm355: add support for vpbe display
+Date: Sat, 16 Mar 2013 15:47:30 +0530
+Message-Id: <1363429052-1081-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prarit Bhargava wrote:
-> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
-> registers to userspace.  The Kconfig help points out that in some cases this
-> can be a security risk as some systems may erroneously configure the map such
-> that additional data is exposed to userspace.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-I'm not aware of any such system (but cannot rule out the possibility).
+This patch series enables VPBE display driver on DM355.
 
-> In an effort to mitigate this risk, and due to the low number of users
-> of the MMAP functionality I've introduced a kernel parameter,
-> hpet_mmap_enable, that is required in order to actually have the HPET
-> MMAP exposed.
+Changes for v5:
+1: Rebased on 3.9, fix review comments pointed by Sekhar for DM365 series.
 
-This introduces a regression for all users.  At least make the default
-state (allowed/forbidden) configurable.
+Changes for v4:
+1: pass different platform names to handle different ip's.
 
-Also, this patch makes the Kconfig help text a lie.
+Changes for v3:
+1: Replaced obsolete preset API by timings API.
+
+Changes for v2:
+1: Removed VPSS clock alias for master and slave which was
+   sent for VPSS driver. since this patch was dependent on
+   patch[1]. I will revist this patch once MC(captrure driver)
+   goes into mainline.
+[1] http://www.spinics.net/lists/linux-media/msg50562.html
 
 
-Regards,
-Clemens
+Lad, Prabhakar (2):
+  ARM: davinci: dm355: add support for v4l2 video display
+  ARM: davinci: dm355 EVM: add support for VPBE display
+
+ arch/arm/mach-davinci/board-dm355-evm.c |   71 +++++++++++-
+ arch/arm/mach-davinci/davinci.h         |    2 +-
+ arch/arm/mach-davinci/dm355.c           |  202 +++++++++++++++++++++++++++++--
+ 3 files changed, 264 insertions(+), 11 deletions(-)
+
+-- 
+1.7.4.1
+
