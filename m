@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3CPGRK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 02:17:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55614 "EHLO bear.ext.ti.com"
+	id S1755381Ab3CPGSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 02:18:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55616 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753198Ab3CPGRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 02:17:07 -0400
+	id S1753379Ab3CPGRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 02:17:09 -0400
 From: Lokesh Vutla <lokeshvutla@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <santosh.shilimkar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lokeshvutla@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 3/8] memory: emif: handle overflow for timing for LP mode
-Date: Sat, 16 Mar 2013 11:46:43 +0530
-Message-ID: <1363414608-7448-4-git-send-email-lokeshvutla@ti.com>
+Subject: [PATCH V2 5/8] memory: emif: use restart if power_off not present when out of spec
+Date: Sat, 16 Mar 2013 11:46:45 +0530
+Message-ID: <1363414608-7448-6-git-send-email-lokeshvutla@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363414608-7448-1-git-send-email-lokeshvutla@ti.com>
 References: <1363414608-7448-1-git-send-email-lokeshvutla@ti.com>
@@ -25,86 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-In case the custom timings provide values which overflow
-the maximum possible field value, warn and use maximum
-permissible value.
+Some machine or kernel variants might have missed implementation
+of power off handlers. We DONOT want to let the system be in
+"out of spec" state in this condition. So, WARN and attempt
+a machine restart in the hopes of clearing the out-of-spec
+temperature condition.
+
+NOTE: This is not the safest option, but safer than leaving the
+system in unstable conditions.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
-Changes since V1: No changes
+Changes since V1:
+	Added a new extra line before if condition.
 
- drivers/memory/emif.c |   36 ++++++++++++++++++++++++++++--------
- 1 file changed, 28 insertions(+), 8 deletions(-)
+ drivers/memory/emif.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 5f3b7ed..e513889 100644
+index 827eb3b..8db74e4 100644
 --- a/drivers/memory/emif.c
 +++ b/drivers/memory/emif.c
-@@ -715,6 +715,8 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
- 	u32 timeout_perf	= EMIF_LP_MODE_TIMEOUT_PERFORMANCE;
- 	u32 timeout_pwr		= EMIF_LP_MODE_TIMEOUT_POWER;
- 	u32 freq_threshold	= EMIF_LP_MODE_FREQ_THRESHOLD;
-+	u32 mask;
-+	u8 shift;
+@@ -25,6 +25,7 @@
+ #include <linux/module.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
++#include <linux/pm.h>
+ #include <memory/jedec_ddr.h>
+ #include "emif.h"
+ #include "of_memory.h"
+@@ -1015,7 +1016,14 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
  
- 	struct emif_custom_configs *cust_cfgs = emif->plat_data->custom_configs;
- 
-@@ -743,27 +745,45 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
- 
- 	switch (lpmode) {
- 	case EMIF_LP_MODE_CLOCK_STOP:
--		pwr_mgmt_ctrl = (timeout << CS_TIM_SHIFT) |
--					SR_TIM_MASK | PD_TIM_MASK;
-+		shift = CS_TIM_SHIFT;
-+		mask = CS_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_SELF_REFRESH:
- 		/* Workaround for errata i735 */
- 		if (timeout < 6)
- 			timeout = 6;
- 
--		pwr_mgmt_ctrl = (timeout << SR_TIM_SHIFT) |
--					CS_TIM_MASK | PD_TIM_MASK;
-+		shift = SR_TIM_SHIFT;
-+		mask = SR_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_PWR_DN:
--		pwr_mgmt_ctrl = (timeout << PD_TIM_SHIFT) |
--					CS_TIM_MASK | SR_TIM_MASK;
-+		shift = PD_TIM_SHIFT;
-+		mask = PD_TIM_MASK;
- 		break;
- 	case EMIF_LP_MODE_DISABLE:
- 	default:
--		pwr_mgmt_ctrl = CS_TIM_MASK |
--					PD_TIM_MASK | SR_TIM_MASK;
-+		mask = 0;
-+		shift = 0;
-+		break;
-+	}
-+	/* Round to maximum in case of overflow, BUT warn! */
-+	if (lpmode != EMIF_LP_MODE_DISABLE && timeout > mask >> shift) {
-+		pr_err("TIMEOUT Overflow - lpmode=%d perf=%d pwr=%d freq=%d\n",
-+		       lpmode,
-+		       timeout_perf,
-+		       timeout_pwr,
-+		       freq_threshold);
-+		WARN(1, "timeout=0x%02x greater than 0x%02x. Using max\n",
-+		     timeout, mask >> shift);
-+		timeout = mask >> shift;
+ 	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN) {
+ 		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
+-		kernel_power_off();
++
++		/* If we have Power OFF ability, use it, else try restarting */
++		if (pm_power_off) {
++			kernel_power_off();
++		} else {
++			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
++			kernel_restart("SDRAM Over-temp Emergency restart");
++		}
+ 		return IRQ_HANDLED;
  	}
  
-+	/* Setup required timing */
-+	pwr_mgmt_ctrl = (timeout << shift) & mask;
-+	/* setup a default mask for rest of the modes */
-+	pwr_mgmt_ctrl |= (SR_TIM_MASK | CS_TIM_MASK | PD_TIM_MASK) &
-+			  ~mask;
-+
- 	/* No CS_TIM in EMIF_4D5 */
- 	if (ip_rev == EMIF_4D5)
- 		pwr_mgmt_ctrl &= ~CS_TIM_MASK;
 -- 
 1.7.9.5
 
