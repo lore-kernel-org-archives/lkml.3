@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3CPHY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 03:24:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58399 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3CPHY3 (ORCPT
+	id S1753655Ab3CPHho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 03:37:44 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58294 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab3CPHhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 03:24:29 -0400
-Date: Sat, 16 Mar 2013 08:23:47 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com,
-        josh.h.morris@us.ibm.com, klebers@linux.vnet.ibm.com
-Subject: Re: [Patch 01/02v2] block: IBM FlashSystem 70/80 EEH Support.
-Message-ID: <20130316072347.GZ31875@kernel.dk>
-References: <20130315192404.GF5833@oc6784271780.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130315192404.GF5833@oc6784271780.ibm.com>
+	Sat, 16 Mar 2013 03:37:43 -0400
+From: Dmitry Voytik <dvv.kernel@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Dmitry Voytik <dvv.kernel@gmail.com>
+Subject: [PATCH] staging: android: lowmemorykiller: well-marked debug print
+Date: Sat, 16 Mar 2013 11:37:26 +0400
+Message-Id: <1363419446-21236-1-git-send-email-dvv.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1303151508070.32475@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1303151508070.32475@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15 2013, Philip J. Kelleher wrote:
-> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
-> 
-> Adding in EEH support to the IBM FlashSystem 70/80 device driver.
-> 
-> Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
-> -------------------------------------------------------------------------------
-> Changes in v2 include:
-> o Fixed spelling of guarantee.
-> o Fixed potential memory leak if slot reset fails out.
-> o Changed list_for_each_entry_safe with list_for_each_entry.
+Add "lowmemorykiller:" prefix to the debug print so it's easier to
+analyse LMK's debug output:
+dmesg | grep lowmemorykiller
 
-Applied, thanks Philip.
+Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
+---
+ drivers/staging/android/lowmemorykiller.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 53d80c2..fe74494 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -30,6 +30,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+@@ -61,7 +63,7 @@ static unsigned long lowmem_deathpending_timeout;
+ #define lowmem_print(level, x...)			\
+ 	do {						\
+ 		if (lowmem_debug_level >= (level))	\
+-			printk(x);			\
++			pr_info(x);			\
+ 	} while (0)
+ 
+ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 -- 
-Jens Axboe
+1.7.9.5
 
