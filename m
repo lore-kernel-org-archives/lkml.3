@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab3CPEiw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 00:38:52 -0400
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:58843 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3CPEiv (ORCPT
+	id S1752164Ab3CPEoM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 00:44:12 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:61556 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3CPEoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 00:38:51 -0400
-Message-ID: <5143F6B2.4070308@synopsys.com>
-Date: Sat, 16 Mar 2013 10:06:02 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sat, 16 Mar 2013 00:44:10 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arc: remove #ifdef-ed out include of dead header
-References: <1363364177.1335.123.camel@x61.thuisdomein>
-In-Reply-To: <1363364177.1335.123.camel@x61.thuisdomein>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.217]
+Date: Sat, 16 Mar 2013 10:14:09 +0530
+Message-ID: <CABYxbz6ydTtHmLW1xETanHa9uZzZ5M=4wv3Wj5aNDE2Db1b2Rw@mail.gmail.com>
+Subject: Getting kernel uImage build issue on omap2+
+From: Anil Kumar <anilk4.v@gmail.com>
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 March 2013 09:46 PM, Paul Bolle wrote:
-> There's no (Kconfig) macro CONFIG_BLOCK_DEV_RAM. (CONFIG_BLK_DEV_RAM
-> does exist though.) But linux/blk.h got killed in 2005 anyway (in a
-> patch titled "kill blk.h"), so these three lines can be removed.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Hi,
 
-Applied to next.
+I am getting kernel uImage build issue on omap2+ log[1]
 
-P.S. The msg to linux-snps-arc would have bounced back since the list couldn't be
-created - I have a patch to be sent to Linus to remove that.
+Taken kernel branch "for_3.10/dts" from
+https://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
 
-Thx,
--Vineet
+Taking reference from
+https://kernel.googlesource.com/pub/scm/linux/kernel/git/tmlind/linux-omap/+/omap-for-v3.9/multiplatform-enable-signed-v2
+
+Am I missing some thing ?
+
+[1]
+anil@anil-laptop:~/Anil/omap3/bcousson$  mkimage -A arm -O linux -T
+kernel -C none -a 0x80008000 -e 0x80008000 -n "Linux" -d
+zImage-omap2plus uImage-omap2plus
+mkimage: Can't open zImage-omap2plus: No such file or directory
+anil@anil-laptop:~/Anil/omap3/bcousson$
+
+Thanks,
+Anil
