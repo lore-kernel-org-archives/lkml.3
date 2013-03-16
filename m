@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab3CSCbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:31:04 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47057 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377Ab3CSCa7 (ORCPT
+	id S933616Ab3CSCbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:31:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46260 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978Ab3CSCbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:30:59 -0400
+	Mon, 18 Mar 2013 22:31:08 -0400
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v3 10/21] vmcore: clean up read_vmcore()
+Subject: [PATCH v3 12/21] vmcore: allocate per-cpu crash_notes objects on
+ page-size boundary
 To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         heiko.carstens@de.ibm.com, akpm@linux-foundation.org
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         zhangyanfei@cn.fujitsu.com
-Date: Sat, 16 Mar 2013 13:01:43 +0900
-Message-ID: <20130316040143.15064.74100.stgit@localhost6.localdomain6>
+Date: Sat, 16 Mar 2013 13:01:54 +0900
+Message-ID: <20130316040154.15064.35482.stgit@localhost6.localdomain6>
 In-Reply-To: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -26,113 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up read_vmcore(). Part for objects in vmcore_list can be written
-uniformly to part for ELF headers. By this change, duplicate and
-complicated codes are removed, so it's more clear to see what's done
-there.
+To satisfy mmap()'s page-size boundary requirement, allocate per-cpu
+crash_notes objects on page-size boundary.
 
-Also, by this change, map_offset_to_paddr() is no longer used. Remove
-it.
+/proc/vmcore on the 2nd kernel checks if each note objects is
+allocated on page-size boundary. If there's some object not satisfying
+the page-size boundary requirement, /proc/vmcore doesn't provide
+mmap() interface.
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |   68 ++++++++++++++++--------------------------------------
- 1 files changed, 20 insertions(+), 48 deletions(-)
+ kernel/kexec.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index b85ba32..7e21d64 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -118,27 +118,6 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
- 	return read;
- }
- 
--/* Maps vmcore file offset to respective physical address in memroy. */
--static u64 map_offset_to_paddr(loff_t offset, struct list_head *vc_list,
--					struct vmcore **m_ptr)
--{
--	struct vmcore *m;
--	u64 paddr;
--
--	list_for_each_entry(m, vc_list, list) {
--		u64 start, end;
--		start = m->offset;
--		end = m->offset + m->size - 1;
--		if (offset >= start && offset <= end) {
--			paddr = m->paddr + offset - start;
--			*m_ptr = m;
--			return paddr;
--		}
--	}
--	*m_ptr = NULL;
--	return 0;
--}
--
- /* Read from the ELF header and then the crash dump. On error, negative value is
-  * returned otherwise number of bytes read are returned.
-  */
-@@ -147,8 +126,8 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index bddd3d7..d1f365e 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1234,7 +1234,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+ static int __init crash_notes_memory_init(void)
  {
- 	ssize_t acc = 0, tmp;
- 	size_t tsz;
--	u64 start, nr_bytes;
--	struct vmcore *curr_m = NULL;
-+	u64 start;
-+	struct vmcore *m;
- 
- 	if (buflen == 0 || *fpos >= vmcore_size)
- 		return 0;
-@@ -174,33 +153,26 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
- 			return acc;
- 	}
- 
--	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
--	if (!curr_m)
--        	return -EINVAL;
--
--	while (buflen) {
--		tsz = min_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
--
--		/* Calculate left bytes in current memory segment. */
--		nr_bytes = (curr_m->size - (start - curr_m->paddr));
--		if (tsz > nr_bytes)
--			tsz = nr_bytes;
--
--		tmp = read_from_oldmem(buffer, tsz, &start, 1);
--		if (tmp < 0)
--			return tmp;
--		buflen -= tsz;
--		*fpos += tsz;
--		buffer += tsz;
--		acc += tsz;
--		if (start >= (curr_m->paddr + curr_m->size)) {
--			if (curr_m->list.next == &vmcore_list)
--				return acc;	/*EOF*/
--			curr_m = list_entry(curr_m->list.next,
--						struct vmcore, list);
--			start = curr_m->paddr;
-+	list_for_each_entry(m, &vmcore_list, list) {
-+		if (*fpos < m->offset + m->size) {
-+			tsz = m->offset + m->size - *fpos;
-+			if (buflen < tsz)
-+				tsz = buflen;
-+			start = m->paddr + *fpos - m->offset;
-+			tmp = read_from_oldmem(buffer, tsz, &start, 1);
-+			if (tmp < 0)
-+				return tmp;
-+			buflen -= tsz;
-+			*fpos += tsz;
-+			buffer += tsz;
-+			acc += tsz;
-+
-+			/* leave now if filled buffer already */
-+			if (buflen == 0)
-+				return acc;
- 		}
- 	}
-+
- 	return acc;
- }
- 
+ 	/* Allocate memory for saving cpu registers. */
+-	crash_notes = alloc_percpu(note_buf_t);
++	crash_notes = __alloc_percpu(roundup(sizeof(note_buf_t), PAGE_SIZE),
++				     PAGE_SIZE);
+ 	if (!crash_notes) {
+ 		printk("Kexec: Memory allocation for saving cpu register"
+ 		" states failed\n");
 
