@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3CPQPg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 12:15:36 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:44899 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab3CPQPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 12:15:34 -0400
-Date: Sat, 16 Mar 2013 09:16:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 00/50] staging: omap-thermal: several code refactoring
-Message-ID: <20130316161641.GA2630@kroah.com>
-References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
- <20130316090540.GQ9138@mwanda>
- <5144698B.9080703@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5144698B.9080703@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755978Ab3CPQPn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 12:15:43 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53210 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750850Ab3CPQPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 12:15:41 -0400
+Message-ID: <1363450540.2023.30.camel@joe-AO722>
+Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
+ format with no args
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 16 Mar 2013 09:15:40 -0700
+In-Reply-To: <1363449458.25967.76.camel@gandalf.local.home>
+References: <1363441844.2023.17.camel@joe-AO722>
+	 <1363449458.25967.76.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 08:46:03AM -0400, Eduardo Valentin wrote:
-> Hello Dan,
-> 
-> On 16-03-2013 05:05, Dan Carpenter wrote:
-> >I've reviewed this set.
-> >
-> >I hate to make people redo whole patchset sets, and I hate
-> >re-reviewing code.  Obviously, I don't really like the bunny hop
-> >patches and I'm trying to discourage that going forward.  ;P  But
-> >I wouldn't say it's a "Redo the whole thing" kind of problem.
-> >
-> >Could just resend patch 33 and 47?  You should probably be able to
-> >redo those without changing the rest.
-> 
-> I could of course change them if the comment is better clarified. As
-> I mentioned as reply to one of your comments, those changes are
-> following what is suggested in CodingStyle file.
-> 
-> I can of course send a diff on top of 33, to fix the introduce bug.
-> 
-> For 47, I'm not sure the comment is fully applicable.
+On Sat, 2013-03-16 at 11:57 -0400, Steven Rostedt wrote:
+> My macro nastiness is contagious ;-)
 
-As I've taken all of these already (sorry Dan, I was fast and I didn't
-review them as well as you did), you will have to just send incremental
-patches on top of the whole series in order for me to be able to apply
-them.
+True.
 
-thanks,
+> On Sat, 2013-03-16 at 06:50 -0700, Joe Perches wrote:
 
-greg k-h
+> > +int (seq_printf)(struct seq_file *m, const char *f, ...)
+> 
+> That's rather ugly. Why not just #undef seq_printf before defining it?
+
+The whole thing is ugly, nasty and hackish.
+I kinda like it.
+
+But I don't like unnecessary undefs.
+The preprocessor doesn't expand (funcname).
+
+> Anyway, not making va_args a whacky name is dangerous. This is why I add
+> those crazy underscores. If someone does:
+> 
+> 	var = 1;
+> 	va_args[] = "abc";
+> 	seq_printf(m, "%d %s", var, va_args);
+
+The same could be true of fmt and it's
+used in lots of macros no?
+
+> What will be printed is:
+> 
+> 	1 var, va_args
+> 
+> That will be very confusing to people.
+
+And so be fixed very quickly.
+
+> > +	if (sizeof(va_args) > 1)				\
+> > +		seq_printf(seq, fmt, ##__VA_ARGS__);		\
+> > +	else							\
+> > +		seq_puts(seq, fmt);				\
+> > +} while (0)
+> 
+> BTW, you need to return a value.
+
+Oh, yeah, thanks.
+
+>  #define seq_printf(seq, fmt, ...)				\
+> -do {								\
+> +({								\
+>  	char va_args[] = __stringify(__VA_ARGS__);		\
+> +	int _____ret;						\
+>  	if (sizeof(va_args) > 1)				\
+> -		seq_printf(seq, fmt, ##__VA_ARGS__);		\
+> +		_____ret = seq_printf(seq, fmt, ##__VA_ARGS__); \
+>  	else							\
+> -		seq_puts(seq, fmt);				\
+> -} while (0)
+> +		_____ret = seq_puts(seq, fmt);			\
+> +	_____ret;						\
+> +})
+
+It's certainly better as a statement expression,
+but I think the underscores are really ugly and
+not necessary as ret is locally scoped.
+
+Checkpatch doesn't generally parse strings.
+checking strings for % could be done though
+I suppose.
+
