@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab3CPREg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:04:36 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44705 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494Ab3CPREc (ORCPT
+	id S1756006Ab3CPREV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:04:21 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51657 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547Ab3CPRER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:04:32 -0400
+	Sat, 16 Mar 2013 13:04:17 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,13 +15,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [PATCH v2, part3 09/12] mm: avoid using __free_pages_bootmem() at runtime
-Date: Sun, 17 Mar 2013 01:03:30 +0800
-Message-Id: <1363453413-8139-10-git-send-email-jiang.liu@huawei.com>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH v2, part3 07/12] mm: accurately calculate zone->managed_pages for highmem zones
+Date: Sun, 17 Mar 2013 01:03:28 +0800
+Message-Id: <1363453413-8139-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
 References: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
@@ -29,141 +29,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid using __free_pages_bootmem() at runtime, so we could easily
-manage totalram_pages and zone->managed_pages. With this change applied,
-__free_pages_bootmem() is only used by bootmem.c and nobootmem.c at
-boot time, so mark it as __init. And other callers of
-__free_pages_bootmem() have been switched to free_reserved_page(),
-which handles totalram_pages and zone->managed_pages in a safe way.
+Commit "mm: introduce new field 'managed_pages' to struct zone" assumes
+that all highmem pages will be freed into the buddy system by function
+mem_init(). But that's not always true, some architectures may reserve
+some highmem pages during boot. For example PPC may allocate highmem
+pages for giagant HugeTLB pages, and several architectures have code to
+check PageReserved flag to exclude highmem pages allocated during boot
+when freeing highmem pages into the buddy system.
 
-This patch also fix a bug in free_pagetable() for x86_64, which should
-increase zone->managed_pages instead of zone->present_pages when freeing
-reserved pages.
-
-And free_reserved_page() protects totalram_pages and zone->managed_pages
-with managed_pages_count_lock, so remove the redundant ppb_lock lock in
-put_page_bootmem(). This makes the locking rules much more clear.
+So do the same thing for highmem zones as normal zones, which is to:
+1) reset all zones' managed_pages to zero in mem_init()
+2) recalculate managed_pages for each zone when freeing pages into the
+   buddy system.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: x86@kernel.org
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Joonsoo Kim <js1304@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Minchan Kim <minchan@kernel.org>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org
 ---
- arch/x86/mm/init_64.c |   18 ++----------------
- mm/memory_hotplug.c   |   16 ++--------------
- mm/page_alloc.c       |    9 +--------
- 3 files changed, 5 insertions(+), 38 deletions(-)
+ arch/x86/mm/highmem_32.c |    6 ++++++
+ include/linux/bootmem.h  |    1 +
+ mm/bootmem.c             |   32 ++++++++++++++++++--------------
+ mm/nobootmem.c           |   32 +++++++++++++++++---------------
+ mm/page_alloc.c          |    1 +
+ 5 files changed, 43 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 05ef3ff..5e19126 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -694,36 +694,22 @@ EXPORT_SYMBOL_GPL(arch_add_memory);
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index 252b8f5..4500142 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -1,6 +1,7 @@
+ #include <linux/highmem.h>
+ #include <linux/module.h>
+ #include <linux/swap.h> /* for totalram_pages */
++#include <linux/bootmem.h>
  
- static void __meminit free_pagetable(struct page *page, int order)
+ void *kmap(struct page *page)
  {
--	struct zone *zone;
--	bool bootmem = false;
- 	unsigned long magic;
- 	unsigned int nr_pages = 1 << order;
+@@ -121,6 +122,11 @@ void __init set_highmem_pages_init(void)
+ 	struct zone *zone;
+ 	int nid;
  
- 	/* bootmem page has reserved flag */
- 	if (PageReserved(page)) {
- 		__ClearPageReserved(page);
--		bootmem = true;
++	/*
++	 * Explicitly reset zone->managed_pages because set_highmem_pages_init()
++	 * is invoked before free_all_bootmem()
++	 */
++	reset_all_zones_managed_pages();
+ 	for_each_zone(zone) {
+ 		unsigned long zone_start_pfn, zone_end_pfn;
  
- 		magic = (unsigned long)page->lru.next;
- 		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
- 			while (nr_pages--)
- 				put_page_bootmem(page++);
- 		} else
--			__free_pages_bootmem(page, order);
-+			while (nr_pages--)
-+				free_reserved_page(page++);
- 	} else
- 		free_pages((unsigned long)page_address(page), order);
--
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 190ff06..b0806c9 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -47,6 +47,7 @@ extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
+ extern unsigned long free_low_memory_core_early(int nodeid);
+ extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
+ extern unsigned long free_all_bootmem(void);
++extern void reset_all_zones_managed_pages(void);
+ 
+ extern void free_bootmem_node(pg_data_t *pgdat,
+ 			      unsigned long addr,
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index b93376c..7f71b31 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -241,20 +241,26 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+ 	return count;
+ }
+ 
+-static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
++static int reset_managed_pages_done __initdata;
++
++static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
+ {
+ 	struct zone *z;
+ 
 -	/*
--	 * SECTION_INFO pages and MIX_SECTION_INFO pages
--	 * are all allocated by bootmem.
+-	 * In free_area_init_core(), highmem zone's managed_pages is set to
+-	 * present_pages, and bootmem allocator doesn't allocate from highmem
+-	 * zones. So there's no need to recalculate managed_pages because all
+-	 * highmem pages will be managed by the buddy system. Here highmem
+-	 * zone also includes highmem movable zone.
 -	 */
--	if (bootmem) {
--		zone = page_zone(page);
--		zone_span_writelock(zone);
--		zone->present_pages += nr_pages;
--		zone_span_writeunlock(zone);
--		totalram_pages += nr_pages;
--	}
++	if (reset_managed_pages_done)
++		return;
++
+ 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+-		if (!is_highmem(z))
+-			z->managed_pages = 0;
++		z->managed_pages = 0;
++}
++
++void __init reset_all_zones_managed_pages(void)
++{
++	struct pglist_data *pgdat;
++
++	for_each_online_pgdat(pgdat)
++		reset_node_managed_pages(pgdat);
++	reset_managed_pages_done = 1;
  }
  
- static void __meminit free_pte_table(pte_t *pte_start, pmd_t *pmd)
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 40c3c78..a1debd0 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -101,12 +101,9 @@ void get_page_bootmem(unsigned long info,  struct page *page,
- 	atomic_inc(&page->_count);
- }
- 
--/* reference to __meminit __free_pages_bootmem is valid
-- * so use __ref to tell modpost not to generate a warning */
--void __ref put_page_bootmem(struct page *page)
-+void put_page_bootmem(struct page *page)
+ /**
+@@ -266,7 +272,7 @@ static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
+ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
  {
- 	unsigned long type;
--	static DEFINE_MUTEX(ppb_lock);
- 
- 	type = (unsigned long) page->lru.next;
- 	BUG_ON(type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
-@@ -116,17 +113,8 @@ void __ref put_page_bootmem(struct page *page)
- 		ClearPagePrivate(page);
- 		set_page_private(page, 0);
- 		INIT_LIST_HEAD(&page->lru);
--
--		/*
--		 * Please refer to comment for __free_pages_bootmem()
--		 * for why we serialize here.
--		 */
--		mutex_lock(&ppb_lock);
--		__free_pages_bootmem(page, 0);
--		mutex_unlock(&ppb_lock);
--		totalram_pages++;
-+		free_reserved_page(page);
- 	}
--
+ 	register_page_bootmem_info_node(pgdat);
+-	reset_node_lowmem_managed_pages(pgdat);
++	reset_node_managed_pages(pgdat);
+ 	return free_all_bootmem_core(pgdat->bdata);
  }
  
- #ifndef CONFIG_SPARSEMEM_VMEMMAP
+@@ -279,10 +285,8 @@ unsigned long __init free_all_bootmem(void)
+ {
+ 	unsigned long total_pages = 0;
+ 	bootmem_data_t *bdata;
+-	struct pglist_data *pgdat;
+ 
+-	for_each_online_pgdat(pgdat)
+-		reset_node_lowmem_managed_pages(pgdat);
++	reset_all_zones_managed_pages();
+ 
+ 	list_for_each_entry(bdata, &bdata_list, list)
+ 		total_pages += free_all_bootmem_core(bdata);
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index b8294fc..3db0f67 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -137,20 +137,25 @@ unsigned long __init free_low_memory_core_early(int nodeid)
+ 	return count;
+ }
+ 
+-static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
++static int reset_managed_pages_done __initdata;
++
++static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
+ {
+ 	struct zone *z;
+ 
+-	/*
+-	 * In free_area_init_core(), highmem zone's managed_pages is set to
+-	 * present_pages, and bootmem allocator doesn't allocate from highmem
+-	 * zones. So there's no need to recalculate managed_pages because all
+-	 * highmem pages will be managed by the buddy system. Here highmem
+-	 * zone also includes highmem movable zone.
+-	 */
++	if (reset_managed_pages_done)
++		return;
+ 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+-		if (!is_highmem(z))
+-			z->managed_pages = 0;
++		z->managed_pages = 0;
++}
++
++void __init reset_all_zones_managed_pages(void)
++{
++	struct pglist_data *pgdat;
++
++	for_each_online_pgdat(pgdat)
++		reset_node_managed_pages(pgdat);
++	reset_managed_pages_done = 1;
+ }
+ 
+ /**
+@@ -162,7 +167,7 @@ static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
+ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
+ {
+ 	register_page_bootmem_info_node(pgdat);
+-	reset_node_lowmem_managed_pages(pgdat);
++	reset_node_managed_pages(pgdat);
+ 
+ 	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
+ 	return 0;
+@@ -175,10 +180,7 @@ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
+  */
+ unsigned long __init free_all_bootmem(void)
+ {
+-	struct pglist_data *pgdat;
+-
+-	for_each_online_pgdat(pgdat)
+-		reset_node_lowmem_managed_pages(pgdat);
++	reset_all_zones_managed_pages();
+ 
+ 	/*
+ 	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9d08d06..b0ca2b7 100644
+index 8c7b366..23bb4d7 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -740,14 +740,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	local_irq_restore(flags);
- }
- 
--/*
-- * Read access to zone->managed_pages is safe because it's unsigned long,
-- * but we still need to serialize writers. Currently all callers of
-- * __free_pages_bootmem() except put_page_bootmem() should only be used
-- * at boot time. So for shorter boot time, we shift the burden to
-- * put_page_bootmem() to serialize writers.
-- */
--void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
-+void __init __free_pages_bootmem(struct page *page, unsigned int order)
+@@ -5147,6 +5147,7 @@ void free_highmem_page(struct page *page)
  {
- 	unsigned int nr_pages = 1 << order;
- 	unsigned int loop;
+ 	__free_reserved_page(page);
+ 	totalram_pages++;
++	page_zone(page)->managed_pages++;
+ 	totalhigh_pages++;
+ }
+ #endif
 -- 
 1.7.9.5
 
