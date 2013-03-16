@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3CPR42 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:56:28 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:49478 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3CPR41 (ORCPT
+	id S1755825Ab3CPR5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:57:42 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39704 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab3CPR5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:56:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOULuObGX24KK+i88WT1PSN4_o3zFYuyyyZAcQPXqm-3xGrW0g@mail.gmail.com>
-References: <20130315132607.GA4565@quad>
-	<CAOULuObGX24KK+i88WT1PSN4_o3zFYuyyyZAcQPXqm-3xGrW0g@mail.gmail.com>
-Date: Sat, 16 Mar 2013 10:56:26 -0700
-X-Google-Sender-Auth: B2kBJGHZW3eNKM22zxrl6_RY6QQ
-Message-ID: <CA+55aFwHRAiaFBZdwoYMVAUKrT7XPi99JKNMjjROFAKhgw8=4A@mail.gmail.com>
-Subject: Re: [PATCH] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: multipart/mixed; boundary=089e013cc38684342904d80e790f
+	Sat, 16 Mar 2013 13:57:41 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, tiwai@suse.de, alsa-devel@alsa-project.org,
+        perex@perex.cz, rob@landley.net
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] documentation: alsa: Fix typo in Documentation/sound
+Date: Sun, 17 Mar 2013 02:57:28 +0900
+Message-Id: <1363456648-7519-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e013cc38684342904d80e790f
-Content-Type: text/plain; charset=UTF-8
+Correct spelling typos in Documentation/sound/alsa
 
-On Sat, Mar 16, 2013 at 9:11 AM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->
-> This seems to trigger a WARN_ON during suspend/resume.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/sound/alsa/ALSA-Configuration.txt | 2 +-
+ Documentation/sound/alsa/seq_oss.html           | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Ugh, yes. It's practically harmless, but it's ugly and technically
-wrong (we're using wrmsr_on_cpu() on our current cpu, but in a context
-where using it on anything else would be horribly broken).
+diff --git a/Documentation/sound/alsa/ALSA-Configuration.txt b/Documentation/sound/alsa/ALSA-Configuration.txt
+index ce6581c..4499bd9 100644
+--- a/Documentation/sound/alsa/ALSA-Configuration.txt
++++ b/Documentation/sound/alsa/ALSA-Configuration.txt
+@@ -912,7 +912,7 @@ Prior to version 0.9.0rc4 options had a 'snd_' prefix. This was removed.
+     models depending on the codec chip.  The list of available models
+     is found in HD-Audio-Models.txt
+ 
+-    The model name "genric" is treated as a special case.  When this
++    The model name "generic" is treated as a special case.  When this
+     model is given, the driver uses the generic codec parser without
+     "codec-patch".  It's sometimes good for testing and debugging.
+ 
+diff --git a/Documentation/sound/alsa/seq_oss.html b/Documentation/sound/alsa/seq_oss.html
+index d9776cf..9663b45 100644
+--- a/Documentation/sound/alsa/seq_oss.html
++++ b/Documentation/sound/alsa/seq_oss.html
+@@ -285,7 +285,7 @@ sample data.
+ <H4>
+ 7.2.4 Close Callback</H4>
+ The <TT>close</TT> callback is called when this device is closed by the
+-applicaion. If any private data was allocated in open callback, it must
++application. If any private data was allocated in open callback, it must
+ be released in the close callback. The deletion of ALSA port should be
+ done here, too. This callback must not be NULL.
+ <H4>
+-- 
+1.8.2
 
-I think the attached patch should fix it. UNTESTED!
-
-                  Linus
-
---089e013cc38684342904d80e790f
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hed2u35j0
-
-IGFyY2gveDg2L2tlcm5lbC9jcHUvcGVyZl9ldmVudF9pbnRlbF9kcy5jIHwgNCArKystCiAxIGZp
-bGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0pCgpkaWZmIC0tZ2l0IGEv
-YXJjaC94ODYva2VybmVsL2NwdS9wZXJmX2V2ZW50X2ludGVsX2RzLmMgYi9hcmNoL3g4Ni9rZXJu
-ZWwvY3B1L3BlcmZfZXZlbnRfaW50ZWxfZHMuYwppbmRleCAwZTliZGQzY2IwMWUuLmIwNWE1NzVk
-NTZmNCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL2NwdS9wZXJmX2V2ZW50X2ludGVsX2Rz
-LmMKKysrIGIvYXJjaC94ODYva2VybmVsL2NwdS9wZXJmX2V2ZW50X2ludGVsX2RzLmMKQEAgLTcz
-Miw4ICs3MzIsMTAgQEAgdm9pZCBpbnRlbF9kc19pbml0KHZvaWQpCiAKIHZvaWQgcGVyZl9yZXN0
-b3JlX2RlYnVnX3N0b3JlKHZvaWQpCiB7CisJc3RydWN0IGRlYnVnX3N0b3JlICpkcyA9IF9fdGhp
-c19jcHVfcmVhZChjcHVfaHdfZXZlbnRzLmRzKTsKKwogCWlmICgheDg2X3BtdS5idHMgJiYgIXg4
-Nl9wbXUucGVicykKIAkJcmV0dXJuOwogCi0JaW5pdF9kZWJ1Z19zdG9yZV9vbl9jcHUoc21wX3By
-b2Nlc3Nvcl9pZCgpKTsKKwl3cm1zcmwoTVNSX0lBMzJfRFNfQVJFQSwgKHVuc2lnbmVkIGxvbmcp
-ZHMpOwogfQo=
---089e013cc38684342904d80e790f--
