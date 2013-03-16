@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3CPB6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 21:58:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13120 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3CPB6F (ORCPT
+	id S932174Ab3CPCCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:02:32 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19965 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab3CPCCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 21:58:05 -0400
+	Fri, 15 Mar 2013 22:02:31 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 15 Mar 2013 18:51:04 -0700
-Message-ID: <1363399103.2879.6.camel@bilhuang-vm1>
-Subject: Re: [RFC v2 1/1] clk: Add notifier support in
- clk_prepare/clk_unprepare
+	by hqnvupgp08.nvidia.com on Fri, 15 Mar 2013 18:55:32 -0700
+Message-ID: <1363399371.2879.10.camel@bilhuang-vm1>
+Subject: Re: [PATCH 1/1] mfd: palmas: Add power off control
 From: Bill Huang <bilhuang@nvidia.com>
 To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 15 Mar 2013 18:58:23 -0700
-In-Reply-To: <51437BB6.3040607@wwwdotorg.org>
-References: <1363253464-3200-1-git-send-email-bilhuang@nvidia.com>
-	 <20130315174558.GS4977@n2100.arm.linux.org.uk>
-	 <51437BB6.3040607@wwwdotorg.org>
+CC: Stephen Warren <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "Laxman Dewangan" <ldewangan@nvidia.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 15 Mar 2013 19:02:51 -0700
+In-Reply-To: <514358BC.4030600@wwwdotorg.org>
+References: <1363258680-12600-1-git-send-email-bilhuang@nvidia.com>
+	 <5142AF55.80708@nvidia.com> <1363326713.3311.50.camel@bilhuang-vm1>
+	 <514358BC.4030600@wwwdotorg.org>
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ISO-8859-9"
@@ -34,77 +34,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 03:51 +0800, Stephen Warren wrote:
-> On 03/15/2013 11:45 AM, Russell King - ARM Linux wrote:
-> > On Thu, Mar 14, 2013 at 02:31:04AM -0700, Bill Huang wrote:
-> >> Add the below two notifier events so drivers which are interested in
-> >> knowing the clock status can act accordingly. This is extremely useful
-> >> in some of the DVFS (Dynamic Voltage Frequency Scaling) design.
+On Sat, 2013-03-16 at 01:22 +0800, Stephen Warren wrote:
+> On 03/14/2013 11:51 PM, Bill Huang wrote:
+> > On Fri, 2013-03-15 at 13:19 +0800, Stephen Warren wrote:
+> >> On 03/14/2013 04:58 AM, Bill Huang wrote:
+> >>> Hook up "pm_power_off" to palmas power off routine if there is DT
+> >>> property "ti,system-power-controller" defined, so platform which is
+> >>> powered by this regulator can be powered off properly.
 > >>
-> >> CLK_PREPARED
-> >> CLK_UNPREPARED
+> >>> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
 > >>
-> >> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> >> ---
-> >>  drivers/clk/clk.c   |    3 +++
-> >>  include/linux/clk.h |    2 ++
-> >>  2 files changed, 5 insertions(+)
+> >>> +	pdata->pm_off = of_property_read_bool(node,
+> >>> +			"ti,system-power-controller");
 > >>
-> >> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> >> index ed87b24..3292cec 100644
-> >> --- a/drivers/clk/clk.c
-> >> +++ b/drivers/clk/clk.c
-> >> @@ -550,6 +550,7 @@ void clk_unprepare(struct clk *clk)
-> >>  {
-> >>  	mutex_lock(&prepare_lock);
-> >>  	__clk_unprepare(clk);
-> >> +	__clk_notify(clk, CLK_UNPREPARED, clk->rate, clk->rate);
-> >>  	mutex_unlock(&prepare_lock);
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(clk_unprepare);
-> >> @@ -598,6 +599,8 @@ int clk_prepare(struct clk *clk)
-> >>  
-> >>  	mutex_lock(&prepare_lock);
-> >>  	ret = __clk_prepare(clk);
-> >> +	if (!ret)
-> >> +		__clk_notify(clk, CLK_PREPARED, clk->rate, clk->rate);
-> > 
-> > So, on prepare, we notify after we've prepared the clock.  On unprepare,
-> > we notify after the clock has been shut down.  Are you sure that's the
-> > correct ordering?  Would it not be better to view it in a stack-like
-> > fashion, iow:
+> >> You would need to add that property to the DT binding documentation for
+> >> this device.
+> >
+> > Does it work that some time later Laxmain helps to add it when he
+> > submits his pmic bindings for Palmas?
 > 
-> > get
-> > 	prepare
-> > 		notify-prepare
-> > 			enable
-> > 			disable
-> > 		notify-unprepare
-> > 	unprepare
-> > put
+> I'll note that Ian Lartey and Graeme Gregory actually seem to be the
+> people defining the PMIC bindings for Palmas. See:
 > 
-> Yes, these should be stacked/nested better for consistency.
+> http://comments.gmane.org/gmane.linux.documentation/9948
 > 
-> But for DVFS, the voltage needs to be raised before the prepare body is
-> run, so that if clk_prepare actually enables the clock, the voltage is
-> already at the safe level required by that clock. Similarly, for
-> unprepare, you can only lower the voltage after having turned off the
-> clock, which is guaranteed after the unprepare body. So, I think you
-> want to move the notifier for prepare in the code above (and rename it
-> to pre/before_prepare?), rather than the notifier for unprepare.
+> Or is Laxman planning to send some updates to that?
+> 
+> But irrespective of that no, I don't think that influences this at all;
+> if you introduce driver support for new DT content, then either that DT
+> content should already be documented in the binding, or this patch
+> should add it to the documentation.
 
-Oh yes I should raised notify before prepare body is run.
-> 
-> In order to cover more cases, you might have both
-> {pre,post}_{un,}prepare notifiers, although I'm not sure when you'd use
-> the other two options.
-
-Right, maybe {pre,post}_{un,}prepare will be useful.
-> 
-> >> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> 
-> >> +#define CLK_PREPARED			BIT(3)
-> >> +#define CLK_UNPREPARED			BIT(4)
-> 
+Thanks, here I just need to add a property into the DT bindings but
+currently there is no any Palmas binding document exist so that means I
+have to hold off the patch.
 
 
