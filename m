@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab3CPDcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 23:32:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22226 "EHLO
+	id S932589Ab3CPDcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 23:32:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3057 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab3CPDbr (ORCPT
+	with ESMTP id S1755438Ab3CPDbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 23:31:47 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=09nJGDjnI7QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KT4Yw0wyyfoA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=PHo0CsLH493t_rUCqXoA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=hPjdaMEvmhQA:10 a=Zh68SRI7RUMA:10 a=MSl-tDqOz04A:10 a=Dq9v3A9vL-LZP2r7PtUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 15 Mar 2013 23:31:44 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=AMBXYsvUD50A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0YuRFWqe5zEA:10 a=3IGDQTqjCqsdcYdpLgYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=u_dmaJ29askVJ_c4l3sA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130316033143.553069781@goodmis.org>
+Message-Id: <20130316033143.744766877@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 23:24:20 -0400
+Date: Fri, 15 Mar 2013 23:24:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>, <stable@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [for-next][PATCH 8/9] tracing: Fix ftrace_dump()
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: [for-next][PATCH 9/9] tracing: Update debugfs README file
 References: <20130316032412.416651612@goodmis.org>
-Content-Disposition: inline; filename=0008-tracing-Fix-ftrace_dump.patch
+Content-Disposition: inline; filename=0009-tracing-Update-debugfs-README-file.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,186 +33,134 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-ftrace_dump() had a lot of issues. What ftrace_dump() does, is when
-ftrace_dump_on_oops is set (via a kernel parameter or sysctl), it
-will dump out the ftrace buffers to the console when either a oops,
-panic, or a sysrq-z occurs.
+Update the README file in debugfs/tracing to something more useful.
+What's currently in the file is very old and what it shows doesn't
+have much use. Heck, it tells you how to mount debugfs! But to read
+this file you would have already needed to mount it.
 
-This was written a long time ago when ftrace was fragile to recursion.
-But it wasn't written well even for that.
+Replace the file with current up-to-date information. It's rather
+limited, but what do you expect from a pseudo README file.
 
-There's a possible deadlock that can occur if a ftrace_dump() is happening
-and an NMI triggers another dump. This is because it grabs a lock
-before checking if the dump ran.
-
-It also totally disables ftrace, and tracing for no good reasons.
-
-As the ring_buffer now checks if it is read via a oops or NMI, where
-there's a chance that the buffer gets corrupted, it will disable
-itself. No need to have ftrace_dump() do the same.
-
-ftrace_dump() is now cleaned up where it uses an atomic counter to
-make sure only one dump happens at a time. A simple atomic_inc_return()
-is enough that is needed for both other CPUs and NMIs. No need for
-a spinlock, as if one CPU is running the dump, no other CPU needs
-to do it too.
-
-The tracing_on variable is turned off and not turned on. The original
-code did this, but it wasn't pretty. By just disabling this variable
-we get the result of not seeing traces that happen between crashes.
-
-For sysrq-z, it doesn't get turned on, but the user can always write
-a '1' to the tracing_on file. If they are using sysrq-z, then they should
-know about tracing_on.
-
-The new code is much easier to read and less error prone. No more
-deadlock possibility when an NMI triggers here.
-
-Reported-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c          |   62 +++++++++++++++++--------------------=
+ kernel/trace/trace.c |   89 ++++++++++++++++++++++++++++++++++++++++++----=
 ----
- kernel/trace/trace_selftest.c |    9 +++---
- 2 files changed, 31 insertions(+), 40 deletions(-)
+ 1 file changed, 75 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8486256..3dc7999 100644
+index 3dc7999..83ad596 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -5997,36 +5997,32 @@ void trace_init_global_iter(struct trace_iterator *=
-iter)
- 	iter->trace_buffer =3D &global_trace.trace_buffer;
- }
+@@ -3300,20 +3300,81 @@ static const struct file_operations tracing_iter_fo=
+ps =3D {
 =20
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
-+void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- {
--	static arch_spinlock_t ftrace_dump_lock =3D
--		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static atomic_t dump_running;
- 	unsigned int old_userobj;
--	static int dump_ran;
- 	unsigned long flags;
- 	int cnt =3D 0, cpu;
+ static const char readme_msg[] =3D
+ 	"tracing mini-HOWTO:\n\n"
+-	"# mount -t debugfs nodev /sys/kernel/debug\n\n"
+-	"# cat /sys/kernel/debug/tracing/available_tracers\n"
+-	"wakeup wakeup_rt preemptirqsoff preemptoff irqsoff function nop\n\n"
+-	"# cat /sys/kernel/debug/tracing/current_tracer\n"
+-	"nop\n"
+-	"# echo wakeup > /sys/kernel/debug/tracing/current_tracer\n"
+-	"# cat /sys/kernel/debug/tracing/current_tracer\n"
+-	"wakeup\n"
+-	"# cat /sys/kernel/debug/tracing/trace_options\n"
+-	"noprint-parent nosym-offset nosym-addr noverbose\n"
+-	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
+-	"# echo 1 > /sys/kernel/debug/tracing/tracing_on\n"
+-	"# cat /sys/kernel/debug/tracing/trace > /tmp/trace.txt\n"
+-	"# echo 0 > /sys/kernel/debug/tracing/tracing_on\n"
++	"# echo 0 > tracing_on : quick way to disable tracing\n"
++	"# echo 1 > tracing_on : quick way to re-enable tracing\n\n"
++	" Important files:\n"
++	"  trace\t\t\t- The static contents of the buffer\n"
++	"\t\t\t  To clear the buffer write into this file: echo > trace\n"
++	"  trace_pipe\t\t- A consuming read to see the contents of the buffer\n"
++	"  current_tracer\t- function and latency tracers\n"
++	"  available_tracers\t- list of configured tracers for current_tracer\n"
++	"  buffer_size_kb\t- view and modify size of per cpu buffer\n"
++	"  buffer_total_size_kb  - view total size of all cpu buffers\n\n"
++	"  trace_clock\t\t-change the clock used to order events\n"
++	"       local:   Per cpu clock but may not be synced across CPUS\n"
++	"      global:   Synced across CPUs but slows tracing down.\n"
++	"     counter:   Not a clock, but just an increment\n"
++	"      uptime:   Jiffy counter from time of boot\n"
++	"        perf:   Same clock that perf events use\n"
++#ifdef CONFIG_X86_64
++	"     x86-tsc:   TSC cycle counter\n"
++#endif
++	"\n  trace_marker\t\t- Writes into this file writes into the kernel buffe=
+r\n"
++	"  tracing_cpumask\t- Limit which CPUs to trace\n"
++	"  instances\t\t- Make sub-buffers with: mkdir instances/foo\n"
++	"\t\t\t  Remove sub-buffer with rmdir\n"
++	"  trace_options\t\t- Set format or modify how tracing happens\n"
++	"\t\t\t  Disable an option by adding a suffix 'no' to the option name\n"
++#ifdef CONFIG_DYNAMIC_FTRACE
++	"\n  available_filter_functions - list of functions that can be filtered =
+on\n"
++	"  set_ftrace_filter\t- echo function name in here to only trace these fu=
+nctions\n"
++	"            accepts: func_full_name, *func_end, func_begin*, *func_middl=
+e*\n"
++	"            modules: Can select a group via module\n"
++	"             Format: :mod:<module-name>\n"
++	"             example: echo :mod:ext3 > set_ftrace_filter\n"
++	"            triggers: a command to perform when function is hit\n"
++	"              Format: <function>:<trigger>[:count]\n"
++	"             trigger: traceon, traceoff\n"
++	"                      enable_event:<system>:<event>\n"
++	"                      disable_event:<system>:<event>\n"
++#ifdef CONFIG_STACKTRACE
++	"                      stacktrace\n"
++#endif
++#ifdef CONFIG_TRACER_SNAPSHOT
++	"                      snapshot\n"
++#endif
++	"             example: echo do_fault:traceoff > set_ftrace_filter\n"
++	"                      echo do_trap:traceoff:3 > set_ftrace_filter\n"
++	"             The first one will disable tracing everytime do_fault is hi=
+t\n"
++	"             The second will disable tracing at most 3 times whne do_tra=
+p is hit\n"
++	"             To remove trigger without count:\n"
++	"               echo '!<function>:<trigger> > set_ftrace_filter\n"
++	"             To remove trigger with a count:\n"
++	"               echo '!<function>:<trigger>:0 > set_ftrace_filter\n"
++	"  set_ftrace_notrace\t- echo function name in here to never trace.\n"
++	"            accepts: func_full_name, *func_end, func_begin*, *func_middl=
+e*\n"
++	"            modules: Can select a group via module command :mod:\n"
++	"            Does not accept triggers\n"
++#endif /* CONFIG_DYNAMIC_FTRACE */
++#ifdef CONFIG_FUNCTION_TRACER
++	"  set_ftrace_pid\t- Write pid(s) to only function trace those pids (func=
+tion)\n"
++#endif
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++	"  set_graph_function\t- Trace the nested calls of a function (function_g=
+raph)\n"
++	"  max_graph_depth\t- Trace a limited depth of nested calls (0 is unlimit=
+ed)\n"
++#endif
++#ifdef CONFIG_TRACER_SNAPSHOT
++	"\n  snashot\t\t- Like 'trace' but shows the content of the static snapsh=
+ot buffer\n"
++	"\t\t\t  Read the contents for more infromation\n"
++#endif
++#ifdef CONFIG_STACKTRACE
++	"  stack_trace\t\t- Shows the max stack trace when active\n"
++	"  stack_max_size\t- Shows current max stack size that was traced\n"
++	"\t\t\t  Write into this file to reset the max size (trigger a new trace)=
+\n"
++#ifdef CONFIG_DYNAMIC_FTRACE
++	"  stack_trace_filter\t- Like set_ftrace_filter but limits what stack_tra=
+ce traces\n"
++#endif
++#endif /* CONFIG_STACKTRACE */
+ ;
 =20
--	/* only one dump */
--	local_irq_save(flags);
--	arch_spin_lock(&ftrace_dump_lock);
--	if (dump_ran)
--		goto out;
--
--	dump_ran =3D 1;
-+	/* Only allow one dump user at a time. */
-+	if (atomic_inc_return(&dump_running) !=3D 1) {
-+		atomic_dec(&dump_running);
-+		return;
-+	}
-=20
-+	/*
-+	 * Always turn off tracing when we dump.
-+	 * We don't need to show trace output of what happens
-+	 * between multiple crashes.
-+	 *
-+	 * If the user does a sysrq-z, then they can re-enable
-+	 * tracing with echo 1 > tracing_on.
-+	 */
- 	tracing_off();
-=20
--	/* Did function tracer already get disabled? */
--	if (ftrace_is_dead()) {
--		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
--		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
--	}
--
--	if (disable_tracing)
--		ftrace_kill();
-+	local_irq_save(flags);
-=20
- 	/* Simulate the iterator */
- 	trace_init_global_iter(&iter);
-@@ -6056,6 +6052,12 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dump=
-_mode oops_dump_mode)
-=20
- 	printk(KERN_TRACE "Dumping ftrace buffer:\n");
-=20
-+	/* Did function tracer already get disabled? */
-+	if (ftrace_is_dead()) {
-+		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
-+		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
-+	}
-+
- 	/*
- 	 * We need to stop all tracing on all CPUS to read the
- 	 * the next buffer. This is a bit expensive, but is
-@@ -6095,26 +6097,14 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dum=
-p_mode oops_dump_mode)
- 		printk(KERN_TRACE "---------------------------------\n");
-=20
-  out_enable:
--	/* Re-enable tracing if requested */
--	if (!disable_tracing) {
--		trace_flags |=3D old_userobj;
-+	trace_flags |=3D old_userobj;
-=20
--		for_each_tracing_cpu(cpu) {
--			atomic_dec(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
--		}
--		tracing_on();
-+	for_each_tracing_cpu(cpu) {
-+		atomic_dec(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
- 	}
--
-- out:
--	arch_spin_unlock(&ftrace_dump_lock);
-+ 	atomic_dec(&dump_running);
- 	local_irq_restore(flags);
- }
--
--/* By default: disable tracing after the dump */
--void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
--{
--	__ftrace_dump(true, oops_dump_mode);
--}
- EXPORT_SYMBOL_GPL(ftrace_dump);
-=20
- __init static int tracer_alloc_buffers(void)
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 8672c40..55e2cf6 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -703,8 +703,6 @@ trace_selftest_startup_function(struct tracer *trace, s=
-truct trace_array *tr)
- /* Maximum number of functions to trace before diagnosing a hang */
- #define GRAPH_MAX_FUNC_TEST	100000000
-=20
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
- static unsigned int graph_hang_thresh;
-=20
- /* Wrap the real function entry probe to avoid possible hanging */
-@@ -714,8 +712,11 @@ static int trace_graph_entry_watchdog(struct ftrace_gr=
-aph_ent *trace)
- 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
- 		ftrace_graph_stop();
- 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
--		if (ftrace_dump_on_oops)
--			__ftrace_dump(false, DUMP_ALL);
-+		if (ftrace_dump_on_oops) {
-+			ftrace_dump(DUMP_ALL);
-+			/* ftrace_dump() disables tracing */
-+			tracing_on();
-+		}
- 		return 0;
- 	}
-=20
+ static ssize_t
 --=20
 1.7.10.4
 
@@ -227,13 +173,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ+efAAoJEOdOSU1xswtMUnQH/1XlD4ED1ivSPSpP2K3dVSws
-pkPpw0jCTjSRB7OC43aw30mETS0URwazf0wvZtnsTPk2ZYuxboo0zzrwrny+GQL4
-bfrTiREdB87ZedVOEiX0O4J1/TrVVbrcIyIk/XcOq40+Rlp9LXuOT1uP890hJ9EY
-lFL47Plf1KVg+n3ugI+LjVNGi/90YQNZuc6NEl2c7ggAfDl6lRRz9IJqO6M6Uqvc
-L0UEjKoCOTb0QDVCbBhZ1PO1qpeByTLF0Aqcay1/QphLUuIywQiBV/B7QOk4aT1j
-MuTkF8MCoyyi3rjqVATbqj6BrxW2MZYVEouLFTJNZhZnwHGclaYZ8keqs/E0aec=
-=sJED
+iQEcBAABAgAGBQJRQ+efAAoJEOdOSU1xswtMcPIIAIMJJazMFPx+QQfdTO8C/X/y
+kcbO2BzES6FhiCsuormOdHbEM4zsIaGJS7lMzWvIuQ8hjQOI7JJMTwAuBDbBCYd5
+83VHQTwZ+UtFbc2igJ/hqlG2iQmUA+1hOAEs0GAHK1R6WaHEJchlWpmYlRz+hoMm
+DTunH5xQamf5DuvBU9vrs3WeGckMFNWBrvLNQQ/YJX0W8Pn+b2scTLD5luyWJ4Fg
+pLKDxNca7Z8ROJS6Nv+5Jfeu1naVP78mbX/xAwhGBOx6cXIg9IgGaeg/DyEoKoRM
+FDxjctTqtrY4ctra8n6e+UWnp93E+yDvjckJ8NdavGflOd57/32lMpPYV+l8Lkg=
+=l2H2
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
