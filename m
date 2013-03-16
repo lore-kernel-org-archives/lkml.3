@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab3CPCKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 22:10:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45406 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932104Ab3CPCKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 22:10:36 -0400
-Message-ID: <1363399822.3937.161.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 04/21] target/pscsi: Fix page increment
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Asias He <asias@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 16 Mar 2013 02:10:22 +0000
-In-Reply-To: <20130312223245.664885170@linuxfoundation.org>
-References: <20130312223245.109098379@linuxfoundation.org>
-	 <20130312223245.664885170@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-eCm0M3iZwbbfe6PD3oX3"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S932358Ab3CPCK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:10:59 -0400
+Received: from mout.web.de ([212.227.15.4]:59071 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932180Ab3CPCK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Mar 2013 22:10:56 -0400
+Message-ID: <5143D4A5.4080002@web.de>
+Date: Sat, 16 Mar 2013 03:10:45 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-mm@kvack.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+References: <Pine.LNX.4.44L0.1303141719450.1194-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1303141719450.1194-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:gWRp6u6viLZPRZv34qNa2cYKNSajQ2hzpVRlX+yXvah
+ AtdgF/1zJw5PpJoQ1swQRrPwdK+K608htbSDrb+Lj4RKoV0MbG
+ 9fv3uluAgcyAdF1CJlm7yqIYPLXfMPWqtRGxnsqKoDl3ax5DyK
+ TIUx6QlwUD7W3hYvMIhmZM9QeWVOLld3LwEmUEtOpDCxnD6xWr
+ wiK/YSDjMAyPIgvG3vsLA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14.03.2013 22:33, Alan Stern wrote:
+> Maybe a better way to go about this is, instead of printing out every
+> allocation and deallocation, to keep a running counter.  You could have
+> the driver print out the value of this counter every minute or so.  Any
+> time the device isn't in use, the counter should be 0.
 
---=-eCm0M3iZwbbfe6PD3oX3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I implemented the counter. The max value is sampled at the beginning of 
+end_free_itds(), the current counter value is sampled at the end of this 
+function. Counter values w/o a max number are from the error path in 
+itd_urb_transaction().
+The number of allocated iTDs can grow to higher values (why?), but 
+normally the iTDs are freed during normal operation. Due to some reason 
+the number of iTDs suddenly increases until coherent pool exhaustion. 
+There is no permanent memory leak, all iTDs are released when the user 
+application ends. But imho several thousands of iTDs cannot be the 
+intended behavior...
 
-On Tue, 2013-03-12 at 15:44 -0700, Greg Kroah-Hartman wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Asias He <asias@redhat.com>
->=20
-> commit 472b72f2db7831d7dbe22ffdff4adee3bd49b05d upstream.
->=20
-> The page++ is wrong. It makes bio_add_pc_page() pointing to a wrong page
-> address if the 'while (len > 0 && data_len > 0) { ... }' loop is
-> executed more than one once.
->=20
-> Signed-off-by: Asias He <asias@redhat.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->=20
-> ---
->  drivers/target/target_core_pscsi.c |    1 -
->  1 file changed, 1 deletion(-)
->=20
-> --- a/drivers/target/target_core_pscsi.c
-> +++ b/drivers/target/target_core_pscsi.c
-> @@ -1210,7 +1210,6 @@ static int __pscsi_map_task_SG(
->  				bio =3D NULL;
->  			}
-> =20
-> -			page++;
->  			len -=3D bytes;
->  			data_len -=3D bytes;
->  			off =3D 0;
+   Soeren
 
-So in case a fragment crosses a page boundary, we wrap around to the
-beginning of the same page?  That doesn't look right.
 
-Ben.
+Mar 16 01:12:52 guruvdr kernel: itd_counter:42 (max:174)
+Mar 16 01:12:52 guruvdr kernel: itd_counter:0 (max:174)
+Mar 16 01:13:13 guruvdr kernel: itd_counter:42 (max:174)
+Mar 16 01:13:13 guruvdr kernel: itd_counter:0 (max:174)
+Mar 16 01:13:34 guruvdr kernel: itd_counter:87 (max:174)
+Mar 16 01:13:34 guruvdr kernel: itd_counter:0 (max:174)
+Mar 16 01:13:55 guruvdr kernel: itd_counter:42 (max:426)
+Mar 16 01:13:55 guruvdr kernel: itd_counter:0 (max:426)
+Mar 16 01:15:14 guruvdr kernel: itd_counter:249 (max:1441)
+Mar 16 01:15:14 guruvdr kernel: itd_counter:0 (max:1441)
+[...]
+Mar 16 02:03:33 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:04:15 guruvdr kernel: itd_counter:150 (max:1441)
+Mar 16 02:04:15 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:04:36 guruvdr kernel: itd_counter:42 (max:1441)
+Mar 16 02:04:36 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:04:57 guruvdr kernel: itd_counter:42 (max:1441)
+Mar 16 02:04:57 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:05:18 guruvdr kernel: itd_counter:42 (max:1441)
+Mar 16 02:05:18 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:05:39 guruvdr kernel: itd_counter:42 (max:1441)
+Mar 16 02:05:39 guruvdr kernel: itd_counter:0 (max:1441)
+Mar 16 02:06:43 guruvdr kernel: itd_counter:254 (max:1441)
+Mar 16 02:07:44 guruvdr kernel: itd_counter:968 (max:1469)
+Mar 16 02:08:04 guruvdr kernel: itd_counter:1192 (max:1469)
+Mar 16 02:08:46 guruvdr kernel: itd_counter:1812 (max:1854)
+Mar 16 02:09:07 guruvdr kernel: itd_counter:2117 (max:2159)
+Mar 16 02:09:28 guruvdr kernel: itd_counter:2482 (max:2524)
+Mar 16 02:09:49 guruvdr kernel: itd_counter:2791 (max:2833)
+Mar 16 02:10:10 guruvdr kernel: itd_counter:3088 (max:3409)
+Mar 16 02:10:31 guruvdr kernel: itd_counter:3402 (max:3444)
+Mar 16 02:10:52 guruvdr kernel: itd_counter:3689 (max:3731)
+Mar 16 02:11:13 guruvdr kernel: itd_counter:3950 (max:4073)
+Mar 16 02:11:34 guruvdr kernel: itd_counter:4264 (max:4306)
+Mar 16 02:11:55 guruvdr kernel: itd_counter:4525 (max:4567)
+Mar 16 02:12:16 guruvdr kernel: itd_counter:4803 (max:4845)
+Mar 16 02:12:37 guruvdr kernel: itd_counter:5028 (max:5070)
+Mar 16 02:13:19 guruvdr kernel: itd_counter:5549 (max:5843)
+Mar 16 02:13:40 guruvdr kernel: itd_counter:5836 (max:5878)
+Mar 16 02:14:01 guruvdr kernel: itd_counter:6133 (max:6238)
+Mar 16 02:14:06 guruvdr kernel: ERROR: 1024 KiB atomic DMA coherent pool 
+is too small!
+Mar 16 02:14:06 guruvdr kernel: Please increase it with coherent_pool= 
+kernel parameter!
+Mar 16 02:14:06 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:06 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:06 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:06 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:06 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:06 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:06 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:06 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:07 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:07 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:07 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:07 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:08 guruvdr kernel: itd_counter:6275
+Mar 16 02:14:08 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 16 02:14:08 guruvdr kernel: itd_counter:78 (max:6275)
+Mar 16 02:14:22 guruvdr kernel: itd_counter:0 (max:6275)
 
---=20
-Ben Hutchings
-It is easier to change the specification to fit the program than vice versa=
-.
-
---=-eCm0M3iZwbbfe6PD3oX3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUUPUjue/yOyVhhEJAQqtrA//a4o7qU5/dbCX9NpgxpEeKyfyr4FdJyVp
-AH3+QXPHrXodv5Aa/tr6B/FWogRIR9vg4Bm4rAboBMBO5exuSx2x3SJT25o5Olmm
-HXP7pXJilPH6ylFO3AXH2snOrdeQhrhACuzc/ezprEJt68xgtdR7D94fIxqfPWwZ
-ZiSeXiLB1D4G6dJXrvR/CwV3NsaOaTJt5mYF+jNf5lwgA4L1wNiOm4Vm/w7lf+Mj
-Jogu5zJo2vbCvGjeWCeVOjPfBnqUMjqAL2eUYOvquUPtq+JY15dwrrxcE65pNdi9
-lI8pMAXMbSv4GIy7HnMRbUjboiqOMFfUOZB0z9e7FqexINUDrk6DE0rLCnnJdN/B
-lvG8pqxNLVo1kMfIX0qKwqoYXo8GHyREcVTo6+bT6juLOSIJzHocb6ob17urCKEK
-xpDHgdSdEBi0+xcpc8V9devXBFzqPEzovXY+GGdZ+WJgWsqPMsZMfeodVni2iFb9
-2vc7u/XscORSXsDGj3zTot/23ZwQidBFbbD0mk7sZ6Y9nBZtI1983LGNF/ZQ5q48
-wJmCKQIAWGSGS52YdgR9xJZM30L9uR6B/wlDSzSSTu9B88J67+b0lj6AqrarfdFA
-ZapRS7qQRL5Kwejgl/dXf8SgYPvUs23bhz3nTV5MA2fvxMPG75ozNtSilcOLEBhl
-XGxkYi58xZM=
-=on2g
------END PGP SIGNATURE-----
-
---=-eCm0M3iZwbbfe6PD3oX3--
