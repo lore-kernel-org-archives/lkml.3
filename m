@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab3CPEoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 00:44:12 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:61556 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3CPEoK (ORCPT
+	id S1752524Ab3CPEye (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 00:54:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50397 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3CPEyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 00:44:10 -0400
+	Sat, 16 Mar 2013 00:54:33 -0400
+Message-ID: <5143FB1F.9010509@infradead.org>
+Date: Fri, 15 Mar 2013 21:54:55 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Date: Sat, 16 Mar 2013 10:14:09 +0530
-Message-ID: <CABYxbz6ydTtHmLW1xETanHa9uZzZ5M=4wv3Wj5aNDE2Db1b2Rw@mail.gmail.com>
-Subject: Getting kernel uImage build issue on omap2+
-From: Anil Kumar <anilk4.v@gmail.com>
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?TWFub2xvIETDrWF6?= <diaz.manolo@gmail.com>
+CC: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PROBLEM: CONFIG_DEFAULT_MESSAGE_LOGLEVEL option seems not to
+ work
+References: <20130315225636.2baf75ae@gmail.com>
+In-Reply-To: <20130315225636.2baf75ae@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/15/13 14:56, Manolo Díaz wrote:
+> Hi,
+> 
+> It seems that the kernel loglevel is set to 7 ignoring the
+> CONFIG_DEFAULT_MESSAGE_LOGLEVEL option (set to 4 in my config file)
+> 
+> The /proc/sys/kernel/printk output is 
+> 
+> 7	4	1	7
+> 
+> Passing the boot parameter "loglevel=4" or echoing "4 4 1 7"
+> to /proc/sys/kernel/printk solves my problem and then this proc file
+> contains
+> 
+> 4	4	1	7
+> 
+> as expected.
+> 
+> kernel version:
+> Linux version 3.8.3 (root@alcyone) (gcc version 4.7.2 (Debian 4.7.2-5)
+> ) #2 SMP Fri Mar 15 08:23:50 CET 2013
+> 
+> config file is gziped and attached.
+
+
 Hi,
 
-I am getting kernel uImage build issue on omap2+ log[1]
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL modifies the second field (value) in /proc/sys/kernel/printk,
+not the first value.  OTOH, the "loglevel" kernel parameter modifies the first value in
+that /proc file, not the second value.
 
-Taken kernel branch "for_3.10/dts" from
-https://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+Does that clarify/help?
 
-Taking reference from
-https://kernel.googlesource.com/pub/scm/linux/kernel/git/tmlind/linux-omap/+/omap-for-v3.9/multiplatform-enable-signed-v2
-
-Am I missing some thing ?
-
-[1]
-anil@anil-laptop:~/Anil/omap3/bcousson$  mkimage -A arm -O linux -T
-kernel -C none -a 0x80008000 -e 0x80008000 -n "Linux" -d
-zImage-omap2plus uImage-omap2plus
-mkimage: Can't open zImage-omap2plus: No such file or directory
-anil@anil-laptop:~/Anil/omap3/bcousson$
-
-Thanks,
-Anil
+-- 
+~Randy
