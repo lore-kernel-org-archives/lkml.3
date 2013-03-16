@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab3CPNbS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 09:31:18 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:37555 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755625Ab3CPNbR (ORCPT
+	id S1755829Ab3CPNdq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 09:33:46 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59185 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab3CPNdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 09:31:17 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: konrad.wilk@oracle.com, gregkh@linuxfoundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: dan.magenheimer@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, liwanp@linux.vnet.ibm.com, bob.liu@oracle.com
-Subject: [PATCH] zcache/TODO: Update on two items.
-Date: Sat, 16 Mar 2013 09:31:10 -0400
-Message-Id: <1363440670-7262-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.11.7
+	Sat, 16 Mar 2013 09:33:45 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 16 Mar 2013 06:33:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [ 11/21] hwmon: (sht15) Check return value of regulator_enable()
+Message-ID: <20130316133352.GA25567@roeck-us.net>
+References: <20130312223245.109098379@linuxfoundation.org>
+ <20130312223246.431610777@linuxfoundation.org>
+ <1363407324.3937.169.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363407324.3937.169.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two of them (zcache DebugFS cleanup) and the module loading
-capability are now in linux-next for v3.10.
+On Sat, Mar 16, 2013 at 04:15:24AM +0000, Ben Hutchings wrote:
+> On Tue, 2013-03-12 at 15:44 -0700, Greg Kroah-Hartman wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > 
+> > commit 3e78080f81481aa8340374d5a37ae033c1cf4272 upstream.
+> > 
+> > Not having power is a pretty serious error so check that we are able to
+> > enable the supply and error out if we can't.
+> > 
+> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> > ---
+> >  drivers/hwmon/sht15.c |    8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > --- a/drivers/hwmon/sht15.c
+> > +++ b/drivers/hwmon/sht15.c
+> > @@ -926,7 +926,13 @@ static int __devinit sht15_probe(struct
+> >  		if (voltage)
+> >  			data->supply_uV = voltage;
+> >  
+> > -		regulator_enable(data->reg);
+> > +		ret = regulator_enable(data->reg);
+> > +		if (ret != 0) {
+> > +			dev_err(&pdev->dev,
+> > +				"failed to enable regulator: %d\n", ret);
+> > +			return ret;
+> > +		}
+> > +
+> >  		/*
+> >  		 * Setup a notifier block to update this if another device
+> >  		 * causes the voltage to change
+> 
+> Since this has now been released, I think you need this follow-up fix in
+> 3.0.y and 3.4.y:
+> 
+Excellent catch. I submitted your patch to -stable.
 
-Also Bob Liu is full-time going to help on knocking these items
-off the list.
-
-CC: bob.liu@oracle.com
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/staging/zcache/TODO | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
-index c1e26d4..ec9aa11 100644
---- a/drivers/staging/zcache/TODO
-+++ b/drivers/staging/zcache/TODO
-@@ -41,14 +41,10 @@ STATUS/OWNERSHIP
-     for 3.9, see https://lkml.org/lkml/2013/2/6/437;
- 7. PROTOTYPED as part of "new" zcache; in staging/zcache for 3.9;
-     needs more review (plan to discuss at LSF/MM 2013)
--8. IN PROGRESS; owned by Konrad Wilk; v2 recently posted
--   http://lkml.org/lkml/2013/2/1/542
- 9. IN PROGRESS; owned by Konrad Wilk; Mel Gorman provided
-    great feedback in August 2012 (unfortunately of "old"
-    zcache)
--10. Konrad posted series of fixes (that now need rebasing)
--    https://lkml.org/lkml/2013/2/1/566 
--11. NOT DONE; owned by Konrad Wilk
-+11. NOT DONE; owned by Konrad Wilk and Bob Liu
- 12. TBD (depends on quantity of feedback)
- 13. PROPOSED; one suggestion proposed by Dan; needs more ideas/feedback
- 14. TBD (depends on feedback)
--- 
-1.7.11.7
-
+Thanks,
+Guenter
