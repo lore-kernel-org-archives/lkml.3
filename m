@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3CPVMI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 17:12:08 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48266
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1751949Ab3CPVMG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 17:12:06 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53978
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433Ab3CPVMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 17:12:03 -0400
+	id S1751326Ab3CPVMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 17:12:02 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
@@ -15,71 +15,40 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
         yinghan@google.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations for ballooning
-Date: Sat, 16 Mar 2013 14:42:05 -0700
-Message-Id: <1363470125-24606-2-git-send-email-kys@microsoft.com>
+Subject: [PATCH 1/2] mm: Export split_page()
+Date: Sat, 16 Mar 2013 14:42:04 -0700
+Message-Id: <1363470125-24606-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363470125-24606-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1363470088-24565-1-git-send-email-kys@microsoft.com>
 References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
- <1363470125-24606-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While ballooning memory out of the guest, attempt 2M allocations first.
-If 2M allocations fail, then go for 4K allocations. In cases where we
-have performed 2M allocations, split this 2M page so that we can free this
-page at 4K granularity (when the host returns the memory).
+The split_page() function will be very useful for balloon drivers. On Hyper-V,
+it will be very efficient to use 2M allocations in the guest as this (a) makes
+the ballooning protocol with the host that much more efficient and (b) moving
+memory in 2M chunks minimizes fragmentation in the host. Export the split_page()
+function to let the guest allocations be in 2M chunks while the host is free to
+return this memory at arbitrary granularity.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/hv/hv_balloon.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 2cf7d4e..71655b4 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -997,6 +997,14 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6cacfee..7e0ead6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
+ 	for (i = 1; i < (1 << order); i++)
+ 		set_page_refcounted(page + i);
+ }
++EXPORT_SYMBOL_GPL(split_page);
  
- 		dm->num_pages_ballooned += alloc_unit;
- 
-+		/*
-+		 * If we allocatted 2M pages; split them so we
-+		 * can free them in any order we get.
-+		 */
-+
-+		if (alloc_unit != 1)
-+			split_page(pg, get_order(alloc_unit << PAGE_SHIFT));
-+
- 		bl_resp->range_count++;
- 		bl_resp->range_array[i].finfo.start_page =
- 			page_to_pfn(pg);
-@@ -1023,9 +1031,10 @@ static void balloon_up(struct work_struct *dummy)
- 
- 
- 	/*
--	 * Currently, we only support 4k allocations.
-+	 * We will attempt 2M allocations. However, if we fail to
-+	 * allocate 2M chunks, we will go back to 4k allocations.
- 	 */
--	alloc_unit = 1;
-+	alloc_unit = 512;
- 
- 	while (!done) {
- 		bl_resp = (struct dm_balloon_response *)send_buffer;
-@@ -1041,6 +1050,11 @@ static void balloon_up(struct work_struct *dummy)
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
- 
-+		if ((alloc_error) && (alloc_unit != 1)) {
-+			alloc_unit = 1;
-+			continue;
-+		}
-+
- 		if ((alloc_error) || (num_ballooned == num_pages)) {
- 			bl_resp->more_pages = 0;
- 			done = true;
+ static int __isolate_free_page(struct page *page, unsigned int order)
+ {
 -- 
 1.7.4.1
 
