@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab3CPTVY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 15:21:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24773 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab3CPTVX (ORCPT
+	id S1754874Ab3CPTc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 15:32:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:42636 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab3CPTcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 15:21:23 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=2s8qfAZQTSAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rUnzm6ZD3sEA:10 a=Cxs8l86nFTuuujnqJi8A:9 a=PUjeQqilurYA:10 a=R1ORBWAdiSl-Xi4k:21 a=j_EV8MX9MOrVHnyr:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363461681.25967.114.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
- format with no args
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Joe Perches <joe@perches.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Mar 2013 15:21:21 -0400
-In-Reply-To: <20130316180141.GB21522@ZenIV.linux.org.uk>
-References: <1363441844.2023.17.camel@joe-AO722>
-	 <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
-	 <1363456278.2023.40.camel@joe-AO722>
-	 <20130316180141.GB21522@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Sat, 16 Mar 2013 15:32:55 -0400
+X-IronPort-AV: E=Sophos;i="4.84,857,1355126400"; 
+   d="scan'208";a="30062449"
+Message-ID: <5144C8DC.9010104@codeaurora.org>
+Date: Sat, 16 Mar 2013 12:32:44 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCHv2] ARM: Push selects for TWD/SCU into machine entries
+References: <1362007694-3419-1-git-send-email-sboyd@codeaurora.org> <512E9A39.3070207@wwwdotorg.org> <51354E35.1080804@codeaurora.org> <201303052234.32723.arnd@arndb.de>
+In-Reply-To: <201303052234.32723.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 18:01 +0000, Al Viro wrote:
-> On Sat, Mar 16, 2013 at 10:51:18AM -0700, Joe Perches wrote:
-> > > This is certainly a neat trick.
-> > > 
-> > > But I don't really like the fact that it complicates things for every
-> > > future code reader, especially when a trivial change in the caller
-> > > would accomplish the same thing.  Do you have any idea how much
-> > > performance we would gain in exchange for the complication?
-> > 
-> > Nope.  I believe it's trivial in any case.
-> > I just saw Steven's trace hack and thought of seq_printk.
-> > 
-> > Is there a real performance sensitive seq_printf anywhere?
-> 
-> ... and _that_ is the question that should've been asked first.
+On 3/5/2013 2:34 PM, Arnd Bergmann wrote:
+> On Tuesday 05 March 2013, Stephen Boyd wrote:
+>> On 02/27/13 15:43, Stephen Warren wrote:
+>>> Seems simple enough it doesn't really need many, but for Tegra,
+>>> Acked-by: Stephen Warren <swarren@nvidia.com>
+>>>
+>>> Which kernel is this going into? It's possible Tegra will get converted
+>>> to multi-platform in 3.10, which might move that main ARCH_TEGRA block
+>>> from arch/arm/Kconfig into arch/arm/mach-tegra/Kconfig, although I
+>>> suppose it doesn't have to move it. I think some/all(?) other
+>>> multi-platform conversions have moved their main Kconfig option like
+>>> that though.
+>> Thanks. I'm hoping that Arnd/Olof can pick this up. I'm not sure which
+>> version it will go into.
+>>
+> Hmm, it certainly looks useful to me. I think it should go into the next
+> cleanup branch as a base, so others can build on top of it. We will
+> also need it for the Exynos multiplatform patches that I hope can land
+> in 3.10 as well.
+>
+> Sneaking it in through the fixes branch would make life easier for us,
+> but it doesn't feel right.
 
-I totally agree with you. I've been avoiding the "performance
-sensitivity" question because of my narcissistic enjoyment of my macro
-cleverness ;-)
-And also because I have no "F"'n life.
+Arnd, can you pick this up into the arm-soc tree now? It would be good
+to get this into next so that conflicts are avoided later on.
 
-I just figured someone else will point out the lack of clothes the
-Emperor has on.
-
-> 
-> > It's trivial to replace seq_printf("constant") with
-> > seq_puts but there are over a thousand of them.
-> > 
-> > It may be better to just leave everything as-is.
-> 
-> Quite.  Note that it's not equivalent to gcc treatment of printf/puts -
-> there we have cases when it *is* a real hotpath (and I seriously suspect
-> that it's in part driven by desire to discourage people from uglifying
-> source by manual equivalents of that micro-optimization).  Moreover,
-> glibc printf at least used to be heavy; kernel-side we are nowhere near
-> that bad.
-
-It's also a very hot path in tracing. One reason I only implemented the
-macro trick with trace_printk() and not printk() nor seq_printk() is
-because I knew those were not hot paths. The reason I created
-trace_puts() in the first place, is because I had a bug I was trying to
-debug where a trace_printk() would actually make the bug go away. It
-added too much of an impact to get the race to trigger. But the
-trace_puts() was able to do the trace and still have the bug trigger,
-and I was able to debug the problem.
-
-But I enjoyed this conversation while it lasted. Sorry it took up your
-time. But it did call to attention that these macros that create
-variables should probably have a naming policy to avoid macro traps.
-
--- Steve
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
