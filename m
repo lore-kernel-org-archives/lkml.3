@@ -1,555 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3CPOlq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 10:41:46 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:49469 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab3CPOlo convert rfc822-to-8bit (ORCPT
+	id S1755913Ab3CPOsv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 10:48:51 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16043 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761Ab3CPOsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 10:41:44 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] net: Add davicom wemac ethernet driver found on Allwinner A10 SoC's
-Date: Sat, 16 Mar 2013 15:41:36 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-doc@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
-        kevin@allwinnertech.com
-References: <1363380605-6577-1-git-send-email-maxime.ripard@free-electrons.com> <1363380605-6577-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1363380605-6577-2-git-send-email-maxime.ripard@free-electrons.com>
-Organization: OpenWrt
+	Sat, 16 Mar 2013 10:48:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 16 Mar 2013 07:41:56 -0700
+Message-ID: <514485D2.6000806@nvidia.com>
+Date: Sat, 16 Mar 2013 20:16:42 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303161541.37341.florian@openwrt.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 RESEND 1/2] regmap: irq: Add support for interrupt
+ type
+References: <1362673997-6762-1-git-send-email-ldewangan@nvidia.com> <1362673997-6762-2-git-send-email-ldewangan@nvidia.com> <20130312195546.GH19942@opensource.wolfsonmicro.com>
+In-Reply-To: <20130312195546.GH19942@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maxime, Stefan,
+On Wednesday 13 March 2013 01:25 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Mar 07, 2013 at 10:03:17PM +0530, Laxman Dewangan wrote:
+>
+>>   /**
+>> + * The Regmap IRQ type Index
+>> + * REGMAP_IRQ_TYPE_NONE is used for setting inital value for clearing type.
+>> + */
+>> +enum {
+>> +	REGMAP_IRQ_TYPE_NONE,
+>> +	REGMAP_IRQ_TYPE_RISING,
+>> +	REGMAP_IRQ_TYPE_FALLING,
+>> +	REGMAP_IRQ_TYPE_BOTH,
+>> +	REGMAP_IRQ_TYPE_LEVEL_HIGH,
+>> +	REGMAP_IRQ_TYPE_LEVEL_LOW,
+>> +
+>> +	/* Last entry to get maximum index */
+>> +	REGMAP_IRQ_TYPE_NR,
+> Why can't we just use the normal IRQ_TYPE macros?
 
-Please find below some comments regarding your PHY implementation in the driver 
-as well as the transmit and transmit completion routines.
+IRQ_TYPE is bit wise allocated and I wanted to have on serieal index to 
+assign value on array indexed with type.
 
-Le vendredi 15 mars 2013 21:50:00, Maxime Ripard a écrit :
-> From: Stefan Roese <sr@denx.de>
-> 
-> The Allwinner A10 has an ethernet controller that is advertised as
-> coming from Davicom.
-> 
-> The exact feature set of this controller is unknown, since there is no
-> public documentation for this IP, and this driver is mostly the one
-> published by Allwinner that has been heavily cleaned up.
-> 
-> Signed-off-by: Stefan Roese <sr@denx.de>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>
+>> + * @type_reg_sub_offset: Suboffset for type register if type mask are
+>> + *              accomodated in the multiple register.
+>> + * @type_supported_flags: Supported interrupt type as per interrupt.h.
+>> + *             All supported flags are ORed.
+>> + * type_mask: Type mask for getting related register bits.
+>> + * @type_value: The type value in array form to set value for a given flag.
+> This is making my head hurt, it's a bit confusing - I'm having to think
+> too hard to understand what all these different fields do and how they
+> interact.  Especially type_reg_sub_offset which feels like it must be
+> part of a wider feature to support a greater range of register layouts.
+>
+> Can you clarify a bit please?
+>
 
-[snip]
+Sorry for complicating the things.
+When I added this feature I was working on two PMICs, Max77660/MAX77663 
+and the Palmas. I also consider how it is possible to handle in the 
+tps65910 but seems not possible.
+All this driver uses the regmap-irq. (MAX77660 is not in mainline and 
+working on upstreaming this)
+On Max77660/Max77663, the interrupt support is having 2 level, one top 
+level for main interrupt like GPIO, RTC interrupt and second level in the
+sub module like for RTC submodule: alram or timer in RTC interrupt 
+mask/status, for GPIO submodule: gpio control and gpio interrupt status.
+GPIO sub module of MAX77660/MAX77663 is as follows:
+- Top level interrupt for gpio module.
+- GPIO  module have GPIOx_CNTRL where bit6:5 shows the rising/falling 
+edge interrupt and GPIO_INT_STATUS shows the interrupt status.
+GPIO0_CNTL(0x20): bit 6:5: rising/falling edge of gpio0
+GPIO1_CNTL(0x21): bit 65:5 rising/falling edge of gpio1
+::::::::::::::::::::::::::::
+GPIO7_CNTRL(0x27): bit 65:5 rising/falling edge of gpio7
 
-> +
-> +wemac: ethernet@01c0b000 {
-> +       compatible = "davicom,wemac";
-> +       reg = <0x01c0b000 0x1000>;
-> +       interrupts = <55>;
-> +       allwinner,power-gpios = <&pio 7 19 0>;
-> +};
+GPIO_INT_STATUS: bit 0 for gpio0, bit 1 for gpio1, bit 2 for gpio2 etc.
 
-You do not define any handle for the PHY chip, but I think you should make this 
-configurable and use the standard Device Tree helpers for finding and connecting 
-a PHY driver to your EMAC adapter driver.
-[snip]
+There is no separate mask register here.
 
-> +#define WEMAC_PHY		0x100	/* PHY address 0x01 */
 
-This should be made configurable if possible.
+For palmas: All interrupts are on same level, there is no two level of 
+interrupts.
+There is 4 interrupt mask/status interrupt.
 
-[snip]
+INT4_MASK/STATUS: bit 0 for gpio0, bit 1 for gpio1, bit 2 for gpio2 etc.
+INT4_EDGE1_REG: bit 1:0 for gpio0 rising/falling, bit 3:2 for gpio1 
+rising falling...
+INT4_EDGE2_REG: bit 1:0 for gpio4 rising/falling, bit 3:2 for gpio5 
+rising falling...
 
-> + */
-> +
-> +struct wemac_board_info {
-> +	struct clk		*clk;
-> +	struct device		*dev;
-> +	spinlock_t		lock;
-> +	void __iomem		*membase;
-> +	struct mii_if_info	mii;
-> +	u32			msg_enable;
-> +	struct net_device	*ndev;
-> +	struct mutex		phy_lock;
-> +	struct delayed_work	phy_poll;
+It has mask, interrupt status, edge1, edg2 as part of set of register. 
+For other interrups also there is same sets but edge1 and edge2 are  
+reserved.
 
-Consider using phylib which should allow you to remove struct mii_if_info and 
-the mutex and poll delayed workqueue.
 
-> +	unsigned		power_gpio;
+To support rising/falling through regmap, I consider above two type of 
+register set. Here as we can have more than 2 register for edge 
+configuration,
+I make register_sub_offset with type_register to address edge1 and edge2 
+register.
 
-you could make this an int, so that you use gpio_is_valid() on this one.
+Now, Palmas series have multiple PMICs and currently I am wokring on 
+tps65913 and tps80036.
+It is easy to support interrupt through regmap-irq for tps65913 but not 
+possible to tps80036.
+In tps65913, there is 4 int status/mask sets properly address spaced.
+INT1_STATUS 0x0, INT2_STATUS 0x5, INT3_STATUS 0xA, INT4_STATUS 0xF
+But tps80036 added few more interrupts and so INT5_STATUS which is not 
+at 0x14 but it is at different 0x15 and INT6_STATUS 0x1A.
+So using regmap-irq for tps80036 is not possible.
 
-> +	struct sk_buff		*skb_last;
-> +	u16			tx_fifo_stat;
-> +};
-> +
-> +static inline struct wemac_board_info *to_wemac_board(struct net_device
-> *dev) +{
-> +	return netdev_priv(dev);
-> +}
-> +
-> +static int wemac_phy_read(struct net_device *dev, int phyaddr, int reg)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +	unsigned long flags;
-> +	int ret;
-> +
-> +	mutex_lock(&db->phy_lock);
-> +
-> +	spin_lock_irqsave(&db->lock, flags);
-> +	/* issue the phy address and reg */
-> +	writel(phyaddr | reg, db->membase + EMAC_MAC_MADR_REG);
-> +	/* pull up the phy io line */
-> +	writel(0x1, db->membase + EMAC_MAC_MCMD_REG);
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +
-> +	/* Wait read complete */
-> +	mdelay(1);
-> +
-> +	/* push down the phy io line and read data */
-> +	spin_lock_irqsave(&db->lock, flags);
-> +	/* push down the phy io line */
-> +	writel(0x0, db->membase + EMAC_MAC_MCMD_REG);
-> +	/* and read data */
-> +	ret = readl(db->membase + EMAC_MAC_MRDD_REG);
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +
-> +	mutex_unlock(&db->phy_lock);
 
-This sounds pretty complicated as a locking scheme, using phylib should make 
-this simpler anyway.
+So given above limitation on palma, I think I should not complicate type 
+support, only add register_type and drop the register_type_offset, 
+typically to support the MAX77660.
 
-> +
-> +	return ret;
-> +}
-> +
-> +/* Write a word to phyxcer */
-> +static void wemac_phy_write(struct net_device *dev,
-> +			    int phyaddr, int reg, int value)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +	unsigned long flags;
-> +
-> +	mutex_lock(&db->phy_lock);
-> +
-> +	spin_lock_irqsave(&db->lock, flags);
-> +	/* issue the phy address and reg */
-> +	writel(phyaddr | reg, db->membase + EMAC_MAC_MADR_REG);
-> +	/* pull up the phy io line */
-> +	writel(0x1, db->membase + EMAC_MAC_MCMD_REG);
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +
-> +	/* Wait write complete */
-> +	mdelay(1);
-> +
-> +	spin_lock_irqsave(&db->lock, flags);
-> +	/* push down the phy io line */
-> +	writel(0x0, db->membase + EMAC_MAC_MCMD_REG);
-> +	/* and write data */
-> +	writel(value, db->membase + EMAC_MAC_MWTD_REG);
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +
-> +	mutex_unlock(&db->phy_lock);
+let me know your opinion.
 
-Ditto
 
-> +}
-> +
-> +static int emacrx_completed_flag = 1;
 
-This should be moved to your interface specific private structure, as it won't 
-work when there are two instances of the same driver.
-
-[snip]
-
-> +
-> +static void wemac_dumpblk_32bit(void __iomem *reg, int count)
-> +{
-> +	int i;
-> +	int tmp;
-> +
-> +	for (i = 0; i < (round_up(count, 4) / 4); i++)
-> +		tmp = readl(reg);
-> +}
-
-This could probably be removed, tmp is a write only location, did you remove 
-the variable printing that came along this?
-
-> +
-> +static void wemac_schedule_poll(struct wemac_board_info *db)
-> +{
-> +	schedule_delayed_work(&db->phy_poll, HZ * 2);
-> +}
-
-phylib takes care of the polling for you.
-
-> +
-> +static int wemac_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
-> +{
-> +	struct wemac_board_info *dm = to_wemac_board(dev);
-> +
-> +	if (!netif_running(dev))
-> +		return -EINVAL;
-> +
-> +	return generic_mii_ioctl(&dm->mii, if_mii(req), cmd, NULL);
-> +}
-> +
-> +/* ethtool ops */
-> +static void wemac_get_drvinfo(struct net_device *dev,
-> +			      struct ethtool_drvinfo *info)
-> +{
-> +	strcpy(info->driver, DRV_NAME);
-> +	strcpy(info->version, DRV_VERSION);
-
-You should use strlcpy() here to ensure null-termination, and you should also 
-fill in the bus_info member of struct ethtool_drvinfo.
-
-> +}
-> +
-
-[snip]
-
-> +unsigned int phy_link_check(struct net_device *dev)
-> +{
-> +	unsigned int reg_val;
-> +
-> +	reg_val = wemac_phy_read(dev, WEMAC_PHY, 1);
-> +
-> +	if (reg_val & 0x4) {
-> +		netdev_info(dev, "EMAC PHY Linked...\n");
-> +		return 1;
-> +	} else {
-> +		netdev_info(dev, "EMAC PHY Link waiting......\n");
-> +		return 0;
-> +	}
-> +}
-
-Please remove this and migrate to phylib.
-
-> +
-> +unsigned int emac_setup(struct net_device *ndev)
-> +{
-> +	unsigned int reg_val;
-> +	unsigned int phy_val;
-> +	unsigned int duplex_flag;
-> +	struct wemac_board_info *db = netdev_priv(ndev);
-> +
-> +	/* set up TX */
-> +	reg_val = readl(db->membase + EMAC_TX_MODE_REG);
-> +
-> +	writel(reg_val | EMAC_TX_MODE_ABORTED_FRAME_EN,
-> +		db->membase + EMAC_TX_MODE_REG);
-> +
-> +	/* set up RX */
-> +	reg_val = readl(db->membase + EMAC_RX_CTL_REG);
-> +
-> +	writel(reg_val | EMAC_RX_CTL_PASS_LEN_OOR_EN |
-> +		EMAC_RX_CTL_ACCEPT_UNICAST_EN | EMAC_RX_CTL_DA_FILTER_EN |
-> +		EMAC_RX_CTL_ACCEPT_MULTICAST_EN |
-> +		EMAC_RX_CTL_ACCEPT_BROADCAST_EN,
-> +		db->membase + EMAC_RX_CTL_REG);
-> +
-> +	/* set MAC */
-> +	/* set MAC CTL0 */
-> +	reg_val = readl(db->membase + EMAC_MAC_CTL0_REG);
-> +	writel(reg_val | EMAC_MAC_CTL0_RX_FLOW_CTL_EN |
-> +		EMAC_MAC_CTL0_TX_FLOW_CTL_EN,
-> +		db->membase + EMAC_MAC_CTL0_REG);
-> +
-> +	/* set MAC CTL1 */
-> +	reg_val = readl(db->membase + EMAC_MAC_CTL1_REG);
-> +	phy_val = wemac_phy_read(ndev, WEMAC_PHY, 0);
-> +	dev_dbg(db->dev, "PHY SETUP, reg 0 value: %x\n", phy_val);
-> +	duplex_flag = !!(phy_val & EMAC_PHY_DUPLEX);
-> +
-> +	if (duplex_flag)
-> +		reg_val |= EMAC_MAC_CTL1_DUPLEX_EN;
-> +
-> +	reg_val |= EMAC_MAC_CTL1_LEN_CHECK_EN;
-> +	reg_val |= EMAC_MAC_CTL1_CRC_EN;
-> +	reg_val |= EMAC_MAC_CTL1_PAD_EN;
-> +	writel(reg_val, db->membase + EMAC_MAC_CTL1_REG);
-> +
-> +	/* set up IPGT */
-> +	writel(EMAC_MAC_IPGT_FULL_DUPLEX, db->membase + EMAC_MAC_IPGT_REG);
-> +
-> +	/* set up IPGR */
-> +	writel((EMAC_MAC_IPGR_IPG1 << 8) | EMAC_MAC_IPGR_IPG2,
-> +		db->membase + EMAC_MAC_IPGR_REG);
-> +
-> +	/* set up Collison window */
-> +	writel((EMAC_MAC_CLRT_COLLISION_WINDOW << 8) | EMAC_MAC_CLRT_RM,
-> +		db->membase + EMAC_MAC_CLRT_REG);
-> +
-> +	/* set up Max Frame Length */
-> +	writel(WEMAC_MAX_FRAME_LEN,
-> +		db->membase + EMAC_MAC_MAXF_REG);
-> +
-> +	return 0;
-> +}
-> +
-> +unsigned int wemac_powerup(struct net_device *ndev)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(ndev);
-> +	unsigned int reg_val;
-> +
-> +	/* initial EMAC */
-> +	/* flush RX FIFO */
-> +	reg_val = readl(db->membase + EMAC_RX_CTL_REG);
-> +	reg_val |= 0x8;
-> +	writel(reg_val, db->membase + EMAC_RX_CTL_REG);
-> +	udelay(1);
-> +
-> +	/* initial MAC */
-> +	/* soft reset MAC */
-> +	reg_val = readl(db->membase + EMAC_MAC_CTL0_REG);
-> +	reg_val &= ~EMAC_MAC_CTL0_SOFT_RESET;
-> +	writel(reg_val, db->membase + EMAC_MAC_CTL0_REG);
-> +
-> +	/* set MII clock */
-> +	reg_val = readl(db->membase + EMAC_MAC_MCFG_REG);
-> +	reg_val &= (~(0xf << 2));
-> +	reg_val |= (0xD << 2);
-> +	writel(reg_val, db->membase + EMAC_MAC_MCFG_REG);
-> +
-> +	/* clear RX counter */
-> +	writel(0x0, db->membase + EMAC_RX_FBC_REG);
-> +
-> +	/* disable all interrupt and clear interrupt status */
-> +	writel(0, db->membase + EMAC_INT_CTL_REG);
-> +	reg_val = readl(db->membase + EMAC_INT_STA_REG);
-> +	writel(reg_val, db->membase + EMAC_INT_STA_REG);
-> +
-> +	udelay(1);
-> +
-> +	/* set up EMAC */
-> +	emac_setup(ndev);
-> +
-> +	/* set mac_address to chip */
-> +	writel(ndev->dev_addr[0] << 16 | ndev->dev_addr[1] << 8 | ndev->
-> +	       dev_addr[2], db->membase + EMAC_MAC_A1_REG);
-> +	writel(ndev->dev_addr[3] << 16 | ndev->dev_addr[4] << 8 | ndev->
-> +	       dev_addr[5], db->membase + EMAC_MAC_A0_REG);
-> +
-> +	mdelay(1);
-> +
-> +	return 1;
-> +}
-> +
-> +static void wemac_poll_work(struct work_struct *w)
-> +{
-> +	struct delayed_work *dw = container_of(w, struct delayed_work, work);
-> +	struct wemac_board_info *db = container_of(dw,
-> +						struct wemac_board_info,
-> +						phy_poll);
-> +	struct net_device *ndev = db->ndev;
-> +
-> +	mii_check_media(&db->mii, netif_msg_link(db), 0);
-> +
-> +	if (netif_running(ndev))
-> +		wemac_schedule_poll(db);
-> +}
-> +
-> +static int wemac_set_mac_address(struct net_device *dev, void *p)
-> +{
-> +	struct sockaddr *addr = p;
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +
-> +	if (netif_running(dev))
-> +		return -EBUSY;
-> +
-> +	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-> +
-> +	writel(dev->dev_addr[0] << 16 | dev->dev_addr[1] << 8 | dev->
-> +	       dev_addr[2], db->membase + EMAC_MAC_A1_REG);
-> +	writel(dev->dev_addr[3] << 16 | dev->dev_addr[4] << 8 | dev->
-> +	       dev_addr[5], db->membase + EMAC_MAC_A0_REG);
-> +
-> +	return 0;
-> +}
-> +
-> +/* Initialize wemac board */
-> +static void wemac_init_wemac(struct net_device *dev)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +	unsigned int phy_reg;
-> +	unsigned int reg_val;
-> +
-> +	if (gpio_is_valid(db->power_gpio))
-> +		gpio_set_value(db->power_gpio, 1);
-> +
-> +	/* PHY POWER UP */
-> +	phy_reg = wemac_phy_read(dev, WEMAC_PHY, 0);
-> +	wemac_phy_write(dev, WEMAC_PHY, 0, phy_reg & (~(1 << 11)));
-> +	mdelay(1);
-> +
-> +	phy_reg = wemac_phy_read(dev, WEMAC_PHY, 0);
-> +
-> +	/* set EMAC SPEED, depend on PHY  */
-> +	reg_val = readl(db->membase + EMAC_MAC_SUPP_REG);
-> +	reg_val &= (~(0x1 << 8));
-> +	reg_val |= (((phy_reg & (1 << 13)) >> 13) << 8);
-> +	writel(reg_val, db->membase + EMAC_MAC_SUPP_REG);
-> +
-> +	/* set duplex depend on phy */
-> +	reg_val = readl(db->membase + EMAC_MAC_CTL1_REG);
-> +	reg_val &= (~(0x1 << 0));
-> +	reg_val |= (((phy_reg & (1 << 8)) >> 8) << 0);
-> +	writel(reg_val, db->membase + EMAC_MAC_CTL1_REG);
-> +
-> +	/* enable RX/TX */
-> +	reg_val = readl(db->membase + EMAC_CTL_REG);
-> +	writel(reg_val | EMAC_CTL_RESET | EMAC_CTL_TX_EN | EMAC_CTL_RX_EN,
-> +		db->membase + EMAC_CTL_REG);
-> +
-> +	/* enable RX/TX0/RX Hlevel interrup */
-> +	reg_val = readl(db->membase + EMAC_INT_CTL_REG);
-> +	reg_val |= (0xf << 0) | (0x01 << 8);
-> +	writel(reg_val, db->membase + EMAC_INT_CTL_REG);
-> +
-> +	/* Init Driver variable */
-> +	db->tx_fifo_stat = 0;
-> +	dev->trans_start = 0;
-
-I do not think this is required you are supposed to update this field only in 
-the receive path.
-
-> +}
-> +
-> +/* Our watchdog timed out. Called by the networking layer */
-> +static void wemac_timeout(struct net_device *dev)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +	unsigned long flags;
-> +
-> +	if (netif_msg_timer(db))
-> +		dev_err(db->dev, "tx time out.\n");
-> +
-> +	/* Save previous register address */
-> +	spin_lock_irqsave(&db->lock, flags);
-> +
-> +	netif_stop_queue(dev);
-> +	wemac_reset(db);
-> +	wemac_init_wemac(dev);
-> +	/* We can accept TX packets again */
-> +	dev->trans_start = jiffies;
-> +	netif_wake_queue(dev);
-> +
-> +	/* Restore previous register address */
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +}
-> +
-> +/* Hardware start transmission.
-> + * Send a packet to media from the upper layer.
-> + */
-> +static int wemac_start_xmit(struct sk_buff *skb, struct net_device *dev)
-> +{
-> +	struct wemac_board_info *db = netdev_priv(dev);
-> +	unsigned long channel;
-> +	unsigned long flags;
-> +
-> +	channel = db->tx_fifo_stat & 3;
-> +	if (channel == 3)
-> +		return 1;
-
-start_xmit expects standardized return values such as NETDEV_TX_BUSY and 
-NETDEV_TX_COMPLETE, please use them.
-
-> +
-> +	channel = (channel == 1 ? 1 : 0);
-> +
-> +	spin_lock_irqsave(&db->lock, flags);
-> +
-> +	writel(channel, db->membase + EMAC_TX_INS_REG);
-> +
-> +	wemac_outblk_32bit(db->membase + EMAC_TX_IO_DATA_REG,
-> +			skb->data, skb->len);
-> +	dev->stats.tx_bytes += skb->len;
-> +
-> +	db->tx_fifo_stat |= 1 << channel;
-> +	/* TX control: First packet immediately send, second packet queue */
-> +	if (channel == 0) {
-> +		/* set TX len */
-> +		writel(skb->len, db->membase + EMAC_TX_PL0_REG);
-> +		/* start translate from fifo to phy */
-> +		writel(readl(db->membase + EMAC_TX_CTL0_REG) | 1,
-> +		       db->membase + EMAC_TX_CTL0_REG);
-
-Do not you need some write barrier here to ensure your descriptor address and 
-control are properly written before the EMAC will see these?
-
-> +
-> +		/* save the time stamp */
-> +		dev->trans_start = jiffies;
-> +	} else if (channel == 1) {
-> +		/* set TX len */
-> +		writel(skb->len, db->membase + EMAC_TX_PL1_REG);
-> +		/* start translate from fifo to phy */
-> +		writel(readl(db->membase + EMAC_TX_CTL1_REG) | 1,
-> +		       db->membase + EMAC_TX_CTL1_REG);
-> +
-> +		/* save the time stamp */
-> +		dev->trans_start = jiffies;
-> +	}
-> +
-> +	if ((db->tx_fifo_stat & 3) == 3) {
-> +		/* Second packet */
-> +		netif_stop_queue(dev);
-
-Why is that required? Does that mean that your EMAC can only transmit one 
-packet at a time?
-
-> +	}
-> +
-> +	spin_unlock_irqrestore(&db->lock, flags);
-> +
-> +	/* free this SKB */
-> +	dev_kfree_skb(skb);
-> +
-> +	return 0;
-> +}
-> +
-> +/* WEMAC interrupt handler
-> + * receive the packet to upper layer, free the transmitted packet
-> + */
-> +static void wemac_tx_done(struct net_device *dev, struct wemac_board_info
-> *db, +			  unsigned int tx_status)
-> +{
-> +	/* One packet sent complete */
-> +	db->tx_fifo_stat &= ~(tx_status & 3);
-> +	if (3 == (tx_status & 3))
-> +		dev->stats.tx_packets += 2;
-> +	else
-> +		dev->stats.tx_packets++;
-> +
-> +	if (netif_msg_tx_done(db))
-> +		dev_dbg(db->dev, "tx done, NSR %02x\n", tx_status);
-> +
-> +	netif_wake_queue(dev);
-
-Why is that also required? According to your start_xmit function you should do 
-this only when you have transmitted 2 packets no?
-
-[snip]
-
-> +
-> +		reg_val = readl(db->membase + EMAC_RX_IO_DATA_REG);
-> +		if (netif_msg_rx_status(db))
-> +			dev_dbg(db->dev, "receive header: %x\n", reg_val);
-> +		if (reg_val != 0x0143414d) {
-
-Where is that magic value coming from?
--- 
-Florian
