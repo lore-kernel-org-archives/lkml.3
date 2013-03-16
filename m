@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab3CPGRR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 02:17:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38669 "EHLO comal.ext.ti.com"
+	id S1755333Ab3CPGRh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 02:17:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55622 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab3CPGRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 02:17:14 -0400
+	id S1754620Ab3CPGRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 02:17:15 -0400
 From: Lokesh Vutla <lokeshvutla@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <santosh.shilimkar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lokeshvutla@ti.com>, Grygorii Strashko <grygorii.strashko@ti.com>,
-        Vitaly Chernooky <vitaly.chernooky@ti.com>,
-        Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Subject: [PATCH V2 7/8] memory: emif: errata i743: Prohibit usage of Power-Down mode
-Date: Sat, 16 Mar 2013 11:46:47 +0530
-Message-ID: <1363414608-7448-8-git-send-email-lokeshvutla@ti.com>
+        <lokeshvutla@ti.com>
+Subject: [PATCH V2 8/8] memory: emif: Load the correct custom config values from dt
+Date: Sat, 16 Mar 2013 11:46:48 +0530
+Message-ID: <1363414608-7448-9-git-send-email-lokeshvutla@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363414608-7448-1-git-send-email-lokeshvutla@ti.com>
 References: <1363414608-7448-1-git-send-email-lokeshvutla@ti.com>
@@ -25,90 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+of_get_property returns value in Big Endian format.
+Before using this value it should be converted to little endian
+using be32_to_cpup().
+Custom configs of emif are read from dt using of_get_property,
+but these are not converted to litte endian format.
+Correcting the same here.
 
-ERRATA DESCRIPTION :
-The EMIF supports power-down state for low power. The EMIF
-automatically puts the SDRAM into power-down after the memory is
-not accessed for a defined number of cycles and the
-EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE bit field is set to 0x4.
-As the EMIF supports automatic output impedance calibration, a ZQ
-calibration long command is issued every time it exits active
-power-down and precharge power-down modes. The EMIF waits and
-blocks any other command during this calibration.
-The EMIF does not allow selective disabling of ZQ calibration upon
-exit of power-down mode. Due to very short periods of power-down
-cycles, ZQ calibration overhead creates bandwidth issues and
-increases overall system power consumption. On the other hand,
-issuing ZQ calibration long commands when exiting self-refresh is
-still required.
-
-WORKAROUND :
-Because there is no power consumption benefit of the power-down due
-to the calibration and there is a performance risk, the guideline
-is to not allow power-down state and, therefore, to not have set
-the EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE bit field to 0x4.
-
-This is applicable only for EMIF4D IP used in OMAP4 Soc's.
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Vitaly Chernooky <vitaly.chernooky@ti.com>
-Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
 Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
-Changes since V1: 
-	Updated the change log and fixed a typo in a comment.
+Changes since V1: No changes
 
- drivers/memory/emif.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/memory/emif.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index d27111e..9b27c2b 100644
+index 9b27c2b..475174a 100644
 --- a/drivers/memory/emif.c
 +++ b/drivers/memory/emif.c
-@@ -257,6 +257,41 @@ static void set_lpmode(struct emif_data *emif, u8 lpmode)
- 	u32 temp;
- 	void __iomem *base = emif->base;
+@@ -1263,7 +1263,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ {
+ 	struct emif_custom_configs	*cust_cfgs = NULL;
+ 	int				len;
+-	const int			*lpmode, *poll_intvl;
++	const __be32			*lpmode, *poll_intvl;
  
-+	/*
-+	 * Workaround for errata i743 - LPDDR2 Power-Down State is Not
-+	 * Efficient
-+	 *
-+	 * i743 DESCRIPTION:
-+	 * The EMIF supports power-down state for low power. The EMIF
-+	 * automatically puts the SDRAM into power-down after the memory is
-+	 * not accessed for a defined number of cycles and the
-+	 * EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE bit field is set to 0x4.
-+	 * As the EMIF supports automatic output impedance calibration, a ZQ
-+	 * calibration long command is issued every time it exits active
-+	 * power-down and precharge power-down modes. The EMIF waits and
-+	 * blocks any other command during this calibration.
-+	 * The EMIF does not allow selective disabling of ZQ calibration upon
-+	 * exit of power-down mode. Due to very short periods of power-down
-+	 * cycles, ZQ calibration overhead creates bandwidth issues and
-+	 * increases overall system power consumption. On the other hand,
-+	 * issuing ZQ calibration long commands when exiting self-refresh is
-+	 * still required.
-+	 *
-+	 * WORKAROUND
-+	 * Because there is no power consumption benefit of the power-down due
-+	 * to the calibration and there is a performance risk, the guideline
-+	 * is to not allow power-down state and, therefore, to not have set
-+	 * the EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE bit field to 0x4.
-+	 */
-+	if ((emif->plat_data->ip_rev == EMIF_4D) &&
-+	    (EMIF_LP_MODE_PWR_DN == lpmode)) {
-+		WARN_ONCE(1,
-+			  "REG_LP_MODE = LP_MODE_PWR_DN(4) is prohibited by"
-+			  "erratum i743 switch to LP_MODE_SELF_REFRESH(2)\n");
-+		/* rollback LP_MODE to Self-refresh mode */
-+		lpmode = EMIF_LP_MODE_SELF_REFRESH;
-+	}
-+
- 	temp = readl(base + EMIF_POWER_MANAGEMENT_CONTROL);
- 	temp &= ~LP_MODE_MASK;
- 	temp |= (lpmode << LP_MODE_SHIFT);
+ 	lpmode = of_get_property(np_emif, "low-power-mode", &len);
+ 	poll_intvl = of_get_property(np_emif, "temp-alert-poll-interval", &len);
+@@ -1277,7 +1277,7 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ 
+ 	if (lpmode) {
+ 		cust_cfgs->mask |= EMIF_CUSTOM_CONFIG_LPMODE;
+-		cust_cfgs->lpmode = *lpmode;
++		cust_cfgs->lpmode = be32_to_cpup(lpmode);
+ 		of_property_read_u32(np_emif,
+ 				"low-power-mode-timeout-performance",
+ 				&cust_cfgs->lpmode_timeout_performance);
+@@ -1292,7 +1292,8 @@ static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
+ 	if (poll_intvl) {
+ 		cust_cfgs->mask |=
+ 				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL;
+-		cust_cfgs->temp_alert_poll_interval_ms = *poll_intvl;
++		cust_cfgs->temp_alert_poll_interval_ms =
++						be32_to_cpup(poll_intvl);
+ 	}
+ 
+ 	if (of_find_property(np_emif, "extended-temp-part", &len))
 -- 
 1.7.9.5
 
