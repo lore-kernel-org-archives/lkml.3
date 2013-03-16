@@ -1,247 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab3CPNH3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 09:07:29 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:41600 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab3CPNH1 (ORCPT
+	id S1755820Ab3CPNJO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 09:09:14 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50978 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755764Ab3CPNJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 09:07:27 -0400
-Date: Sat, 16 Mar 2013 09:07:21 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] zero-filled pages awareness
-Message-ID: <20130316130720.GC5987@konrad-lan.dumpdata.com>
-References: <1363255697-19674-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1363255697-19674-3-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363255697-19674-3-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 16 Mar 2013 09:09:12 -0400
+Message-ID: <1363439347.1335.129.camel@x61.thuisdomein>
+Subject: [PATCH] firewire: Remove two unneeded checks for macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Sat, 16 Mar 2013 14:09:07 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Mar 2013 13:09:08.0154 (UTC) FILETIME=[717071A0:01CE2247]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 06:08:15PM +0800, Wanpeng Li wrote:
-> Compression of zero-filled pages can unneccessarily cause internal
-> fragmentation, and thus waste memory. This special case can be
-> optimized.
-> 
-> This patch captures zero-filled pages, and marks their corresponding
-> zcache backing page entry as zero-filled. Whenever such zero-filled
-> page is retrieved, we fill the page frame with zero.
-> 
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+The old IEEE 1394 driver stack was removed in v2.6.37. That made the
+checks for two Kconfig (module) macros unneeded, since they will now
+always evaluate to true. Remove these two checks.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/zcache-main.c |   86 +++++++++++++++++++++++++++++++--
->  1 files changed, 80 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index b71e033..db200b4 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -59,6 +59,11 @@ static inline void frontswap_tmem_exclusive_gets(bool b)
->  }
->  #endif
->  
-> +/*
-> + * mark pampd to special value in order that later
-> + * retrieve will identify zero-filled pages
-> + */
-> +
->  /* enable (or fix code) when Seth's patches are accepted upstream */
->  #define zcache_writeback_enabled 0
->  
-> @@ -543,7 +548,23 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
->  {
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size;
-> +	bool zero_filled = false;
->  	struct page *page = (struct page *)(data), *newpage;
-> +	char *user_mem;
-> +
-> +	user_mem = kmap_atomic(page);
-> +
-> +	/*
-> +	 * Compressing zero-filled pages will waste memory and introduce
-> +	 * serious fragmentation, skip it to avoid overhead
-> +	 */
-> +	if (page_zero_filled(user_mem)) {
-> +		kunmap_atomic(user_mem);
-> +		clen = 0;
-> +		zero_filled = true;
-> +		goto got_pampd;
-> +	}
-> +	kunmap_atomic(user_mem);
->  
->  	if (!raw) {
->  		zcache_compress(page, &cdata, &clen);
-> @@ -592,6 +613,8 @@ got_pampd:
->  		zcache_eph_zpages_max = zcache_eph_zpages;
->  	if (ramster_enabled && raw)
->  		ramster_count_foreign_pages(true, 1);
-> +	if (zero_filled)
-> +		pampd = (void *)ZERO_FILLED;
->  out:
->  	return pampd;
->  }
-> @@ -601,14 +624,31 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
->  {
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size;
-> +	bool zero_filled = false;
->  	struct page *page = (struct page *)(data), *newpage;
->  	unsigned long zbud_mean_zsize;
->  	unsigned long curr_pers_zpages, total_zsize;
-> +	char *user_mem;
->  
->  	if (data == NULL) {
->  		BUG_ON(!ramster_enabled);
->  		goto create_pampd;
->  	}
-> +
-> +	user_mem = kmap_atomic(page);
-> +
-> +	/*
-> +	 * Compressing zero-filled pages will waste memory and introduce
-> +	 * serious fragmentation, skip it to avoid overhead
-> +	 */
-> +	if (page_zero_filled(page)) {
-> +		kunmap_atomic(user_mem);
-> +		clen = 0;
-> +		zero_filled = true;
-> +		goto got_pampd;
-> +	}
-> +	kunmap_atomic(user_mem);
-> +
->  	curr_pers_zpages = zcache_pers_zpages;
->  /* FIXME CONFIG_RAMSTER... subtract atomic remote_pers_pages here? */
->  	if (!raw)
-> @@ -674,6 +714,8 @@ got_pampd:
->  		zcache_pers_zbytes_max = zcache_pers_zbytes;
->  	if (ramster_enabled && raw)
->  		ramster_count_foreign_pages(false, 1);
-> +	if (zero_filled)
-> +		pampd = (void *)ZERO_FILLED;
->  out:
->  	return pampd;
->  }
-> @@ -735,7 +777,8 @@ out:
->   */
->  void zcache_pampd_create_finish(void *pampd, bool eph)
->  {
-> -	zbud_create_finish((struct zbudref *)pampd, eph);
-> +	if (pampd != (void *)ZERO_FILLED)
-> +		zbud_create_finish((struct zbudref *)pampd, eph);
->  }
->  
->  /*
-> @@ -780,6 +823,14 @@ static int zcache_pampd_get_data(char *data, size_t *sizep, bool raw,
->  	BUG_ON(preemptible());
->  	BUG_ON(eph);	/* fix later if shared pools get implemented */
->  	BUG_ON(pampd_is_remote(pampd));
-> +
-> +	if (pampd == (void *)ZERO_FILLED) {
-> +		handle_zero_page(data);
-> +		if (!raw)
-> +			*sizep = PAGE_SIZE;
-> +		return 0;
-> +	}
-> +
->  	if (raw)
->  		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
->  						sizep, eph);
-> @@ -801,12 +852,23 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  					struct tmem_oid *oid, uint32_t index)
->  {
->  	int ret;
-> -	bool eph = !is_persistent(pool);
-> +	bool eph = !is_persistent(pool), zero_filled = false;
->  	struct page *page = NULL;
->  	unsigned int zsize, zpages;
->  
->  	BUG_ON(preemptible());
->  	BUG_ON(pampd_is_remote(pampd));
-> +
-> +	if (pampd == (void *)ZERO_FILLED) {
-> +		handle_zero_page(data);
-> +		zero_filled = true;
-> +		zsize = 0;
-> +		zpages = 0;
-> +		if (!raw)
-> +			*sizep = PAGE_SIZE;
-> +		goto zero_fill;
-> +	}
-> +
->  	if (raw)
->  		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
->  						sizep, eph);
-> @@ -818,6 +880,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  	}
->  	page = zbud_free_and_delist((struct zbudref *)pampd, eph,
->  					&zsize, &zpages);
-> +zero_fill:
->  	if (eph) {
->  		if (page)
->  			zcache_eph_pageframes =
-> @@ -837,7 +900,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  	}
->  	if (!is_local_client(pool->client))
->  		ramster_count_foreign_pages(eph, -1);
-> -	if (page)
-> +	if (page && !zero_filled)
->  		zcache_free_page(page);
->  	return ret;
->  }
-> @@ -851,16 +914,27 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  {
->  	struct page *page = NULL;
->  	unsigned int zsize, zpages;
-> +	bool zero_filled = false;
->  
->  	BUG_ON(preemptible());
-> -	if (pampd_is_remote(pampd)) {
-> +
-> +	if (pampd == (void *)ZERO_FILLED) {
-> +		zero_filled = true;
-> +		zsize = 0;
-> +		zpages = 0;
-> +	}
-> +
-> +	if (pampd_is_remote(pampd) && !zero_filled) {
-> +
->  		BUG_ON(!ramster_enabled);
->  		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
->  		if (pampd == NULL)
->  			return;
->  	}
->  	if (is_ephemeral(pool)) {
-> -		page = zbud_free_and_delist((struct zbudref *)pampd,
-> +		if (!zero_filled)
-> +			page = zbud_free_and_delist((struct zbudref *)pampd,
-> +
->  						true, &zsize, &zpages);
->  		if (page)
->  			zcache_eph_pageframes =
-> @@ -883,7 +957,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  	}
->  	if (!is_local_client(pool->client))
->  		ramster_count_foreign_pages(is_ephemeral(pool), -1);
-> -	if (page)
-> +	if (page && !zero_filled)
->  		zcache_free_page(page);
->  }
->  
-> -- 
-> 1.7.7.6
-> 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Perhaps these alias can be dropped entirely. Bat that's not my call.
+
+ drivers/firewire/ohci.c | 2 --
+ drivers/firewire/sbp2.c | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 45912e6..4a55b51 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -3837,6 +3837,4 @@ MODULE_DESCRIPTION("Driver for PCI OHCI IEEE1394 controllers");
+ MODULE_LICENSE("GPL");
+ 
+ /* Provide a module alias so root-on-sbp2 initrds don't break. */
+-#ifndef CONFIG_IEEE1394_OHCI1394_MODULE
+ MODULE_ALIAS("ohci1394");
+-#endif
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 1162d6b..12ec0e6 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1636,9 +1636,7 @@ MODULE_LICENSE("GPL");
+ MODULE_DEVICE_TABLE(ieee1394, sbp2_id_table);
+ 
+ /* Provide a module alias so root-on-sbp2 initrds don't break. */
+-#ifndef CONFIG_IEEE1394_SBP2_MODULE
+ MODULE_ALIAS("sbp2");
+-#endif
+ 
+ static int __init sbp2_init(void)
+ {
+-- 
+1.7.11.7
+
