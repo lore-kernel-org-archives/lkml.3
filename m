@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3CPCZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 22:25:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14481 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511Ab3CPCZe (ORCPT
+	id S932344Ab3CPC2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:28:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53077 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031Ab3CPC2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 22:25:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 15 Mar 2013 19:25:27 -0700
-Message-ID: <1363400755.3875.0.camel@bilhuang-vm1>
-Subject: Re: [RFC 1/1] clk: Add notifier support in
- clk_prepare_enable/clk_disable_unprepare
-From: Bill Huang <bilhuang@nvidia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Date: Fri, 15 Mar 2013 19:25:55 -0700
-In-Reply-To: <20130315170945.GM4977@n2100.arm.linux.org.uk>
-References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
-	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
-	 <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>
-	 <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org>
-	 <1363153204.3311.14.camel@bilhuang-vm1>
-	 <20130315170945.GM4977@n2100.arm.linux.org.uk>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Mar 2013 22:28:06 -0400
+Date: Sat, 16 Mar 2013 13:27:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: New MFD tree for linux-next
+Message-Id: <20130316132753.591db4c078d06db297ba46a8@canb.auug.org.au>
+In-Reply-To: <20130315164625.GA29531@zurbaran>
+References: <20130314000201.GA4425@zurbaran>
+	<20130315164625.GA29531@zurbaran>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__16_Mar_2013_13_27_53_+1100_VGOt6ndy.NGoa6Op"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 01:09 +0800, Russell King - ARM Linux wrote:
-> On Tue, Mar 12, 2013 at 10:40:04PM -0700, Bill Huang wrote:
-> > That will be too bad, it looks like we deadlock in the mechanism, we
-> > cannot change existing drivers behavior (that means some call
-> > clk_disable/enable directly, some are not), and we cannot hook notifier
-> > in clk_disable/enable either, that means there seems no any chance to
-> > get what we want, any idea?
-> 
-> Look, the whole point is:
-> 
-> - Drivers can call clk_enable/clk_disable from their atomic regions to
->   control the clock.  Drivers which do this also call clk_prepare/
->   clk_unprepare from a schedulable context to perform any operations
->   necessary to allow the clock to be used.
-> 
-> - Drivers which only ever control the clock from a schedulable context
->   *can* use clk_prepare_enable()/clk_disable_unprepare() to control
->   their clock, which simplifies the coding in the driver.
-> 
-> The whole point here is to cater for what is found on different SoCs and
-> not need to keep rewriting the drivers between different SoCs.
-> 
-> So, the idea is that:
-> 
-> - clk_prepare() does whatever is needed to prepare a clock for use which
->   may require waiting for the clock to be in a state which it can be
->   enabled.  In other words, if there is a PLL, the PLL is setup and
->   we wait for it to report that it has locked.
-> 
-> - clk_enable() is about turning the clock output on so that the device
->   receives the clock.
-> 
-> Now, in the case of a PLL directly feeding a device, it's entirely possible
-> that clk_prepare() ends up providing the clock signal to the device, and
-> clk_enable() does absolutely nothing.
-> 
-> Or, if the clock has a gate on it, it's entirely possible that clk_prepare()
-> does nothing, and clk_enable() unmasks the gate to allow the clock to be
-> provided to the device - which can happen from atomic contexts.
-> 
-> The whole point about the separation of these two functions is that device
-> driver writers _can_ code their drivers for both situations and not care
-> about how the SoC implements the clocking at all.
-> 
-> Why did we end up with this split in the first place?  Because we ran into
-> the problem that some SoCs required a sleeping clk_enable() and others
-> didn't, and the whole thing was turning into an incompatible mess.
-> 
-> So, please.  Realise that clk_prepare() and clk_enable() are the _official_
-> APIs, and that clk_prepare_enable() is merely a helper function for drivers
-> to allow them to automate the calling of those two functions in succession
-> with _no_ _further_ _processing_ at all.
-> 
-> So, if your hooks need to be callable from schedulable contexts, then you
-> need to put them inside clk_prepare().  If your hooks are callable from
-> atomic contexts, then they can go into clk_enable().  But what you can
-> not do is put them into clk_prepare_enable().
+--Signature=_Sat__16_Mar_2013_13_27_53_+1100_VGOt6ndy.NGoa6Op
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks a lot for good point.
+Hi Samuel,
 
+On Fri, 15 Mar 2013 17:46:25 +0100 Samuel Ortiz <sameo@linux.intel.com> wro=
+te:
+>
+> On Thu, Mar 14, 2013 at 01:02:01AM +0100, Samuel Ortiz wrote:
+> >=20
+> > I am moving the MFD development from mfd-2.6.git/for-next to a new mfd-=
+next
+> > tree:
+> >=20
+> > git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git
+> >=20
+> > Could you please point linux-next at it ? Many thanks in advance.
 
+Done.  I assume that you are still using the for-next branch?
+
+> I'm also carrying MFD fixes through the mfd-fixes tree:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-fixes.git
+>=20
+> Could you please also add it to linux-next ?
+
+What branch should I use of that?
+
+BTW, those two trees look very similar (in fact "diff -u <(git ls-remote
+mfd) <(git ls-remote mfd-fixes)" only shows a couple of differences in
+all the refs).  You do realise that I can use 2 different branches of one
+tree, right (as can others)?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sat__16_Mar_2013_13_27_53_+1100_VGOt6ndy.NGoa6Op
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRQ9ipAAoJEECxmPOUX5FEWFgP/j8k4g5KaKJyAavWi01e5eBu
+N4PoyuJBA0CQocroqx1SE1GHg6B4Pq6c8yqJT5xWTVBpZdub2MKL16CrisnbPrbm
+35UGW34MdTm4TaVd6of8OhZ9Nprkz2pwGVXbjt91ea7Bh6YZ4ZP5UmPIwfHjYfTf
+GuA8WPVibWp9m0X9te1w9wr+km71h60FE+hbZ2i4lSy0ZHqiWb83fD2F82waywye
+4hxVPEkT7W5gOB0/I4zh8ZwGmpFyQU1Z5Vt6wN7/3haV984tY+1Yt0yk4+ok/Uos
+f1IOzh1fZu/ELitKrVVjhDoeec3lDY/pHHNp75VU+yiR/4mvWFI3LOSRqL34FyX9
+XtJm/Cvc7Aou1GMVlE239AJRjaRD5NoNSdd8jwT2UJlcNISO+wybTFaAidTaui9/
+1JjYeQO9SdsKItgioye8zeRq0XdwE6lG2FtKBp6kgR87cP0m4KZzA6GluaF668WL
+WOQi3VLc8tYPUdLBnEPdNk+3/93RFVc0uPG3JUVF0SWY60QB1P0+62KmKg2nDB1/
+gQlfiaaLABA6SFMv3ZOsh0IWgTdzR9E3xQQPqiHLaQONdlKutnHwfnnRuEN+nzMJ
+p2ZKEMDOsejh4hi9pdEA+pNbacxfq9S1C/UyNmRviLbPdjNwuo5KfJ15yD1UJS1f
++FB6MRnTUKNRAMB5PlgY
+=XJv8
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__16_Mar_2013_13_27_53_+1100_VGOt6ndy.NGoa6Op--
