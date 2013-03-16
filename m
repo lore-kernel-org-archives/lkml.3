@@ -1,247 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab3CPOOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 10:14:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40395 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab3CPOOG (ORCPT
+	id S1755669Ab3CPOW3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 10:22:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42471 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab3CPOW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 10:14:06 -0400
-Message-ID: <51447DC9.5070701@oracle.com>
-Date: Sat, 16 Mar 2013 22:12:25 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sat, 16 Mar 2013 10:22:26 -0400
+Date: Sat, 16 Mar 2013 17:22:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 47/50] staging: omap-thermal: switch mutex to spinlock
+ inside omap-bandgap
+Message-ID: <20130316142216.GR9138@mwanda>
+References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com>
+ <1363352438-15935-48-git-send-email-eduardo.valentin@ti.com>
+ <20130316085902.GP9138@mwanda>
+ <5144687A.7030007@ti.com>
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] zero-filled pages awareness
-References: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com> <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5144687A.7030007@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 03/15/2013 10:34 AM, Wanpeng Li wrote:
-> Compression of zero-filled pages can unneccessarily cause internal
-> fragmentation, and thus waste memory. This special case can be
-> optimized.
+On Sat, Mar 16, 2013 at 08:41:30AM -0400, Eduardo Valentin wrote:
+> On 16-03-2013 04:59, Dan Carpenter wrote:
+> >On Fri, Mar 15, 2013 at 09:00:35AM -0400, Eduardo Valentin wrote:
+> >>@@ -502,9 +504,9 @@ int _omap_bandgap_write_threshold(struct omap_bandgap *bg_ptr, int id, int val,
+> >>  	if (ret < 0)
+> >>  		goto exit;
+> >>
+> >>-	mutex_lock(&bg_ptr->bg_mutex);
+> >>+	spin_lock(&bg_ptr->lock);
+> >
+> >These need to disable interrupts because we take the spin lock in
+> >the IRQ handler.
 > 
-> This patch captures zero-filled pages, and marks their corresponding
-> zcache backing page entry as zero-filled. Whenever such zero-filled
-> page is retrieved, we fill the page frame with zero.
-> 
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/zcache-main.c |   81 +++++++++++++++++++++++++++++++---
->  1 files changed, 75 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index d73dd4b..6c35c7d 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -59,6 +59,12 @@ static inline void frontswap_tmem_exclusive_gets(bool b)
->  }
->  #endif
->  
-> +/*
-> + * mark pampd to special value in order that later
-> + * retrieve will identify zero-filled pages
-> + */
-> +#define ZERO_FILLED 0x2
-> +
->  /* enable (or fix code) when Seth's patches are accepted upstream */
->  #define zcache_writeback_enabled 0
->  
-> @@ -543,7 +549,23 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
->  {
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size;
-> +	bool zero_filled = false;
->  	struct page *page = (struct page *)(data), *newpage;
-> +	char *user_mem;
-> +
-> +	user_mem = kmap_atomic(page);
-> +
-> +	/*
-> +	 * Compressing zero-filled pages will waste memory and introduce
-> +	 * serious fragmentation, skip it to avoid overhead
-> +	 */
-> +	if (page_is_zero_filled(user_mem)) {
-> +		kunmap_atomic(user_mem);
-> +		clen = 0;
-> +		zero_filled = true;
-> +		goto got_pampd;
-> +	}
-> +	kunmap_atomic(user_mem);
->  
->  	if (!raw) {
->  		zcache_compress(page, &cdata, &clen);
-> @@ -592,6 +614,8 @@ got_pampd:
->  		zcache_eph_zpages_max = zcache_eph_zpages;
->  	if (ramster_enabled && raw)
->  		ramster_count_foreign_pages(true, 1);
-> +	if (zero_filled)
-> +		pampd = (void *)ZERO_FILLED;
->  out:
->  	return pampd;
->  }
-> @@ -601,14 +625,31 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
->  {
->  	void *pampd = NULL, *cdata = data;
->  	unsigned clen = size;
-> +	bool zero_filled = false;
->  	struct page *page = (struct page *)(data), *newpage;
->  	unsigned long zbud_mean_zsize;
->  	unsigned long curr_pers_zpages, total_zsize;
-> +	char *user_mem;
->  
->  	if (data == NULL) {
->  		BUG_ON(!ramster_enabled);
->  		goto create_pampd;
->  	}
-> +
-> +	user_mem = kmap_atomic(page);
-> +
-> +	/*
-> +	 * Compressing zero-filled pages will waste memory and introduce
-> +	 * serious fragmentation, skip it to avoid overhead
-> +	 */
-> +	if (page_is_zero_filled(page)) {
-> +		kunmap_atomic(user_mem);
-> +		clen = 0;
-> +		zero_filled = true;
-> +		goto got_pampd;
-> +	}
-> +	kunmap_atomic(user_mem);
-> +
+> This IRQ gets masked at the IRQ controller level when served
+> (ONE_SHOT). Not sure if your comment is applicable in this case..
 
-Maybe we can add a function for this code? It seems a bit duplicated.
+Yes.  It still applies.  We need to disable IRQs from the current
+CPU while we are holding a spin_lock which they will need.
 
->  	curr_pers_zpages = zcache_pers_zpages;
->  /* FIXME CONFIG_RAMSTER... subtract atomic remote_pers_pages here? */
->  	if (!raw)
-> @@ -674,6 +715,8 @@ got_pampd:
->  		zcache_pers_zbytes_max = zcache_pers_zbytes;
->  	if (ramster_enabled && raw)
->  		ramster_count_foreign_pages(false, 1);
-> +	if (zero_filled)
-> +		pampd = (void *)ZERO_FILLED;
->  out:
->  	return pampd;
->  }
-> @@ -735,7 +778,8 @@ out:
->   */
->  void zcache_pampd_create_finish(void *pampd, bool eph)
->  {
-> -	zbud_create_finish((struct zbudref *)pampd, eph);
-> +	if (pampd != (void *)ZERO_FILLED)
-> +		zbud_create_finish((struct zbudref *)pampd, eph);
->  }
->  
->  /*
-> @@ -780,6 +824,14 @@ static int zcache_pampd_get_data(char *data, size_t *sizep, bool raw,
->  	BUG_ON(preemptible());
->  	BUG_ON(eph);	/* fix later if shared pools get implemented */
->  	BUG_ON(pampd_is_remote(pampd));
-> +
-> +	if (pampd == (void *)ZERO_FILLED) {
-> +		handle_zero_filled_page(data);
-> +		if (!raw)
-> +			*sizep = PAGE_SIZE;
-> +		return 0;
-> +	}
-> +
->  	if (raw)
->  		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
->  						sizep, eph);
-> @@ -801,12 +853,21 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  					struct tmem_oid *oid, uint32_t index)
->  {
->  	int ret;
-> -	bool eph = !is_persistent(pool);
-> +	bool eph = !is_persistent(pool), zero_filled = false;
->  	struct page *page = NULL;
->  	unsigned int zsize, zpages;
->  
->  	BUG_ON(preemptible());
->  	BUG_ON(pampd_is_remote(pampd));
-> +
-> +	if (pampd == (void *)ZERO_FILLED) {
-> +		handle_zero_filled_page(data);
-> +		zero_filled = true;
-> +		if (!raw)
-> +			*sizep = PAGE_SIZE;
-> +		goto zero_fill;
-> +	}
-> +
->  	if (raw)
->  		ret = zbud_copy_from_zbud(data, (struct zbudref *)pampd,
->  						sizep, eph);
-> @@ -818,6 +879,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  	}
->  	page = zbud_free_and_delist((struct zbudref *)pampd, eph,
->  					&zsize, &zpages);
-> +zero_fill:
->  	if (eph) {
->  		if (page)
->  			zcache_eph_pageframes =
-> @@ -837,7 +899,7 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
->  	}
->  	if (!is_local_client(pool->client))
->  		ramster_count_foreign_pages(eph, -1);
-> -	if (page)
-> +	if (page && !zero_filled)
->  		zcache_free_page(page);
->  	return ret;
->  }
-> @@ -851,16 +913,23 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  {
->  	struct page *page = NULL;
->  	unsigned int zsize, zpages;
-> +	bool zero_filled = false;
->  
->  	BUG_ON(preemptible());
-> -	if (pampd_is_remote(pampd)) {
-> +
-> +	if (pampd == (void *)ZERO_FILLED)
-> +		zero_filled = true;
-> +
-> +	if (pampd_is_remote(pampd) && !zero_filled) {
-> +
->  		BUG_ON(!ramster_enabled);
->  		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
->  		if (pampd == NULL)
->  			return;
->  	}
->  	if (is_ephemeral(pool)) {
-> -		page = zbud_free_and_delist((struct zbudref *)pampd,
-> +		if (!zero_filled)
-> +			page = zbud_free_and_delist((struct zbudref *)pampd,
->  						true, &zsize, &zpages);
->  		if (page)
->  			zcache_eph_pageframes =
-> @@ -883,7 +952,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  	}
->  	if (!is_local_client(pool->client))
->  		ramster_count_foreign_pages(is_ephemeral(pool), -1);
-> -	if (page)
-> +	if (page && !zero_filled)
->  		zcache_free_page(page);
->  }
->  
-> 
+regards,
+dan carpenter
 
--- 
-Regards,
--Bob
