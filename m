@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab3CPV0K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 17:26:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab3CPV0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 17:26:07 -0400
-Date: Sat, 16 Mar 2013 22:23:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Feng Hong <hongfeng@marvell.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [PATCH 0/2] finx argv_split() vs sysctl race
-Message-ID: <20130316212351.GA21190@redhat.com>
-References: <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com> <20130312203514.GA23488@redhat.com> <20130313174641.GA28083@redhat.com> <20130313174705.GB28083@redhat.com> <20130314152819.7fb1242b493e8bad2d34671b@linux-foundation.org> <20130315163916.GA31995@redhat.com> <20130316202327.GA18613@redhat.com> <20130316203221.GT11268@two.firstfloor.org> <20130316204539.GA19462@redhat.com> <20130316205634.GU11268@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130316205634.GU11268@two.firstfloor.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754559Ab3CPVam (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 17:30:42 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55488 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750913Ab3CPVak (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 17:30:40 -0400
+Message-ID: <1363469435.1335.137.camel@x61.thuisdomein>
+Subject: [PATCH] checkpatch: stop checking for CONFIG_EXPERIMENTAL
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 16 Mar 2013 22:30:35 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Mar 2013 21:30:35.0774 (UTC) FILETIME=[7F0EE9E0:01CE228D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16, Andi Kleen wrote:
->
-> > Perhaps rcu can be better, although a global rwsem looks simpler,
-> > I dunno.
->
-> It's a general problem with lots of sysctls.
-> >
-> > But argv_split() or its usage should be changed anyway, and GFP_KERNEL
-> > won't work under rcu_read_lock().
->
-> rcu strings has a helper function to copy the string for sleepy cases.
+CONFIG_EXPERIMENTAL has been removed from the tree, in commit
+3d374d09f16f64ab4d71704cbe621514d36cd0b1 ("final removal of
+CONFIG_EXPERIMENTAL"). There's no need to test for it in checkpatch
+anymore. If it ever pops up again it can be caught when someone feels
+like cleaning up invalid Kconfig symbols and macros again.
 
-Then you need to pre-allocate, take rcu_read_lock(), copy, and check
-that it actually fits the pre-allocated buffer. Not sure why the simple
-rwsem is worse.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Checkpatch tested!
 
-But I won't argue in any case
+1) A lot of defconfigs still have CONFIG_EXPERIMENTAL in them. How
+should that be cleaned up?
 
-> > To me 1/2 looks as a simplification anyway, but I won't argue if we
-> > decide to add rcu/locking and avoid this patch.
->
-> Ok I'll revisit.
+ scripts/checkpatch.pl | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-OK, but do you agree with 1/2?
-
-Once again, this is subjective of course but imho this patch could be
-considered as a cleanup/microoptimization, and it won't affect the rcu
-changes.
-
-Oleg.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b28cc38..de8b1ff 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1745,13 +1745,6 @@ sub process {
+ 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
+ 		}
+ 
+-# discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
+-		if ($realfile =~ /Kconfig/ &&
+-		    $line =~ /.\s*depends on\s+.*\bEXPERIMENTAL\b/) {
+-			WARN("CONFIG_EXPERIMENTAL",
+-			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
+-		}
+-
+ 		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
+ 		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
+ 			my $flag = $1;
+@@ -1907,12 +1900,6 @@ sub process {
+ # check we are in a valid C source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c)$/);
+ 
+-# discourage the addition of CONFIG_EXPERIMENTAL in #if(def).
+-		if ($line =~ /^\+\s*\#\s*if.*\bCONFIG_EXPERIMENTAL\b/) {
+-			WARN("CONFIG_EXPERIMENTAL",
+-			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
+-		}
+-
+ # check for RCS/CVS revision markers
+ 		if ($rawline =~ /^\+.*\$(Revision|Log|Id)(?:\$|)/) {
+ 			WARN("CVS_KEYWORD",
+-- 
+1.7.11.7
 
