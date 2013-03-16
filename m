@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3CPRmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:42:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43781 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751890Ab3CPRms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:42:48 -0400
-Message-ID: <1363455766.2023.36.camel@joe-AO722>
-Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
- format with no args
-From: Joe Perches <joe@perches.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Mar 2013 10:42:46 -0700
-In-Reply-To: <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
-References: <1363441844.2023.17.camel@joe-AO722>
-	 <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1755946Ab3CPRou (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:44:50 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:45645 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab3CPRos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 13:44:48 -0400
+Message-ID: <1363455885.29475.68.camel@edumazet-glaptop>
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: dormando <dormando@rydia.net>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Sat, 16 Mar 2013 10:44:45 -0700
+In-Reply-To: <1363455366.29475.66.camel@edumazet-glaptop>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
+	 <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
+	 <1362494795.15793.113.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303061631290.6723@dflat>
+	 <1362663990.15793.208.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303141359080.16308@dflat>
+	 <1363301786.29475.40.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303141610490.16308@dflat>
+	 <1363303174.29475.46.camel@edumazet-glaptop>
+	 <1363455366.29475.66.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 09:43 -0600, Bjorn Helgaas wrote:
-> Checkpatch could look for additions of seq_printf() with constant formats.
+On Sat, 2013-03-16 at 10:36 -0700, Eric Dumazet wrote:
+> On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
+> 
+> > Thanks thats really useful, we might miss to increment socket refcount
+> > in a timer setup.
+> > 
+> 
+> Hmm, please add following debugging patch as well
+> 
+> diff --git a/include/net/sock.h b/include/net/sock.h
+> index 14f6e9d..fe7c8a6 100644
+> --- a/include/net/sock.h
+> +++ b/include/net/sock.h
+> @@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
+>   */
+>  static inline void __sock_put(struct sock *sk)
+>  {
+> -	atomic_dec(&sk->sk_refcnt);
+> +	int newref = atomic_dec_return(&sk->sk_refcnt);
+> +
+> +	BUG_ON(newref <= 0);
+>  }
+>  
+>  static inline bool sk_del_node_init(struct sock *sk)
+> diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+> index 786d97a..a445e15 100644
+> --- a/net/ipv4/inet_connection_sock.c
+> +++ b/net/ipv4/inet_connection_sock.c
+> @@ -739,7 +739,7 @@ void inet_csk_prepare_forced_close(struct sock *sk)
+>  {
+>  	/* sk_clone_lock locked the socket and set refcnt to 2 */
+>  	bh_unlock_sock(sk);
+> -	sock_put(sk);
+> +	__sock_put(sk);
+>  
+>  	/* The below has to be done to allow calling inet_csk_destroy_sock */
+>  	sock_set_flag(sk, SOCK_DEAD);
+> @@ -835,13 +835,13 @@ void inet_csk_listen_stop(struct sock *sk)
+>  			 * tcp_v4_destroy_sock().
+>  			 */
+>  			tcp_sk(child)->fastopen_rsk = NULL;
+> -			sock_put(sk);
+> +			__sock_put(sk);
+>  		}
+>  		inet_csk_destroy_sock(child);
+>  
+>  		bh_unlock_sock(child);
+>  		local_bh_enable();
+> -		sock_put(child);
+> +		__sock_put(child);
+>  
 
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
+Please don't include the last line : this should stay as
 
-I don't know what perl version introduced $-[0] and $+[0]
-so this may not work with older perl.
+ sock_put(child);
 
- scripts/checkpatch.pl | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b28cc38..e5b50c5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -628,6 +628,13 @@ sub sanitise_line {
- 	return $res;
- }
- 
-+sub get_quoted_string {
-+	my ($line, $rawline) = @_;
-+
-+	return "" if ($line !~ m/(\"[X]+\")/g);
-+	return substr($rawline, $-[0], $+[0] - $-[0]);
-+}
-+
- sub ctx_statement_block {
- 	my ($linenr, $remain, $off) = @_;
- 	my $line = $linenr - 1;
-@@ -3372,6 +3379,15 @@ sub process {
- 			     "struct spinlock should be spinlock_t\n" . $herecurr);
- 		}
- 
-+# check for seq_printf uses that could be seq_puts
-+		if ($line =~ /\bseq_printf\s*\(/) {
-+			my $fmt = get_quoted_string($line, $rawline);
-+			if ($fmt !~ /[^\\]\%/) {
-+				WARN("PREFER_SEQ_PUTS",
-+				     "Prefer seq_puts to seq_printf\n" . $herecurr);
-+			}
-+		}
-+
- # Check for misused memsets
- 		if ($^V && $^V ge 5.10.0 &&
- 		    defined $stat &&
 
 
