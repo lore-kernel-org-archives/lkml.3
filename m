@@ -1,165 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab3CPRCK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:02:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24481 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3CPRCI (ORCPT
+	id S1755711Ab3CPRDr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:03:47 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63486 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3CPRDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:02:08 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=2s8qfAZQTSAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rUnzm6ZD3sEA:10 a=T4B5grLNUFVfDLvWdv0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363453326.25967.105.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
- format with no args
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Mar 2013 13:02:06 -0400
-In-Reply-To: <1363450540.2023.30.camel@joe-AO722>
-References: <1363441844.2023.17.camel@joe-AO722>
-	 <1363449458.25967.76.camel@gandalf.local.home>
-	 <1363450540.2023.30.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Mar 2013 13:03:45 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2, part3 00/12] accurately calculate zone->managed_pages
+Date: Sun, 17 Mar 2013 01:03:21 +0800
+Message-Id: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 09:15 -0700, Joe Perches wrote:
+The original goal of this patchset is to fix the bug reported by
+https://bugzilla.kernel.org/show_bug.cgi?id=53501
+Now it has also been expanded to reduce common code used by memory
+initializion.
 
-> > > +int (seq_printf)(struct seq_file *m, const char *f, ...)
-> > 
-> > That's rather ugly. Why not just #undef seq_printf before defining it?
-> 
-> The whole thing is ugly, nasty and hackish.
-> I kinda like it.
-> 
-> But I don't like unnecessary undefs.
-> The preprocessor doesn't expand (funcname).
+This is the third part, previous two patch sets could be accessed at:
+http://marc.info/?l=linux-mm&m=136289696323825&w=2
+http://marc.info/?l=linux-mm&m=136290291524901&w=2
 
-Either way, as long as it's commented.
+This patchset applies to
+https://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.8
 
-> 
-> > Anyway, not making va_args a whacky name is dangerous. This is why I add
-> > those crazy underscores. If someone does:
-> > 
-> > 	var = 1;
-> > 	va_args[] = "abc";
-> > 	seq_printf(m, "%d %s", var, va_args);
-> 
-> The same could be true of fmt and it's
-> used in lots of macros no?
+Patch 1-6 are minor fixes and furthur work for preview patchset,
+which uses common helper functions to free reserved pages.
 
-No, not at all. Try it. The difference is that 'fmt' is the macro arg
-and gets replaced by the pre-processor, where as va_args is what gets
-placed into the C code by the C pre-processor. Any variables that's not
-a macro argument MUST BE UNIQUE!
+Patch 7-11 enhance the way to calculate zone->managed_pages and report
+available pages as "MemTotal" for each NUMA node
 
-> 
-> > What will be printed is:
-> > 
-> > 	1 var, va_args
-> > 
-> > That will be very confusing to people.
-> 
-> And so be fixed very quickly.
+Patch 12 concentrates adjusting of totalram_pages, which reduces 37
+references to totalram_pages from arch/ subdirectories.
 
-By changing the caller, it's a bug in the implementation of the macro,
-not the user of the macro.
+We have only tested these patchset on x86 platforms, and have done basic
+compliation tests using cross-compilers from ftp.kernel.org. That means
+some code may not pass compilation on some architectures. So any help
+to test this patchset are welcomed!
 
-> 
-> > > +	if (sizeof(va_args) > 1)				\
-> > > +		seq_printf(seq, fmt, ##__VA_ARGS__);		\
-> > > +	else							\
-> > > +		seq_puts(seq, fmt);				\
-> > > +} while (0)
-> > 
-> > BTW, you need to return a value.
-> 
-> Oh, yeah, thanks.
-> 
-> >  #define seq_printf(seq, fmt, ...)				\
-> > -do {								\
-> > +({								\
-> >  	char va_args[] = __stringify(__VA_ARGS__);		\
-> > +	int _____ret;						\
-> >  	if (sizeof(va_args) > 1)				\
-> > -		seq_printf(seq, fmt, ##__VA_ARGS__);		\
-> > +		_____ret = seq_printf(seq, fmt, ##__VA_ARGS__); \
-> >  	else							\
-> > -		seq_puts(seq, fmt);				\
-> > -} while (0)
-> > +		_____ret = seq_puts(seq, fmt);			\
-> > +	_____ret;						\
-> > +})
-> 
-> It's certainly better as a statement expression,
-> but I think the underscores are really ugly and
-> not necessary as ret is locally scoped.
+There is still another part still under development:
+Part4: introduce helper functions to simplify mem_init() and remove the
+	global variable num_physpages.
 
-Let me show you the issue:
+Jiang Liu (12):
+  mm: enhance free_reserved_area() to support poisoning memory with
+    zero
+  mm/ARM64: kill poison_init_mem()
+  mm/x86: use common help functions to furthur simplify code
+  mm/tile: use common help functions to free reserved pages
+  mm/powertv: use common help functions to free reserved pages
+  mm/acornfb: use common help functions to free reserved pages
+  mm: accurately calculate zone->managed_pages for highmem zones
+  mm: use a dedicated lock to protect totalram_pages and
+    zone->managed_pages
+  mm: avoid using __free_pages_bootmem() at runtime
+  mm: correctly update zone->mamaged_pages
+  mm: report available pages as "MemTotal" for each NUMA node
+  mm: concentrate adjusting of totalram_pages
 
-#define seq_printf(seq, fmt, ...)			\
-({							\
-	char va_args[] = __stringify(__VA_ARGS__);		\
-	int ret;					\
-	if (sizeof(va_args) > 1)			\
-		ret = seq_printf(seq, fmt, ##__VA_ARGS__);	\
-	else
-		ret = seq_puts(seq, fmt);		\
-	ret;						\
-})
+ arch/alpha/kernel/sys_nautilus.c      |    2 +-
+ arch/alpha/mm/init.c                  |    6 ++--
+ arch/alpha/mm/numa.c                  |    2 +-
+ arch/arm/mm/init.c                    |   11 ++++----
+ arch/arm64/mm/init.c                  |   15 ++--------
+ arch/avr32/mm/init.c                  |    6 ++--
+ arch/blackfin/mm/init.c               |    6 ++--
+ arch/c6x/mm/init.c                    |    6 ++--
+ arch/cris/mm/init.c                   |    4 +--
+ arch/frv/mm/init.c                    |    6 ++--
+ arch/h8300/mm/init.c                  |    6 ++--
+ arch/hexagon/mm/init.c                |    3 +-
+ arch/ia64/mm/init.c                   |    4 +--
+ arch/m32r/mm/init.c                   |    6 ++--
+ arch/m68k/mm/init.c                   |    8 +++---
+ arch/microblaze/mm/init.c             |    6 ++--
+ arch/mips/mm/init.c                   |    2 +-
+ arch/mips/powertv/asic/asic_devices.c |   13 ++-------
+ arch/mips/sgi-ip27/ip27-memory.c      |    2 +-
+ arch/mn10300/mm/init.c                |    2 +-
+ arch/openrisc/mm/init.c               |    6 ++--
+ arch/parisc/mm/init.c                 |    8 +++---
+ arch/powerpc/kernel/kvm.c             |    2 +-
+ arch/powerpc/mm/mem.c                 |    7 ++---
+ arch/s390/mm/init.c                   |    4 +--
+ arch/score/mm/init.c                  |    2 +-
+ arch/sh/mm/init.c                     |    6 ++--
+ arch/sparc/mm/init_32.c               |    3 +-
+ arch/sparc/mm/init_64.c               |   10 +++----
+ arch/tile/mm/init.c                   |    9 ++----
+ arch/um/kernel/mem.c                  |    4 +--
+ arch/unicore32/mm/init.c              |    6 ++--
+ arch/x86/mm/highmem_32.c              |    5 ++++
+ arch/x86/mm/init.c                    |   14 ++--------
+ arch/x86/mm/init_32.c                 |    2 +-
+ arch/x86/mm/init_64.c                 |   24 ++++------------
+ arch/xtensa/mm/init.c                 |    6 ++--
+ drivers/video/acornfb.c               |   28 ++-----------------
+ drivers/virtio/virtio_balloon.c       |    8 ++++--
+ drivers/xen/balloon.c                 |   23 ++++------------
+ include/linux/bootmem.h               |    1 +
+ include/linux/mm.h                    |   17 ++++++------
+ include/linux/mmzone.h                |   14 +++++++---
+ mm/bootmem.c                          |   41 +++++++++++++++++----------
+ mm/hugetlb.c                          |    2 +-
+ mm/memory_hotplug.c                   |   31 ++++-----------------
+ mm/nobootmem.c                        |   35 +++++++++++++----------
+ mm/page_alloc.c                       |   49 ++++++++++++++++++++++-----------
+ 48 files changed, 210 insertions(+), 273 deletions(-)
 
-Now lets look at the usage of in the code:
-
-	ret = 1;
-	va_args = 5;
-	fmt = "hello world\n";
-	seq_print(m, "my fmt=%s args=%d ret=%d\n", fmt, va_args, ret);
-
-Notice that here we have va_args as a integer.
-
-Here's what cpp does to it (adding newlines to make it readable):
-
-	ret = 1;
-	va_args = 5;
-	fmt = "hello world";
-	({
-		char va_args[] = "fmt, va_args, ret";
-		int ret;
-		if (sizeof(va_args) > 1)
-			ret = seq_printf(seq, "my fmt=%s args=%d ret=%d\n", fmt, va_args, ret);
-		else
-			ret = seq_puts(seq, "my fmt=%s args=%d ret=%d\n");
-		ret;
-	})
-
-A couple of things here. One, you'll get a gcc warning about ret being
-used uninitialized. That should confuse the hell out of the developer.
-
-Then you'll also get a warning about %d expecting a number but the
-argument is a string. Another damn confusing thing for developers to
-see.
-
-Let me stress it one more time... Any variable names added by a macro,
-that's not replaced by the parameters of the macro MUST BE UNIQUE!!!!
-Otherwise you will get very difficult hard to debug bugs.
-
-I'm also thinking, as macros may include macros, we may need to define a
-macro variable name space policy. Something like:
-
-	char __seq_printf__va_args[] = __stringify(__VA_ARGS__);
-	int __seq_printf__ret;
-
-It may make the macro ugly, but it helps keep conflicts in name spacing.
-
--- Steve
-
+-- 
+1.7.9.5
 
