@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3CPBMK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 21:12:10 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.102]:55113 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755031Ab3CPBMJ (ORCPT
+	id S932184Ab3CPBMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 21:12:19 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:35433 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab3CPBMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 21:12:09 -0400
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Mar 2013 21:12:09 EDT
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-160.messagelabs.com!1363395918!5385110!1
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] video: ep93xx-fb.c: fix section mismatch and use module_platform_driver
-Date: Fri, 15 Mar 2013 18:05:09 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-fbdev@vger.kernel.org>, Ryan Mallon <rmallon@gmail.com>,
-        <FlorianSchandinat@gmx.de>
+	Fri, 15 Mar 2013 21:12:14 -0400
+Message-ID: <5143C6EA.60908@gmail.com>
+Date: Sat, 16 Mar 2013 02:12:10 +0100
+From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:20.0) Gecko/20100101 Thunderbird/20.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201303151805.10277.hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Corrupt packets with ath5k
+References: <51252AE7.7040903@ono.com> <51256A7F.7010207@ono.com>
+In-Reply-To: <51256A7F.7010207@ono.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the __init tags from the ep93xxfb_calc_fbsize() and
-ep93xxfb_alloc_videomem() functions to fix the section mismatch
-warnings.
+On 02/21/2013 01:29 AM, JA Magallón wrote:
+> On 02/20/2013 08:58 PM, JA Magallón wrote:
+>> Hi all...
+>>
+>> I have a strange problem with latest kernels. When I update my netbook
+>> I get many "Installation failed, bad rpms:" mesages. First I thougt
+>> that the oldie cheap ssd was failing (it is an Aspire AOA110).
+>> But the updates work always fine when plugged to ethernet.
+>>
+>> Now i tried to copy a couple RPMS via ssh over wifi and got:
+>>
+>> mplayer-1.1-11.r35916.1.mga3.tainted.i586.rpm  100% 2192KB   2.1MB/s   00:00
+>> Received disconnect from 192.168.1.51: 2: Packet corrupt
+>> lost connection
+>>
+>> Hardware/driver are these:
+>>
+>> 03:00.0 Ethernet controller: Atheros Communications Inc. AR242x / AR542x Wireless Network Adapter (PCI-Express) (rev 01)
+>>      Subsystem: Foxconn International, Inc. Device e008
+>>      Kernel driver in use: ath5k
+>>
+>> Ist that hardware failing ? Is driver failing ? Other laptop/androids
+>> update fine with the router via wifi.
+>> Any idea ?
+>>
+>> I currently have 3.8.0, distro build.
+>>
+>
+> I tried with 3.7.1 and everything works fine.
+> Possible clues:
+> - 3.7.1: works fine
+> - warm boot in 3.8.0: transfer stalls and scp looks hanged, speed
+>    drops to zero, but no error message
+> - cold boot in 3.8.0: transfer stops with Packet corrupt error or sometimes
+>    stalls..
+>
 
-Use module_platform_driver() to remove the init/exit boilerplate.
+I have found these:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
----
- drivers/video/ep93xx-fb.c | 18 +++---------------
- 1 file changed, 3 insertions(+), 15 deletions(-)
+http://blog.gmane.org/gmane.linux.drivers.ath5k.devel
+https://bugzilla.kernel.org/show_bug.cgi?id=55211
 
-diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-index e06cd5d..ee1ee54 100644
---- a/drivers/video/ep93xx-fb.c
-+++ b/drivers/video/ep93xx-fb.c
-@@ -419,7 +419,7 @@ static struct fb_ops ep93xxfb_ops = {
- 	.fb_mmap	= ep93xxfb_mmap,
- };
- 
--static int __init ep93xxfb_calc_fbsize(struct ep93xxfb_mach_info *mach_info)
-+static int ep93xxfb_calc_fbsize(struct ep93xxfb_mach_info *mach_info)
- {
- 	int i, fb_size = 0;
- 
-@@ -441,7 +441,7 @@ static int __init ep93xxfb_calc_fbsize(struct ep93xxfb_mach_info *mach_info)
- 	return fb_size;
- }
- 
--static int __init ep93xxfb_alloc_videomem(struct fb_info *info)
-+static int ep93xxfb_alloc_videomem(struct fb_info *info)
- {
- 	struct ep93xx_fbi *fbi = info->par;
- 	char __iomem *virt_addr;
-@@ -627,19 +627,7 @@ static struct platform_driver ep93xxfb_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- };
--
--static int ep93xxfb_init(void)
--{
--	return platform_driver_register(&ep93xxfb_driver);
--}
--
--static void __exit ep93xxfb_exit(void)
--{
--	platform_driver_unregister(&ep93xxfb_driver);
--}
--
--module_init(ep93xxfb_init);
--module_exit(ep93xxfb_exit);
-+module_platform_driver(ep93xxfb_driver);
- 
- MODULE_DESCRIPTION("EP93XX Framebuffer Driver");
- MODULE_ALIAS("platform:ep93xx-fb");
+Any plans to include fix in 3.8.4 ?
+
 -- 
-1.8.1.4
-
+J.A. Magallon <jamagallonn()gmail!com>     \               Winter is coming...
