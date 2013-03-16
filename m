@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab3CPBWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 21:22:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16784 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab3CPBWe convert rfc822-to-8bit (ORCPT
+	id S1755545Ab3CPByO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 21:54:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19402 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3CPByM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 21:22:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,855,1355126400"; 
-   d="scan'208";a="280268068"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "Li, Fei" <fei.li@intel.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	Fri, 15 Mar 2013 21:54:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Mar 2013 18:47:02 -0700
+Message-ID: <1363398860.2879.2.camel@bilhuang-vm1>
+Subject: Re: [RFC 1/1] clk: Add notifier support in
+ clk_prepare_enable/clk_disable_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Ulf Hansson <ulf.hansson@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>
-Subject: RE: [PATCH] pm: print the name of failed suspend function for
- platform device
-Thread-Topic: [PATCH] pm: print the name of failed suspend function for
- platform device
-Thread-Index: AQHOIbIsii1CID+liUi8UiNF1Nk0i5inhVQA
-Date: Sat, 16 Mar 2013 01:22:31 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A25BE7A@SHSMSX101.ccr.corp.intel.com>
-References: <1360041183.15311.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <27240C0AC20F114CBF8149A2696CBE4A254DD3@SHSMSX101.ccr.corp.intel.com>
- <20130315192024.GB11988@kroah.com>
-In-Reply-To: <20130315192024.GB11988@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 15 Mar 2013 18:54:20 -0700
+In-Reply-To: <514378CB.1060605@wwwdotorg.org>
+References: <1363151317.3311.9.camel@bilhuang-vm1>
+	 <51400D9D.9060305@wwwdotorg.org> <1363153204.3311.14.camel@bilhuang-vm1>
+	 <5140C12A.4060900@wwwdotorg.org> <1363227311.3311.30.camel@bilhuang-vm1>
+	 <20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
+	 <1363253287.3311.32.camel@bilhuang-vm1> <51420EBB.7080503@wwwdotorg.org>
+	 <1363310454.3311.44.camel@bilhuang-vm1> <5142B027.4040403@wwwdotorg.org>
+	 <20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
+	 <CAPDyKFoBJpraMz8i1FmFqG7=Zsv0DTQ0PKVOQJ-+iEsKpb3Hdg@mail.gmail.com>
+	 <1363349206.5827.10.camel@bilhuang-vm1>
+	 <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
+	 <514378CB.1060605@wwwdotorg.org>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-9"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
-
-Double checked, there is no your response before.
-Can you consider it again? Thanks.
-
-Since we have printed the failure info, why not enhance it a bit:)
-
-Example without this patch:
-pm_op(): platform_pm_suspend+0x0/0x50 returns -11
-PM: Device power.0 failed to suspend: error -11
-
-And with this patch:
-platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
-pm_op(): platform_pm_suspend+0x0/0x80 returns -11
-PM: Device power.0 failed to suspend: error -11
-
-
-> -----Original Message-----
-> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
-> Sent: Saturday, March 16, 2013 3:20 AM
-> To: Liu, Chuansheng
-> Cc: Li, Fei; rjw@sisk.pl; akpm@linux-foundation.org;
-> linux-kernel@vger.kernel.org; ldewangan@nvidia.com
-> Subject: Re: [PATCH] pm: print the name of failed suspend function for platform
-> device
+On Sat, 2013-03-16 at 03:38 +0800, Stephen Warren wrote:
+> On 03/15/2013 06:33 AM, Ulf Hansson wrote:
+> > On 15 March 2013 13:06, Bill Huang <bilhuang@nvidia.com> wrote:
+> >> On Fri, 2013-03-15 at 18:08 +0800, Ulf Hansson wrote:
+> ...
+> >>> Some prerequisites; I think am in favor of using the clk API to
+> >>> trigger DVFS changes and then I agree on that clk_prepare|unprepare
+> >>> needs to be possible to track from a DVFS perspective. clk_set_rate is
+> >>> not enough.
+> >>>
+> >>> So if we decide to do the above (using the clk API to trigger DVFS
+> >>> changes), I believe we should discuss two possible solutions;
+> >>> - clk notifiers or..
+> >>> - dvfs clock type.
+> >>>
+> >>> I am trying to make up my mind of what I think is the best solution.
+> >>> Have you considered "dvfs clock type"?
+> >>> I put some comments about this for "[PATCH 2/5] clk: notifier handler
+> >>> for dynamic voltage scaling" recently as well.
+> >>>
+> >>> What could the advantages/disadvantages be between the two options?
+> >>
+> >> I personally prefer clk notifiers since that's easy and all the existing
+> >> device drivers don't need to be modified, a new clock or API might be
+> >> more thoroughly considered (and hence maybe more graceful) but that
+> >> means we need more time to cook and many drivers need to plug into that
+> >> API when it comes out, a lot of test/verification or maybe chaos
+> >> follows, I'm not sure will that be a little overkill.
+> > 
+> > I guess you did not fully got what I meant with "dvfs clock type". It
+> > will not affect the clock API. But instead the dvfs is handled by
+> > implementing a specific clk hw type. So the same thing is accomplished
+> > as with clk notifiers, no changes should be needed to device drivers.
+> > 
+> > The difference is only that no notifiers will be needed, and all the
+> > dvfs stuff will be handled in the clk hw instead. It will mean that we
+> > will bundle dvfs stuff into the clock drivers, instead of separating
+> > the code outside the clock drivers. But, on the other hand no
+> > notifiers will be needed.
 > 
-> On Mon, Mar 11, 2013 at 01:41:28AM +0000, Liu, Chuansheng wrote:
-> > Hi Greg,
-> >
-> > I just noticed some other cases need the more log also.
-> > https://lkml.org/lkml/2013/3/8/71
-> >
-> > Could you consider the below patch, thanks?
-> 
-> Didn't I already consider it and respond?
+> The advantage here is that I assume that a notifier would continually
+> have to check whether the clock being modified was one that the DVFS
+> notifier cared about. By integrating the CVFS logic into the clk_hw
+
+Actually, we can register notifier only on clocks that DVFS care about.
+
 
