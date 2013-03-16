@@ -1,42 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab3CSC2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:28:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43436 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab3CSC2R (ORCPT
+	id S933161Ab3CSCaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:30:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46989 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3CSCaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:28:17 -0400
-Date: Mon, 18 Mar 2013 19:24:02 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [Patch v3 0/4] Add support for tps65090-charger
-Message-ID: <20130319022402.GA14118@lizard.gateway.2wire.net>
-References: <1363126089-9071-1-git-send-email-rklein@nvidia.com>
+	Mon, 18 Mar 2013 22:30:01 -0400
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
+To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com
+Date: Sat, 16 Mar 2013 13:00:47 +0900
+Message-ID: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1363126089-9071-1-git-send-email-rklein@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 06:08:05PM -0400, Rhyland Klein wrote:
-> This patchset adds support for the TPS65090-charger. This charger is
-> registered as a subdevice of the TPS65090 PMIC.
-> 
-> This series includes a fix for the tps65090 header file where all
-> the interrupts were shifted by 1.
+Currently, read to /proc/vmcore is done by read_oldmem() that uses
+ioremap/iounmap per a single page. For example, if memory is 1GB,
+ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+times. This causes big performance degradation.
 
-Thanks for the patches, Rhyland! 3/4 and 4/4 applied to the
-battery-2.6.git tree.
+In particular, the current main user of this mmap() is makedumpfile,
+which not only reads memory from /proc/vmcore but also does other
+processing like filtering, compression and IO work. Update of page
+table and the following TLB flush makes such processing much slow;
+though I have yet to make patch for makedumpfile and yet to confirm
+how it's improved.
 
-Anton
+To address the issue, this patch implements mmap() on /proc/vmcore to
+improve read performance. My simple benchmark shows the improvement
+from 200 [MiB/sec] to over 50.0 [GiB/sec].
+
+ChangeLog
+=========
+
+v2 => v3)
+
+- Rebase 3.9-rc3.
+
+- Copy program headers seprately from e_phoff in ELF note segment
+  buffer. Now there's no risk to allocate huge memory if program
+  header table positions after memory segment.
+  => See PATCH 01.
+
+- Add cleanup patch that removes unnecessary variable.
+  => See PATCH 02.
+
+- Fix wrongly using the variable that is buffer size configurable at
+  runtime. Instead, use the varibale that has original buffer size.
+  => See PATCH 05.
+
+v1 => v2)
+
+- Clean up the existing codes: use e_phoff, and remove the assumption
+  on PT_NOTE entries.
+  => See PATCH 01, 02.
+
+- Fix potencial bug that ELF haeader size is not included in exported
+  vmcoreinfo size.
+  => See Patch 03.
+
+- Divide patch modifying read_vmcore() into two: clean-up and primary
+  code change.
+  => See Patch 9, 10.
+
+- Put ELF note segments in page-size boundary on the 1st kernel
+  instead of copying them into the buffer on the 2nd kernel.
+  => See Patch 11, 12, 13, 14, 16.
+
+Benchmark
+=========
+
+No change is seen from the previous patch series. See the previous
+one from here:
+
+  https://lkml.org/lkml/2013/2/14/89
+
+The benchmark using fixed makedumpfile on 32GB memory system is found
+at:
+
+  http://lists.infradead.org/pipermail/kexec/2013-March/008300.html
+
+TODO
+====
+
+- Benchmark on system with tera-byte memory using fixed makedumpfile.
+
+- fix crash utility to support NT_VMCORE_PAD note type, which donesn't
+  distinguish the same note types from different note names, which is
+  not conform to ELF specification; now NT_VMCORE_PAD note is wrongly
+  interpreted as NT_VMCORE_DEBUGINFO.
+
+Test
+====
+
+This patch set is composed based on v3.9-rc3.
+
+Done on x86-64, x86-32 both with 1GB and over 4GB memory environments.
+
+---
+
+HATAYAMA Daisuke (21):
+      vmcore: introduce mmap_vmcore()
+      vmcore: count holes generated by round-up operation for vmcore size
+      vmcore: round-up offset of vmcore object in page-size boundary
+      vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
+      vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
+      kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
+      elf: introduce NT_VMCORE_PAD type
+      kexec, elf: introduce NT_VMCORE_DEBUGINFO note type
+      kexec: allocate vmcoreinfo note buffer on page-size boundary
+      vmcore: allocate per-cpu crash_notes objects on page-size boundary
+      vmcore: read buffers for vmcore objects copied from old memory
+      vmcore: clean up read_vmcore()
+      vmcore: modify vmcore clean-up function to free buffer on 2nd kernel
+      vmcore: copy non page-size aligned head and tail pages in 2nd kernel
+      vmcore, procfs: introduce a flag to distinguish objects copied in 2nd kernel
+      vmcore: round up buffer size of ELF headers by PAGE_SIZE
+      vmcore: allocate buffer for ELF headers on page-size alignment
+      vmcore, sysfs: export ELF note segment size instead of vmcoreinfo data size
+      vmcore: rearrange program headers without assuming consequtive PT_NOTE entries
+      vmcore: clean up by removing unnecessary variable
+      vmcore: reference e_phoff member explicitly to get position of program header table
+
+
+ arch/s390/include/asm/kexec.h |    8 -
+ fs/proc/vmcore.c              |  595 ++++++++++++++++++++++++++++++++---------
+ include/linux/kexec.h         |   16 +
+ include/linux/proc_fs.h       |    8 -
+ include/uapi/linux/elf.h      |    5 
+ kernel/kexec.c                |   47 ++-
+ kernel/ksysfs.c               |    2 
+ 7 files changed, 522 insertions(+), 159 deletions(-)
+
+-- 
+
+Thanks.
+HATAYAMA, Daisuke
