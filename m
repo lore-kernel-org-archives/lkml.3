@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab3CQIjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 04:39:51 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42315 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015Ab3CQIjt (ORCPT
+	id S1756162Ab3CQIkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 04:40:08 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:39596 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab3CQIj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 04:39:49 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v2 0/7] f2fs: Add tracepoints support in f2fs filesystem
-Date: Sun, 17 Mar 2013 17:39:27 +0900
-Message-Id: <1363509567-3469-1-git-send-email-linkinjeon@gmail.com>
+	Sun, 17 Mar 2013 04:39:58 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] net: bluetooth: Replaced kzalloc and memcpy with kmemdup
+Date: Sat, 16 Mar 2013 16:07:10 +0200
+Message-Id: <1363442830-13754-1-git-send-email-gheorghiuandru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Replaced calls to kzalloc followed by memcpy with a single call to kmemdup.
+Patch found using coccinelle.
 
-Add tracepoints in f2fs filesystem for tracing the filesystem
-operations for information/debugging purpose if needed. All the 
-tracepoints are clubbed with respect to functionalities.
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ net/bluetooth/a2mp.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
- Namjae Jeon(7):
-  f2fs: add tracepoints for sync operations and inode operations
-  f2fs: add tracepoints for truncate operation
-  f2fs: add tracepoint for tracing the page i/o operations
-  f2fs: add tracepoints for GC threads
-  f2fs: add tracepoints to debug the block allocation and fallocate
-  f2fs: add tracepoints for write page operations
-  f2fs: add tracepoints to debug checkpoint request
+diff --git a/net/bluetooth/a2mp.c b/net/bluetooth/a2mp.c
+index eb0f4b1..140e81c 100644
+--- a/net/bluetooth/a2mp.c
++++ b/net/bluetooth/a2mp.c
+@@ -397,13 +397,12 @@ static int a2mp_getampassoc_rsp(struct amp_mgr *mgr, struct sk_buff *skb,
+ 	if (ctrl) {
+ 		u8 *assoc;
+ 
+-		assoc = kzalloc(assoc_len, GFP_KERNEL);
++		assoc = kmemdup(rsp->amp_assoc, assoc_len, GFP_KERNEL);
+ 		if (!assoc) {
+ 			amp_ctrl_put(ctrl);
+ 			return -ENOMEM;
+ 		}
+ 
+-		memcpy(assoc, rsp->amp_assoc, assoc_len);
+ 		ctrl->assoc = assoc;
+ 		ctrl->assoc_len = assoc_len;
+ 		ctrl->assoc_rem_len = assoc_len;
+@@ -472,13 +471,12 @@ static int a2mp_createphyslink_req(struct amp_mgr *mgr, struct sk_buff *skb,
+ 		size_t assoc_len = le16_to_cpu(hdr->len) - sizeof(*req);
+ 		u8 *assoc;
+ 
+-		assoc = kzalloc(assoc_len, GFP_KERNEL);
++		assoc = kmemdup(rep->amp_assoc, assoc_len, GFP_KERNEL);
+ 		if (!assoc) {
+ 			amp_ctrl_put(ctrl);
+ 			return -ENOMEM;
+ 		}
+ 
+-		memcpy(assoc, req->amp_assoc, assoc_len);
+ 		ctrl->assoc = assoc;
+ 		ctrl->assoc_len = assoc_len;
+ 		ctrl->assoc_rem_len = assoc_len;
 -- 
 1.7.9.5
 
