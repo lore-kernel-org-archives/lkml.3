@@ -1,312 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab3CPKSH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 06:18:07 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:35289 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3CPKRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 06:17:52 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 1/2] ARM: davinci: dm355: add support for v4l2 video display
-Date: Sat, 16 Mar 2013 15:47:31 +0530
-Message-Id: <1363429052-1081-2-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363429052-1081-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1363429052-1081-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1755428Ab3CPKT3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 06:19:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15024 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753091Ab3CPKT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 06:19:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,856,1355126400"; 
+   d="scan'208";a="280394375"
+Date: Sat, 16 Mar 2013 10:19:20 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ben Widawsky <ben@bwidawsk.net>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
+ for a NULL pointer
+Message-ID: <20130316101920.GB17405@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Ben Widawsky <ben@bwidawsk.net>,
+	Tommi Rantala <tt.rantala@gmail.com>,
+	David Airlie <airlied@linux.ie>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+References: <CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com>
+ <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+ <20130315045004.GA14747@bwidawsk.net>
+ <20130315082403.GA29916@cantiga.alporthouse.com>
+ <20130315163606.GA17773@bwidawsk.net>
+ <20130315220619.GA17405@cantiga.alporthouse.com>
+ <20130315234942.GB715@bwidawsk.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130315234942.GB715@bwidawsk.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Fri, Mar 15, 2013 at 04:49:42PM -0700, Ben Widawsky wrote:
+> On Fri, Mar 15, 2013 at 10:06:19PM +0000, Chris Wilson wrote:
+> > On Fri, Mar 15, 2013 at 09:36:07AM -0700, Ben Widawsky wrote:
+> > > On Fri, Mar 15, 2013 at 08:24:03AM +0000, Chris Wilson wrote:
+> > > > That's what I thought too. Looking at the stack trace, the empirical
+> > > > evidence is that we need the check.
+> > > > -Chris
+> > > 
+> > > I think we need to investigate the issue more then, or put a BUG_ON() in
+> > > the drm code and run it through trinity. We have other places where arg
+> > > can't/shouldn't be NULL and we don't check.
+> > 
+> > Actually we are both wrong. drm_ioctl() does not validate that the
+> > user struct matches the expected size, just ensures that if that user
+> > cmd specifies that the arg is to be used that it only up to the known
+> > size is copied.
+> > 
+> > A hostile userspace can bludgen a NULL pointer through drm_ioctl() into
+> > the driver->ioctl->func().
+> 
+> > > > +   if (args == NULL)
+> > > > +           return -EINVAL;
+> > > > +
+> 
+> I must be failing to see the obvious, but I'm still not getting how args
+> can ever be NULL. kdata which is passed to us as "data" and cast to
+> "args' is either always some stack variable, or some kmalloc'd memory. I
+> see how the arguments themselves can be crap which is really only when
+> user size != drv_size.
+> 
+> So tell me, which case can result in a NULL arg?
+> 1. user size == drv_size // better not be this one
+> 2. user size < driver size
+> 3. user size > driver size
+> 
+> It seems to me we still must [simply] be missing something in our
+> parameter validation.
 
-Create platform devices for various video modules like venc,osd,
-vpbe and v4l2 driver for dm355.
+If *userspace* doesn't request either IOC_IN | IOC_OUT in their ioctl
+command (which are seperate from the ioctl number), then kdata is set to
+NULL.
+-Chris
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- arch/arm/mach-davinci/board-dm355-evm.c |    4 +-
- arch/arm/mach-davinci/davinci.h         |    2 +-
- arch/arm/mach-davinci/dm355.c           |  202 +++++++++++++++++++++++++++++--
- 3 files changed, 197 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index 147b8e1..37d12cc 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -253,8 +253,6 @@ static struct davinci_uart_config uart_config __initdata = {
- 
- static void __init dm355_evm_map_io(void)
- {
--	/* setup input configuration for VPFE input devices */
--	dm355_set_vpfe_config(&vpfe_cfg);
- 	dm355_init();
- }
- 
-@@ -344,6 +342,8 @@ static __init void dm355_evm_init(void)
- 	davinci_setup_mmc(0, &dm355evm_mmc_config);
- 	davinci_setup_mmc(1, &dm355evm_mmc_config);
- 
-+	dm355_init_video(&vpfe_cfg, NULL);
-+
- 	dm355_init_spi0(BIT(0), dm355_evm_spi_info,
- 			ARRAY_SIZE(dm355_evm_spi_info));
- 
-diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
-index 1c2670f..acfe0bb 100644
---- a/arch/arm/mach-davinci/davinci.h
-+++ b/arch/arm/mach-davinci/davinci.h
-@@ -74,7 +74,7 @@ void __init dm355_init(void);
- void dm355_init_spi0(unsigned chipselect_mask,
- 		const struct spi_board_info *info, unsigned len);
- void __init dm355_init_asp1(u32 evt_enable, struct snd_platform_data *pdata);
--void dm355_set_vpfe_config(struct vpfe_config *cfg);
-+int __init dm355_init_video(struct vpfe_config *, struct vpbe_config *);
- 
- /* DM365 function declarations */
- void __init dm365_init(void);
-diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index b49c3b7..761fcba 100644
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@ -36,6 +36,17 @@
- 
- #define DM355_UART2_BASE	(IO_PHYS + 0x206000)
- 
-+#define DM3XX_VDAC_CONFIG_BASE		0x01c4002c
-+
-+#define DM355_OSD_BASE			0x01c70200
-+
-+#define DM355_VENC_BASE			0x01c70400
-+
-+#define DM355_VPSS_CLK_CTRL_ADDR		0x44
-+#define DM355_VPSS_MUXSEL_EXTCLK_ENABLE		BIT(1)
-+#define DM355_VPSS_VENCCLKEN_ENABLE		BIT(3)
-+#define DM355_VPSS_DACCLKEN_ENABLE		BIT(4)
-+
- /*
-  * Device specific clocks
-  */
-@@ -744,11 +755,165 @@ static struct platform_device vpfe_capture_dev = {
- 	},
- };
- 
--void dm355_set_vpfe_config(struct vpfe_config *cfg)
-+static struct resource dm355_osd_resources[] = {
-+	{
-+		.start	= DM355_OSD_BASE,
-+		.end	= DM355_OSD_BASE + 0x180,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device dm355_osd_dev = {
-+	.name		= DM355_VPBE_OSD_SUBDEV_NAME,
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_osd_resources),
-+	.resource	= dm355_osd_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
-+static struct resource dm355_venc_resources[] = {
-+	{
-+		.start	= IRQ_VENCINT,
-+		.end	= IRQ_VENCINT,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	/* venc registers io space */
-+	{
-+		.start	= DM355_VENC_BASE,
-+		.end	= DM355_VENC_BASE + 0x180,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	/* VDAC config register io space */
-+	{
-+		.start	= DM3XX_VDAC_CONFIG_BASE,
-+		.end	= DM3XX_VDAC_CONFIG_BASE + 4,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct resource dm355_v4l2_disp_resources[] = {
-+	{
-+		.start	= IRQ_VENCINT,
-+		.end	= IRQ_VENCINT,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	/* venc registers io space */
-+	{
-+		.start	= DM355_VENC_BASE,
-+		.end	= DM355_VENC_BASE + 0x180,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static int dm355_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
-+			    int field)
- {
--	vpfe_capture_dev.dev.platform_data = cfg;
-+	switch (if_type) {
-+	case V4L2_MBUS_FMT_SGRBG8_1X8:
-+		davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		/*
-+		 * This was VPBE_DIGITAL_IF_YCC16. Replace the enum
-+		 * accordingly when the right one gets into open source
-+		 */
-+		if (field)
-+			davinci_cfg_reg(DM355_VOUT_FIELD);
-+		else
-+			davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	davinci_cfg_reg(DM355_VOUT_COUTL_EN);
-+	davinci_cfg_reg(DM355_VOUT_COUTH_EN);
-+
-+	return 0;
- }
- 
-+static inline u32 dm355_reg_modify(void *reg, u32 val, u32 mask)
-+{
-+	u32 new_val = (readl(reg) & ~mask) | (val & mask);
-+
-+	writel(new_val, reg);
-+
-+	return new_val;
-+}
-+
-+static int dm355_venc_setup_clock(enum vpbe_enc_timings_type type,
-+				   unsigned int pclock)
-+{
-+	void __iomem *vpss_clk_ctrl_reg;
-+
-+	vpss_clk_ctrl_reg = DAVINCI_SYSMOD_VIRT(DM355_VPSS_CLK_CTRL_ADDR);
-+
-+	switch (type) {
-+	case VPBE_ENC_STD:
-+		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 0);
-+		writel(DM355_VPSS_DACCLKEN_ENABLE |
-+		       DM355_VPSS_VENCCLKEN_ENABLE, vpss_clk_ctrl_reg);
-+		break;
-+
-+	case VPBE_ENC_DV_TIMINGS:
-+		if (pclock > 27000000)
-+			/*
-+			 * For HD, use external clock source since we cannot
-+			 * support HD mode with internal clocks.
-+			 */
-+			writel(DM355_VPSS_MUXSEL_EXTCLK_ENABLE,
-+			       vpss_clk_ctrl_reg);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_device dm355_vpbe_display = {
-+	.name		= "vpbe-v4l2",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_v4l2_disp_resources),
-+	.resource	= dm355_v4l2_disp_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
-+struct venc_platform_data dm355_venc_pdata = {
-+	.setup_pinmux	= dm355_vpbe_setup_pinmux,
-+	.setup_clock	= dm355_venc_setup_clock,
-+};
-+
-+static struct platform_device dm355_venc_dev = {
-+	.name		= DM355_VPBE_VENC_SUBDEV_NAME,
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_venc_resources),
-+	.resource	= dm355_venc_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+		.platform_data		= (void *)&dm355_venc_pdata,
-+	},
-+};
-+
-+static struct platform_device dm355_vpbe_dev = {
-+	.name		= "vpbe_controller",
-+	.id		= -1,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
- /*----------------------------------------------------------------------*/
- 
- static struct map_desc dm355_io_desc[] = {
-@@ -868,19 +1033,40 @@ void __init dm355_init(void)
- 	davinci_map_sysmod();
- }
- 
-+int __init dm355_init_video(struct vpfe_config *vpfe_cfg,
-+				struct vpbe_config *vpbe_cfg)
-+{
-+	if (vpfe_cfg || vpbe_cfg)
-+		platform_device_register(&dm355_vpss_device);
-+
-+	if (vpfe_cfg) {
-+		/* Add ccdc clock aliases */
-+		clk_add_alias("master", dm355_ccdc_dev.name,
-+			      "vpss_master", NULL);
-+		clk_add_alias("slave", dm355_ccdc_dev.name, "vpss_slave", NULL);
-+		vpfe_capture_dev.dev.platform_data = vpfe_cfg;
-+		platform_device_register(&dm355_ccdc_dev);
-+		platform_device_register(&vpfe_capture_dev);
-+	}
-+
-+	if (vpbe_cfg) {
-+		dm355_vpbe_dev.dev.platform_data = vpbe_cfg;
-+		platform_device_register(&dm355_osd_dev);
-+		platform_device_register(&dm355_venc_dev);
-+		platform_device_register(&dm355_vpbe_dev);
-+		platform_device_register(&dm355_vpbe_display);
-+	}
-+
-+	return 0;
-+}
-+
- static int __init dm355_init_devices(void)
- {
- 	if (!cpu_is_davinci_dm355())
- 		return 0;
- 
--	/* Add ccdc clock aliases */
--	clk_add_alias("master", dm355_ccdc_dev.name, "vpss_master", NULL);
--	clk_add_alias("slave", dm355_ccdc_dev.name, "vpss_master", NULL);
- 	davinci_cfg_reg(DM355_INT_EDMA_CC);
- 	platform_device_register(&dm355_edma_device);
--	platform_device_register(&dm355_vpss_device);
--	platform_device_register(&dm355_ccdc_dev);
--	platform_device_register(&vpfe_capture_dev);
- 
- 	return 0;
- }
 -- 
-1.7.4.1
-
+Chris Wilson, Intel Open Source Technology Centre
