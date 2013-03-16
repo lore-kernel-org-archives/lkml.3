@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3CPSMq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 14:12:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54814 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab3CPSMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 14:12:45 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 16 Mar 2013 11:12:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [RFC PATCH 0/2] fs: sysfs: Add devres support
-Message-ID: <20130316181253.GA23608@roeck-us.net>
-References: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
- <20130316162140.GB2630@kroah.com>
+	id S1756037Ab3CPSVu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 14:21:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34145 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755114Ab3CPSVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 14:21:48 -0400
+Date: Sat, 16 Mar 2013 19:19:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+	.patch added to -mm tree
+Message-ID: <20130316181947.GA7560@redhat.com>
+References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <CAFTL4hxNh5qMZyyrLc8_yG5-i7UoS_nan22pO8o1fb8yS7Vz3w@mail.gmail.com> <20130315175117.GA2462@redhat.com> <CAFTL4hwZQcN_sO0SN8bJqEsQdC8ArDvJhFPg62Kh8OQyUe=MUw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130316162140.GB2630@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFTL4hwZQcN_sO0SN8bJqEsQdC8ArDvJhFPg62Kh8OQyUe=MUw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding lm-sensors.
+On 03/15, Frederic Weisbecker wrote:
+>
+> 2013/3/15 Oleg Nesterov <oleg@redhat.com>:
+> >
+> > do_something() looks fine, if atomic_add_unless_negative() succeeds
+> > we do have a barrier?
+>
+> Ok, I guess the guarantee of a barrier in case of failure is probably
+> not needed. But since the only way to safely read the atomic value is
+> a cmpxchg like operation, I guess a barrier must be involved in any
+> case.
+>
+> Using atomic_read() may return some stale value.
 
-On Sat, Mar 16, 2013 at 09:21:40AM -0700, Greg Kroah-Hartman wrote:
-> On Thu, Mar 14, 2013 at 08:24:45PM -0700, Guenter Roeck wrote:
-> > Provide devres functions for device_create_file, sysfs_create_file,
-> > and sysfs_create_group plus the respective remove functions.
-> > 
-> > Idea is to be able to drop calls to the remove functions from the various
-> > drivers using those calls.
-> 
-> Hm, despite the fact that almost every driver that makes these calls is
-> broken?  :)
-> 
-> > Potential savings are substantial. There are more than 700 calls to
-> > device_remove_file in the kernel, more than 500 calls to sysfs_remove_group,
-> > and some 50 calls to sysfs_remove_file (though not all of those use dev->kobj
-> > as parameter). Expanding the API to sysfs_create_bin_file would add another 80+
-> > opportunities, and adding sysfs_create_link would create another 100 or so.
-> 
-> The idea is nice, but why are these drivers adding sysfs files on their
-> own?  Are they doing this in a way that is race-free with userspace
-> (i.e. creating them before userspace is told about the device), or are
-> they broken and need to have these calls added to the "default
-> device/driver/bus" attribute list for them instead?
-> 
-My use case is primarily for hwmon drivers.
+Oh, if the lack of the barrier is fine, then "stale" should be fine
+too, I think. I bet you can't describe accurately what "stale" can
+actually mean in this case ;)
 
-hwmon has a separate API call to register a driver with the hwmon subsystem,
-which creates a separate hwmon device and provides the user space notification.
-As the created attribute files are often conditional on device variant and device
-configuration, I don't see how this could be done through a default attribute
-list (even though it might be worthwhile exploring if it can be used for some
-of the simpler drivers).
+If, say, atomic_inc_unless_negative(p) sees the stale value < 0, it
+was actually negative somewhere in the past. If it was changed later,
+we can pretend that atomic_inc_unless_negative() was called before
+the change which makes it positive.
 
-The idea was to also provide devm_hwmon_register and devm_hwmon_unregister.
-Together that would help us reducing the remove function for most hwmon
-drivers to pretty much nothing.
+> > Anyway, I understand that it is possible to write the code which
+> > won't work without the uncoditional mb().
+>
+> Yeah that's my fear.
 
-Some other subsystems:
+I see... well personally I can't imagine the "natural" (non-artificial)
+code example which needs mb() in case of failure.
 
-usb: Used widely. From looking into a couple of sources, usage seems to be
-questionable, as I don't see how userspace would be notified. I don't know
-enough about usb to be sure, though.
 
-mtd: One use case (volume creation) seems to be safe, as it notifies userspace
-about its completion. For UBI I am not that sure, as it registers the device
-first and then adds the attributes.
+However, I have to agree with Paul's "It is not like memory ordering is
+simple", so I won't argue.
 
-regulators: No idea if it does the right thing.
+> > My point was: should we fix atomic_add_unless() then? If not, why
+> > should atomic_add_unless_negative() differ?
+>
+> They shouldn't differ I guess.
 
-input: Usage in files I looked at seems questionable.
+Agreed, they shouldn't.
 
-There are others, but it really gets murky and I don't understand
-the subsystems well enough to make a call.
+Oleg.
 
-> I think the "we need to fix the drivers" option is the correct one :(
-> 
-> Ideally, I could get rid of those files from being exported at all, but
-> some busses do do things correctly, so I can't.  But they seem to be in
-> the minority...
-> 
-> So how about we fix up the drivers first, then, if there are valid users
-> for this type of interface (which I do think there is), we can add it
-> then?
-> 
-I think hwmon is a valid use case.
-
-For other subsystems, I simply don't know enough about those to do that kind
-of work; I think it would make more sense to ask it to be done by people who
-are familiar with the respective subsystems or drivers to do it.
-
-Besides, looking through well above 1,000 calls would probably take about
-forever if a single person was to do it, even if that person would be available
-full-time to do the work.
-
-How about an alternative: Provide the API, then if/when people start using it
-wrongly ask them to fix up the drivers instead. That seems to make more sense
-to me.
-
-Thanks,
-Guenter
