@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3CPTf6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 15:35:58 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:58245 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3CPTf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 15:35:56 -0400
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqBwAMDIRFFV5qjOPGdsb2JhbABDh0uFILhDAgIBgWwXAwEBAQE4NYIqAQEEAScTHCMFCwgDDhMlDwUlChoTiA4Kwn8VjVEUVEcHgl9hA5Zdhg2DYIohO4EuIw
-X-IronPort-AV: E=Sophos;i="4.84,857,1355094000"; 
-   d="scan'208";a="220097695"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sat, 16 Mar 2013 20:40:05 +0100
-To: Benson Leung <bleung@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, olofj@chromium.org, djkurtz@chromium.org,
-        dudl@cypress.com
-Subject: Re: [PATCH 1/4] Input: cyapa - Move common initialization to
- cyapa_detect
-Message-ID: <20130316194005.GA6086@polaris.bitmath.org>
-References: <1363218651-22457-1-git-send-email-bleung@chromium.org>
- <1363218651-22457-2-git-send-email-bleung@chromium.org>
+	id S1755959Ab3CPTgG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 15:36:06 -0400
+Received: from mout.web.de ([212.227.15.4]:65372 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab3CPTgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 15:36:01 -0400
+From: Martin Walch <walch.martin@web.de>
+To: linux-kernel@vger.kernel.org
+Subject: RAMster selects HAVE_ALIGNED_STRUCT_PAGE on 64 bit systems when it should not
+Date: Sat, 16 Mar 2013 20:35:59 +0100
+Message-ID: <1577953.rJTZvHtihu@tacticalops>
+User-Agent: KMail/4.10.1 (Linux/3.7.10-gentoo-gnu; KDE/4.10.1; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363218651-22457-2-git-send-email-bleung@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart5173705.3zXMljTsZa"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+X-Provags-ID: V02:K0:Y+HVODDgXj8PnZiw7BNsJ6IJQawnBkSwQdVVLayGrpZ
+ P0rys6wRJeD9J4IdB956DoeVi43bnk+Mbpc5DsAdoQnSnvTzKO
+ XifRqpNreVClVAe7bH8ht+WnrmAaJpDoqfzg10UHOlWXx9eQhE
+ B6YtTtg6FL6t6AmwRgouTioDIpBifdWcmwti4NpNboes2778YZ
+ jhsV+/tN+uLRrwttdz6tQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benson,
 
-> cyapa_check_is_operational and cyapa_create_input_dev are common to
-> the probe and firmware update paths. Pull those out into
-> cyapa_detect.
-> 
-> Signed-off-by: Benson Leung <bleung@chromium.org>
-> ---
->  drivers/input/mouse/cyapa.c | 57 +++++++++++++++++++++++++++++++--------------
->  1 file changed, 39 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-> index b409c3d..a631aca 100644
-> --- a/drivers/input/mouse/cyapa.c
-> +++ b/drivers/input/mouse/cyapa.c
-> @@ -823,6 +823,40 @@ err_free_device:
->  	return ret;
->  }
->  
-> +static void cyapa_detect(struct cyapa *cyapa)
+--nextPart5173705.3zXMljTsZa
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 
-No error return here?
+At drivers/staging/zcache/Kconfig:13 it says
 
-> +{
-> +	struct device *dev = &cyapa->client->dev;
-> +	int ret;
-> +
-> +	ret = cyapa_check_is_operational(cyapa);
-> +	if (ret == -ETIMEDOUT)
-> +		dev_err(dev, "no device detected, %d\n", ret);
-> +	else if (ret)
-> +		dev_err(dev, "device detected, but not operational, %d\n", ret);
-> +
-> +	if (!cyapa->input) {
+config RAMSTER
+	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+	depends on CONFIGFS_FS=y && SYSFS=y && !HIGHMEM && ZCACHE=y
+	depends on NET
+	# must ensure struct page is 8-byte aligned
+	select HAVE_ALIGNED_STRUCT_PAGE if !64_BIT
+	default n
 
-Return here saves you the ugly indentation.
+However, there is no config section for the symbol 64_BIT, so !64_BIT will 
+always be evaluated to true, and therefore RAMSTER will always select 
+HAVE_ALIGNED_STRUCT_PAGE, disregarding any breakage.
 
-> +		ret = cyapa_create_input_dev(cyapa);
-> +		if (ret)
-> +			dev_err(dev, "create input_dev instance failed, %d\n",
-> +				ret);
-> +
-> +		enable_irq(cyapa->irq);
-> +		/*
-> +		 * On some systems, a system crash / warm boot does not reset
-> +		 * the device's current power mode to FULL_ACTIVE.
-> +		 * If such an event happens during suspend, after the device
-> +		 * has been put in a low power mode, the device will still be
-> +		 * in low power mode on a subsequent boot, since there was
-> +		 * never a matching resume().
-> +		 * Handle this by always forcing full power here, when a
-> +		 * device is first detected to be in operational mode.
-> +		 */
-> +		ret = cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
-> +		if (ret)
-> +			dev_warn(dev, "set active power failed, %d\n", ret);
-> +	}
-> +}
-> +
->  static int cyapa_probe(struct i2c_client *client,
->  		       const struct i2c_device_id *dev_id)
->  {
-> @@ -853,23 +887,8 @@ static int cyapa_probe(struct i2c_client *client,
->  	if (adapter_func == CYAPA_ADAPTER_FUNC_SMBUS)
->  		cyapa->smbus = true;
->  	cyapa->state = CYAPA_STATE_NO_DEVICE;
-> -	ret = cyapa_check_is_operational(cyapa);
-> -	if (ret) {
-> -		dev_err(dev, "device not operational, %d\n", ret);
-> -		goto err_mem_free;
-> -	}
->  
-> -	ret = cyapa_create_input_dev(cyapa);
-> -	if (ret) {
-> -		dev_err(dev, "create input_dev instance failed, %d\n", ret);
-> -		goto err_mem_free;
-> -	}
-> -
-> -	ret = cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
-> -	if (ret) {
-> -		dev_err(dev, "set active power failed, %d\n", ret);
-> -		goto err_unregister_device;
-> -	}
-> +	cyapa_detect(cyapa);
+64_BIT should probably say 64BIT which has corresponding config sections in 
+arch/{x86,ia64,mips,s390,tile,alpha,arm64,sparc,parisc,powerpc}/Kconfig and 
+arch/x86/um/Kconfig.
 
-Replacing proper error handling with a silent function seems wrong.
+I do not know if there are any bad consequences about this, but I guess this 
+should be reviewed and fixed, probably by just removing the underscore from 
+64_BIT in drivers/staging/zcache/Kconfig.
 
->  
->  	cyapa->irq = client->irq;
->  	ret = request_threaded_irq(cyapa->irq,
-> @@ -886,8 +905,8 @@ static int cyapa_probe(struct i2c_client *client,
->  	return 0;
->  
->  err_unregister_device:
-> -	input_unregister_device(cyapa->input);
-> -err_mem_free:
-> +	if (cyapa->input)
-> +		input_unregister_device(cyapa->input);
->  	kfree(cyapa);
->  
->  	return ret;
-> @@ -937,6 +956,8 @@ static int cyapa_resume(struct device *dev)
->  	if (device_may_wakeup(dev) && cyapa->irq_wake)
->  		disable_irq_wake(cyapa->irq);
->  
-> +	cyapa_detect(cyapa);
-> +
+Regards
+Martin Walch
+-- 
 
-Ditto.
+--nextPart5173705.3zXMljTsZa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
->  	ret = cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
->  	if (ret)
->  		dev_warn(dev, "resume active power failed, %d\n", ret);
-> -- 
-> 1.8.1.3
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Thanks,
-Henrik
+iEYEABECAAYFAlFEyZ8ACgkQM6S4K8IXn9dATQCgjLCemlSYDUbSIKUmPXeN35Oz
+5UoAoLUkQ+m6wKO7K2yyG9xgl/qaS8Oj
+=UC0L
+-----END PGP SIGNATURE-----
+
+--nextPart5173705.3zXMljTsZa--
+
