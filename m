@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3CQIlS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 04:41:18 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:34481 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab3CQIlQ (ORCPT
+	id S1756175Ab3CQImr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 04:42:47 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:42476 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756097Ab3CQImq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 04:41:16 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v2 7/7] f2fs: add tracepoints to debug checkpoint request
-Date: Sun, 17 Mar 2013 17:41:08 +0900
-Message-Id: <1363509668-3707-1-git-send-email-linkinjeon@gmail.com>
+	Sun, 17 Mar 2013 04:42:46 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] net: bluetooth: Use PTR_RET function
+Date: Sat, 16 Mar 2013 16:10:03 +0200
+Message-Id: <1363443003-13839-1-git-send-email-gheorghiuandru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Used PTR_RET function instead of IS_ERR and PTR_ERR.
+Patch found using coccinelle.
 
-Add tracepoints to debug checkpoint request.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 ---
- fs/f2fs/checkpoint.c        |    1 +
- include/trace/events/f2fs.h |   18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
+ net/bluetooth/hci_sysfs.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 9e0a314..ae88300 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -604,6 +604,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	void *kaddr;
- 	int i;
+diff --git a/net/bluetooth/hci_sysfs.c b/net/bluetooth/hci_sysfs.c
+index 23b4e24..ff38561 100644
+--- a/net/bluetooth/hci_sysfs.c
++++ b/net/bluetooth/hci_sysfs.c
+@@ -590,10 +590,8 @@ int __init bt_sysfs_init(void)
+ 	bt_debugfs = debugfs_create_dir("bluetooth", NULL);
  
-+	trace_f2fs_do_checkpoint(sbi->sb);
- 	/* Flush all the NAT/SIT pages */
- 	while (get_pages(sbi, F2FS_DIRTY_META))
- 		sync_meta_pages(sbi, META, LONG_MAX);
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index b78b0ef..8d0e0c7 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -482,6 +482,24 @@ DEFINE_EVENT(f2fs_page_type_op, f2fs_write_page,
- 	TP_ARGS(page, type)
- );
+ 	bt_class = class_create(THIS_MODULE, "bluetooth");
+-	if (IS_ERR(bt_class))
+-		return PTR_ERR(bt_class);
  
-+TRACE_EVENT(f2fs_do_checkpoint,
-+	TP_PROTO(struct super_block *sb),
-+
-+	TP_ARGS(sb),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= sb->s_dev;
-+	),
-+
-+	TP_printk("dev %d,%d ",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev))
-+
-+);
-+
- #endif /* _TRACE_F2FS_H */
+-	return 0;
++	return PTR_RET(bt_class);
+ }
  
-  /* This part must be outside protection */
+ void bt_sysfs_cleanup(void)
 -- 
 1.7.9.5
 
