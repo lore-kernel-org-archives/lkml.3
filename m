@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3CPREV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:04:21 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:51657 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab3CPRER (ORCPT
+	id S932669Ab3CPREn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:04:43 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:57210 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932494Ab3CPREi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:04:17 -0400
+	Sat, 16 Mar 2013 13:04:38 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,13 +15,18 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Tejun Heo <tj@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH v2, part3 07/12] mm: accurately calculate zone->managed_pages for highmem zones
-Date: Sun, 17 Mar 2013 01:03:28 +0800
-Message-Id: <1363453413-8139-8-git-send-email-jiang.liu@huawei.com>
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: [PATCH v2, part3 10/12] mm: correctly update zone->mamaged_pages
+Date: Sun, 17 Mar 2013 01:03:31 +0800
+Message-Id: <1363453413-8139-11-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
 References: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
@@ -29,210 +34,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "mm: introduce new field 'managed_pages' to struct zone" assumes
-that all highmem pages will be freed into the buddy system by function
-mem_init(). But that's not always true, some architectures may reserve
-some highmem pages during boot. For example PPC may allocate highmem
-pages for giagant HugeTLB pages, and several architectures have code to
-check PageReserved flag to exclude highmem pages allocated during boot
-when freeing highmem pages into the buddy system.
+Enhance adjust_managed_page_count() to adjust totalhigh_pages for
+highmem pages. And change code which directly adjusts totalram_pages
+to use adjust_managed_page_count() because it adjusts totalram_pages,
+totalhigh_pages and zone->managed_pages altogether in a safe way.
 
-So do the same thing for highmem zones as normal zones, which is to:
-1) reset all zones' managed_pages to zero in mem_init()
-2) recalculate managed_pages for each zone when freeing pages into the
-   buddy system.
+Remove inc_totalhigh_pages() and dec_totalhigh_pages() from xen/balloon
+driver bacause adjust_managed_page_count() has already adjusted
+totalhigh_pages.
+
+This patch also fixes two bugs:
+1) enhances virtio_balloon driver to adjust totalhigh_pages when
+   reserve/unreserve pages.
+2) enhance memory_hotplug.c to adjust totalhigh_pages when hot-removing
+   memory.
+
+We still need to deal with modifications of totalram_pages in file
+arch/powerpc/platforms/pseries/cmm.c, but need help from PPC experts.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Joonsoo Kim <js1304@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: linux-kernel@vger.kernel.org
+Cc: virtualization@lists.linux-foundation.org
+Cc: xen-devel@lists.xensource.com
 Cc: linux-mm@kvack.org
 ---
- arch/x86/mm/highmem_32.c |    6 ++++++
- include/linux/bootmem.h  |    1 +
- mm/bootmem.c             |   32 ++++++++++++++++++--------------
- mm/nobootmem.c           |   32 +++++++++++++++++---------------
- mm/page_alloc.c          |    1 +
- 5 files changed, 43 insertions(+), 29 deletions(-)
+ drivers/virtio/virtio_balloon.c |    8 +++++---
+ drivers/xen/balloon.c           |   23 +++++------------------
+ mm/hugetlb.c                    |    2 +-
+ mm/memory_hotplug.c             |   15 +++------------
+ mm/page_alloc.c                 |   10 +++++-----
+ 5 files changed, 19 insertions(+), 39 deletions(-)
 
-diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
-index 252b8f5..4500142 100644
---- a/arch/x86/mm/highmem_32.c
-+++ b/arch/x86/mm/highmem_32.c
-@@ -1,6 +1,7 @@
- #include <linux/highmem.h>
- #include <linux/module.h>
- #include <linux/swap.h> /* for totalram_pages */
-+#include <linux/bootmem.h>
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 797e1c7..4828c90 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -148,7 +148,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 		}
+ 		set_page_pfns(vb->pfns + vb->num_pfns, page);
+ 		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
+-		totalram_pages--;
++		adjust_managed_page_count(page, -1);
+ 	}
  
- void *kmap(struct page *page)
+ 	/* Did we get any? */
+@@ -160,11 +160,13 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
  {
-@@ -121,6 +122,11 @@ void __init set_highmem_pages_init(void)
- 	struct zone *zone;
- 	int nid;
+ 	unsigned int i;
++	struct page *page;
  
-+	/*
-+	 * Explicitly reset zone->managed_pages because set_highmem_pages_init()
-+	 * is invoked before free_all_bootmem()
-+	 */
-+	reset_all_zones_managed_pages();
- 	for_each_zone(zone) {
- 		unsigned long zone_start_pfn, zone_end_pfn;
- 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 190ff06..b0806c9 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -47,6 +47,7 @@ extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
- extern unsigned long free_low_memory_core_early(int nodeid);
- extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
- extern unsigned long free_all_bootmem(void);
-+extern void reset_all_zones_managed_pages(void);
- 
- extern void free_bootmem_node(pg_data_t *pgdat,
- 			      unsigned long addr,
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index b93376c..7f71b31 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -241,20 +241,26 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
- 	return count;
+ 	/* Find pfns pointing at start of each page, get pages and free them. */
+ 	for (i = 0; i < num; i += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+-		balloon_page_free(balloon_pfn_to_page(pfns[i]));
+-		totalram_pages++;
++		page = balloon_pfn_to_page(pfns[i]);
++		balloon_page_free(page);
++		adjust_managed_page_count(page, 1);
+ 	}
  }
  
--static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
-+static int reset_managed_pages_done __initdata;
-+
-+static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index a56776d..eefba39 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -89,14 +89,6 @@ EXPORT_SYMBOL_GPL(balloon_stats);
+ /* We increase/decrease in batches which fit in a page */
+ static xen_pfn_t frame_list[PAGE_SIZE / sizeof(unsigned long)];
  
--	/*
--	 * In free_area_init_core(), highmem zone's managed_pages is set to
--	 * present_pages, and bootmem allocator doesn't allocate from highmem
--	 * zones. So there's no need to recalculate managed_pages because all
--	 * highmem pages will be managed by the buddy system. Here highmem
--	 * zone also includes highmem movable zone.
--	 */
-+	if (reset_managed_pages_done)
-+		return;
-+
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
--		if (!is_highmem(z))
--			z->managed_pages = 0;
-+		z->managed_pages = 0;
-+}
-+
-+void __init reset_all_zones_managed_pages(void)
-+{
-+	struct pglist_data *pgdat;
-+
-+	for_each_online_pgdat(pgdat)
-+		reset_node_managed_pages(pgdat);
-+	reset_managed_pages_done = 1;
- }
- 
- /**
-@@ -266,7 +272,7 @@ static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
- unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
- {
- 	register_page_bootmem_info_node(pgdat);
--	reset_node_lowmem_managed_pages(pgdat);
-+	reset_node_managed_pages(pgdat);
- 	return free_all_bootmem_core(pgdat->bdata);
- }
- 
-@@ -279,10 +285,8 @@ unsigned long __init free_all_bootmem(void)
- {
- 	unsigned long total_pages = 0;
- 	bootmem_data_t *bdata;
--	struct pglist_data *pgdat;
- 
--	for_each_online_pgdat(pgdat)
--		reset_node_lowmem_managed_pages(pgdat);
-+	reset_all_zones_managed_pages();
- 
- 	list_for_each_entry(bdata, &bdata_list, list)
- 		total_pages += free_all_bootmem_core(bdata);
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index b8294fc..3db0f67 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -137,20 +137,25 @@ unsigned long __init free_low_memory_core_early(int nodeid)
- 	return count;
- }
- 
--static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
-+static int reset_managed_pages_done __initdata;
-+
-+static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
- 
--	/*
--	 * In free_area_init_core(), highmem zone's managed_pages is set to
--	 * present_pages, and bootmem allocator doesn't allocate from highmem
--	 * zones. So there's no need to recalculate managed_pages because all
--	 * highmem pages will be managed by the buddy system. Here highmem
--	 * zone also includes highmem movable zone.
--	 */
-+	if (reset_managed_pages_done)
-+		return;
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
--		if (!is_highmem(z))
--			z->managed_pages = 0;
-+		z->managed_pages = 0;
-+}
-+
-+void __init reset_all_zones_managed_pages(void)
-+{
-+	struct pglist_data *pgdat;
-+
-+	for_each_online_pgdat(pgdat)
-+		reset_node_managed_pages(pgdat);
-+	reset_managed_pages_done = 1;
- }
- 
- /**
-@@ -162,7 +167,7 @@ static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
- unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
- {
- 	register_page_bootmem_info_node(pgdat);
--	reset_node_lowmem_managed_pages(pgdat);
-+	reset_node_managed_pages(pgdat);
- 
- 	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
- 	return 0;
-@@ -175,10 +180,7 @@ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
-  */
- unsigned long __init free_all_bootmem(void)
- {
--	struct pglist_data *pgdat;
+-#ifdef CONFIG_HIGHMEM
+-#define inc_totalhigh_pages() (totalhigh_pages++)
+-#define dec_totalhigh_pages() (totalhigh_pages--)
+-#else
+-#define inc_totalhigh_pages() do {} while (0)
+-#define dec_totalhigh_pages() do {} while (0)
+-#endif
 -
--	for_each_online_pgdat(pgdat)
--		reset_node_lowmem_managed_pages(pgdat);
-+	reset_all_zones_managed_pages();
+ /* List of ballooned pages, threaded through the mem_map array. */
+ static LIST_HEAD(ballooned_pages);
  
- 	/*
- 	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
+@@ -132,9 +124,7 @@ static void __balloon_append(struct page *page)
+ static void balloon_append(struct page *page)
+ {
+ 	__balloon_append(page);
+-	if (PageHighMem(page))
+-		dec_totalhigh_pages();
+-	totalram_pages--;
++	adjust_managed_page_count(page, -1);
+ }
+ 
+ /* balloon_retrieve: rescue a page from the balloon, if it is not empty. */
+@@ -151,13 +141,12 @@ static struct page *balloon_retrieve(bool prefer_highmem)
+ 		page = list_entry(ballooned_pages.next, struct page, lru);
+ 	list_del(&page->lru);
+ 
+-	if (PageHighMem(page)) {
++	if (PageHighMem(page))
+ 		balloon_stats.balloon_high--;
+-		inc_totalhigh_pages();
+-	} else
++	else
+ 		balloon_stats.balloon_low--;
+ 
+-	totalram_pages++;
++	adjust_managed_page_count(page, 1);
+ 
+ 	return page;
+ }
+@@ -372,9 +361,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ #endif
+ 
+ 		/* Relinquish the page back to the allocator. */
+-		ClearPageReserved(page);
+-		init_page_count(page);
+-		__free_page(page);
++		__free_reserved_page(page);
+ 	}
+ 
+ 	balloon_stats.current_pages += rc;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 344e7fe..4fb9a04 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1246,7 +1246,7 @@ static void __init gather_bootmem_prealloc(void)
+ 		 * side-effects, like CommitLimit going negative.
+ 		 */
+ 		if (h->order > (MAX_ORDER - 1))
+-			totalram_pages += 1 << h->order;
++			adjust_managed_page_count(page, 1 << h->order);
+ 	}
+ }
+ 
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index a1debd0..97454b3 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -760,20 +760,13 @@ EXPORT_SYMBOL_GPL(__online_page_set_limits);
+ 
+ void __online_page_increment_counters(struct page *page)
+ {
+-	totalram_pages++;
+-
+-#ifdef CONFIG_HIGHMEM
+-	if (PageHighMem(page))
+-		totalhigh_pages++;
+-#endif
++	adjust_managed_page_count(page, 1);
+ }
+ EXPORT_SYMBOL_GPL(__online_page_increment_counters);
+ 
+ void __online_page_free(struct page *page)
+ {
+-	ClearPageReserved(page);
+-	init_page_count(page);
+-	__free_page(page);
++	__free_reserved_page(page);
+ }
+ EXPORT_SYMBOL_GPL(__online_page_free);
+ 
+@@ -970,7 +963,6 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+ 		return ret;
+ 	}
+ 
+-	zone->managed_pages += onlined_pages;
+ 	zone->present_pages += onlined_pages;
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+ 	if (onlined_pages) {
+@@ -1554,10 +1546,9 @@ repeat:
+ 	/* reset pagetype flags and makes migrate type to be MOVABLE */
+ 	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
+ 	/* removal success */
+-	zone->managed_pages -= offlined_pages;
++	adjust_managed_page_count(pfn_to_page(start_pfn), -offlined_pages);
+ 	zone->present_pages -= offlined_pages;
+ 	zone->zone_pgdat->node_present_pages -= offlined_pages;
+-	totalram_pages -= offlined_pages;
+ 
+ 	init_per_zone_wmark_min();
+ 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8c7b366..23bb4d7 100644
+index b0ca2b7..6834104 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5147,6 +5147,7 @@ void free_highmem_page(struct page *page)
- {
- 	__free_reserved_page(page);
- 	totalram_pages++;
-+	page_zone(page)->managed_pages++;
- 	totalhigh_pages++;
+@@ -775,11 +775,7 @@ void __init init_cma_reserved_pageblock(struct page *page)
+ 	set_page_refcounted(page);
+ 	set_pageblock_migratetype(page, MIGRATE_CMA);
+ 	__free_pages(page, pageblock_order);
+-	totalram_pages += pageblock_nr_pages;
+-#ifdef CONFIG_HIGHMEM
+-	if (PageHighMem(page))
+-		totalhigh_pages += pageblock_nr_pages;
+-#endif
++	adjust_managed_page_count(page, pageblock_nr_pages);
  }
  #endif
+ 
+@@ -5128,6 +5124,10 @@ void adjust_managed_page_count(struct page *page, long count)
+ 
+ 	page_zone(page)->managed_pages += count;
+ 	totalram_pages += count;
++#ifdef	CONFIG_HIGHMEM
++	if (PageHighMem(page))
++		totalhigh_pages += count;
++#endif
+ 
+ 	if (lock)
+ 		spin_unlock(&managed_page_count_lock);
 -- 
 1.7.9.5
 
