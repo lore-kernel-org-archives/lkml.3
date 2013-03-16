@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3CPJeH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 05:34:07 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:39576 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab3CPJeF (ORCPT
+	id S1755021Ab3CPJ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 05:56:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59126 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753754Ab3CPJ4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 05:34:05 -0400
+	Sat, 16 Mar 2013 05:56:14 -0400
+X-Sasl-enc: OJrmWcQrybW7mukOPG/WCWiM6gxNvyL/GAZ0pRNO0lMh 1363427773
+Message-ID: <51444171.1080905@ladisch.de>
+Date: Sat, 16 Mar 2013 10:54:57 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBDHwgtm=to3WUj73d7q6cjJ7oG6capjUxvcpVk0wH-fbQ@mail.gmail.com>
-References: <CAJd=RBDHwgtm=to3WUj73d7q6cjJ7oG6capjUxvcpVk0wH-fbQ@mail.gmail.com>
-From: Raymond Jennings <shentino@gmail.com>
-Date: Sat, 16 Mar 2013 02:33:23 -0700
-Message-ID: <CAGDaZ_ryxdMBm44kotjKyCeFEFk3OURjHav3zVOcQNGwP_ZwAQ@mail.gmail.com>
-Subject: Re: OOM triggered with plenty of memory free
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Jonathan Woithe <jwoithe@atrad.com.au>,
-        David Rientjes <rientjes@google.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
+References: <1363377610-19196-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1363377610-19196-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 2:25 AM, Hillf Danton <dhillf@gmail.com> wrote:
->> Some system specifications:
->> - CPU: i7 860 at 2.8 GHz
->> - Mainboard: Advantech AIMB-780
->> - RAM: 4 GB
->> - Kernel: 2.6.35.11 SMP, 32 bit (kernel.org kernel, no patches applied)
+Prarit Bhargava wrote:
+> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
+> registers to userspace.  The Kconfig help points out that in some cases this
+> can be a security risk as some systems may erroneously configure the map such
+> that additional data is exposed to userspace.
 
-> The highmem no longer holds memory with 64-bit kernel.
+I'm not aware of any such system (but cannot rule out the possibility).
 
-I don't really think that's a valid reason to dismiss problems with
-32-bit though, as I still use it myself.
+> In an effort to mitigate this risk, and due to the low number of users
+> of the MMAP functionality I've introduced a kernel parameter,
+> hpet_mmap_enable, that is required in order to actually have the HPET
+> MMAP exposed.
 
-Anyway, to the parent poster, could you tell us more, such as how much
-ram you had left free?
+This introduces a regression for all users.  At least make the default
+state (allowed/forbidden) configurable.
 
-A printout of /proc/meminfo might help here.
+Also, this patch makes the Kconfig help text a lie.
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+Regards,
+Clemens
