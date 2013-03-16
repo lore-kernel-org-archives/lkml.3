@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3CPUQR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 16:16:17 -0400
-Received: from rydia.net ([69.46.88.68]:49512 "EHLO mail.rydia.net"
+	id S1751754Ab3CPUZr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 16:25:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326Ab3CPUQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 16:16:16 -0400
-Date: Sat, 16 Mar 2013 13:16:12 -0700 (PDT)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dflat
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-In-Reply-To: <1363455885.29475.68.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.02.1303161314510.25737@dflat>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>  <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>  <1362494795.15793.113.camel@edumazet-glaptop>
-  <alpine.DEB.2.02.1303061631290.6723@dflat>  <1362663990.15793.208.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303141359080.16308@dflat>  <1363301786.29475.40.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303141610490.16308@dflat>  <1363303174.29475.46.camel@edumazet-glaptop>
-  <1363455366.29475.66.camel@edumazet-glaptop> <1363455885.29475.68.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751268Ab3CPUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 16:25:46 -0400
+Date: Sat, 16 Mar 2013 21:23:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Feng Hong <hongfeng@marvell.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: [PATCH 0/2] finx argv_split() vs sysctl race
+Message-ID: <20130316202327.GA18613@redhat.com>
+References: <CAKi4VALkUhOtP_8BOi3Mi8fTz8TUPwmwQq7WW27BEDue2wFNRw@mail.gmail.com> <20130312182210.GA15862@redhat.com> <CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com> <20130312191118.GA17439@redhat.com> <CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com> <20130312203514.GA23488@redhat.com> <20130313174641.GA28083@redhat.com> <20130313174705.GB28083@redhat.com> <20130314152819.7fb1242b493e8bad2d34671b@linux-foundation.org> <20130315163916.GA31995@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130315163916.GA31995@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, 2013-03-16 at 10:36 -0700, Eric Dumazet wrote:
-> > On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
-> >
-> > > Thanks thats really useful, we might miss to increment socket refcount
-> > > in a timer setup.
-> > >
-> >
-> > Hmm, please add following debugging patch as well
-> >
-> > diff --git a/include/net/sock.h b/include/net/sock.h
-> > index 14f6e9d..fe7c8a6 100644
-> > --- a/include/net/sock.h
-> > +++ b/include/net/sock.h
-> > @@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
-> >   */
-> >  static inline void __sock_put(struct sock *sk)
-> >  {
-> > -	atomic_dec(&sk->sk_refcnt);
-> > +	int newref = atomic_dec_return(&sk->sk_refcnt);
-> > +
-> > +	BUG_ON(newref <= 0);
-> >  }
-> >
-> >  static inline bool sk_del_node_init(struct sock *sk)
-> > diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-> > index 786d97a..a445e15 100644
-> > --- a/net/ipv4/inet_connection_sock.c
-> > +++ b/net/ipv4/inet_connection_sock.c
-> > @@ -739,7 +739,7 @@ void inet_csk_prepare_forced_close(struct sock *sk)
-> >  {
-> >  	/* sk_clone_lock locked the socket and set refcnt to 2 */
-> >  	bh_unlock_sock(sk);
-> > -	sock_put(sk);
-> > +	__sock_put(sk);
-> >
-> >  	/* The below has to be done to allow calling inet_csk_destroy_sock */
-> >  	sock_set_flag(sk, SOCK_DEAD);
-> > @@ -835,13 +835,13 @@ void inet_csk_listen_stop(struct sock *sk)
-> >  			 * tcp_v4_destroy_sock().
-> >  			 */
-> >  			tcp_sk(child)->fastopen_rsk = NULL;
-> > -			sock_put(sk);
-> > +			__sock_put(sk);
-> >  		}
-> >  		inet_csk_destroy_sock(child);
-> >
-> >  		bh_unlock_sock(child);
-> >  		local_bh_enable();
-> > -		sock_put(child);
-> > +		__sock_put(child);
-> >
+On 03/15, Oleg Nesterov wrote:
 >
-> Please don't include the last line : this should stay as
->
->  sock_put(child);
->
+> To remind, say, argv_split(poweroff_cmd) can race with sysctl changing this
+> string, in this case it can write to the memory after argv[] array. We can
+> fix this, or we can rewrite argv_split/free:
 
-thanks! Will take at least 24 hours to get the trace.
+OK, please see 1/2.
+
+And this reminds me about set_task_comm() which pretends it does something
+meaningful for the reader of the mutable ->comm, see the offtopic 2/2.
+
+> But, whatever we do with argv_split(), it can hit the string "in between".
+> Personally I think we do not really care, but...
+>
+> Perhaps we should add proc_dostring_lock() which takes some lock and
+> modify the callers of argv_split() (or add argv_split_lock) ?
+>
+> Or perhaps we should introduce the rwsem which should protect every
+> sysctl-string and proc_dostring() should take this lock?
+
+Please tell me if you think we should do something with that.
+
+Oleg.
+
