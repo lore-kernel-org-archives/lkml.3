@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab3CPDcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 23:32:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22226 "EHLO
+	id S932420Ab3CPDcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 23:32:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18453 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab3CPDbp (ORCPT
+	with ESMTP id S1755488Ab3CPDbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Mar 2013 23:31:45 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1P36UJWDmIkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=p7yrIiBiWhUA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=aC7ebmpEPab3e4CML2AA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=wudEcauMuK7Qg8RuvvUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=dFYlJhJYAWQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=34mVwQnwHT0A:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=LSKYr4QK8mN5tH2s6a8A:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=lWNHMShOs62LvWcJxtkA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130316033142.800679553@goodmis.org>
+Message-Id: <20130316033143.356607943@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 15 Mar 2013 23:24:16 -0400
+Date: Fri, 15 Mar 2013 23:24:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [for-next][PATCH 4/9] tracing: Move find_event_field() into trace_events.c
+Subject: [for-next][PATCH 7/9] tracing: Rename trace_event_mutex to trace_event_sem
 References: <20130316032412.416651612@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-Move-find_event_field-into-trace_events.c.patch
+Content-Disposition: inline; filename=0007-tracing-Rename-trace_event_mutex-to-trace_event_sem.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,155 +33,185 @@ Content-Transfer-Encoding: quoted-printable
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-By moving find_event_field() and trace_find_field() into trace_events.c,
-the ftrace_common_fields list and trace_get_fields() can become local to
-the trace_events.c file.
+trace_event_mutex is an rw semaphore now, not a mutex, change the name.
 
-find_event_field() is renamed to trace_find_event_field() to conform to
-the tracing global function names.
-
-Link: http://lkml.kernel.org/r/513D8426.9070109@huawei.com
+Link: http://lkml.kernel.org/r/513D843B.40109@huawei.com
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-[ rostedt: Modified trace_find_field() to trace_find_event_field() ]
+[ Forward ported to my new code ]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h               |    6 ++----
- kernel/trace/trace_events.c        |   31 +++++++++++++++++++++++++++++--
- kernel/trace/trace_events_filter.c |   29 +----------------------------
- 3 files changed, 32 insertions(+), 34 deletions(-)
+ kernel/trace/trace_events.c |   22 +++++++++++-----------
+ kernel/trace/trace_output.c |   16 ++++++++--------
+ kernel/trace/trace_output.h |    2 +-
+ 3 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 5cc5236..9e01458 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -995,8 +995,6 @@ struct filter_pred {
- 	unsigned short		right;
- };
-=20
--extern struct list_head ftrace_common_fields;
--
- extern enum regex_type
- filter_parse_regex(char *buff, int len, char **search, int *not);
- extern void print_event_filter(struct ftrace_event_call *call,
-@@ -1009,8 +1007,8 @@ extern void print_subsystem_event_filter(struct event=
-_subsystem *system,
- 					 struct trace_seq *s);
- extern int filter_assign_type(const char *type);
-=20
--struct list_head *
--trace_get_fields(struct ftrace_event_call *event_call);
-+struct ftrace_event_field *
-+trace_find_event_field(struct ftrace_event_call *call, char *name);
-=20
- static inline int
- filter_check_discard(struct ftrace_event_call *call, void *rec,
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index c636523..ba523d7 100644
+index a71cdc3..53582e9 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -34,7 +34,7 @@ char event_storage[EVENT_STORAGE_SIZE];
- EXPORT_SYMBOL_GPL(event_storage);
-=20
- LIST_HEAD(ftrace_events);
--LIST_HEAD(ftrace_common_fields);
-+static LIST_HEAD(ftrace_common_fields);
-=20
- #define GFP_TRACE (GFP_KERNEL | __GFP_ZERO)
-=20
-@@ -54,7 +54,7 @@ static struct kmem_cache *file_cachep;
- #define while_for_each_event_file()		\
- 	}
-=20
--struct list_head *
-+static struct list_head *
- trace_get_fields(struct ftrace_event_call *event_call)
- {
- 	if (!event_call->class->get_fields)
-@@ -62,6 +62,33 @@ trace_get_fields(struct ftrace_event_call *event_call)
- 	return event_call->class->get_fields(event_call);
+@@ -1584,7 +1584,7 @@ int trace_add_event_call(struct ftrace_event_call *ca=
+ll)
  }
 =20
-+static struct ftrace_event_field *
-+__find_event_field(struct list_head *head, char *name)
-+{
-+	struct ftrace_event_field *field;
-+
-+	list_for_each_entry(field, head, link) {
-+		if (!strcmp(field->name, name))
-+			return field;
-+	}
-+
-+	return NULL;
-+}
-+
-+struct ftrace_event_field *
-+trace_find_event_field(struct ftrace_event_call *call, char *name)
-+{
-+	struct ftrace_event_field *field;
-+	struct list_head *head;
-+
-+	field =3D __find_event_field(&ftrace_common_fields, name);
-+	if (field)
-+		return field;
-+
-+	head =3D trace_get_fields(call);
-+	return __find_event_field(head, name);
-+}
-+
- static int __trace_define_field(struct list_head *head, const char *type,
- 				const char *name, int offset, int size,
- 				int is_signed, int filter_type)
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
-_filter.c
-index 2a22a17..a636117 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -658,33 +658,6 @@ void print_subsystem_event_filter(struct event_subsyst=
-em *system,
+ /*
+- * Must be called under locking both of event_mutex and trace_event_mutex.
++ * Must be called under locking both of event_mutex and trace_event_sem.
+  */
+ static void __trace_remove_event_call(struct ftrace_event_call *call)
+ {
+@@ -1597,9 +1597,9 @@ static void __trace_remove_event_call(struct ftrace_e=
+vent_call *call)
+ void trace_remove_event_call(struct ftrace_event_call *call)
+ {
+ 	mutex_lock(&event_mutex);
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	__trace_remove_event_call(call);
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
  	mutex_unlock(&event_mutex);
  }
 =20
--static struct ftrace_event_field *
--__find_event_field(struct list_head *head, char *name)
--{
--	struct ftrace_event_field *field;
--
--	list_for_each_entry(field, head, link) {
--		if (!strcmp(field->name, name))
--			return field;
--	}
--
--	return NULL;
--}
--
--static struct ftrace_event_field *
--find_event_field(struct ftrace_event_call *call, char *name)
--{
--	struct ftrace_event_field *field;
--	struct list_head *head;
--
--	field =3D __find_event_field(&ftrace_common_fields, name);
--	if (field)
--		return field;
--
--	head =3D trace_get_fields(call);
--	return __find_event_field(head, name);
--}
--
- static int __alloc_pred_stack(struct pred_stack *stack, int n_preds)
- {
- 	stack->preds =3D kcalloc(n_preds + 1, sizeof(*stack->preds), GFP_KERNEL);
-@@ -1337,7 +1310,7 @@ static struct filter_pred *create_pred(struct filter_=
-parse_state *ps,
- 		return NULL;
- 	}
+@@ -1707,7 +1707,7 @@ static void trace_module_remove_events(struct module =
+*mod)
+ 	struct ftrace_event_call *call, *p;
+ 	bool clear_trace =3D false;
 =20
--	field =3D find_event_field(call, operand1);
-+	field =3D trace_find_event_field(call, operand1);
- 	if (!field) {
- 		parse_error(ps, FILT_ERR_FIELD_NOT_FOUND, 0);
- 		return NULL;
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	list_for_each_entry_safe(call, p, &ftrace_events, list) {
+ 		if (call->mod =3D=3D mod) {
+ 			if (call->flags & TRACE_EVENT_FL_WAS_ENABLED)
+@@ -1725,7 +1725,7 @@ static void trace_module_remove_events(struct module =
+*mod)
+ 		list_del(&file_ops->list);
+ 		kfree(file_ops);
+ 	}
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+ 	/*
+ 	 * It is safest to reset the ring buffer if the module being unloaded
+@@ -2262,9 +2262,9 @@ int event_trace_add_tracer(struct dentry *parent, str=
+uct trace_array *tr)
+ 	if (ret)
+ 		goto out_unlock;
+=20
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	__trace_add_event_dirs(tr);
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+  out_unlock:
+ 	mutex_unlock(&event_mutex);
+@@ -2287,9 +2287,9 @@ early_event_add_tracer(struct dentry *parent, struct =
+trace_array *tr)
+ 	if (ret)
+ 		goto out_unlock;
+=20
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	__trace_early_add_event_dirs(tr);
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+  out_unlock:
+ 	mutex_unlock(&event_mutex);
+@@ -2304,10 +2304,10 @@ int event_trace_del_tracer(struct trace_array *tr)
+=20
+ 	mutex_lock(&event_mutex);
+=20
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	__trace_remove_event_dirs(tr);
+ 	debugfs_remove_recursive(tr->event_dir);
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+ 	tr->event_dir =3D NULL;
+=20
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 19f48e7..f475b2a 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -14,7 +14,7 @@
+ /* must be a power of 2 */
+ #define EVENT_HASHSIZE	128
+=20
+-DECLARE_RWSEM(trace_event_mutex);
++DECLARE_RWSEM(trace_event_sem);
+=20
+ static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
+=20
+@@ -826,12 +826,12 @@ static int trace_search_list(struct list_head **list)
+=20
+ void trace_event_read_lock(void)
+ {
+-	down_read(&trace_event_mutex);
++	down_read(&trace_event_sem);
+ }
+=20
+ void trace_event_read_unlock(void)
+ {
+-	up_read(&trace_event_mutex);
++	up_read(&trace_event_sem);
+ }
+=20
+ /**
+@@ -854,7 +854,7 @@ int register_ftrace_event(struct trace_event *event)
+ 	unsigned key;
+ 	int ret =3D 0;
+=20
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+=20
+ 	if (WARN_ON(!event))
+ 		goto out;
+@@ -909,14 +909,14 @@ int register_ftrace_event(struct trace_event *event)
+=20
+ 	ret =3D event->type;
+  out:
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(register_ftrace_event);
+=20
+ /*
+- * Used by module code with the trace_event_mutex held for write.
++ * Used by module code with the trace_event_sem held for write.
+  */
+ int __unregister_ftrace_event(struct trace_event *event)
+ {
+@@ -931,9 +931,9 @@ int __unregister_ftrace_event(struct trace_event *event)
+  */
+ int unregister_ftrace_event(struct trace_event *event)
+ {
+-	down_write(&trace_event_mutex);
++	down_write(&trace_event_sem);
+ 	__unregister_ftrace_event(event);
+-	up_write(&trace_event_mutex);
++	up_write(&trace_event_sem);
+=20
+ 	return 0;
+ }
+diff --git a/kernel/trace/trace_output.h b/kernel/trace/trace_output.h
+index af77870..127a9d8 100644
+--- a/kernel/trace/trace_output.h
++++ b/kernel/trace/trace_output.h
+@@ -33,7 +33,7 @@ trace_print_lat_fmt(struct trace_seq *s, struct trace_ent=
+ry *entry);
+=20
+ /* used by module unregistering */
+ extern int __unregister_ftrace_event(struct trace_event *event);
+-extern struct rw_semaphore trace_event_mutex;
++extern struct rw_semaphore trace_event_sem;
+=20
+ #define MAX_MEMHEX_BYTES	8
+ #define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
 --=20
 1.7.10.4
 
@@ -194,13 +224,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRQ+eeAAoJEOdOSU1xswtMD48IAMJPhPDOJY5sSK9Z/si+EkJ6
-sGnsAH2dCGus1lB0h8eqIDFmTC6TukMpH+1PY00kEDxPV5V/OsgEoppn2bw9JmoN
-6FP9h1/J8vfJW7RHqwcVRXCP+nRA8pq6+XI/nePKHLoCcyhWxoUNhqbNZ2EZ6kgS
-KWEfMrB2GyJMN+9WaI1vt2b2AsvP9ZunEkU/RfZG1DJxBN8b+esCxQ4xQk4ztMPA
-ulShoQGcb1UrT//2e1Lo2M1/GueXfgRfBQeoe2KoKHhAQwb/zguyy3zCSKAaMxQ3
-WvbfplGLZ1kcrwizoM6Fiv5EKVD4V6Lzr/LbxZrCfKaHbyQzopiW13Xe9eML/yg=
-=Ox8W
+iQEcBAABAgAGBQJRQ+efAAoJEOdOSU1xswtMFWoH/RE23Vvg8YWzrDONJAyJZQ2p
+KKZ/Qeq5GPtY7Xxm+LhU2aGipnSzaVEMsb1dF7Gj9FL/zeSHQ0c+rVMu5v/4P4+I
+Vhu0pbUsUujWCFKroZiePaHv8hm51XOcrPNbyRcXazT5tb21ptyCkjXGqVcXuKnf
+vgfHNd1lc7qp/PVqt230samJ1oavwBSKZCARI8pWKPwoFQbYeADtJYgkFBGsKZBH
+BPPZFvCQ0CmIM6TMM29AbFPHJqlDVFluPPL/7mSHM8Lv6w+g+LiVFTl0PdUmAO5e
+1BhsjFN/oa2nZJZ1i84sbCDd7X/AFfuvhYxOO9mQ72Y5r65sC5znfqLotdmJykY=
+=qyYT
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
