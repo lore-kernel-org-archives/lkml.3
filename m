@@ -1,39 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab3CPCXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Mar 2013 22:23:09 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14417 "EHLO
+	id S932307Ab3CPCZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Mar 2013 22:25:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14481 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3CPCXG (ORCPT
+	with ESMTP id S1755511Ab3CPCZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Mar 2013 22:23:06 -0400
+	Fri, 15 Mar 2013 22:25:34 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 15 Mar 2013 19:22:51 -0700
-Message-ID: <1363400599.2879.18.camel@bilhuang-vm1>
+	by hqnvupgp07.nvidia.com on Fri, 15 Mar 2013 19:25:27 -0700
+Message-ID: <1363400755.3875.0.camel@bilhuang-vm1>
 Subject: Re: [RFC 1/1] clk: Add notifier support in
  clk_prepare_enable/clk_disable_unprepare
 From: Bill Huang <bilhuang@nvidia.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
         "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 15 Mar 2013 19:23:19 -0700
-In-Reply-To: <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
-References: <1363151317.3311.9.camel@bilhuang-vm1>
-	 <51400D9D.9060305@wwwdotorg.org>	<1363153204.3311.14.camel@bilhuang-vm1>
-	 <5140C12A.4060900@wwwdotorg.org>	<1363227311.3311.30.camel@bilhuang-vm1>
-	 <20130314092132.GE18519@tbergstrom-lnx.Nvidia.com>
-	 <1363253287.3311.32.camel@bilhuang-vm1>	<51420EBB.7080503@wwwdotorg.org>
-	 <1363310454.3311.44.camel@bilhuang-vm1>	<5142B027.4040403@wwwdotorg.org>
-	 <20130315093951.GV18519@tbergstrom-lnx.Nvidia.com>
-	 <CAPDyKFoBJpraMz8i1FmFqG7=Zsv0DTQ0PKVOQJ-+iEsKpb3Hdg@mail.gmail.com>
-	 <1363349206.5827.10.camel@bilhuang-vm1>
-	 <CAPDyKFpHz6KCNbVe2AsDuzZw-oN7NyRzCA=RatWA+9iMaQ7C+Q@mail.gmail.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Date: Fri, 15 Mar 2013 19:25:55 -0700
+In-Reply-To: <20130315170945.GM4977@n2100.arm.linux.org.uk>
+References: <1363091861-21534-1-git-send-email-bilhuang@nvidia.com>
+	 <20130312134032.GU4977@n2100.arm.linux.org.uk>
+	 <1363139273.21694.11.camel@bilhuang-vm1> <514003B6.8020904@wwwdotorg.org>
+	 <1363151317.3311.9.camel@bilhuang-vm1> <51400D9D.9060305@wwwdotorg.org>
+	 <1363153204.3311.14.camel@bilhuang-vm1>
+	 <20130315170945.GM4977@n2100.arm.linux.org.uk>
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ISO-8859-9"
@@ -42,28 +37,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-15 at 20:33 +0800, Ulf Hansson wrote:
-> I guess you did not fully got what I meant with "dvfs clock type". It
-> will not affect the clock API. But instead the dvfs is handled by
-> implementing a specific clk hw type. So the same thing is accomplished
-> as with clk notifiers, no changes should be needed to device drivers.
+On Sat, 2013-03-16 at 01:09 +0800, Russell King - ARM Linux wrote:
+> On Tue, Mar 12, 2013 at 10:40:04PM -0700, Bill Huang wrote:
+> > That will be too bad, it looks like we deadlock in the mechanism, we
+> > cannot change existing drivers behavior (that means some call
+> > clk_disable/enable directly, some are not), and we cannot hook notifier
+> > in clk_disable/enable either, that means there seems no any chance to
+> > get what we want, any idea?
 > 
-> The difference is only that no notifiers will be needed, and all the
-> dvfs stuff will be handled in the clk hw instead. It will mean that we
-> will bundle dvfs stuff into the clock drivers, instead of separating
-> the code outside the clock drivers. But, on the other hand no
-> notifiers will be needed.
+> Look, the whole point is:
 > 
-Oh yes I misunderstand your origin point, but my thought is using
-existing devfreq framework as frequency/voltage policy driver instead of
-creating another one in clock driver and that's why I think we need the
-notifier work. 
+> - Drivers can call clk_enable/clk_disable from their atomic regions to
+>   control the clock.  Drivers which do this also call clk_prepare/
+>   clk_unprepare from a schedulable context to perform any operations
+>   necessary to allow the clock to be used.
+> 
+> - Drivers which only ever control the clock from a schedulable context
+>   *can* use clk_prepare_enable()/clk_disable_unprepare() to control
+>   their clock, which simplifies the coding in the driver.
+> 
+> The whole point here is to cater for what is found on different SoCs and
+> not need to keep rewriting the drivers between different SoCs.
+> 
+> So, the idea is that:
+> 
+> - clk_prepare() does whatever is needed to prepare a clock for use which
+>   may require waiting for the clock to be in a state which it can be
+>   enabled.  In other words, if there is a PLL, the PLL is setup and
+>   we wait for it to report that it has locked.
+> 
+> - clk_enable() is about turning the clock output on so that the device
+>   receives the clock.
+> 
+> Now, in the case of a PLL directly feeding a device, it's entirely possible
+> that clk_prepare() ends up providing the clock signal to the device, and
+> clk_enable() does absolutely nothing.
+> 
+> Or, if the clock has a gate on it, it's entirely possible that clk_prepare()
+> does nothing, and clk_enable() unmasks the gate to allow the clock to be
+> provided to the device - which can happen from atomic contexts.
+> 
+> The whole point about the separation of these two functions is that device
+> driver writers _can_ code their drivers for both situations and not care
+> about how the SoC implements the clocking at all.
+> 
+> Why did we end up with this split in the first place?  Because we ran into
+> the problem that some SoCs required a sleeping clk_enable() and others
+> didn't, and the whole thing was turning into an incompatible mess.
+> 
+> So, please.  Realise that clk_prepare() and clk_enable() are the _official_
+> APIs, and that clk_prepare_enable() is merely a helper function for drivers
+> to allow them to automate the calling of those two functions in succession
+> with _no_ _further_ _processing_ at all.
+> 
+> So, if your hooks need to be callable from schedulable contexts, then you
+> need to put them inside clk_prepare().  If your hooks are callable from
+> atomic contexts, then they can go into clk_enable().  But what you can
+> not do is put them into clk_prepare_enable().
 
-By the way, some centralized DVFS implementation like Tegra's VDD_CORE
-rail has association with tens of clocks which will need to be taken
-care specially if we're doing those in clock driver I think.
-
-> Kind regards
-> Ulf Hansson
+Thanks a lot for good point.
 
 
