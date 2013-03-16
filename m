@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab3CSCbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:31:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58468 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933620Ab3CSCbl (ORCPT
+	id S933733Ab3CSCbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:31:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46313 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933620Ab3CSCbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:31:41 -0400
+	Mon, 18 Mar 2013 22:31:47 -0400
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s
- page-size boundary requirement
+Subject: [PATCH v3 19/21] vmcore: round-up offset of vmcore object in
+ page-size boundary
 To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         heiko.carstens@de.ibm.com, akpm@linux-foundation.org
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         zhangyanfei@cn.fujitsu.com
-Date: Sat, 16 Mar 2013 13:02:29 +0900
-Message-ID: <20130316040228.15064.28019.stgit@localhost6.localdomain6>
+Date: Sat, 16 Mar 2013 13:02:34 +0900
+Message-ID: <20130316040234.15064.1158.stgit@localhost6.localdomain6>
 In-Reply-To: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -27,70 +27,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there's some vmcore object that doesn't satisfy page-size boundary
-requirement, remap_pfn_range() fails to remap it to user-space.
-
-Objects that posisbly don't satisfy the requirement are ELF note
-segments only. The memory chunks corresponding to PT_LOAD entries are
-guaranteed to satisfy page-size boundary requirement by the copy from
-old memory to buffer in 2nd kernel done in later patch.
-
-This patch doesn't copy each note segment into the 2nd kernel since
-they amount to so large in total if there are multiple CPUs. For
-example, current maximum number of CPUs in x86_64 is 5120, where note
-segments exceed 1MB with NT_PRSTATUS only.
+To satisfy mmap()'s page-size bounary requirement, round-up offset of
+each vmcore objects in page-size boundary; each offset is connected to
+user-space virtual address through mapping of mmap().
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ fs/proc/vmcore.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 2a0f885..0077a9a 100644
+index 0077a9a..f15c881 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -38,6 +38,8 @@ static u64 vmcore_size;
+@@ -698,7 +698,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+ }
  
- static struct proc_dir_entry *proc_vmcore = NULL;
- 
-+static bool support_mmap_vmcore;
-+
- /*
-  * Returns > 0 for RAM pages, 0 for non-RAM pages, < 0 on error
-  * The called function has to take care of module refcounting.
-@@ -911,6 +913,7 @@ static int __init parse_crash_elf_headers(void)
- static int __init vmcore_init(void)
+ /* Sets offset fields of vmcore elements. */
+-static void __init set_vmcore_list_offsets_elf64(char *elfptr,
++static void __init set_vmcore_list_offsets_elf64(char *elfptr, size_t elfsz,
+ 						struct list_head *vc_list)
  {
- 	int rc = 0;
-+	struct vmcore *m;
+ 	loff_t vmcore_off;
+@@ -708,17 +708,16 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
  
- 	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
- 	if (!(is_vmcore_usable()))
-@@ -921,6 +924,25 @@ static int __init vmcore_init(void)
+ 	/* Skip Elf header and program headers. */
+-	vmcore_off = ehdr_ptr->e_phoff +
+-			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
++	vmcore_off = elfsz;
+ 
+ 	list_for_each_entry(m, vc_list, list) {
+ 		m->offset = vmcore_off;
+-		vmcore_off += m->size;
++		vmcore_off += roundup(m->size, PAGE_SIZE);
+ 	}
+ }
+ 
+ /* Sets offset fields of vmcore elements. */
+-static void __init set_vmcore_list_offsets_elf32(char *elfptr,
++static void __init set_vmcore_list_offsets_elf32(char *elfptr, size_t elfsz,
+ 						struct list_head *vc_list)
+ {
+ 	loff_t vmcore_off;
+@@ -728,12 +727,11 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+ 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+ 
+ 	/* Skip Elf header and program headers. */
+-	vmcore_off = ehdr_ptr->e_phoff +
+-			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
++	vmcore_off = elfsz;
+ 
+ 	list_for_each_entry(m, vc_list, list) {
+ 		m->offset = vmcore_off;
+-		vmcore_off += m->size;
++		vmcore_off += roundup(m->size, PAGE_SIZE);
+ 	}
+ }
+ 
+@@ -801,7 +799,7 @@ static int __init parse_crash_elf64_headers(void)
+ 			   get_order(elfcorebuf_sz_orig));
  		return rc;
  	}
+-	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
++	set_vmcore_list_offsets_elf64(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+ 	return 0;
+ }
  
-+	/* If some object doesn't satisfy PAGE_SIZE boundary
-+	 * requirement, mmap_vmcore() is not exported to
-+	 * user-space. */
-+	support_mmap_vmcore = true;
-+	list_for_each_entry(m, &vmcore_list, list) {
-+		u64 paddr;
-+
-+		if (m->flag & MEM_TYPE_CURRENT_KERNEL)
-+			paddr = (u64)__pa(m->buf);
-+		else
-+			paddr = m->paddr;
-+
-+		if ((m->offset & ~PAGE_MASK) || (paddr & ~PAGE_MASK)
-+		    || (m->size & ~PAGE_MASK)) {
-+			support_mmap_vmcore = false;
-+			break;
-+		}
-+	}
-+
- 	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
- 	if (proc_vmcore)
- 		proc_vmcore->size = vmcore_size;
+@@ -869,7 +867,7 @@ static int __init parse_crash_elf32_headers(void)
+ 			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+-	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
++	set_vmcore_list_offsets_elf32(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+ 	return 0;
+ }
+ 
 
