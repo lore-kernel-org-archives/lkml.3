@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab3CSCbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:31:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46260 "EHLO
+	id S1757667Ab3CSCbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:31:15 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46267 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3CSCbI (ORCPT
+	with ESMTP id S1756978Ab3CSCbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:31:08 -0400
+	Mon, 18 Mar 2013 22:31:13 -0400
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v3 12/21] vmcore: allocate per-cpu crash_notes objects on
- page-size boundary
+Subject: [PATCH v3 13/21] kexec: allocate vmcoreinfo note buffer on page-size
+ boundary
 To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         heiko.carstens@de.ibm.com, akpm@linux-foundation.org
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         zhangyanfei@cn.fujitsu.com
-Date: Sat, 16 Mar 2013 13:01:54 +0900
-Message-ID: <20130316040154.15064.35482.stgit@localhost6.localdomain6>
+Date: Sat, 16 Mar 2013 13:02:00 +0900
+Message-ID: <20130316040200.15064.86851.stgit@localhost6.localdomain6>
 In-Reply-To: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -27,32 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To satisfy mmap()'s page-size boundary requirement, allocate per-cpu
-crash_notes objects on page-size boundary.
-
-/proc/vmcore on the 2nd kernel checks if each note objects is
-allocated on page-size boundary. If there's some object not satisfying
-the page-size boundary requirement, /proc/vmcore doesn't provide
-mmap() interface.
+To satisfy mmap()'s page-size boundary requirement, specify aligned
+attribute to vmcoreinfo_note objects to allocate it on page-size
+boundary.
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- kernel/kexec.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ include/linux/kexec.h |    6 ++++--
+ kernel/kexec.c        |    2 +-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index d2e6927..5113570 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -185,8 +185,10 @@ extern struct kimage *kexec_crash_image;
+ #define VMCOREINFO_BYTES           (4096)
+ #define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
+ #define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
+-#define VMCOREINFO_NOTE_SIZE       (KEXEC_NOTE_HEAD_BYTES*2 + VMCOREINFO_BYTES \
+-				    + VMCOREINFO_NOTE_NAME_BYTES)
++#define VMCOREINFO_NOTE_SIZE       ALIGN(KEXEC_NOTE_HEAD_BYTES*2	\
++					 +VMCOREINFO_BYTES		\
++					 +VMCOREINFO_NOTE_NAME_BYTES,	\
++					 PAGE_SIZE)
+ 
+ /* Location of a reserved region to hold the crash kernel.
+  */
 diff --git a/kernel/kexec.c b/kernel/kexec.c
-index bddd3d7..d1f365e 100644
+index d1f365e..195de6d 100644
 --- a/kernel/kexec.c
 +++ b/kernel/kexec.c
-@@ -1234,7 +1234,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
- static int __init crash_notes_memory_init(void)
- {
- 	/* Allocate memory for saving cpu registers. */
--	crash_notes = alloc_percpu(note_buf_t);
-+	crash_notes = __alloc_percpu(roundup(sizeof(note_buf_t), PAGE_SIZE),
-+				     PAGE_SIZE);
- 	if (!crash_notes) {
- 		printk("Kexec: Memory allocation for saving cpu register"
- 		" states failed\n");
+@@ -43,7 +43,7 @@ note_buf_t __percpu *crash_notes;
+ 
+ /* vmcoreinfo stuff */
+ static unsigned char vmcoreinfo_data[VMCOREINFO_BYTES];
+-u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
++u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4] __aligned(PAGE_SIZE);
+ size_t vmcoreinfo_size;
+ size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
+ 
 
