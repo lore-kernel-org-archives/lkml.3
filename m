@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3CPEye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 00:54:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50397 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3CPEyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 00:54:33 -0400
-Message-ID: <5143FB1F.9010509@infradead.org>
-Date: Fri, 15 Mar 2013 21:54:55 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1752524Ab3CPGOH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 02:14:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35770 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224Ab3CPGOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Mar 2013 02:14:05 -0400
+Message-ID: <51440D9E.3060202@ti.com>
+Date: Sat, 16 Mar 2013 11:43:50 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: =?UTF-8?B?TWFub2xvIETDrWF6?= <diaz.manolo@gmail.com>
-CC: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: CONFIG_DEFAULT_MESSAGE_LOGLEVEL option seems not to
- work
-References: <20130315225636.2baf75ae@gmail.com>
-In-Reply-To: <20130315225636.2baf75ae@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/8] memory: emif: miscellaneous bug fixes for EMIF driver
+References: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com> <20130315180856.GA30236@kroah.com>
+In-Reply-To: <20130315180856.GA30236@kroah.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/13 14:56, Manolo Díaz wrote:
-> Hi,
-> 
-> It seems that the kernel loglevel is set to 7 ignoring the
-> CONFIG_DEFAULT_MESSAGE_LOGLEVEL option (set to 4 in my config file)
-> 
-> The /proc/sys/kernel/printk output is 
-> 
-> 7	4	1	7
-> 
-> Passing the boot parameter "loglevel=4" or echoing "4 4 1 7"
-> to /proc/sys/kernel/printk solves my problem and then this proc file
-> contains
-> 
-> 4	4	1	7
-> 
-> as expected.
-> 
-> kernel version:
-> Linux version 3.8.3 (root@alcyone) (gcc version 4.7.2 (Debian 4.7.2-5)
-> ) #2 SMP Fri Mar 15 08:23:50 CET 2013
-> 
-> config file is gziped and attached.
+On Friday 15 March 2013 11:38 PM, Greg KH wrote:
+> On Mon, Mar 11, 2013 at 10:35:57AM +0530, Lokesh Vutla wrote:
+>> This series resolves a few minor issues for EMIF driver.
+>>
+>> Tested all patches on OMAP4430-sdp.
+>> Patch : "memory: emif: setup LP settings on freq update"
+>> is tested on a local tree, since freq update cannot be
+>> tested on mainline.
+>
+> Can you please resend these with all of the requested changes made, and
+> acks added?
+Ok ill send V2 with necessary changes and acks added..
+Thanks,
+Lokesh
+>
+> thanks,
+>
+> greg k-h
+>
 
-
-Hi,
-
-CONFIG_DEFAULT_MESSAGE_LOGLEVEL modifies the second field (value) in /proc/sys/kernel/printk,
-not the first value.  OTOH, the "loglevel" kernel parameter modifies the first value in
-that /proc file, not the second value.
-
-Does that clarify/help?
-
--- 
-~Randy
