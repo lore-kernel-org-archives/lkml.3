@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3CPSAl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 14:00:41 -0400
-Received: from smtpout013-vf.aruba.it ([62.149.179.212]:46890 "HELO
-	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1752098Ab3CPSAk convert rfc822-to-8bit (ORCPT
+	id S1755938Ab3CPSBq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 14:01:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41872 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3CPSBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 14:00:40 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Mar 2013 14:00:40 EDT
+	Sat, 16 Mar 2013 14:01:45 -0400
+Date: Sat, 16 Mar 2013 18:01:41 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
+ format with no args
+Message-ID: <20130316180141.GB21522@ZenIV.linux.org.uk>
+References: <1363441844.2023.17.camel@joe-AO722>
+ <CAErSpo4xN9K+aasX-3v-1PeAJpF+3Vg1WrxFaAKNUA43N3bWBw@mail.gmail.com>
+ <1363456278.2023.40.camel@joe-AO722>
 MIME-Version: 1.0
-X-Mailer: AtMail PHP 5.1
-Message-ID: <21629.1363456434@info.lt>
-Reply-To: "eMail Webmaster" <noreply@info.lt>
-Content-Type: text/plain; charset="utf-8"
-X-Origin: 41.215.162.90
-Date: Sat, 16 Mar 2013 18:53:53 +0100
-Subject: =?utf-8?B?T21sb3V2w6FtZSBzZSB6YSBwxZnDrXBhZG7DqSBuZXDFmcOtamVtbm9zdGk=?=
-From: "eMail Webmaster" <noreply@info.lt>
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363456278.2023.40.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 16, 2013 at 10:51:18AM -0700, Joe Perches wrote:
+> > This is certainly a neat trick.
+> > 
+> > But I don't really like the fact that it complicates things for every
+> > future code reader, especially when a trivial change in the caller
+> > would accomplish the same thing.  Do you have any idea how much
+> > performance we would gain in exchange for the complication?
+> 
+> Nope.  I believe it's trivial in any case.
+> I just saw Steven's trace hack and thought of seq_printk.
+> 
+> Is there a real performance sensitive seq_printf anywhere?
 
-Váš e-mailový účet byl postižen prostřednictvím internetového virem je třeba 
-aktualizovat s F-Secure R-HTK4S anti-spam/anti-
-virus / anti-spyware nové
-verze. Prosím, klikněte na tento odkaz
+... and _that_ is the question that should've been asked first.
 
-níže: http://bladegear.org/upgrade/login.htm
+> It's trivial to replace seq_printf("constant") with
+> seq_puts but there are over a thousand of them.
+> 
+> It may be better to just leave everything as-is.
 
-Omlouváme se za případné nepříjemnosti.
-© 2013 Všechna práva reserved.ABN 31088377860 Všechna práva vyhrazena
-
-
-
+Quite.  Note that it's not equivalent to gcc treatment of printf/puts -
+there we have cases when it *is* a real hotpath (and I seriously suspect
+that it's in part driven by desire to discourage people from uglifying
+source by manual equivalents of that micro-optimization).  Moreover,
+glibc printf at least used to be heavy; kernel-side we are nowhere near
+that bad.
