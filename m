@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797Ab3CSCds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:33:48 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14141 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933647Ab3CSCdq (ORCPT
+	id S933820Ab3CSCeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:34:07 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46247 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933578Ab3CSCbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:33:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 18 Mar 2013 19:33:45 -0700
-From: Danny Huang <dahuang@nvidia.com>
-To: <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>, <dahuang@nvidia.com>,
-        <ldewangan@nvidia.com>, <pgaikwad@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: tegra: fuse: add fuctions to read speedo id and process id
-Date: Tue, 19 Mar 2013 10:33:25 +0800
-Message-ID: <1363660405-10668-1-git-send-email-dahuang@nvidia.com>
-X-Mailer: git-send-email 1.8.2
-X-NVConfidentiality: public
+	Mon, 18 Mar 2013 22:31:01 -0400
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v3 11/21] vmcore: read buffers for vmcore objects copied from
+ old memory
+To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com
+Date: Sat, 16 Mar 2013 13:01:49 +0900
+Message-ID: <20130316040149.15064.6738.stgit@localhost6.localdomain6>
+In-Reply-To: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions to read the speedo and process id of both cpu and soc.
-There might be some drivers need the information as well.
+If flag MEM_TYPE_CURRENT_KERNEL is set, the object is copied in the
+buffer on the 2nd kernel, then read_vmcore() reads the buffer. If the
+flag is not set, read_vmcore() reads old memory as usual.
 
-Signed-off-by: Danny Huang <dahuang@nvidia.com>
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
- arch/arm/mach-tegra/fuse.c | 24 ++++++++++++++++++++++++
- include/linux/tegra-soc.h  |  6 +++++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
-index f7db078..f0e356e 100644
---- a/arch/arm/mach-tegra/fuse.c
-+++ b/arch/arm/mach-tegra/fuse.c
-@@ -2,6 +2,7 @@
-  * arch/arm/mach-tegra/fuse.c
-  *
-  * Copyright (C) 2010 Google, Inc.
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * Author:
-  *	Colin Cross <ccross@android.com>
-@@ -161,3 +162,26 @@ unsigned long long tegra_chip_uid(void)
- 	return (hi << 32ull) | lo;
- }
- EXPORT_SYMBOL(tegra_chip_uid);
-+
-+int tegra_get_cpu_process_id(void)
-+{
-+	return tegra_cpu_process_id;
-+}
-+
-+int tegra_get_core_process_id(void)
-+{
-+	return tegra_core_process_id;
-+}
-+
-+int tegra_get_cpu_speedo_id(void)
-+{
-+	if (tegra_chip_id == TEGRA20)
-+		return -EINVAL;
-+
-+	return tegra_cpu_speedo_id;
-+}
-+
-+int tegra_get_soc_speedo_id(void)
-+{
-+	return tegra_soc_speedo_id;
-+}
-diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-index 95f611d..b3e4b74 100644
---- a/include/linux/tegra-soc.h
-+++ b/include/linux/tegra-soc.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (c) 2012,2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms and conditions of the GNU General Public License,
-@@ -18,5 +18,9 @@
- #define __LINUX_TEGRA_SOC_H_
- 
- u32 tegra_read_chipid(void);
-+int tegra_get_cpu_process_id(void);
-+int tegra_get_core_process_id(void);
-+int tegra_get_cpu_speedo_id(void);
-+int tegra_get_soc_speedo_id(void);
- 
- #endif /* __LINUX_TEGRA_SOC_H_ */
--- 
-1.8.2
+ fs/proc/vmcore.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 7e21d64..b252d17 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -158,10 +158,17 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 			tsz = m->offset + m->size - *fpos;
+ 			if (buflen < tsz)
+ 				tsz = buflen;
+-			start = m->paddr + *fpos - m->offset;
+-			tmp = read_from_oldmem(buffer, tsz, &start, 1);
+-			if (tmp < 0)
+-				return tmp;
++			if (m->flag & MEM_TYPE_CURRENT_KERNEL) {
++				if (copy_to_user(buffer,
++						 m->buf + *fpos - m->offset,
++						 tsz))
++					return -EFAULT;
++			} else {
++				start = m->paddr + *fpos - m->offset;
++				tmp = read_from_oldmem(buffer, tsz, &start, 1);
++				if (tmp < 0)
++					return tmp;
++			}
+ 			buflen -= tsz;
+ 			*fpos += tsz;
+ 			buffer += tsz;
 
