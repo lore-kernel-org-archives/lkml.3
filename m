@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab3CPRgL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 13:36:11 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:52525 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab3CPRgJ (ORCPT
+	id S1753864Ab3CPRh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 13:37:26 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:47451 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab3CPRhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 13:36:09 -0400
-Message-ID: <1363455366.29475.66.camel@edumazet-glaptop>
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: dormando <dormando@rydia.net>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Sat, 16 Mar 2013 10:36:06 -0700
-In-Reply-To: <1363303174.29475.46.camel@edumazet-glaptop>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
-	 <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
-	 <1362494795.15793.113.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303061631290.6723@dflat>
-	 <1362663990.15793.208.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303141359080.16308@dflat>
-	 <1363301786.29475.40.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303141610490.16308@dflat>
-	 <1363303174.29475.46.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 16 Mar 2013 13:37:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363453413-8139-2-git-send-email-jiang.liu@huawei.com>
+References: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
+	<1363453413-8139-2-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 16 Mar 2013 18:37:24 +0100
+X-Google-Sender-Auth: 9I8a5V5m1h0VFsD3dBAkNXwIjQ0
+Message-ID: <CAMuHMdUbg67zLqn7x_vpzEWpbuwjmxO5MYRNJQhxMpqtLxTVOg@mail.gmail.com>
+Subject: Re: [PATCH v2, part3 01/12] mm: enhance free_reserved_area() to
+ support poisoning memory with zero
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
+On Sat, Mar 16, 2013 at 6:03 PM, Jiang Liu <liuj97@gmail.com> wrote:
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5130,13 +5130,13 @@ unsigned long free_reserved_area(unsigned long start, unsigned long end,
+>         pos = start = PAGE_ALIGN(start);
+>         end &= PAGE_MASK;
+>         for (pages = 0; pos < end; pos += PAGE_SIZE, pages++) {
+> -               if (poison)
+> +               if ((unsigned int)poison <= 0xFF)
 
-> Thanks thats really useful, we might miss to increment socket refcount
-> in a timer setup.
-> 
+"if (poison >= 0)"? No cast needed.
 
-Hmm, please add following debugging patch as well
+>                         memset((void *)pos, poison, PAGE_SIZE);
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 14f6e9d..fe7c8a6 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
-  */
- static inline void __sock_put(struct sock *sk)
- {
--	atomic_dec(&sk->sk_refcnt);
-+	int newref = atomic_dec_return(&sk->sk_refcnt);
-+
-+	BUG_ON(newref <= 0);
- }
- 
- static inline bool sk_del_node_init(struct sock *sk)
-diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-index 786d97a..a445e15 100644
---- a/net/ipv4/inet_connection_sock.c
-+++ b/net/ipv4/inet_connection_sock.c
-@@ -739,7 +739,7 @@ void inet_csk_prepare_forced_close(struct sock *sk)
- {
- 	/* sk_clone_lock locked the socket and set refcnt to 2 */
- 	bh_unlock_sock(sk);
--	sock_put(sk);
-+	__sock_put(sk);
- 
- 	/* The below has to be done to allow calling inet_csk_destroy_sock */
- 	sock_set_flag(sk, SOCK_DEAD);
-@@ -835,13 +835,13 @@ void inet_csk_listen_stop(struct sock *sk)
- 			 * tcp_v4_destroy_sock().
- 			 */
- 			tcp_sk(child)->fastopen_rsk = NULL;
--			sock_put(sk);
-+			__sock_put(sk);
- 		}
- 		inet_csk_destroy_sock(child);
- 
- 		bh_unlock_sock(child);
- 		local_bh_enable();
--		sock_put(child);
-+		__sock_put(child);
- 
- 		sk_acceptq_removed(sk);
- 		__reqsk_free(req);
+Gr{oetje,eeting}s,
 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
