@@ -1,157 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab3CQWFK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 18:05:10 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:34029 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab3CQWFH (ORCPT
+	id S932787Ab3CQWIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 18:08:13 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:63696 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698Ab3CQWIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 18:05:07 -0400
-From: Duncan Laurie <dlaurie@chromium.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Luigi Semenzato <semenzato@chromium.org>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Duncan Laurie <dlaurie@chromium.org>
-Subject: [PATCH] TPM: Retry SaveState command in suspend path
-Date: Sun, 17 Mar 2013 14:56:39 -0700
-Message-Id: <1363557399-11822-1-git-send-email-dlaurie@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Sun, 17 Mar 2013 18:08:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130317215812.GA23103@merkur.ravnborg.org>
+References: <CANeU7QkMd_evQrJL1Otp3j3CR9FAXSXO9VOKSFmESkWPZNMkEA@mail.gmail.com>
+	<20130317215812.GA23103@merkur.ravnborg.org>
+Date: Sun, 17 Mar 2013 15:08:11 -0700
+X-Google-Sender-Auth: T9hWDftvRrXI9V_TZjKDhStTWV4
+Message-ID: <CANeU7Q=uQe7euVnrKExLg0yb1mDJm8NFoFzTqnTn1Gayf69gnA@mail.gmail.com>
+Subject: Re: [RFC PATCH] kbuild: avoid some unnecessary rebuild
+From: Christopher Li <sparse@chrisli.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec54ee608b137d004d8261b77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the TPM has already been sent a SaveState command before the driver
-is loaded it may have problems sending that same command again later.
+--bcaec54ee608b137d004d8261b77
+Content-Type: text/plain; charset=ISO-8859-1
 
-This issue is seen with the Chromebook Pixel due to a firmware bug in
-the legacy mode boot path which is sending the SaveState command
-before booting the kernel.  More information is available at
-http://crbug.com/203524
+On Sun, Mar 17, 2013 at 2:58 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>
+> We got no patch - just some git help stuff.
+> Seems you mistyped somthing..
+>
 
-This change introduces a retry of the SaveState command in the suspend
-path in order to work around this issue.  A future firmware update
-should fix this but this is also a trivial workaround in the driver
-that has no effect on systems that do not show this problem.
+Oops, sorry about that. I reattach the patch here.
 
-When this does happen the TPM responds with a non-fatal TPM_RETRY code
-that is defined in the specification:
+Chris
 
-  The TPM is too busy to respond to the command immediately, but the
-  command could be resubmitted at a later time.  The TPM MAY return
-  TPM_RETRY for any command at any time.
+--bcaec54ee608b137d004d8261b77
+Content-Type: application/octet-stream; 
+	name="kbuild-avoid-rebuild-some-object.patch"
+Content-Disposition: attachment; 
+	filename="kbuild-avoid-rebuild-some-object.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_heer7nq80
 
-It can take several seconds before the TPM will respond again.  I
-measured a typical time between 3 and 4 seconds and the timeout is set
-at a safe 5 seconds.
-
-It is also possible to reproduce this with commands via /dev/tpm0.
-The bug linked above has a python script attached which can be used to
-test for this problem.  I tested a variety of TPMs from Infineon,
-Nuvoton, Atmel, and STMicro but was only able to reproduce this with
-LPC and I2C TPMs from Infineon.
-
-The TPM specification only loosely defines this behavior:
-
-  TPM Main Level 2 Part 3 v1.2 r116, section 3.3. TPM_SaveState:
-  The TPM MAY declare all preserved values invalid in response to any
-  command other than TPM_Init.
-
-  TCG PC Client BIOS Spec 1.21 section 8.3.1.
-  After issuing a TPM_SaveState command, the OS SHOULD NOT issue TPM
-  commands before transitioning to S3 without issuing another
-  TPM_SaveState command.
-
-  TCG PC Client TIS 1.21, section 4. Power Management:
-  The TPM_SaveState command allows a Static OS to indicate to the TPM
-  that the platform may enter a low power state where the TPM will be
-  required to enter into the D3 power state.  The use of the term "may"
-  is significant in that there is no requirement for the platform to
-  actually enter the low power state after sending the TPM_SaveState
-  command.  The software may, in fact, send subsequent commands after
-  sending the TPM_SaveState command.
-
-Change-Id: I52b41e826412688e5b6c8ddd3bb16409939704e9
-Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
----
- drivers/char/tpm/tpm.c | 31 +++++++++++++++++++++++++++----
- drivers/char/tpm/tpm.h |  3 +++
- 2 files changed, 30 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 0d2e82f..7c3b3dc 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1337,7 +1337,7 @@ int tpm_pm_suspend(struct device *dev)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 	struct tpm_cmd_t cmd;
--	int rc;
-+	int rc, try;
- 
- 	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
- 
-@@ -1355,9 +1355,32 @@ int tpm_pm_suspend(struct device *dev)
- 	}
- 
- 	/* now do the actual savestate */
--	cmd.header.in = savestate_header;
--	rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE,
--			  "sending savestate before suspend");
-+	for (try = 0; try < TPM_RETRY; try++) {
-+		cmd.header.in = savestate_header;
-+		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
-+
-+		/*
-+		 * If the TPM indicates that it is too busy to respond to
-+		 * this command then retry before giving up.  It can take
-+		 * several seconds for this TPM to be ready.
-+		 *
-+		 * This can happen if the TPM has already been sent the
-+		 * SaveState command before the driver has loaded.  TCG 1.2
-+		 * specification states that any communication after SaveState
-+		 * may cause the TPM to invalidate previously saved state.
-+		 */
-+		if (rc != TPM_WARN_RETRY)
-+			break;
-+		msleep(TPM_TIMEOUT_RETRY);
-+	}
-+
-+	if (rc)
-+		dev_err(chip->dev,
-+			"Error (%d) sending savestate before suspend\n", rc);
-+	else if (try > 0)
-+		dev_warn(chip->dev, "TPM savestate took %dms\n",
-+			 try * TPM_TIMEOUT_RETRY);
-+
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm_pm_suspend);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 81b5201..0770d1d 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -32,10 +32,12 @@ enum tpm_const {
- 	TPM_MINOR = 224,	/* officially assigned */
- 	TPM_BUFSIZE = 4096,
- 	TPM_NUM_DEVICES = 256,
-+	TPM_RETRY = 50,		/* 5 seconds */
- };
- 
- enum tpm_timeout {
- 	TPM_TIMEOUT = 5,	/* msecs */
-+	TPM_TIMEOUT_RETRY = 100 /* msecs */
- };
- 
- /* TPM addresses */
-@@ -44,6 +46,7 @@ enum tpm_addr {
- 	TPM_ADDR = 0x4E,
- };
- 
-+#define TPM_WARN_RETRY          0x800
- #define TPM_WARN_DOING_SELFTEST 0x802
- #define TPM_ERR_DEACTIVATED     0x6
- #define TPM_ERR_DISABLED        0x7
--- 
-1.8.1.3
-
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9NYWtlZmlsZSBiL2FyY2gveDg2
+L2Jvb3QvY29tcHJlc3NlZC9NYWtlZmlsZQppbmRleCA4YTg0NTAxLi4xNzA2ZWU1IDEwMDY0NAot
+LS0gYS9hcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvTWFrZWZpbGUKKysrIGIvYXJjaC94ODYvYm9v
+dC9jb21wcmVzc2VkL01ha2VmaWxlCkBAIC0zMyw2ICszMyw3IEBAICQob2JqKS9lZmlfc3R1Yl8k
+KEJJVFMpLm86IEtCVUlMRF9DTEZBR1MgKz0gLWZzaG9ydC13Y2hhciAtbW5vLXJlZC16b25lCiAK
+IGlmZXEgKCQoQ09ORklHX0VGSV9TVFVCKSwgeSkKIAlWTUxJTlVYX09CSlMgKz0gJChvYmopL2Vi
+b290Lm8gJChvYmopL2VmaV9zdHViXyQoQklUUykubworCXRhcmdldHMgKz0gZWJvb3QubyBlZmlf
+c3R1Yl8kKEJJVFMpLm8KIGVuZGlmCiAKICQob2JqKS92bWxpbnV4OiAkKFZNTElOVVhfT0JKUykg
+Rk9SQ0UKZGlmZiAtLWdpdCBhL3NjcmlwdHMvbW9kL01ha2VmaWxlIGIvc2NyaXB0cy9tb2QvTWFr
+ZWZpbGUKaW5kZXggOTQxNWI1Ni4uZTIwZDA2YiAxMDA2NDQKLS0tIGEvc2NyaXB0cy9tb2QvTWFr
+ZWZpbGUKKysrIGIvc2NyaXB0cy9tb2QvTWFrZWZpbGUKQEAgLTQ4LDQgKzQ4LDQgQEAgcXVpZXRf
+Y21kX2VsZmNvbmZpZyA9IE1LRUxGICAgJEAKICQob2JqKS9lbGZjb25maWcuaDogJChvYmopL2Vt
+cHR5Lm8gJChvYmopL21rX2VsZmNvbmZpZyBGT1JDRQogCSQoY2FsbCBpZl9jaGFuZ2VkLGVsZmNv
+bmZpZykKIAotdGFyZ2V0cyArPSBlbGZjb25maWcuaAordGFyZ2V0cyArPSBlbGZjb25maWcuaCBk
+ZXZpY2V0YWJsZS1vZmZzZXRzLnMK
+--bcaec54ee608b137d004d8261b77--
