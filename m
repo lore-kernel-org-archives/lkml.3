@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab3CQHoG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 03:44:06 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:49865 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755684Ab3CQHoC (ORCPT
+	id S1756070Ab3CQHxN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 03:53:13 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:39810 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab3CQHxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 03:44:02 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-media@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, prabhakar.lad@ti.com, sakari.ailus@iki.fi,
-        laurent.pinchart@ideasonboard.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] drivers: staging: davinci_vpfe: use resource_size()
-Date: Sun, 17 Mar 2013 09:43:52 +0200
-Message-Id: <1363506232-11517-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 17 Mar 2013 03:53:11 -0400
+Date: Sun, 17 Mar 2013 08:53:10 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>, dormando <dormando@rydia.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+Message-ID: <20130317075310.GG24041@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	dormando <dormando@rydia.net>, Cong Wang <xiyou.wangcong@gmail.com>,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6> <1362494795.15793.113.camel@edumazet-glaptop> <alpine.DEB.2.02.1303061631290.6723@dflat> <1362663990.15793.208.camel@edumazet-glaptop> <alpine.DEB.2.02.1303141359080.16308@dflat> <1363301786.29475.40.camel@edumazet-glaptop> <alpine.DEB.2.02.1303141610490.16308@dflat> <1363303174.29475.46.camel@edumazet-glaptop> <1363455366.29475.66.camel@edumazet-glaptop> <20130317063948.GF24041@order.stressinduktion.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130317063948.GF24041@order.stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses the resource_size() function instead of explicit computation.
+On Sun, Mar 17, 2013 at 07:39:48AM +0100, Hannes Frederic Sowa wrote:
+> On Sat, Mar 16, 2013 at 10:36:06AM -0700, Eric Dumazet wrote:
+> > On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
+> > 
+> > > Thanks thats really useful, we might miss to increment socket refcount
+> > > in a timer setup.
+> > > 
+> > 
+> > Hmm, please add following debugging patch as well
+> > 
+> > diff --git a/include/net/sock.h b/include/net/sock.h
+> > index 14f6e9d..fe7c8a6 100644
+> > --- a/include/net/sock.h
+> > +++ b/include/net/sock.h
+> > @@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
+> >   */
+> >  static inline void __sock_put(struct sock *sk)
+> >  {
+> > -	atomic_dec(&sk->sk_refcnt);
+> > +	int newref = atomic_dec_return(&sk->sk_refcnt);
+> > +
+> > +	BUG_ON(newref <= 0);
+> >  }
+> 
+> Couldn't it also be a free from sock_wfree where the wmem accounting went
+> wrong? It does not care about reference counts there.
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |    3 ++-
- drivers/staging/media/davinci_vpfe/dm365_isif.c    |    6 ++++--
- drivers/staging/media/davinci_vpfe/dm365_resizer.c |    4 +++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-index 9285353..de3f202 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-@@ -27,6 +27,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/ioport.h>
- 
- #include "dm365_ipipe.h"
- #include "dm365_ipipe_hw.h"
-@@ -1859,5 +1860,5 @@ void vpfe_ipipe_cleanup(struct vpfe_ipipe_device *ipipe,
- 	iounmap(ipipe->isp5_base_addr);
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 4);
- 	if (res)
--		release_mem_region(res->start, res->end - res->start + 1);
-+		release_mem_region(res->start, resource_size(res));
- }
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_isif.c b/drivers/staging/media/davinci_vpfe/dm365_isif.c
-index ebeea72..cd263d5 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_isif.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_isif.c
-@@ -19,6 +19,8 @@
-  *      Prabhakar Lad <prabhakar.lad@ti.com>
-  */
- 
-+#include <linux/ioport.h>
-+
- #include "dm365_isif.h"
- #include "vpfe_mc_capture.h"
- 
-@@ -1953,7 +1955,7 @@ static void isif_remove(struct vpfe_isif_device *isif,
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
- 		if (res)
- 			release_mem_region(res->start,
--					   res->end - res->start + 1);
-+					   resource_size(res));
- 		i++;
- 	}
- }
-@@ -2003,7 +2005,7 @@ int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev)
- 			status = -ENOENT;
- 			goto fail_nobase_res;
- 		}
--		res_len = res->end - res->start + 1;
-+		res_len = resource_size(res);
- 		res = request_mem_region(res->start, res_len, res->name);
- 		if (!res) {
- 			status = -EBUSY;
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_resizer.c b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-index 9cb0262..c351ea1 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-@@ -24,6 +24,8 @@
-  * same input image, but can have different output resolution.
-  */
- 
-+#include <linux/ioport.h>
-+
- #include "dm365_ipipe_hw.h"
- #include "dm365_resizer.h"
- 
-@@ -1995,5 +1997,5 @@ vpfe_resizer_cleanup(struct vpfe_resizer_device *vpfe_rsz,
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 5);
- 	if (res)
- 		release_mem_region(res->start,
--					res->end - res->start + 1);
-+				   resource_size(res));
- }
--- 
-1.7.9.5
-
+nvm, it had to be in the stacktrace then.
