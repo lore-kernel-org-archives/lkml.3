@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3CQIBn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 04:01:43 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:61611 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab3CQIBm (ORCPT
+	id S1756094Ab3CQI0k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 04:26:40 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:41088 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab3CQI0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 04:01:42 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: cbou@mail.ru, dwmw2@infradead.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] drivers: power: goldfish: use resource_size()
-Date: Sun, 17 Mar 2013 10:01:34 +0200
-Message-Id: <1363507294-19958-1-git-send-email-silviupopescu1990@gmail.com>
+	Sun, 17 Mar 2013 04:26:34 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 1/5] f2fs: notify when discard is not supported
+Date: Sun, 17 Mar 2013 17:26:14 +0900
+Message-Id: <1363508774-2818-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This uses the resource_size() function instead of explicit computation.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Change f2fs so that a warning is emitted when an attempt is made to
+mount a filesystem with the unsupported discard option.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- drivers/power/goldfish_battery.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/f2fs/super.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/power/goldfish_battery.c b/drivers/power/goldfish_battery.c
-index c10f460..29eba88 100644
---- a/drivers/power/goldfish_battery.c
-+++ b/drivers/power/goldfish_battery.c
-@@ -178,7 +178,7 @@ static int goldfish_battery_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index ae75536..2bb6951 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -21,6 +21,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/random.h>
+ #include <linux/exportfs.h>
++#include <linux/blkdev.h>
+ #include <linux/f2fs_fs.h>
  
--	data->reg_base = devm_ioremap(&pdev->dev, r->start, r->end - r->start + 1);
-+	data->reg_base = devm_ioremap(&pdev->dev, r->start, resource_size(r));
- 	if (data->reg_base == NULL) {
- 		dev_err(&pdev->dev, "unable to remap MMIO\n");
- 		return -ENOMEM;
+ #include "f2fs.h"
+@@ -649,6 +650,14 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	err = f2fs_build_stats(sbi);
+ 	if (err)
+ 		goto fail;
++
++	if (test_opt(sbi, DISCARD)) {
++		struct request_queue *q = bdev_get_queue(sb->s_bdev);
++		if (!blk_queue_discard(q))
++			f2fs_msg(sb, KERN_WARNING,
++					"mounting with \"discard\" option, but "
++					"the device does not support discard");
++	}
+ 
+ 	return 0;
+ fail:
 -- 
 1.7.9.5
 
