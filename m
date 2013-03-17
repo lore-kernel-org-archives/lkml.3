@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab3CQT51 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 15:57:27 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37267 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756411Ab3CQT5Z (ORCPT
+	id S932614Ab3CQT6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 15:58:40 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:38762 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756411Ab3CQT6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 15:57:25 -0400
-Date: Sun, 17 Mar 2013 19:57:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Dongsheng Song <dongsheng.song@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Linux 3.8.3
-Message-ID: <20130317195709.GC4977@n2100.arm.linux.org.uk>
-References: <20130314184702.GA17860@kroah.com> <CAE8XmWoYXyNFQ14e6X+2rkWQyRA=kSdc4J+DNu2Sv+6e9rvZRg@mail.gmail.com> <20130317193321.GA15102@arwen.pp.htv.fi>
+	Sun, 17 Mar 2013 15:58:39 -0400
+Date: Sun, 17 Mar 2013 21:01:58 +0100
+From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hverkuil@xs4all.nl, elezegarcia@gmail.com
+Subject: Re: [RFC V1 0/8] Add a driver for somagic smi2021
+Message-ID: <20130317200158.GB17291@dell.arpanet.local>
+Reply-To: 20130315120856.GA2989@localhost.arpanet.local
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+ <20130315120856.GA2989@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130317193321.GA15102@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130315120856.GA2989@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 09:33:21PM +0200, Felipe Balbi wrote:
-> Hi,
-> 
-> On Sun, Mar 17, 2013 at 10:00:08PM +0800, Dongsheng Song wrote:
-> > “make ARCH=arm menuconfig”  no complains,  but "make ARCH=arm
-> > CROSS_COMPILE=arm-linux-gnueabihf-" failed:
+On Fri, Mar 15, 2013 at 09:08:58AM -0300, Ezequiel Garcia wrote:
+> On Thu, Mar 14, 2013 at 03:06:56PM +0100, Jon Arne Jørgensen wrote:
+> > This patch-set will add a driver for the Somagic SMI2021 chip.
 > > 
-> > $ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-> >   CHK     include/generated/uapi/linux/version.h
-> >   CHK     include/generated/utsrelease.h
-> > make[1]: `include/generated/mach-types.h' is up to date.
-> >   CALL    scripts/checksyscalls.sh
-> >   CHK     include/generated/compile.h
-> >   CHK     kernel/config_data.h
-> >   Kernel: arch/arm/boot/Image is ready
-> >   Kernel: arch/arm/boot/zImage is ready
-> >   Building modules, stage 2.
-> >   MODPOST 1904 modules
-> > ERROR: "flush_tlb_kernel_range" [drivers/staging/zsmalloc/zsmalloc.ko]
-> > undefined!
-> > make[1]: *** [__modpost] Error 1
-> > make: *** [modules] Error 2
+> > This chip is found inside different usb video-capture devices.
+> > Most of them are branded as EasyCap, but there also seems to be
+> > some other brands selling devices with this chip.
 > > 
-> > Please find the attachment with .config.gz file.
+> > This driver is split into two modules, where one is called smi2021-bootloader,
+> > and the other is just called smi2021.
+> > 
+> > The bootloader is responsible for the upload of a firmware that is needed by some
+> > versions of the devices.
+> > 
+> > All Somagic devices that need firmware seems to identify themselves
+> > with the usb product id 0x0007. There is no way for the kernel to know
+> > what firmware to upload to the device without user interaction.
+> > 
+> > If there is only one firmware present on the computer, the kernel
+> > will upload that firmware to any device that identifies as 0x0007.
+> > If there are multiple Somagic firmwares present, the user will have to pass
+> > a module parameter to the smi2021-bootloader module to tell what firmware to use.
+> > 
 > 
-> linux-arm-kernel might have more information about this.
+> Nice job!
+>
+Thanks :)
+ 
+> I have some minor comments on each patch, but also I don't agree
+> with the patch splitting: what's the point in splitting and sending
+> one patch per file?
+> 
+> It doesn't make it any easier to review, so why don't you just
+> send one patch: "Introduce smi2021 driver"?
+> 
+> The rule is one patch per change, and I believe this whole patchset
+> is just one change: adding a new driver.
+> 
 
-Sigh.
+I think I read another patch to this mailinglist, where someone was told
+to split his patch into one mail per file, but I can't find that thread
+now :)
 
-At times, I really don't know why I bother wasting my time commenting on
-patches if they just go and agree with them, and promptly ignore them.
-I pointed out what this should be:
+I will send the next version as a single mail, and see what happens...
 
-http://marc.info/?l=linux-kernel&m=135972750522902&w=2
-
-And it was agreed:
-
-http://marc.info/?l=linux-kernel&m=135993546317541&w=2
-
-But for some reason the wrong patch got merged:
-
-http://marc.info/?l=git-commits-head&m=136147889001219&w=2
-
-Maybe because it was "simpler" ?  Don't know.  But... well, we now know
-what the outcome of it was.  Let's try a different technique.  I'm going
-to say nothing of any real help and hopefully it will get fixed properly.
-Maybe that'll work.
+> -- 
+> Ezequiel García, Free Electrons
+> Embedded Linux, Kernel and Android Engineering
+> http://free-electrons.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
