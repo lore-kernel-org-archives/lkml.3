@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab3CQVnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 17:43:00 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:43060 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab3CQVnA (ORCPT
+	id S932689Ab3CQVqz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 17:46:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48765 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932476Ab3CQVqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 17:43:00 -0400
+	Sun, 17 Mar 2013 17:46:51 -0400
+Date: Sun, 17 Mar 2013 21:46:42 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2, part3 02/12] mm/ARM64: kill poison_init_mem()
+Message-ID: <20130317214642.GA20875@mudshark.cambridge.arm.com>
+References: <1363453413-8139-1-git-send-email-jiang.liu@huawei.com>
+ <1363453413-8139-3-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20130317214049.GB26102@cantiga.alporthouse.com>
-References: <CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com>
-	<1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
-	<20130315045004.GA14747@bwidawsk.net>
-	<20130315082403.GA29916@cantiga.alporthouse.com>
-	<20130315163606.GA17773@bwidawsk.net>
-	<20130315220619.GA17405@cantiga.alporthouse.com>
-	<20130315234942.GB715@bwidawsk.net>
-	<20130316101920.GB17405@cantiga.alporthouse.com>
-	<CAKMK7uFiMLcE_TYj5=sKZsVAcCnWSmg49qPrxjswH2s3J5byOg@mail.gmail.com>
-	<20130317214049.GB26102@cantiga.alporthouse.com>
-Date: Mon, 18 Mar 2013 07:42:58 +1000
-Message-ID: <CAPM=9txw7pPT195p1nJrr5=TvTBGsd6G+a7N5C+fxQgP0Eof3w@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
- for a NULL pointer
-From: Dave Airlie <airlied@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Widawsky <ben@bwidawsk.net>, Tommi Rantala <tt.rantala@gmail.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363453413-8139-3-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 7:40 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Sun, Mar 17, 2013 at 08:50:03PM +0100, Daniel Vetter wrote:
->> On Sat, Mar 16, 2013 at 11:19 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> > If *userspace* doesn't request either IOC_IN | IOC_OUT in their ioctl
->> > command (which are seperate from the ioctl number), then kdata is set to
->> > NULL.
->>
->> Doesn't that mean that we need these checks everywhere? Or at least a
->> fixup in drm core proper?
->
-> That's my conclusion. We either add a flag to ask drm_ioctl to prevent
-> passing NULL pointers (as the existing behaviour may be useful
-> somewhere, and I have not checked all callees) or saturate our callbacks
-> with NULL checks.
+On Sat, Mar 16, 2013 at 05:03:23PM +0000, Jiang Liu wrote:
+> Use free_reserved_area() to kill poison_init_mem() on ARM64.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm64/mm/init.c |   17 +++--------------
+>  1 file changed, 3 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+> index e58dd7f..b87bdb8 100644
+> --- a/arch/arm64/mm/init.c
+> +++ b/arch/arm64/mm/init.c
+> @@ -197,14 +197,6 @@ void __init bootmem_init(void)
+>  	max_pfn = max_low_pfn = max;
+>  }
+>  
+> -/*
+> - * Poison init memory with an undefined instruction (0x0).
+> - */
+> -static inline void poison_init_mem(void *s, size_t count)
+> -{
+> -	memset(s, 0, count);
+> -}
+> -
+>  #ifndef CONFIG_SPARSEMEM_VMEMMAP
+>  static inline void free_memmap(unsigned long start_pfn, unsigned long end_pfn)
+>  {
+> @@ -386,8 +378,7 @@ void __init mem_init(void)
+>  
+>  void free_initmem(void)
+>  {
+> -	poison_init_mem(__init_begin, __init_end - __init_begin);
+> -	free_initmem_default(-1);
+> +	free_initmem_default(0);
 
-Do we have the kernel's expected IOC_IN/IOC_OUT flags at that point as well?
+This change looks unrelated to $subject. We should probably just poison with
+0 from the outset, when free_initmem_default is introduced.
 
-we could check them and block NULL in that case.
-
-Dave.
+Will
