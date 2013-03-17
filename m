@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab3CQSy5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 14:54:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21428 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab3CQSyy (ORCPT
+	id S1756621Ab3CQTAt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 15:00:49 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:39024 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553Ab3CQTAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 14:54:54 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dg4Nx7oYL4YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=T1sv73n0zC0A:10 a=20KFwNOVAAAA:8 a=IgarNBvqBE6palEcv74A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363546493.25967.129.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] tracing: syscall_regfunc() should not skip kernel
- threads
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-arch <linux-arch@vger.kernel.org>
-Date: Sun, 17 Mar 2013 14:54:53 -0400
-In-Reply-To: <20130317182834.GA22989@redhat.com>
-References: <20130317182834.GA22989@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Sun, 17 Mar 2013 15:00:47 -0400
+Message-ID: <1363546844.29475.83.camel@edumazet-glaptop>
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: dormando <dormando@rydia.net>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Sun, 17 Mar 2013 12:00:44 -0700
+In-Reply-To: <1363539169.29475.78.camel@edumazet-glaptop>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
+	 <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
+	 <1362494795.15793.113.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303061631290.6723@dflat>
+	 <1362663990.15793.208.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303141359080.16308@dflat>
+	 <1363301786.29475.40.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303141610490.16308@dflat>
+	 <1363303174.29475.46.camel@edumazet-glaptop>
+	 <1363455366.29475.66.camel@edumazet-glaptop>
+	 <1363455885.29475.68.camel@edumazet-glaptop>
+	 <alpine.DEB.2.02.1303170218460.28650@dflat>
+	 <1363538008.29475.73.camel@edumazet-glaptop>
+	 <1363539169.29475.78.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-17 at 19:28 +0100, Oleg Nesterov wrote:
-> syscall_regfunc() ignores the kernel thread because "it has
-> no effect", see cc3b13c1 "Don't trace kernel thread syscalls".
-> 
-> However, this means that a user-space task spawned by
-> call_usermodehelper() won't report the system calls if
-> kernel_execve() is called when sys_tracepoint_refcount != 0.
-> 
-> Remove this check. Hopefully the unnecessary report from
-> ret_from_fork path mentioned by cc3b13c1 is fine. In fact
-> "this is the only case" is not true. Say, kernel_execve()
-> itself does "int 80" on X86_32. Hopefully fine too.
-> 
+On Sun, 2013-03-17 at 09:52 -0700, Eric Dumazet wrote:
 
-I'm really thinking the TIF_SYSCALL_TRACEPOINT flag is getting a bit
-ridiculous. We really should have a "swap syscall table when tracepoints
-enabled" that changes the syscall table that does exactly the same thing
-as the normal table but wraps the system call with the tracepoints.
-Something that we are looking to do with interrupts.
-
-Altough this may not be that trivial, as this seems to be the method to
-trace system calls on not only x86, but also PowerPC, ARM, s390, Sparc,
-and sh.
-
--- Steve
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/tracepoint.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
 > 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index a16754b..4e1e4ca 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -737,9 +737,7 @@ void syscall_regfunc(void)
->  	if (!sys_tracepoint_refcount) {
->  		read_lock(&tasklist_lock);
->  		do_each_thread(g, t) {
-> -			/* Skip kernel threads. */
-> -			if (!(t->flags & PF_KTHREAD))
-> -				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-> +			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
->  		} while_each_thread(g, t);
->  		read_unlock(&tasklist_lock);
->  	}
+> We perform a sock_hold() somewhere while the socket is already dead.
+
+Oh well, thats not exactly that.
+
+When processing ICMP messages we perform a full inet[6] lookup and can
+find a LISTEN socket.
+
+Please try the following fix :
+
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index b7ab868..3d250c6 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -407,7 +407,8 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		if (code > NR_ICMP_UNREACH)
+ 			goto out;
+ 
+-		if (code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
++		if (sk->sk_state != TCP_LISTEN &&
++		    code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
+ 			tp->mtu_info = info;
+ 			if (!sock_owned_by_user(sk)) {
+ 				tcp_v4_mtu_reduced(sk);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 9b64600..c12b3ff 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -388,7 +388,7 @@ static void tcp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
+ 			dst->ops->redirect(dst, sk, skb);
+ 	}
+ 
+-	if (type == ICMPV6_PKT_TOOBIG) {
++	if (type == ICMPV6_PKT_TOOBIG && sk->sk_state != TCP_LISTEN) {
+ 		tp->mtu_info = ntohl(info);
+ 		if (!sock_owned_by_user(sk))
+ 			tcp_v6_mtu_reduced(sk);
+
 
 
