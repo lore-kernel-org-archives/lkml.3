@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3CQNGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 09:06:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51594 "EHLO mx2.suse.de"
+	id S1756253Ab3CQNIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 09:08:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab3CQNEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 09:04:23 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements for kswapd
-Date: Sun, 17 Mar 2013 13:04:08 +0000
-Message-Id: <1363525456-10448-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1363525456-10448-1-git-send-email-mgorman@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+	id S1753472Ab3CQNIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 09:08:11 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>, jack@suse.cz
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Date: Sun, 17 Mar 2013 13:06:59 +0000
+Message-ID: <1944.1363525619@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplistically, the anon and file LRU lists are scanned proportionally
-depending on the value of vm.swappiness although there are other factors
-taken into account by get_scan_count().  The patch "mm: vmscan: Limit
-the number of pages kswapd reclaims" limits the number of pages kswapd
-reclaims but it breaks this proportional scanning and may evenly shrink
-anon/file LRUs regardless of vm.swappiness.
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-This patch preserves the proportional scanning and reclaim. It does mean
-that kswapd will reclaim more than requested but the number of pages will
-be related to the high watermark.
+> Export do_splice_direct() to modules.  Needed by overlay filesystem.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Apparently you cannot call this from any function that is holding an i_mutex
+if the target of the splice uses generic_file_splice_write().
+
+The problem is a potential deadlock situation:
+
+We have places already that do:
+
+	mnt_want_write()
+	mutex_lock()
+
+This can be found in do_last() for example.
+
+However, mnt_want_write() calls sb_start_write() as does
+generic_file_splice_write().  So now in ovl_copy_up_locked() you're adding:
+
+	mutex_lock()
+	sb_start_write()
+
+which lockdep reports as a potential ABBA deadlock.
+
+Now, looking at __sb_start_write(), I'm not entirely sure how the deadlock
+might operate, so it's possible that this is a false alarm.  Maybe Jan Kara can
+illuminate further, so I've added him to the cc list.
+
+I've attached the report I got with unionmount.
+
+David
 ---
- mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 41 insertions(+), 11 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4835a7a..182ff15 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1815,6 +1815,45 @@ out:
- 	}
- }
- 
-+static void recalculate_scan_count(unsigned long nr_reclaimed,
-+		unsigned long nr_to_reclaim,
-+		unsigned long nr[NR_LRU_LISTS])
-+{
-+	enum lru_list l;
-+
-+	/*
-+	 * For direct reclaim, reclaim the number of pages requested. Less
-+	 * care is taken to ensure that scanning for each LRU is properly
-+	 * proportional. This is unfortunate and is improper aging but
-+	 * minimises the amount of time a process is stalled.
-+	 */
-+	if (!current_is_kswapd()) {
-+		if (nr_reclaimed >= nr_to_reclaim) {
-+			for_each_evictable_lru(l)
-+				nr[l] = 0;
-+		}
-+		return;
-+	}
-+
-+	/*
-+	 * For kswapd, reclaim at least the number of pages requested.
-+	 * However, ensure that LRUs shrink by the proportion requested
-+	 * by get_scan_count() so vm.swappiness is obeyed.
-+	 */
-+	if (nr_reclaimed >= nr_to_reclaim) {
-+		unsigned long min = ULONG_MAX;
-+
-+		/* Find the LRU with the fewest pages to reclaim */
-+		for_each_evictable_lru(l)
-+			if (nr[l] < min)
-+				min = nr[l];
-+
-+		/* Normalise the scan counts so kswapd scans proportionally */
-+		for_each_evictable_lru(l)
-+			nr[l] -= min;
-+	}
-+}
-+
- /*
-  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
-  */
-@@ -1841,17 +1880,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
- 							    lruvec, sc);
- 			}
- 		}
--		/*
--		 * On large memory systems, scan >> priority can become
--		 * really large. This is fine for the starting priority;
--		 * we want to put equal scanning pressure on each zone.
--		 * However, if the VM has a harder time of freeing pages,
--		 * with multiple processes reclaiming pages, the total
--		 * freeing target can get unreasonably large.
--		 */
--		if (nr_reclaimed >= nr_to_reclaim &&
--		    sc->priority < DEF_PRIORITY)
--			break;
-+
-+		recalculate_scan_count(nr_reclaimed, nr_to_reclaim, nr);
- 	}
- 	blk_finish_plug(&plug);
- 	sc->nr_reclaimed += nr_reclaimed;
--- 
-1.8.1.4
-
+[ INFO: possible recursive locking detected ]
+3.9.0-rc1-fsdevel+ #934 Not tainted
+---------------------------------------------
+fs-op/4476 is trying to acquire lock:
+ (sb_writers#4){.+.+.+}, at: [<ffffffff811087a4>] generic_file_splice_write+0x5d/0x14b
+but task is already holding lock:
+ (sb_writers#4){.+.+.+}, at: [<ffffffff810ff97c>] mnt_want_write+0x1f/0x46
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+       CPU0
+       ----
+  lock(sb_writers#4);
+  lock(sb_writers#4);
+ *** DEADLOCK ***
+ May be due to missing lock nesting notation
+2 locks held by fs-op/4476:
+ #0:  (sb_writers#4){.+.+.+}, at: [<ffffffff810ff97c>] mnt_want_write+0x1f/0x46
+ #1:  (&type->i_mutex_dir_key[1]){+.+.+.}, at: [<ffffffff81131c74>] __union_copy_up+0x9a/0x132
+stack backtrace:
+Pid: 4476, comm: fs-op Not tainted 3.9.0-rc1-fsdevel+ #934
+Call Trace:
+ [<ffffffff81070398>] __lock_acquire+0x86a/0x16cf
+ [<ffffffff811081cc>] ? page_cache_pipe_buf_release+0x1b/0x1b
+ [<ffffffff810715e2>] lock_acquire+0x57/0x6d
+ [<ffffffff811087a4>] ? generic_file_splice_write+0x5d/0x14b
+ [<ffffffff810e3314>] __sb_start_write+0x10d/0x15d
+ [<ffffffff811087a4>] ? generic_file_splice_write+0x5d/0x14b
+ [<ffffffff811087a4>] generic_file_splice_write+0x5d/0x14b
+ [<ffffffff811083d5>] do_splice_from+0x74/0x91
+ [<ffffffff81108410>] direct_splice_actor+0x1e/0x20
+ [<ffffffff8110868b>] splice_direct_to_actor+0xc2/0x17e
+ [<ffffffff811083f2>] ? do_splice_from+0x91/0x91
+ [<ffffffff8110999d>] do_splice_direct+0x47/0x5a
+ [<ffffffff81131a99>] __union_copy_up_locked+0x171/0x2b2
+ [<ffffffff81131cc4>] __union_copy_up+0xea/0x132
+ [<ffffffff810e02ca>] vfs_truncate+0x15e/0x289
+ [<ffffffff810e043b>] do_sys_truncate+0x46/0x83
+ [<ffffffff810e05cf>] sys_truncate+0x9/0xb
+ [<ffffffff81456f92>] system_call_fastpath+0x16/0x1b
