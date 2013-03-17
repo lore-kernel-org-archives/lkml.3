@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab3CQVur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 17:50:47 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62007 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567Ab3CQVup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 17:50:45 -0400
+	id S932750Ab3CQVvw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 17:51:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56543 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932510Ab3CQVvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 17:51:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,860,1355126400"; 
+   d="scan'208";a="215766572"
+Date: Sun, 17 Mar 2013 21:51:42 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Ben Widawsky <ben@bwidawsk.net>,
+        Tommi Rantala <tt.rantala@gmail.com>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Jones <davej@redhat.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
+ for a NULL pointer
+Message-ID: <20130317215142.GC26102@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Dave Airlie <airlied@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Ben Widawsky <ben@bwidawsk.net>,
+	Tommi Rantala <tt.rantala@gmail.com>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	Dave Jones <davej@redhat.com>
+References: <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+ <20130315045004.GA14747@bwidawsk.net>
+ <20130315082403.GA29916@cantiga.alporthouse.com>
+ <20130315163606.GA17773@bwidawsk.net>
+ <20130315220619.GA17405@cantiga.alporthouse.com>
+ <20130315234942.GB715@bwidawsk.net>
+ <20130316101920.GB17405@cantiga.alporthouse.com>
+ <CAKMK7uFiMLcE_TYj5=sKZsVAcCnWSmg49qPrxjswH2s3J5byOg@mail.gmail.com>
+ <20130317214049.GB26102@cantiga.alporthouse.com>
+ <CAPM=9txw7pPT195p1nJrr5=TvTBGsd6G+a7N5C+fxQgP0Eof3w@mail.gmail.com>
 MIME-Version: 1.0
-Date: Sun, 17 Mar 2013 14:50:44 -0700
-X-Google-Sender-Auth: -jJ5E6YzabXBgAmriiM3oeciQ8s
-Message-ID: <CANeU7QkMd_evQrJL1Otp3j3CR9FAXSXO9VOKSFmESkWPZNMkEA@mail.gmail.com>
-Subject: [RFC PATCH] kbuild: avoid some unnecessary rebuild
-From: Christopher Li <sparse@chrisli.org>
-To: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=f46d041c5f724980ae04d825dd2e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9txw7pPT195p1nJrr5=TvTBGsd6G+a7N5C+fxQgP0Eof3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d041c5f724980ae04d825dd2e
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, Mar 18, 2013 at 07:42:58AM +1000, Dave Airlie wrote:
+> On Mon, Mar 18, 2013 at 7:40 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > On Sun, Mar 17, 2013 at 08:50:03PM +0100, Daniel Vetter wrote:
+> >> On Sat, Mar 16, 2013 at 11:19 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >> > If *userspace* doesn't request either IOC_IN | IOC_OUT in their ioctl
+> >> > command (which are seperate from the ioctl number), then kdata is set to
+> >> > NULL.
+> >>
+> >> Doesn't that mean that we need these checks everywhere? Or at least a
+> >> fixup in drm core proper?
+> >
+> > That's my conclusion. We either add a flag to ask drm_ioctl to prevent
+> > passing NULL pointers (as the existing behaviour may be useful
+> > somewhere, and I have not checked all callees) or saturate our callbacks
+> > with NULL checks.
+> 
+> Do we have the kernel's expected IOC_IN/IOC_OUT flags at that point as well?
+> 
+> we could check them and block NULL in that case.
 
-In the current tip of git tree. If I do a allmodconfig full build, then follow
-by a "make" again without changing any code in the tree.
-There are some object will always get rebuild. e.g. eboot.o.
-I use "make V=2", it shows that the rebuild is due to some object file
-not in $(targets). I did not understand the $(targets) very well, the
-Kbuild.include mention that It is likely a bug in the kbuild if that
-happen.
+Yes. For the core ioctls, we use drm_ioctls[nr].cmd rather than the
+value passed in by userspace for the IOC_IN|IN_OUT bits. So:
 
-I add them in the $(targets) and that seems avoid the unnecessary
-rebuild of several objects. The second "make" has fewer output.
-The clean rebuild seems works fine too.
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 25f91cd..79b8bd1 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -408,6 +408,7 @@ long drm_ioctl(struct file *filp,
+                usize = asize = _IOC_SIZE(cmd);
+                if (drv_size > asize)
+                        asize = drv_size;
++               cmd = ioctl->cmd;
+        }
+        else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
+                ioctl = &drm_ioctls[nr];
 
-Chris
 
---f46d041c5f724980ae04d825dd2e
-Content-Type: application/octet-stream; 
-	name="kbuild-avoid-rebuild-some-object.patch"
-Content-Disposition: attachment; 
-	filename="kbuild-avoid-rebuild-some-object.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_heep743q0
-
-dXNhZ2U6IGdpdCBbLS12ZXJzaW9uXSBbLS1leGVjLXBhdGhbPTxwYXRoPl1dIFstLWh0bWwtcGF0
-aF0gWy0tbWFuLXBhdGhdIFstLWluZm8tcGF0aF0KICAgICAgICAgICBbLXB8LS1wYWdpbmF0ZXwt
-LW5vLXBhZ2VyXSBbLS1uby1yZXBsYWNlLW9iamVjdHNdIFstLWJhcmVdCiAgICAgICAgICAgWy0t
-Z2l0LWRpcj08cGF0aD5dIFstLXdvcmstdHJlZT08cGF0aD5dIFstLW5hbWVzcGFjZT08bmFtZT5d
-CiAgICAgICAgICAgWy1jIG5hbWU9dmFsdWVdIFstLWhlbHBdCiAgICAgICAgICAgPGNvbW1hbmQ+
-IFs8YXJncz5dCgpUaGUgbW9zdCBjb21tb25seSB1c2VkIGdpdCBjb21tYW5kcyBhcmU6CiAgIGFk
-ZCAgICAgICAgQWRkIGZpbGUgY29udGVudHMgdG8gdGhlIGluZGV4CiAgIGJpc2VjdCAgICAgRmlu
-ZCBieSBiaW5hcnkgc2VhcmNoIHRoZSBjaGFuZ2UgdGhhdCBpbnRyb2R1Y2VkIGEgYnVnCiAgIGJy
-YW5jaCAgICAgTGlzdCwgY3JlYXRlLCBvciBkZWxldGUgYnJhbmNoZXMKICAgY2hlY2tvdXQgICBD
-aGVja291dCBhIGJyYW5jaCBvciBwYXRocyB0byB0aGUgd29ya2luZyB0cmVlCiAgIGNsb25lICAg
-ICAgQ2xvbmUgYSByZXBvc2l0b3J5IGludG8gYSBuZXcgZGlyZWN0b3J5CiAgIGNvbW1pdCAgICAg
-UmVjb3JkIGNoYW5nZXMgdG8gdGhlIHJlcG9zaXRvcnkKICAgZGlmZiAgICAgICBTaG93IGNoYW5n
-ZXMgYmV0d2VlbiBjb21taXRzLCBjb21taXQgYW5kIHdvcmtpbmcgdHJlZSwgZXRjCiAgIGZldGNo
-ICAgICAgRG93bmxvYWQgb2JqZWN0cyBhbmQgcmVmcyBmcm9tIGFub3RoZXIgcmVwb3NpdG9yeQog
-ICBncmVwICAgICAgIFByaW50IGxpbmVzIG1hdGNoaW5nIGEgcGF0dGVybgogICBpbml0ICAgICAg
-IENyZWF0ZSBhbiBlbXB0eSBnaXQgcmVwb3NpdG9yeSBvciByZWluaXRpYWxpemUgYW4gZXhpc3Rp
-bmcgb25lCiAgIGxvZyAgICAgICAgU2hvdyBjb21taXQgbG9ncwogICBtZXJnZSAgICAgIEpvaW4g
-dHdvIG9yIG1vcmUgZGV2ZWxvcG1lbnQgaGlzdG9yaWVzIHRvZ2V0aGVyCiAgIG12ICAgICAgICAg
-TW92ZSBvciByZW5hbWUgYSBmaWxlLCBhIGRpcmVjdG9yeSwgb3IgYSBzeW1saW5rCiAgIHB1bGwg
-ICAgICAgRmV0Y2ggZnJvbSBhbmQgbWVyZ2Ugd2l0aCBhbm90aGVyIHJlcG9zaXRvcnkgb3IgYSBs
-b2NhbCBicmFuY2gKICAgcHVzaCAgICAgICBVcGRhdGUgcmVtb3RlIHJlZnMgYWxvbmcgd2l0aCBh
-c3NvY2lhdGVkIG9iamVjdHMKICAgcmViYXNlICAgICBGb3J3YXJkLXBvcnQgbG9jYWwgY29tbWl0
-cyB0byB0aGUgdXBkYXRlZCB1cHN0cmVhbSBoZWFkCiAgIHJlc2V0ICAgICAgUmVzZXQgY3VycmVu
-dCBIRUFEIHRvIHRoZSBzcGVjaWZpZWQgc3RhdGUKICAgcm0gICAgICAgICBSZW1vdmUgZmlsZXMg
-ZnJvbSB0aGUgd29ya2luZyB0cmVlIGFuZCBmcm9tIHRoZSBpbmRleAogICBzaG93ICAgICAgIFNo
-b3cgdmFyaW91cyB0eXBlcyBvZiBvYmplY3RzCiAgIHN0YXR1cyAgICAgU2hvdyB0aGUgd29ya2lu
-ZyB0cmVlIHN0YXR1cwogICB0YWcgICAgICAgIENyZWF0ZSwgbGlzdCwgZGVsZXRlIG9yIHZlcmlm
-eSBhIHRhZyBvYmplY3Qgc2lnbmVkIHdpdGggR1BHCgpTZWUgJ2dpdCBoZWxwIDxjb21tYW5kPicg
-Zm9yIG1vcmUgaW5mb3JtYXRpb24gb24gYSBzcGVjaWZpYyBjb21tYW5kLgo=
---f46d041c5f724980ae04d825dd2e--
+-- 
+Chris Wilson, Intel Open Source Technology Centre
