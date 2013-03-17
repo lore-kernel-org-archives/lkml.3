@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab3CQO3m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 10:29:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43742 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756277Ab3CQO3l (ORCPT
+	id S932548Ab3CQOaF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 10:30:05 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:55086 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3CQOaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 10:29:41 -0400
-Date: Sun, 17 Mar 2013 14:29:29 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: Re: [PATCH 1/3] ARM: Clear IDIVT hwcap if CONFIG_ARM_THUMB=n
-Message-ID: <20130317142929.GD19071@mudshark.cambridge.arm.com>
-References: <1363138321-27849-1-git-send-email-sboyd@codeaurora.org>
- <1363138321-27849-2-git-send-email-sboyd@codeaurora.org>
+	Sun, 17 Mar 2013 10:30:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363138321-27849-2-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363530028.2423.43.camel@zim.stowe>
+References: <20130316213512.2974.17303.stgit@amt.stowe> <20130316213519.2974.38954.stgit@amt.stowe>
+ <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
+ <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
+ <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
+ <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com> <1363530028.2423.43.camel@zim.stowe>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 17 Mar 2013 15:29:39 +0100
+Message-ID: <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+To: Myron Stowe <mstowe@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
+        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 01:31:59AM +0000, Stephen Boyd wrote:
-> Don't advertise support for the SDIV/UDIV thumb instructions if
-> the kernel is not compiled with support for thumb userspace. This
-> is in line with how we remove the THUMB hwcap in these
-> configurations.
-> 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On Sun, Mar 17, 2013 at 3:20 PM, Myron Stowe <mstowe@redhat.com> wrote:
+> On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
+>> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> > I'm assuming that the device only breaks because udevadm is dumping the
+>> > full I/O port register space of the device and that if an actual driver
+>> > was interacting with it through this interface that it would work.  Who
+>> > knows how many devices will have read side-effects by udevadm blindly
+>> > dumping these files.  Thanks,
+>>
+>> Sysfs is a too public interface to export things there which make
+>> devices/driver choke on a simple read() of an attribute.
+>>
+>> This is nothing specific to udevadm, any tool can do that. Udevadm
+>> will never read any of the files during normal operation. The admin
+>> explicitly asked udevadm with a specific command to dump all the stuff
+>> the device offers.
+>>
+>> The kernel driver needs to be fixed to allow that, in the worst case,
+>> the attributes not exported at all. People should take more care what
+>> they export in /sys, it's not a hidden and private ioctl what's
+>> exported there, stuff is very visible and will be looked at.
+>>
+>> Telling userspace not to use specific stuff in /sys I would not expect
+>> to work as a strategy; there is too much weird stuff out there that
+>> will always try to do that ...
+>
+> Kay - could you comment on Foot Note 3 in
+> https://lkml.org/lkml/2013/3/16/168
+>
+> With respect to 'udev', you are working on the assumption that all files
+> in sysfs must be readable with no consequences which may be implied by
+> the Documentation's sysfs.txt file's mentioning ASCII.  If we are to
+> interpret that as strictly as you seem to want to then why is there
+> sysfs support for creating binary files?
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+They cannot be distinguished from outside, so there is nothing I know
+that could make a difference to userspace tools.
 
-Will
+Tools -- no matter how useful they are not not, it's that they do that
+for many years already -- need to be able to read() the stuff in
+there, without causing any damage to the system.
+
+Kay
