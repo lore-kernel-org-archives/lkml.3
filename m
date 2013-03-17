@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab3CQOgv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 10:36:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49594 "EHLO mx1.redhat.com"
+	id S932603Ab3CQOhG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 10:37:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17856 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab3CQOgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 10:36:44 -0400
-Date: Sun, 17 Mar 2013 15:34:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ptracing a task from core_pattern pipe
-Message-ID: <20130317143446.GB25236@redhat.com>
-References: <20130316011508.GA11010@fifo99.com> <20130316175845.GA6194@redhat.com> <20130317004431.GA28915@fifo99.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130317004431.GA28915@fifo99.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932318Ab3CQOhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 10:37:02 -0400
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+From: Myron Stowe <mstowe@redhat.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
+        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+	 <20130316213519.2974.38954.stgit@amt.stowe>
+	 <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
+	 <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
+	 <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
+	 <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
+	 <1363530028.2423.43.camel@zim.stowe>
+	 <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Mar 2013 08:36:57 -0600
+Message-ID: <1363531017.2423.50.camel@zim.stowe>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16, Daniel Walker wrote:
->
-> On Sat, Mar 16, 2013 at 06:58:45PM +0100, Oleg Nesterov wrote:
-> > On 03/15, Daniel Walker wrote:
-> > >
-> > > I was writing an application to ptrace a process which is dumping core
-> > > from inside the pipe application for core_pattern.
+On Sun, 2013-03-17 at 15:29 +0100, Kay Sievers wrote:
+> On Sun, Mar 17, 2013 at 3:20 PM, Myron Stowe <mstowe@redhat.com> wrote:
+> > On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
+> >> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
+> >> <alex.williamson@redhat.com> wrote:
+> >> > I'm assuming that the device only breaks because udevadm is dumping the
+> >> > full I/O port register space of the device and that if an actual driver
+> >> > was interacting with it through this interface that it would work.  Who
+> >> > knows how many devices will have read side-effects by udevadm blindly
+> >> > dumping these files.  Thanks,
+> >>
+> >> Sysfs is a too public interface to export things there which make
+> >> devices/driver choke on a simple read() of an attribute.
+> >>
+> >> This is nothing specific to udevadm, any tool can do that. Udevadm
+> >> will never read any of the files during normal operation. The admin
+> >> explicitly asked udevadm with a specific command to dump all the stuff
+> >> the device offers.
+> >>
+> >> The kernel driver needs to be fixed to allow that, in the worst case,
+> >> the attributes not exported at all. People should take more care what
+> >> they export in /sys, it's not a hidden and private ioctl what's
+> >> exported there, stuff is very visible and will be looked at.
+> >>
+> >> Telling userspace not to use specific stuff in /sys I would not expect
+> >> to work as a strategy; there is too much weird stuff out there that
+> >> will always try to do that ...
 > >
-> > This was never possible. And never will, I think.
+> > Kay - could you comment on Foot Note 3 in
+> > https://lkml.org/lkml/2013/3/16/168
 > >
-> > > So for example you make core pattern equal to something like
-> > > "|/bin/corepipe_app" then the kernel runs that app prior to actually
-> > > killing the process that failed.
-> >
-> > No, the dumper "kills" itself (but see below) and the starts
-> > /bin/corepipe_app.
->
->
-> Not sure what you mean by "dumper" .. The thread that has failed (i.e.
-> the thread which has seg faulted)
+> > With respect to 'udev', you are working on the assumption that all files
+> > in sysfs must be readable with no consequences which may be implied by
+> > the Documentation's sysfs.txt file's mentioning ASCII.  If we are to
+> > interpret that as strictly as you seem to want to then why is there
+> > sysfs support for creating binary files?
+> 
+> They cannot be distinguished from outside, so there is nothing I know
+> that could make a difference to userspace tools.
 
-Yes, and this is the thread which spawns corepipe_app and dumps the core.
+Agreed
+> 
+> Tools -- no matter how useful they are not not, it's that they do that
+> for many years already -- need to be able to read() the stuff in
+> there, without causing any damage to the system.
 
-> is sleeping until the corepipe_app
-> returns.
+So then, why are certain sysfs files skipped in udevadm-info's parsing
+(./src/udevadm-info.c::skip_attribute())?
+> 
+> Kay
 
-Yes, but it dumps the core first. And to clarify, it sleeps until
-corepipe_app closes the pipe.
-
-> > > Before the pipe application runs it puts SIGKILL on the pending signal
-> > > list for the failed application.
-> >
-> > if "it" means the dumper thread then "almost true". It kills other threads
-> > but not itself.
-> >
->
-> "it" is in the kernel prior to spawning the corepipe_app , but I think
-> it's the context of the thread which failed.. The SIGKILL is done in
-
-Can't understand... Yes it kills other threads before it starts the
-corepipe_app. To clarify, "kills" means it sends SIGKILL to other threads
-and wait until they all park in exit_mm().
-
-> > (Just in case, this was recently changed. After
-> >  coredump-ensure-that-sigkill-always-kills-the-dumping-thread.patch in -mm
-> >  tree the dumper doesn't run in SIGNAL_GROUP_EXIT, but probably this
-> >  doesn't matter)
-> >
-> > > However the application can't run.
-> >
-> > Which application? Both the dumper and corepipe_app can run...
->
-> the "dumper" , assuming I know what you mean, is sleeping..
-
-It sleeps only after it dumps the core. It only sleeps to ensure we
-do not close the write side prematurely.
-
-> It can't
-> run when corepipe_app runs. It wouldn't make sense because the core is
-> getting saved at that point.
-
-At this point it doesn't run, yes. But while it dumps the core they
-both run in parallel.
-
-> > > This commit,
-> > >
-> > > 9899d11f654474d2d54ea52ceaa2a1f4db3abd68
-> >
-> > > seems to put a damper on ptracing the application at this point.
-> >
-> > How can this commit make any difference? It should not.
->
-> As I said there is a SIGKILL pending on the "dumper" thread,
-
-As I said, there is no SIGKILL pending on the "dumper" thread. (unless it
-is actually killed of course).
-
-> and your
-> commit finds the SIGKILL pending.
-
-Can't understand. It can find the pending SIGKILL, but only after ptrace()
-returns sucessfully and the tracee was stopped. And the dumper never stops.
-
-Please explain what difference this patch makes in your testing.
-
-> > > So I wanted to see what you think of all this.. Can we add an exception
-> > > to this which would allow operations on a task which is dumping core,
-> >
-> > Which ptrace request you think should work at this stage? The coredumping
-> > task is dying, it can't report, say, signal or syscall. It can report
-> > nothing except PTRACE_EVENT_EXIT, but only after it closes the pipe.
->
-> It can give me it's registers, and allow me access to it's memory space.
-> That's all I want realistically ..
-
-...
-
-> I'm trying to get the "dumpers" registers and stack out when it fails.
-
-Can't you read the generated core for that? And see below...
-
-> > Now that the coredump is killable (-mm patches), _perhaps_ we can, say,
-> > add PTRACE_EVENT_CORED_DUMPED reported after binfmt->core_dump(). Not
-> > sure this is what you need...
->
-> Not sure what this would accomplish .. I just want the processes
-> registers and stack or access to all it's memory.
-
-Confused... why do you think PTRACE_EVENT_CORE_DUMPED reported after
-binfmt->core_dump() won't allow to do this?
-
-Of course, this can't help to ptrace/inspect other threads, they are
-already (well, almost) dead at this point.
-
-Oleg.
 
