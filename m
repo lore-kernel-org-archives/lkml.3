@@ -1,92 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab3CQXpe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 19:45:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37630 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768Ab3CQXpb (ORCPT
+	id S932801Ab3CQX7Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 19:59:25 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59541 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932587Ab3CQX7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 19:45:31 -0400
-Date: Mon, 18 Mar 2013 10:45:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: New MFD tree for linux-next
-Message-Id: <20130318104520.06b6a22c577be324880a4d06@canb.auug.org.au>
-In-Reply-To: <20130317233907.GB4809@zurbaran>
-References: <20130314000201.GA4425@zurbaran>
-	<20130315164625.GA29531@zurbaran>
-	<20130316132753.591db4c078d06db297ba46a8@canb.auug.org.au>
-	<20130317233907.GB4809@zurbaran>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Mar_2013_10_45_20_+1100_V0cyH=C=D=WQsG8N"
+	Sun, 17 Mar 2013 19:59:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363527603.25967.119.camel@gandalf.local.home>
+References: <1363509620-3571-1-git-send-email-linkinjeon@gmail.com>
+	<1363527603.25967.119.camel@gandalf.local.home>
+Date: Mon, 18 Mar 2013 08:59:21 +0900
+Message-ID: <CAKYAXd82DwOZh8QKmX8vrdwPAGYiMhoFxLWk3Z490SXLpUsnHQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] f2fs: add tracepoint for tracing the page i/o operations
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Mar_2013_10_45_20_+1100_V0cyH=C=D=WQsG8N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Samuel,
-
-On Mon, 18 Mar 2013 00:39:07 +0100 Samuel Ortiz <sameo@linux.intel.com> wro=
-te:
+2013/3/17, Steven Rostedt <rostedt@goodmis.org>:
+> On Sun, 2013-03-17 at 17:40 +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Add tracepoints for page i/o operations and block allocation
+>> tracing during page read operation.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+>> ---
+>>  fs/f2fs/data.c              |   11 ++++++--
+>>  include/trace/events/f2fs.h |   58
+>> +++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 67 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+>> index 02ad450..bb9117b 100644
+>> --- a/fs/f2fs/data.c
+>> +++ b/fs/f2fs/data.c
+>> @@ -22,6 +22,7 @@
+>>  #include "f2fs.h"
+>>  #include "node.h"
+>>  #include "segment.h"
+>> +#include <trace/events/f2fs.h>
+>>
+>>  /*
+>>   * Lock ordering for the change of data block address:
+>> @@ -335,6 +336,9 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct
+>> page *page,
+>>  	bool sync = (type == READ_SYNC);
+>>  	struct bio *bio;
+>>
+>> +	if (page->mapping)
+>> +		trace_f2fs_readpage(page);
 >
-> > I assume that you are still using the for-next branch?
-> I will update for-next branch to be in sync with mfd-next until the 3.10 =
-merge
-> window closes. After that I'll probably delete the mfd-2.6.git tree.
-
-I meant "I assume that I should still fetch the for-next branch
-of ...sameo/mfd-next.git".  If that has changed, please let me know.
-
-> > What branch should I use of that?
-> Ah, I didn't see that the remote tree still carries the mfd-2.6 branches,=
- I'll
-> remove them.
-> Please use master.
-
-OK.  I will do that from tomorrow.
-
-> > BTW, those two trees look very similar (in fact "diff -u <(git ls-remote
-> > mfd) <(git ls-remote mfd-fixes)" only shows a couple of differences in
-> > all the refs).  You do realise that I can use 2 different branches of o=
-ne
-> > tree, right (as can others)?
-> I understand that :) But using 2 trees rather than 2 separate branches is=
- more
-> convenient to my personal workflow.
-
-No worries.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__18_Mar_2013_10_45_20_+1100_V0cyH=C=D=WQsG8N
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRRlWQAAoJEECxmPOUX5FEwIsP/1nQPiPIOdayPOhDUaPs5ODR
-O0ATYi+KM9zjD+cEWUpkavdNpr52E1ydLZiAKnPmB/kqq7aqcDAlhGZX3OCQdkhB
-s2QjCc5hmC7fjV8KX4QinwhyuAh/ofoGFiPLAaIBnuVAPYYEpiKnn1eUHSS9uxaf
-3TchN3dmwkZe30uCjYlgmjIlbKX/kjQNK1mQryEBWJA1L0dlPumNCtPZgyZOAtbQ
-us6g4rphRQYWNEmg7CuM3yESOA/SZTILhBmjm8fvLBtKFrPMaGQI6IyfcQd/V4Ol
-Jrj1G/oeTih/IBmBeNgliUtj9P1wUd75kvhdF1uw7E86pYMpDnidlFQuOjZtYYqF
-3iwB5plDaNGU0zC4AzVE2G/L1J+yYU04vMuzbykOemfs4LZXswcQukRrk9ks2bOM
-ACVGr2+F/MkKv4HrCI7UZ1RJRzuvdOQDfBysh1xuINnHxMwyhbhSbVfUkdk1nuA1
-Kr0BA2GY+MyDPctXZ/ahlZ2WZVqB8D1IzAkX3NPXnEZOUdNzszQF5WyMwl9jrnlK
-P3j8ItZbNWj9A+oJo0dNvZFovrGlfrCx+CcgBePAwHfYv+KY8WvkCwrA23lP2a+f
-wNjwSyvXRdbwGLXZnHhOOsww3Tb3SH6hxmB5Li8Tg8OrD+qyP2nWryO2swrCvSyZ
-pGODFigFzvsQchEvp51x
-=viGK
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Mar_2013_10_45_20_+1100_V0cyH=C=D=WQsG8N--
+> Since the only thing that happens whet page->mapping is set is to trace
+> the page, you can move that check into the tracepoint itself. That is,
+> move the branch into the tracepoint, making the branch a nop when the
+> tracepoint isn't active. That's what TRACE_EVENT_CONDITION() does. Make
+> this into:
+>
+> 	trace_f2fs_readpage(page);
+>
+> and then see below.
+>
+>> +
+>>  	/* This page can be already read by other threads */
+>>  	if (PageUptodate(page)) {
+>>  		if (!sync)
+>> @@ -385,6 +389,7 @@ static int get_data_block_ro(struct inode *inode,
+>> sector_t iblock,
+>>  	pgoff_t pgofs;
+>>  	int err;
+>>
+>> +	trace_f2fs_get_data_block_enter(inode, iblock, 0);
+>>  	/* Get the page offset from the block offset(iblock) */
+>>  	pgofs =	(pgoff_t)(iblock >> (PAGE_CACHE_SHIFT - blkbits));
+>>
+>> @@ -394,9 +399,10 @@ static int get_data_block_ro(struct inode *inode,
+>> sector_t iblock,
+>>  	/* When reading holes, we need its node page */
+>>  	set_new_dnode(&dn, inode, NULL, NULL, 0);
+>>  	err = get_dnode_of_data(&dn, pgofs, LOOKUP_NODE_RA);
+>> -	if (err)
+>> +	if (err) {
+>> +		trace_f2fs_get_data_block_exit(inode, iblock, err);
+>>  		return (err == -ENOENT) ? 0 : err;
+>> -
+>> +	}
+>>  	/* It does not support data allocation */
+>>  	BUG_ON(create);
+>>
+>> @@ -420,6 +426,7 @@ static int get_data_block_ro(struct inode *inode,
+>> sector_t iblock,
+>>  		bh_result->b_size = (i << blkbits);
+>>  	}
+>>  	f2fs_put_dnode(&dn);
+>> +	trace_f2fs_get_data_block_exit(inode, iblock, 0);
+>>  	return 0;
+>>  }
+>>
+>> diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+>> index 0d39f58..d60f3ed 100644
+>> --- a/include/trace/events/f2fs.h
+>> +++ b/include/trace/events/f2fs.h
+>> @@ -266,6 +266,64 @@ TRACE_EVENT(f2fs_truncate,
+>>  		  (unsigned long) __entry->ino)
+>>  );
+>>
+>> +TRACE_EVENT(f2fs_readpage,
+>
+> TRACE_EVENT_CONDITIO(f2fs_readpage,
+>
+>> +	TP_PROTO(struct page *page),
+>> +
+>> +	TP_ARGS(page),
+>
+> 	TP_CONDITION(page->mapping),
+>
+> That's it!
+>
+> Now the tracepoint will only be called if page->mapping is set, but
+> checking page->mapping will be done only if the tracepoint is enabled.
+> Keeping the original code untouched.
+Hi Steve.
+Okay :) I will fix it. Thanks for your review !
+>
+> -- Steve
+>
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(pgoff_t, index)
+>> +		__field(ino_t,	ino)
+>> +		__field(dev_t,	dev)
+>> +
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->index	= page->index;
+>> +		__entry->ino	= page->mapping->host->i_ino;
+>> +		__entry->dev	= page->mapping->host->i_sb->s_dev;
+>> +	),
+>> +
+>> +	TP_printk("dev %d,%d ino %lu page_index %lu",
+>> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
+>> +		  (unsigned long) __entry->ino,
+>> +		  (unsigned long) __entry->index)
+>> +);
+>> +
+>> +DECLARE_EVENT_CLASS(f2fs_data_block,
+>> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
+>> +
+>> +	TP_ARGS(inode, block, ret),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(dev_t,	dev)
+>> +		__field(ino_t,	ino)
+>> +		__field(sector_t,	block)
+>> +		__field(int,	ret)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->dev	= inode->i_sb->s_dev;
+>> +		__entry->ino	= inode->i_ino;
+>> +		__entry->block	= block;
+>> +		__entry->ret	= ret;
+>> +	),
+>> +
+>> +	TP_printk("dev %d,%d ino %lu block number %llu error %d",
+>> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
+>> +		  (unsigned long) __entry->ino, (unsigned long long) __entry->block,
+>> __entry->ret)
+>> +);
+>> +
+>> +DEFINE_EVENT(f2fs_data_block, f2fs_get_data_block_enter,
+>> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
+>> +	TP_ARGS(inode, block, ret)
+>> +);
+>> +
+>> +DEFINE_EVENT(f2fs_data_block, f2fs_get_data_block_exit,
+>> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
+>> +	TP_ARGS(inode, block, ret)
+>> +);
+>> +
+>>  #endif /* _TRACE_F2FS_H */
+>>
+>>   /* This part must be outside protection */
+>
+>
+>
