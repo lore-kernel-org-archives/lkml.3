@@ -1,90 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab3CQBDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 21:03:25 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:39590 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab3CQBDU (ORCPT
+	id S1755670Ab3CQCEC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 22:04:02 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49595 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751949Ab3CQCD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 21:03:20 -0400
-Date: Sat, 16 Mar 2013 18:03:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Myron Stowe <mstowe@redhat.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, kay@vrfy.org,
-        linux-hotplug@vger.kernel.org, alex.williamson@redhat.com,
-        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-Message-ID: <20130317010317.GB9641@kroah.com>
-References: <20130316213512.2974.17303.stgit@amt.stowe>
- <20130316213519.2974.38954.stgit@amt.stowe>
- <20130316221159.GA3702@kroah.com>
- <1363477853.2423.25.camel@zim.stowe>
+	Sat, 16 Mar 2013 22:03:57 -0400
+Date: Sat, 16 Mar 2013 22:03:53 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
+	Implementation
+Message-ID: <20130317020353.GA9344@Krystal>
+References: <20130311213602.GB9829@Krystal> <20130314042227.GA15675@dcvr.yhbt.net> <20130314131855.GA9155@Krystal> <20130314190746.GA16120@dcvr.yhbt.net> <20130316220216.GA25099@dcvr.yhbt.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363477853.2423.25.camel@zim.stowe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130316220216.GA25099@dcvr.yhbt.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
-> On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
-> > On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
-> > > Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
-> > > Port space and MMIO.  This memory regions correspond to the device's
-> > > internal status and control registers used to drive the device.
+* Eric Wong (normalperson@yhbt.net) wrote:
+> Eric Wong <normalperson@yhbt.net> wrote:
+> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > * Eric Wong (normalperson@yhbt.net) wrote:
+> > > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > > > +/*
+> > > > > + * Load a data from shared memory.
+> > > > > + */
+> > > > > +#define CMM_LOAD_SHARED(p)		ACCESS_ONCE(p)
+> > > > 
+> > > > When iterating through the queue by dequeueing, I needed a way
+> > > > to get the tail at the start of the iteration and use that as
+> > > > a sentinel while iterating, so I access the tail like this:
+> > > > 
+> > > > 	struct wfcq_node *p = CMM_LOAD_SHARED(ep->rdltail.p);
+> > > > 
+> > > > I hope this is supported... it seems to work :)
 > > > 
-> > > Accessing these registers from userspace such as "udevadm info
-> > > --attribute-walk --path=/sys/devices/..." does can not be allowed as
-> > > such accesses outside of the driver, even just reading, can yield
-> > > catastrophic consequences.
-> > > 
-> > > Udevadm-info skips parsing a specific set of sysfs entries including
-> > > 'resource'.  This patch extends the set to include the additional
-> > > 'resource<N>' entries that correspond to a PCI device's BARs.
+> > > Ideally it would be good if users could try using the exposed APIs to do
+> > > these things, or if it's really needed, maybe it's a sign that we need
+> > > to extend the API.
 > > 
-> > Nice, are you also going to patch bash to prevent a user from reading
-> > these sysfs files as well?  :)
-> > 
-> > And pciutils?
-> > 
-> > You get my point here, right?  The root user just asked to read all of
-> > the data for this device, so why wouldn't you allow it?  Just like
-> > 'lspci' does.  Or bash does.
+> > Right.  If I can use splice, I will not need this.  more comments below
+> > on splice...
 > 
-> Yes :P , you raise a very good point, there are a lot of way a user can
-> poke around in those BARs.  However, there is a difference between
-> shooting yourself in the foot and getting what you deserve versus
-> unknowingly executing a common command such as udevadm and having the
-> system hang.
-> > 
-> > If this hardware has a problem, then it needs to be fixed in the kernel,
-> > not have random band-aids added to various userspace programs to paper
-> > over the root problem here.  Please fix the kernel driver and all should
-> > be fine.  No need to change udevadm.
+> Even with splice, I think I need to see the main tail at the start of
+> iteration to maintain compatibility (for weird apps that might care).
+
+Thanks for providing this detailed scenario. I think there is an
+important aspect in the use of splice I suggested on which we are not
+fully understanding each other. I will annotate your scenario below with
+clarifications:
+
 > 
-> Xiangliang initially proposed a patch within the PCI core.  Ignoring the
-> specific issue with the proposal which I pointed out in the
-> https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
-> the right place to effect a change either as PCI's core isn't concerned
-> with the contents or access limitations of those regions, those are
-> issues that the driver concerns itself with.
+> Consider this scenario:
 > 
-> So things seem to be gravitating towards the driver.  I'm fairly
-> ignorant of this area but as Robert succinctly pointed out in the
-> originating thread - the AHCI driver only uses the device's MMIO region.
-> The I/O related regions are for legacy SFF-compatible ATA ports and are
-> not used to driver the device.  This, coupled with the observance that
-> userspace accesses such as udevadm, and others like you additionally
-> point out, do not filter through the device's driver for seems to
-> suggest that changes to the driver will not help here either.
+>   1) main.queue has 20 events
+> 
+>   2) epoll_wait(maxevents=16) called by user
+> 
+>   3) splice all 20 events into unconsumed.queue, main.queue is empty
+> 
+>   4) put_user + dequeue on 16 events from unconsumed.queue
+>      # unconsumed.queue has 4 left at this point
+> 
+>   5) main.queue gets several more events enqueued at any point after 3.
 
-A PCI quirk should handle this properly, right?  Why not do that?  Worse
-thing, the quirk could just not expose these sysfs files for this
-device, which would solve all userspace program issues, right?
+Let's suppose 11 events are enqueued into main.queue after 3.
 
-thanks,
+> 
+>   6) epoll_wait(maxevents=16) called by user again
 
-greg k-h
+Before 7), here is what should be done:
+
+6.5) splice all new events from main.queue into unconsumed.queue.
+     unconsumed.queue will now contain 4 + 11 = 15 events. Note
+     that splice will preserve the right order of events within
+     unconsumed.queue.
+
+> 
+>   7) put_user + dequeue on 4 remaining items in unconsumed.queue
+> 
+>      We can safely return 4 events back to the user at this point.
+
+Step 7) will now return 15 events from unconsumed.queue.
+
+> 
+>      However, this might break compatibility for existing users.  I'm
+>      not sure if there's any weird apps which know/expect the event
+>      count they'll get from epoll_wait, but maybe there is one...
+
+With the new step 6.5), I don't think the behavior will change compared
+to what is already there.
+
+> 
+>   8) We could perform a splice off main.queue to fill the remaining
+>      slots the user requested, but we do not know if the things we
+>      splice from main.queue at this point were just dequeued in 7.
+> 
+>      If we loaded the main.queue.tail before 7, we could safely splice
+>      into unconsumed.queue and know when to stop when repeating the
+>      put_user + dequeue loop.
+
+We can achieve the same thing by doing step 6.5) at the beginning of
+epoll_wait(). It's important to do it at the beginning of epoll_wait for
+the reason you discuss in 8) : if you wait until you notice that
+unconsumed.queue is empty before refilling it from main.queue, you won't
+be able to know if the events in main.queue were added after the first
+event was dequeued.
+
+Step 6.5) should be performed each time upon entry into epoll_wait(). It
+does not matter if unconsumed.queue would happen to have enough events
+to fill in the maxevents request or not (and you don't want to iterate
+on the unconsumed.queue needlessly to count them): you can just do a
+O(1) splice from main.queue into unconsumed.queue, and your original
+semantic should be preserved.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
