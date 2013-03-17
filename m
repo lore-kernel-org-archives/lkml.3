@@ -1,73 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab3CQV7S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 17:59:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab3CQV7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 17:59:17 -0400
-Date: Sun, 17 Mar 2013 17:58:58 -0400
-From: Dave Jones <davej@redhat.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Ben Widawsky <ben@bwidawsk.net>,
-        Tommi Rantala <tt.rantala@gmail.com>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
- for a NULL pointer
-Message-ID: <20130317215858.GD3703@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Ben Widawsky <ben@bwidawsk.net>,
-	Tommi Rantala <tt.rantala@gmail.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <CA+ydwtpuBvbwxbt-tdgPUvj1EU7itmCHo_2B3w13HkD5+jWKow@mail.gmail.com>
- <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
- <20130315045004.GA14747@bwidawsk.net>
- <20130315082403.GA29916@cantiga.alporthouse.com>
- <20130315163606.GA17773@bwidawsk.net>
- <20130315220619.GA17405@cantiga.alporthouse.com>
- <20130315234942.GB715@bwidawsk.net>
- <20130316101920.GB17405@cantiga.alporthouse.com>
- <CAKMK7uFiMLcE_TYj5=sKZsVAcCnWSmg49qPrxjswH2s3J5byOg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uFiMLcE_TYj5=sKZsVAcCnWSmg49qPrxjswH2s3J5byOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932783Ab3CQWFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 18:05:10 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:34029 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698Ab3CQWFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 18:05:07 -0400
+From: Duncan Laurie <dlaurie@chromium.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Luigi Semenzato <semenzato@chromium.org>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Subject: [PATCH] TPM: Retry SaveState command in suspend path
+Date: Sun, 17 Mar 2013 14:56:39 -0700
+Message-Id: <1363557399-11822-1-git-send-email-dlaurie@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 08:50:03PM +0100, Daniel Vetter wrote:
+If the TPM has already been sent a SaveState command before the driver
+is loaded it may have problems sending that same command again later.
 
- > Doesn't that mean that we need these checks everywhere? Or at least a
- > fixup in drm core proper?
- > 
- > And I think we need to add trinity to our test setup eventually ;-)
+This issue is seen with the Chromebook Pixel due to a firmware bug in
+the legacy mode boot path which is sending the SaveState command
+before booting the kernel.  More information is available at
+http://crbug.com/203524
 
-Note that trinity's ioctl fuzzing is still very new (added in just
-the last few weeks), and for drm isn't very advanced at all yet.
-I was pretty surprised when Tommi's changes started turning up bugs
-so quickly, but I guess a lot of the ioctl paths have just never been
-audited for these kinds of bugs.
+This change introduces a retry of the SaveState command in the suspend
+path in order to work around this issue.  A future firmware update
+should fix this but this is also a trivial workaround in the driver
+that has no effect on systems that do not show this problem.
 
-As you can see at 
-https://github.com/kernelslacker/trinity/blob/master/ioctls/drm.c
-It's literally just enumerating the known ioctl's, and using the 
-generic fuzzing routines (so it just guesses what the argument is,
-and hence passes crap like NULL, or a page of garbage).
+When this does happen the TPM responds with a non-fatal TPM_RETRY code
+that is defined in the specification:
 
-Eventually I'd like to have routines for each of the individual ioctl
-cases to pass something that looks slightly more realistic to what
-it's expecting to see.
-(Compare to say, the SCSI SG_IO routines here:
- https://github.com/kernelslacker/trinity/blob/master/ioctls/scsi.c
- [still kinda dumb, but gives an idea of the direction])
+  The TPM is too busy to respond to the command immediately, but the
+  command could be resubmitted at a later time.  The TPM MAY return
+  TPM_RETRY for any command at any time.
 
-Lots of work ahead.
+It can take several seconds before the TPM will respond again.  I
+measured a typical time between 3 and 4 seconds and the timeout is set
+at a safe 5 seconds.
 
-	Dave
+It is also possible to reproduce this with commands via /dev/tpm0.
+The bug linked above has a python script attached which can be used to
+test for this problem.  I tested a variety of TPMs from Infineon,
+Nuvoton, Atmel, and STMicro but was only able to reproduce this with
+LPC and I2C TPMs from Infineon.
+
+The TPM specification only loosely defines this behavior:
+
+  TPM Main Level 2 Part 3 v1.2 r116, section 3.3. TPM_SaveState:
+  The TPM MAY declare all preserved values invalid in response to any
+  command other than TPM_Init.
+
+  TCG PC Client BIOS Spec 1.21 section 8.3.1.
+  After issuing a TPM_SaveState command, the OS SHOULD NOT issue TPM
+  commands before transitioning to S3 without issuing another
+  TPM_SaveState command.
+
+  TCG PC Client TIS 1.21, section 4. Power Management:
+  The TPM_SaveState command allows a Static OS to indicate to the TPM
+  that the platform may enter a low power state where the TPM will be
+  required to enter into the D3 power state.  The use of the term "may"
+  is significant in that there is no requirement for the platform to
+  actually enter the low power state after sending the TPM_SaveState
+  command.  The software may, in fact, send subsequent commands after
+  sending the TPM_SaveState command.
+
+Change-Id: I52b41e826412688e5b6c8ddd3bb16409939704e9
+Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+---
+ drivers/char/tpm/tpm.c | 31 +++++++++++++++++++++++++++----
+ drivers/char/tpm/tpm.h |  3 +++
+ 2 files changed, 30 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 0d2e82f..7c3b3dc 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1337,7 +1337,7 @@ int tpm_pm_suspend(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 	struct tpm_cmd_t cmd;
+-	int rc;
++	int rc, try;
+ 
+ 	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
+ 
+@@ -1355,9 +1355,32 @@ int tpm_pm_suspend(struct device *dev)
+ 	}
+ 
+ 	/* now do the actual savestate */
+-	cmd.header.in = savestate_header;
+-	rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE,
+-			  "sending savestate before suspend");
++	for (try = 0; try < TPM_RETRY; try++) {
++		cmd.header.in = savestate_header;
++		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
++
++		/*
++		 * If the TPM indicates that it is too busy to respond to
++		 * this command then retry before giving up.  It can take
++		 * several seconds for this TPM to be ready.
++		 *
++		 * This can happen if the TPM has already been sent the
++		 * SaveState command before the driver has loaded.  TCG 1.2
++		 * specification states that any communication after SaveState
++		 * may cause the TPM to invalidate previously saved state.
++		 */
++		if (rc != TPM_WARN_RETRY)
++			break;
++		msleep(TPM_TIMEOUT_RETRY);
++	}
++
++	if (rc)
++		dev_err(chip->dev,
++			"Error (%d) sending savestate before suspend\n", rc);
++	else if (try > 0)
++		dev_warn(chip->dev, "TPM savestate took %dms\n",
++			 try * TPM_TIMEOUT_RETRY);
++
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(tpm_pm_suspend);
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 81b5201..0770d1d 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -32,10 +32,12 @@ enum tpm_const {
+ 	TPM_MINOR = 224,	/* officially assigned */
+ 	TPM_BUFSIZE = 4096,
+ 	TPM_NUM_DEVICES = 256,
++	TPM_RETRY = 50,		/* 5 seconds */
+ };
+ 
+ enum tpm_timeout {
+ 	TPM_TIMEOUT = 5,	/* msecs */
++	TPM_TIMEOUT_RETRY = 100 /* msecs */
+ };
+ 
+ /* TPM addresses */
+@@ -44,6 +46,7 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
+ 
++#define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+ #define TPM_ERR_DISABLED        0x7
+-- 
+1.8.1.3
 
