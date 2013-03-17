@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab3CQFNW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 01:13:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54093 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715Ab3CQFNU (ORCPT
+	id S1751894Ab3CQFXk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 01:23:40 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:63143 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3CQFXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 01:13:20 -0400
-Message-ID: <1363497184.3937.254.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Fix memory leak in cpufreq stats.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Colin Cross <ccross@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Tang, Guifang" <guifang.tang@intel.com>, stable@vger.kernel.org
-Date: Sun, 17 Mar 2013 05:13:04 +0000
-In-Reply-To: <CAMbhsRTi8-41em4+-7NpLwXFpbGcy3Vsib5ees_OWm5JGmOVDw@mail.gmail.com>
-References: <EE928378561BF1449699C96571234A740FE66C2A@SHSMSX102.ccr.corp.intel.com>
-	 <3402692.Elm8oBRUJI@vostro.rjw.lan>
-	 <CAMbhsRTi8-41em4+-7NpLwXFpbGcy3Vsib5ees_OWm5JGmOVDw@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Y5b+u+bFWuovb0UrtK/o"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 17 Mar 2013 01:23:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <513838F2.60101@ti.com>
+References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
+	<CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
+	<F3DBB1B3EF102E4994C89758CFCA32412CC74F@DBDE01.ent.ti.com>
+	<CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com>
+	<20130306175313.GQ11806@atomide.com>
+	<513838F2.60101@ti.com>
+Date: Sun, 17 Mar 2013 10:53:36 +0530
+Message-ID: <CABYxbz7bLZxX-6U3O9nRsKxAXbg0nEta55eO-ERuotPnw=X5BQ@mail.gmail.com>
+Subject: Re: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
+From: Anil Kumar <anilk4.v@gmail.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux@arm.linux.org.uk, Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Weber <thomas@tomweber.eu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Benoit,
 
---=-Y5b+u+bFWuovb0UrtK/o
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 7, 2013 at 12:21 PM, Benoit Cousson <b-cousson@ti.com> wrote:
+> Hi,
+>
+> On 03/06/2013 06:53 PM, Tony Lindgren wrote:
+>> * Anil Kumar <anilk4.v@gmail.com> [130305 18:40]:
+>>> Hi Tony,
+>>>
+>>>>> From: linux-arm-kernel [mailto:linux-arm-kernel-
+>>>>> bounces@lists.infradead.org] On Behalf Of Anil Kumar
+>>>>> Sent: Wednesday, February 27, 2013 8:03 AM
+>>>>> To: devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org;
+>>>>> linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+>>>>> Cc: linux@arm.linux.org.uk; Cousson, Benoit; Tony Lindgren; Grant
+>>>>> Likely; Anil Kumar; thomas@tomweber.eu
+>>>>> Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for
+>>>>> DevKit8000.
+>>>>>
+>>>>> Hi,
+>>>>>>
+>>>>>> DevKit8000 is a beagle board clone from Timll, sold by
+>>>>>> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
+>>>>>> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
+>>>>>> JTAG interface.
+>>>>>>
+>>>>>> This patch adds the basic DT support for devkit8000. At this time,
+>>>>> Information
+>>>>>> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
+>>>>>>
+>>>>>> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+>>>>>> Tested-by: Thomas Weber <thomas@tomweber.eu>
+>>>>>
+>>>>> Gentle Ping. As there are no review comments on this patch,
+>>>>> Could you please pull this patch ?
+>>>
+>>> Gentle Ping.
+>>>
+>>> This patch also got Reviewed-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>>> and as patch "ARM: dts: omap3-devkit8000: Enable audio support"  has already got
+>>> "Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>" but it is on the
+>>> top of this patch.
+>>> So, Could you please pull this patch in one of your omap branch? or
+>>> you want me to
+>>> do rebase this patch on top of v3.9-rc1 ?
+>>
+>> Let's wait for Benoit to queue it as he has a bunch of .dts changes already
+>> applied. Too bad we missed v3.9 merge window for those, but hopefully
+>> we can get them queued early for v3.10.
+>
+> Yep, sorry for having missed 3.9, I was a little bit sick at the wrong
+> moment :-(
+>
+> I'm starting queuing the pending patches, and should have enough to push
+> to you just after Linaro Connect.
 
-On Mon, 2013-03-11 at 18:23 -0700, Colin Cross wrote:
-> On Mon, Oct 15, 2012 at 1:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday 15 of October 2012 02:48:28 Tu, Xiaobing wrote:
-> >>
-> >> Fix memory leak in cpufreq stats.
-> >>
-> >> When system enter sleep, non-boot CPUs will be disable.
-> >> Cpufreq stats sysfs is created when the CPU is up, but it is not freed=
- when
-> >> the CPU going down. This will cause memory leak.
-> >> signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> >> signed-off-by: guifang tang <guifang.tang@intel.com>
-> >
-> > I will push this patch for v3.7 in the -rc3 time frame if no one object=
-s.
-> >
-> > Thanks,
-> > Rafael
-> >
-> >
-> >> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq=
-_stats.c
-> >> index b40ee14..3998316 100644
-> >> --- a/drivers/cpufreq/cpufreq_stats.c
-> >> +++ b/drivers/cpufreq/cpufreq_stats.c
-> >> @@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(str=
-uct notifier_block *nfb,
-> >>                 cpufreq_update_policy(cpu);
-> >>                 break;
-> >>         case CPU_DOWN_PREPARE:
-> >> +       case CPU_DOWN_PREPARE_FROZEN:
-> >>                 cpufreq_stats_free_sysfs(cpu);
-> >>                 break;
-> >>         case CPU_DEAD:
-> >>
-> >> Br
-> >> XiaoBing Tu
-> >> PSI@System Integration Shanghai
->=20
-> This patch, commited as e37736777254ce1abc85493a5cacbefe5983b896 since
-> v3.7, should also have gone to stable.  It should apply all the way
-> back to 3.0.
+I think you missed below patch which is needed for gpmc nand to work fine.
 
-Queued up for 3.2, thanks.
+Jon Hunter:-
+  ARM: OMAP2+: Fix-up gpmc merge error
 
-Ben.
+I have re based my changes on top of your repository to make pull
+easier for you.
+I hope you will pull these changes for 3.10.
 
---=20
-Ben Hutchings
-Usenet is essentially a HUGE group of people passing notes in class.
-                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
-'
+The following changes since Commit a7f7881de9c0b58de3b3aea8f01a8aef906d4ade
 
---=-Y5b+u+bFWuovb0UrtK/o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+are available in the git repository at:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+git://gitorious.org/devkit8000-for_3-10/devkit8000-for_3-10.git
+branch for_3.10/dts
 
-iQIVAwUAUUVQ4Oe/yOyVhhEJAQrYQA/+O302WT7O+FZUhNtQ+Xb9YsQum1S+gdr1
-ITYUt4RdbJSxFt+s1rij7JvHya4Z8KdHc3cJrP+bzfBGAWm3fklrQN97UJSAU843
-HQemAehuzdQr4kF2BRek8wcpOs3rq07Q7pNzOJGOUwokmclsJ2GUlXbfXriHOPhw
-njBVmpFNPXs0GmJj+MHxC8UD1rBzGzA9DrQAunh1Cz1LNH5d49HjdDpc73+TCNVb
-72piqIf9aDKHiMbpqYnaTYoTJiad971DuHFAZqpMsyoTXjPVGnptbHPnc9K7LYmI
-q0q8CQSHCqzZw5AABRkgQbRhd0P7izRtl0efOAbOe8BUnhxlUXzUYQOrZVPmL33B
-1BdyHqq2im00sxv6wCd47jE/n/mfonSSy8MiFpSUICq5XWjcSRAJD0sUMcGVr/SA
-/ZlQwMP5WXplQgHCiJ3LvvfUpnHvnX7h4qyIR08xRBUkyI9CG5MPkuXHYYKJmipp
-e4y0LJBI7ZOjiAqkgSoL0y1F/FybhS4aEYrF0iMGBvvpkBt8J+Ca9bHKrLluTpgI
-6lnQXWgStfRBhJmNJd8SbxfAimNmBdOamJR/uqTUD47OhtLFkjnHLKRACHhTK+4R
-bJOp8KbLhFfEyk912a+hH7Z/g2uRUU6WpF3y3IRiSp3bKO3jCNCgPfLqGUYFVO0l
-5OiYuGRQAwQ=
-=QrBX
------END PGP SIGNATURE-----
+for you to fetch changes up to Commit 975abc8b2e7ec4ff7324d726c9775958945ccc5e
 
---=-Y5b+u+bFWuovb0UrtK/o--
+Anil Kumar:
+ARM: dts: add minimal DT support for DevKit8000
+ARM: dts: omap3-devkit8000: Enable audio support
+ARM: dts: omap3-devkit8000: add nand dt node
+
+Thanks,
+Anil
