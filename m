@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab3CQNIN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 09:08:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab3CQNIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 09:08:11 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>, jack@suse.cz
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Date: Sun, 17 Mar 2013 13:06:59 +0000
-Message-ID: <1944.1363525619@warthog.procyon.org.uk>
+	id S1756226Ab3CQNT0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 09:19:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50071 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab3CQNTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 09:19:25 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sun, 17 Mar 2013 06:19:33 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [RFC PATCH 0/2] fs: sysfs: Add devres support
+Message-ID: <20130317131933.GA15179@roeck-us.net>
+References: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
+ <20130316162140.GB2630@kroah.com>
+ <20130316181253.GA23608@roeck-us.net>
+ <20130316195002.GB3112@kroah.com>
+ <20130316212540.GA18933@roeck-us.net>
+ <20130317133920.465e8a8c@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130317133920.465e8a8c@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Sun, Mar 17, 2013 at 01:39:20PM +0100, Jean Delvare wrote:
+> On Sat, 16 Mar 2013 14:25:40 -0700, Guenter Roeck wrote:
+> > On Sat, Mar 16, 2013 at 12:50:02PM -0700, Greg Kroah-Hartman wrote:
+> > > On Sat, Mar 16, 2013 at 11:12:53AM -0700, Guenter Roeck wrote:
+> > > > My use case is primarily for hwmon drivers.
+> > > > 
+> > > > hwmon has a separate API call to register a driver with the hwmon subsystem,
+> > > > which creates a separate hwmon device and provides the user space notification.
+> > > > As the created attribute files are often conditional on device variant and device
+> > > > configuration, I don't see how this could be done through a default attribute
+> > > > list (even though it might be worthwhile exploring if it can be used for some
+> > > > of the simpler drivers).
+> > > 
+> > > The default attribute list functionality offers you the ability to have
+> > > callbacks to your driver to validate if you really want this sysfs file
+> > > to be created or not.  Just use that like other subsystems do, then you
+> > > will never have to be making these create and remove calls at all.
+> > 
+> > I thought about it, but right now I have no idea how to make it work.
+> > Initialization sequence in hwmon drivers is
+> >     probe():
+> >         allocate and initialize local driver data structures
+> >     	detect configuration and initialize hardware if necessary
+> > 	create attribute files
+> > 	register with hwmon subsystem
+> > 	sometimes do additional work, such as enable interrupts
+> > 
+> > If I use attribute_group of the device_driver structure to create the attribute
+> > files, my understanding is that those would be created prior to calling
+> > the probe function.
+> > 
+> > This would be too early, since local data structures do not yet exist, and
+> > the chip configuration is unknown and uninitialized.
+> > 
+> > On the other side, attribute files must exist before hwmon_device_register()
+> > is called, since otherwise userspace would get confused.
+> 
+> I'd like to add something at this point.
+> 
+> We have historically created the hwmon attributes in the hardware (i2c,
+> platform...) device, and then created an empty hwmon class device on
+> top of it so that libsensors etc. can locate all hardware monitoring
+> chips on the system. This is probably wrong and this may explain the
+> difference of views between Greg and Guenter.
+> 
+> I suspect that ideally all hwmon-related attributes should belong to the
+> hwmon-class device and not the physical device. Would doing so solve
+> the problem of is_visible() needing chip-specific information that can
+> only be gathered during probe()? Sure this is an interface change, but
+> a few hwmon drivers already do it that way (the ones without an actual
+> hardware device, e.g. ACPI thermal zones) and libsensors supports this
+> since version 3.0.3, which was released in September 2008 - 4.5 years
+> ago.
+> 
+> This would require creating the attributes after calling
+> hwmon_device_register() rather than before, but from the ongoing
+> discussion I seem to understand that the driver core supports creating
+> the attributes for us, possibly at the same time as the class device
+> will be created. Would this solve the userspace timing issue?
+> 
+This is what I had in mind as ultimate possibility when I created
+the second API mentioned in my other e-mail.
 
-> Export do_splice_direct() to modules.  Needed by overlay filesystem.
+struct device *devm_hwmon_device_register(struct device *dev,
+					  const struct attribute_group **groups)
 
-Apparently you cannot call this from any function that is holding an i_mutex
-if the target of the splice uses generic_file_splice_write().
+The attributes are still attached to dev (ie to the hardware device)
+in my current code, but it should be possible to attach them to the
+hwmon class device instead.
 
-The problem is a potential deadlock situation:
+Problem with that approach is that it makes drivers larger, not smaller,
+at least if is_visible is needed. So it kind of defeats the purpose.
 
-We have places already that do:
+We can go along that route anyway if people think it is the right or a better
+approach, but I am not sure if it is worth it. I can send out the patches if
+there is interest.
 
-	mnt_want_write()
-	mutex_lock()
+> Also note that libsensors is really old fashioned when it comes to
+> device discovery. It doesn't support hot-plug nor hot-remove. So some
+> work would be needed in this area anyway if we want libsensors-based
+> applications to properly cope with device addition and removal.
+>
+Agreed.
 
-This can be found in do_last() for example.
-
-However, mnt_want_write() calls sb_start_write() as does
-generic_file_splice_write().  So now in ovl_copy_up_locked() you're adding:
-
-	mutex_lock()
-	sb_start_write()
-
-which lockdep reports as a potential ABBA deadlock.
-
-Now, looking at __sb_start_write(), I'm not entirely sure how the deadlock
-might operate, so it's possible that this is a false alarm.  Maybe Jan Kara can
-illuminate further, so I've added him to the cc list.
-
-I've attached the report I got with unionmount.
-
-David
----
-[ INFO: possible recursive locking detected ]
-3.9.0-rc1-fsdevel+ #934 Not tainted
----------------------------------------------
-fs-op/4476 is trying to acquire lock:
- (sb_writers#4){.+.+.+}, at: [<ffffffff811087a4>] generic_file_splice_write+0x5d/0x14b
-but task is already holding lock:
- (sb_writers#4){.+.+.+}, at: [<ffffffff810ff97c>] mnt_want_write+0x1f/0x46
-other info that might help us debug this:
- Possible unsafe locking scenario:
-       CPU0
-       ----
-  lock(sb_writers#4);
-  lock(sb_writers#4);
- *** DEADLOCK ***
- May be due to missing lock nesting notation
-2 locks held by fs-op/4476:
- #0:  (sb_writers#4){.+.+.+}, at: [<ffffffff810ff97c>] mnt_want_write+0x1f/0x46
- #1:  (&type->i_mutex_dir_key[1]){+.+.+.}, at: [<ffffffff81131c74>] __union_copy_up+0x9a/0x132
-stack backtrace:
-Pid: 4476, comm: fs-op Not tainted 3.9.0-rc1-fsdevel+ #934
-Call Trace:
- [<ffffffff81070398>] __lock_acquire+0x86a/0x16cf
- [<ffffffff811081cc>] ? page_cache_pipe_buf_release+0x1b/0x1b
- [<ffffffff810715e2>] lock_acquire+0x57/0x6d
- [<ffffffff811087a4>] ? generic_file_splice_write+0x5d/0x14b
- [<ffffffff810e3314>] __sb_start_write+0x10d/0x15d
- [<ffffffff811087a4>] ? generic_file_splice_write+0x5d/0x14b
- [<ffffffff811087a4>] generic_file_splice_write+0x5d/0x14b
- [<ffffffff811083d5>] do_splice_from+0x74/0x91
- [<ffffffff81108410>] direct_splice_actor+0x1e/0x20
- [<ffffffff8110868b>] splice_direct_to_actor+0xc2/0x17e
- [<ffffffff811083f2>] ? do_splice_from+0x91/0x91
- [<ffffffff8110999d>] do_splice_direct+0x47/0x5a
- [<ffffffff81131a99>] __union_copy_up_locked+0x171/0x2b2
- [<ffffffff81131cc4>] __union_copy_up+0xea/0x132
- [<ffffffff810e02ca>] vfs_truncate+0x15e/0x289
- [<ffffffff810e043b>] do_sys_truncate+0x46/0x83
- [<ffffffff810e05cf>] sys_truncate+0x9/0xb
- [<ffffffff81456f92>] system_call_fastpath+0x16/0x1b
+Thanks,
+Guenter
