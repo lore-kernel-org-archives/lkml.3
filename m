@@ -1,91 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3CQJVn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 05:21:43 -0400
-Received: from rydia.net ([69.46.88.68]:57666 "EHLO mail.rydia.net"
+	id S1756134Ab3CQJld (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 05:41:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8342 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab3CQJVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 05:21:39 -0400
-Date: Sun, 17 Mar 2013 02:21:35 -0700 (PDT)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dflat
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-In-Reply-To: <1363455885.29475.68.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.02.1303170218460.28650@dflat>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>  <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>  <1362494795.15793.113.camel@edumazet-glaptop>
-  <alpine.DEB.2.02.1303061631290.6723@dflat>  <1362663990.15793.208.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303141359080.16308@dflat>  <1363301786.29475.40.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303141610490.16308@dflat>  <1363303174.29475.46.camel@edumazet-glaptop>
-  <1363455366.29475.66.camel@edumazet-glaptop> <1363455885.29475.68.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750855Ab3CQJlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 05:41:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,859,1355126400"; 
+   d="scan'208";a="307767246"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/2] mei: add mei_irq_compl_handler function
+Date: Sun, 17 Mar 2013 11:41:20 +0200
+Message-Id: <1363513281-12606-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, 2013-03-16 at 10:36 -0700, Eric Dumazet wrote:
-> > On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
-> >
-> > > Thanks thats really useful, we might miss to increment socket refcount
-> > > in a timer setup.
-> > >
-> >
-> > Hmm, please add following debugging patch as well
-> >
-> > diff --git a/include/net/sock.h b/include/net/sock.h
-> > index 14f6e9d..fe7c8a6 100644
-> > --- a/include/net/sock.h
-> > +++ b/include/net/sock.h
-> > @@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
-> >   */
-> >  static inline void __sock_put(struct sock *sk)
-> >  {
-> > -	atomic_dec(&sk->sk_refcnt);
-> > +	int newref = atomic_dec_return(&sk->sk_refcnt);
-> > +
-> > +	BUG_ON(newref <= 0);
-> >  }
-> >
-> >  static inline bool sk_del_node_init(struct sock *sk)
-> > diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
-> > index 786d97a..a445e15 100644
-> > --- a/net/ipv4/inet_connection_sock.c
-> > +++ b/net/ipv4/inet_connection_sock.c
-> > @@ -739,7 +739,7 @@ void inet_csk_prepare_forced_close(struct sock *sk)
-> >  {
-> >  	/* sk_clone_lock locked the socket and set refcnt to 2 */
-> >  	bh_unlock_sock(sk);
-> > -	sock_put(sk);
-> > +	__sock_put(sk);
-> >
-> >  	/* The below has to be done to allow calling inet_csk_destroy_sock */
-> >  	sock_set_flag(sk, SOCK_DEAD);
-> > @@ -835,13 +835,13 @@ void inet_csk_listen_stop(struct sock *sk)
-> >  			 * tcp_v4_destroy_sock().
-> >  			 */
-> >  			tcp_sk(child)->fastopen_rsk = NULL;
-> > -			sock_put(sk);
-> > +			__sock_put(sk);
-> >  		}
-> >  		inet_csk_destroy_sock(child);
-> >
-> >  		bh_unlock_sock(child);
-> >  		local_bh_enable();
-> > -		sock_put(child);
-> > +		__sock_put(child);
-> >
->
-> Please don't include the last line : this should stay as
->
->  sock_put(child);
+similar to read/write add also irq completion handler
+that is called for the irq thread
 
-Hope you don't mind a screenshot:
-http://www.dormando.me/p/3.8.2-trace-crash.jpg
+rename missnamed mei_irq_complete_handler to
+mei_cl_complete_handler as it operates on a single client
 
-(I put the patches on 3.8.2). box is on another continent so screenshot
-via IPMI is what I get. If this isn't enough or isn't right I'll try
-harder to get the trace logged, I guess?
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/hw-me.c     | 18 +-----------------
+ drivers/misc/mei/interrupt.c | 39 ++++++++++++++++++++++++++++++++-------
+ drivers/misc/mei/mei_dev.h   |  3 +--
+ 3 files changed, 34 insertions(+), 26 deletions(-)
 
-Thanks!
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 0db071f..7c2b14d 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -466,8 +466,6 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ {
+ 	struct mei_device *dev = (struct mei_device *) dev_id;
+ 	struct mei_cl_cb complete_list;
+-	struct mei_cl_cb *cb_pos = NULL, *cb_next = NULL;
+-	struct mei_cl *cl;
+ 	s32 slots;
+ 	int rets;
+ 	bool  bus_message_received;
+@@ -538,23 +536,9 @@ end:
+ 		wake_up_interruptible(&dev->wait_recvd_msg);
+ 		bus_message_received = false;
+ 	}
+-	if (list_empty(&complete_list.list))
+-		return IRQ_HANDLED;
+ 
++	mei_irq_compl_handler(dev, &complete_list);
+ 
+-	list_for_each_entry_safe(cb_pos, cb_next, &complete_list.list, list) {
+-		cl = cb_pos->cl;
+-		list_del(&cb_pos->list);
+-		if (cl) {
+-			if (cl != &dev->iamthif_cl) {
+-				dev_dbg(&dev->pdev->dev, "completing call back.\n");
+-				mei_irq_complete_handler(cl, cb_pos);
+-				cb_pos = NULL;
+-			} else if (cl == &dev->iamthif_cl) {
+-				mei_amthif_complete(dev, cb_pos);
+-			}
+-		}
+-	}
+ 	return IRQ_HANDLED;
+ }
+ static const struct mei_hw_ops mei_me_hw_ops = {
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 14c70b8..73fbce3 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -30,21 +30,21 @@
+ 
+ 
+ /**
+- * mei_complete_handler - processes completed operation.
++ * mei_cl_complete_handler - processes completed operation for a client
+  *
+  * @cl: private data of the file object.
+- * @cb_pos: callback block.
++ * @cb: callback block.
+  */
+-void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
++static void mei_cl_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb)
+ {
+-	if (cb_pos->fop_type == MEI_FOP_WRITE) {
+-		mei_io_cb_free(cb_pos);
+-		cb_pos = NULL;
++	if (cb->fop_type == MEI_FOP_WRITE) {
++		mei_io_cb_free(cb);
++		cb = NULL;
+ 		cl->writing_state = MEI_WRITE_COMPLETE;
+ 		if (waitqueue_active(&cl->tx_wait))
+ 			wake_up_interruptible(&cl->tx_wait);
+ 
+-	} else if (cb_pos->fop_type == MEI_FOP_READ &&
++	} else if (cb->fop_type == MEI_FOP_READ &&
+ 			MEI_READING == cl->reading_state) {
+ 		cl->reading_state = MEI_READ_COMPLETE;
+ 		if (waitqueue_active(&cl->rx_wait))
+@@ -54,6 +54,31 @@ void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos)
+ }
+ 
+ /**
++ * mei_irq_compl_handler - dispatch complete handelers
++ *	for the completed callbacks
++ *
++ * @dev - mei device
++ * @compl_list - list of completed cbs
++ */
++void mei_irq_compl_handler(struct mei_device *dev, struct mei_cl_cb *compl_list)
++{
++	struct mei_cl_cb *cb, *next;
++	struct mei_cl *cl;
++
++	list_for_each_entry_safe(cb, next, &compl_list->list, list) {
++		cl = cb->cl;
++		list_del(&cb->list);
++		if (!cl)
++			continue;
++
++		dev_dbg(&dev->pdev->dev, "completing call back.\n");
++		if (cl == &dev->iamthif_cl)
++			mei_amthif_complete(dev, cb);
++		else
++			mei_cl_complete_handler(cl, cb);
++	}
++}
++/**
+  * _mei_irq_thread_state_ok - checks if mei header matches file private data
+  *
+  * @cl: private data of the file object
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index c17bced..d6fd3d6 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -406,8 +406,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 		struct mei_cl_cb *cmpl_list, s32 *slots);
+ 
+ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list);
+-
+-void mei_irq_complete_handler(struct mei_cl *cl, struct mei_cl_cb *cb_pos);
++void mei_irq_compl_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list);
+ 
+ /*
+  * AMTHIF - AMT Host Interface Functions
+-- 
+1.8.1.3
+
