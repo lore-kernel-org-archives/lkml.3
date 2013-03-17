@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab3CQOaF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 10:30:05 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:55086 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3CQOaB (ORCPT
+	id S932515Ab3CQOcQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 10:32:16 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:47849 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3CQOcN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 10:30:01 -0400
+	Sun, 17 Mar 2013 10:32:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363530028.2423.43.camel@zim.stowe>
-References: <20130316213512.2974.17303.stgit@amt.stowe> <20130316213519.2974.38954.stgit@amt.stowe>
- <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
- <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
- <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
- <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com> <1363530028.2423.43.camel@zim.stowe>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sun, 17 Mar 2013 15:29:39 +0100
-Message-ID: <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-To: Myron Stowe <mstowe@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
-        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20130317140528.GA2494@kroah.com>
+References: <20130314184702.GA17860@kroah.com> <CAE8XmWoYXyNFQ14e6X+2rkWQyRA=kSdc4J+DNu2Sv+6e9rvZRg@mail.gmail.com>
+ <20130317140528.GA2494@kroah.com>
+From: Dongsheng Song <dongsheng.song@gmail.com>
+Date: Sun, 17 Mar 2013 22:31:52 +0800
+Message-ID: <CAE8XmWpP=PB_Dx5xM7Oa3UxziA0bMSxCxcJ9a5tS7XmZ-3zDTA@mail.gmail.com>
+Subject: Re: Linux 3.8.3
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 3:20 PM, Myron Stowe <mstowe@redhat.com> wrote:
-> On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
->> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > I'm assuming that the device only breaks because udevadm is dumping the
->> > full I/O port register space of the device and that if an actual driver
->> > was interacting with it through this interface that it would work.  Who
->> > knows how many devices will have read side-effects by udevadm blindly
->> > dumping these files.  Thanks,
+On Sun, Mar 17, 2013 at 10:05 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Mar 17, 2013 at 10:00:08PM +0800, Dongsheng Song wrote:
+>> On Fri, Mar 15, 2013 at 2:47 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >
+>> > I'm announcing the release of the 3.8.3 kernel.
+>> >
+>> > All users of the 3.8 kernel series must upgrade.
+>> >
+>> > The updated 3.8.y git tree can be found at:
+>> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.8.y
+>> > and can be browsed at the normal kernel.org git web browser:
+>> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+>> >
+>> > thanks,
+>> >
+>> > greg k-h
 >>
->> Sysfs is a too public interface to export things there which make
->> devices/driver choke on a simple read() of an attribute.
+>> Hi,
 >>
->> This is nothing specific to udevadm, any tool can do that. Udevadm
->> will never read any of the files during normal operation. The admin
->> explicitly asked udevadm with a specific command to dump all the stuff
->> the device offers.
->>
->> The kernel driver needs to be fixed to allow that, in the worst case,
->> the attributes not exported at all. People should take more care what
->> they export in /sys, it's not a hidden and private ioctl what's
->> exported there, stuff is very visible and will be looked at.
->>
->> Telling userspace not to use specific stuff in /sys I would not expect
->> to work as a strategy; there is too much weird stuff out there that
->> will always try to do that ...
+>> “make ARCH=arm menuconfig”  no complains,  but "make ARCH=arm
+>> CROSS_COMPILE=arm-linux-gnueabihf-" failed:
 >
-> Kay - could you comment on Foot Note 3 in
-> https://lkml.org/lkml/2013/3/16/168
+> Is this new (i.e. does 3.8.2 work?)
 >
-> With respect to 'udev', you are working on the assumption that all files
-> in sysfs must be readable with no consequences which may be implied by
-> the Documentation's sysfs.txt file's mentioning ASCII.  If we are to
-> interpret that as strictly as you seem to want to then why is there
-> sysfs support for creating binary files?
+> If so, what commit caused it?
+>
+> thanks,
+>
+> greg k-h
 
-They cannot be distinguished from outside, so there is nothing I know
-that could make a difference to userspace tools.
-
-Tools -- no matter how useful they are not not, it's that they do that
-for many years already -- need to be able to read() the stuff in
-there, without causing any damage to the system.
-
-Kay
+Sorry, I do not know, I'm newbie to arm, this is my first DIY.
