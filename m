@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3CQStz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 14:49:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab3CQSty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 14:49:54 -0400
-Date: Sun, 17 Mar 2013 20:50:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: stable@kernel.org, rusty@rustcorp.com.au, jasowang@redhat.com,
-        basil.gor@gmail.com, nab@risingtidesystems.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] vhost/net: fix heads usage of ubuf_info
-Message-ID: <20130317185022.GA22517@redhat.com>
-References: <20130317124609.GA25967@redhat.com>
- <20130317.142955.1114572401286297685.davem@davemloft.net>
+	id S1756623Ab3CQSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 14:50:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35143 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755751Ab3CQSuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 14:50:11 -0400
+Date: Sun, 17 Mar 2013 19:50:00 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 00/23] ldisc fixes
+Message-ID: <20130317185000.GC12749@linutronix.de>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+ <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+ <20130305205033.GA5771@linutronix.de>
+ <1362522029.18799.145.camel@thor.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130317.142955.1114572401286297685.davem@davemloft.net>
+In-Reply-To: <1362522029.18799.145.camel@thor.lan>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 02:29:55PM -0400, David Miller wrote:
-> From: "Michael S. Tsirkin" <mst@redhat.com>
-> Date: Sun, 17 Mar 2013 14:46:09 +0200
-> 
-> > ubuf info allocator uses guest controlled head as an index,
-> > so a malicious guest could put the same head entry in the ring twice,
-> > and we will get two callbacks on the same value.
-> > To fix use upend_idx which is guaranteed to be unique.
-> > 
-> > Reported-by: Rusty Russell <rusty@rustcorp.com.au>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Applied and queued up for -stable, thanks.
+* Peter Hurley | 2013-03-05 17:20:29 [-0500]:
 
-OK I'll drop it from my tree then.
+>> Not sure I understood. tty_hangup() is only called from within
+>> gserial_disconnect() which calls right after usb_ep_disable(). After
+>> usb_ep_disable() no further serial packets can be received until the
+>> endpoints are re-enabled. This happens in gserial_connect().
+>
+>That's why I asked. There are two potential issues:
+>
+>First, tty_hangup() is asynchronous -- ie., it returns immediately. It
+>does not wait for the tty device to actually perform the hangup. So if
+>the gadget layers start cleanup immediately after, expecting that they
+>won't get a flurry of tty calls, that would be bad.
+
+tty_hangup() is called from interrupt context usually after the USB
+cable has been unplugged. It is also possible that if the host requests
+the function twice, it will (on the second invocation without a reset)
+call tty_hangup() followed by tty_wakeup() to start the new session.
+
+>
+>tty_vhangup() is synchronous -- ie., you wait while it cleans up. This
+>is what the usb serial core does on it's disconnect() method. But I
+>didn't research further if the circumstances were the same.
+Okay.
+
+>Second, when the hangup actually does run -- in __tty_hangup() -- it
+>expects the tty to exist. I didn't go looking through the gadget layers
+>to see if the tty was disposed some other way, which might race the
+>asynchronous tty hangup.
+
+It calls wake_up_interruptible() expecting the user to leave. The
+node is removed on module removal.
+
+Is there any change of API you suggest?
+
+>Thanks,
+>Peter Hurley
+
+Sebastian
