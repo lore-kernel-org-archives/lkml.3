@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab3CQTku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 15:40:50 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:61726 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756411Ab3CQTkr (ORCPT
+	id S1756623Ab3CQTqm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 15:46:42 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:55398 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab3CQTql convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 15:40:47 -0400
+	Sun, 17 Mar 2013 15:46:41 -0400
 MIME-Version: 1.0
 X-Originating-IP: [178.83.130.250]
-In-Reply-To: <201303161135.59793.a.miskiewicz@gmail.com>
-References: <201303142136.24917.a.miskiewicz@gmail.com>
-	<201303161135.59793.a.miskiewicz@gmail.com>
-Date: Sun, 17 Mar 2013 20:40:46 +0100
-Message-ID: <CAKMK7uHXpjucZhcjMgZXi2QSXOCgA=NZaOv0m2DvfuyT3TAzRw@mail.gmail.com>
-Subject: Re: 3.8.2->3.8.3 i915 regression: GMBUS [i915 gmbus dpb] timed out,
- falling back to bit banging on pin 5
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        intel-gfx@lists.freedesktop.org
+In-Reply-To: <CACP_E+JZ36SXNU4b4GDFRo9KkW28brEEFDEYhyRqR3S4n6JNQg@mail.gmail.com>
+References: <20120913141841.GC5693@phenom.ffwll.local>
+	<CACP_E+JZ36SXNU4b4GDFRo9KkW28brEEFDEYhyRqR3S4n6JNQg@mail.gmail.com>
+Date: Sun, 17 Mar 2013 20:46:40 +0100
+X-Google-Sender-Auth: XdwxO_pAFhZF3J2DF-OlWjSW9hk
+Message-ID: <CAKMK7uHW0YnbZnGH0vLz3aq+EwR7x+f5o7dh6cyttWuEdSpRTQ@mail.gmail.com>
+Subject: Re: [pull] drm-intel-next
+From: Daniel Vetter <daniel@ffwll.ch>
+To: =?ISO-8859-1?Q?St=E9phane_Marchesin?= 
+	<stephane.marchesin@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 11:35 AM, Arkadiusz Miskiewicz
-<a.miskiewicz@gmail.com> wrote:
-> On Thursday 14 of March 2013, Arkadiusz Miskiewicz wrote:
->> Hello.
->>
->> After upgrading from 3.8.2 to 3.8.3 I'm getting regression :
->
-> More people hits this:
-> https://bugzilla.redhat.com/show_bug.cgi?id=922304
-> https://bugs.archlinux.org/task/34327
-> (seems always GM45 gpu in these reports)
->
-> archlinux people also noticed that xrandr reports VGA1 as connected (while in
-> reality nothing is connected to VGA1)
+On Fri, Mar 15, 2013 at 3:11 AM, Stéphane Marchesin
+<stephane.marchesin@gmail.com> wrote:
+>>       drm/i915: read out the modeset hw state at load and resume time
+> This commit regresses modeset on the samsung series 5 chromebook (it
+> is basically a pineview machine with an lvds panel). I don't seem to
+> be able to set any mode on it any longer.
 
-Can you please test whether 3.9-rc kernels are affected, too? We need
-to know this since stable rules mandate that a regression is fixed on
-upstream first. Once that's figured out we can backport a fix (if
-3.9-rc works) or start working on a fix for 3.8-rc kernels first and
-backport afterwards.
+Does that mean the kernel refuses to set the mode, or that you get a
+black screen?
+
+For starters I guess we need:
+- drm.debug=0xe dmesg from just before that commit
+- same for latest 3.9-rc kernels, presuming it's not broken there
+
+Latest upstream has a minor chance to work better I think since we've
+improved the pfit handling in the setup and teardown sequence a bit.
+
+Generally lvds has been hit&miss on way too many machines
+unfortunately with things randomly breaking and getting fixed again
+(e.g. one of Chris' machines works again with the new code ...). And
+the commit above doesn't really change much in the code itself but it
+does change the order (and timing) of the different enable/disable
+codepaths.
 
 Thanks, Daniel
 -- 
