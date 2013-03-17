@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3CQCuG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 22:50:06 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:57051 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753934Ab3CQCuD (ORCPT
+	id S1756057Ab3CQDn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 23:43:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53597 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755435Ab3CQDn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 22:50:03 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Mar 2013 22:50:03 EDT
-Message-ID: <51452DA6.5050302@akamai.com>
-Date: Sat, 16 Mar 2013 22:42:46 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Andrew Cooks <acooks@gmail.com>
-CC: Jim Cromie <jim.cromie@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: Bug involving dynamic_debug and '-p' modifier
-References: <CAJtEV7ZsOd=c6_+A3W+NYBtrWAUPH7NrVEk-J+_+ZgoJQTBZVg@mail.gmail.com> <CAJtEV7YfgcxuEAj+a8SbNmsoMHaEgY1RQ1RoR=8nAi4=8qwT_w@mail.gmail.com>
-In-Reply-To: <CAJtEV7YfgcxuEAj+a8SbNmsoMHaEgY1RQ1RoR=8nAi4=8qwT_w@mail.gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Mar 2013 23:43:56 -0400
+Message-ID: <1363491758.3937.239.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.2] iommu/amd: Initialize device table after dma_ops
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: shuah.khan@hp.com, iommu@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, shuahkhan@gmail.com
+Date: Sun, 17 Mar 2013 03:42:38 +0000
+In-Reply-To: <20130303225828.GA22602@8bytes.org>
+References: <1362087590.2822.44.camel@lorien2>
+	 <1362265235.3768.156.camel@deadeye.wl.decadent.org.uk>
+	 <20130303225828.GA22602@8bytes.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-WPbVFvloCwtPcxK4NBQz"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
 
-Thanks for the bug report. I need to send a patch to update the maintainers
-file...
+--=-WPbVFvloCwtPcxK4NBQz
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Haven't had a chance to look into this yet. Will get back to you.
+On Sun, 2013-03-03 at 23:58 +0100, Joerg Roedel wrote:
+> Hi Ben,
+>=20
+> On Sat, Mar 02, 2013 at 11:00:35PM +0000, Ben Hutchings wrote:
+> > I'm not convinced about this backport, because the order of
+> > initialisation already changed a lot after 3.2 and before the upstream
+> > commit.  So I'm going to wait for Joerg to confirm that this makes sens=
+e
+> > before adding it to the patch queue.
+>=20
+> The patch looks good, it fixes a race condition during amd_iommu
+> initialization. I'll also gave the backport a test to be sure it
+> doesn't break anything.
 
-Thanks,
+Applied, thanks all.
 
--Jason
+Ben.
 
+--=20
+Ben Hutchings
+Usenet is essentially a HUGE group of people passing notes in class.
+                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
+'
 
+--=-WPbVFvloCwtPcxK4NBQz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-On 03/11/2013 10:28 PM, Andrew Cooks wrote:
-> On Tue, Mar 12, 2013 at 9:14 AM, Andrew Cooks <acooks@gmail.com> wrote:
->> Hi Jason
->>
->> When I specify a '-p' modifier in the dynamic debug options in the
->> kernel command line, I get a kernel panic during boot. The panic
->> happens after userspace starts doing graphical stuff, but I haven't
->> been able to pinpoint exactly what.
->>
->> If I use '=_' instead of '-p', or boot to a recovery mode, or change
->> the modifier after booting using debugfs, the panic doesn't occur. For
->> example, booting to runlevel 3 with '=_', then flipping the same
->> modifier to first to '+p' and then to '-p', before starting X does not
->> result in a panic.
->>
->> Booting to runlevel 3 (or even 1!), with '-p' results in a panic, but
->> 'rdshell' is OK.
->>
->> I also tried the Red Hat kernel (just because it's installed - I
->> haven't figured out how to tell the package manager that I don't want
->> a kernel). This also panics, but it says that '-p' is not supported.
->>
->> Please let me know if you need me to do any other tests.
->>
->> '-p', panic: http://pastebin.com/8yAcBQdY
->> '-p', rdshell, no panic: http://pastebin.com/Hi2a7BZA
->>
->> --
->> a.
-> Jason's mail bounced, so redirecting to Jim Cromie, who made the most
-> recent significant changes to dynamic_debug...
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAUUU7rue/yOyVhhEJAQrSfg/9HdiIdudy3NnPDqaENUElXOipOIYN3VIj
+9aQLvrGXAsBM7yGT5StWZupYMCXUpkpXveGMV1v7Vy1ncnXb37wf9a98F8B6mSsU
+UWNVSN8fQaz4J++y8sVIiZYiGEqF8cshSvLLVpHTozQrtCZ0JxijAeazhLObfNTz
+g2IAKINJ15TBDhn6f3snZxAJO3g3wzW/7aBpjlEztkTvm4zOVziWmuVhhDLTyZh5
+3DDgMvgtoQ2mW9x4UG0vefp3dwQ5VrfOtFcw/e7J47q6aotseIRQ1HkZd4xvX6Pt
+hYnQLdWS58IfAnv0hkaO8DJPqyiXGOE8Xq32uNwIdzCuRYqJyh4f6FhDmOi2O3gB
+xft4+UBkRPoJr4emEmcZWPoHxjN/k2bKALtW/BRuNQsvOkojlwBDu0bswVhXrR3y
+S1BT3elILYI+ZhLkEeyB1K+GabSEUDE2SWhM4Kq4hs/T0HalIheocUeavEYK0X+4
+8ChoeDNAD2vi8nCsEZvssvznk1KTBrmvfv/Mh3rAV2kUeUdDeMFmliGBdqw5kl8G
+QqDsDqurHW24EtwFrFP01HOVTfYzp8qEfb29iTbDKpVNi4kJdlT5QESiT2oWG1du
+tFHePFmMvkjYXnxaxypxObZ4C4mYz1bqd3JIxUkIuwzGHnRabNn8JAUChCeCWeRg
+bN72eDYl5YQ=
+=MrJG
+-----END PGP SIGNATURE-----
+
+--=-WPbVFvloCwtPcxK4NBQz--
