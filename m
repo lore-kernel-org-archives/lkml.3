@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3CQFXk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 01:23:40 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:63143 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3CQFXh (ORCPT
+	id S1752450Ab3CQFfE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 01:35:04 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:33639 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab3CQFfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 01:23:37 -0400
+	Sun, 17 Mar 2013 01:35:01 -0400
+Date: Sat, 16 Mar 2013 22:36:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
+        kay@vrfy.org, linux-hotplug@vger.kernel.org, linux-pci@vger.kernel.org,
+        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+Message-ID: <20130317053611.GC948@kroah.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+ <20130316213519.2974.38954.stgit@amt.stowe>
+ <20130316221159.GA3702@kroah.com>
+ <1363477853.2423.25.camel@zim.stowe>
+ <20130317010317.GB9641@kroah.com>
+ <1363493482.16793.69.camel@ul30vt.home>
 MIME-Version: 1.0
-In-Reply-To: <513838F2.60101@ti.com>
-References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
-	<CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
-	<F3DBB1B3EF102E4994C89758CFCA32412CC74F@DBDE01.ent.ti.com>
-	<CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com>
-	<20130306175313.GQ11806@atomide.com>
-	<513838F2.60101@ti.com>
-Date: Sun, 17 Mar 2013 10:53:36 +0530
-Message-ID: <CABYxbz7bLZxX-6U3O9nRsKxAXbg0nEta55eO-ERuotPnw=X5BQ@mail.gmail.com>
-Subject: Re: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
-From: Anil Kumar <anilk4.v@gmail.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux@arm.linux.org.uk, Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Weber <thomas@tomweber.eu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363493482.16793.69.camel@ul30vt.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+On Sat, Mar 16, 2013 at 10:11:22PM -0600, Alex Williamson wrote:
+> On Sat, 2013-03-16 at 18:03 -0700, Greg KH wrote:
+> > On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
+> > > On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
+> > > > On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
+> > > > > Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
+> > > > > Port space and MMIO.  This memory regions correspond to the device's
+> > > > > internal status and control registers used to drive the device.
+> > > > > 
+> > > > > Accessing these registers from userspace such as "udevadm info
+> > > > > --attribute-walk --path=/sys/devices/..." does can not be allowed as
+> > > > > such accesses outside of the driver, even just reading, can yield
+> > > > > catastrophic consequences.
+> > > > > 
+> > > > > Udevadm-info skips parsing a specific set of sysfs entries including
+> > > > > 'resource'.  This patch extends the set to include the additional
+> > > > > 'resource<N>' entries that correspond to a PCI device's BARs.
+> > > > 
+> > > > Nice, are you also going to patch bash to prevent a user from reading
+> > > > these sysfs files as well?  :)
+> > > > 
+> > > > And pciutils?
+> > > > 
+> > > > You get my point here, right?  The root user just asked to read all of
+> > > > the data for this device, so why wouldn't you allow it?  Just like
+> > > > 'lspci' does.  Or bash does.
+> > > 
+> > > Yes :P , you raise a very good point, there are a lot of way a user can
+> > > poke around in those BARs.  However, there is a difference between
+> > > shooting yourself in the foot and getting what you deserve versus
+> > > unknowingly executing a common command such as udevadm and having the
+> > > system hang.
+> > > > 
+> > > > If this hardware has a problem, then it needs to be fixed in the kernel,
+> > > > not have random band-aids added to various userspace programs to paper
+> > > > over the root problem here.  Please fix the kernel driver and all should
+> > > > be fine.  No need to change udevadm.
+> > > 
+> > > Xiangliang initially proposed a patch within the PCI core.  Ignoring the
+> > > specific issue with the proposal which I pointed out in the
+> > > https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
+> > > the right place to effect a change either as PCI's core isn't concerned
+> > > with the contents or access limitations of those regions, those are
+> > > issues that the driver concerns itself with.
+> > > 
+> > > So things seem to be gravitating towards the driver.  I'm fairly
+> > > ignorant of this area but as Robert succinctly pointed out in the
+> > > originating thread - the AHCI driver only uses the device's MMIO region.
+> > > The I/O related regions are for legacy SFF-compatible ATA ports and are
+> > > not used to driver the device.  This, coupled with the observance that
+> > > userspace accesses such as udevadm, and others like you additionally
+> > > point out, do not filter through the device's driver for seems to
+> > > suggest that changes to the driver will not help here either.
+> > 
+> > A PCI quirk should handle this properly, right?  Why not do that?  Worse
+> > thing, the quirk could just not expose these sysfs files for this
+> > device, which would solve all userspace program issues, right?
+> 
+> Not exactly.  I/O port access through pci-sysfs was added for userspace
+> programs, specifically qemu-kvm device assignment.  We use the I/O port
+> resource# files to access device owned I/O port registers using file
+> permissions rather than global permissions such as iopl/ioperm.  File
+> permissions also prevent random users from accessing device registers
+> through these files, but of course can't stop a privileged app that
+> chooses to ignore the purpose of these files.  A quirk would therefore
+> remove a file that actually has a useful purpose for one app just so
+> another app that has no particular reason for dumping the contents can
+> run unabated.  Thanks,
 
-On Thu, Mar 7, 2013 at 12:21 PM, Benoit Cousson <b-cousson@ti.com> wrote:
-> Hi,
->
-> On 03/06/2013 06:53 PM, Tony Lindgren wrote:
->> * Anil Kumar <anilk4.v@gmail.com> [130305 18:40]:
->>> Hi Tony,
->>>
->>>>> From: linux-arm-kernel [mailto:linux-arm-kernel-
->>>>> bounces@lists.infradead.org] On Behalf Of Anil Kumar
->>>>> Sent: Wednesday, February 27, 2013 8:03 AM
->>>>> To: devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org;
->>>>> linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
->>>>> Cc: linux@arm.linux.org.uk; Cousson, Benoit; Tony Lindgren; Grant
->>>>> Likely; Anil Kumar; thomas@tomweber.eu
->>>>> Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for
->>>>> DevKit8000.
->>>>>
->>>>> Hi,
->>>>>>
->>>>>> DevKit8000 is a beagle board clone from Timll, sold by
->>>>>> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
->>>>>> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
->>>>>> JTAG interface.
->>>>>>
->>>>>> This patch adds the basic DT support for devkit8000. At this time,
->>>>> Information
->>>>>> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
->>>>>>
->>>>>> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
->>>>>> Tested-by: Thomas Weber <thomas@tomweber.eu>
->>>>>
->>>>> Gentle Ping. As there are no review comments on this patch,
->>>>> Could you please pull this patch ?
->>>
->>> Gentle Ping.
->>>
->>> This patch also got Reviewed-by: Manish Badarkhe <badarkhe.manish@gmail.com>
->>> and as patch "ARM: dts: omap3-devkit8000: Enable audio support"  has already got
->>> "Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>" but it is on the
->>> top of this patch.
->>> So, Could you please pull this patch in one of your omap branch? or
->>> you want me to
->>> do rebase this patch on top of v3.9-rc1 ?
->>
->> Let's wait for Benoit to queue it as he has a bunch of .dts changes already
->> applied. Too bad we missed v3.9 merge window for those, but hopefully
->> we can get them queued early for v3.10.
->
-> Yep, sorry for having missed 3.9, I was a little bit sick at the wrong
-> moment :-(
->
-> I'm starting queuing the pending patches, and should have enough to push
-> to you just after Linaro Connect.
+The quirk would only be for this one specific device, which obviously
+can't handle this type of access, so why would you want the sysfs files
+even present for it at all?
 
-I think you missed below patch which is needed for gpmc nand to work fine.
-
-Jon Hunter:-
-  ARM: OMAP2+: Fix-up gpmc merge error
-
-I have re based my changes on top of your repository to make pull
-easier for you.
-I hope you will pull these changes for 3.10.
-
-The following changes since Commit a7f7881de9c0b58de3b3aea8f01a8aef906d4ade
-
-are available in the git repository at:
-
-git://gitorious.org/devkit8000-for_3-10/devkit8000-for_3-10.git
-branch for_3.10/dts
-
-for you to fetch changes up to Commit 975abc8b2e7ec4ff7324d726c9775958945ccc5e
-
-Anil Kumar:
-ARM: dts: add minimal DT support for DevKit8000
-ARM: dts: omap3-devkit8000: Enable audio support
-ARM: dts: omap3-devkit8000: add nand dt node
-
-Thanks,
-Anil
+greg k-h
