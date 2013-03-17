@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab3CQNrO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 09:47:14 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55802 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab3CQNrL (ORCPT
+	id S1756340Ab3CQNuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 09:50:05 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:49475 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756224Ab3CQNuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 09:47:11 -0400
-From: Alexandre Courbot <gnurou@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        gnurou@gmail.com, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 2/3] m68k: coldfire: use gpiolib
-Date: Sun, 17 Mar 2013 22:42:02 +0900
-Message-Id: <1363527723-32713-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1363527723-32713-1-git-send-email-acourbot@nvidia.com>
-References: <1363527723-32713-1-git-send-email-acourbot@nvidia.com>
+	Sun, 17 Mar 2013 09:50:02 -0400
+Date: Sun, 17 Mar 2013 14:49:57 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com
+Subject: [PATCH] perf,x86: add SNB/SNB-EP scheduling constraints for
+ cycle_activity event
+Message-ID: <20130317134957.GA8550@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force use of gpiolib for Coldfire, as a step towards the deprecation of
-GENERIC_GPIO.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Add scheduling constraints for SNB/SNB-EP CYCLE_ACTIVITY event
+as defined by SDM Jan 2013 edition. The STALLS umasks are
+combinations with the NO_DISPATCH umask.
+
+Signed-off-by: Stephane Eranian <eranian@gmail.com>
 ---
- arch/m68k/Kconfig.cpu | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/m68k/Kconfig.cpu b/arch/m68k/Kconfig.cpu
-index b1cfff8..d266787 100644
---- a/arch/m68k/Kconfig.cpu
-+++ b/arch/m68k/Kconfig.cpu
-@@ -22,8 +22,7 @@ config M68KCLASSIC
- 
- config COLDFIRE
- 	bool "Coldfire CPU family support"
--	select GENERIC_GPIO
--	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select ARCH_REQUIRE_GPIOLIB
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select CPU_HAS_NO_BITFIELDS
- 	select CPU_HAS_NO_MULDIV64
--- 
-1.8.2
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 529c893..dab7580 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -101,6 +101,10 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_DISPATCH */
++	INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x02a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x06a3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
+ 	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+ 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
