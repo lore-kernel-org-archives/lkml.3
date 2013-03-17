@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3CQCbq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 22:31:46 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:42292 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3CQCbm (ORCPT
+	id S1755984Ab3CQCuG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 22:50:06 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:57051 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753934Ab3CQCuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 22:31:42 -0400
-Message-ID: <51452AEB.6010806@gmail.com>
-Date: Sun, 17 Mar 2013 10:31:07 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sat, 16 Mar 2013 22:50:03 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Mar 2013 22:50:03 EDT
+Message-ID: <51452DA6.5050302@akamai.com>
+Date: Sat, 16 Mar 2013 22:42:46 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Andrea Adami <andrea.adami@gmail.com>,
-        Chen Gang <gang.chen@asianux.com>, matthew.leach@arm.com,
-        dave.martin@linaro.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, nico@linaro.org,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        matthew.gretton-dann@linaro.org
-Subject: Re: [Suggestion] Latest randconfig build errors for Head.S
-References: <51415428.1070401@asianux.com> <201303151056.55819.arnd@arndb.de> <514301E8.9040201@gmail.com> <201303151129.43542.arnd@arndb.de>
-In-Reply-To: <201303151129.43542.arnd@arndb.de>
+To: Andrew Cooks <acooks@gmail.com>
+CC: Jim Cromie <jim.cromie@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: Bug involving dynamic_debug and '-p' modifier
+References: <CAJtEV7ZsOd=c6_+A3W+NYBtrWAUPH7NrVEk-J+_+ZgoJQTBZVg@mail.gmail.com> <CAJtEV7YfgcxuEAj+a8SbNmsoMHaEgY1RQ1RoR=8nAi4=8qwT_w@mail.gmail.com>
+In-Reply-To: <CAJtEV7YfgcxuEAj+a8SbNmsoMHaEgY1RQ1RoR=8nAi4=8qwT_w@mail.gmail.com>
 Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013Äê03ÔÂ15ÈÕ 19:29, Arnd Bergmann wrote:
-> On Friday 15 March 2013, Chen Gang F T wrote:
->> >   excuse me, my English is not quite well.
->> > 
->> >   I guess your meaning is:
->> >     "that bug" means the toolchain's bug (need toolchain people fix it).
->> >     prefer to apply your patch, before "that bug" is fixed (we don't know when)
->> > 
->> >   is it correct ?
-> Yes, correct.
+Hi Andrew,
 
-  thanks, and I support you.
+Thanks for the bug report. I need to send a patch to update the maintainers
+file...
 
--- 
-Chen Gang
+Haven't had a chance to look into this yet. Will get back to you.
 
-Flying Transformer
+Thanks,
+
+-Jason
+
+
+
+On 03/11/2013 10:28 PM, Andrew Cooks wrote:
+> On Tue, Mar 12, 2013 at 9:14 AM, Andrew Cooks <acooks@gmail.com> wrote:
+>> Hi Jason
+>>
+>> When I specify a '-p' modifier in the dynamic debug options in the
+>> kernel command line, I get a kernel panic during boot. The panic
+>> happens after userspace starts doing graphical stuff, but I haven't
+>> been able to pinpoint exactly what.
+>>
+>> If I use '=_' instead of '-p', or boot to a recovery mode, or change
+>> the modifier after booting using debugfs, the panic doesn't occur. For
+>> example, booting to runlevel 3 with '=_', then flipping the same
+>> modifier to first to '+p' and then to '-p', before starting X does not
+>> result in a panic.
+>>
+>> Booting to runlevel 3 (or even 1!), with '-p' results in a panic, but
+>> 'rdshell' is OK.
+>>
+>> I also tried the Red Hat kernel (just because it's installed - I
+>> haven't figured out how to tell the package manager that I don't want
+>> a kernel). This also panics, but it says that '-p' is not supported.
+>>
+>> Please let me know if you need me to do any other tests.
+>>
+>> '-p', panic: http://pastebin.com/8yAcBQdY
+>> '-p', rdshell, no panic: http://pastebin.com/Hi2a7BZA
+>>
+>> --
+>> a.
+> Jason's mail bounced, so redirecting to Jim Cromie, who made the most
+> recent significant changes to dynamic_debug...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
