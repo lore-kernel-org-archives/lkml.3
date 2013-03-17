@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab3CQHxN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 03:53:13 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:39810 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3CQHxL (ORCPT
+	id S1756065Ab3CQIBn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 04:01:43 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:61611 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab3CQIBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 03:53:11 -0400
-Date: Sun, 17 Mar 2013 08:53:10 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>, dormando <dormando@rydia.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-Message-ID: <20130317075310.GG24041@order.stressinduktion.org>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	dormando <dormando@rydia.net>, Cong Wang <xiyou.wangcong@gmail.com>,
-	linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6> <1362494795.15793.113.camel@edumazet-glaptop> <alpine.DEB.2.02.1303061631290.6723@dflat> <1362663990.15793.208.camel@edumazet-glaptop> <alpine.DEB.2.02.1303141359080.16308@dflat> <1363301786.29475.40.camel@edumazet-glaptop> <alpine.DEB.2.02.1303141610490.16308@dflat> <1363303174.29475.46.camel@edumazet-glaptop> <1363455366.29475.66.camel@edumazet-glaptop> <20130317063948.GF24041@order.stressinduktion.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130317063948.GF24041@order.stressinduktion.org>
+	Sun, 17 Mar 2013 04:01:42 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: cbou@mail.ru, dwmw2@infradead.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] drivers: power: goldfish: use resource_size()
+Date: Sun, 17 Mar 2013 10:01:34 +0200
+Message-Id: <1363507294-19958-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 07:39:48AM +0100, Hannes Frederic Sowa wrote:
-> On Sat, Mar 16, 2013 at 10:36:06AM -0700, Eric Dumazet wrote:
-> > On Fri, 2013-03-15 at 00:19 +0100, Eric Dumazet wrote:
-> > 
-> > > Thanks thats really useful, we might miss to increment socket refcount
-> > > in a timer setup.
-> > > 
-> > 
-> > Hmm, please add following debugging patch as well
-> > 
-> > diff --git a/include/net/sock.h b/include/net/sock.h
-> > index 14f6e9d..fe7c8a6 100644
-> > --- a/include/net/sock.h
-> > +++ b/include/net/sock.h
-> > @@ -530,7 +530,9 @@ static inline void sock_hold(struct sock *sk)
-> >   */
-> >  static inline void __sock_put(struct sock *sk)
-> >  {
-> > -	atomic_dec(&sk->sk_refcnt);
-> > +	int newref = atomic_dec_return(&sk->sk_refcnt);
-> > +
-> > +	BUG_ON(newref <= 0);
-> >  }
-> 
-> Couldn't it also be a free from sock_wfree where the wmem accounting went
-> wrong? It does not care about reference counts there.
+This uses the resource_size() function instead of explicit computation.
 
-nvm, it had to be in the stacktrace then.
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/power/goldfish_battery.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/power/goldfish_battery.c b/drivers/power/goldfish_battery.c
+index c10f460..29eba88 100644
+--- a/drivers/power/goldfish_battery.c
++++ b/drivers/power/goldfish_battery.c
+@@ -178,7 +178,7 @@ static int goldfish_battery_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	data->reg_base = devm_ioremap(&pdev->dev, r->start, r->end - r->start + 1);
++	data->reg_base = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+ 	if (data->reg_base == NULL) {
+ 		dev_err(&pdev->dev, "unable to remap MMIO\n");
+ 		return -ENOMEM;
+-- 
+1.7.9.5
+
