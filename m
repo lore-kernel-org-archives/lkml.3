@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3CQTgQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 15:36:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25377 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3CQTgN (ORCPT
+	id S1756618Ab3CQTku (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 15:40:50 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:61726 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab3CQTkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 15:36:13 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dg4Nx7oYL4YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=T1sv73n0zC0A:10 a=jYvyI3cVrODwppLM6HMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363548972.25967.137.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] tracing: syscall_regfunc() should not skip kernel
- threads
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-arch <linux-arch@vger.kernel.org>
-Date: Sun, 17 Mar 2013 15:36:12 -0400
-In-Reply-To: <20130317190438.GA24582@redhat.com>
-References: <20130317182834.GA22989@redhat.com>
-	 <1363546493.25967.129.camel@gandalf.local.home>
-	 <20130317190438.GA24582@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 17 Mar 2013 15:40:47 -0400
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <201303161135.59793.a.miskiewicz@gmail.com>
+References: <201303142136.24917.a.miskiewicz@gmail.com>
+	<201303161135.59793.a.miskiewicz@gmail.com>
+Date: Sun, 17 Mar 2013 20:40:46 +0100
+Message-ID: <CAKMK7uHXpjucZhcjMgZXi2QSXOCgA=NZaOv0m2DvfuyT3TAzRw@mail.gmail.com>
+Subject: Re: 3.8.2->3.8.3 i915 regression: GMBUS [i915 gmbus dpb] timed out,
+ falling back to bit banging on pin 5
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-17 at 20:04 +0100, Oleg Nesterov wrote:
+On Sat, Mar 16, 2013 at 11:35 AM, Arkadiusz Miskiewicz
+<a.miskiewicz@gmail.com> wrote:
+> On Thursday 14 of March 2013, Arkadiusz Miskiewicz wrote:
+>> Hello.
+>>
+>> After upgrading from 3.8.2 to 3.8.3 I'm getting regression :
+>
+> More people hits this:
+> https://bugzilla.redhat.com/show_bug.cgi?id=922304
+> https://bugs.archlinux.org/task/34327
+> (seems always GM45 gpu in these reports)
+>
+> archlinux people also noticed that xrandr reports VGA1 as connected (while in
+> reality nothing is connected to VGA1)
 
-> > I'm really thinking the TIF_SYSCALL_TRACEPOINT flag is getting a bit
-> > ridiculous. We really should have a "swap syscall table when tracepoints
-> > enabled" that changes the syscall table that does exactly the same thing
-> > as the normal table but wraps the system call with the tracepoints.
-> 
-> But we also need to force the slow path in system_call...
+Can you please test whether 3.9-rc kernels are affected, too? We need
+to know this since stable rules mandate that a regression is fixed on
+upstream first. Once that's figured out we can backport a fix (if
+3.9-rc works) or start working on a fix for 3.8-rc kernels first and
+backport afterwards.
 
-Why? If we remove the tracepoint from the slowpath and use a table swap,
-then we wouldn't need to use the slowpath at all.
-
-> 
-> Anyway, do you agree with this change for now?
-
-Well, if it's solving a bug today sure. But we should really be looking
-at fixing what's there for the future.
-
--- Steve
-
-
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
