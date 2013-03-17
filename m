@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab3CQRj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 13:39:57 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33953 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756324Ab3CQRjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 13:39:54 -0400
-Date: Sun, 17 Mar 2013 13:39:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Soeren Moch <smoch@web.de>
-cc: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        <linux-mm@kvack.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
-In-Reply-To: <Pine.LNX.4.44L0.1303171320560.26486-100000@netrider.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1303171338270.26486-100000@netrider.rowland.org>
+	id S932719Ab3CQSCh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 14:02:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab3CQSCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 14:02:34 -0400
+Date: Sun, 17 Mar 2013 19:00:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] uprobes: Use file_inode()
+Message-ID: <20130317180036.GA16843@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Mar 2013, Alan Stern wrote:
+Cleanup. Now that we have f_inode/file_inode() we can use it
+instead of ->f_mapping->host.
 
-> On Sun, 17 Mar 2013, Soeren Moch wrote:
-> 
-> > For each device only one isochronous endpoint is used (EP IN4, 1x 940 
-> > Bytes, Interval 1).
-> > When the ENOMEM error occurs, a huge number of iTDs is in the free_list 
-> > of one stream. This number is much higher than the 2*M entries, which 
-> > should be there according to your description.
-> 
-> Okay, but how did they get there?  With each URB requiring 9 iTDs, and
-> about 5 URBs active at any time, there should be about 5*9 = 45 iTDs in
-> use and 2*9 = 18 iTDs on the free list.  By the time each URB
-> completes, it should have released all 9 iTDs back to the free list,
-> and each time an URB is submitted, it should be able to acquire all 9
-> of the iTDs that it needs from the free list -- it shouldn't have to 
-> allocate any from the DMA pool.
-> 
-> Looks like you'll have to investigate what's going on inside
-> itd_urb_transaction().  Print out some useful information whenever the
-> size of stream->free_list is above 50, such as the value of num_itds,
-> how many of the loop iterations could get an iTD from the free list,
-> and the value of itd->frame in the case where the "goto alloc_itd"
-> statement is followed.
-> 
-> It might be a good idea also to print out the size of the free list in
-> itd_complete(), where it calls ehci_urb_done(), and include the value
-> of ehci->now_frame.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-One thing I forgot to mention: It would help to have millisecond
-precision for the timestamps in the system log, for comparison of frame
-number values.  Please enable CONFIG_PRINTK_TIME for the next test.
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 2bcd08e..5c273b3 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -758,7 +758,7 @@ register_for_each_vma(struct uprobe *uprobe, struct uprobe_consumer *new)
+ 		down_write(&mm->mmap_sem);
+ 		vma = find_vma(mm, info->vaddr);
+ 		if (!vma || !valid_vma(vma, is_register) ||
+-		    vma->vm_file->f_mapping->host != uprobe->inode)
++		    file_inode(vma->vm_file) != uprobe->inode)
+ 			goto unlock;
+ 
+ 		if (vma->vm_start > info->vaddr ||
+@@ -917,7 +917,7 @@ static int unapply_uprobe(struct uprobe *uprobe, struct mm_struct *mm)
+ 		loff_t offset;
+ 
+ 		if (!valid_vma(vma, false) ||
+-		    vma->vm_file->f_mapping->host != uprobe->inode)
++		    file_inode(vma->vm_file) != uprobe->inode)
+ 			continue;
+ 
+ 		offset = (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+@@ -1010,7 +1010,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	if (no_uprobe_events() || !valid_vma(vma, true))
+ 		return 0;
+ 
+-	inode = vma->vm_file->f_mapping->host;
++	inode = file_inode(vma->vm_file);
+ 	if (!inode)
+ 		return 0;
+ 
+@@ -1041,7 +1041,7 @@ vma_has_uprobes(struct vm_area_struct *vma, unsigned long start, unsigned long e
+ 	struct inode *inode;
+ 	struct rb_node *n;
+ 
+-	inode = vma->vm_file->f_mapping->host;
++	inode = file_inode(vma->vm_file);
+ 
+ 	min = vaddr_to_offset(vma, start);
+ 	max = min + (end - start) - 1;
+@@ -1465,7 +1465,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 	vma = find_vma(mm, bp_vaddr);
+ 	if (vma && vma->vm_start <= bp_vaddr) {
+ 		if (valid_vma(vma, false)) {
+-			struct inode *inode = vma->vm_file->f_mapping->host;
++			struct inode *inode = file_inode(vma->vm_file);
+ 			loff_t offset = vaddr_to_offset(vma, bp_vaddr);
+ 
+ 			uprobe = find_uprobe(inode, offset);
+-- 
+1.5.5.1
 
-Alan Stern
 
