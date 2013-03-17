@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab3CQV4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 17:56:39 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:40567 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3CQV4i (ORCPT
+	id S932773Ab3CQV6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 17:58:15 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:44534 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576Ab3CQV6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 17:56:38 -0400
-Date: Sun, 17 Mar 2013 22:59:22 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "drm/i915: try to train DP even harder"
-Message-ID: <20130317215922.GH9021@phenom.ffwll.local>
-Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
-	Paulo Zanoni <paulo.r.zanoni@intel.com>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <s5h8v5tkf7j.wl%tiwai@suse.de>
+	Sun, 17 Mar 2013 17:58:14 -0400
+Date: Sun, 17 Mar 2013 22:58:12 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Christopher Li <sparse@chrisli.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] kbuild: avoid some unnecessary rebuild
+Message-ID: <20130317215812.GA23103@merkur.ravnborg.org>
+References: <CANeU7QkMd_evQrJL1Otp3j3CR9FAXSXO9VOKSFmESkWPZNMkEA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5h8v5tkf7j.wl%tiwai@suse.de>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANeU7QkMd_evQrJL1Otp3j3CR9FAXSXO9VOKSFmESkWPZNMkEA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 06:40:16PM +0100, Takashi Iwai wrote:
-> This reverts commit 0d71068835e2610576d369d6d4cbf90e0f802a71.
+On Sun, Mar 17, 2013 at 02:50:44PM -0700, Christopher Li wrote:
+> In the current tip of git tree. If I do a allmodconfig full build, then follow
+> by a "make" again without changing any code in the tree.
+> There are some object will always get rebuild. e.g. eboot.o.
+> I use "make V=2", it shows that the rebuild is due to some object file
+> not in $(targets). I did not understand the $(targets) very well, the
+> Kbuild.include mention that It is likely a bug in the kbuild if that
+> happen.
 > 
-> Not only that the commit introduces a bogus check (voltage_tries == 5
-> will never meet at the inserted code path), it brings the i915 driver
-> into an endless dp-train loop on HP Z1 desktop machine with IVY+eDP.
-> 
-> At least reverting this commit recovers the framebuffer (but X is
-> still broken by other reasons...)
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Picked up for -fixes, thanks for the patch. Adding Paulo since it's his
-patch. To assign proper blame please cc: relevant people when sending out
-reverts.
+> I add them in the $(targets) and that seems avoid the unnecessary
+> rebuild of several objects. The second "make" has fewer output.
+> The clean rebuild seems works fine too.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+We got no patch - just some git help stuff.
+Seems you mistyped somthing..
+
+	Sam
