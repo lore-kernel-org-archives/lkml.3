@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab3CQWmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 18:42:31 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49150 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570Ab3CQWm3 (ORCPT
+	id S932797Ab3CQWtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 18:49:16 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:59523 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755847Ab3CQWtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 18:42:29 -0400
-Message-ID: <514623A8.5000905@kernel.org>
-Date: Sun, 17 Mar 2013 20:12:24 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Sun, 17 Mar 2013 18:49:13 -0400
+Date: Sun, 17 Mar 2013 15:49:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: peterz@infradead.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>, acme@redhat.com,
+        jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [patch for-] perf,x86: fix link failure for non-Intel configs
+In-Reply-To: <20130315132607.GA4565@quad>
+Message-ID: <alpine.DEB.2.02.1303171544030.368@chino.kir.corp.google.com>
+References: <20130315132607.GA4565@quad>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 1/2] iio: adc: Kconfig: exynos_adc depends on CONFIG_OF
-References: <1363364620-23597-1-git-send-email-ch.naveen@samsung.com> <CAD=FV=W90mKzmpg4cG_JJ6R6Of1jt=TxOe_1h-nvzs7KeAvDXQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=W90mKzmpg4cG_JJ6R6Of1jt=TxOe_1h-nvzs7KeAvDXQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2013 06:09 PM, Doug Anderson wrote:
-> Naveen,
-> 
-> On Fri, Mar 15, 2013 at 9:23 AM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> As the exynos_adc driver only supports device tree registration.
->> Making driver depend on CONFIG_OF solves possible errors during probe.
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
->> Cc: Doug Anderson <dianders@chromium.org>
->> Cc: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->> Discussion thread for this patch can be found at
->> http://www.gossamer-threads.com/lists/linux/kernel/1693284?page=last
->>
->>  drivers/iio/adc/Kconfig |    1 +
->>  1 file changed, 1 insertion(+)
-> 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-Applied to togreg branch of iio.git, thanks,
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after 
+suspend/resume") introduces a link failure since 
+perf_restore_debug_store() is only defined for CONFIG_CPU_SUP_INTEL:
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+	arch/x86/power/built-in.o: In function `restore_processor_state':
+	(.text+0x45c): undefined reference to `perf_restore_debug_store'
+
+Fix it by defining the dummy function appropriately.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/perf_event.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -758,7 +758,6 @@ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
+ extern int __perf_event_disable(void *info);
+ extern void perf_event_task_tick(void);
+-extern void perf_restore_debug_store(void);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *prev,
+@@ -798,6 +797,11 @@ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
+ static inline int __perf_event_disable(void *info)			{ return -1; }
+ static inline void perf_event_task_tick(void)				{ }
++#endif
++
++#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_INTEL)
++extern void perf_restore_debug_store(void);
++#else
+ static inline void perf_restore_debug_store(void)			{ }
+ #endif
+ 
