@@ -1,138 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3CQCEC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Mar 2013 22:04:02 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49595 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751949Ab3CQCD5 (ORCPT
+	id S1755812Ab3CQCPK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Mar 2013 22:15:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53127 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751949Ab3CQCPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Mar 2013 22:03:57 -0400
-Date: Sat, 16 Mar 2013 22:03:53 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
-	Implementation
-Message-ID: <20130317020353.GA9344@Krystal>
-References: <20130311213602.GB9829@Krystal> <20130314042227.GA15675@dcvr.yhbt.net> <20130314131855.GA9155@Krystal> <20130314190746.GA16120@dcvr.yhbt.net> <20130316220216.GA25099@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130316220216.GA25099@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 16 Mar 2013 22:15:07 -0400
+Message-ID: <1363486492.3937.238.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] hw_random: free rng_buffer at module exit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Aurelien Jarno <aurelien@aurel32.net>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Sun, 17 Mar 2013 02:14:52 +0000
+In-Reply-To: <87d2v1tfr0.fsf@rustcorp.com.au>
+References: <20130312223211.492954675@linuxfoundation.org>
+	 <20130312223212.790278686@linuxfoundation.org>
+	 <874ngeykp6.wl%satoru.takeuchi@gmail.com> <87txoetre6.fsf@rustcorp.com.au>
+	 <87k3pagllu.wl%satoru.takeuchi@gmail.com> <87d2v1tfr0.fsf@rustcorp.com.au>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-o0xneHHjTjCluw23MPZ+"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> Eric Wong <normalperson@yhbt.net> wrote:
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > * Eric Wong (normalperson@yhbt.net) wrote:
-> > > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > > > +/*
-> > > > > + * Load a data from shared memory.
-> > > > > + */
-> > > > > +#define CMM_LOAD_SHARED(p)		ACCESS_ONCE(p)
-> > > > 
-> > > > When iterating through the queue by dequeueing, I needed a way
-> > > > to get the tail at the start of the iteration and use that as
-> > > > a sentinel while iterating, so I access the tail like this:
-> > > > 
-> > > > 	struct wfcq_node *p = CMM_LOAD_SHARED(ep->rdltail.p);
-> > > > 
-> > > > I hope this is supported... it seems to work :)
-> > > 
-> > > Ideally it would be good if users could try using the exposed APIs to do
-> > > these things, or if it's really needed, maybe it's a sign that we need
-> > > to extend the API.
-> > 
-> > Right.  If I can use splice, I will not need this.  more comments below
-> > on splice...
-> 
-> Even with splice, I think I need to see the main tail at the start of
-> iteration to maintain compatibility (for weird apps that might care).
 
-Thanks for providing this detailed scenario. I think there is an
-important aspect in the use of splice I suggested on which we are not
-fully understanding each other. I will annotate your scenario below with
-clarifications:
+--=-o0xneHHjTjCluw23MPZ+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Consider this scenario:
-> 
->   1) main.queue has 20 events
-> 
->   2) epoll_wait(maxevents=16) called by user
-> 
->   3) splice all 20 events into unconsumed.queue, main.queue is empty
-> 
->   4) put_user + dequeue on 16 events from unconsumed.queue
->      # unconsumed.queue has 4 left at this point
-> 
->   5) main.queue gets several more events enqueued at any point after 3.
+On Fri, 2013-03-15 at 15:35 +1030, Rusty Russell wrote:
+> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
+> > At Thu, 14 Mar 2013 17:11:21 +1030,
+> > Rusty Russell wrote:
+> >>=20
+> >> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
+> >> > Hi Rusty,
+> >> >
+> >> > At Tue, 12 Mar 2013 15:43:33 -0700,
+> >> > Greg Kroah-Hartman wrote:
+> >> >> @@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
+> >> >> =20
+> >> >>  	mutex_lock(&rng_mutex);
+> >> >> =20
+> >> >> +	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
+> >> >> +	err =3D -ENOMEM;
+> >> >> +	if (!rng_buffer) {
+> >> >> +		rng_buffer =3D kmalloc(rng_buffer_size(), GFP_KERNEL);
+> >> >
+> >> > rng_buffer is now kmalloc-ed, but not kfree-ed. Shoudn't it be kfree=
+-ed
+> >> > at hwrng_unregister()? If my suspect is correct, the same problem is
+> >> > in 3.8.3-rc1 and 3.0.69-rc1. I'm OK to make a patch, but it'll be af=
+ter
+> >> > some hours.
+> >> >
+> >> > Corecct me if I'm wrong.
+> >>=20
+> >> Yes, it would be nice to free it, but it really makes sense to free it
+> >> in module_cleanup() (which would have to be written, as the module
+> >> currently doesn't have one).
+> >>=20
+> >> Cheers,
+> >> Rusty.
+> >
+> > From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+> >
+> > rng-core module allocates rng_buffer by kmalloc() since commit
+> > f7f154f1246ccc5a0a7e9ce50932627d60a0c878. But this buffer won't be
+> > freed and there is a memory leak possibility at module exit.
+> >
+> > Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Matt Mackall <mpm@selenic.com>
+> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> > Cc: Aurelien Jarno <aurelien@aurel32.net>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: stable@vger.kernel.org
+>=20
+> Cc: stable might be overkill, but I've tested it and put it in my patch
+> queue, and will push it to Linus once it's survived linux-next.
 
-Let's suppose 11 events are enqueued into main.queue after 3.
+If the module cannot be removed currently, it does not leak.  Making it
+removable is a feature addition and I think you're right that it's not
+suitable for stable.
 
-> 
->   6) epoll_wait(maxevents=16) called by user again
+Ben.
 
-Before 7), here is what should be done:
+--=20
+Ben Hutchings
+Usenet is essentially a HUGE group of people passing notes in class.
+                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette=
+'
 
-6.5) splice all new events from main.queue into unconsumed.queue.
-     unconsumed.queue will now contain 4 + 11 = 15 events. Note
-     that splice will preserve the right order of events within
-     unconsumed.queue.
+--=-o0xneHHjTjCluw23MPZ+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-> 
->   7) put_user + dequeue on 4 remaining items in unconsumed.queue
-> 
->      We can safely return 4 events back to the user at this point.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Step 7) will now return 15 events from unconsumed.queue.
+iQIVAwUAUUUnHOe/yOyVhhEJAQpERhAAqgbY9LTd1inmy27ekGO+2+8dw27YV+Y5
+VhObqdqVXcjTY1K2V+eCTZqHR3+wjTKSBbqpH9J4kSW8C2apAiGSA6DPsmGramxS
+DWhf2BBQba6ryczVNysbRUvUkqm2tABc2Tqexc7t+gO4nHYkzVzhDdBka5EEICXK
+umSgNQFryZcxgf86Twpr53uDbGZn7iI9AV7rzf3hfH9M4eTcn5C0vQa5wNav84wE
+rn+R72YPmdJQxMmoP1VD2VX3czXNP4OKQW4ByqarFRz/f7no6hw5/lvqhD4QTFRb
+zbs8VahKahFNw1lowY2ylSWgq6jLntY0FsRtENjcowuccLGaVhrlMm09ddUodD0Z
+0L+ORsIci7+7R1bml+Y9yDW1nxQX13GiUgEdboBXYu49VIFKcaIObZ2Wg16Nqhc+
+2IYZ4Z19S/SMHV9Tn7kvxMUSz98ivc128cgyEkKl3mATF7f/Q88LcL3xUCJWsXFe
+WUziH8MZTLxtEZqWWy7CGGo2crK3Ey8ucCLbF0Bw/ItZObImJqp3mQec36YF6h2W
+9BH2eG3UDijCJw3AmtnrH43kr3lDKGIrL3UWSUwYhpI/hsdHayqm/AnyYixTkOG+
+GZ41VjUVa2hjCHyLByuqsNHYV7UJFYoWE0WZQtPPMM5FrIX1z+7YuEH7bf/hRb9L
+RnLG4I2+QUY=
+=JLt7
+-----END PGP SIGNATURE-----
 
-> 
->      However, this might break compatibility for existing users.  I'm
->      not sure if there's any weird apps which know/expect the event
->      count they'll get from epoll_wait, but maybe there is one...
-
-With the new step 6.5), I don't think the behavior will change compared
-to what is already there.
-
-> 
->   8) We could perform a splice off main.queue to fill the remaining
->      slots the user requested, but we do not know if the things we
->      splice from main.queue at this point were just dequeued in 7.
-> 
->      If we loaded the main.queue.tail before 7, we could safely splice
->      into unconsumed.queue and know when to stop when repeating the
->      put_user + dequeue loop.
-
-We can achieve the same thing by doing step 6.5) at the beginning of
-epoll_wait(). It's important to do it at the beginning of epoll_wait for
-the reason you discuss in 8) : if you wait until you notice that
-unconsumed.queue is empty before refilling it from main.queue, you won't
-be able to know if the events in main.queue were added after the first
-event was dequeued.
-
-Step 6.5) should be performed each time upon entry into epoll_wait(). It
-does not matter if unconsumed.queue would happen to have enough events
-to fill in the maxevents request or not (and you don't want to iterate
-on the unconsumed.queue needlessly to count them): you can just do a
-O(1) splice from main.queue into unconsumed.queue, and your original
-semantic should be preserved.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+--=-o0xneHHjTjCluw23MPZ+--
