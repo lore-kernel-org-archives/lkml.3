@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3CQTAt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 15:00:49 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:39024 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab3CQTAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 15:00:47 -0400
-Message-ID: <1363546844.29475.83.camel@edumazet-glaptop>
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: dormando <dormando@rydia.net>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Sun, 17 Mar 2013 12:00:44 -0700
-In-Reply-To: <1363539169.29475.78.camel@edumazet-glaptop>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
-	 <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
-	 <1362494795.15793.113.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303061631290.6723@dflat>
-	 <1362663990.15793.208.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303141359080.16308@dflat>
-	 <1363301786.29475.40.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303141610490.16308@dflat>
-	 <1363303174.29475.46.camel@edumazet-glaptop>
-	 <1363455366.29475.66.camel@edumazet-glaptop>
-	 <1363455885.29475.68.camel@edumazet-glaptop>
-	 <alpine.DEB.2.02.1303170218460.28650@dflat>
-	 <1363538008.29475.73.camel@edumazet-glaptop>
-	 <1363539169.29475.78.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756632Ab3CQTCb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 15:02:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756553Ab3CQTC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 15:02:28 -0400
+Date: Sun, 17 Mar 2013 20:00:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing: syscall_*regfunc() can race with
+	copy_process()
+Message-ID: <20130317190023.GA24023@redhat.com>
+References: <20130317182831.GA22986@redhat.com> <1363546123.25967.125.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363546123.25967.125.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-17 at 09:52 -0700, Eric Dumazet wrote:
+On 03/17, Steven Rostedt wrote:
+>
+> On Sun, 2013-03-17 at 19:28 +0100, Oleg Nesterov wrote:
+> > syscall_regfunc() and syscall_unregfunc() should set/clear
+> > TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
+> > with copy_process() and miss the new child which was not added to
+> > init_task.tasks list yet.
+> >
+> > Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
+> > under tasklist.
+>
+> Is this because "p = dup_task_struct(current);" is outside the lock?
+> Probably should state this in the change log.
 
-> 
-> We perform a sock_hold() somewhere while the socket is already dead.
+Not only, syscall_regfunc/syscall_unregfunc can miss the new child.
 
-Oh well, thats not exactly that.
+Just suppose that syscall_regfunc() takes tasklist right before the
+forking task tries to take it for writing and and the child to the
+list.
 
-When processing ICMP messages we perform a full inet[6] lookup and can
-find a LISTEN socket.
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+> > +		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > +	else
+> > +		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > +#endif
+>
+> I hate seeing #ifdef code like this in C files. Can you add a function
+> to set this in include/trace/syscalls.h:
 
-Please try the following fix :
+It seems that everyone hates them, except me ;)
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index b7ab868..3d250c6 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -407,7 +407,8 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 		if (code > NR_ICMP_UNREACH)
- 			goto out;
- 
--		if (code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
-+		if (sk->sk_state != TCP_LISTEN &&
-+		    code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
- 			tp->mtu_info = info;
- 			if (!sock_owned_by_user(sk)) {
- 				tcp_v4_mtu_reduced(sk);
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 9b64600..c12b3ff 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -388,7 +388,7 @@ static void tcp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
- 			dst->ops->redirect(dst, sk, skb);
- 	}
- 
--	if (type == ICMPV6_PKT_TOOBIG) {
-+	if (type == ICMPV6_PKT_TOOBIG && sk->sk_state != TCP_LISTEN) {
- 		tp->mtu_info = ntohl(info);
- 		if (!sock_owned_by_user(sk))
- 			tcp_v6_mtu_reduced(sk);
+> #ifdef CONFIG_TRACEPOINTS
+> static inline void syscall_tracepoint_update(struct task_struct *p)
+> {
+> 	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+> 		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> 	else
+> 		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> }
+> #else
+> static inline void syscall_tracepoint_update(struct task_struct *p) {}
+> #endif
 
+OK, thanks, will do. But perhaps tracepoint_fork() would be better?
 
+Oleg.
 
