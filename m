@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab3CQOhG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 10:37:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17856 "EHLO mx1.redhat.com"
+	id S932565Ab3CQOjk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 10:39:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49266 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab3CQOhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 10:37:02 -0400
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-From: Myron Stowe <mstowe@redhat.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
-        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
-References: <20130316213512.2974.17303.stgit@amt.stowe>
-	 <20130316213519.2974.38954.stgit@amt.stowe>
-	 <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
-	 <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
-	 <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
-	 <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
-	 <1363530028.2423.43.camel@zim.stowe>
-	 <CAPXgP13+BACQEid=xcFLDv+Tm3A1pCqDDfP4K+ZZrwGZBQ9A8g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 17 Mar 2013 08:36:57 -0600
-Message-ID: <1363531017.2423.50.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756360Ab3CQOji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 10:39:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,859,1355126400"; 
+   d="scan'208";a="304108359"
+From: Andi Kleen <andi@firstfloor.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements for kswapd
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+	<1363525456-10448-3-git-send-email-mgorman@suse.de>
+Date: Sun, 17 Mar 2013 07:39:37 -0700
+In-Reply-To: <1363525456-10448-3-git-send-email-mgorman@suse.de> (Mel Gorman's
+	message of "Sun, 17 Mar 2013 13:04:08 +0000")
+Message-ID: <m2a9q2jdjq.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-17 at 15:29 +0100, Kay Sievers wrote:
-> On Sun, Mar 17, 2013 at 3:20 PM, Myron Stowe <mstowe@redhat.com> wrote:
-> > On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
-> >> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
-> >> <alex.williamson@redhat.com> wrote:
-> >> > I'm assuming that the device only breaks because udevadm is dumping the
-> >> > full I/O port register space of the device and that if an actual driver
-> >> > was interacting with it through this interface that it would work.  Who
-> >> > knows how many devices will have read side-effects by udevadm blindly
-> >> > dumping these files.  Thanks,
-> >>
-> >> Sysfs is a too public interface to export things there which make
-> >> devices/driver choke on a simple read() of an attribute.
-> >>
-> >> This is nothing specific to udevadm, any tool can do that. Udevadm
-> >> will never read any of the files during normal operation. The admin
-> >> explicitly asked udevadm with a specific command to dump all the stuff
-> >> the device offers.
-> >>
-> >> The kernel driver needs to be fixed to allow that, in the worst case,
-> >> the attributes not exported at all. People should take more care what
-> >> they export in /sys, it's not a hidden and private ioctl what's
-> >> exported there, stuff is very visible and will be looked at.
-> >>
-> >> Telling userspace not to use specific stuff in /sys I would not expect
-> >> to work as a strategy; there is too much weird stuff out there that
-> >> will always try to do that ...
-> >
-> > Kay - could you comment on Foot Note 3 in
-> > https://lkml.org/lkml/2013/3/16/168
-> >
-> > With respect to 'udev', you are working on the assumption that all files
-> > in sysfs must be readable with no consequences which may be implied by
-> > the Documentation's sysfs.txt file's mentioning ASCII.  If we are to
-> > interpret that as strictly as you seem to want to then why is there
-> > sysfs support for creating binary files?
-> 
-> They cannot be distinguished from outside, so there is nothing I know
-> that could make a difference to userspace tools.
+Mel Gorman <mgorman@suse.de> writes:
+> +
+> +	/*
+> +	 * For direct reclaim, reclaim the number of pages requested. Less
+> +	 * care is taken to ensure that scanning for each LRU is properly
+> +	 * proportional. This is unfortunate and is improper aging but
+> +	 * minimises the amount of time a process is stalled.
+> +	 */
+> +	if (!current_is_kswapd()) {
+> +		if (nr_reclaimed >= nr_to_reclaim) {
+> +			for_each_evictable_lru(l)
 
-Agreed
-> 
-> Tools -- no matter how useful they are not not, it's that they do that
-> for many years already -- need to be able to read() the stuff in
-> there, without causing any damage to the system.
+Don't we need some NUMA awareness here?
+Similar below.
 
-So then, why are certain sysfs files skipped in udevadm-info's parsing
-(./src/udevadm-info.c::skip_attribute())?
-> 
-> Kay
+-Andi
 
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
