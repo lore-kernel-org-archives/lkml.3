@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab3CQNGb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 09:06:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51609 "EHLO mx2.suse.de"
+	id S1756323Ab3CQNGz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 09:06:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51594 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756200Ab3CQNEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 09:04:25 -0400
+	id S1753472Ab3CQNEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 09:04:23 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -13,9 +13,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
         Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat based on reclaim progress
-Date: Sun, 17 Mar 2013 13:04:10 +0000
-Message-Id: <1363525456-10448-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements for kswapd
+Date: Sun, 17 Mar 2013 13:04:08 +0000
+Message-Id: <1363525456-10448-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1363525456-10448-1-git-send-email-mgorman@suse.de>
 References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
@@ -23,117 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the past, kswapd makes a decision on whether to compact memory after the
-pgdat was considered balanced. This more or less worked but it is late to
-make such a decision and does not fit well now that kswapd makes a decision
-whether to exit the zone scanning loop depending on reclaim progress.
+Simplistically, the anon and file LRU lists are scanned proportionally
+depending on the value of vm.swappiness although there are other factors
+taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+the number of pages kswapd reclaims" limits the number of pages kswapd
+reclaims but it breaks this proportional scanning and may evenly shrink
+anon/file LRUs regardless of vm.swappiness.
 
-This patch will compact a pgdat if at least  the requested number of pages
-were reclaimed from unbalanced zones for a given priority. If any zone is
-currently balanced, kswapd will not call compaction as it is expected the
-necessary pages are already available.
+This patch preserves the proportional scanning and reclaim. It does mean
+that kswapd will reclaim more than requested but the number of pages will
+be related to the high watermark.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c | 52 +++++++++++++++++++++-------------------------------
- 1 file changed, 21 insertions(+), 31 deletions(-)
+ mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 41 insertions(+), 11 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 279d0c2..7513bd1 100644
+index 4835a7a..182ff15 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2694,8 +2694,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+@@ -1815,6 +1815,45 @@ out:
+ 	}
+ }
  
- 	do {
- 		unsigned long lru_pages = 0;
-+		unsigned long nr_to_reclaim = 0;
- 		unsigned long nr_reclaimed = sc.nr_reclaimed;
-+		unsigned long this_reclaimed;
- 		bool raise_priority = true;
-+		bool pgdat_needs_compaction = true;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2743,7 +2746,17 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
- 
-+			if (!populated_zone(zone))
-+				continue;
++static void recalculate_scan_count(unsigned long nr_reclaimed,
++		unsigned long nr_to_reclaim,
++		unsigned long nr[NR_LRU_LISTS])
++{
++	enum lru_list l;
 +
- 			lru_pages += zone_reclaimable_pages(zone);
++	/*
++	 * For direct reclaim, reclaim the number of pages requested. Less
++	 * care is taken to ensure that scanning for each LRU is properly
++	 * proportional. This is unfortunate and is improper aging but
++	 * minimises the amount of time a process is stalled.
++	 */
++	if (!current_is_kswapd()) {
++		if (nr_reclaimed >= nr_to_reclaim) {
++			for_each_evictable_lru(l)
++				nr[l] = 0;
++		}
++		return;
++	}
 +
-+			/* Check if the memory needs to be defragmented */
-+			if (order && pgdat_needs_compaction &&
-+					zone_watermark_ok(zone, order,
-+						low_wmark_pages(zone),
-+						*classzone_idx, 0))
-+				pgdat_needs_compaction = false;
- 		}
- 
- 		/*
-@@ -2814,6 +2827,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				 */
- 				if (kswapd_shrink_zone(zone, &sc, lru_pages))
- 					raise_priority = false;
++	/*
++	 * For kswapd, reclaim at least the number of pages requested.
++	 * However, ensure that LRUs shrink by the proportion requested
++	 * by get_scan_count() so vm.swappiness is obeyed.
++	 */
++	if (nr_reclaimed >= nr_to_reclaim) {
++		unsigned long min = ULONG_MAX;
 +
-+				nr_to_reclaim += sc.nr_to_reclaim;
++		/* Find the LRU with the fewest pages to reclaim */
++		for_each_evictable_lru(l)
++			if (nr[l] < min)
++				min = nr[l];
++
++		/* Normalise the scan counts so kswapd scans proportionally */
++		for_each_evictable_lru(l)
++			nr[l] -= min;
++	}
++}
++
+ /*
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+@@ -1841,17 +1880,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 							    lruvec, sc);
  			}
- 
- 			/*
-@@ -2864,46 +2879,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		if (try_to_freeze() || kthread_should_stop())
- 			break;
- 
--		/* If no reclaim progress then increase scanning priority */
--		if (sc.nr_reclaimed - nr_reclaimed == 0)
--			raise_priority = true;
-+		/* Compact if necessary and kswapd is reclaiming efficiently */
-+		this_reclaimed = sc.nr_reclaimed - nr_reclaimed;
-+		if (order && pgdat_needs_compaction &&
-+				this_reclaimed > nr_to_reclaim)
-+			compact_pgdat(pgdat, order);
- 
- 		/*
- 		 * Raise priority if scanning rate is too low or there was no
- 		 * progress in reclaiming pages
- 		 */
--		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
-+		if (raise_priority || !this_reclaimed)
- 			sc.priority--;
- 	} while (sc.priority >= 0 &&
- 		 !pgdat_balanced(pgdat, order, *classzone_idx));
- 
--	/*
--	 * If kswapd was reclaiming at a higher order, it has the option of
--	 * sleeping without all zones being balanced. Before it does, it must
--	 * ensure that the watermarks for order-0 on *all* zones are met and
--	 * that the congestion flags are cleared. The congestion flag must
--	 * be cleared as kswapd is the only mechanism that clears the flag
--	 * and it is potentially going to sleep here.
--	 */
--	if (order) {
--		int zones_need_compaction = 1;
--
--		for (i = 0; i <= end_zone; i++) {
--			struct zone *zone = pgdat->node_zones + i;
--
--			if (!populated_zone(zone))
--				continue;
--
--			/* Check if the memory needs to be defragmented. */
--			if (zone_watermark_ok(zone, order,
--				    low_wmark_pages(zone), *classzone_idx, 0))
--				zones_need_compaction = 0;
--		}
--
--		if (zones_need_compaction)
--			compact_pgdat(pgdat, order);
--	}
--
- out:
- 	/*
- 	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+ 		}
+-		/*
+-		 * On large memory systems, scan >> priority can become
+-		 * really large. This is fine for the starting priority;
+-		 * we want to put equal scanning pressure on each zone.
+-		 * However, if the VM has a harder time of freeing pages,
+-		 * with multiple processes reclaiming pages, the total
+-		 * freeing target can get unreasonably large.
+-		 */
+-		if (nr_reclaimed >= nr_to_reclaim &&
+-		    sc->priority < DEF_PRIORITY)
+-			break;
++
++		recalculate_scan_count(nr_reclaimed, nr_to_reclaim, nr);
+ 	}
+ 	blk_finish_plug(&plug);
+ 	sc->nr_reclaimed += nr_reclaimed;
 -- 
 1.8.1.4
 
