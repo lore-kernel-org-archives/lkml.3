@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3CQNFX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 09:05:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51648 "EHLO mx2.suse.de"
+	id S1756308Ab3CQNFt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 09:05:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51623 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756237Ab3CQNEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 09:04:30 -0400
+	id S1756224Ab3CQNE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 09:04:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -13,9 +13,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
         Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/10] mm: vmscan: Check if kswapd should writepage once per priority
-Date: Sun, 17 Mar 2013 13:04:15 +0000
-Message-Id: <1363525456-10448-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/10] mm: vmscan: Have kswapd writeback pages based on dirty pages encountered, not priority
+Date: Sun, 17 Mar 2013 13:04:12 +0000
+Message-Id: <1363525456-10448-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1363525456-10448-1-git-send-email-mgorman@suse.de>
 References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
@@ -23,48 +23,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kswapd checks if it should start writepage as it shrinks
-each zone without taking into consideration if the zone is balanced or
-not. This is not wrong as such but it does not make much sense either.
-This patch checks once per priority if kswapd should be writing pages.
+Currently kswapd queues dirty pages for writeback if scanning at an elevated
+priority but the priority kswapd scans at is not related to the number
+of unqueued dirty encountered.  Since commit "mm: vmscan: Flatten kswapd
+priority loop", the priority is related to the size of the LRU and the
+zone watermark which is no indication as to whether kswapd should write
+pages or not.
+
+This patch tracks if an excessive number of unqueued dirty pages are being
+encountered at the end of the LRU.  If so, it indicates that dirty pages
+are being recycled before flusher threads can clean them and flags the
+zone so that kswapd will start writing pages until the zone is balanced.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ include/linux/mmzone.h |  8 ++++++++
+ mm/vmscan.c            | 29 +++++++++++++++++++++++------
+ 2 files changed, 31 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index ede2749..edd6b98 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -495,6 +495,9 @@ typedef enum {
+ 	ZONE_CONGESTED,			/* zone has many dirty pages backed by
+ 					 * a congested BDI
+ 					 */
++	ZONE_DIRTY,			/* reclaim scanning has recently found
++					 * many dirty file pages
++					 */
+ } zone_flags_t;
+ 
+ static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+@@ -517,6 +520,11 @@ static inline int zone_is_reclaim_congested(const struct zone *zone)
+ 	return test_bit(ZONE_CONGESTED, &zone->flags);
+ }
+ 
++static inline int zone_is_reclaim_dirty(const struct zone *zone)
++{
++	return test_bit(ZONE_DIRTY, &zone->flags);
++}
++
+ static inline int zone_is_reclaim_locked(const struct zone *zone)
+ {
+ 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 84375b2..8c66e5a 100644
+index af3bb6f..493728b 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2804,6 +2804,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+@@ -675,13 +675,14 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 				      struct zone *zone,
+ 				      struct scan_control *sc,
+ 				      enum ttu_flags ttu_flags,
+-				      unsigned long *ret_nr_dirty,
++				      unsigned long *ret_nr_unqueued_dirty,
+ 				      unsigned long *ret_nr_writeback,
+ 				      bool force_reclaim)
+ {
+ 	LIST_HEAD(ret_pages);
+ 	LIST_HEAD(free_pages);
+ 	int pgactivate = 0;
++	unsigned long nr_unqueued_dirty = 0;
+ 	unsigned long nr_dirty = 0;
+ 	unsigned long nr_congested = 0;
+ 	unsigned long nr_reclaimed = 0;
+@@ -807,14 +808,17 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		if (PageDirty(page)) {
+ 			nr_dirty++;
+ 
++			if (!PageWriteback(page))
++				nr_unqueued_dirty++;
++
+ 			/*
+ 			 * Only kswapd can writeback filesystem pages to
+-			 * avoid risk of stack overflow but do not writeback
+-			 * unless under significant pressure.
++			 * avoid risk of stack overflow but only writeback
++			 * if many dirty pages have been encountered.
+ 			 */
+ 			if (page_is_file_cache(page) &&
+ 					(!current_is_kswapd() ||
+-					 sc->priority >= DEF_PRIORITY - 2)) {
++					 !zone_is_reclaim_dirty(zone))) {
+ 				/*
+ 				 * Immediately reclaim when written back.
+ 				 * Similar in principal to deactivate_page()
+@@ -959,7 +963,7 @@ keep:
+ 	list_splice(&ret_pages, page_list);
+ 	count_vm_events(PGACTIVATE, pgactivate);
+ 	mem_cgroup_uncharge_end();
+-	*ret_nr_dirty += nr_dirty;
++	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
+ 	*ret_nr_writeback += nr_writeback;
+ 	return nr_reclaimed;
+ }
+@@ -1372,6 +1376,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 			(nr_taken >> (DEF_PRIORITY - sc->priority)))
+ 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+ 
++	/*
++	 * Similarly, if many dirty pages are encountered that are not
++	 * currently being written then flag that kswapd should start
++	 * writing back pages.
++	 */
++	if (global_reclaim(sc) && nr_dirty &&
++			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
++		zone_set_flag(zone, ZONE_DIRTY);
++
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
+ 		nr_scanned, nr_reclaimed,
+@@ -2735,8 +2748,12 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				end_zone = i;
+ 				break;
+ 			} else {
+-				/* If balanced, clear the congested flag */
++				/*
++				 * If balanced, clear the dirty and congested
++				 * flags
++				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
++				zone_clear_flag(zone, ZONE_DIRTY);
+ 			}
  		}
  
- 		/*
-+		 * If we're getting trouble reclaiming, start doing writepage
-+		 * even in laptop mode.
-+		 */
-+		if (sc.priority < DEF_PRIORITY - 2)
-+			sc.may_writepage = 1;
-+
-+		/*
- 		 * Now scan the zone in the dma->highmem direction, stopping
- 		 * at the last zone which needs scanning.
- 		 *
-@@ -2876,13 +2883,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				nr_to_reclaim += sc.nr_to_reclaim;
- 			}
- 
--			/*
--			 * If we're getting trouble reclaiming, start doing
--			 * writepage even in laptop mode.
--			 */
--			if (sc.priority < DEF_PRIORITY - 2)
--				sc.may_writepage = 1;
--
- 			if (zone->all_unreclaimable) {
- 				if (end_zone && end_zone == i)
- 					end_zone--;
 -- 
 1.8.1.4
 
