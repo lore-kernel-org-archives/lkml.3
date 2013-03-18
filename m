@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab3CRWAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:00:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45534 "EHLO
+	id S1757232Ab3CRWAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:00:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab3CRVGm (ORCPT
+	with ESMTP id S1755375Ab3CRVGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 17:06:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jan Kara <jack@suse.cz>
-Subject: [ 18/75] ext3: Fix format string issues
-Date: Mon, 18 Mar 2013 14:06:41 -0700
-Message-Id: <20130318210511.559070550@linuxfoundation.org>
+        Vincent Deffontaines <vincent@gryzor.com>, Sean Young <sean@mess.org>
+Subject: [ 19/75] tty/8250_pnp: serial port detection regression since v3.7
+Date: Mon, 18 Mar 2013 14:06:42 -0700
+Message-Id: <20130318210511.628163756@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,48 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Sean Young <sean@mess.org>
 
-commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
+commit 77e372a3d82e5e4878ce1962207edd766773cc76 upstream.
 
-ext3_msg() takes the printk prefix as the second parameter and the
-format string as the third parameter. Two callers of ext3_msg omit the
-prefix and pass the format string as the second parameter and the first
-parameter to the format string as the third parameter. In both cases
-this string comes from an arbitrary source. Which means the string may
-contain format string characters, which will
-lead to undefined and potentially harmful behavior.
+The InsydeH2O BIOS (version dated 09/12/2011) has the following in
+its pnp resouces for its serial ports:
 
-The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
-in ext3") and is fixed by this patch.
+$ cat /sys/bus/pnp/devices/00:0b/resources
+state = active
+io disabled
+irq disabled
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jan Kara <jack@suse.cz>
+We do not check if the resources are disabled, and create a bogus
+ttyS* device. Since commit 835d844d1a28e (8250_pnp: do pnp probe
+before legacy probe) we get a bogus ttyS0, which prevents the legacy
+probe from detecting it.
+
+Note, the BIOS can also be upgraded, fixing this problem, but for people
+who can't do that, this fix is needed.
+
+Reported-by: Vincent Deffontaines <vincent@gryzor.com>
+Tested-by: Vincent Deffontaines <vincent@gryzor.com>
+Signed-off-by: Sean Young <sean@mess.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250_pnp.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -353,7 +353,7 @@ static struct block_device *ext3_blkdev_
- 	return bdev;
+--- a/drivers/tty/serial/8250/8250_pnp.c
++++ b/drivers/tty/serial/8250/8250_pnp.c
+@@ -429,6 +429,7 @@ serial_pnp_probe(struct pnp_dev *dev, co
+ {
+ 	struct uart_8250_port uart;
+ 	int ret, line, flags = dev_id->driver_data;
++	struct resource *res = NULL;
  
- fail:
--	ext3_msg(sb, "error: failed to open journal device %s: %ld",
-+	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
- 		__bdevname(dev, b), PTR_ERR(bdev));
- 
- 	return NULL;
-@@ -887,7 +887,7 @@ static ext3_fsblk_t get_sb_block(void **
- 	/*todo: use simple_strtoll with >32bit ext3 */
- 	sb_block = simple_strtoul(options, &options, 0);
- 	if (*options && *options != ',') {
--		ext3_msg(sb, "error: invalid sb specification: %s",
-+		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
- 		       (char *) *data);
- 		return 1;
- 	}
+ 	if (flags & UNKNOWN_DEV) {
+ 		ret = serial_pnp_guess_board(dev);
+@@ -439,11 +440,12 @@ serial_pnp_probe(struct pnp_dev *dev, co
+ 	memset(&uart, 0, sizeof(uart));
+ 	if (pnp_irq_valid(dev, 0))
+ 		uart.port.irq = pnp_irq(dev, 0);
+-	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2)) {
+-		uart.port.iobase = pnp_port_start(dev, 2);
+-		uart.port.iotype = UPIO_PORT;
+-	} else if (pnp_port_valid(dev, 0)) {
+-		uart.port.iobase = pnp_port_start(dev, 0);
++	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2))
++		res = pnp_get_resource(dev, IORESOURCE_IO, 2);
++	else if (pnp_port_valid(dev, 0))
++		res = pnp_get_resource(dev, IORESOURCE_IO, 0);
++	if (pnp_resource_enabled(res)) {
++		uart.port.iobase = res->start;
+ 		uart.port.iotype = UPIO_PORT;
+ 	} else if (pnp_mem_valid(dev, 0)) {
+ 		uart.port.mapbase = pnp_mem_start(dev, 0);
 
 
