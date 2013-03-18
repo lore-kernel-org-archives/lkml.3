@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab3CRVVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:21:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
+	id S932993Ab3CRVVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:21:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab3CRVKN (ORCPT
+	with ESMTP id S1756426Ab3CRVKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:13 -0400
+	Mon, 18 Mar 2013 17:10:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 13/40] tty: serial: fix typo "ARCH_S5P6450"
-Date: Mon, 18 Mar 2013 14:10:51 -0700
-Message-Id: <20130318211017.215261095@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Emese Revfy <re.emese@gmail.com>,
+        PaX Team <pageexec@freemail.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/40] signal: always clear sa_restorer on execve
+Date: Mon, 18 Mar 2013 14:10:49 -0700
+Message-Id: <20130318211017.077816181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -26,33 +33,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Kees Cook <keescook@chromium.org>
 
-commit 827aa0d36d486f359808c8fb931cf7a71011a09d upstream.
+commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
 
-This could have been either ARCH_S5P64X0 or CPU_S5P6450. Looking at
-commit 2555e663b367b8d555e76023f4de3f6338c28d6c ("ARM: S5P64X0: Add UART
-serial support for S5P6450") - which added this typo - makes clear this
-should be CPU_S5P6450.
+When the new signal handlers are set up, the location of sa_restorer is
+not cleared, leaking a parent process's address space location to
+children.  This allows for a potential bypass of the parent's ASLR by
+examining the sa_restorer value returned when calling sigaction().
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Based on what should be considered "secret" about addresses, it only
+matters across the exec not the fork (since the VMAs haven't changed
+until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
+this is where it should be fixed.
+
+Given the few uses of sa_restorer, a "set" function was not written
+since this would be the only use.  Instead, we use
+__ARCH_HAS_SA_RESTORER, as already done in other places.
+
+Example of the leak before applying this patch:
+
+  $ cat /proc/$$/maps
+  ...
+  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  $ ./leak
+  ...
+  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  1 0 (nil) 0x7fb9f30b94a0
+  2 4000000 (nil) 0x7f278bcaa4a0
+  3 4000000 (nil) 0x7f278bcaa4a0
+  4 0 (nil) 0x7fb9f30b94a0
+  ...
+
+[akpm@linux-foundation.org: use SA_RESTORER for backportability]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/signal.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -458,7 +458,7 @@ config SERIAL_SAMSUNG_UARTS
- 	int
- 	depends on ARM && PLAT_SAMSUNG
- 	default 2 if ARCH_S3C2400
--	default 6 if ARCH_S5P6450
-+	default 6 if CPU_S5P6450
- 	default 4 if SERIAL_SAMSUNG_UARTS_4
- 	default 3
- 	help
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -437,6 +437,9 @@ flush_signal_handlers(struct task_struct
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
++#ifdef SA_RESTORER
++		ka->sa.sa_restorer = NULL;
++#endif
+ 		sigemptyset(&ka->sa.sa_mask);
+ 		ka++;
+ 	}
 
 
