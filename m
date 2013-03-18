@@ -1,231 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab3CRW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:27:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39774 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754259Ab3CRW1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 18:27:02 -0400
-Date: Mon, 18 Mar 2013 18:32:42 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Shuge <shugelinux@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        Kevin <kevin@allwinneretch.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] bounce:fix bug, avoid to flush dcache on slab page
- from jbd2.
-Message-ID: <20130318173242.GA7852@quack.suse.cz>
-References: <5139DB90.5090302@gmail.com>
- <20130312153221.0d26fe5599d4885e51bb0c7c@linux-foundation.org>
- <20130313011020.GA5313@blackbox.djwong.org>
- <20130313085021.GA29730@quack.suse.cz>
- <20130313194429.GE5313@blackbox.djwong.org>
- <20130313210216.GA7754@quack.suse.cz>
- <20130314224243.GI5313@blackbox.djwong.org>
- <20130315100105.GA4889@quack.suse.cz>
- <20130315175441.GB5306@blackbox.djwong.org>
+	id S1755217Ab3CRWcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:32:16 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:59219 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab3CRWcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 18:32:14 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        dmitry.kasatkin@intel.com, akpm@linux-foundation.org,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
+	<1363379758-10071-4-git-send-email-vgoyal@redhat.com>
+	<51438EDB.3050300@schaufler-ca.com>
+	<20130318170552.GG20743@redhat.com>
+	<514753DC.4030609@schaufler-ca.com>
+	<20130318183028.GB28061@redhat.com>
+	<514768AF.4010504@schaufler-ca.com>
+Date: Mon, 18 Mar 2013 15:32:02 -0700
+In-Reply-To: <514768AF.4010504@schaufler-ca.com> (Casey Schaufler's message of
+	"Mon, 18 Mar 2013 12:19:11 -0700")
+Message-ID: <8738vs7319.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130315175441.GB5306@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19Thy2TLWR3Uij3iZLl7eXQGcJjjN6ylOk=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Casey Schaufler <casey@schaufler-ca.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 3/4] capability: Create a new capability CAP_SIGNED
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 15-03-13 10:54:41, Darrick J. Wong wrote:
-> On Fri, Mar 15, 2013 at 11:01:05AM +0100, Jan Kara wrote:
-> > On Thu 14-03-13 15:42:43, Darrick J. Wong wrote:
-> > > On Wed, Mar 13, 2013 at 10:02:16PM +0100, Jan Kara wrote:
-> > > > On Wed 13-03-13 12:44:29, Darrick J. Wong wrote:
-> > > > > On Wed, Mar 13, 2013 at 09:50:21AM +0100, Jan Kara wrote:
-> > > > > > On Tue 12-03-13 18:10:20, Darrick J. Wong wrote:
-> > > > > > > On Tue, Mar 12, 2013 at 03:32:21PM -0700, Andrew Morton wrote:
-> > > > > > > > On Fri, 08 Mar 2013 20:37:36 +0800 Shuge <shugelinux@gmail.com> wrote:
-> > > > > > > > 
-> > > > > > > > > The bounce accept slab pages from jbd2, and flush dcache on them.
-> > > > > > > > > When enabling VM_DEBUG, it will tigger VM_BUG_ON in page_mapping().
-> > > > > > > > > So, check PageSlab to avoid it in __blk_queue_bounce().
-> > > > > > > > > 
-> > > > > > > > > Bug URL: http://lkml.org/lkml/2013/3/7/56
-> > > > > > > > > 
-> > > > > > > > > ...
-> > > > > > > > >
-> > > > > > > > > --- a/mm/bounce.c
-> > > > > > > > > +++ b/mm/bounce.c
-> > > > > > > > > @@ -214,7 +214,8 @@ static void __blk_queue_bounce(struct request_queue 
-> > > > > > > > > *q, struct bio **bio_orig,
-> > > > > > > > >   		if (rw == WRITE) {
-> > > > > > > > >   			char *vto, *vfrom;
-> > > > > > > > >   -			flush_dcache_page(from->bv_page);
-> > > > > > > > > +			if (unlikely(!PageSlab(from->bv_page)))
-> > > > > > > > > +				flush_dcache_page(from->bv_page);
-> > > > > > > > >   			vto = page_address(to->bv_page) + to->bv_offset;
-> > > > > > > > >   			vfrom = kmap(from->bv_page) + from->bv_offset;
-> > > > > > > > >   			memcpy(vto, vfrom, to->bv_len);
-> > > > > > > > 
-> > > > > > > > I guess this is triggered by Catalin's f1a0c4aa0937975b ("arm64: Cache
-> > > > > > > > maintenance routines"), which added a page_mapping() call to arm64's
-> > > > > > > > arch/arm64/mm/flush.c:flush_dcache_page().
-> > > > > > > > 
-> > > > > > > > What's happening is that jbd2 is using kmalloc() to allocate buffer_head
-> > > > > > > > data.  That gets submitted down the BIO layer and __blk_queue_bounce()
-> > > > > > > > calls flush_dcache_page() which in the arm64 case calls page_mapping()
-> > > > > > > > and page_mapping() does VM_BUG_ON(PageSlab) and splat.
-> > > > > > > > 
-> > > > > > > > The unusual thing about all of this is that the payload for some disk
-> > > > > > > > IO is coming from kmalloc, rather than being a user page.  It's oddball
-> > > > > > > > but we've done this for ages and should continue to support it.
-> > > > > > > > 
-> > > > > > > > 
-> > > > > > > > Now, the page from kmalloc() cannot be in highmem, so why did the
-> > > > > > > > bounce code decide to bounce it?
-> > > > > > > > 
-> > > > > > > > __blk_queue_bounce() does
-> > > > > > > > 
-> > > > > > > > 		/*
-> > > > > > > > 		 * is destination page below bounce pfn?
-> > > > > > > > 		 */
-> > > > > > > > 		if (page_to_pfn(page) <= queue_bounce_pfn(q) && !force)
-> > > > > > > > 			continue;
-> > > > > > > > 
-> > > > > > > > and `force' comes from must_snapshot_stable_pages().  But
-> > > > > > > > must_snapshot_stable_pages() must have returned false, because if it
-> > > > > > > > had returned true then it would have been must_snapshot_stable_pages()
-> > > > > > > > which went BUG, because must_snapshot_stable_pages() calls page_mapping().
-> > > > > > > > 
-> > > > > > > > So my tentative diagosis is that arm64 is fishy.  A page which was
-> > > > > > > > allocated via jbd2_alloc(GFP_NOFS)->kmem_cache_alloc() ended up being
-> > > > > > > > above arm64's queue_bounce_pfn().  Can you please do a bit of
-> > > > > > > > investigation to work out if this is what is happening?  Find out why
-> > > > > > > > __blk_queue_bounce() decided to bounce a page which shouldn't have been
-> > > > > > > > bounced?
-> > > > > > > 
-> > > > > > > That sure is strange.  I didn't see any obvious reasons why we'd end up with a
-> > > > > > > kmalloc above queue_bounce_pfn().  But then I don't have any arm64s either.
-> > > > > > > 
-> > > > > > > > This is all terribly fragile :( afaict if someone sets
-> > > > > > > > bdi_cap_stable_pages_required() against that jbd2 queue, we're going to
-> > > > > > > > hit that BUG_ON() again, via must_snapshot_stable_pages()'s
-> > > > > > > > page_mapping() call.  (Darrick, this means you ;))
-> > > > > > > 
-> > > > > > > Wheeee.  You're right, we shouldn't be calling page_mapping on slab pages.
-> > > > > > > We can keep walking the bio segments to find a non-slab page that can tell us
-> > > > > > > MS_SNAP_STABLE is set, since we probably won't need the bounce buffer anyway.
-> > > > > > > 
-> > > > > > > How does something like this look?  (+ the patch above)
-> > > > > >   Umm, this won't quite work. We can have a bio which has just PageSlab
-> > > > > > page attached and so you won't be able to get to the superblock. Heh, isn't
-> > > > > > the whole page_mapping() thing in must_snapshot_stable_pages() wrong? When we
-> > > > > > do direct IO, these pages come directly from userspace and hell knows where
-> > > > > > they come from. Definitely their page_mapping() doesn't give us anything
-> > > > > > useful... Sorry for not realizing this earlier when reviewing the patch.
-> > > > > > 
-> > > > > > ... remembering why we need to get to sb and why ext3 needs this ... So
-> > > > > > maybe a better solution would be to have a bio flag meaning that pages need
-> > > > > > bouncing? And we would set it from filesystems that need it - in case of
-> > > > > > ext3 only writeback of data from kjournald actually needs to bounce the
-> > > > > > pages. Thoughts?
-> > > > > 
-> > > > > What about dirty pages that don't result in journal transactions?  I think
-> > > > > ext3_sync_file() eventually calls ext3_ordered_writepage, which then calls
-> > > > > __block_write_full_page, which in turn calls submit_bh().
-> > > >   So here we have two options:
-> > > > Either we let ext3 wait the same way as other filesystems when stable pages
-> > > > are required. Then only data IO from kjournald needs to be bounced (all
-> > > > other IO is properly protected by PageWriteback bit).
-> > > > 
-> > > > Or we won't let ext3 wait (as it is now), keep the superblock flag that fs
-> > > > needs bouncing, and set the bio flag in __block_write_full_page() and
-> > > > kjournald based on the sb flag.
-> > > > 
-> > > > I think the first option is slightly better but I don't feel strongly
-> > > > about that.
-> > > 
-> > > I like that first option -- it contains the kludgery to jbd instead of
-> > > spreading it around.  Here's a patch that passes a quick smoke test on ext[34],
-> > > xfs, and vfat.  What do you think of this one?  Should I create a
-> > > submit_snapshot_bh() instead of letting callers stuff in arbitrary dangerous
-> > > BH_ flags?
-> >   Thanks for writing the patch. I think _submit_bh() is OK as you did it. I
-> > have just two comments below.
-> > 
-> > > ---
-> > > From: Darrick J. Wong <darrick.wong@oracle.com>
-> > > Subject: [PATCH] mm: Make snapshotting pages for stable writes a per-bio operation
-> > > 
-> > > Walking a bio's page mappings has proved problematic, so create a new bio flag
-> > > to indicate that a bio's data needs to be snapshotted in order to guarantee
-> > > stable pages during writeback.  Next, for the one user (ext3/jbd) of
-> > > snapshotting, hook all the places where writes can be initiated without
-> > > PG_writeback set, and set BIO_SNAP_STABLE there.  Finally, the MS_SNAP_STABLE
-> > > mount flag (only used by ext3) is now superfluous, so get rid of it.
-> > > 
-> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > ---
-> > >  fs/buffer.c                 |    9 ++++++++-
-> > >  fs/ext3/super.c             |    1 -
-> > >  fs/jbd/commit.c             |    4 ++--
-> > >  include/linux/blk_types.h   |    3 ++-
-> > >  include/linux/buffer_head.h |    1 +
-> > >  include/uapi/linux/fs.h     |    1 -
-> > >  mm/bounce.c                 |   21 +--------------------
-> > >  mm/page-writeback.c         |    4 ----
-> > >  8 files changed, 14 insertions(+), 30 deletions(-)
-> > > 
-> > ...
-> > > diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-> > > index 86b39b1..b91b688 100644
-> > > --- a/fs/jbd/commit.c
-> > > +++ b/fs/jbd/commit.c
-> > > @@ -163,7 +163,7 @@ static void journal_do_submit_data(struct buffer_head **wbuf, int bufs,
-> > >  	for (i = 0; i < bufs; i++) {
-> > >  		wbuf[i]->b_end_io = end_buffer_write_sync;
-> > >  		/* We use-up our safety reference in submit_bh() */
-> > > -		submit_bh(write_op, wbuf[i]);
-> > > +		_submit_bh(write_op, wbuf[i], 1 << BIO_SNAP_STABLE);
-> >   Please add a comment here why we need BIO_SNAP_STABLE. Something like:
-> > /*
-> >  * Here we write back pagecache data that may be mmaped. Since we cannot
-> >  * afford to clean the page and set PageWriteback here due to lock ordering
-> >  * (page lock ranks above transaction start), the data can change while IO is
-> >  * in flight. Tell the block layer it should bounce the bio pages if stable
-> >  * data during write is required.
-> >  */
-> > 
-> > >  	}
-> > >  }
-> > >  
-> > > @@ -667,7 +667,7 @@ start_journal_io:
-> > >  				clear_buffer_dirty(bh);
-> > >  				set_buffer_uptodate(bh);
-> > >  				bh->b_end_io = journal_end_buffer_io_sync;
-> > > -				submit_bh(write_op, bh);
-> > > +				_submit_bh(write_op, bh, 1 << BIO_SNAP_STABLE);
-> >   And this isn't needed. Here we write out only metadata and JBD already
-> > handles copying those / waiting for IO in flight for metadata.
-> 
-> I think it only copies the page if either the buffer is also a part of the
-> current transaction (or someone called do_get_undo_access()).  Unfortunately,
-> if we're in data=journal mode, dirty data pages get pushed through jbd as if
-> they were fs metadata, but in the meantime other processes can still write to
-> those pages.  So I guess we need the journal to freeze those pages as soon as
-> they come in.
-  So you miss the part that do_get_write_access() actually waits for buffer
-if it is undergoing commit (kjournald is writing it). But you are right
-that in data=journal mode if the page is mmaped, user can change it while
-kjournald is doing write out. Actually the same problem is with ext4 and
-data=journal mode. So for now I'd stay with your simple patch and later we
-can optimize it so that we don't have to pay the penalty when the buffer is
-not journalled data.
 
-								Honza
+Adding Serge as he is the sometimes capabilities maintainer to this
+discussion.
 
----
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Casey Schaufler <casey@schaufler-ca.com> writes:
+
+> On 3/18/2013 11:30 AM, Vivek Goyal wrote:
+>> On Mon, Mar 18, 2013 at 10:50:21AM -0700, Casey Schaufler wrote:
+>>> On 3/18/2013 10:05 AM, Vivek Goyal wrote:
+>>>> On Fri, Mar 15, 2013 at 02:12:59PM -0700, Casey Schaufler wrote:
+>>>>> On 3/15/2013 1:35 PM, Vivek Goyal wrote:
+>>>>>> Create a new capability CAP_SIGNED which can be given to signed executables.
+>>>>> This would drive anyone who is trying to use
+>>>>> capabilities as the privilege mechanism it is
+>>>>> intended to be absolutely crazy.
+>>>> Will calling it CAP_SIGNED_SERVICES help. I intend to use it as
+>>>> capability (and not just as a flag for task attribute).
+>>> No, the name is not the issue.
+>>>
+>>>> I think primary difference here is that this capability is controlled
+>>>> by kernel and only validly signed processes get it.
+>>> Applications are allowed to manipulate their capability sets
+>>> in well defined ways. The behavior of file based capabilities
+>>> is also explicitly defined. The behavior you are proposing would
+>>> violate both of these mechanisms. 
+>>>
+>>>>> Capabilities aren't just random attribute bits. They
+>>>>> indicate that a task has permission to violate a
+>>>>> system policy (e.g. change the mode bits of a file
+>>>>> the user doesn't own). Think about how this will
+>>>>> interact with programs using file based capabilities.
+>>>> It is a separate capability. I am not sure why it would
+>>>> interfere with other capabilities or functionality out there.
+>>> The behavior of capabilities is uniform. You can't have one
+>>> capability that behaves differently from the others. If a
+>>> file is unsigned but has CAP_SIGNED in the file capability
+>>> set what do you expect to happen? Do you want a signed
+>>> application to be able to drop and raise the fact that it
+>>> is signed?
+>> I have already removed this capability from bounding set. Behavior
+>> I am looking for is that nobody should be able to set CAP_SIGNED
+>> as file capability. I will look into that.
+>
+> No! You are not listening. All capabilities work the same way.
+> If the file capabilities say ALL that means ALL. You do not get
+> to put a hole in the middle of the file based capabilities.
+>
+>
+>> I am thinking of this more as kernel managed capability. It is
+>> not in bounding set of any process and it can not be set as file
+>> capability.
+>
+> I heard that. No, you don't get to do that. All capabilities
+> work the same way. Your attribute does not behave the way
+> capabilities do, so you have to implement it some other way.
+>
+>
+>> It is a new capability, so no existing user application should
+>> be trying to set it.
+>
+> There are (and will be) applications that raise and drop all
+> capabilities, and that do so for good reasons.
+>
+>> I think the only surprise would be that they can't drop it. If
+>> that's a concern, may be we can allow dropping the capability.
+>> But the side affect is that there is no way to gain it back for
+>> the life time of process.
+>
+> Right. And that is a change to the capability mechanism. No, you
+> don't get to do that.
+>
+> You don't want a new capability. You want a new attribute that
+> behaves differently than capabilities do. You need to come up
+> with a different way to implement your attribute. You do not get
+> to change the way capabilities work.
+>
+>>> I expect that you don't want your attribute that indicates
+>>> that the binary was signed to behave the same way that
+>>> capabilities do. Like I said, capabilities are not just
+>>> attribute bits. You need a different kind of process attribute
+>>> to indicate that the binary was signed.
+>> I think I need more than process attribute. One of the things
+>> I am looking for is that signed processes run locked in memory
+>> and nobody (i think no unsigned process) is able to do ptrace() on it.
+>> Using the notion of capability might help here.
+>
+> There are already capabilities associated with ptrace. It would
+> be simple to add a check for signatures in cap_ptrace_access_check.
+>
+>
+>>> When (if ever) we have multiple LSM support you might consider
+>>> doing this as a small LSM. Until then, you're going to need a
+>>> different way to express the signature attribute.
+>> I am not sure why you are viewing it as necessarily as attribute only.
+>> I am thinking more in terms of that in certain situations, user space
+>> processes can't perform certain operations (like kexec) untile and
+>> unless process has the capability CAP_SIGNED_SERVICES. And this capability
+>> is granted if upon exec() process signature are verified.
+>
+> Sigh. You need the process attribute to make the checks against. The
+> process capability set, uids and groups are all examples of process
+> attributes that exist today.
+>
+>> So yes it is little different from how capabilities are managed
+>> currently. But is it very hard to extend the current capability definition
+>> and include the fact that kernel can give additional capabilities to
+>> processes based on some other factors.
+>
+> Yes. That is correct. That is why we have the LSM facility. The
+> unfortunate fact is that you only get one LSM at a time today. I
+> am working on fixing that, but there is still work to be done
+> before it will be ready for upstream.
+>
+> If signed application controls are deemed sufficiently important
+> and your implementation sound you should be able to get the signature
+> attribute and the checks on that attribute into the base system.
+
+Vivek the desired semantics for today for kexec is that you have an
+application that is allowed CAP_SYS_BOOT in it's file capabilities.
+
+In a context where root is not trusted with all capabilities by default
+you want one or a couple of capabilities to only be possible when coming
+from file capabilities.  So that you can say.  "I trust you oh great and
+blessed executable do what you will."
+
+I don't think those are contentious semantics.
+
+Eric
+
