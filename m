@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3CRVyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:54:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45633 "EHLO
+	id S932272Ab3CRVyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:54:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629Ab3CRVHA (ORCPT
+	with ESMTP id S1755607Ab3CRVHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 17:07:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 42/75] selinux: use GFP_ATOMIC under spin_lock
-Date: Mon, 18 Mar 2013 14:07:05 -0700
-Message-Id: <20130318210513.256124085@linuxfoundation.org>
+        Tomas Novotny <tomas@novotny.cz>, Matt Porter <mporter@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [ 41/75] ARM: davinci: edma: fix dmaengine induced null pointer dereference on da830
+Date: Mon, 18 Mar 2013 14:07:04 -0700
+Message-Id: <20130318210513.183706082@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,38 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Matt Porter <mporter@ti.com>
 
-commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34 upstream.
+commit 069552777a121eb39da29de4bc0383483dbe1f7e upstream.
 
-The call tree here is:
+This adds additional error checking to the private edma api implementation
+to catch the case where the edma_alloc_slot() has an invalid controller
+parameter. The edma dmaengine wrapper driver relies on this condition
+being handled in order to avoid setting up a second edma dmaengine
+instance on DA830.
 
-sk_clone_lock()              <- takes bh_lock_sock(newsk);
-xfrm_sk_clone_policy()
-__xfrm_sk_clone_policy()
-clone_policy()               <- uses GFP_ATOMIC for allocations
-security_xfrm_policy_clone()
-security_ops->xfrm_policy_clone_security()
-selinux_xfrm_policy_clone()
+Verfied using a DA850 with the second EDMA controller platform instance
+removed to simulate a DA830 which only has a single EDMA controller.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Reported-by: Tomas Novotny <tomas@novotny.cz>
+Signed-off-by: Matt Porter <mporter@ti.com>
+Tested-by: Tomas Novotny <tomas@novotny.cz>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/xfrm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-davinci/dma.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfr
- 
- 	if (old_ctx) {
- 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
--				  GFP_KERNEL);
-+				  GFP_ATOMIC);
- 		if (!new_ctx)
- 			return -ENOMEM;
+--- a/arch/arm/mach-davinci/dma.c
++++ b/arch/arm/mach-davinci/dma.c
+@@ -743,6 +743,9 @@ EXPORT_SYMBOL(edma_free_channel);
+  */
+ int edma_alloc_slot(unsigned ctlr, int slot)
+ {
++	if (!edma_cc[ctlr])
++		return -EINVAL;
++
+ 	if (slot >= 0)
+ 		slot = EDMA_CHAN_SLOT(slot);
  
 
 
