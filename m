@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab3CRV1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:27:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45938 "EHLO
+	id S1756294Ab3CRVID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:08:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab3CRVIG (ORCPT
+	with ESMTP id S932087Ab3CRVHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:06 -0400
+	Mon, 18 Mar 2013 17:07:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?ISO-8859-15?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 36/48] drm/i915: Increase the RC6p threshold.
-Date: Mon, 18 Mar 2013 14:08:44 -0700
-Message-Id: <20130318210812.797825940@linuxfoundation.org>
+        Marcin Jurkowski <marcin1j@gmail.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>, Josh Boyer <jwboyer@gmail.com>,
+        Sven Geggus <lists@fuchsschwanzdomain.de>
+Subject: [ 21/48] w1: fix oops when w1_search is called from netlink connector
+Date: Mon, 18 Mar 2013 14:08:29 -0700
+Message-Id: <20130318210811.765281255@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,33 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stéphane Marchesin <marcheu@chromium.org>
+From: Marcin Jurkowski <marcin1j@gmail.com>
 
-commit 0920a48719f1ceefc909387a64f97563848c7854 upstream.
+commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
 
-This increases GEN6_RC6p_THRESHOLD from 100000 to 150000. For some
-reason this avoids the gen6_gt_check_fifodbg.isra warnings and
-associated GPU lockups, which makes my ivy bridge machine stable.
+On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
+> This is the bad commit I found doing git bisect:
+> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
+> commit 04f482faf50535229a5a5c8d629cf963899f857c
+> Author: Patrick McHardy <kaber@trash.net>
+> Date:   Mon Mar 28 08:39:36 2011 +0000
 
-Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Good job. I was too lazy to bisect for bad commit;)
+
+Reading the code I found problematic kthread_should_stop call from netlink
+connector which causes the oops. After applying a patch, I've been testing
+owfs+w1 setup for nearly two days and it seems to work very reliable (no
+hangs, no memleaks etc).
+More detailed description and possible fix is given below:
+
+Function w1_search can be called from either kthread or netlink callback.
+While the former works fine, the latter causes oops due to kthread_should_stop
+invocation.
+
+This patch adds a check if w1_search is serving netlink command, skipping
+kthread_should_stop invocation if so.
+
+Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/w1/w1.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8364,7 +8364,7 @@ void gen6_enable_rps(struct drm_i915_pri
- 	I915_WRITE(GEN6_RC_SLEEP, 0);
- 	I915_WRITE(GEN6_RC1e_THRESHOLD, 1000);
- 	I915_WRITE(GEN6_RC6_THRESHOLD, 50000);
--	I915_WRITE(GEN6_RC6p_THRESHOLD, 100000);
-+	I915_WRITE(GEN6_RC6p_THRESHOLD, 150000);
- 	I915_WRITE(GEN6_RC6pp_THRESHOLD, 64000); /* unused */
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -928,7 +928,8 @@ void w1_search(struct w1_master *dev, u8
+ 			tmp64 = (triplet_ret >> 2);
+ 			rn |= (tmp64 << i);
  
- 	rc6_mode = intel_enable_rc6(dev_priv->dev);
+-			if (kthread_should_stop()) {
++			/* ensure we're called from kthread and not by netlink callback */
++			if (!dev->priv && kthread_should_stop()) {
+ 				dev_dbg(&dev->dev, "Abort w1_search\n");
+ 				return;
+ 			}
 
 
