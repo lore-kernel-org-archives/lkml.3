@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab3CRSrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:47:20 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56250 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753542Ab3CRSrS (ORCPT
+	id S1754091Ab3CRSwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:52:54 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36139 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab3CRSwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:47:18 -0400
-Date: Mon, 18 Mar 2013 14:47:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Yuan-Hsin Chen <yuanlmm@gmail.com>, <gregkh@linuxfoundation.org>,
-        <sarah.a.sharp@linux.intel.com>, <Julia.Lawall@lip6.fr>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, <john453@faraday-tech.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-In-Reply-To: <20130318182316.GA13371@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1303181444330.1922-100000@iolanthe.rowland.org>
+	Mon, 18 Mar 2013 14:52:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1363602093-11965-1-git-send-email-linfeng@cn.fujitsu.com>
+References: <1363602093-11965-1-git-send-email-linfeng@cn.fujitsu.com>
+Date: Mon, 18 Mar 2013 11:52:52 -0700
+X-Google-Sender-Auth: VRM0u36l_g03C-Wfz26I7T34nNQ
+Message-ID: <CAE9FiQUHtM_Nuz4ak+HeNGV6a-HTtfMkxc+zBZuow47Vj70CKQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: mm: add_pfn_range_mapped: use meaningful index to
+ teach clean_sort_range()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, penberg@kernel.org, jacob.shin@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013, Felipe Balbi wrote:
+On Mon, Mar 18, 2013 at 3:21 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
+> Since add_range_with_merge() return the max none zero element of the array, it's
+> suffice to use it to instruct clean_sort_range() to do the sort. Or the former
+> assignment by add_range_with_merge() is nonsense because clean_sort_range()
+> will produce a accurate number of the sorted array and it never depends on
+> nr_pfn_mapped.
+>
+> Cc: Jacob Shin <jacob.shin@amd.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+> ---
+>  arch/x86/mm/init.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 59b7fc4..55ae904 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -310,7 +310,7 @@ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+>  {
+>         nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
+>                                              nr_pfn_mapped, start_pfn, end_pfn);
+> -       nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
+> +       nr_pfn_mapped = clean_sort_range(pfn_mapped, nr_pfn_mapped);
+>
+>         max_pfn_mapped = max(max_pfn_mapped, end_pfn);>
 
-> Hi,
-> 
-> On Mon, Mar 18, 2013 at 10:16:56AM -0400, Alan Stern wrote:
-> > > > it would cause copious modification and duplication of ehci hcd
-> > > > driver. For example, there is no "configured_flag" register in
-> > > > fusbh200 controller, yet, ehci hcd driver accesses "configured_flag"
-> > > > in function ehci_run which would cause compile errors. Therefore,
-> > > > maybe my first patch which refers to oxu210hp-hcd is a better
-> > > > solution?
-> > > 
-> > > why don't you just add a quirk flag to ehci struct so that it knows it
-> > > shouldn't access CONFIGFLAG register when that's non-existent ?
-> > > 
-> > > There are only 5 uses of configured_flag in ehci-hcd.c, so it should be
-> > > easy to wrap that around a flag check.
-> > 
-> > Two of those uses turn configured_flag on and two of them turn it off.  
-> > However, one of the uses tests its value (the first one in
-> > ehci_resume).  How would that be handled if configured_flag doesn't
-> > exist?
-> 
-> perhaps they don't use it because they have a root-hub TT ? In that case
-> you assume EHCI *always* owns the port. Would that work ?
-
-The usage in ehci_resume is meant for checking whether power was lost 
-while the controller was suspended.  This probably isn't an issue 
-during runtime suspend; it's likely to come up only during system 
-suspend.  If Yuan-Hsin's platform doesn't support system suspend then 
-we don't have to worry about it.
-
-Alan Stern
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
