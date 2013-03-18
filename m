@@ -1,332 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235Ab3CVNjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:39:14 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:59570 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab3CVNgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:36:11 -0400
-From: Ian Lartey <ian@slimlogic.co.uk>
+	id S932361Ab3CVNjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:39:33 -0400
+Received: from swissweb.swissdisk.com ([174.129.12.238]:52784 "EHLO
+	swissweb.swissdisk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680Ab3CVNjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:39:31 -0400
+X-Greylist: delayed 1379 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 09:39:31 EDT
+From: Ben Collins <ben.c@servergy.com>
+Date: Mon, 18 Mar 2013 19:49:04 -0400
+Subject: [PATCH] of_mdio: Remove flags argument from of_phy_connect
 To: linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-leds@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
-        linus.walleij@linaro.org, cooloney@gmail.com, sfr@canb.auug.org.au,
-        rpurdie@rpsys.net, akpm@linux-foundation.org, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
-Subject: [PATCH v9 02/11] mfd: palmas add variant and OTP detection
-Date: Fri, 22 Mar 2013 13:36:04 +0000
-Message-Id: <1363959373-10671-3-git-send-email-ian@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
-References: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Message-Id: <E1UJ1fR-0004hv-8a@swissweb.swissdisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <gg@slimlogic.co.uk>
+of_phy_connect() only required a flags argument in order to pass it down to
+to phy_connect(). Since that argument was removed, it is of no use in this
+function either (confirmed by checking all callers in kernel tree as well).
 
-Read the chip varient and the OTP information from the chip and display
-this on probe to aid in debugging of issues.
-
-Older palmas chips do not have the USB_ID programmed and will therefore
-return 0x0000 for this field.
-
-palmas register read/write/update API is now used
-
-palmas_read_product_id_and_revs used by palmas_i2c_probe to get
-the device id, design and software revisions
-
-id field of pamas struct renamed to device_id
-
-Updated the DT parsing to agree with the bindings document, just some minor
-value name changes.
-
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Signed-off-by: Ben Collins <ben.c@servergy.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/mfd/palmas.c       |  102 ++++++++++++++++++++++++++++++++++----------
- include/linux/mfd/palmas.h |   35 +++++++++++++++-
- 2 files changed, 113 insertions(+), 24 deletions(-)
+ drivers/net/ethernet/freescale/fec_mpc52xx.c          | 2 +-
+ drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 2 +-
+ drivers/net/ethernet/freescale/gianfar.c              | 2 +-
+ drivers/net/ethernet/freescale/ucc_geth.c             | 2 +-
+ drivers/net/ethernet/marvell/mvneta.c                 | 2 +-
+ drivers/net/ethernet/octeon/octeon_mgmt.c             | 2 +-
+ drivers/net/ethernet/pasemi/pasemi_mac.c              | 2 +-
+ drivers/net/ethernet/xilinx/ll_temac_main.c           | 2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c     | 2 +-
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c         | 2 +-
+ drivers/of/of_mdio.c                                  | 2 +-
+ drivers/staging/octeon/ethernet-mdio.c                | 2 +-
+ include/linux/of_mdio.h                               | 4 ++--
+ 13 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index 73bf76d..913416f 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -1,9 +1,10 @@
- /*
-  * TI Palmas MFD Driver
-  *
-- * Copyright 2011-2012 Texas Instruments Inc.
-+ * Copyright 2011-2013 Texas Instruments Inc.
-  *
-  * Author: Graeme Gregory <gg@slimlogic.co.uk>
-+ * Author: Ian Lartey <ian@slimlogic.co.uk>
-  *
-  *  This program is free software; you can redistribute it and/or modify it
-  *  under  the terms of the GNU General  Public License as published by the
-@@ -257,6 +258,56 @@ static struct regmap_irq_chip palmas_irq_chip = {
- 			PALMAS_INT1_MASK),
- };
+diff --git a/drivers/net/ethernet/freescale/fec_mpc52xx.c b/drivers/net/ethernet/freescale/fec_mpc52xx.c
+index 77943a6..ea01dcd 100644
+--- a/drivers/net/ethernet/freescale/fec_mpc52xx.c
++++ b/drivers/net/ethernet/freescale/fec_mpc52xx.c
+@@ -217,7 +217,7 @@ static int mpc52xx_fec_open(struct net_device *dev)
  
-+static int palmas_read_product_id_and_revs(struct palmas *palmas)
-+{
-+	int ret;
-+	unsigned int reg;
-+
-+	/* Read variant info from the device */
-+	ret = palmas_read(palmas, PALMAS_ID_BASE, PALMAS_PRODUCT_ID_LSB, &reg);
-+	if (ret < 0) {
-+		dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
-+		return ret;
-+	}
-+
-+	palmas->product_id = reg;
-+
-+	ret = palmas_read(palmas, PALMAS_ID_BASE, PALMAS_PRODUCT_ID_MSB, &reg);
-+	if (ret < 0) {
-+		dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
-+		return ret;
-+	}
-+
-+	palmas->product_id |= reg << 8;
-+
-+	dev_info(palmas->dev, "Product ID %x\n", palmas->product_id);
-+
-+	ret = palmas_read(palmas, PALMAS_DESIGNREV_BASE,
-+				PALMAS_DESIGNREV, &reg);
-+	if (ret < 0) {
-+		dev_err(palmas->dev, "Unable to read DESIGNREV err: %d\n", ret);
-+		return ret;
-+	}
-+
-+	palmas->designrev = reg & PALMAS_DESIGNREV_DESIGNREV_MASK;
-+
-+	dev_info(palmas->dev, "Product Design Rev %x\n", palmas->designrev);
-+
-+	ret = palmas_read(palmas, PALMAS_PMU_CONTROL_BASE, PALMAS_SW_REVISION,
-+			&reg);
-+	if (ret < 0) {
-+		dev_err(palmas->dev, "Unable to read SW_REVISION err: %d\n",
-+				ret);
-+		return ret;
-+	}
-+
-+	palmas->sw_revision = reg;
-+
-+	dev_info(palmas->dev, "Product SW Rev %x\n", palmas->sw_revision);
-+
-+	return 0;
-+}
-+
- static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
- 		struct palmas_platform_data *pdata)
+ 	if (priv->phy_node) {
+ 		priv->phydev = of_phy_connect(priv->ndev, priv->phy_node,
+-					      mpc52xx_fec_adjust_link, 0, 0);
++					      mpc52xx_fec_adjust_link, 0);
+ 		if (!priv->phydev) {
+ 			dev_err(&dev->dev, "of_phy_connect failed\n");
+ 			return -ENODEV;
+diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+index 46df288..5523fc0 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
++++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+@@ -799,7 +799,7 @@ static int fs_init_phy(struct net_device *dev)
+ 	iface = fep->fpi->use_rmii ?
+ 		PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII;
+ 
+-	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
++	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link,
+ 				iface);
+ 	if (!phydev) {
+ 		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index d2c5441..383d302 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -1467,7 +1467,7 @@ static int init_phy(struct net_device *dev)
+ 
+ 	interface = gfar_get_interface(dev);
+ 
+-	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link, 0,
++	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link,
+ 				      interface);
+ 	if (!priv->phydev)
+ 		priv->phydev = of_phy_connect_fixed_link(dev, &adjust_link,
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+index 0a70bb5..fb9a573 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.c
++++ b/drivers/net/ethernet/freescale/ucc_geth.c
+@@ -1745,7 +1745,7 @@ static int init_phy(struct net_device *dev)
+ 	priv->oldspeed = 0;
+ 	priv->oldduplex = -1;
+ 
+-	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link, 0,
++	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link,
+ 				priv->phy_interface);
+ 	if (!phydev)
+ 		phydev = of_phy_connect_fixed_link(dev, &adjust_link,
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index cd345b8..dcb865e8 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -2344,7 +2344,7 @@ static int mvneta_mdio_probe(struct mvneta_port *pp)
  {
-@@ -278,20 +329,20 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
- 	int ret;
- 	u32 prop;
+ 	struct phy_device *phy_dev;
  
--	ret = of_property_read_u32(node, "ti,mux_pad1", &prop);
-+	ret = of_property_read_u32(node, "ti,mux-pad1", &prop);
- 	if (!ret) {
- 		pdata->mux_from_pdata = 1;
- 		pdata->pad1 = prop;
+-	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link, 0,
++	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link,
+ 				 pp->phy_interface);
+ 	if (!phy_dev) {
+ 		netdev_err(pp->dev, "could not find the PHY\n");
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index 921729f..c2d281e 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -970,7 +970,7 @@ static int octeon_mgmt_init_phy(struct net_device *netdev)
  	}
  
--	ret = of_property_read_u32(node, "ti,mux_pad2", &prop);
-+	ret = of_property_read_u32(node, "ti,mux-pad2", &prop);
- 	if (!ret) {
- 		pdata->mux_from_pdata = 1;
- 		pdata->pad2 = prop;
- 	}
+ 	p->phydev = of_phy_connect(netdev, p->phy_np,
+-				   octeon_mgmt_adjust_link, 0,
++				   octeon_mgmt_adjust_link,
+ 				   PHY_INTERFACE_MODE_MII);
  
- 	/* The default for this register is all masked */
--	ret = of_property_read_u32(node, "ti,power_ctrl", &prop);
-+	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
- 	if (!ret)
- 		pdata->power_ctrl = prop;
- 	else
-@@ -309,7 +360,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	struct palmas_platform_data *pdata;
- 	struct device_node *node = i2c->dev.of_node;
- 	int ret = 0, i;
--	unsigned int reg, addr;
-+	unsigned int reg;
- 	int slave;
- 	struct mfd_cell *children;
+ 	if (!p->phydev)
+diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.c b/drivers/net/ethernet/pasemi/pasemi_mac.c
+index b1cfbb7..aad29d1 100644
+--- a/drivers/net/ethernet/pasemi/pasemi_mac.c
++++ b/drivers/net/ethernet/pasemi/pasemi_mac.c
+@@ -1100,7 +1100,7 @@ static int pasemi_mac_phy_init(struct net_device *dev)
+ 	mac->speed = 0;
+ 	mac->duplex = -1;
  
-@@ -333,7 +384,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+-	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link, 0,
++	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link,
+ 				PHY_INTERFACE_MODE_SGMII);
  
- 	i2c_set_clientdata(i2c, palmas);
- 	palmas->dev = &i2c->dev;
--	palmas->id = id->driver_data;
-+	palmas->product_id = id->driver_data;
- 	palmas->irq = i2c->irq;
+ 	if (!phydev) {
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 9fc2ada..4c5e0a9 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -857,7 +857,7 @@ static int temac_open(struct net_device *ndev)
  
- 	for (i = 0; i < PALMAS_NUM_CLIENTS; i++) {
-@@ -374,12 +425,16 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 		goto err;
- 	}
+ 	if (lp->phy_node) {
+ 		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
+-					     temac_adjust_link, 0, 0);
++					     temac_adjust_link, 0);
+ 		if (!lp->phy_dev) {
+ 			dev_err(lp->dev, "of_phy_connect() failed\n");
+ 			return -ENODEV;
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index 278c9db..7f2afdd 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -935,7 +935,7 @@ static int axienet_open(struct net_device *ndev)
  
-+	/* Read variant info from the device */
-+	ret = palmas_read_product_id_and_revs(palmas);
-+	if (ret < 0)
-+		goto err;
-+
- 	/* Change IRQ into clear on read mode for efficiency */
- 	slave = PALMAS_BASE_TO_SLAVE(PALMAS_INTERRUPT_BASE);
--	addr = PALMAS_BASE_TO_REG(PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL);
- 	reg = PALMAS_INT_CTRL_INT_CLEAR;
+ 	if (lp->phy_node) {
+ 		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
+-					     axienet_adjust_link, 0,
++					     axienet_adjust_link,
+ 					     PHY_INTERFACE_MODE_GMII);
+ 		if (!lp->phy_dev) {
+ 			dev_err(lp->dev, "of_phy_connect() failed\n");
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 919b983..bccb064 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -931,7 +931,7 @@ static int xemaclite_open(struct net_device *dev)
+ 		u32 bmcr;
  
--	regmap_write(palmas->regmap[slave], addr, reg);
-+	ret = palmas_write(palmas, PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL, reg);
+ 		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
+-					     xemaclite_adjust_link, 0,
++					     xemaclite_adjust_link,
+ 					     PHY_INTERFACE_MODE_MII);
+ 		if (!lp->phy_dev) {
+ 			dev_err(&lp->ndev->dev, "of_phy_connect() failed\n");
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index e3a8b22..199b7f2 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -149,7 +149,7 @@ EXPORT_SYMBOL(of_phy_find_device);
+  */
+ struct phy_device *of_phy_connect(struct net_device *dev,
+ 				  struct device_node *phy_np,
+-				  void (*hndlr)(struct net_device *), u32 flags,
++				  void (*hndlr)(struct net_device *),
+ 				  phy_interface_t iface)
+ {
+ 	struct phy_device *phy = of_phy_find_device(phy_np);
+diff --git a/drivers/staging/octeon/ethernet-mdio.c b/drivers/staging/octeon/ethernet-mdio.c
+index 83b1030..37897e3 100644
+--- a/drivers/staging/octeon/ethernet-mdio.c
++++ b/drivers/staging/octeon/ethernet-mdio.c
+@@ -171,7 +171,7 @@ int cvm_oct_phy_setup_device(struct net_device *dev)
+ 	if (!phy_node)
+ 		return 0;
  
- 	ret = regmap_add_irq_chip(palmas->regmap[slave], palmas->irq,
- 			IRQF_ONESHOT | pdata->irq_flags, 0, &palmas_irq_chip,
-@@ -387,17 +442,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err;
+-	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link, 0,
++	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link,
+ 				      PHY_INTERFACE_MODE_GMII);
  
--	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
--	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
--			PALMAS_PRIMARY_SECONDARY_PAD1);
--
- 	if (pdata->mux_from_pdata) {
- 		reg = pdata->pad1;
--		ret = regmap_write(palmas->regmap[slave], addr, reg);
-+		ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
-+				PALMAS_PRIMARY_SECONDARY_PAD1, reg);
- 		if (ret)
- 			goto err_irq;
- 	} else {
--		ret = regmap_read(palmas->regmap[slave], addr, &reg);
-+		ret = palmas_read(palmas, PALMAS_PU_PD_OD_BASE,
-+				PALMAS_PRIMARY_SECONDARY_PAD1, &reg);
- 		if (ret)
- 			goto err_irq;
- 	}
-@@ -423,16 +476,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	if (!(reg & PALMAS_PRIMARY_SECONDARY_PAD1_GPIO_3))
- 		palmas->gpio_muxed |= PALMAS_GPIO_3_MUXED;
- 
--	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
--			PALMAS_PRIMARY_SECONDARY_PAD2);
--
- 	if (pdata->mux_from_pdata) {
- 		reg = pdata->pad2;
--		ret = regmap_write(palmas->regmap[slave], addr, reg);
-+		ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
-+				PALMAS_PRIMARY_SECONDARY_PAD2, reg);
- 		if (ret)
- 			goto err_irq;
- 	} else {
--		ret = regmap_read(palmas->regmap[slave], addr, &reg);
-+		ret = palmas_read(palmas, PALMAS_PU_PD_OD_BASE,
-+				PALMAS_PRIMARY_SECONDARY_PAD2, &reg);
- 		if (ret)
- 			goto err_irq;
- 	}
-@@ -452,10 +504,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 
- 	reg = pdata->power_ctrl;
- 
--	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PMU_CONTROL_BASE);
--	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_POWER_CTRL);
--
--	ret = regmap_write(palmas->regmap[slave], addr, reg);
-+	ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
-+			PALMAS_PRIMARY_SECONDARY_PAD2, reg);
- 	if (ret)
- 		goto err_irq;
- 
-@@ -534,6 +584,12 @@ MODULE_DEVICE_TABLE(i2c, palmas_i2c_id);
- 
- static struct of_device_id of_palmas_match_tbl[] = {
- 	{ .compatible = "ti,palmas", },
-+	{ .compatible = "ti,twl6035", },
-+	{ .compatible = "ti,twl6036", },
-+	{ .compatible = "ti,twl6037", },
-+	{ .compatible = "ti,tps65913", },
-+	{ .compatible = "ti,tps65914", },
-+	{ .compatible = "ti,tps80036", },
- 	{ /* end */ }
- };
- 
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index 4a066d0..4cffe31 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -44,7 +44,9 @@ struct palmas {
- 	struct regmap *regmap[PALMAS_NUM_CLIENTS];
- 
- 	/* Stored chip id */
--	int id;
-+	int product_id;
-+	int designrev;
-+	int sw_revision;
- 
- 	/* IRQ Data */
- 	int irq;
-@@ -438,11 +440,13 @@ enum usb_irq_events {
- #define PALMAS_PU_PD_OD_BASE					0x1F4
- #define PALMAS_LED_BASE						0x200
- #define PALMAS_INTERRUPT_BASE					0x210
-+#define PALMAS_ID_BASE						0x24F
- #define PALMAS_USB_OTG_BASE					0x250
- #define PALMAS_VIBRATOR_BASE					0x270
- #define PALMAS_GPIO_BASE					0x280
- #define PALMAS_USB_BASE						0x290
- #define PALMAS_GPADC_BASE					0x2C0
-+#define PALMAS_DESIGNREV_BASE					0x357
- #define PALMAS_TRIM_GPADC_BASE					0x3CD
- 
- /* Registers for function RTC */
-@@ -2160,6 +2164,28 @@ enum usb_irq_events {
- #define PALMAS_INT_CTRL_INT_CLEAR				0x01
- #define PALMAS_INT_CTRL_INT_CLEAR_SHIFT				0
- 
-+/* Registers for function ID */
-+#define PALMAS_VENDOR_ID_LSB					0x0
-+#define PALMAS_VENDOR_ID_MSB					0x1
-+#define PALMAS_PRODUCT_ID_LSB					0x2
-+#define PALMAS_PRODUCT_ID_MSB					0x3
-+
-+/* Bit definitions for VENDOR_ID_LSB */
-+#define PALMAS_VENDOR_ID_LSB_VENDOR_ID_MASK			0xff
-+#define PALMAS_VENDOR_ID_LSB_VENDOR_ID_SHIFT			0
-+
-+/* Bit definitions for VENDOR_ID_MSB */
-+#define PALMAS_VENDOR_ID_MSB_VENDOR_ID_MASK			0xff
-+#define PALMAS_VENDOR_ID_MSB_VENDOR_ID_SHIFT			0
-+
-+/* Bit definitions for PRODUCT_ID_LSB */
-+#define PALMAS_PRODUCT_ID_LSB_PRODUCT_ID_MASK			0xff
-+#define PALMAS_PRODUCT_ID_LSB_PRODUCT_ID_SHIFT			0
-+
-+/* Bit definitions for PRODUCT_ID_MSB */
-+#define PALMAS_PRODUCT_ID_MSB_PRODUCT_ID_MASK			0xff
-+#define PALMAS_PRODUCT_ID_MSB_PRODUCT_ID_SHIFT			0
-+
- /* Registers for function USB_OTG */
- #define PALMAS_USB_WAKEUP					0x3
- #define PALMAS_USB_VBUS_CTRL_SET				0x4
-@@ -2782,6 +2808,13 @@ enum usb_irq_events {
- #define PALMAS_GPADC_SMPS_VSEL_MONITORING_SMPS_VSEL_MONITORING_MASK	0x7f
- #define PALMAS_GPADC_SMPS_VSEL_MONITORING_SMPS_VSEL_MONITORING_SHIFT	0
- 
-+/* Registers for function DESIGNREV */
-+#define PALMAS_DESIGNREV					0x0
-+
-+/* Bit definitions for DESIGNREV */
-+#define PALMAS_DESIGNREV_DESIGNREV_MASK				0x0f
-+#define PALMAS_DESIGNREV_DESIGNREV_SHIFT			0
-+
- /* Registers for function GPADC */
- #define PALMAS_GPADC_TRIM1					0x0
- #define PALMAS_GPADC_TRIM2					0x1
+ 	if (priv->phydev == NULL)
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index 8163107..cdc62c9 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -18,7 +18,7 @@ extern struct phy_device *of_phy_find_device(struct device_node *phy_np);
+ extern struct phy_device *of_phy_connect(struct net_device *dev,
+ 					 struct device_node *phy_np,
+ 					 void (*hndlr)(struct net_device *),
+-					 u32 flags, phy_interface_t iface);
++					 phy_interface_t iface);
+ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 					 void (*hndlr)(struct net_device *),
+ 					 phy_interface_t iface);
+@@ -39,7 +39,7 @@ static inline struct phy_device *of_phy_find_device(struct device_node *phy_np)
+ static inline struct phy_device *of_phy_connect(struct net_device *dev,
+ 						struct device_node *phy_np,
+ 						void (*hndlr)(struct net_device *),
+-						u32 flags, phy_interface_t iface)
++						phy_interface_t iface)
+ {
+ 	return NULL;
+ }
 -- 
-1.7.0.4
+1.8.1.2
 
