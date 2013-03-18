@@ -1,55 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3CRQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:27:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54962 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab3CRQ1X (ORCPT
+	id S1753106Ab3CRQ0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:26:06 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49406
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752854Ab3CRQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:27:23 -0400
-Date: Mon, 18 Mar 2013 09:27:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <clark@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: workqueue code needing preemption disabled
-Message-ID: <20130318162718.GB20133@mtj.dyndns.org>
-References: <1363617383.25967.152.camel@gandalf.local.home>
- <20130318160652.GA20133@mtj.dyndns.org>
- <1363623799.25967.172.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363623799.25967.172.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Mar 2013 12:25:59 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 38/54] perf tools: Remove unused trace_read_data function
+Date: Mon, 18 Mar 2013 13:25:23 -0300
+Message-Id: <1363623939-10748-39-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
+References: <1363623939-10748-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Steven.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-On Mon, Mar 18, 2013 at 12:23:19PM -0400, Steven Rostedt wrote:
-> > Maybe I'm confused but I can't really see how the above would be a
-> > problem to workqueue in itself.  Both rq->lock and gcwq->lock are
-> > irq-safe, so spin_lock() not disabling preemption shouldn't be a
-> > problem.  Are CPU hotplug operations involved?
-> 
-> No CPU hotplug is involved here. But I will note that gcwq->lock in -rt
-> is not irq -safe. That is, in rt the spin_lock_irq(&gcwq->lock) really
-> becomes a special "mutex_lock(&gcwq->lock)". Because, in -rt, interrupts
-> (except for the timer interrupt) are run as threads, and anything that
-> isn't marked as raw_spin_lock() turns into a mutex. I don't believe it's
-> safe to turn the gcwq->lock into a raw_spin_lock either, or at least not
-> short enough to hold it. Anything that holds a spin_lock() for more than
-> a microsecond is too much for a raw lock.
+And functions that called only from the trace_read_data().
 
-Does that mean that a task holding gcwq->lock may be preempted?  If
-so, that sure could lead to weird problems.  Maybe gcwq->lock should
-be marked non-preemptible somehow?
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1363173585-9754-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-read.c |  201 ------------------------------------
+ 1 files changed, 0 insertions(+), 201 deletions(-)
 
-Thanks.
-
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 3741572..7cb2463 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -41,8 +41,6 @@
+ 
+ static int input_fd;
+ 
+-static int read_page;
+-
+ int file_bigendian;
+ int host_bigendian;
+ static int long_size;
+@@ -287,205 +285,6 @@ static void read_event_files(struct pevent *pevent)
+ 	}
+ }
+ 
+-struct cpu_data {
+-	unsigned long long	offset;
+-	unsigned long long	size;
+-	unsigned long long	timestamp;
+-	struct pevent_record	*next;
+-	char			*page;
+-	int			cpu;
+-	int			index;
+-	int			page_size;
+-};
+-
+-static struct cpu_data *cpu_data;
+-
+-static void update_cpu_data_index(int cpu)
+-{
+-	cpu_data[cpu].offset += page_size;
+-	cpu_data[cpu].size -= page_size;
+-	cpu_data[cpu].index = 0;
+-}
+-
+-static void get_next_page(int cpu)
+-{
+-	off_t save_seek;
+-	off_t ret;
+-
+-	if (!cpu_data[cpu].page)
+-		return;
+-
+-	if (read_page) {
+-		if (cpu_data[cpu].size <= page_size) {
+-			free(cpu_data[cpu].page);
+-			cpu_data[cpu].page = NULL;
+-			return;
+-		}
+-
+-		update_cpu_data_index(cpu);
+-
+-		/* other parts of the code may expect the pointer to not move */
+-		save_seek = lseek(input_fd, 0, SEEK_CUR);
+-
+-		ret = lseek(input_fd, cpu_data[cpu].offset, SEEK_SET);
+-		if (ret == (off_t)-1)
+-			die("failed to lseek");
+-		ret = read(input_fd, cpu_data[cpu].page, page_size);
+-		if (ret < 0)
+-			die("failed to read page");
+-
+-		/* reset the file pointer back */
+-		lseek(input_fd, save_seek, SEEK_SET);
+-
+-		return;
+-	}
+-
+-	munmap(cpu_data[cpu].page, page_size);
+-	cpu_data[cpu].page = NULL;
+-
+-	if (cpu_data[cpu].size <= page_size)
+-		return;
+-
+-	update_cpu_data_index(cpu);
+-
+-	cpu_data[cpu].page = mmap(NULL, page_size, PROT_READ, MAP_PRIVATE,
+-				  input_fd, cpu_data[cpu].offset);
+-	if (cpu_data[cpu].page == MAP_FAILED)
+-		die("failed to mmap cpu %d at offset 0x%llx",
+-		    cpu, cpu_data[cpu].offset);
+-}
+-
+-static unsigned int type_len4host(unsigned int type_len_ts)
+-{
+-	if (file_bigendian)
+-		return (type_len_ts >> 27) & ((1 << 5) - 1);
+-	else
+-		return type_len_ts & ((1 << 5) - 1);
+-}
+-
+-static unsigned int ts4host(unsigned int type_len_ts)
+-{
+-	if (file_bigendian)
+-		return type_len_ts & ((1 << 27) - 1);
+-	else
+-		return type_len_ts >> 5;
+-}
+-
+-static int calc_index(void *ptr, int cpu)
+-{
+-	return (unsigned long)ptr - (unsigned long)cpu_data[cpu].page;
+-}
+-
+-struct pevent_record *trace_peek_data(struct pevent *pevent, int cpu)
+-{
+-	struct pevent_record *data;
+-	void *page = cpu_data[cpu].page;
+-	int idx = cpu_data[cpu].index;
+-	void *ptr = page + idx;
+-	unsigned long long extend;
+-	unsigned int type_len_ts;
+-	unsigned int type_len;
+-	unsigned int delta;
+-	unsigned int length = 0;
+-
+-	if (cpu_data[cpu].next)
+-		return cpu_data[cpu].next;
+-
+-	if (!page)
+-		return NULL;
+-
+-	if (!idx) {
+-		/* FIXME: handle header page */
+-		if (header_page_ts_size != 8)
+-			die("expected a long long type for timestamp");
+-		cpu_data[cpu].timestamp = data2host8(pevent, ptr);
+-		ptr += 8;
+-		switch (header_page_size_size) {
+-		case 4:
+-			cpu_data[cpu].page_size = data2host4(pevent, ptr);
+-			ptr += 4;
+-			break;
+-		case 8:
+-			cpu_data[cpu].page_size = data2host8(pevent, ptr);
+-			ptr += 8;
+-			break;
+-		default:
+-			die("bad long size");
+-		}
+-		ptr = cpu_data[cpu].page + header_page_data_offset;
+-	}
+-
+-read_again:
+-	idx = calc_index(ptr, cpu);
+-
+-	if (idx >= cpu_data[cpu].page_size) {
+-		get_next_page(cpu);
+-		return trace_peek_data(pevent, cpu);
+-	}
+-
+-	type_len_ts = data2host4(pevent, ptr);
+-	ptr += 4;
+-
+-	type_len = type_len4host(type_len_ts);
+-	delta = ts4host(type_len_ts);
+-
+-	switch (type_len) {
+-	case RINGBUF_TYPE_PADDING:
+-		if (!delta)
+-			die("error, hit unexpected end of page");
+-		length = data2host4(pevent, ptr);
+-		ptr += 4;
+-		length *= 4;
+-		ptr += length;
+-		goto read_again;
+-
+-	case RINGBUF_TYPE_TIME_EXTEND:
+-		extend = data2host4(pevent, ptr);
+-		ptr += 4;
+-		extend <<= TS_SHIFT;
+-		extend += delta;
+-		cpu_data[cpu].timestamp += extend;
+-		goto read_again;
+-
+-	case RINGBUF_TYPE_TIME_STAMP:
+-		ptr += 12;
+-		break;
+-	case 0:
+-		length = data2host4(pevent, ptr);
+-		ptr += 4;
+-		die("here! length=%d", length);
+-		break;
+-	default:
+-		length = type_len * 4;
+-		break;
+-	}
+-
+-	cpu_data[cpu].timestamp += delta;
+-
+-	data = malloc_or_die(sizeof(*data));
+-	memset(data, 0, sizeof(*data));
+-
+-	data->ts = cpu_data[cpu].timestamp;
+-	data->size = length;
+-	data->data = ptr;
+-	ptr += length;
+-
+-	cpu_data[cpu].index = calc_index(ptr, cpu);
+-	cpu_data[cpu].next = data;
+-
+-	return data;
+-}
+-
+-struct pevent_record *trace_read_data(struct pevent *pevent, int cpu)
+-{
+-	struct pevent_record *data;
+-
+-	data = trace_peek_data(pevent, cpu);
+-	cpu_data[cpu].next = NULL;
+-
+-	return data;
+-}
+-
+ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ {
+ 	char buf[BUFSIZ];
 -- 
-tejun
+1.7.1
+
