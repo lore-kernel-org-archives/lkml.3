@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab3CRVIH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:08:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45922 "EHLO
+	id S933228Ab3CRV1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:27:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45942 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab3CRVIE (ORCPT
+	with ESMTP id S1756344Ab3CRVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:04 -0400
+	Mon, 18 Mar 2013 17:08:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guo Chao <yan@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "M. Hindess" <hindessm@uk.ibm.com>,
-        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [ 34/48] loopdev: fix a deadlock
-Date: Mon, 18 Mar 2013 14:08:42 -0700
-Message-Id: <20130318210812.653678837@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 27/48] s390: critical section cleanup vs. machine checks
+Date: Mon, 18 Mar 2013 14:08:35 -0700
+Message-Id: <20130318210812.178014375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -31,63 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guo Chao <yan@linux.vnet.ibm.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 5370019dc2d2c2ff90e95d181468071362934f3a upstream.
+commit 6551fbdfd8b85d1ab5822ac98abb4fb449bcfae0 upstream.
 
-bd_mutex and lo_ctl_mutex can be held in different order.
+The current machine check code uses the registers stored by the machine
+in the lowcore at __LC_GPREGS_SAVE_AREA as the registers of the interrupted
+context. The registers 0-7 of a user process can get clobbered if a machine
+checks interrupts the execution of a critical section in entry[64].S.
 
-Path #1:
+The reason is that the critical section cleanup code may need to modify
+the PSW and the registers for the previous context to get to the end of a
+critical section. If registers 0-7 have to be replaced the relevant copy
+will be in the registers, which invalidates the copy in the lowcore. The
+machine check handler needs to explicitly store registers 0-7 to the stack.
 
-blkdev_open
- blkdev_get
-  __blkdev_get (hold bd_mutex)
-   lo_open (hold lo_ctl_mutex)
-
-Path #2:
-
-blkdev_ioctl
- lo_ioctl (hold lo_ctl_mutex)
-  lo_set_capacity (hold bd_mutex)
-
-Lockdep does not report it, because path #2 actually holds a subclass of
-lo_ctl_mutex.  This subclass seems creep into the code by mistake.  The
-patch author actually just mentioned it in the changelog, see commit
-f028f3b2 ("loop: fix circular locking in loop_clr_fd()"), also see:
-
-	http://marc.info/?l=linux-kernel&m=123806169129727&w=2
-
-Path #2 hold bd_mutex to call bd_set_size(), I've protected it
-with i_mutex in a previous patch, so drop bd_mutex at this site.
-
-Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: M. Hindess <hindessm@uk.ibm.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/loop.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/s390/kernel/entry.S   |    3 ++-
+ arch/s390/kernel/entry64.S |    5 +++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1263,11 +1263,9 @@ static int loop_set_capacity(struct loop
- 	/* the width of sector_t may be narrow for bit-shift */
- 	sz = sec;
- 	sz <<= 9;
--	mutex_lock(&bdev->bd_mutex);
- 	bd_set_size(bdev, sz);
- 	/* let user-space know about the new size */
- 	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
--	mutex_unlock(&bdev->bd_mutex);
- 
-  out:
- 	return err;
+--- a/arch/s390/kernel/entry.S
++++ b/arch/s390/kernel/entry.S
+@@ -669,7 +669,8 @@ ENTRY(mcck_int_handler)
+ 	UPDATE_VTIME %r14,%r15,__LC_MCCK_ENTER_TIMER
+ mcck_skip:
+ 	SWITCH_ASYNC __LC_GPREGS_SAVE_AREA+32,__LC_PANIC_STACK,PAGE_SHIFT
+-	mvc	__PT_R0(64,%r11),__LC_GPREGS_SAVE_AREA
++	stm	%r0,%r7,__PT_R0(%r11)
++	mvc	__PT_R8(32,%r11),__LC_GPREGS_SAVE_AREA+32
+ 	stm	%r8,%r9,__PT_PSW(%r11)
+ 	xc	__SF_BACKCHAIN(4,%r15),__SF_BACKCHAIN(%r15)
+ 	l	%r1,BASED(.Ldo_machine_check)
+--- a/arch/s390/kernel/entry64.S
++++ b/arch/s390/kernel/entry64.S
+@@ -689,8 +689,9 @@ ENTRY(mcck_int_handler)
+ 	UPDATE_VTIME %r14,__LC_MCCK_ENTER_TIMER
+ 	LAST_BREAK %r14
+ mcck_skip:
+-	lghi	%r14,__LC_GPREGS_SAVE_AREA
+-	mvc	__PT_R0(128,%r11),0(%r14)
++	lghi	%r14,__LC_GPREGS_SAVE_AREA+64
++	stmg	%r0,%r7,__PT_R0(%r11)
++	mvc	__PT_R8(64,%r11),0(%r14)
+ 	stmg	%r8,%r9,__PT_PSW(%r11)
+ 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
+ 	lgr	%r2,%r11		# pass pointer to pt_regs
 
 
