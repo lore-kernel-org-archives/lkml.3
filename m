@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab3CRUVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:21:35 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:45414
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754982Ab3CRUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:21:26 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 2/3] Drivers: hv: balloon: Support 2M page allocations for ballooning
-Date: Mon, 18 Mar 2013 13:51:37 -0700
-Message-Id: <1363639898-1615-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363639898-1615-1-git-send-email-kys@microsoft.com>
-References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
- <1363639898-1615-1-git-send-email-kys@microsoft.com>
+	id S1755123Ab3CRUXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:23:13 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:41286 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab3CRUXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 16:23:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363379758-10071-5-git-send-email-vgoyal@redhat.com>
+References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
+	<1363379758-10071-5-git-send-email-vgoyal@redhat.com>
+Date: Mon, 18 Mar 2013 16:23:11 -0400
+Message-ID: <CA+5PVA4fxN4EhKQJ5C4dLG__ZRzrYPKFqNnZuDgssXCYAjX2yQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] binfmt_elf: Elf executable signature verification
+From: Josh Boyer <jwboyer@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dmitry.kasatkin@intel.com,
+        akpm@linux-foundation.org, ebiederm@xmission.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Hyper-V it will be very efficient to use 2M allocations in the guest as this
-makes the ballooning protocol with the host that much more efficient. Hyper-V
-uses page ranges (start pfn : number of pages) to specify memory being moved
-around and with 2M pages this encoding can be very efficient. However, when
-memory is returned to the guest, the host does not guarantee any granularity.
-To deal with this issue, split the page soon after a successful 2M allocation
-so that this memory can potentially be freed as 4K pages.
+On Fri, Mar 15, 2013 at 4:35 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Do elf executable signature verification (if one is present). If signature
+> is present, it should be valid. Validly signed files are given a capability
+> CAP_SIGNED.
+>
+> If file is unsigned, it can execute but it does not get the capability
+> CAP_SIGNED.
+>
+> This is work in progress. This patch is just an RFC to show how one
+> can go about making use of IMA APIs for executable signature
+> verification.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  fs/Kconfig.binfmt |   12 ++++++++++++
+>  fs/binfmt_elf.c   |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 56 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
+> index 0efd152..cbb1d4a 100644
+> --- a/fs/Kconfig.binfmt
+> +++ b/fs/Kconfig.binfmt
+> @@ -23,6 +23,18 @@ config BINFMT_ELF
+>           ld.so (check the file <file:Documentation/Changes> for location and
+>           latest version).
+>
+> +config BINFMT_ELF_SIG
+> +       bool "ELF binary signature verification"
+> +       depends on BINFMT_ELF
+> +       select INTEGRITY
+> +       select INTEGRITY_SIGNATURE
+> +       select INTEGRITY_ASYMMETRIC_KEYS
+> +       select IMA
+> +       select IMA_APPRAISE
+> +       default n
+> +       ---help---
+> +         Check ELF binary signature verfication.
+> +
 
-If 2M allocations fail, we revert to 4K allocations.
+I haven't reviewed the whole patch set, but this caught my eye.  There
+are a couple things wrong with it.
 
-In this version of the patch, based on the feedback from Michal Hocko
-<mhocko@suse.cz>, I have added some additional commentary to the patch
-description. 
+1) The help text isn't helpful.  It could definitely be more verbose and
+should probably point to something in Documentation/ that describes what
+this whole thing is.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/hv_balloon.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+2) The select mechanism is horrible.  I would really like to see this
+option use "depends on" instead of select given that you're selecting in
+a whole subsystem that people probably aren't going to have already
+enabled.
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 2cf7d4e..71655b4 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -997,6 +997,14 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
- 
- 		dm->num_pages_ballooned += alloc_unit;
- 
-+		/*
-+		 * If we allocatted 2M pages; split them so we
-+		 * can free them in any order we get.
-+		 */
-+
-+		if (alloc_unit != 1)
-+			split_page(pg, get_order(alloc_unit << PAGE_SHIFT));
-+
- 		bl_resp->range_count++;
- 		bl_resp->range_array[i].finfo.start_page =
- 			page_to_pfn(pg);
-@@ -1023,9 +1031,10 @@ static void balloon_up(struct work_struct *dummy)
- 
- 
- 	/*
--	 * Currently, we only support 4k allocations.
-+	 * We will attempt 2M allocations. However, if we fail to
-+	 * allocate 2M chunks, we will go back to 4k allocations.
- 	 */
--	alloc_unit = 1;
-+	alloc_unit = 512;
- 
- 	while (!done) {
- 		bl_resp = (struct dm_balloon_response *)send_buffer;
-@@ -1041,6 +1050,11 @@ static void balloon_up(struct work_struct *dummy)
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
- 
-+		if ((alloc_error) && (alloc_unit != 1)) {
-+			alloc_unit = 1;
-+			continue;
-+		}
-+
- 		if ((alloc_error) || (num_ballooned == num_pages)) {
- 			bl_resp->more_pages = 0;
- 			done = true;
--- 
-1.7.4.1
-
+josh
