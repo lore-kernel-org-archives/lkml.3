@@ -1,156 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3CRTSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 15:18:54 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:44292 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3CRTSw (ORCPT
+	id S1754888Ab3CRTTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 15:19:09 -0400
+Received: from nm19-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.25]:44006
+	"EHLO nm19-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754745Ab3CRTTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 15:18:52 -0400
-Date: Mon, 18 Mar 2013 20:21:36 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Greg KH <greg@kroah.com>, Harald Arnesen <skogtun.linux@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re:
- [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses))
-Message-ID: <20130318192135.GT9021@phenom.ffwll.local>
-Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
-	Chris Wilson <chris@chris-wilson.co.uk>, Greg KH <greg@kroah.com>,
-	Harald Arnesen <skogtun.linux@gmail.com>,
-	Kernel development list <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Thomas Meyer <thomas@m3y3r.de>,
-	Shawn Starr <shawn.starr@rogers.com>,
-	USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-	Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-	Yinghai Lu <yinghai@kernel.org>, Imre Deak <imre.deak@intel.com>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	dri-devel@lists.freedesktop.org
-References: <1363280764.26318.4.camel@thor.lan>
- <5657408.cYX6iimiA4@vostro.rjw.lan>
- <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
- <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
- <20130315153249.GA32425@kroah.com>
- <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz>
- <20130315154739.GA1024@kroah.com>
- <20130318082156.GO9021@phenom.ffwll.local>
- <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
+	Mon, 18 Mar 2013 15:19:05 -0400
+X-Yahoo-Newman-Id: 68894.93082.bm@smtp101.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: NhuNTMEVM1kiLryQqj0GKSCtRSuEZfpf1nsOFyq5cYsEr_6
+ ns8ID8x8lGgYlNG4omgjPl0PYnSn0a5XpuGDzAcR1fKVqdZ8dnOFLhLouZ0B
+ ae6xPlR3Pwjx.2pjUjmlFm6wo0qkGMnV_nS9JF3Mgr2Cc.R7i0M_UyFKhsqX
+ LU63OkwPIXatjGRV3sqvmbxhAp44JB347r0tlPzbDF0MLESf8q_qBNEFw.sL
+ 1BD5n7RwWpA8H3lKmyhKkWscG5RLuCYilCW1NhFKHygjQDZ0ecD2FnsY_1Um
+ C3iCtPcVKIYsByKJBOhxIVHAzKgjTm8BzJXt0UrFPsFkJl9Jxa9RpkfPacyr
+ 48YNpLtB_PwsLZ31b_pf3qCedFutrnTMKhZwAIcyK77F9CBiQtk3Qe0L6USk
+ 13jXfJgCrRoQ5R9WIG2R9v7UpQqXP2zViNYirMgCo.SXyXNnYYLzT42QCgEj
+ AfNRjWQ--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@50.131.111.212 with plain)
+        by smtp101.biz.mail.bf1.yahoo.com with SMTP; 18 Mar 2013 12:19:02 -0700 PDT
+Message-ID: <514768AF.4010504@schaufler-ca.com>
+Date: Mon, 18 Mar 2013 12:19:11 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dmitry.kasatkin@intel.com,
+        akpm@linux-foundation.org, ebiederm@xmission.com,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 3/4] capability: Create a new capability CAP_SIGNED
+References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com> <1363379758-10071-4-git-send-email-vgoyal@redhat.com> <51438EDB.3050300@schaufler-ca.com> <20130318170552.GG20743@redhat.com> <514753DC.4030609@schaufler-ca.com> <20130318183028.GB28061@redhat.com>
+In-Reply-To: <20130318183028.GB28061@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 04:56:02PM +0100, Jiri Kosina wrote:
-> Okay, so I think that for 3.9 we want the patch below, and if eventually 
-> hardware root cause / workaround is found for GM45, we can have it merged 
-> later.
+On 3/18/2013 11:30 AM, Vivek Goyal wrote:
+> On Mon, Mar 18, 2013 at 10:50:21AM -0700, Casey Schaufler wrote:
+>> On 3/18/2013 10:05 AM, Vivek Goyal wrote:
+>>> On Fri, Mar 15, 2013 at 02:12:59PM -0700, Casey Schaufler wrote:
+>>>> On 3/15/2013 1:35 PM, Vivek Goyal wrote:
+>>>>> Create a new capability CAP_SIGNED which can be given to signed executables.
+>>>> This would drive anyone who is trying to use
+>>>> capabilities as the privilege mechanism it is
+>>>> intended to be absolutely crazy.
+>>> Will calling it CAP_SIGNED_SERVICES help. I intend to use it as
+>>> capability (and not just as a flag for task attribute).
+>> No, the name is not the issue.
+>>
+>>> I think primary difference here is that this capability is controlled
+>>> by kernel and only validly signed processes get it.
+>> Applications are allowed to manipulate their capability sets
+>> in well defined ways. The behavior of file based capabilities
+>> is also explicitly defined. The behavior you are proposing would
+>> violate both of these mechanisms. 
+>>
+>>>> Capabilities aren't just random attribute bits. They
+>>>> indicate that a task has permission to violate a
+>>>> system policy (e.g. change the mode bits of a file
+>>>> the user doesn't own). Think about how this will
+>>>> interact with programs using file based capabilities.
+>>> It is a separate capability. I am not sure why it would
+>>> interfere with other capabilities or functionality out there.
+>> The behavior of capabilities is uniform. You can't have one
+>> capability that behaves differently from the others. If a
+>> file is unsigned but has CAP_SIGNED in the file capability
+>> set what do you expect to happen? Do you want a signed
+>> application to be able to drop and raise the fact that it
+>> is signed?
+> I have already removed this capability from bounding set. Behavior
+> I am looking for is that nobody should be able to set CAP_SIGNED
+> as file capability. I will look into that.
 
-I'd prefer if we dig into this for a bit more. I've been traveling last
-week and only just now recovered from the mail backlog, hence my delays in
-handling this.
+No! You are not listening. All capabilities work the same way.
+If the file capabilities say ALL that means ALL. You do not get
+to put a hole in the middle of the file based capabilities.
 
-Also the "nobody cared" showing up only very late after the last gmbus
-transaction isn't too surprising: It only fires after 100k interrupts, and
-apparently the irq handler is already a bit racy, so any interrupt might
-push it over the edge. gmbus interrupts are apparently just help to expose
-the race (presuming it's indeed the msi race already docuemented in the
-code).
--Daniel
 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips
-> 
-> Commit 28c70f162 ("drm/i915: use the gmbus irq for waits") switched to
-> using GMBUS irqs instead of GPIO bit-banging for chipset generations 4
-> and above.
-> 
-> It turns out though that on many systems this leads to spurious interrupts
-> being generated, long after the register write to disable the IRQs has been
-> issued.
-> 
-> Flushing of the register writes by POSTING_READ() directly after the register
-> write doesn't work either.
-> 
-> Disable using of GMBUS IRQs on Gen4 systems before the root cause is found and
-> revert back to old behavior.
-> 
-> Also be more careful about not issuing GMBUS4 register reads in 
-> gmbus_wait_hw_status() if we are not using GMBUS IRQs.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/gpu/drm/i915/intel_i2c.c |   12 ++++++++++--
->  1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> index acf8aec..8638036 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -58,12 +58,14 @@ to_intel_gmbus(struct i2c_adapter *i2c)
->  	return container_of(i2c, struct intel_gmbus, adapter);
->  }
->  
-> +#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
->  void
->  intel_i2c_reset(struct drm_device *dev)
->  {
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
-> -	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
-> +	if (HAS_GMBUS_IRQ(dev))
-> +		I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
->  }
->  
->  static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
-> @@ -203,7 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
->  	algo->data = bus;
->  }
->  
-> -#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
->  static int
->  gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
->  		     u32 gmbus2_status,
-> @@ -214,6 +215,13 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
->  	u32 gmbus2 = 0;
->  	DEFINE_WAIT(wait);
->  
-> +	if (!HAS_GMBUS_IRQ(dev_priv->dev)) {
-> +		int ret;
-> +		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
-> +				(GMBUS_SATOER | gmbus2_status),
-> +				50);
-> +		return ret;
-> +	}
->  	/* Important: The hw handles only the first bit, so set only one! Since
->  	 * we also need to check for NAKs besides the hw ready/idle signal, we
->  	 * need to wake up periodically and check that ourselves. */
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+> I am thinking of this more as kernel managed capability. It is
+> not in bounding set of any process and it can not be set as file
+> capability.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I heard that. No, you don't get to do that. All capabilities
+work the same way. Your attribute does not behave the way
+capabilities do, so you have to implement it some other way.
+
+
+> It is a new capability, so no existing user application should
+> be trying to set it.
+
+There are (and will be) applications that raise and drop all
+capabilities, and that do so for good reasons.
+
+> I think the only surprise would be that they can't drop it. If
+> that's a concern, may be we can allow dropping the capability.
+> But the side affect is that there is no way to gain it back for
+> the life time of process.
+
+Right. And that is a change to the capability mechanism. No, you
+don't get to do that.
+
+You don't want a new capability. You want a new attribute that
+behaves differently than capabilities do. You need to come up
+with a different way to implement your attribute. You do not get
+to change the way capabilities work.
+
+>> I expect that you don't want your attribute that indicates
+>> that the binary was signed to behave the same way that
+>> capabilities do. Like I said, capabilities are not just
+>> attribute bits. You need a different kind of process attribute
+>> to indicate that the binary was signed.
+> I think I need more than process attribute. One of the things
+> I am looking for is that signed processes run locked in memory
+> and nobody (i think no unsigned process) is able to do ptrace() on it.
+> Using the notion of capability might help here.
+
+There are already capabilities associated with ptrace. It would
+be simple to add a check for signatures in cap_ptrace_access_check.
+
+
+>> When (if ever) we have multiple LSM support you might consider
+>> doing this as a small LSM. Until then, you're going to need a
+>> different way to express the signature attribute.
+> I am not sure why you are viewing it as necessarily as attribute only.
+> I am thinking more in terms of that in certain situations, user space
+> processes can't perform certain operations (like kexec) untile and
+> unless process has the capability CAP_SIGNED_SERVICES. And this capability
+> is granted if upon exec() process signature are verified.
+
+Sigh. You need the process attribute to make the checks against. The
+process capability set, uids and groups are all examples of process
+attributes that exist today.
+
+> So yes it is little different from how capabilities are managed
+> currently. But is it very hard to extend the current capability definition
+> and include the fact that kernel can give additional capabilities to
+> processes based on some other factors.
+
+Yes. That is correct. That is why we have the LSM facility. The
+unfortunate fact is that you only get one LSM at a time today. I
+am working on fixing that, but there is still work to be done
+before it will be ready for upstream.
+
+If signed application controls are deemed sufficiently important
+and your implementation sound you should be able to get the signature
+attribute and the checks on that attribute into the base system.
+
+
+> Thanks
+> Vivek
+>
+
