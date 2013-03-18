@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab3CRVSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:18:34 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36717 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab3CRVSb (ORCPT
+	id S1756859Ab3CRVRL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:17:11 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36906 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab3CRVRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:18:31 -0400
+	Mon, 18 Mar 2013 17:17:08 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,67 +15,48 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
-        Steven Whitehouse <swhiteho@redhat.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/7] rcu: Fix hlist_bl_set_first_rcu() annotation
-Date: Mon, 18 Mar 2013 14:16:54 -0700
-Message-Id: <1363641416-18642-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/7] rcu: Avoid invoking RCU core on offline CPUs
+Date: Mon, 18 Mar 2013 14:16:51 -0700
+Message-Id: <1363641416-18642-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363641416-18642-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130318211615.GA15814@linux.vnet.ibm.com>
  <1363641416-18642-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-7282-0000-0000-00001543FEAF
+x-cbid: 13031821-2876-0000-0000-00000674262D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Abhi noticed that we were getting a complaint from the RCU subsystem
-about access of an RCU protected list under the write side bit lock.
-This commit adds additional annotation to check both the RCU read
-lock and the write side bit lock before printing a message.
+Offline CPUs transition through the scheduler to the idle loop one
+last time before being shut down.  This can result in RCU raising
+softirq on this CPU, which is at best useless given that the CPU's
+callbacks will be offloaded at CPU_DEAD time.  This commit therefore
+avoids raising softirq on offline CPUs.
 
-Reported by: Abhijith Das <adas@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Tested-by: Abhijith Das <adas@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/list_bl.h    | 5 +++++
- include/linux/rculist_bl.h | 2 +-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ kernel/rcutree.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index 31f9d75..2eb8855 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -125,6 +125,11 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
- 	__bit_spin_unlock(0, (unsigned long *)b);
- }
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 157539a..b2fc234 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2169,7 +2169,8 @@ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
  
-+static inline bool hlist_bl_is_locked(struct hlist_bl_head *b)
-+{
-+	return bit_spin_is_locked(0, (unsigned long *)b);
-+}
-+
- /**
-  * hlist_bl_for_each_entry	- iterate over list of given type
-  * @tpos:	the type * to use as a loop cursor.
-diff --git a/include/linux/rculist_bl.h b/include/linux/rculist_bl.h
-index cf1244f..4f216c5 100644
---- a/include/linux/rculist_bl.h
-+++ b/include/linux/rculist_bl.h
-@@ -20,7 +20,7 @@ static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
- static inline struct hlist_bl_node *hlist_bl_first_rcu(struct hlist_bl_head *h)
+ static void invoke_rcu_core(void)
  {
- 	return (struct hlist_bl_node *)
--		((unsigned long)rcu_dereference(h->first) & ~LIST_BL_LOCKMASK);
-+		((unsigned long)rcu_dereference_check(h->first, hlist_bl_is_locked(h)) & ~LIST_BL_LOCKMASK);
+-	raise_softirq(RCU_SOFTIRQ);
++	if (cpu_online(smp_processor_id()))
++		raise_softirq(RCU_SOFTIRQ);
  }
  
- /**
+ /*
 -- 
 1.8.1.5
 
