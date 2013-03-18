@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3CRMC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:02:26 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:42363 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3CRMCZ convert rfc822-to-8bit (ORCPT
+	id S1753412Ab3CRMJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:09:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12007 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab3CRMJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:02:25 -0400
+	Mon, 18 Mar 2013 08:09:27 -0400
+X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
+   d="scan'208";a="30279932"
+X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
+   d="scan'208";a="418885370"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Andrei Epure <epure.andrei@gmail.com>
+CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ath: changed kmalloc to kmemdup
+References: <1362919199-16292-1-git-send-email-epure.andrei@gmail.com>
+Date: Mon, 18 Mar 2013 14:09:22 +0200
+In-Reply-To: <1362919199-16292-1-git-send-email-epure.andrei@gmail.com>
+	(Andrei Epure's message of "Sun, 10 Mar 2013 14:39:58 +0200")
+Message-ID: <878v5k9afh.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1363607942.14386.73.camel@kjgkr>
-References: <1363585931-8441-1-git-send-email-jaegeuk.kim@samsung.com>
-	<CAKYAXd9qmaJksB9cOYGBpGb6h4mdQj7J-OwWttRprps8=i0RKA@mail.gmail.com>
-	<1363607942.14386.73.camel@kjgkr>
-Date: Mon, 18 Mar 2013 21:02:24 +0900
-Message-ID: <CAKYAXd__07xB=_GM0b5qdDe6HpLF1JHkz4qyU1r7gmTBwHBYVQ@mail.gmail.com>
-Subject: Re: [PATCH 13/19] f2fs: fix return value of releasepage for node and data
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> 2013-03-18 (월), 20:39 +0900, Namjae Jeon:
->> 2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> > If the return value of releasepage is equal to zero, the page cannot be
->> > reclaimed.
->> > Instead, we should return 1 in order to reclaim clean pages.
->> >
->> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
->> > ---
->> >  fs/f2fs/data.c |  4 +++-
->> >  fs/f2fs/node.c | 13 +++----------
->> >  2 files changed, 6 insertions(+), 11 deletions(-)
->> >
->> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
->> > index 6616137..cd6b2cc 100644
->> > --- a/fs/f2fs/data.c
->> > +++ b/fs/f2fs/data.c
->> > @@ -680,8 +680,10 @@ static void f2fs_invalidate_data_page(struct page
->> > *page, unsigned long offset)
->> >
->> >  static int f2fs_release_data_page(struct page *page, gfp_t wait)
->> >  {
->> > +	if (PageWriteback(page))
->> > +		return 0;
->> >  	ClearPagePrivate(page);
->> > -	return 0;
->> > +	return 1;
->> >  }
->> I have a question.
->> Although PageWriteback is already checked in try_to_release_page,
->> we need to check it again in f2fs_release_data_page ?
->
-> Oh, I made a mistake.
-> No need to check that.
-> Thanks,
-You can add
-Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+Andrei Epure <epure.andrei@gmail.com> writes:
 
-Thanks :)
+> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+> ---
+>  drivers/net/wireless/ath/ath6kl/usb.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 >
+> diff --git a/drivers/net/wireless/ath/ath6kl/usb.c b/drivers/net/wireless/ath/ath6kl/usb.c
+> index 5fcd342..ffa1daa 100644
+> --- a/drivers/net/wireless/ath/ath6kl/usb.c
+> +++ b/drivers/net/wireless/ath/ath6kl/usb.c
+> @@ -856,11 +856,9 @@ static int ath6kl_usb_submit_ctrl_out(struct ath6kl_usb *ar_usb,
+>  	int ret;
+>  
+>  	if (size > 0) {
+> -		buf = kmalloc(size, GFP_KERNEL);
+> +		buf = kmemdup(data, size, GFP_KERNEL);
+>  		if (buf == NULL)
+>  			return -ENOMEM;
+> -
+> -		memcpy(buf, data, size);
+>  	}
+
+Thanks, applied to ath6kl.git.
+
+-- 
+Kalle Valo
