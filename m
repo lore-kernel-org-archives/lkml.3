@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751323Ab3CRBqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 21:46:10 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64066 "EHLO
+	id S1751383Ab3CRBrt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 21:47:49 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58421 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3CRBqI (ORCPT
+	with ESMTP id S1751255Ab3CRBqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Mar 2013 21:46:08 -0400
 X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 17 Mar 2013 20:46:03 -0500
+  Sun, 17 Mar 2013 20:46:07 -0500
 X-Originating-IP: 108.223.40.66
 From: Guenter Roeck <linux@roeck-us.net>
 To: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
 Cc: Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 1/8] hwmon: Add devres support
-Date: Sun, 17 Mar 2013 18:45:50 -0700
-Message-Id: <1363571157-16273-2-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 6/8] hwmon: (lm90) Convert to devm_hwmon_device_register API
+Date: Sun, 17 Mar 2013 18:45:55 -0700
+Message-Id: <1363571157-16273-7-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1363571157-16273-1-git-send-email-linux@roeck-us.net>
 References: <1363571157-16273-1-git-send-email-linux@roeck-us.net>
@@ -25,215 +25,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provices new API functions devm_hwmon_device_register() and
-devm_hwmon_device_unregister().
-
-devm_hwmon_device_register() has a new parameter, a pointer to an array of type
-attribute_group. When using this API, callers to not have to create or remove
-sysfs attribute groups. Instead, attributes are created by the infrastructure.
-
-devm_hwmon_device_unregister() does not have to be called except for error
-handling.
-
-The new API attaches the provided attributes to the hwmon device.
-It automatically creates a 'name' attribute as required by the hwmon sysfs ABI.
-The name is set to either the name provided with devm_hwmon_device_register
-or the name of the hardware device driver.
-
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/hwmon.c |  123 +++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/hwmon.h |    5 ++
- 2 files changed, 119 insertions(+), 9 deletions(-)
+ drivers/hwmon/lm90.c |  106 ++++++++++++++++++++++----------------------------
+ 1 file changed, 46 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/hwmon/hwmon.c b/drivers/hwmon/hwmon.c
-index 646314f..4681b98 100644
---- a/drivers/hwmon/hwmon.c
-+++ b/drivers/hwmon/hwmon.c
-@@ -29,6 +29,51 @@ static struct class *hwmon_class;
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index 8eeb141..a35fa47 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -306,6 +306,7 @@ struct lm90_data {
+ 	unsigned long last_updated; /* in jiffies */
+ 	int kind;
+ 	u32 flags;
++	const struct attribute_group *groups[7];
  
- static DEFINE_IDA(hwmon_ida);
+ 	int update_interval;	/* in milliseconds */
  
-+static void hwmon_device_register_release(struct device *dev)
-+{
-+	kfree(dev);
-+}
+@@ -464,7 +465,7 @@ static void lm90_set_convrate(struct i2c_client *client, struct lm90_data *data,
+ 
+ static struct lm90_data *lm90_update_device(struct device *dev)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 	unsigned long next_update;
+ 
+@@ -738,7 +739,7 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+ 	};
+ 
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 	int nr = attr->index;
+ 	long val;
+@@ -805,7 +806,7 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 	};
+ 
+ 	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 	int nr = attr->nr;
+ 	int index = attr->index;
+@@ -867,7 +868,7 @@ static ssize_t show_temphyst(struct device *dev,
+ static ssize_t set_temphyst(struct device *dev, struct device_attribute *dummy,
+ 			    const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 	long val;
+ 	int err;
+@@ -921,7 +922,7 @@ static ssize_t set_update_interval(struct device *dev,
+ 				   struct device_attribute *attr,
+ 				   const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 	unsigned long val;
+ 	int err;
+@@ -971,6 +972,15 @@ static DEVICE_ATTR(alarms, S_IRUGO, show_alarms, NULL);
+ static DEVICE_ATTR(update_interval, S_IRUGO | S_IWUSR, show_update_interval,
+ 		   set_update_interval);
+ 
++static struct attribute *temp2_attributes[] = {
++	&sensor_dev_attr_temp2_offset.dev_attr.attr,
++	NULL
++};
 +
-+static struct device *_hwmon_device_register(struct device *dev,
-+					const struct attribute_group **groups,
-+					const char *name)
-+{
-+	struct device *hwdev;
-+	int id, err;
++static const struct attribute_group temp2_group = {
++	.attrs = temp2_attributes,
++};
 +
-+	hwdev = kzalloc(sizeof(*hwdev), GFP_KERNEL);
-+	if (!hwdev)
-+		return ERR_PTR(-ENOMEM);
+ static struct attribute *lm90_attributes[] = {
+ 	&sensor_dev_attr_temp1_input.dev_attr.attr,
+ 	&sensor_dev_attr_temp2_input.dev_attr.attr,
+@@ -1083,14 +1093,14 @@ static const struct attribute_group lm90_temp3_group = {
+ static ssize_t show_pec(struct device *dev, struct device_attribute *dummy,
+ 			char *buf)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	return sprintf(buf, "%d\n", !!(client->flags & I2C_CLIENT_PEC));
+ }
+ 
+ static ssize_t set_pec(struct device *dev, struct device_attribute *dummy,
+ 		       const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_client *client = to_i2c_client(dev->parent);
+ 	long val;
+ 	int err;
+ 
+@@ -1114,6 +1124,15 @@ static ssize_t set_pec(struct device *dev, struct device_attribute *dummy,
+ 
+ static DEVICE_ATTR(pec, S_IWUSR | S_IRUGO, show_pec, set_pec);
+ 
++static struct attribute *pec_attributes[] = {
++	&dev_attr_pec.attr,
++	NULL
++};
 +
-+	id = ida_simple_get(&hwmon_ida, 0, 0, GFP_KERNEL);
-+	if (id < 0) {
-+		err = id;
-+		goto err_free;
-+	}
++static const struct attribute_group pec_group = {
++	.attrs = pec_attributes,
++};
 +
-+	hwdev->groups = groups;
-+	hwdev->class = hwmon_class;
-+	hwdev->parent = dev;
-+	hwdev->release = hwmon_device_register_release;
-+	dev_set_drvdata(hwdev, (void *)name);
-+
-+	err = kobject_set_name(&hwdev->kobj, HWMON_ID_FORMAT, id);
-+	if (err)
-+		goto err_remove;
-+
-+	err = device_register(hwdev);
-+	if (err)
-+		goto err_remove;
-+
-+	return hwdev;
-+
-+err_remove:
-+	ida_simple_remove(&hwmon_ida, id);
-+err_free:
-+	kfree(hwdev);
-+	return ERR_PTR(err);
-+}
-+
- /**
-  * hwmon_device_register - register w/ hwmon
-  * @dev: the device to register
-@@ -40,22 +85,52 @@ static DEFINE_IDA(hwmon_ida);
+ /*
+  * Real code
   */
- struct device *hwmon_device_register(struct device *dev)
- {
-+	return _hwmon_device_register(dev, NULL, NULL);
-+}
-+EXPORT_SYMBOL_GPL(hwmon_device_register);
-+
-+struct hwmon_devres {
-+	struct list_head node;
- 	struct device *hwdev;
--	int id;
-+};
- 
--	id = ida_simple_get(&hwmon_ida, 0, 0, GFP_KERNEL);
--	if (id < 0)
--		return ERR_PTR(id);
-+static void devm_hwmon_release(struct device *dev, void *res)
-+{
-+	struct hwmon_devres *devres = res;
- 
--	hwdev = device_create(hwmon_class, dev, MKDEV(0, 0), NULL,
--			      HWMON_ID_FORMAT, id);
-+	hwmon_device_unregister(devres->hwdev);
-+}
- 
--	if (IS_ERR(hwdev))
--		ida_simple_remove(&hwmon_ida, id);
-+struct device *devm_hwmon_device_register(struct device *dev,
-+					  const struct attribute_group **groups,
-+					  const char *name)
-+{
-+	struct hwmon_devres *devres;
-+	struct device *hwdev;
-+	int err;
-+
-+	if (!dev)
-+		return ERR_PTR(-EINVAL);
-+
-+	devres = devres_alloc(devm_hwmon_release, sizeof(*devres),
-+			      GFP_KERNEL);
-+	if (!devres)
-+		return ERR_PTR(-ENOMEM);
- 
-+	hwdev = _hwmon_device_register(dev, groups, name);
-+	if (IS_ERR(hwdev)) {
-+		err = PTR_ERR(hwdev);
-+		goto err_free;
-+	}
-+	devres->hwdev = hwdev;
-+	devres_add(dev, devres);
- 	return hwdev;
-+
-+err_free:
-+	devres_free(devres);
-+	return ERR_PTR(err);
- }
--EXPORT_SYMBOL_GPL(hwmon_device_register);
-+EXPORT_SYMBOL_GPL(devm_hwmon_device_register);
- 
- /**
-  * hwmon_device_unregister - removes the previously registered class device
-@@ -75,6 +150,22 @@ void hwmon_device_unregister(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(hwmon_device_unregister);
- 
-+static int devm_hwmon_match(struct device *dev, void *res, void *data)
-+{
-+	struct hwmon_devres *devres = res;
-+
-+	return devres->hwdev == data;
-+}
-+
-+void devm_hwmon_device_unregister(struct device *hwdev)
-+{
-+	WARN_ON(devres_destroy(hwdev->parent, devm_hwmon_release,
-+			       devm_hwmon_match, hwdev));
-+
-+	hwmon_device_unregister(hwdev);
-+}
-+EXPORT_SYMBOL_GPL(devm_hwmon_device_unregister);
-+
- static void __init hwmon_pci_quirks(void)
- {
- #if defined CONFIG_X86 && defined CONFIG_PCI
-@@ -103,6 +194,19 @@ static void __init hwmon_pci_quirks(void)
- #endif
- }
- 
-+static ssize_t hwmon_name_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	const char *name = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%s\n", name ? : dev->parent->driver->name);
-+}
-+
-+struct device_attribute hwmon_dev_attrs[] = {
-+	__ATTR(name, S_IRUGO, hwmon_name_show, NULL),
-+	__ATTR_NULL,
-+};
-+
- static int __init hwmon_init(void)
- {
- 	hwmon_pci_quirks();
-@@ -112,6 +216,7 @@ static int __init hwmon_init(void)
- 		pr_err("couldn't create sysfs class\n");
- 		return PTR_ERR(hwmon_class);
- 	}
-+	hwmon_class->dev_attrs = hwmon_dev_attrs;
+@@ -1320,22 +1339,6 @@ static int lm90_detect(struct i2c_client *client,
  	return 0;
  }
  
-diff --git a/include/linux/hwmon.h b/include/linux/hwmon.h
-index b2514f7..67c9c08 100644
---- a/include/linux/hwmon.h
-+++ b/include/linux/hwmon.h
-@@ -15,9 +15,14 @@
- #define _HWMON_H_
+-static void lm90_remove_files(struct i2c_client *client, struct lm90_data *data)
+-{
+-	struct device *dev = &client->dev;
+-
+-	if (data->flags & LM90_HAVE_TEMP3)
+-		sysfs_remove_group(&dev->kobj, &lm90_temp3_group);
+-	if (data->flags & LM90_HAVE_EMERGENCY_ALARM)
+-		sysfs_remove_group(&dev->kobj, &lm90_emergency_alarm_group);
+-	if (data->flags & LM90_HAVE_EMERGENCY)
+-		sysfs_remove_group(&dev->kobj, &lm90_emergency_group);
+-	if (data->flags & LM90_HAVE_OFFSET)
+-		device_remove_file(dev, &sensor_dev_attr_temp2_offset.dev_attr);
+-	device_remove_file(dev, &dev_attr_pec);
+-	sysfs_remove_group(&dev->kobj, &lm90_group);
+-}
+-
+ static void lm90_restore_conf(struct i2c_client *client, struct lm90_data *data)
+ {
+ 	/* Restore initial configuration */
+@@ -1397,7 +1400,7 @@ static int lm90_probe(struct i2c_client *client,
+ 	struct device *dev = &client->dev;
+ 	struct i2c_adapter *adapter = to_i2c_adapter(dev->parent);
+ 	struct lm90_data *data;
+-	int err;
++	int err, group = 0;
  
- struct device;
-+struct attribute_group;
+ 	data = devm_kzalloc(&client->dev, sizeof(struct lm90_data), GFP_KERNEL);
+ 	if (!data)
+@@ -1430,47 +1433,32 @@ static int lm90_probe(struct i2c_client *client,
+ 	lm90_init_client(client);
  
- struct device *hwmon_device_register(struct device *dev);
-+struct device *devm_hwmon_device_register(struct device *dev,
-+					const struct attribute_group **groups,
-+					const char *name);
+ 	/* Register sysfs hooks */
+-	err = sysfs_create_group(&dev->kobj, &lm90_group);
+-	if (err)
+-		goto exit_restore;
+-	if (client->flags & I2C_CLIENT_PEC) {
+-		err = device_create_file(dev, &dev_attr_pec);
+-		if (err)
+-			goto exit_remove_files;
+-	}
+-	if (data->flags & LM90_HAVE_OFFSET) {
+-		err = device_create_file(dev,
+-					&sensor_dev_attr_temp2_offset.dev_attr);
+-		if (err)
+-			goto exit_remove_files;
+-	}
+-	if (data->flags & LM90_HAVE_EMERGENCY) {
+-		err = sysfs_create_group(&dev->kobj, &lm90_emergency_group);
+-		if (err)
+-			goto exit_remove_files;
+-	}
+-	if (data->flags & LM90_HAVE_EMERGENCY_ALARM) {
+-		err = sysfs_create_group(&dev->kobj,
+-					 &lm90_emergency_alarm_group);
+-		if (err)
+-			goto exit_remove_files;
+-	}
+-	if (data->flags & LM90_HAVE_TEMP3) {
+-		err = sysfs_create_group(&dev->kobj, &lm90_temp3_group);
+-		if (err)
+-			goto exit_remove_files;
+-	}
++	data->groups[group++] = &lm90_group;
  
- void hwmon_device_unregister(struct device *dev);
-+void devm_hwmon_device_unregister(struct device *dev);
+-	data->hwmon_dev = hwmon_device_register(dev);
++	if (client->flags & I2C_CLIENT_PEC)
++		data->groups[group++] = &pec_group;
++
++	if (data->flags & LM90_HAVE_OFFSET)
++		data->groups[group++] = &temp2_group;
++
++	if (data->flags & LM90_HAVE_EMERGENCY)
++		data->groups[group++] = &lm90_emergency_group;
++
++	if (data->flags & LM90_HAVE_EMERGENCY_ALARM)
++		data->groups[group++] = &lm90_emergency_alarm_group;
++
++	if (data->flags & LM90_HAVE_TEMP3)
++		data->groups[group++] = &lm90_temp3_group;
++
++	data->hwmon_dev = devm_hwmon_device_register(dev, data->groups,
++						     id->name);
+ 	if (IS_ERR(data->hwmon_dev)) {
+ 		err = PTR_ERR(data->hwmon_dev);
+-		goto exit_remove_files;
++		goto exit_restore;
+ 	}
  
- #endif
+ 	return 0;
+ 
+-exit_remove_files:
+-	lm90_remove_files(client, data);
+ exit_restore:
+ 	lm90_restore_conf(client, data);
+ 	return err;
+@@ -1480,8 +1468,6 @@ static int lm90_remove(struct i2c_client *client)
+ {
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 
+-	hwmon_device_unregister(data->hwmon_dev);
+-	lm90_remove_files(client, data);
+ 	lm90_restore_conf(client, data);
+ 
+ 	return 0;
 -- 
 1.7.9.7
 
