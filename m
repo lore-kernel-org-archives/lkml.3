@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab3CRUV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:21:27 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:57771
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1755060Ab3CRUVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:21:37 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:45421
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab3CRUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754980Ab3CRUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 16:21:26 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -15,39 +15,84 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
         yinghan@google.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 1/3]  mm: Export split_page()
-Date: Mon, 18 Mar 2013 13:51:36 -0700
-Message-Id: <1363639898-1615-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH V2 3/3] Drivers: hv: Notify the host of permanent hot-add failures
+Date: Mon, 18 Mar 2013 13:51:38 -0700
+Message-Id: <1363639898-1615-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363639873-1576-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1363639898-1615-1-git-send-email-kys@microsoft.com>
 References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
+ <1363639898-1615-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This symbol would be used in the Hyper-V balloon driver to support 2M
-allocations.
+If memory hot-add fails with the error -EEXIST, then this is a permanent
+failure. Notify the host of this information, so the host will not attempt
+hot-add again. If the failure were a transient failure, host will attempt
+a hot-add after some delay.
 
-In this version of the patch, based on feedback from Michal Hocko
-<mhocko@suse.cz>, I have updated the patch description.
+In this version of the patch, I have added some additional comments
+to clarify how the host treats different failure conditions.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- mm/page_alloc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/hv/hv_balloon.c |   33 +++++++++++++++++++++++++++++++--
+ 1 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6cacfee..7e0ead6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
- 	for (i = 1; i < (1 << order); i++)
- 		set_page_refcounted(page + i);
- }
-+EXPORT_SYMBOL_GPL(split_page);
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index 71655b4..4cc1d10 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -583,6 +583,16 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
  
- static int __isolate_free_page(struct page *page, unsigned int order)
- {
+ 		if (ret) {
+ 			pr_info("hot_add memory failed error is %d\n", ret);
++			if (ret == -EEXIST) {
++				/*
++				 * This error indicates that the error
++				 * is not a transient failure. This is the
++				 * case where the guest's physical address map
++				 * precludes hot adding memory. Stop all further
++				 * memory hot-add.
++				 */
++				do_hot_add = false;
++			}
+ 			has->ha_end_pfn -= HA_CHUNK;
+ 			has->covered_end_pfn -=  processed_pfn;
+ 			break;
+@@ -842,11 +852,30 @@ static void hot_add_req(struct work_struct *dummy)
+ 		rg_sz = region_size;
+ 	}
+ 
+-	resp.page_count = process_hot_add(pg_start, pfn_cnt,
+-					rg_start, rg_sz);
++	if (do_hot_add)
++		resp.page_count = process_hot_add(pg_start, pfn_cnt,
++						rg_start, rg_sz);
+ #endif
++	/*
++	 * The result field of the response structure has the
++	 * following semantics:
++	 *
++	 * 1. If all or some pages hot-added: Guest should return success.
++	 *
++	 * 2. If no pages could be hot-added:
++	 *
++	 * If the guest returns success, then the host
++	 * will not attempt any further hot-add operations. This
++	 * signifies a permanent failure.
++	 *
++	 * If the guest returns failure, then this failure will be
++	 * treated as a transient failure and the host may retry the
++	 * hot-add operation after some delay.
++	 */
+ 	if (resp.page_count > 0)
+ 		resp.result = 1;
++	else if (!do_hot_add)
++		resp.result = 1;
+ 	else
+ 		resp.result = 0;
+ 
 -- 
 1.7.4.1
 
