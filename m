@@ -1,218 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3CRQ34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:29:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49417
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752935Ab3CRQZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:59 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 51/54] perf test: Add test case for checking number of EXIT events
-Date: Mon, 18 Mar 2013 13:25:36 -0300
-Message-Id: <1363623939-10748-52-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
-References: <1363623939-10748-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753350Ab3CRQbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:31:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56279 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920Ab3CRQbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:31:19 -0400
+Date: Mon, 18 Mar 2013 09:29:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, rostedt@goodmis.org,
+        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
+        tglx@linutronix.de
+Subject: [PATCH] nohz1: Documentation
+Message-ID: <20130318162942.GA9359@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031816-9360-0000-0000-0000115ECF14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+First attempt at documentation for adaptive ticks.
 
-The new test__task_exit() test runs a simple "/usr/bin/true" workload and then
-checks whether the number of EXIT event is 1 or not.
+Thoughts?
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/87obeljax4.fsf@sejong.aot.lge.com
-[ committer note: Fixup conflicts with f4c66b4 ( bp overflow tests ) ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile             |    1 +
- tools/perf/tests/builtin-test.c |    4 +
- tools/perf/tests/task-exit.c    |  123 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |    1 +
- 4 files changed, 129 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/tests/task-exit.c
+							Thanx, Paul
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 990e9a1..8e1bba3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -513,6 +513,7 @@ LIB_OBJS += $(OUTPUT)tests/hists_link.o
- LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
-+LIB_OBJS += $(OUTPUT)tests/task-exit.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 45d9ad4..9b5c70a 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -86,6 +86,10 @@ static struct test {
- 		.func = test__bp_signal_overflow,
- 	},
- 	{
-+		.desc = "Test number of exit event of a simple workload",
-+		.func = test__task_exit,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
+------------------------------------------------------------------------
+
+nohz1: Documentation
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
 new file mode 100644
-index 0000000..28fe589
+index 0000000..7279109
 --- /dev/null
-+++ b/tools/perf/tests/task-exit.c
-@@ -0,0 +1,123 @@
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "thread_map.h"
-+#include "cpumap.h"
-+#include "tests.h"
++++ b/Documentation/timers/NO_HZ.txt
+@@ -0,0 +1,200 @@
++		NO_HZ: Reducing Scheduling-Clock Ticks
 +
-+#include <signal.h>
 +
-+static int exited;
-+static int nr_exit;
++This document covers kernel configuration variables used to reduce
++the number of scheduling-clock interrupts.  These reductions can be
++helpful in improving energy efficiency and in reducing "OS jitter",
++the latter being very important for some types of computationally
++intensive high-performance computing (HPC) applications and for real-time
++applications.
 +
-+static void sig_handler(int sig)
-+{
-+	exited = 1;
++Within the Linux kernel, there are two major aspects of scheduling-clock
++interrupt reduction:
 +
-+	if (sig == SIGUSR1)
-+		nr_exit = -1;
-+}
++1.	Idle CPUs.
 +
-+/*
-+ * This test will start a workload that does nothing then it checks
-+ * if the number of exit event reported by the kernel is 1 or not
-+ * in order to check the kernel returns correct number of event.
-+ */
-+int test__task_exit(void)
-+{
-+	int err = -1;
-+	union perf_event *event;
-+	struct perf_evsel *evsel;
-+	struct perf_evlist *evlist;
-+	struct perf_target target = {
-+		.uid		= UINT_MAX,
-+		.uses_mmap	= true,
-+	};
-+	const char *argv[] = { "true", NULL };
++2.	CPUs having only one runnable task.
 +
-+	signal(SIGCHLD, sig_handler);
-+	signal(SIGUSR1, sig_handler);
++These two cases are described in the following sections.
 +
-+	evlist = perf_evlist__new();
-+	if (evlist == NULL) {
-+		pr_debug("perf_evlist__new\n");
-+		return -1;
-+	}
-+	/*
-+	 * We need at least one evsel in the evlist, use the default
-+	 * one: "cycles".
-+	 */
-+	err = perf_evlist__add_default(evlist);
-+	if (err < 0) {
-+		pr_debug("Not enough memory to create evsel\n");
-+		goto out_free_evlist;
-+	}
 +
-+	/*
-+	 * Create maps of threads and cpus to monitor. In this case
-+	 * we start with all threads and cpus (-1, -1) but then in
-+	 * perf_evlist__prepare_workload we'll fill in the only thread
-+	 * we're monitoring, the one forked there.
-+	 */
-+	evlist->cpus = cpu_map__dummy_new();
-+	evlist->threads = thread_map__new_by_tid(-1);
-+	if (!evlist->cpus || !evlist->threads) {
-+		err = -ENOMEM;
-+		pr_debug("Not enough memory to create thread/cpu maps\n");
-+		goto out_delete_maps;
-+	}
++IDLE CPUs
 +
-+	err = perf_evlist__prepare_workload(evlist, &target, argv, false, true);
-+	if (err < 0) {
-+		pr_debug("Couldn't run the workload!\n");
-+		goto out_delete_maps;
-+	}
++If a CPU is idle, there is little point in sending it a scheduling-clock
++interrupt.  After all, the primary purpose of a scheduling-clock interrupt
++is to force a busy CPU to shift its attention among multiple duties,
++but an idle CPU by definition has no duties to shift its attention among.
 +
-+	evsel = perf_evlist__first(evlist);
-+	evsel->attr.task = 1;
-+	evsel->attr.sample_freq = 0;
-+	evsel->attr.inherit = 0;
-+	evsel->attr.watermark = 0;
-+	evsel->attr.wakeup_events = 1;
-+	evsel->attr.exclude_kernel = 1;
++The CONFIG_NO_HZ=y Kconfig option causes the kernel to avoid sending
++scheduling-clock interrupts to idle CPUs, which is critically important
++both to battery-powered devices and to highly virtualized mainframes.
++A battery-powered device running a CONFIG_NO_HZ=n kernel would drain its
++battery very quickly, easily 2-3x as fast as would the same device running
++a CONFIG_NO_HZ=n kernel.  A mainframe running 1,500 OS instances could
++easily find that half of its CPU time was consumed by scheduling-clock
++interrupts.  In these situations, there is therefore strong motivation
++to avoid sending scheduling-clock interrupts to idle CPUs.  That said,
++dyntick-idle mode is not free:
 +
-+	err = perf_evlist__open(evlist);
-+	if (err < 0) {
-+		pr_debug("Couldn't open the evlist: %s\n", strerror(-err));
-+		goto out_delete_maps;
-+	}
++1.	It increases the number of instructions executed on the path
++	to and from the idle loop.
 +
-+	if (perf_evlist__mmap(evlist, 128, true) < 0) {
-+		pr_debug("failed to mmap events: %d (%s)\n", errno,
-+			 strerror(errno));
-+		goto out_close_evlist;
-+	}
++2.	Many architectures will place dyntick-idle CPUs into deep sleep
++	states, which further degrades from-idle transition latencies.
 +
-+	perf_evlist__start_workload(evlist);
++Therefore, systems with aggressive real-time response constraints
++often run CONFIG_NO_HZ=n kernels in order to avoid degrading from-idle
++transition latencies.
 +
-+retry:
-+	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
-+		if (event->header.type != PERF_RECORD_EXIT)
-+			continue;
++An idle CPU that is not receiving scheduling-clock interrupts is said to
++be "dyntick-idle", "in dyntick-idle mode", "in nohz mode", or "running
++tickless".  The remainder of this document will use "dyntick-idle mode".
 +
-+		nr_exit++;
-+	}
++There is also a boot parameter "nohz=" that can be used to disable
++dyntick-idle mode in CONFIG_NO_HZ=y kernels by specifying "nohz=off".
++By default, CONFIG_NO_HZ=y kernels boot with "nohz=on", enabling
++dyntick-idle mode.
 +
-+	if (!exited || !nr_exit) {
-+		poll(evlist->pollfd, evlist->nr_fds, -1);
-+		goto retry;
-+	}
 +
-+	if (nr_exit != 1) {
-+		pr_debug("received %d EXIT records\n", nr_exit);
-+		err = -1;
-+	}
++CPUs WITH ONLY ONE RUNNABLE TASK
 +
-+	perf_evlist__munmap(evlist);
-+out_close_evlist:
-+	perf_evlist__close(evlist);
-+out_delete_maps:
-+	perf_evlist__delete_maps(evlist);
-+out_free_evlist:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 6cf1ec4..b33b328 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -25,5 +25,6 @@ int test__hists_link(void);
- int test__python_use(void);
- int test__bp_signal(void);
- int test__bp_signal_overflow(void);
-+int test__task_exit(void);
- 
- #endif /* TESTS_H */
--- 
-1.7.1
++If a CPU has only one runnable task, there is again little point in
++sending it a scheduling-clock interrupt.  Recall that the primary
++purpose of a scheduling-clock interrupt is to force a busy CPU to
++shift its attention among many things requiring its attention -- and
++there is nowhere else for a CPU with but one runnable task to shift its
++attention to.
++
++The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to avoid
++sending scheduling-clock interrupts to CPUs with a single runnable task.
++This is important for applications with aggressive real-time response
++constraints because it allows them to improve their worst-case response
++times by the maximum duration of a scheduling-clock interrupt.  It is also
++important for computationally intensive iterative workloads with short
++iterations:  If any CPU is delayed during a given iteration, all the
++other CPUs will be forced to wait idle while the delayed CPU finished.
++Thus, the delay is multiplied by one less than the number of CPUs.
++In these situations, there is again strong motivation to avoid sending
++scheduling-clock interrupts to CPUs that have but one runnable task that
++is executing in user mode.
++
++Note that if a given CPU is in adaptive-ticks mode while executing in
++user mode, transitioning to kernel mode does not automatically force
++that CPU out of adaptive-ticks mode.  The CPU will exit adaptive-ticks
++mode only if needed, for example, if that CPU enqueues an RCU callback.
++
++Just as with dyntick-idle mode, the benefits of adaptive-tick mode do
++not come for free:
++
++1.	The user/kernel transitions are slightly more expensive due
++	to the need to inform kernel subsystems (such as RCU) about
++	the change in mode.
++
++2.	POSIX CPU timers on adaptive-tick CPUs may fire late (or even
++	not at all) because they currently rely on scheduling-tick
++	interrupts.  This will likely be fixed in one of two ways: (1)
++	Prevent CPUs with POSIX CPU timers from entering adaptive-tick
++	mode, or (2) Use hrtimers or other adaptive-ticks-immune mechanism
++	to cause the POSIX CPU timer to fire properly.
++
++3.	If there are more perf events pending than the hardware can
++	accommodate, they are normally round-robined so as to collect
++	all of them over time.  Adaptive-tick mode may prevent this
++	round-robining from happening.  This will likely be fixed by
++	preventing CPUs with large numbers of perf events pending from
++	entering adaptive-tick mode.
++
++4.	Scheduler statistics for adaptive-idle CPUs may be computed
++	slightly differently than those for non-adaptive-idle CPUs.
++	This may in turn perturb load-balancing of real-time tasks.
++
++5.	The LB_BIAS scheduler feature is disabled by adaptive ticks.
++
++Although improvements are expected over time, adaptive ticks is quite
++useful for many types of real-time and compute-intensive applications.
++However, the drawbacks listed above mean that adaptive ticks should not
++be enabled by default across the board at the current time.
++
++
++RCU IMPLICATIONS
++
++There are situations in which idle CPUs cannot be permitted to
++enter either dyntick-idle mode or adaptive-tick mode, the most
++familiar being the case where that CPU has RCU callbacks pending.
++
++The CONFIG_RCU_FAST_NO_HZ=y Kconfig option may be used to cause such
++CPUs to enter dyntick-idle mode or adaptive-tick mode anyway, though a
++timer will awaken these CPUs every four jiffies in order to ensure that
++the RCU callbacks are processed in a timely fashion.
++
++Another approach is to offload RCU callback processing to "rcuo" kthreads
++using the CONFIG_RCU_NOCB_CPU=y.  The specific CPUs to offload may be
++selected via several methods:
++
++1.	The "rcu_nocbs=" kernel boot parameter, which takes a comma-separated
++	list of CPUs and CPU ranges, for example, "1,3-5" selects CPUs 1,
++	3, 4, and 5.
++
++2.	The RCU_NOCB_CPU_ZERO=y Kconfig option, which causes CPU 0 to
++	be offloaded.  This is the build-time equivalent of "rcu_nocbs=0".
++
++3.	The RCU_NOCB_CPU_ALL=y Kconfig option, which causes all CPUs
++	to be offloaded.  On a 16-CPU system, this is equivalent to
++	"rcu_nocbs=0-15".
++
++The offloaded CPUs never have RCU callbacks queued, and therefore RCU
++never prevents offloaded CPUs from entering either dyntick-idle mode or
++adaptive-tick mode.  That said, note that it is up to userspace to
++pin the "rcuo" kthreads to specific CPUs if desired.  Otherwise, the
++scheduler will decide where to run them, which might or might not be
++where you want them to run.
++
++
++KNOWN ISSUES
++
++o	Dyntick-idle slows transitions to and from idle slightly.
++	In practice, this has not been a problem except for the most
++	aggressive real-time workloads, which have the option of disabling
++	dyntick-idle mode, an option that most of them take.
++
++o	Adaptive-ticks slows user/kernel transitions slightly.
++	This is not expected to be a problem for computational-intensive
++	workloads, which have few such transitions.  Careful benchmarking
++	will be required to determine whether or not other workloads
++	are significantly affected by this effect.
++
++o	Adaptive-ticks does not do anything unless there is only one
++	runnable task for a given CPU, even though there are a number
++	of other situations where the scheduling-clock tick is not
++	needed.  To give but one example, consider a CPU that has one
++	runnable high-priority SCHED_FIFO task and an arbitrary number
++	of low-priority SCHED_OTHER tasks.  In this case, the CPU is
++	required to run the SCHED_FIFO task until either it blocks or
++	some other higher-priority task awakens on (or is assigned to)
++	this CPU, so there is no point in sending a scheduling-clock
++	interrupt to this CPU.
++
++	Better handling of these sorts of situations is future work.
++
++o	A reboot is required to reconfigure both adaptive idle and RCU
++	callback offloading.  Runtime reconfiguration could be provided
++	if needed, however, due to the complexity of reconfiguring RCU
++	at runtime, there would need to be an earthshakingly good reason.
++	Especially given the option of simply offloading RCU callbacks
++	from all CPUs.
++
++o	Additional configuration is required to deal with other sources
++	of OS jitter, including interrupts and system-utility tasks
++	and processes.
++
++o	Some sources of OS jitter can currently be eliminated only by
++	constraining the workload.  For example, the only way to eliminate
++	OS jitter due to global TLB shootdowns is to avoid the unmapping
++	operations (such as kernel module unload operations) that result
++	in these shootdowns.  For another example, page faults and TLB
++	misses can be reduced (and in some cases eliminated) by using
++	huge pages and by constraining the amount of memory used by the
++	application.
++
++o	At least one CPU must keep the scheduling-clock interrupt going
++	in order to support accurate timekeeping.
 
