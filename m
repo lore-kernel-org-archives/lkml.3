@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab3CRK6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 06:58:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34001 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab3CRK6m (ORCPT
+	id S1753783Ab3CRLAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:00:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60618 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab3CRK76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:58:42 -0400
-Date: Mon, 18 Mar 2013 03:57:13 -0700
-From: tip-bot for Sukadev Bhattiprolu <tipbot@zytor.com>
-Message-ID: <tip-3bf7b07ece6e00747602938f68c1db8001b9925f@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        mingo@redhat.com, paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, michael@ellerman.id.au, jolsa@redhat.com,
-        robert.richter@amd.com, anton@au1.ibm.com, ak@linux.intel.com,
-        tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org, mingo@redhat.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, michael@ellerman.id.au, jolsa@redhat.com,
-        robert.richter@amd.com, anton@au1.ibm.com, ak@linux.intel.com,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <20130306054826.GA14627@us.ibm.com>
-References: <20130306054826.GA14627@us.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/POWER7:
-  Create a sysfs format entry for Power7 events
-Git-Commit-ID: 3bf7b07ece6e00747602938f68c1db8001b9925f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 18 Mar 2013 06:59:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+Date: Mon, 18 Mar 2013 10:58:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <201303152018.09094.arnd@arndb.de> <CAHkwnC9YFTw8gVzyZB3_gZCgM5zMA6tLch15EDqcA2F4CAOpAQ@mail.gmail.com>
+In-Reply-To: <CAHkwnC9YFTw8gVzyZB3_gZCgM5zMA6tLch15EDqcA2F4CAOpAQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:57:19 -0700 (PDT)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303181058.51641.arnd@arndb.de>
+X-Provags-ID: V02:K0:0cL2cpQkGf/y11WD24WigC1LF5VkprWZqmGpzut/3OJ
+ fSjD8nZnOiRXFQYEda9RXzUSqmsWQMFVYdOCeTsgKy6dJ8fWi4
+ tqPKgNCBdy7FS7BCvXbwhWdHcPZ4C1xa/JhKxfRbqlryKPeGK3
+ 3WHKlyHTs0foV6Zj4++alEpu2eLVDkHJmZ+hfHFZCdiudo8hEk
+ Jxv11/CmdF/J/zKrrMM+Xvy9f8Iz83EJwRQTBqzxWSRjtnbByr
+ hKPhed019FuGWgEPKjBcLFgiDilC/eXazrNzlsIfnga+lzUi3u
+ wkJa6c4eDsn63WHy8YFoa//7P484ZllJuAQlUYdRZzwASamk3j
+ 7AT8aixX2MCzJDhR2apc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3bf7b07ece6e00747602938f68c1db8001b9925f
-Gitweb:     http://git.kernel.org/tip/3bf7b07ece6e00747602938f68c1db8001b9925f
-Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-AuthorDate: Tue, 5 Mar 2013 21:48:26 -0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Mar 2013 17:01:04 -0300
+On Monday 18 March 2013, Fabio Porcedda wrote:
+> Since by using platform_driver_probe() the  function
+> ep93xx_pwm_probe() is freed after initialization,
+> is better to use module_platform_drive_probe().
+> IMHO i don't see any good reason to use module_platform_driver() for
+> this driver.
 
-perf/POWER7: Create a sysfs format entry for Power7 events
+As I commented earlier, the platform_driver_probe() and
+module_platform_drive_probe() interfaces are rather dangerous in combination
+with deferred probing, I would much prefer Harley's patch.
 
-Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-which describes the format of the POWER7 PMU events.
-
-This code is based on corresponding code in x86.
-
-Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
-		for other POWER cpus. So move the code to POWER7-specific,
-		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
-
-Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Paul Mackerras <paulus@samba.org>
-Tested-by: Michael Ellerman <michael@ellerman.id.au>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: benh@kernel.crashing.org
-Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130306054826.GA14627@us.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- arch/powerpc/perf/power7-pmu.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index b554879..3c475d6 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -420,7 +420,20 @@ static struct attribute_group power7_pmu_events_group = {
- 	.attrs = power7_events_attr,
- };
- 
-+PMU_FORMAT_ATTR(event, "config:0-19");
-+
-+static struct attribute *power7_pmu_format_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+struct attribute_group power7_pmu_format_group = {
-+	.name = "format",
-+	.attrs = power7_pmu_format_attr,
-+};
-+
- static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power7_pmu_format_group,
- 	&power7_pmu_events_group,
- 	NULL,
- };
+	Arnd
