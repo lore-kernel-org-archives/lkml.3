@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3CRNWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:22:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37803 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab3CRNWQ (ORCPT
+	id S1752572Ab3CRNZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:25:22 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48775 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3CRNZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:22:16 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCH/Resend 2/2] arm: mach-omap2: prevent UART console idle on suspend while using "no_console_suspend"
-Date: Mon, 18 Mar 2013 18:52:04 +0530
-Message-ID: <1363612924-349-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 18 Mar 2013 09:25:19 -0400
+Message-ID: <514715B6.3080507@linux.vnet.ibm.com>
+Date: Mon, 18 Mar 2013 21:25:10 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
+References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com> <5146CB92.7060203@linux.vnet.ibm.com> <20130318091303.GA1276@redhat.com> <514708A9.8040009@linux.vnet.ibm.com> <20130318124616.GH4020@redhat.com> <51471217.7070801@linux.vnet.ibm.com> <20130318131907.GK4020@redhat.com>
+In-Reply-To: <20130318131907.GK4020@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031813-2000-0000-0000-00000B63E0E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dt boot, uart wakeup after suspend is non functional on omap4/5 while using
-"no_console_suspend" in the bootargs. With "no_console_suspend" used, od->flags
-should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not allowing the console
-to idle in the suspend path. For non-dt case, this was taken care by platform data.
+On 03/18/2013 09:19 PM, Gleb Natapov wrote:
+> On Mon, Mar 18, 2013 at 09:09:43PM +0800, Xiao Guangrong wrote:
+>> On 03/18/2013 08:46 PM, Gleb Natapov wrote:
+>>> On Mon, Mar 18, 2013 at 08:29:29PM +0800, Xiao Guangrong wrote:
+>>>> On 03/18/2013 05:13 PM, Gleb Natapov wrote:
+>>>>> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
+>>>>>> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
+>>>>>>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
+>>>>>>>> This patch tries to introduce a very simple and scale way to invalid all
+>>>>>>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
+>>>>>>>>
+>>>>>>>> KVM maintains a global mmio invalid generation-number which is stored in
+>>>>>>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+>>>>>>>> generation-number into his available bits when it is created
+>>>>>>>>
+>>>>>>>> When KVM need zap all mmio sptes, it just simply increase the global
+>>>>>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+>>>>>>>> then it walks the shadow page table and get the mmio spte. If the
+>>>>>>>> generation-number on the spte does not equal the global generation-number,
+>>>>>>>> it will go to the normal #PF handler to update the mmio spte
+>>>>>>>>
+>>>>>>>> Since 19 bits are used to store generation-number on mmio spte, the
+>>>>>>>> generation-number can be round after 33554432 times. It is large enough
+>>>>>>>> for nearly all most cases, but making the code be more strong, we zap all
+>>>>>>>> shadow pages when the number is round
+>>>>>>>>
+>>>>>>> Very nice idea, but why drop Takuya patches instead of using
+>>>>>>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
+>>>>>>
+>>>>>> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
+>>>>>> more than 500000 times is really really rare, it nearly does not happen.
+>>>>>> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
+>>>>>> implantation.) And, after my patch optimizing zapping all shadow pages,
+>>>>>> zap-all-sps should not be a problem anymore since it does not take too much lock
+>>>>>> time.
+>>>>>>
+>>>>>> Your idea?
+>>>>>>
+>>>>> I expect 500000 to become less since I already had plans to store some
+>>>>
+>>>> Interesting, just curious, what are the plans? ;)
+>>>>
+>>> Currently we uses pio to signal that work is pending to virtio devices. The
+>>> requirement is that signaling should be fast and PIO is fast since there
+>>> is not need to emulate instruction. PCIE though is not really designed
+>>> with PIO in mind, so we will have to use MMIO to do signaling. To avoid
+>>> instruction emulation I thought about making guest access these devices using
+>>> predefined variety of MOV instruction so that emulation can be skipped.
+>>> The idea is to mark mmio spte to know that emulation is not needed.
+>>
+>> How to know page-fault is caused by the predefined instruction?
+>>
+> Only predefined phys address rages will be accessed that way. If page
+> fault is in a range we assume the knows instruction is used.
 
-Tested on omap5430evm, omap4430sdp.
-
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
- arch/arm/mach-omap2/omap_device.c |   34 +++++++++++++++++++++++++++++++++-
- 1 files changed, 33 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 381be7a..71f5a73 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -35,11 +35,17 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/notifier.h>
-+#include <linux/platform_data/serial-omap.h>
- 
- #include "soc.h"
- #include "omap_device.h"
- #include "omap_hwmod.h"
- 
-+#define MAX_UART_HWMOD_NAME_LEN         16
-+
-+static u8 no_console_suspend;
-+static u8 console_uart_num;
-+
- /* Private functions */
- 
- static void _add_clkdev(struct omap_device *od, const char *clk_alias,
-@@ -108,6 +114,12 @@ static void _add_hwmod_clocks_clkdev(struct omap_device *od,
- 		_add_clkdev(od, oh->opt_clks[i].role, oh->opt_clks[i].clk);
- }
- 
-+static char *cmdline_find_option(char *str)
-+{
-+	extern char *saved_command_line;
-+
-+	return strstr(saved_command_line, str);
-+}
- 
- /**
-  * omap_device_build_from_dt - build an omap_device with multiple hwmods
-@@ -129,6 +141,7 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 	struct device_node *node = pdev->dev.of_node;
- 	const char *oh_name;
- 	int oh_cnt, i, ret = 0;
-+	static u8 console_uart_id;
- 
- 	oh_cnt = of_property_count_strings(node, "ti,hwmods");
- 	if (!oh_cnt || IS_ERR_VALUE(oh_cnt)) {
-@@ -170,7 +183,12 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 			r->name = dev_name(&pdev->dev);
- 	}
- 
--	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
-+	if (no_console_suspend && !strncmp(oh->name, "uart", 4)) {
-+		if (console_uart_num == console_uart_id)
-+			omap_device_disable_idle_on_suspend(pdev);
-+		else
-+			console_uart_id++;
-+	} else if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
- 		omap_device_disable_idle_on_suspend(pdev);
- 
- 	pdev->dev.pm_domain = &omap_device_pm_domain;
-@@ -838,7 +856,21 @@ static struct notifier_block platform_nb = {
- 
- static int __init omap_device_init(void)
- {
-+	int i;
-+	char uart_name[MAX_UART_HWMOD_NAME_LEN];
-+
- 	bus_register_notifier(&platform_bus_type, &platform_nb);
-+
-+	if (cmdline_find_option("no_console_suspend")) {
-+		no_console_suspend = true;
-+		for (i = 0; i < OMAP_MAX_HSUART_PORTS; i++) {
-+			snprintf(uart_name, MAX_UART_HWMOD_NAME_LEN,
-+				"%s%d", OMAP_SERIAL_NAME, i);
-+			if (cmdline_find_option(uart_name))
-+				console_uart_num = i;
-+		}
-+	}
-+
- 	return 0;
- }
- omap_core_initcall(omap_device_init);
--- 
-1.7.1
+That means the access can be identified by the gfn, why need cache
+other things into mmio spte?
 
