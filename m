@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab3CRJM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 05:12:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57014 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158Ab3CRJM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 05:12:56 -0400
-Date: Mon, 18 Mar 2013 10:12:49 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Harald Arnesen <skogtun.linux@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [3.9-rc1] irq 16: nobody cared (was [3.9-rc1] very poor interrupt
- responses)
-In-Reply-To: <CAE9FiQUqPTUqPOzANnxpdfoRYPr+OiU5pFEoLKRiOFHd9Py4XQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1303181010080.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <alpine.LNX.2.00.1303151609480.9529@pobox.suse.cz> <CAE9FiQUqPTUqPOzANnxpdfoRYPr+OiU5pFEoLKRiOFHd9Py4XQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753396Ab3CRJNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 05:13:15 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:56236 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab3CRJNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 05:13:06 -0400
+Date: Mon, 18 Mar 2013 10:13:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] sched: Cputime update for 3.10
+Message-ID: <20130318091302.GB19068@gmail.com>
+References: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363196663-4258-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Mar 2013, Yinghai Lu wrote:
 
-> > Just a datapoint -- I have put a trivial debugging patch in place, and it
-> > reveals that "nobody cared" for irq 16 happens long after last
-> >
-> >         I915_WRITE(GMBUS4 + reg_offset, 0);
-> >
-> > has been performed in gmbus_wait_hw_status(). On the other hand, if I
-> > comment out both GMBUS4 register offset writes in gmbus_wait_hw_status(),
-> > then it of course falls back to GPIO bit-banging, but the "nobody cared"
-> > for irq 16 is gone.
-> >
-> > So it seems like something gets severely confused by the I915_WRITE to
-> > GMBUS4 + reg_offset. So far this seems to have been reported solely on
-> > Lenovos as far as I can see (although a completely different types), so it
-> > might be some platform-specific quirk?
-> >
-> > Honestly, I still don't understand how all the GMBUS stuff relates to IRQ
-> > 16 at all.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Ingo,
 > 
-> that device is using
-> i915 0000:00:02.0: irq 44 for MSI/MSI-X
+> Please pull the latest cputime accounting updates that can be found at:
 > 
-> so can you try to boot with pci=nomsi?
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	sched/core
+> 
+> HEAD: d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
+> 
+> Some users are complaining that their threadgroup's runtime accounting freezes
+> after a week or so of intense cpu-bound workload. This set tries to fix the issue
+> by reducing the risk of multiplication overflow in the cputime scaling code.
+> 
+> Thanks.
+> 
+> ---
+> Frederic Weisbecker (2):
+>   math64: New div64_u64_rem helper
+>   sched: Lower chances of cputime scaling overflow
+> 
+>  include/linux/math64.h |   19 ++++++++++++++++++-
+>  kernel/sched/cputime.c |   46 ++++++++++++++++++++++++++++++++++------------
+>  lib/div64.c            |   19 +++++++++++++------
+>  3 files changed, 65 insertions(+), 19 deletions(-)
 
-Yes, switching from MSI to IO-APIC-fasteoi makes the report about lost 
-interrupts go away.
+Pulled, thanks guys!
 
-My understanding from the other mail is that DAniel Vetter already has an 
-idea what might be going wrong with IRQ acking on GM45 chipsets; hopefully 
-this datapoint regarding MSI will fit into it.
+I Cc:-ed Linus, for the div64_u64_rem() helper to linux/math64.h and 
+lib/dev64.c.
 
--- 
-Jiri Kosina
-SUSE Labs
+	Ingo
