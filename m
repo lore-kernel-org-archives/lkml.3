@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933828Ab3CRVqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:46:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45781 "EHLO
+	id S1755974Ab3CRVHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab3CRVHY (ORCPT
+	with ESMTP id S1753702Ab3CRVHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:24 -0400
+	Mon, 18 Mar 2013 17:07:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Vlad Yasevich <vyasevic@redhat.com>,
+        Lorenzo Colitti <lorenzo@google.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 65/75] team: unsyc the devices addresses when port is removed
-Date: Mon, 18 Mar 2013 14:07:28 -0700
-Message-Id: <20130318210514.956909477@linuxfoundation.org>
+Subject: [ 60/75] net: ipv6: Dont purge default router if accept_ra=2
+Date: Mon, 18 Mar 2013 14:07:23 -0700
+Message-Id: <20130318210514.578396640@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -28,32 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Lorenzo Colitti <lorenzo@google.com>
 
-[ Upstream commit ba81276b1a5e3cf0674cb0e6d9525e5ae0c98695 ]
+[ Upstream commit 3e8b0ac3e41e3c882222a5522d5df7212438ab51 ]
 
-When a team port is removed, unsync all devices addresses that may have
-been synched to the port devices.
+Setting net.ipv6.conf.<interface>.accept_ra=2 causes the kernel
+to accept RAs even when forwarding is enabled. However, enabling
+forwarding purges all default routes on the system, breaking
+connectivity until the next RA is received. Fix this by not
+purging default routes on interfaces that have accept_ra=2.
 
-CC: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Lorenzo Colitti <lorenzo@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/route.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1139,6 +1139,8 @@ static int team_port_del(struct team *te
- 	netdev_set_master(port_dev, NULL);
- 	team_port_disable_netpoll(port);
- 	vlan_vids_del_by_dev(port_dev, dev);
-+	dev_uc_unsync(port_dev, dev);
-+	dev_mc_unsync(port_dev, dev);
- 	dev_close(port_dev);
- 	team_port_leave(team, port);
- 	team_port_set_orig_dev_addr(port);
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1990,7 +1990,8 @@ void rt6_purge_dflt_routers(struct net *
+ restart:
+ 	read_lock_bh(&table->tb6_lock);
+ 	for (rt = table->tb6_root.leaf; rt; rt = rt->dst.rt6_next) {
+-		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) {
++		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF) &&
++		    (!rt->rt6i_idev || rt->rt6i_idev->cnf.accept_ra != 2)) {
+ 			dst_hold(&rt->dst);
+ 			read_unlock_bh(&table->tb6_lock);
+ 			ip6_del_rt(rt);
 
 
