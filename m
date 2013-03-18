@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3CRN6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:58:13 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:54679 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3CRN6L (ORCPT
+	id S1753234Ab3CRN7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:59:31 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:59598 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab3CRN7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:58:11 -0400
+	Mon, 18 Mar 2013 09:59:30 -0400
+Message-ID: <51471DBE.1030209@acm.org>
+Date: Mon, 18 Mar 2013 08:59:26 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <51471B85.5060404@broadcom.com>
-References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
-	<51471B85.5060404@broadcom.com>
-Date: Mon, 18 Mar 2013 14:58:08 +0100
-Message-ID: <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
-Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Piotr Haber <phaber@broadcom.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: char: ipmi: Replaced kmalloc and strcpy with
+ kstrdup
+References: <1363443413-21937-1-git-send-email-gheorghiuandru@gmail.com>
+In-Reply-To: <1363443413-21937-1-git-send-email-gheorghiuandru@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Piotr
+On 03/16/2013 09:16 AM, Alexandru Gheorghiu wrote:
+> Replaced calls to kmalloc followed by strcpy with a sincle call to kstrdup.
+> Patch found using coccinelle.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>   drivers/char/ipmi/ipmi_msghandler.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+> index 053201b..617b443 100644
+> --- a/drivers/char/ipmi/ipmi_msghandler.c
+> +++ b/drivers/char/ipmi/ipmi_msghandler.c
+> @@ -2037,12 +2037,11 @@ int ipmi_smi_add_proc_entry(ipmi_smi_t smi, char *name,
+>   	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+>   	if (!entry)
+>   		return -ENOMEM;
+> -	entry->name = kmalloc(strlen(name)+1, GFP_KERNEL);
+> +	entry->name = kstrdup(name, GFP_KERNEL);
+>   	if (!entry->name) {
+>   		kfree(entry);
+>   		return -ENOMEM;
+>   	}
+> -	strcpy(entry->name, name);
+>   
+>   	file = proc_create_data(name, 0, smi->proc_dir, proc_ops, data);
+>   	if (!file) {
+Actually, I should say that I've pulled this into my tree.
 
-On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
-> On 03/18/13 11:45, David Herrmann wrote:
->> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
->> wireless AP reconnection on: (14e4:4727)
->>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
->>
->> Any attempt to reconnect to an AP results in timeouts no matter how near to the
->> AP I am:
->>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
->>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
->>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
->>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
->>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
->> ---
->> Hi
->>
->> I tried coming up with a fix instead of reverting this commit, but the commit is
->> way to big for me to understand what's going on. Sorry.
->>
->> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
->> one time, but any further attempt resulted in:
->>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
->>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
->>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
->>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
->>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
->>
->> Even sitting right next to the AP didn't help so I started bisecting and it
->> turned out to be:
->>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
->> Please revert it.
->>
->> Thanks
->> David
->>
-> Hi,
-> unfortunately this is not a first report of this patch breaking 4313 for some users.
-> I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
-> successfully in our test setup.
-> Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
-> <debugfs_mount>/brcmsmac/bcma0:0/hardware
+Thanks,
 
-Hi
-
-$ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
-board vendor: 185f
-board type: 51a
-board revision: 1408
-board flags: 8402a01
-board flags2: 880
-firmware revision: 262032b
-
-I can also try partial reverts of that commit, but I really don't know
-which parts might be important.
-
-Thanks
-David
+-corey
