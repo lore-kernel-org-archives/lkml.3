@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab3CRI6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:58:10 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:48547 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752930Ab3CRI6I (ORCPT
+	id S1753033Ab3CRI7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:59:15 -0400
+Received: from canardo.mork.no ([148.122.252.1]:57770 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab3CRI7M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:58:08 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlQJAFTWRlFQyKa6/2dsb2JhbABDiCW8fAQBgVcXdIIkAQEFIzMjEAsOBgQCAgUhAgIPBSUkE4gYr0WSEIEjjFeBGweCLTJhA5ZdkQODCzs
-Date: Mon, 18 Mar 2013 09:58:03 +0100
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the char-misc tree
-Message-ID: <20130318085803.GB1532@vandijck-laurijssen.be>
-Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-	Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130318135614.ff04cf3d56fc64e2988a912c@canb.auug.org.au>
+	Mon, 18 Mar 2013 04:59:12 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elezegarcia@gmail.com
+Subject: Re: [RFC V1 5/8] smi2021: Add smi2021_video.c
+Organization: m
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+	<1363270024-12127-6-git-send-email-jonarne@jonarne.no>
+	<201303180917.03572.hverkuil@xs4all.nl>
+Date: Mon, 18 Mar 2013 09:58:32 +0100
+In-Reply-To: <201303180917.03572.hverkuil@xs4all.nl> (Hans Verkuil's message
+	of "Mon, 18 Mar 2013 09:17:03 +0100")
+Message-ID: <87620p3wzr.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130318135614.ff04cf3d56fc64e2988a912c@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 01:56:14PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the char-misc tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/net/can/softing/softing_cs.c:343:1: error: expected identifier or '(' before '&' token
-> drivers/net/can/softing/softing_cs.c: In function '__inittest':
-> drivers/net/can/softing/softing_cs.c:343:1: error: 'softingcs_driver_init' undeclared (first use in this function)
-> drivers/net/can/softing/softing_cs.c:343:1: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/net/can/softing/softing_cs.c: At top level:
-> drivers/net/can/softing/softing_cs.c:343:1: error: expected identifier or '(' before '&' token
-> drivers/net/can/softing/softing_cs.c: In function '__exittest':
-> drivers/net/can/softing/softing_cs.c:343:1: error: 'softingcs_driver_exit' undeclared (first use in this function)
-> drivers/net/can/softing/softing_cs.c: At top level:
-> drivers/net/can/softing/softing_cs.c:335:29: warning: 'softingcs_driver' defined but not used [-Wunused-variable]
-> drivers/net/can/softing/softing_cs.c:343:1: error: 'init_module' aliased to undefined symbol '&softingcs_driver_init'
-> drivers/net/can/softing/softing_cs.c:343:1: error: 'cleanup_module' aliased to undefined symbol '&softingcs_driver_exit'
-> 
-> Caused by commit a750fa4edd9e ("softingcs: use module_pcmcia_driver").
-> 
-> I have used the char-misc tree form next-20130315 for today.
+Hans Verkuil <hverkuil@xs4all.nl> writes:
 
-I have no idea what I've overlooked during tests.  My apologies.
-I have found the problem. Can this be squashed?
-Kurt
+>> +/*
+>> + *
+>> + * The device delivers data in chunks of 0x400 bytes.
+>> + * The four first bytes is a magic header to identify the chunks.
+>> + *	0xaa 0xaa 0x00 0x00 = saa7113 Active Video Data
+>> + *	0xaa 0xaa 0x00 0x01 = PCM - 24Bit 2 Channel audio data
+>> + */
+>> +static void process_packet(struct smi2021_dev *dev, u8 *p, int len)
+>> +{
+>> +	int i;
+>> +	u32 *header;
+>> +
+>> +	if (len % 0x400 != 0) {
+>> +		printk_ratelimited(KERN_INFO "smi2021::%s: len: %d\n",
+>> +				__func__, len);
+>> +		return;
+>> +	}
+>> +
+>> +	for (i = 0; i < len; i += 0x400) {
+>> +		header = (u32 *)(p + i);
+>> +		switch (__cpu_to_be32(*header)) {
+>
+> That's not right. You probably mean __be32_to_cpu, that makes more sense.
+>
+>> +		case 0xaaaa0000: {
+>> +			parse_video(dev, p+i+4, 0x400-4);
+>> +			break;
+>> +		}
+>> +		case 0xaaaa0001: {
+>> +			smi2021_audio(dev, p+i+4, 0x400-4);
+>> +			break;
+>> +		}
 
--- 
-commit 081ec8f7f7ef4d68c7a6ffe4a571b1a855527627
-Author: Kurt Van Dijck <kurt.van.dijck@eia.be>
-Date:   Mon Mar 18 09:56:55 2013
+This could be just me, but I would have done it like this to take
+advantage of compile time constant conversions (and also dropping the
+noisy extra {}s):
 
-    FIX: softingcs conversion to module_pcmcia_driver macro
-    
-    Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+		switch (*header) {
+		case cpu_to_be32(0xaaaa0000):
+			parse_video(dev, p+i+4, 0x400-4);
+			break;
+		case cpu_to_be32(0xaaaa0001):
+			smi2021_audio(dev, p+i+4, 0x400-4);
+			break;
+                ..
 
-diff --git a/drivers/net/can/softing/softing_cs.c b/drivers/net/can/softing/softing_cs.c
-index 738355c..498605f 100644
---- a/drivers/net/can/softing/softing_cs.c
-+++ b/drivers/net/can/softing/softing_cs.c
-@@ -340,7 +340,7 @@ static struct pcmcia_driver softingcs_driver = {
- 	.remove		= softingcs_remove,
- };
- 
--module_pcmcia_driver(&softingcs_driver);
-+module_pcmcia_driver(softingcs_driver);
- 
- MODULE_DESCRIPTION("softing CANcard driver"
- 		", links PCMCIA card to softing driver");
+
+>From the name of the function I assume the difference may actually be
+measurable here if this runs for every processed packet.
+
+
+Bjørn
