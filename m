@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3CRV2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:28:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45908 "EHLO
+	id S933309Ab3CRV2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:28:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756274Ab3CRVID (ORCPT
+	with ESMTP id S1754709Ab3CRVIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:03 -0400
+	Mon, 18 Mar 2013 17:08:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 32/48] hwmon: (sht15) Fix memory leak if regulator_enable() fails
-Date: Mon, 18 Mar 2013 14:08:40 -0700
-Message-Id: <20130318210812.526574563@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 29/48] btrfs: use rcu_barrier() to wait for bdev puts at unmount
+Date: Mon, 18 Mar 2013 14:08:37 -0700
+Message-Id: <20130318210812.316888505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,33 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Eric Sandeen <sandeen@redhat.com>
 
-Commit 3e78080f8148 ('hwmon: (sht15) Check return value of
-regulator_enable()') depends on the use of devm_kmalloc() for automatic
-resource cleanup in the failure cases, which was introduced in 3.7.  In
-older stable branches, explicit cleanup is needed.
+commit bc178622d40d87e75abc131007342429c9b03351 upstream.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Doing this would reliably fail with -EBUSY for me:
+
+# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
+...
+unable to open /dev/sdb2: Device or resource busy
+
+because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
+
+Using systemtap to track bdev gets & puts shows a kworker thread doing a
+blkdev put after mkfs attempts a get; this is left over from the unmount
+path:
+
+btrfs_close_devices
+	__btrfs_close_devices
+		call_rcu(&device->rcu, free_device);
+			free_device
+				INIT_WORK(&device->rcu_work, __free_device);
+				schedule_work(&device->rcu_work);
+
+so unmount might complete before __free_device fires & does its blkdev_put.
+
+Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
+until all blkdev_put()s are done, and the device is truly free once
+unmount completes.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Applies to stable branches between 3.0 and 3.6 where commit 3e78080f8148
-has been applied.
+ fs/btrfs/volumes.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
- drivers/hwmon/sht15.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -930,7 +930,7 @@ static int __devinit sht15_probe(struct
- 		if (ret != 0) {
- 			dev_err(&pdev->dev,
- 				"failed to enable regulator: %d\n", ret);
--			return ret;
-+			goto err_free_data;
- 		}
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -591,6 +591,12 @@ int btrfs_close_devices(struct btrfs_fs_
+ 		__btrfs_close_devices(fs_devices);
+ 		free_fs_devices(fs_devices);
+ 	}
++	/*
++	 * Wait for rcu kworkers under __btrfs_close_devices
++	 * to finish all blkdev_puts so device is really
++	 * free when umount is done.
++	 */
++	rcu_barrier();
+ 	return ret;
+ }
  
- 		/*
 
 
