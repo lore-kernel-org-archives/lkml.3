@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3CRNQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:16:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11939 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752833Ab3CRNQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:16:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="304467960"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: request line field in the generic slave config structure
-Thread-Topic: request line field in the generic slave config structure
-Thread-Index: AQHOI9q4GFVxhEuNAkupcr3IFpje3g==
-Date: Mon, 18 Mar 2013 13:16:01 +0000
-Message-ID: <1363612546.18714.85.camel@smile>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.173]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8970C649104F134180BED67DD5A43685@intel.com>
+	id S1752426Ab3CRNSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:18:14 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:45880 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3CRNSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 09:18:12 -0400
 MIME-Version: 1.0
+In-Reply-To: <1363612263.22553.12.camel@laptop>
+References: <20130318124847.GA2491@quad>
+	<1363611569.22553.10.camel@laptop>
+	<CABPqkBRGutLBC+mO+F8fH5F-Yoe1NL8e_=yF9boxA28jNLO56g@mail.gmail.com>
+	<1363612263.22553.12.camel@laptop>
+Date: Mon, 18 Mar 2013 14:18:12 +0100
+Message-ID: <CABPqkBRM7b-ONg4fuRuUF-p-mJZNzXA69_VQpASGJBgWTCCbow@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix ring_buffer perf_output_space() boundary calculation
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2IDGAiu016783
 
-Hello!
-
-It seems the one (as I think good) question was left unanswered:
-http://www.spinics.net/lists/arm-kernel/msg186120.html
-
-What is your opinions, comments?
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Mon, Mar 18, 2013 at 2:11 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2013-03-18 at 14:03 +0100, Stephane Eranian wrote:
+>> On Mon, Mar 18, 2013 at 1:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Mon, 2013-03-18 at 13:48 +0100, Stephane Eranian wrote:
+>> >>         if (!rb->writable)
+>> >> -               return true;
+>> >> +               return false;
+>> >
+>> >
+>> > writable means user writable (VM_WRITE); the difference is that a
+>> > !VM_WRITE buffer will simply over-write its own tail whereas a VM_WRITE
+>> > buffer will drop events.
+>> >
+>> > So returning true for !VM_WRITE makes sense, there's always space.
+>> >
+>> Ok, that was not so clear to me. I think this if() statment deserves a comment.
+>> I will add that in V2.
+>
+> Thanks; I suppose renaming the entire ->writable thing might be better
+> though. Something like ->overwrite or so.
+>
+Yes. And if you do this you invert the logic of the field.
+overwrite=1 -> !VM_WRITE
+overwrite=0 -> VM_WRITE
