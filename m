@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811Ab3CRVw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:52:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45644 "EHLO
+	id S934053Ab3CRVxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:53:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45648 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755668Ab3CRVHF (ORCPT
+	with ESMTP id S1755644Ab3CRVHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:05 -0400
+	Mon, 18 Mar 2013 17:07:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Korsgaard <jacmet@sunsite.dk>, Johan Hovold <jhovold@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 50/75] atmel_lcdfb: fix 16-bpp modes on older SOCs
-Date: Mon, 18 Mar 2013 14:07:13 -0700
-Message-Id: <20130318210513.868401963@linuxfoundation.org>
+        Alexander Shiyan <shc_work@mail.ru>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 48/75] mtd: nand: reintroduce NAND_NO_READRDY as NAND_NEED_READRDY
+Date: Mon, 18 Mar 2013 14:07:11 -0700
+Message-Id: <20130318210513.725190489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,89 +28,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit a79eac7165ed62114e6ca197195aa5060a54f137 upstream.
+commit 5bc7c33ca93a285dcfe7b7fd64970f6314440ad1 upstream.
 
-Fix regression introduced by commit 787f9fd23283 ("atmel_lcdfb: support
-16bit BGR:565 mode, remove unsupported 15bit modes") which broke 16-bpp
-modes for older SOCs which use IBGR:555 (msb is intensity) rather
-than BGR:565.
+This partially reverts commit 1696e6bc2ae83734e64e206ac99766ea19e9a14e
+("mtd: nand: kill NAND_NO_READRDY").
 
-Use SOC-type to determine the pixel layout.
+In that patch I overlooked a few things.
 
-Tested on at91sam9263 and at91sam9g45.
+The original documentation for NAND_NO_READRDY included "True for all
+large page devices, as they do not support autoincrement." I was
+conflating "not support autoincrement" with the NAND_NO_AUTOINCR option,
+which was in fact doing nothing. So, when I dropped NAND_NO_AUTOINCR, I
+concluded that I then could harmlessly drop NAND_NO_READRDY. But of
+course the fact the NAND_NO_AUTOINCR was doing nothing didn't mean
+NAND_NO_READRDY was doing nothing...
 
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+So, NAND_NO_READRDY is re-introduced as NAND_NEED_READRDY and applied
+only to those few remaining small-page NAND which needed it in the first
+place.
+
+Reported-by: Alexander Shiyan <shc_work@mail.ru>
+Tested-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/atmel_lcdfb.c |   22 +++++++++++++++-------
- include/video/atmel_lcdc.h  |    1 +
- 2 files changed, 16 insertions(+), 7 deletions(-)
+ drivers/mtd/nand/nand_base.c |   16 ++++++++
+ drivers/mtd/nand/nand_ids.c  |   78 ++++++++++++++++++++++---------------------
+ include/linux/mtd/nand.h     |    7 +++
+ 3 files changed, 63 insertions(+), 38 deletions(-)
 
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -422,17 +422,22 @@ static int atmel_lcdfb_check_var(struct
- 			= var->bits_per_pixel;
- 		break;
- 	case 16:
-+		/* Older SOCs use IBGR:555 rather than BGR:565. */
-+		if (sinfo->have_intensity_bit)
-+			var->green.length = 5;
-+		else
-+			var->green.length = 6;
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -1527,6 +1527,14 @@ static int nand_do_read_ops(struct mtd_i
+ 					oobreadlen -= toread;
+ 				}
+ 			}
 +
- 		if (sinfo->lcd_wiring_mode == ATMEL_LCDC_WIRING_RGB) {
--			/* RGB:565 mode */
--			var->red.offset = 11;
-+			/* RGB:5X5 mode */
-+			var->red.offset = var->green.length + 5;
- 			var->blue.offset = 0;
++			if (chip->options & NAND_NEED_READRDY) {
++				/* Apply delay or wait for ready/busy pin */
++				if (!chip->dev_ready)
++					udelay(chip->chip_delay);
++				else
++					nand_wait_ready(mtd);
++			}
  		} else {
--			/* BGR:565 mode */
-+			/* BGR:5X5 mode */
- 			var->red.offset = 0;
--			var->blue.offset = 11;
-+			var->blue.offset = var->green.length + 5;
- 		}
- 		var->green.offset = 5;
--		var->green.length = 6;
- 		var->red.length = var->blue.length = 5;
- 		break;
- 	case 32:
-@@ -679,8 +684,7 @@ static int atmel_lcdfb_setcolreg(unsigne
+ 			memcpy(buf, chip->buffers->databuf + col, bytes);
+ 			buf += bytes;
+@@ -1791,6 +1799,14 @@ static int nand_do_read_oob(struct mtd_i
+ 		len = min(len, readlen);
+ 		buf = nand_transfer_oob(chip, buf, ops, len);
  
- 	case FB_VISUAL_PSEUDOCOLOR:
- 		if (regno < 256) {
--			if (cpu_is_at91sam9261() || cpu_is_at91sam9263()
--			    || cpu_is_at91sam9rl()) {
-+			if (sinfo->have_intensity_bit) {
- 				/* old style I+BGR:555 */
- 				val  = ((red   >> 11) & 0x001f);
- 				val |= ((green >>  6) & 0x03e0);
-@@ -870,6 +874,10 @@ static int __init atmel_lcdfb_probe(stru
- 	}
- 	sinfo->info = info;
- 	sinfo->pdev = pdev;
-+	if (cpu_is_at91sam9261() || cpu_is_at91sam9263() ||
-+							cpu_is_at91sam9rl()) {
-+		sinfo->have_intensity_bit = true;
-+	}
++		if (chip->options & NAND_NEED_READRDY) {
++			/* Apply delay or wait for ready/busy pin */
++			if (!chip->dev_ready)
++				udelay(chip->chip_delay);
++			else
++				nand_wait_ready(mtd);
++		}
++
+ 		readlen -= len;
+ 		if (!readlen)
+ 			break;
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -22,49 +22,51 @@
+ *	512	512 Byte page size
+ */
+ struct nand_flash_dev nand_flash_ids[] = {
++#define SP_OPTIONS NAND_NEED_READRDY
++#define SP_OPTIONS16 (SP_OPTIONS | NAND_BUSWIDTH_16)
  
- 	strcpy(info->fix.id, sinfo->pdev->name);
- 	info->flags = ATMEL_LCDFB_FBINFO_DEFAULT;
---- a/include/video/atmel_lcdc.h
-+++ b/include/video/atmel_lcdc.h
-@@ -62,6 +62,7 @@ struct atmel_lcdfb_info {
- 	void (*atmel_lcdfb_power_control)(int on);
- 	struct fb_monspecs	*default_monspecs;
- 	u32			pseudo_palette[16];
-+	bool			have_intensity_bit;
- };
+ #ifdef CONFIG_MTD_NAND_MUSEUM_IDS
+-	{"NAND 1MiB 5V 8-bit",		0x6e, 256, 1, 0x1000, 0},
+-	{"NAND 2MiB 5V 8-bit",		0x64, 256, 2, 0x1000, 0},
+-	{"NAND 4MiB 5V 8-bit",		0x6b, 512, 4, 0x2000, 0},
+-	{"NAND 1MiB 3,3V 8-bit",	0xe8, 256, 1, 0x1000, 0},
+-	{"NAND 1MiB 3,3V 8-bit",	0xec, 256, 1, 0x1000, 0},
+-	{"NAND 2MiB 3,3V 8-bit",	0xea, 256, 2, 0x1000, 0},
+-	{"NAND 4MiB 3,3V 8-bit",	0xd5, 512, 4, 0x2000, 0},
+-	{"NAND 4MiB 3,3V 8-bit",	0xe3, 512, 4, 0x2000, 0},
+-	{"NAND 4MiB 3,3V 8-bit",	0xe5, 512, 4, 0x2000, 0},
+-	{"NAND 8MiB 3,3V 8-bit",	0xd6, 512, 8, 0x2000, 0},
+-
+-	{"NAND 8MiB 1,8V 8-bit",	0x39, 512, 8, 0x2000, 0},
+-	{"NAND 8MiB 3,3V 8-bit",	0xe6, 512, 8, 0x2000, 0},
+-	{"NAND 8MiB 1,8V 16-bit",	0x49, 512, 8, 0x2000, NAND_BUSWIDTH_16},
+-	{"NAND 8MiB 3,3V 16-bit",	0x59, 512, 8, 0x2000, NAND_BUSWIDTH_16},
++	{"NAND 1MiB 5V 8-bit",		0x6e, 256, 1, 0x1000, SP_OPTIONS},
++	{"NAND 2MiB 5V 8-bit",		0x64, 256, 2, 0x1000, SP_OPTIONS},
++	{"NAND 4MiB 5V 8-bit",		0x6b, 512, 4, 0x2000, SP_OPTIONS},
++	{"NAND 1MiB 3,3V 8-bit",	0xe8, 256, 1, 0x1000, SP_OPTIONS},
++	{"NAND 1MiB 3,3V 8-bit",	0xec, 256, 1, 0x1000, SP_OPTIONS},
++	{"NAND 2MiB 3,3V 8-bit",	0xea, 256, 2, 0x1000, SP_OPTIONS},
++	{"NAND 4MiB 3,3V 8-bit",	0xd5, 512, 4, 0x2000, SP_OPTIONS},
++	{"NAND 4MiB 3,3V 8-bit",	0xe3, 512, 4, 0x2000, SP_OPTIONS},
++	{"NAND 4MiB 3,3V 8-bit",	0xe5, 512, 4, 0x2000, SP_OPTIONS},
++	{"NAND 8MiB 3,3V 8-bit",	0xd6, 512, 8, 0x2000, SP_OPTIONS},
++
++	{"NAND 8MiB 1,8V 8-bit",	0x39, 512, 8, 0x2000, SP_OPTIONS},
++	{"NAND 8MiB 3,3V 8-bit",	0xe6, 512, 8, 0x2000, SP_OPTIONS},
++	{"NAND 8MiB 1,8V 16-bit",	0x49, 512, 8, 0x2000, SP_OPTIONS16},
++	{"NAND 8MiB 3,3V 16-bit",	0x59, 512, 8, 0x2000, SP_OPTIONS16},
+ #endif
  
- #define ATMEL_LCDC_DMABADDR1	0x00
+-	{"NAND 16MiB 1,8V 8-bit",	0x33, 512, 16, 0x4000, 0},
+-	{"NAND 16MiB 3,3V 8-bit",	0x73, 512, 16, 0x4000, 0},
+-	{"NAND 16MiB 1,8V 16-bit",	0x43, 512, 16, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 16MiB 3,3V 16-bit",	0x53, 512, 16, 0x4000, NAND_BUSWIDTH_16},
+-
+-	{"NAND 32MiB 1,8V 8-bit",	0x35, 512, 32, 0x4000, 0},
+-	{"NAND 32MiB 3,3V 8-bit",	0x75, 512, 32, 0x4000, 0},
+-	{"NAND 32MiB 1,8V 16-bit",	0x45, 512, 32, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 32MiB 3,3V 16-bit",	0x55, 512, 32, 0x4000, NAND_BUSWIDTH_16},
+-
+-	{"NAND 64MiB 1,8V 8-bit",	0x36, 512, 64, 0x4000, 0},
+-	{"NAND 64MiB 3,3V 8-bit",	0x76, 512, 64, 0x4000, 0},
+-	{"NAND 64MiB 1,8V 16-bit",	0x46, 512, 64, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 64MiB 3,3V 16-bit",	0x56, 512, 64, 0x4000, NAND_BUSWIDTH_16},
+-
+-	{"NAND 128MiB 1,8V 8-bit",	0x78, 512, 128, 0x4000, 0},
+-	{"NAND 128MiB 1,8V 8-bit",	0x39, 512, 128, 0x4000, 0},
+-	{"NAND 128MiB 3,3V 8-bit",	0x79, 512, 128, 0x4000, 0},
+-	{"NAND 128MiB 1,8V 16-bit",	0x72, 512, 128, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 128MiB 1,8V 16-bit",	0x49, 512, 128, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 128MiB 3,3V 16-bit",	0x74, 512, 128, 0x4000, NAND_BUSWIDTH_16},
+-	{"NAND 128MiB 3,3V 16-bit",	0x59, 512, 128, 0x4000, NAND_BUSWIDTH_16},
++	{"NAND 16MiB 1,8V 8-bit",	0x33, 512, 16, 0x4000, SP_OPTIONS},
++	{"NAND 16MiB 3,3V 8-bit",	0x73, 512, 16, 0x4000, SP_OPTIONS},
++	{"NAND 16MiB 1,8V 16-bit",	0x43, 512, 16, 0x4000, SP_OPTIONS16},
++	{"NAND 16MiB 3,3V 16-bit",	0x53, 512, 16, 0x4000, SP_OPTIONS16},
++
++	{"NAND 32MiB 1,8V 8-bit",	0x35, 512, 32, 0x4000, SP_OPTIONS},
++	{"NAND 32MiB 3,3V 8-bit",	0x75, 512, 32, 0x4000, SP_OPTIONS},
++	{"NAND 32MiB 1,8V 16-bit",	0x45, 512, 32, 0x4000, SP_OPTIONS16},
++	{"NAND 32MiB 3,3V 16-bit",	0x55, 512, 32, 0x4000, SP_OPTIONS16},
++
++	{"NAND 64MiB 1,8V 8-bit",	0x36, 512, 64, 0x4000, SP_OPTIONS},
++	{"NAND 64MiB 3,3V 8-bit",	0x76, 512, 64, 0x4000, SP_OPTIONS},
++	{"NAND 64MiB 1,8V 16-bit",	0x46, 512, 64, 0x4000, SP_OPTIONS16},
++	{"NAND 64MiB 3,3V 16-bit",	0x56, 512, 64, 0x4000, SP_OPTIONS16},
++
++	{"NAND 128MiB 1,8V 8-bit",	0x78, 512, 128, 0x4000, SP_OPTIONS},
++	{"NAND 128MiB 1,8V 8-bit",	0x39, 512, 128, 0x4000, SP_OPTIONS},
++	{"NAND 128MiB 3,3V 8-bit",	0x79, 512, 128, 0x4000, SP_OPTIONS},
++	{"NAND 128MiB 1,8V 16-bit",	0x72, 512, 128, 0x4000, SP_OPTIONS16},
++	{"NAND 128MiB 1,8V 16-bit",	0x49, 512, 128, 0x4000, SP_OPTIONS16},
++	{"NAND 128MiB 3,3V 16-bit",	0x74, 512, 128, 0x4000, SP_OPTIONS16},
++	{"NAND 128MiB 3,3V 16-bit",	0x59, 512, 128, 0x4000, SP_OPTIONS16},
+ 
+-	{"NAND 256MiB 3,3V 8-bit",	0x71, 512, 256, 0x4000, 0},
++	{"NAND 256MiB 3,3V 8-bit",	0x71, 512, 256, 0x4000, SP_OPTIONS},
+ 
+ 	/*
+ 	 * These are the new chips with large page size. The pagesize and the
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -187,6 +187,13 @@ typedef enum {
+  * This happens with the Renesas AG-AND chips, possibly others.
+  */
+ #define BBT_AUTO_REFRESH	0x00000080
++/*
++ * Chip requires ready check on read (for auto-incremented sequential read).
++ * True only for small page devices; large page devices do not support
++ * autoincrement.
++ */
++#define NAND_NEED_READRDY	0x00000100
++
+ /* Chip does not allow subpage writes */
+ #define NAND_NO_SUBPAGE_WRITE	0x00000200
+ 
 
 
