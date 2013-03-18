@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab3CRQNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:13:21 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:56639 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3CRQNU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:13:20 -0400
-From: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] h8300, score: fix CROSS_COMPILE setting in arch/xxx/Makefile
-Date: Tue, 19 Mar 2013 00:13:07 +0800
-Message-Id: <1363623187-4350-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	id S1751735Ab3CRQNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:13:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149Ab3CRQNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:13:47 -0400
+Date: Mon, 18 Mar 2013 09:13:42 -0700
+From: Zach Brown <zab@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Kent Overstreet <koverstreet@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-aio@kvack.org
+Subject: adding missed signed-off-by for aio retry removal patch
+Message-ID: <20130318161342.GB2322@lenny.home.zabbo.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makefiles for h8300 and score architectures unconditionally set
-CROSS_COMPILE to a default value, which breaks following cross
-compilation command:
-ARCH=h8300 CROSS_COMPILE=/ws/tool/h8300-elf/bin/h8300-elf- make arch/h8300/mm/init.o
-make: h8300-elf-gcc: Command not found
-make: h8300-elf-gcc: Command not found
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      kernel/bounds.s
-/bin/sh: 1: h8300-elf-gcc: not found
-make[1]: *** [kernel/bounds.s] Error 127
-make: *** [prepare0] Error 2
+Hi Fellas,
 
-So only set CROSS_COMPILE to the default value if it's has been set yet.
+Kent mentioned that Ted was reviewing the aio patch series and wanted to
+see a Signed-off-by: from me for the patch that tears out the retry
+infrastructure.  I had left it out as the patch was changing as we
+reviewed it and we forgot to add it in as it was finalized :(.
 
-Also fix a typo in arch/h8300/Makefile to change "CROSS-COMPILE" to
-"CROSS_COMPILE".
+Ted, here's my sob for the version of the patch that's in -next via
+Andrew's patches at this moment:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
----
- arch/h8300/Makefile |    6 ++++--
- arch/score/Makefile |    4 +++-
- 2 files changed, 7 insertions(+), 3 deletions(-)
+    commit ae5e0fe5ecafc6f8285367a20a8915b67a91066c
+    Author: Zach Brown <zab@redhat.com>
+    Date:   Thu Jan 24 13:14:37 2013 +1100
 
-diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
-index a556447..62a4d08 100644
---- a/arch/h8300/Makefile
-+++ b/arch/h8300/Makefile
-@@ -38,8 +38,10 @@ KBUILD_CFLAGS += -DUTS_SYSNAME=\"uClinux\"
- KBUILD_AFLAGS += -DPLATFORM=$(PLATFORM) -DMODEL=$(MODEL) $(cflags-y)
- LDFLAGS += $(ldflags-y)
- 
--CROSS_COMPILE = h8300-elf-
--LIBGCC := $(shell $(CROSS-COMPILE)$(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
-+ifeq ($(CROSS_COMPILE),)
-+	CROSS_COMPILE := h8300-elf-
-+endif
-+LIBGCC := $(shell $(CROSS_COMPILE)$(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- 
- head-y := arch/$(ARCH)/platform/$(PLATFORM)/$(BOARD)/crt0_$(MODEL).o
- 
-diff --git a/arch/score/Makefile b/arch/score/Makefile
-index 974aefe..70973bb 100644
---- a/arch/score/Makefile
-+++ b/arch/score/Makefile
-@@ -7,7 +7,9 @@
- #
- 
- KBUILD_DEFCONFIG := spct6600_defconfig
--CROSS_COMPILE := score-linux-
-+ifeq ($(CROSS_COMPILE),)
-+	CROSS_COMPILE := score-linux-
-+endif
- 
- #
- # CPU-dependent compiler/assembler options for optimization.
--- 
-1.7.9.5
+        aio: remove retry-based AIO
 
+Signed-off-by: Zach Brown <zab@redhat.com>
+
+Hopefully that's sufficient :)
+
+- z
