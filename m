@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab3CRRAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 13:00:44 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:13400 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3CRRAn (ORCPT
+	id S1753961Ab3CRRBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 13:01:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59348 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab3CRRBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 13:00:43 -0400
-X-IronPort-AV: E=Sophos;i="4.84,865,1355097600"; 
-   d="scan'208";a="2617602"
-Message-ID: <51474838.2070206@citrix.com>
-Date: Mon, 18 Mar 2013 18:00:40 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH RFC 06/12] xen-blkback: implement LRU mechanism for persistent
- grants
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-7-git-send-email-roger.pau@citrix.com> <20130304201044.GJ15386@phenom.dumpdata.com> <513634FC.7000401@citrix.com> <20130305214950.GE8235@phenom.dumpdata.com>
-In-Reply-To: <20130305214950.GE8235@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 18 Mar 2013 13:01:39 -0400
+Date: Mon, 18 Mar 2013 13:01:36 -0400 (EDT)
+Message-Id: <20130318.130136.1629094222097780420.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com, nab@linux-iscsi.org,
+        target-devel@vger.kernel.org
+Subject: Re: [PULL] vhost: tcm_vhost fixes for 3.9
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130318112003.GA7809@redhat.com>
+References: <20130318112003.GA7809@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 18 Mar 2013 10:01:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 22:49, Konrad Rzeszutek Wilk wrote:
->>> This could be written a bit differently to also run outside the xen_blkif_schedule
->>> (so a new thread). This would require using the lock mechanism and converting
->>> this big loop to two smaller loops:
->>>  1) - one quick that holds the lock - to take the items of the list,
->>>  2) second one to do the grant_set_unmap_op operations and all the heavy
->>>     free_xenballooned_pages call.
->>
->> Yes, I could add a list_head to persistent_gnt, so we can take them out
->> of the red-black tree and queue them in a list to be processed (unmap +
->> free) after we have looped thought the list, without holding the lock.
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 18 Mar 2013 13:20:03 +0200
 
-I've been trying to implement the "purge" on a different kthread, but
-I'm not able to get the same performance. Since moving this a different
-thread requires additional contention (spinlocks) around the red-black
-tree of persistent grants, I think we should leave it as-is right now,
-and consider moving it to a different thread if we can get a performance
-benefit.
+> The following changes since commit 8c6216d7f118a128678270824b6a1286a63863ca:
+> 
+>   Revert "ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally" (2013-03-16 23:00:41 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+> 
+> for you to fetch changes up to deb7cb067dabd3be625eaf5495da8bdc97377fc1:
+> 
+>   tcm_vhost: Flush vhost_work in vhost_scsi_flush() (2013-03-17 13:04:14 +0200)
+
+This is a scsi driver, I therefore don't think this pull request is for me.
+
+Please avoid such confusion in the future, and don't use branch names
+like "vhost-net" for SCSI driver fixes.
+
+Thanks.
