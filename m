@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3CRVIB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:08:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45869 "EHLO
+	id S1756549Ab3CRV3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:29:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab3CRVH4 (ORCPT
+	with ESMTP id S932183Ab3CRVIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:56 -0400
+	Mon, 18 Mar 2013 17:08:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 22/48] powerpc: Fix STAB initialization
-Date: Mon, 18 Mar 2013 14:08:30 -0700
-Message-Id: <20130318210811.838326472@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 28/48] s390/mm: fix flush_tlb_kernel_range()
+Date: Mon, 18 Mar 2013 14:08:36 -0700
+Message-Id: <20130318210812.247446196@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,33 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 13938117a57f88a22f0df9722a5db7271fda85cd upstream.
+commit f6a70a07079518280022286a1dceb797d12e1edf upstream.
 
-Commit f5339277eb8d3aed37f12a27988366f68ab68930 accidentally removed
-more than just iSeries bits and took out the call to stab_initialize()
-thus breaking support for POWER3 processors.
+Our flush_tlb_kernel_range() implementation calls __tlb_flush_mm() with
+&init_mm as argument. __tlb_flush_mm() however will only flush tlbs
+for the passed in mm if its mm_cpumask is not empty.
 
-Put it back. (Yes, nobody noticed until now ...)
+For the init_mm however its mm_cpumask has never any bits set. Which in
+turn means that our flush_tlb_kernel_range() implementation doesn't
+work at all.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This can be easily verified with a vmalloc/vfree loop which allocates
+a page, writes to it and then frees the page again. A crash will follow
+almost instantly.
+
+To fix this remove the cpumask_empty() check in __tlb_flush_mm() since
+there shouldn't be too many mms with a zero mm_cpumask, besides the
+init_mm of course.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/hash_utils_64.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/s390/include/asm/tlbflush.h |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -759,6 +759,8 @@ void __init early_init_mmu(void)
- 	/* Initialize stab / SLB management */
- 	if (mmu_has_feature(MMU_FTR_SLB))
- 		slb_initialize();
-+	else
-+		stab_initialize(get_paca()->stab_real);
- }
+--- a/arch/s390/include/asm/tlbflush.h
++++ b/arch/s390/include/asm/tlbflush.h
+@@ -74,8 +74,6 @@ static inline void __tlb_flush_idte(unsi
  
- #ifdef CONFIG_SMP
+ static inline void __tlb_flush_mm(struct mm_struct * mm)
+ {
+-	if (unlikely(cpumask_empty(mm_cpumask(mm))))
+-		return;
+ 	/*
+ 	 * If the machine has IDTE we prefer to do a per mm flush
+ 	 * on all cpus instead of doing a local flush if the mm
 
 
