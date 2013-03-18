@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3CRQ35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:29:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49416
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752920Ab3CRQZ7 (ORCPT
+	id S1753353Ab3CRQar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:30:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30377 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab3CRQap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:59 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 39/54] perf tools: Remove unused struct definitions
-Date: Mon, 18 Mar 2013 13:25:24 -0300
-Message-Id: <1363623939-10748-40-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
-References: <1363623939-10748-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 18 Mar 2013 12:30:45 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nGpB3NLV4dgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xnoB05DE7xsA:10 a=SYGBA_oH5YZLNx8tZboA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363624243.25967.178.camel@gandalf.local.home>
+Subject: Re: workqueue code needing preemption disabled
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <clark@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 18 Mar 2013 12:30:43 -0400
+In-Reply-To: <1363624020.25967.175.camel@gandalf.local.home>
+References: <1363617383.25967.152.camel@gandalf.local.home>
+	 <20130318160652.GA20133@mtj.dyndns.org>
+	 <1363623799.25967.172.camel@gandalf.local.home>
+	 <1363624020.25967.175.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 2013-03-18 at 12:27 -0400, Steven Rostedt wrote:
 
-struct event_list and struct events are never used.
+> IOW, what can happen in -rt here is:
+> 
+> 	spin_lock_irq(&gcwq->lock);
+> 	[...]
+> 	<interrupt>
+> 		-> preempt_schedule();
+> 		   schedule();
+> 		   try_to_wake_up_local();
+> 
+> 	[...]
+> 	spin_unlock_irq(&gcwq->lock);
+> 
+> Again, with -rt, spin_lock_irq() does not prevent interrupts nor
+> preemption.
 
-Just get rid of them.
+If you happen to know the critical areas that require preemption to be
+disabled for real, we can encapsulate them with:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363173585-9754-3-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/trace-event-info.c |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
+	preempt_disable_rt();
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 5c1509a..b0bbd76 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -55,18 +55,6 @@ unsigned int page_size;
- static const char *output_file = "trace.info";
- static int output_fd;
- 
--struct event_list {
--	struct event_list *next;
--	const char *event;
--};
--
--struct events {
--	struct events *sibling;
--	struct events *children;
--	struct events *next;
--	char *name;
--};
--
- 
- static void *malloc_or_die(unsigned int size)
- {
--- 
-1.7.1
+	preempt_enable_rt();
+
+These are currently only in the -rt patch, but it annotates locations
+that require preemption to be disabled even when -rt converts spin_locks
+into mutexes. These obviously can not contain spin_locks() as
+spin_locks() can block and schedule out.
+
+-- Steve
+
 
