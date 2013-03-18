@@ -1,173 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab3CRF7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 01:59:12 -0400
-Received: from vps11.idhosting.pl ([91.231.140.110]:41981 "EHLO
-	vps11.idhosting.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab3CRF7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 01:59:08 -0400
-X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 01:59:08 EDT
-From: "Kontakt@rosomak.org.pl" <kontakt1@rosomak.org.pl>
-Subject: Specjalista ds. SZPIEGOSTWA GOSPODARCZEGO
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8bit
-Reply-To: kontakt1@rosomak.org.pl
-Date: Mon, 18 Mar 2013 06:50:39 +0100
-X-Priority: 4
-X-Rozsylacz-AntySpam-Nadawca-Adres: kontakt1@rosomak.org.pl
-X-Rozsylacz-AntySpam-Nadawca-Host: 7-Komputer
-X-Rozsylacz-AntySpam-Nadawca-IP: 109.243.63.223
-X-Rozsylacz-AntySpam-SerwerPocztowy-Adres: rosomak.org.pl
-X-Rozsylacz-AntySpam-SerwerPocztowy-Uzytkownik: kontakt1@rosomak.org.pl
-X-Mailer: Rozsylacz
-Message-Id: <20130318054237.AF8F21046A78@vps11.idhosting.pl>
+	id S1751791Ab3CRGAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 02:00:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18847 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab3CRGAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 02:00:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,862,1355126400"; 
+   d="scan'208";a="280879110"
+Subject: [PATCH] pm: print the name of failed suspend function for platform
+ device
+From: Li Fei <fei.li@intel.com>
+To: gregkh@linuxfoundation.org, rjw@sisk.pl, akpm@linux-foundation.org,
+        ldewangan@nvidia.com
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com, fei.li@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Mar 2013 13:58:23 +0800
+Message-ID: <1363586303.9792.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-S z k o l e n i e
 
-Specjalista ds. SZPIEGOSTWA GOSPODARCZEGO
-i ochrony kontrinwigilacyjnej organizacji i osob
-oraz ich zasobow informacyjnych i innych.
+Print more info when platform device suspend function failed.
+Without this patch, we can not get the real platform device suspend
+API info.
 
-#
+Example without this patch:
+pm_op(): platform_pm_suspend+0x0/0x50 returns -11
+PM: Device power.0 failed to suspend: error -11
 
-Osmiodniowy ogolnodostepny
-SPECJALISTYCZNY KURS ZAWODOWY
-dla menadzerow bezpieczenstwa korporacyjnego,
-pelnomocnikow ochrony informacji niejawnych,
-administratorow bezpieczenstwa informacji i danych 
-osobowych, oraz innych osob odpowiedzialnych za ten 
-zakres zadaniowy w firmach, instytucjach i urzedach 
-administracji panstwowej i samorzadowej,
-jak tez pozostalych osob zainteresowanych realna
-poprawa stanu bezpieczenstwa swojej organizacji
-i jej zasobow informacyjnych i innych
+And with this patch:
+platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
+pm_op(): platform_pm_suspend+0x0/0x80 returns -11
+PM: Device power.0 failed to suspend: error -11
 
-w zakresie:
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+---
+ drivers/base/platform.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-# Funkcjonowania oraz metod pracy stosowanych
-w dzialalnosci operacyjnej przy realizacjach
-wywiadu gospodarczego,
-# Prowadzenia realizacji wywiadowczych
-i kontrwywiadowczych,
-# Ochrony kontrinwigilacyjnej organizacji i osob
-oraz nalezacych do nich zasobow informacyjnych,
-# Realizacji dzialan minimalizujacych zagrozenie
-przestepczoscia pospolita,
-# Postepowania w sytuacjach kryzysowych,
-# Neutralizacji innych zagrozen
-bezpieczenstwa biznesu.
-
-z WARSZTATAMI PRAKTYCZNYMI.
-
-
-#
-
-
-Niezaleznie od tego co o tym myslimy, musimy zdac 
-sobie sprawe, ze w dzisiejszych czasach walka o rynek 
-najczesciej sprowadza sie do wojny o informacje.
-
-Wojny na ktorej wszystkie chwyty sa dozwolone,
-a stosowane metody coraz bardziej bezwzgledne.
-To co niedawno bylo scisle reglamentowana domena
-dzialania panstwowych sluzb specjalnych, obecnie
-jest powszechne w zyciu biznesowym jako narzedzie 
-pracy wielu firm komercyjnych.
-
-Coraz czesciej powstaja wyspecjalizowane
-"prywatne agencje szpiegowskie" dysponujace
-ogromnymi budzetami realizacyjnymi, wysokiej klasy
-specjalistami oraz technika nie odbiegajaca od tej
-jaka dysponuja sluzby panstwowe.
-
-I chociaz mowimy tutaj o realizacjach odnoszacych sie 
-do rynku komercyjnego, to ich celem nie sa wylacznie 
-„prywatni” przedsiebiorcy (firmy, spolki, korporacje), 
-ale takze podmioty panstwowe (najczesciej agencje
-rzadowe, urzedy i instytucje roznego szczebla) 
-dysponujace wiedza o podmiotach gospodarczych, 
-ksztaltowaniu rynku lub chociazby organizujace przetargi 
-o duzej wartosci.
-
-Dzis juz chyba nikt nie ma watpliwosci, ze informacja 
-na rynku jest towarem. Towarem czesto bezcennym. 
-Towarem podlegajacym zarowno wszystkim prawom
- rynku, a glownie prawu podazy i popytu, jak tez wszystkim 
-jego patologiom jak kradziez, nielegalny obrot, niszczenie, 
-falszowanie, wyludzanie, nieuprawnione wykorzystanie itd.
-
-Nie wszyscy natomiast maja swiadomosc skali 
-i zakresu zjawiska, stosowanych metod oraz mozliwych 
-konsekwencji (nie tylko biznesowych), przez co pozostaja 
-praktycznie bezbronni w obliczu zagrozenia.
-
-W tym miejscu warto tez wspomniec, ze realizacje 
-„wywiadowcze” juz dawno przestaly ograniczac sie 
-do operacyjnego pozyskiwania kluczowych informacji. 
-Obecnie to przede wszystkim dzialania ktorych celem 
-jest wywieranie roznorakiego wplywu na funkcjonowanie 
-jednostki (jej pracownikow) bedacej celem danej realizacji.
-
-Dlatego wlasnie opracowalismy ten unikalny program 
-szkolenia ukazujacy omawiane zjawiska zarowno 
-z punktu widzenia potencjalnego napastnika 
-(proces typowania i planowania) jak i jego potencjalnej 
-ofiary – organizacji lub osoby odpowiedzialnej 
-za bezpieczenstwo (ochrone) wlasnych zasobow.
-
-Wszystkich zainteresowanych tematyka 
-zapraszamy do udzialu w szkoleniu!
-
-
-#
-
-
-Tylko jedna edycja szkolenia w roku!
-Ilosc miejsc ograniczona.
-
-
-#
-
-
-Szczegolowy program szkolenia oraz informacje 
-organizacyjne udostepniamy na stronie szkolenia: 
-
-www.bezpieczne.info.pl 
-
-
-#
-
-
-Analogiczne szkolenia realizujemy takze w formule 
-szkolen zamknietych dedykowanych wylacznie pracownikom
-zlecajacej firmy badz instytucji. Szczegolowe informacje w tym
-zakresie na ww. stronie internetowej.
-
-
-#
-
-
-|  NOWY ZAWOD  |  NOWE MOZLIWOSCI  |  NOWE PERSPEKTYWY  |
-
-Zapraszamy.
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index c0b8df3..96a452a 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -747,8 +747,10 @@ static int platform_legacy_suspend(struct device *dev, pm_message_t mesg)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	int ret = 0;
+ 
+-	if (dev->driver && pdrv->suspend)
++	if (dev->driver && pdrv->suspend) {
+ 		ret = pdrv->suspend(pdev, mesg);
++		suspend_report_result(pdrv->suspend, ret);
++	}
+ 
+ 	return ret;
+ }
+@@ -778,10 +780,13 @@ int platform_pm_suspend(struct device *dev)
+ 		return 0;
+ 
+ 	if (drv->pm) {
+-		if (drv->pm->suspend)
++		if (drv->pm->suspend) {
+ 			ret = drv->pm->suspend(dev);
++			suspend_report_result(drv->pm->suspend, ret);
++		}
+ 	} else {
+ 		ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
++		suspend_report_result(platform_legacy_suspend, ret);
+ 	}
+ 
+ 	return ret;
+@@ -818,10 +823,13 @@ int platform_pm_freeze(struct device *dev)
+ 		return 0;
+ 
+ 	if (drv->pm) {
+-		if (drv->pm->freeze)
++		if (drv->pm->freeze) {
+ 			ret = drv->pm->freeze(dev);
++			suspend_report_result(drv->pm->freeze, ret);
++		}
+ 	} else {
+ 		ret = platform_legacy_suspend(dev, PMSG_FREEZE);
++		suspend_report_result(platform_legacy_suspend, ret);
+ 	}
+ 
+ 	return ret;
+@@ -854,10 +862,13 @@ int platform_pm_poweroff(struct device *dev)
+ 		return 0;
+ 
+ 	if (drv->pm) {
+-		if (drv->pm->poweroff)
++		if (drv->pm->poweroff) {
+ 			ret = drv->pm->poweroff(dev);
++			suspend_report_result(drv->pm->poweroff, ret);
++		}
+ 	} else {
+ 		ret = platform_legacy_suspend(dev, PMSG_HIBERNATE);
++		suspend_report_result(platform_legacy_suspend, ret);
+ 	}
+ 
+ 	return ret;
+-- 
+1.7.4.1
 
 
 
-
-
-.
-
-
-
-Aby usunac swoj adres z bazy mailingowej odeslij ten e-mail wpisujac NIE w temacie.
-Nadawca e-maila jest GK Rosomak – www.rosomak.org.pl 
-
-
-(zl.12/03/13)
--
 
