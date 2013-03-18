@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3CREkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:40:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33618 "EHLO
+	id S1752160Ab3CRElK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:41:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33615 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752109Ab3CREa4 (ORCPT
+	by vger.kernel.org with ESMTP id S1752064Ab3CREax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:56 -0400
-Message-Id: <20130318042148.418945193@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:53 -0400
+Message-Id: <20130318042148.523896927@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:27 +0000
+Date: Mon, 18 Mar 2013 04:22:28 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        guifang tang <guifang.tang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 43/82] Fix memory leak in cpufreq stats.
+Cc: akpm@linux-foundation.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 44/82] vfs: fix pipe counter breakage
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
+commit a930d8790552658140d7d0d2e316af4f0d76a512 upstream.
 
-When system enters sleep, non-boot CPUs will be disabled.
-Cpufreq stats sysfs is created when the CPU is up, but it is not
-freed when the CPU is going down. This will cause memory leak.
+If you open a pipe for neither read nor write, the pipe code will not
+add any usage counters to the pipe, causing the 'struct pipe_inode_info"
+to be potentially released early.
 
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-Signed-off-by: guifang tang <guifang.tang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+That doesn't normally matter, since you cannot actually use the pipe,
+but the pipe release code - particularly fasync handling - still expects
+the actual pipe infrastructure to all be there.  And rather than adding
+NULL pointer checks, let's just disallow this case, the same way we
+already do for the named pipe ("fifo") case.
+
+This is ancient going back to pre-2.4 days, and until trinity, nobody
+naver noticed.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/cpufreq/cpufreq_stats.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/pipe.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -330,6 +330,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -859,6 +859,9 @@ pipe_rdwr_open(struct inode *inode, stru
+ {
+ 	int ret = -ENOENT;
+ 
++	if (!(filp->f_mode & (FMODE_READ|FMODE_WRITE)))
++		return -EINVAL;
++
+ 	mutex_lock(&inode->i_mutex);
+ 
+ 	if (inode->i_pipe) {
 
 
