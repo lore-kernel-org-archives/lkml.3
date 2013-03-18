@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553Ab3CRWIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:08:15 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37607 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755155Ab3CRWGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 18:06:47 -0400
-X-Sasl-enc: 3W/1ZO+uDmxPGqjWhnIzB0z1MV87dRKD9UChBqmFxptn 1363644407
-From: Alan Ott <alan@signal11.us>
-To: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH 2/4] mrf24j40: Warn if transmit interrupts timeout
-Date: Mon, 18 Mar 2013 18:06:41 -0400
-Message-Id: <1363644403-11003-3-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1363644403-11003-1-git-send-email-alan@signal11.us>
-References: <1363644403-11003-1-git-send-email-alan@signal11.us>
+	id S1752370Ab3CRWOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:14:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39415 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461Ab3CRWOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 18:14:40 -0400
+Date: Mon, 18 Mar 2013 23:14:36 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] HID: multitouch: support of hybrid finger/pen
+ devices
+In-Reply-To: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1303182313080.9529@pobox.suse.cz>
+References: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issue a warning if a transmit complete interrupt doesn't happen in time.
+On Wed, 27 Feb 2013, Benjamin Tissoires wrote:
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- drivers/net/ieee802154/mrf24j40.c | 1 +
- 1 file changed, 1 insertion(+)
+> So the solution consists in relying inconditionaly to the quirk MULTI_INPUT for
+> hid-multitouch. Before registering the input device in hid-input, we can test if
+> it has been populated, and if not, then we simply don't register it. In order to
+> prevent a regression for drivers that do not fill the input device, we need to
+> add an other quirk.
 
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 3106895..582c0a3 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -362,6 +362,7 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
- 	if (ret == -ERESTARTSYS)
- 		goto err;
- 	if (ret == 0) {
-+		dev_warn(printdev(devrec), "Timeout waiting for TX interrupt\n");
- 		ret = -ETIMEDOUT;
- 		goto err;
- 	}
+Hi everybody,
+
+I am in progress of reviewing this patchset, and so far don't have any 
+major obejctions; I expect to have the review finished this week, so 3.10 
+is definitely a realistic target.
+
+Just to set my own expectations correctly -- Henrik, are you going to 
+review this patchset as well, or there is no need for me to wait for your 
+feedback?
+
+Thanks,
+
 -- 
-1.7.11.2
-
+Jiri Kosina
+SUSE Labs
