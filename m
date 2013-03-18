@@ -1,149 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3CROuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:50:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23756 "EHLO mx1.redhat.com"
+	id S1753467Ab3CROvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:51:08 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:53125 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab3CROur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:50:47 -0400
-Message-ID: <514729C2.3080308@redhat.com>
-Date: Mon, 18 Mar 2013 10:50:42 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Myron Stowe <mstowe@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Myron Stowe <myron.stowe@redhat.com>, kay@vrfy.org,
-        linux-hotplug@vger.kernel.org, linux-pci@vger.kernel.org,
-        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-References: <20130316213512.2974.17303.stgit@amt.stowe>  <20130316213519.2974.38954.stgit@amt.stowe>  <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>  <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>  <20130317053611.GC948@kroah.com>  <1363527503.16793.75.camel@ul30vt.home>  <1363530785.2423.47.camel@zim.stowe> <1363559328.16793.82.camel@ul30vt.home>
-In-Reply-To: <1363559328.16793.82.camel@ul30vt.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753409Ab3CROvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 10:51:04 -0400
+From: Nicolas Schichan <nschichan@freebox.fr>
+To: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Nicolas Schichan <nschichan@freebox.fr>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
+Date: Mon, 18 Mar 2013 15:50:30 +0100
+Message-Id: <1363618233-6375-2-git-send-email-nschichan@freebox.fr>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2013 06:28 PM, Alex Williamson wrote:
-> On Sun, 2013-03-17 at 08:33 -0600, Myron Stowe wrote:
->> On Sun, 2013-03-17 at 07:38 -0600, Alex Williamson wrote:
->>> On Sat, 2013-03-16 at 22:36 -0700, Greg KH wrote:
->>>> On Sat, Mar 16, 2013 at 10:11:22PM -0600, Alex Williamson wrote:
->>>>> On Sat, 2013-03-16 at 18:03 -0700, Greg KH wrote:
->>>>>> On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
->>>>>>> On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
->>>>>>>> On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
->>>>>>>>> Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
->>>>>>>>> Port space and MMIO.  This memory regions correspond to the device's
->>>>>>>>> internal status and control registers used to drive the device.
->>>>>>>>>
->>>>>>>>> Accessing these registers from userspace such as "udevadm info
->>>>>>>>> --attribute-walk --path=/sys/devices/..." does can not be allowed as
->>>>>>>>> such accesses outside of the driver, even just reading, can yield
->>>>>>>>> catastrophic consequences.
->>>>>>>>>
->>>>>>>>> Udevadm-info skips parsing a specific set of sysfs entries including
->>>>>>>>> 'resource'.  This patch extends the set to include the additional
->>>>>>>>> 'resource<N>' entries that correspond to a PCI device's BARs.
->>>>>>>>
->>>>>>>> Nice, are you also going to patch bash to prevent a user from reading
->>>>>>>> these sysfs files as well?  :)
->>>>>>>>
->>>>>>>> And pciutils?
->>>>>>>>
->>>>>>>> You get my point here, right?  The root user just asked to read all of
->>>>>>>> the data for this device, so why wouldn't you allow it?  Just like
->>>>>>>> 'lspci' does.  Or bash does.
->>>>>>>
->>>>>>> Yes :P , you raise a very good point, there are a lot of way a user can
->>>>>>> poke around in those BARs.  However, there is a difference between
->>>>>>> shooting yourself in the foot and getting what you deserve versus
->>>>>>> unknowingly executing a common command such as udevadm and having the
->>>>>>> system hang.
->>>>>>>>
->>>>>>>> If this hardware has a problem, then it needs to be fixed in the kernel,
->>>>>>>> not have random band-aids added to various userspace programs to paper
->>>>>>>> over the root problem here.  Please fix the kernel driver and all should
->>>>>>>> be fine.  No need to change udevadm.
->>>>>>>
->>>>>>> Xiangliang initially proposed a patch within the PCI core.  Ignoring the
->>>>>>> specific issue with the proposal which I pointed out in the
->>>>>>> https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
->>>>>>> the right place to effect a change either as PCI's core isn't concerned
->>>>>>> with the contents or access limitations of those regions, those are
->>>>>>> issues that the driver concerns itself with.
->>>>>>>
->>>>>>> So things seem to be gravitating towards the driver.  I'm fairly
->>>>>>> ignorant of this area but as Robert succinctly pointed out in the
->>>>>>> originating thread - the AHCI driver only uses the device's MMIO region.
->>>>>>> The I/O related regions are for legacy SFF-compatible ATA ports and are
->>>>>>> not used to driver the device.  This, coupled with the observance that
->>>>>>> userspace accesses such as udevadm, and others like you additionally
->>>>>>> point out, do not filter through the device's driver for seems to
->>>>>>> suggest that changes to the driver will not help here either.
->>>>>>
->>>>>> A PCI quirk should handle this properly, right?  Why not do that?  Worse
->>>>>> thing, the quirk could just not expose these sysfs files for this
->>>>>> device, which would solve all userspace program issues, right?
->>>>>
->>>>> Not exactly.  I/O port access through pci-sysfs was added for userspace
->>>>> programs, specifically qemu-kvm device assignment.  We use the I/O port
->>>>> resource# files to access device owned I/O port registers using file
->>>>> permissions rather than global permissions such as iopl/ioperm.  File
->>>>> permissions also prevent random users from accessing device registers
->>>>> through these files, but of course can't stop a privileged app that
->>>>> chooses to ignore the purpose of these files.  A quirk would therefore
->>>>> remove a file that actually has a useful purpose for one app just so
->>>>> another app that has no particular reason for dumping the contents can
->>>>> run unabated.  Thanks,
->>>>
->>>> The quirk would only be for this one specific device, which obviously
->>>> can't handle this type of access, so why would you want the sysfs files
->>>> even present for it at all?
->>>
->>> I'm assuming that the device only breaks because udevadm is dumping the
->>> full I/O port register space of the device and that if an actual driver
->>> was interacting with it through this interface that it would work.
->>
->> Correct:
->>          the AHCI driver only uses the device's MMIO region.  The I/O
->>          related regions are for legacy SFF-compatible ATA ports and are
->>          not used to driver the device.  This, coupled with the
->>          observance that userspace accesses such as udevadm, and others
->>          like Greg additionally pointed out, do not filter through the
->>          device's driver seems to suggest that changes to the driver will
->>          not help here either.
->
-> That may be true of our AHCI driver, but when it's assigned to a guest
-> we're potentially using a completely different stack and cannot make
-> that assumption.  A guest running in compatibility mode or the option
-> ROM for the device may still use I/O port regions.  Thanks,
->
-> Alex
->
->
+Architecture must select HAVE_SECCOMP_FILTER_JIT and implement
+seccomp_jit_compile() and seccomp_jit_free() if they intend to support
+jitted seccomp filters.
 
-In quick summary:
-(1)reading a device's registers may have side effects
-     on the device operation, e.g., a register maps to a device's FIFO register.
-(2) Having two threads read such device registers can cause unknown results,
-      i.e., driver & user-app.
-(3) It may be valid for a user-app to read device regs, e.g.,
-     qemu-kvm assigned device
+struct seccomp_filter has been moved to <linux/seccomp.h> to make its
+content available to the jit compilation code.
 
-So, can't it be solved by:
-(a) if no driver is configured for the device, than it's valid for a user-app
-     to read the device regs ?
-      -- although diff. user apps doing so still exposes the problem, and
-         can't be distinguished, e.g.,  	qemu-kvm + udevadm
-		-- or can file permissions (set by libvirt driving qemu-kvm
-		   device assignment) block multiple user-app reading ?
-		   i.e., basically, a user-level version of a driver allocating
-			 the device, which in the case of qemu-kvm device-assignment,
-			 is what is actually happening! :)
-(b) if driver is configured, need a quirk-registration, or generic, optional,
-	driver function to check for user-app reading approval.
+In a way similar to the net BPF, the jit compilation code is expected
+to updates struct seccomp_filter.bpf_func pointer to the generated
+code.
 
-ok, bash away...
+Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+---
+ arch/Kconfig            |   14 ++++++++++++++
+ include/linux/seccomp.h |   41 +++++++++++++++++++++++++++++++++++++++++
+ kernel/seccomp.c        |   34 +++++-----------------------------
+ 3 files changed, 60 insertions(+), 29 deletions(-)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 5a1779c..1284367 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -339,6 +339,10 @@ config HAVE_ARCH_SECCOMP_FILTER
+ 	  - secure_computing return value is checked and a return value of -1
+ 	    results in the system call being skipped immediately.
+ 
++# Used by archs to tell that they support SECCOMP_FILTER_JIT
++config HAVE_SECCOMP_FILTER_JIT
++	bool
++
+ config SECCOMP_FILTER
+ 	def_bool y
+ 	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+@@ -349,6 +353,16 @@ config SECCOMP_FILTER
+ 
+ 	  See Documentation/prctl/seccomp_filter.txt for details.
+ 
++config SECCOMP_FILTER_JIT
++	bool "enable Seccomp filter Just In Time compiler"
++	depends on HAVE_SECCOMP_FILTER_JIT && BPF_JIT && SECCOMP_FILTER
++	help
++	  Seccomp syscall filtering capabilities are normally handled
++	  by an interpreter. This option allows kernel to generate a native
++	  code when filter is loaded in memory. This should speedup
++	  syscall filtering. Note : Admin should enable this feature
++	  changing /proc/sys/net/core/bpf_jit_enable
++
+ config HAVE_CONTEXT_TRACKING
+ 	bool
+ 	help
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index 6f19cfd..a216ab7 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -6,6 +6,7 @@
+ #ifdef CONFIG_SECCOMP
+ 
+ #include <linux/thread_info.h>
++#include <linux/filter.h>
+ #include <asm/seccomp.h>
+ 
+ struct seccomp_filter;
+@@ -47,6 +48,46 @@ static inline int seccomp_mode(struct seccomp *s)
+ 	return s->mode;
+ }
+ 
++/**
++ * struct seccomp_filter - container for seccomp BPF programs
++ *
++ * @usage: reference count to manage the object lifetime.
++ *         get/put helpers should be used when accessing an instance
++ *         outside of a lifetime-guarded section.  In general, this
++ *         is only needed for handling filters shared across tasks.
++ * @prev: points to a previously installed, or inherited, filter
++ * @len: the number of instructions in the program
++ * @bpc_func: points to either sk_run_filter or the code generated
++ *         by the BPF JIT.
++ * @insns: the BPF program instructions to evaluate
++ *
++ * seccomp_filter objects are organized in a tree linked via the @prev
++ * pointer.  For any task, it appears to be a singly-linked list starting
++ * with current->seccomp.filter, the most recently attached or inherited filter.
++ * However, multiple filters may share a @prev node, by way of fork(), which
++ * results in a unidirectional tree existing in memory.  This is similar to
++ * how namespaces work.
++ *
++ * seccomp_filter objects should never be modified after being attached
++ * to a task_struct (other than @usage).
++ */
++struct seccomp_filter {
++	atomic_t usage;
++	struct seccomp_filter *prev;
++	unsigned short len;  /* Instruction count */
++	unsigned int (*bpf_func)(const struct sk_buff *skb,
++				 const struct sock_filter *filter);
++	struct sock_filter insns[];
++};
++
++#ifdef CONFIG_SECCOMP_FILTER_JIT
++extern void seccomp_jit_compile(struct seccomp_filter *fp);
++extern void seccomp_jit_free(struct seccomp_filter *fp);
++#else
++static inline void seccomp_jit_compile(struct seccomp_filter *fp) { }
++static inline void seccomp_jit_free(struct seccomp_filter *fp) { }
++#endif
++
+ #else /* CONFIG_SECCOMP */
+ 
+ #include <linux/errno.h>
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index b7a1004..a1aadaa 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -30,34 +30,6 @@
+ #include <linux/tracehook.h>
+ #include <linux/uaccess.h>
+ 
+-/**
+- * struct seccomp_filter - container for seccomp BPF programs
+- *
+- * @usage: reference count to manage the object lifetime.
+- *         get/put helpers should be used when accessing an instance
+- *         outside of a lifetime-guarded section.  In general, this
+- *         is only needed for handling filters shared across tasks.
+- * @prev: points to a previously installed, or inherited, filter
+- * @len: the number of instructions in the program
+- * @insns: the BPF program instructions to evaluate
+- *
+- * seccomp_filter objects are organized in a tree linked via the @prev
+- * pointer.  For any task, it appears to be a singly-linked list starting
+- * with current->seccomp.filter, the most recently attached or inherited filter.
+- * However, multiple filters may share a @prev node, by way of fork(), which
+- * results in a unidirectional tree existing in memory.  This is similar to
+- * how namespaces work.
+- *
+- * seccomp_filter objects should never be modified after being attached
+- * to a task_struct (other than @usage).
+- */
+-struct seccomp_filter {
+-	atomic_t usage;
+-	struct seccomp_filter *prev;
+-	unsigned short len;  /* Instruction count */
+-	struct sock_filter insns[];
+-};
+-
+ /* Limit any path through the tree to 256KB worth of instructions. */
+ #define MAX_INSNS_PER_PATH ((1 << 18) / sizeof(struct sock_filter))
+ 
+@@ -213,7 +185,7 @@ static u32 seccomp_run_filters(int syscall)
+ 	 * value always takes priority (ignoring the DATA).
+ 	 */
+ 	for (f = current->seccomp.filter; f; f = f->prev) {
+-		u32 cur_ret = sk_run_filter(NULL, f->insns);
++		u32 cur_ret = f->bpf_func(NULL, f->insns);
+ 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+ 			ret = cur_ret;
+ 	}
+@@ -275,6 +247,9 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+ 	if (ret)
+ 		goto fail;
+ 
++	filter->bpf_func = sk_run_filter;
++	seccomp_jit_compile(filter);
++
+ 	/*
+ 	 * If there is an existing filter, make it the prev and don't drop its
+ 	 * task reference.
+@@ -332,6 +307,7 @@ void put_seccomp_filter(struct task_struct *tsk)
+ 	while (orig && atomic_dec_and_test(&orig->usage)) {
+ 		struct seccomp_filter *freeme = orig;
+ 		orig = orig->prev;
++		seccomp_jit_free(freeme);
+ 		kfree(freeme);
+ 	}
+ }
+-- 
+1.7.10.4
 
