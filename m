@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab3CRMAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:00:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49268 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3CRMAb convert rfc822-to-8bit (ORCPT
+	id S1753394Ab3CRMC0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:02:26 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:42363 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab3CRMCZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:00:31 -0400
+	Mon, 18 Mar 2013 08:02:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363572687.14386.66.camel@kjgkr>
-References: <1363508828-2920-1-git-send-email-linkinjeon@gmail.com>
-	<1363572687.14386.66.camel@kjgkr>
-Date: Mon, 18 Mar 2013 21:00:31 +0900
-Message-ID: <CAKYAXd_rd-NBL5HjO9yoKg5nzZ_A88Kiz+-OXkG2TW5o+6gBjw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] f2fs: remove nid_free from f2fs_new_inode
+In-Reply-To: <1363607942.14386.73.camel@kjgkr>
+References: <1363585931-8441-1-git-send-email-jaegeuk.kim@samsung.com>
+	<CAKYAXd9qmaJksB9cOYGBpGb6h4mdQj7J-OwWttRprps8=i0RKA@mail.gmail.com>
+	<1363607942.14386.73.camel@kjgkr>
+Date: Mon, 18 Mar 2013 21:02:24 +0900
+Message-ID: <CAKYAXd__07xB=_GM0b5qdDe6HpLF1JHkz4qyU1r7gmTBwHBYVQ@mail.gmail.com>
+Subject: Re: [PATCH 13/19] f2fs: fix return value of releasepage for node and data
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,65 +26,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> 2013-03-17 (일), 17:27 +0900, Namjae Jeon:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> we can remove nid_free from new inode allocation part.
->> Since, nid_free is used to check if we need to free alloced nid
->> in case of failure.
->> Instead we can directly call alloc_nid_failed from that point, as
->> there is no dependency in that path.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/f2fs/namei.c |    5 +----
->>  1 file changed, 1 insertion(+), 4 deletions(-)
->>
->> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
->> index d4a171b..261d821 100644
->> --- a/fs/f2fs/namei.c
->> +++ b/fs/f2fs/namei.c
->> @@ -24,7 +24,6 @@ static struct inode *f2fs_new_inode(struct inode *dir,
->> umode_t mode)
->>  	struct f2fs_sb_info *sbi = F2FS_SB(sb);
->>  	nid_t ino;
->>  	struct inode *inode;
->> -	bool nid_free = false;
->>  	int err;
->>
->>  	inode = new_inode(sb);
->> @@ -58,7 +57,7 @@ static struct inode *f2fs_new_inode(struct inode *dir,
->> umode_t mode)
->>  	err = insert_inode_locked(inode);
->>  	if (err) {
->>  		err = -EINVAL;
->> -		nid_free = true;
->> +		alloc_nid_failed(sbi, ino);
->>  		goto out;
->>  	}
->>
->> @@ -70,8 +69,6 @@ out:
->>  	unlock_new_inode(inode);
->>  fail:
->>  	iput(inode);
->> -	if (nid_free)
->> -		alloc_nid_failed(sbi, ino);
+> 2013-03-18 (월), 20:39 +0900, Namjae Jeon:
+>> 2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> > If the return value of releasepage is equal to zero, the page cannot be
+>> > reclaimed.
+>> > Instead, we should return 1 in order to reclaim clean pages.
+>> >
+>> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+>> > ---
+>> >  fs/f2fs/data.c |  4 +++-
+>> >  fs/f2fs/node.c | 13 +++----------
+>> >  2 files changed, 6 insertions(+), 11 deletions(-)
+>> >
+>> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+>> > index 6616137..cd6b2cc 100644
+>> > --- a/fs/f2fs/data.c
+>> > +++ b/fs/f2fs/data.c
+>> > @@ -680,8 +680,10 @@ static void f2fs_invalidate_data_page(struct page
+>> > *page, unsigned long offset)
+>> >
+>> >  static int f2fs_release_data_page(struct page *page, gfp_t wait)
+>> >  {
+>> > +	if (PageWriteback(page))
+>> > +		return 0;
+>> >  	ClearPagePrivate(page);
+>> > -	return 0;
+>> > +	return 1;
+>> >  }
+>> I have a question.
+>> Although PageWriteback is already checked in try_to_release_page,
+>> we need to check it again in f2fs_release_data_page ?
 >
-> We should call alloc_nid_failed() after iput() is completed.
-> Otherwise, another f2fs_new_inode() is able to get this just-released
-> nid before iput(). In such a case, insert_inode_locked() can return
-> -EBUSY or iput() can free this newly allocated inode due to the i_lock
-> race.
+> Oh, I made a mistake.
+> No need to check that.
 > Thanks,
-Okay, I see.
-Thanks!
->
->>  	return ERR_PTR(err);
->>  }
->>
->
-> --
-> Jaegeuk Kim
-> Samsung
+You can add
+Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+
+Thanks :)
 >
