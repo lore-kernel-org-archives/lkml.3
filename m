@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750958Ab3CREGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:06:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54205 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab3CREGa (ORCPT
+	id S1751122Ab3CREVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:21:42 -0400
+Received: from nctlincom01.orcon.net.nz ([60.234.4.69]:55044 "EHLO
+	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3CREVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:06:30 -0400
-Date: Mon, 18 Mar 2013 15:06:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
-Message-Id: <20130318150628.82d6a8a23fcb36d881764399@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Mar_2013_15_06_28_+1100_Fx8VjLxDnWLJjB0z"
+	Mon, 18 Mar 2013 00:21:38 -0400
+X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 00:21:38 EDT
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Message-Id: <BFB01C0A-95E5-4C2B-8AF2-A06BE1FF74E0@orcon.net.nz>
+From: Michael Cree <mcree@orcon.net.nz>
+To: Will Deacon <will.deacon@arm.com>
+In-Reply-To: <1363556926-21097-1-git-send-email-will.deacon@arm.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH] alpha: makefile: don't enforce small data model for kernel builds
+Date: Mon, 18 Mar 2013 17:11:15 +1300
+References: <1363556926-21097-1-git-send-email-will.deacon@arm.com>
+X-Mailer: Apple Mail (2.936)
+X-DSPAM-Check: by mx6.orcon.net.nz on Mon, 18 Mar 2013 17:11:43 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Mon Mar 18 17:11:44 2013
+X-DSPAM-Confidence: 0.6519
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0147 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: -3.00 () [Hold at 4.00] CC(NZ:-3)
+X-CanIt-Geo: ip=130.217.188.11; country=NZ; region=G1; city=Hamilton; latitude=-37.7833; longitude=175.2833; http://maps.google.com/maps?q=-37.7833,175.2833&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 06JcQhc8h - 75285e8fa6c3 - 20130318
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Mar_2013_15_06_28_+1100_Fx8VjLxDnWLJjB0z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 18/03/2013, at 10:48 AM, Will Deacon wrote:
+> Due to all of the goodness being packed into today's kernels, the
+> resulting image isn't as slim as it once was.
+>
+> In light of this, don't pass -msmall-data to the tools, which  
+> results in
+> link failures due to impossible relocations when compiling anything  
+> but
+> the most trivial configurations.
 
-Hi Stephen,
+I think many of us have been using -mlarge-data when compiling with  
+gcc-4.6 or later so maybe it is time to get the change upstream.
 
-Today's linux-next merge of the bcm2835 tree got a conflict in
-arch/arm/Kconfig.debug between commit 29c9b7be7574 ("ARM: cns3xxx: move
-debug_ll code to include/debug/") from the arm-soc tree and commit
-f1ac922dec7e ("ARM: bcm2835: convert to multi-platform") from the bcm2835
-tree.
+The interesting thing is that the kernel still compiles fine with  
+gcc-4.5 and the relocation errors only appear if compiling with  
+gcc-4.6 or later.  I had asked before on this forum what had changed  
+with gcc-4.6 that results in the extra usage of the small data area  
+but never got an answer.  I am still curious to know.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+BTW, the phrase "to the tools" in the commit message makes me think  
+immediately of the tools directory (containing perf, etc.) which is  
+not what is intended.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Matt:  Are you able to collect up this and the other patches of Will  
+and get them sent to Linus?
 
-diff --cc arch/arm/Kconfig.debug
-index bce30a8,a877d51..0000000
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@@ -593,7 -583,7 +597,8 @@@ endchoic
- =20
-  config DEBUG_LL_INCLUDE
-  	string
-+ 	default "debug/bcm2835.S" if DEBUG_BCM2835
- +	default "debug/cns3xxx.S" if DEBUG_CNS3XXX
-  	default "debug/icedcc.S" if DEBUG_ICEDCC
-  	default "debug/imx.S" if DEBUG_IMX1_UART || \
-  				 DEBUG_IMX25_UART || \
+Cheers
+Michael.
 
---Signature=_Mon__18_Mar_2013_15_06_28_+1100_Fx8VjLxDnWLJjB0z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRRpLEAAoJEECxmPOUX5FEjQ8P/RFHy3chUAmc2jy5mkqEbc/m
-9iP0kwBu26UBFR5dulkpDkuTza9Fum8dJ+mpTnq16RJIE6SAgjKhqm/tpr18gE8l
-oly/hxpUjc6m0rmgPnlY1M3z/8UNYfbCowow0LdkUR9nJepbwDXO1kFDz7SnfFkm
-gyAe8vxtSLsZWJBtzLW8J31JyFbgpsWWGn+KBm0Bd7pD4IDI30OjDlVqZ92xBIOg
-hVmxJDK0P8bEArWf9fJDYZNPL1FLGvz7NPKLlqvb2xAH2NHa6Z7Te6Moa/2mma52
-2xbMIAzX6So+J1CtLjSQOI5/3ElkuXpTpoUY0cogCEeHCSFAolbC0Dg525K/OBG7
-TIOo2SyGn32De3ATk+OgPLFUFgun0PISlsMSwA/mUYhb4NPqhIpvwrjawd434Llh
-mXUCAV8guUhUL33RzrfwZ4ncfzq87HenMBA9+Olfjml53aSI0M4c31WyYHQOGkNY
-YUDDGzSWc1GhQ8gOv44tS+s8tmFSnBVFrysjtw7cNEjwEBLxp2CUB1fZsoPNfoLI
-RxA3dfbkHl85SBECUbf+sRd7PYMqKzm8In6vgK5FhFktfA6b9EIjZ9sO3cwQXm9+
-9D+9kUvoWOzNM4lYxU63FaccfH2SZ9Tb7wxPKYXsm3pM4QAd86jDIaONJbWbNFfC
-31fTjbfeVNY1H8FRzb54
-=e5Lq
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Mar_2013_15_06_28_+1100_Fx8VjLxDnWLJjB0z--
