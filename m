@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab3CRVHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
+	id S1757046Ab3CRVcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:32:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3CRVHt (ORCPT
+	with ESMTP id S932090Ab3CRVHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:49 -0400
+	Mon, 18 Mar 2013 17:07:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 11/48] staging: vt6656: Fix oops on resume from suspend.
-Date: Mon, 18 Mar 2013 14:08:19 -0700
-Message-Id: <20130318210811.047328830@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 15/48] tty: serial: fix typo "ARCH_S5P6450"
+Date: Mon, 18 Mar 2013 14:08:23 -0700
+Message-Id: <20130318210811.328347486@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,41 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 6987a6dabfc40222ef767f67b57212fe3a0225fb upstream.
+commit 827aa0d36d486f359808c8fb931cf7a71011a09d upstream.
 
-Remove usb_put_dev from vt6656_suspend and usb_get_dev
-from vt6566_resume.
+This could have been either ARCH_S5P64X0 or CPU_S5P6450. Looking at
+commit 2555e663b367b8d555e76023f4de3f6338c28d6c ("ARM: S5P64X0: Add UART
+serial support for S5P6450") - which added this typo - makes clear this
+should be CPU_S5P6450.
 
-These are not normally in suspend/resume functions.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/main_usb.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/tty/serial/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -718,8 +718,6 @@ static int vt6656_suspend(struct usb_int
- 	if (device->flags & DEVICE_FLAGS_OPENED)
- 		device_close(device->dev);
- 
--	usb_put_dev(interface_to_usbdev(intf));
--
- 	return 0;
- }
- 
-@@ -730,8 +728,6 @@ static int vt6656_resume(struct usb_inte
- 	if (!device || !device->dev)
- 		return -ENODEV;
- 
--	usb_get_dev(interface_to_usbdev(intf));
--
- 	if (!(device->flags & DEVICE_FLAGS_OPENED))
- 		device_open(device->dev);
- 
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -197,7 +197,7 @@ config SERIAL_SAMSUNG_UARTS_4
+ config SERIAL_SAMSUNG_UARTS
+ 	int
+ 	depends on ARM && PLAT_SAMSUNG
+-	default 6 if ARCH_S5P6450
++	default 6 if CPU_S5P6450
+ 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+ 	default 3
+ 	help
 
 
