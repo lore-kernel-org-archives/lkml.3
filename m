@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3CRPbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:31:13 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:36068 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3CRPbL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:31:11 -0400
-Message-ID: <5147333A.3010907@gmail.com>
-Date: Mon, 18 Mar 2013 11:31:06 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753799Ab3CRPdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:33:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49896 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753409Ab3CRPdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:33:02 -0400
+Date: Mon, 18 Mar 2013 16:33:00 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] migrate: make core migration code aware of hugepage
+Message-ID: <20130318153300.GR10192@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130318152224.GQ10192@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Neil Horman <nhorman@tuxdriver.com>, Sasha Levin <sasha.levin@oracle.com>,
-        sri@us.ibm.com, "David S. Miller" <davem@davemloft.net>,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sctp: hang in sctp_remaddr_seq_show
-References: <51434D78.9030308@oracle.com>  <20130318110415.GA9478@hmsreliant.think-freely.org> <1363620340.29475.132.camel@edumazet-glaptop>
-In-Reply-To: <1363620340.29475.132.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130318152224.GQ10192@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2013 11:25 AM, Eric Dumazet wrote:
-> On Mon, 2013-03-18 at 07:04 -0400, Neil Horman wrote:
->
->> I'm not sure why the process would never get back to the schedule, but looking
->> at the sctp_remaddr_seq_show function, I think that we should convert this
->> sequence:
->> 	sctp_local_bh_disable();
->> 	read_lock(&head->lock);
->> 	rcu_read_lock();
->>
->> to this:
->> 	read_lock(&head->lock);
->> 	rcu_read_lock_bh();
->>
->> Neil
->
-> I dont think so.
->
-> BH needs to be disabled before read_lock(&head->lock);
->
-> or else, write_lock() could deadlock (assuming it can be called from BH)
->
->
+On Mon 18-03-13 16:22:24, Michal Hocko wrote:
+> On Thu 21-02-13 14:41:41, Naoya Horiguchi wrote:
+> [...]
+> > diff --git v3.8.orig/include/linux/mempolicy.h v3.8/include/linux/mempolicy.h
+> > index 0d7df39..2e475b5 100644
+> > --- v3.8.orig/include/linux/mempolicy.h
+> > +++ v3.8/include/linux/mempolicy.h
+> > @@ -173,7 +173,7 @@ extern int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol);
+> >  /* Check if a vma is migratable */
+> >  static inline int vma_migratable(struct vm_area_struct *vma)
+> >  {
+> > -	if (vma->vm_flags & (VM_IO | VM_HUGETLB | VM_PFNMAP))
+> > +	if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+> >  		return 0;
+> 
+> Is this safe? At least check_*_range don't seem to be hugetlb aware.
 
-If anything, this should probably be done like this:
-
-rcu_read_lock();
-read_lock_bh(&head->lock)
-...
-
-read_unlock_bh(&head->lock)
-rcu_read_unlock();
-
--vlad
+Ohh, they become in 5/9. Should that one be reordered then?
+-- 
+Michal Hocko
+SUSE Labs
