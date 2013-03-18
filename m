@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab3CRPmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:42:21 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64189 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752808Ab3CRPmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:42:20 -0400
-Message-ID: <1363621331.1335.176.camel@x61.thuisdomein>
-Subject: Re: [PATCH] checkpatch: stop checking for CONFIG_EXPERIMENTAL
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Mar 2013 16:42:11 +0100
-In-Reply-To: <CAGXu5jLfq-AqkTyoZRdcJ-S07h0pFKBXDL=KBi7-nT7NQtftKg@mail.gmail.com>
-References: <1363469435.1335.137.camel@x61.thuisdomein>
-	 <CAGXu5jLfq-AqkTyoZRdcJ-S07h0pFKBXDL=KBi7-nT7NQtftKg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Mar 2013 15:42:11.0671 (UTC) FILETIME=[28116E70:01CE23EF]
-X-RcptDomain: vger.kernel.org
+	id S1754012Ab3CRPmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:42:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753868Ab3CRPm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:42:28 -0400
+Date: Mon, 18 Mar 2013 11:41:43 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hdegoede@redhat.com
+Subject: Re: [PATCH] HID: usbhid: quirk for MSI GX680R led panel
+Message-ID: <20130318154143.GE11243@hansolo.jdub.homelinux.org>
+References: <20130318134702.GB11243@hansolo.jdub.homelinux.org>
+ <alpine.LNX.2.00.1303181454500.9529@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1303181454500.9529@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 15:38 -0700, Kees Cook wrote:
-> Hrm, I actually think it would be better to change this to ERROR
-> instead of WARN.
+On Mon, Mar 18, 2013 at 02:54:58PM +0100, Jiri Kosina wrote:
+> On Mon, 18 Mar 2013, Josh Boyer wrote:
+> 
+> > This keyboard backlight device causes a 10 second delay to boot.  Add it
+> > to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
+> 
+> Applied, thanks.
 
-I figured the main reason to add this warning was to prevent people to
-add dependencies on EXPERIMENTAL while you were cleaning the tree, which
-could mean you had to redo patches each time that happened.
+Ugh.  Typo in this patch that prevents it from building.  I shall hang
+my head in shame and send a fixed v2.  My apologies.
 
-Anyhow, with EXPERIMENTAL gone, this is just one of the mistakes people
-can make in using the kconfig system. I'm not sure that we should use
-checkpatch to catch these. For this particular case it must also be
-noted that if code gets in while still depending on EXPERIMENTAL someone
-also missed that this code doesn't get build at all.
-
-
-Paul Bolle
-
+josh
