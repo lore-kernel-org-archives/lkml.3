@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3CRJ5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 05:57:20 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44575 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab3CRJ5T (ORCPT
+	id S1754078Ab3CRKDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 06:03:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35020 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab3CRKDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 05:57:19 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-64-5146e4fdbff3
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH v2] perf cgroup: Add __percpu annotation to perf_cgroup->info
-Date: Mon, 18 Mar 2013 18:56:34 +0900
-Message-Id: <1363600594-11453-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <20130318093943.GA25045@gmail.com>
-References: <20130318093943.GA25045@gmail.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 18 Mar 2013 06:03:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <201303152018.09094.arnd@arndb.de>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
+ <201303141358.05616.arnd@arndb.de> <ADE657CA350FB648AAC2C43247A983F0020980106B9E@AUSP01VMBX24.collaborationhost.net>
+ <201303152018.09094.arnd@arndb.de>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Mon, 18 Mar 2013 11:03:18 +0100
+Message-ID: <CAHkwnC9YFTw8gVzyZB3_gZCgM5zMA6tLch15EDqcA2F4CAOpAQ@mail.gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Mar 15, 2013 at 9:18 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 15 March 2013, H Hartley Sweeten wrote:
+>> Arnd,
+>>
+>> Ill look at converting the ep93xx pwm driver to the PWM subsystem. The only issue is
+>> the current driver exposes a sysfs interface that I think is not available in that subsystem.
+>
+> You can probably keep providing that interface if you have active users.
+>
+>> >* Regarding the use of module_platform_driver_probe, I'm a little worried about
+>> >  the interactions with deferred probing. I don't think there are any regressions,
+>> >  but we should probably make people aware that one cannot return -EPROBE_DEFER
+>> >  from a platform_driver_probe function.
+>>
+>> The ep93xx pwm driver does not need to use platform_driver_probe(). It can be changed
+>> to use module_platform_driver() by just moving the .probe to the platform_driver. This
+>> driver was added before module_platform_driver() was available and I used the
+>> platform_driver_probe() thinking it would save a couple lines of code.
 
-It's a per-cpu data structure but missed the __percpu annotation.
+Since by using platform_driver_probe() the  function
+ep93xx_pwm_probe() is freed after initialization,
+is better to use module_platform_drive_probe().
+IMHO i don't see any good reason to use module_platform_driver() for
+this driver.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Best regards
+Fabio Porcedda
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5976a2a6b4ce..efb75b3a69ad 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -245,7 +245,7 @@ struct perf_cgroup_info {
- 
- struct perf_cgroup {
- 	struct cgroup_subsys_state	css;
--	struct perf_cgroup_info		*info;
-+	struct perf_cgroup_info	__percpu *info;
- };
- 
- /*
--- 
-1.7.11.7
-
+>> I'll change this in a bit. Right now I'm trying to work out why kernel 3.8 is not booting
+>> on the ep93xx. I had 3.6.6 on my development board and 3.7 works fine but 3.8 hangs
+>> without uncompressing the kernel.
+>
+> Ok, thanks!
+>
+>         Arnd
