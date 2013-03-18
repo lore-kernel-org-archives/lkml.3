@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab3CRVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:50:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45696 "EHLO
+	id S1755800Ab3CRVHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3CRVHK (ORCPT
+	with ESMTP id S1754237Ab3CRVHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:10 -0400
+	Mon, 18 Mar 2013 17:07:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 57/75] l2tp: Restore socket refcount when sendmsg succeeds
-Date: Mon, 18 Mar 2013 14:07:20 -0700
-Message-Id: <20130318210514.359351311@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 47/75] btrfs: use rcu_barrier() to wait for bdev puts at unmount
+Date: Mon, 18 Mar 2013 14:07:10 -0700
+Message-Id: <20130318210513.636428812@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,41 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Eric Sandeen <sandeen@redhat.com>
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+commit bc178622d40d87e75abc131007342429c9b03351 upstream.
 
-[ Upstream commit 8b82547e33e85fc24d4d172a93c796de1fefa81a ]
+Doing this would reliably fail with -EBUSY for me:
 
-The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
-reference counter after successful transmissions. Any successful
-sendmsg() call from userspace will then increase the reference counter
-forever, thus preventing the kernel's session and tunnel data from
-being freed later on.
+# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
+...
+unable to open /dev/sdb2: Device or resource busy
 
-The problem only happens when writing directly on L2TP sockets.
-PPP sockets attached to L2TP are unaffected as the PPP subsystem
-uses pppol2tp_xmit() which symmetrically increase/decrease reference
-counters.
+because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
 
-This patch adds the missing call to sock_put() before returning from
-pppol2tp_sendmsg().
+Using systemtap to track bdev gets & puts shows a kworker thread doing a
+blkdev put after mkfs attempts a get; this is left over from the unmount
+path:
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+btrfs_close_devices
+	__btrfs_close_devices
+		call_rcu(&device->rcu, free_device);
+			free_device
+				INIT_WORK(&device->rcu_work, __free_device);
+				schedule_work(&device->rcu_work);
+
+so unmount might complete before __free_device fires & does its blkdev_put.
+
+Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
+until all blkdev_put()s are done, and the device is truly free once
+unmount completes.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/l2tp/l2tp_ppp.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -355,6 +355,7 @@ static int pppol2tp_sendmsg(struct kiocb
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
- 
- 	sock_put(ps->tunnel_sock);
-+	sock_put(sk);
- 
- 	return error;
+---
+ fs/btrfs/volumes.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -681,6 +681,12 @@ int btrfs_close_devices(struct btrfs_fs_
+ 		__btrfs_close_devices(fs_devices);
+ 		free_fs_devices(fs_devices);
+ 	}
++	/*
++	 * Wait for rcu kworkers under __btrfs_close_devices
++	 * to finish all blkdev_puts so device is really
++	 * free when umount is done.
++	 */
++	rcu_barrier();
+ 	return ret;
+ }
  
 
 
