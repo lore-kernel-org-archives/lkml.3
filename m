@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab3CRSpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:45:32 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:60238 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab3CRSpa (ORCPT
+	id S1754529Ab3CRSq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:46:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21798 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3CRSq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:45:30 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCH 1/2] driver: serial-omap: move max uart count into generic header file.
-References: <1363604206-11264-1-git-send-email-sourav.poddar@ti.com>
-Date: Mon, 18 Mar 2013 11:45:26 -0700
-In-Reply-To: <1363604206-11264-1-git-send-email-sourav.poddar@ti.com> (Sourav
-	Poddar's message of "Mon, 18 Mar 2013 16:26:46 +0530")
-Message-ID: <87r4jcim2h.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 18 Mar 2013 14:46:27 -0400
+X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
+   d="scan'208";a="30405935"
+Message-ID: <51476103.40901@codeaurora.org>
+Date: Mon, 18 Mar 2013 11:46:27 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCHv2 3/3] ARM: Work around faulty ISAR0 register in some
+ Krait CPUs
+References: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org> <1363631337-13816-4-git-send-email-sboyd@codeaurora.org> <20130318183435.GD31193@mudshark.cambridge.arm.com>
+In-Reply-To: <20130318183435.GD31193@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sourav Poddar <sourav.poddar@ti.com> writes:
-
-> OMAP_MAX_HSUART_PORTS is moved to omap_serial header file.
-
-Why?  
-
-You started to explain it in the cover letter, but a full description
-belongs here for the permanent git history.
-
-Kevin
-
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Rajendra nayak <rnayak@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
->  drivers/tty/serial/omap-serial.c          |    2 --
->  include/linux/platform_data/serial-omap.h |    1 +
->  2 files changed, 1 insertions(+), 2 deletions(-)
+On 03/18/13 11:34, Will Deacon wrote:
+> On Mon, Mar 18, 2013 at 06:28:57PM +0000, Stephen Boyd wrote:
+>> From: Stepan Moskovchenko <stepanm@codeaurora.org>
+>>
+>> Some early versions of the Krait CPU design incorrectly indicate
+>> that they only support the UDIV and SDIV instructions in Thumb
+>> mode when they actually support them in ARM and Thumb mode. It
+>> seems that these CPUs follow the DDI0406B ARM ARM which has two
+>> possible values for the divide instructions field, instead of the
+>> DDI0406C document which has three possible values.
+>>
+>> Work around this problem by checking the MIDR against Krait CPUs
+>> with this faulty ISAR0 register and force the hwcaps to indicate
+>> support in both modes.
+>>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+>> [sboyd: Rewrote commit text to reflect real reasoning now that
+>> 	we autodetect udiv/sdiv]
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>>  arch/arm/mm/proc-v7.S | 15 +++++++++++++++
+>>  1 file changed, 15 insertions(+)
+> Acked-by: Will Deacon <will.deacon@arm.com>
 >
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-> index 5722eaf..4c2ba9f 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -43,8 +43,6 @@
->  #include <linux/pinctrl/consumer.h>
->  #include <linux/platform_data/serial-omap.h>
->  
-> -#define OMAP_MAX_HSUART_PORTS	6
-> -
->  #define UART_BUILD_REVISION(x, y)	(((x) << 8) | (y))
->  
->  #define OMAP_UART_REV_42 0x0402
-> diff --git a/include/linux/platform_data/serial-omap.h b/include/linux/platform_data/serial-omap.h
-> index ff9b0aa..92c48c2 100644
-> --- a/include/linux/platform_data/serial-omap.h
-> +++ b/include/linux/platform_data/serial-omap.h
-> @@ -29,6 +29,7 @@
->   * is used as console uart.
->   */
->  #define OMAP_SERIAL_NAME	"ttyO"
-> +#define OMAP_MAX_HSUART_PORTS   6
->  
->  struct omap_uart_port_info {
->  	bool			dma_enabled;	/* To specify DMA Mode */
+
+Thanks. Put all three in the patch tracker.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
