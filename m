@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925Ab3CRVs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:48:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45740 "EHLO
+	id S1757151Ab3CRVt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:49:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab3CRVHR (ORCPT
+	with ESMTP id S1755864Ab3CRVHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:17 -0400
+	Mon, 18 Mar 2013 17:07:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 75/75] Revert "drm/i915: reorder setup sequence to have irqs for output setup"
-Date: Mon, 18 Mar 2013 14:07:38 -0700
-Message-Id: <20130318210515.665622249@linuxfoundation.org>
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 55/75] loopdev: remove an user triggerable oops
+Date: Mon, 18 Mar 2013 14:07:18 -0700
+Message-Id: <20130318210514.216608452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,101 +31,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Revert commit 2a9810441fcc26cf3f006f015f8a62094fe57a90 which is
-commit 52d7ecedac3f96fb562cb482c139015372728638 upstream.
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-This caused problems in 3.8-stable, but all is fine in 3.9-rc.
+commit b1a6650406875b9097a032eed89af50682fe1160 upstream.
 
+When loopdev is built as module and we pass an invalid parameter,
+loop_init() will return directly without deregister misc device, which
+will cause an oops when insert loop module next time because we left some
+garbage in the misc device list.
+
+Test case:
+sudo modprobe loop max_part=1024
+(failed due to invalid parameter)
+sudo modprobe loop
+(oops)
+
+Clean up nicely to avoid such oops.
+
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |   23 +++++++++--------------
- drivers/gpu/drm/i915/i915_drv.h |    1 -
- drivers/gpu/drm/i915/i915_irq.c |    4 ----
- 3 files changed, 9 insertions(+), 19 deletions(-)
+ drivers/block/loop.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1297,21 +1297,19 @@ static int i915_load_modeset_init(struct
- 	if (ret)
- 		goto cleanup_vga_switcheroo;
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1856,11 +1856,15 @@ static int __init loop_init(void)
+ 		max_part = (1UL << part_shift) - 1;
+ 	}
  
--	ret = drm_irq_install(dev);
--	if (ret)
--		goto cleanup_gem_stolen;
--
--	/* Important: The output setup functions called by modeset_init need
--	 * working irqs for e.g. gmbus and dp aux transfers. */
- 	intel_modeset_init(dev);
+-	if ((1UL << part_shift) > DISK_MAX_PARTS)
+-		return -EINVAL;
++	if ((1UL << part_shift) > DISK_MAX_PARTS) {
++		err = -EINVAL;
++		goto misc_out;
++	}
  
- 	ret = i915_gem_init(dev);
- 	if (ret)
--		goto cleanup_irq;
-+		goto cleanup_gem_stolen;
-+
-+	intel_modeset_gem_init(dev);
+-	if (max_loop > 1UL << (MINORBITS - part_shift))
+-		return -EINVAL;
++	if (max_loop > 1UL << (MINORBITS - part_shift)) {
++		err = -EINVAL;
++		goto misc_out;
++	}
  
- 	INIT_WORK(&dev_priv->console_resume_work, intel_console_resume);
+ 	/*
+ 	 * If max_loop is specified, create that many devices upfront.
+@@ -1878,8 +1882,10 @@ static int __init loop_init(void)
+ 		range = 1UL << MINORBITS;
+ 	}
  
--	intel_modeset_gem_init(dev);
-+	ret = drm_irq_install(dev);
-+	if (ret)
-+		goto cleanup_gem;
+-	if (register_blkdev(LOOP_MAJOR, "loop"))
+-		return -EIO;
++	if (register_blkdev(LOOP_MAJOR, "loop")) {
++		err = -EIO;
++		goto misc_out;
++	}
  
- 	/* Always safe in the mode setting case. */
- 	/* FIXME: do pre/post-mode set stuff in core KMS code */
-@@ -1319,10 +1317,7 @@ static int i915_load_modeset_init(struct
+ 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
+ 				  THIS_MODULE, loop_probe, NULL, NULL);
+@@ -1892,6 +1898,10 @@ static int __init loop_init(void)
  
- 	ret = intel_fbdev_init(dev);
- 	if (ret)
--		goto cleanup_gem;
--
--	/* Only enable hotplug handling once the fbdev is fully set up. */
--	dev_priv->enable_hotplug_processing = true;
-+		goto cleanup_irq;
- 
- 	drm_kms_helper_poll_init(dev);
- 
-@@ -1331,13 +1326,13 @@ static int i915_load_modeset_init(struct
- 
+ 	printk(KERN_INFO "loop: module loaded\n");
  	return 0;
++
++misc_out:
++	misc_deregister(&loop_misc);
++	return err;
+ }
  
-+cleanup_irq:
-+	drm_irq_uninstall(dev);
- cleanup_gem:
- 	mutex_lock(&dev->struct_mutex);
- 	i915_gem_cleanup_ringbuffer(dev);
- 	mutex_unlock(&dev->struct_mutex);
- 	i915_gem_cleanup_aliasing_ppgtt(dev);
--cleanup_irq:
--	drm_irq_uninstall(dev);
- cleanup_gem_stolen:
- 	i915_gem_cleanup_stolen(dev);
- cleanup_vga_switcheroo:
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -672,7 +672,6 @@ typedef struct drm_i915_private {
- 
- 	u32 hotplug_supported_mask;
- 	struct work_struct hotplug_work;
--	bool enable_hotplug_processing;
- 
- 	int num_pipe;
- 	int num_pch_pll;
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -287,10 +287,6 @@ static void i915_hotplug_work_func(struc
- 	struct drm_mode_config *mode_config = &dev->mode_config;
- 	struct intel_encoder *encoder;
- 
--	/* HPD irq before everything is fully set up. */
--	if (!dev_priv->enable_hotplug_processing)
--		return;
--
- 	mutex_lock(&mode_config->mutex);
- 	DRM_DEBUG_KMS("running encoder hotplug functions\n");
- 
+ static int loop_exit_cb(int id, void *ptr, void *data)
 
 
