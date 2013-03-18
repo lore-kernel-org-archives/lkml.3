@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab3CRNaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:30:03 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:56257 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab3CRNaA (ORCPT
+	id S1753293Ab3CRNam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:30:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56488 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab3CRNaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:30:00 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 18 Mar 2013 06:29:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC PATCH 0/2] fs: sysfs: Add devres support
-Message-ID: <20130318132954.GA30482@roeck-us.net>
-References: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
- <20130316162140.GB2630@kroah.com>
- <20130316181253.GA23608@roeck-us.net>
- <20130316195002.GB3112@kroah.com>
- <20130316212540.GA18933@roeck-us.net>
- <20130317133920.465e8a8c@endymion.delvare>
- <20130317131933.GA15179@roeck-us.net>
- <20130318090241.3856df75@endymion.delvare>
+	Mon, 18 Mar 2013 09:30:39 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Subject: Re: request line field in the generic slave config structure
+Date: Mon, 18 Mar 2013 13:30:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+References: <1363612546.18714.85.camel@smile>
+In-Reply-To: <1363612546.18714.85.camel@smile>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318090241.3856df75@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303181330.00610.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:ac2jxSjrWARFedRYFdKc1e+Giev4Ha2uHL1VxTtQO7n
+ yxr2tX8EyVQrqZEGCfOPvOAZtru8yEuHx6ZMSvS9C0KuzZKIxq
+ l27aEm7Ks4FK49r60/Mgt8BswnhwqKuUc9rbpn4m0vvAIo0W/h
+ up60fnAjhdeXxyrFT4w1O8Jm+g7gchOiK54ffbEgP1rzMD3KBw
+ FzH7vEpF8wohk7vsQ7OuZ0rET0BXO0glwbQ4gSxW8Erwg9rTuO
+ As2tNgtg1roMMy/VUZYSjG06AJJyh90AYdL/uyv5+g4fx3UThT
+ m/ZcWjTOs4qFWZ8qvHTG4oTfOwJ8CrjD8GkgIo3zEl6E2dGmEk
+ XFm0bEU8EaN7Jq9I4ShCEfGnWXdVuNUYQejvxcq1Y
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 09:02:41AM +0100, Jean Delvare wrote:
-> On Sun, 17 Mar 2013 06:19:33 -0700, Guenter Roeck wrote:
-> > On Sun, Mar 17, 2013 at 01:39:20PM +0100, Jean Delvare wrote:
-> > > I'd like to add something at this point.
-> > > 
-> > > We have historically created the hwmon attributes in the hardware (i2c,
-> > > platform...) device, and then created an empty hwmon class device on
-> > > top of it so that libsensors etc. can locate all hardware monitoring
-> > > chips on the system. This is probably wrong and this may explain the
-> > > difference of views between Greg and Guenter.
-> > > 
-> > > I suspect that ideally all hwmon-related attributes should belong to the
-> > > hwmon-class device and not the physical device. Would doing so solve
-> > > the problem of is_visible() needing chip-specific information that can
-> > > only be gathered during probe()? Sure this is an interface change, but
-> > > a few hwmon drivers already do it that way (the ones without an actual
-> > > hardware device, e.g. ACPI thermal zones) and libsensors supports this
-> > > since version 3.0.3, which was released in September 2008 - 4.5 years
-> > > ago.
-> > > 
-> > > This would require creating the attributes after calling
-> > > hwmon_device_register() rather than before, but from the ongoing
-> > > discussion I seem to understand that the driver core supports creating
-> > > the attributes for us, possibly at the same time as the class device
-> > > will be created. Would this solve the userspace timing issue?
-> > > 
-> > This is what I had in mind as ultimate possibility when I created
-> > the second API mentioned in my other e-mail.
-> > 
-> > struct device *devm_hwmon_device_register(struct device *dev,
-> > 					  const struct attribute_group **groups)
-> > 
-> > The attributes are still attached to dev (ie to the hardware device)
-> > in my current code, but it should be possible to attach them to the
-> > hwmon class device instead.
-> > 
-> > Problem with that approach is that it makes drivers larger, not smaller,
-> > at least if is_visible is needed. So it kind of defeats the purpose.
-> > 
-> > We can go along that route anyway if people think it is the right or a better
-> > approach, but I am not sure if it is worth it. I can send out the patches if
-> > there is interest.
+On Monday 18 March 2013, Shevchenko, Andriy wrote:
+> Hello!
 > 
-> Really, I don't know. All I know is that I do not have any time to
-> devote to this ATM.
+> It seems the one (as I think good) question was left unanswered:
+> http://www.spinics.net/lists/arm-kernel/msg186120.html
 > 
-Hi Jean,
+> What is your opinions, comments?
 
-Can't help it. Worst case I learned how make better use of is_visible
-and how to avoid its pitfalls.
+I'm not sure I understand what the question was. Is this about
+whether we should remove the "slave_id" field in the slave
+configuration?
 
-Guenter
+Those sort of duplicate the request line information that comes
+from the platform in a data structure that should be filled by
+the device driver without platform specific knowledge.
+
+I believe that is currently used by shmobile, and we won't be able
+to kill that before that platform has been converted to use
+dma_request_slave_channel.
+
+	Arnd
