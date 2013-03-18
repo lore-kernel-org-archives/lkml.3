@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab3CRVHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45723 "EHLO
+	id S933828Ab3CRVqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:46:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3CRVHO (ORCPT
+	with ESMTP id S1755982Ab3CRVHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:14 -0400
+	Mon, 18 Mar 2013 17:07:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zang MingJie <zealot0630@gmail.com>,
+        Jiri Pirko <jiri@resnulli.us>, Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 63/75] vxlan: fix oops when delete netns containing vxlan
-Date: Mon, 18 Mar 2013 14:07:26 -0700
-Message-Id: <20130318210514.799001438@linuxfoundation.org>
+Subject: [ 65/75] team: unsyc the devices addresses when port is removed
+Date: Mon, 18 Mar 2013 14:07:28 -0700
+Message-Id: <20130318210514.956909477@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -28,86 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Zang MingJie <zealot0630@gmail.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 9cb6cb7ed11cd3b69c47bb414983603a6ff20b1d ]
+[ Upstream commit ba81276b1a5e3cf0674cb0e6d9525e5ae0c98695 ]
 
-The following script will produce a kernel oops:
+When a team port is removed, unsync all devices addresses that may have
+been synched to the port devices.
 
-    sudo ip netns add v
-    sudo ip netns exec v ip ad add 127.0.0.1/8 dev lo
-    sudo ip netns exec v ip link set lo up
-    sudo ip netns exec v ip ro add 224.0.0.0/4 dev lo
-    sudo ip netns exec v ip li add vxlan0 type vxlan id 42 group 239.1.1.1 dev lo
-    sudo ip netns exec v ip link set vxlan0 up
-    sudo ip netns del v
-
-where inspect by gdb:
-
-    Program received signal SIGSEGV, Segmentation fault.
-    [Switching to Thread 107]
-    0xffffffffa0289e33 in ?? ()
-    (gdb) bt
-    #0  vxlan_leave_group (dev=0xffff88001bafa000) at drivers/net/vxlan.c:533
-    #1  vxlan_stop (dev=0xffff88001bafa000) at drivers/net/vxlan.c:1087
-    #2  0xffffffff812cc498 in __dev_close_many (head=head@entry=0xffff88001f2e7dc8) at net/core/dev.c:1299
-    #3  0xffffffff812cd920 in dev_close_many (head=head@entry=0xffff88001f2e7dc8) at net/core/dev.c:1335
-    #4  0xffffffff812cef31 in rollback_registered_many (head=head@entry=0xffff88001f2e7dc8) at net/core/dev.c:4851
-    #5  0xffffffff812cf040 in unregister_netdevice_many (head=head@entry=0xffff88001f2e7dc8) at net/core/dev.c:5752
-    #6  0xffffffff812cf1ba in default_device_exit_batch (net_list=0xffff88001f2e7e18) at net/core/dev.c:6170
-    #7  0xffffffff812cab27 in cleanup_net (work=<optimized out>) at net/core/net_namespace.c:302
-    #8  0xffffffff810540ef in process_one_work (worker=0xffff88001ba9ed40, work=0xffffffff8167d020) at kernel/workqueue.c:2157
-    #9  0xffffffff810549d0 in worker_thread (__worker=__worker@entry=0xffff88001ba9ed40) at kernel/workqueue.c:2276
-    #10 0xffffffff8105870c in kthread (_create=0xffff88001f2e5d68) at kernel/kthread.c:168
-    #11 <signal handler called>
-    #12 0x0000000000000000 in ?? ()
-    #13 0x0000000000000000 in ?? ()
-    (gdb) fr 0
-    #0  vxlan_leave_group (dev=0xffff88001bafa000) at drivers/net/vxlan.c:533
-    533		struct sock *sk = vn->sock->sk;
-    (gdb) l
-    528	static int vxlan_leave_group(struct net_device *dev)
-    529	{
-    530		struct vxlan_dev *vxlan = netdev_priv(dev);
-    531		struct vxlan_net *vn = net_generic(dev_net(dev), vxlan_net_id);
-    532		int err = 0;
-    533		struct sock *sk = vn->sock->sk;
-    534		struct ip_mreqn mreq = {
-    535			.imr_multiaddr.s_addr	= vxlan->gaddr,
-    536			.imr_ifindex		= vxlan->link,
-    537		};
-    (gdb) p vn->sock
-    $4 = (struct socket *) 0x0
-
-The kernel calls `vxlan_exit_net` when deleting the netns before shutting down
-vxlan interfaces. Later the removal of all vxlan interfaces, where `vn->sock`
-is already gone causes the oops. so we should manually shutdown all interfaces
-before deleting `vn->sock` as the patch does.
-
-Signed-off-by: Zang MingJie <zealot0630@gmail.com>
+CC: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/team/team.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1491,6 +1491,15 @@ static __net_init int vxlan_init_net(str
- static __net_exit void vxlan_exit_net(struct net *net)
- {
- 	struct vxlan_net *vn = net_generic(net, vxlan_net_id);
-+	struct vxlan_dev *vxlan;
-+	struct hlist_node *pos;
-+	unsigned h;
-+
-+	rtnl_lock();
-+	for (h = 0; h < VNI_HASH_SIZE; ++h)
-+		hlist_for_each_entry(vxlan, pos, &vn->vni_list[h], hlist)
-+			dev_close(vxlan->dev);
-+	rtnl_unlock();
- 
- 	if (vn->sock) {
- 		sk_release_kernel(vn->sock->sk);
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1139,6 +1139,8 @@ static int team_port_del(struct team *te
+ 	netdev_set_master(port_dev, NULL);
+ 	team_port_disable_netpoll(port);
+ 	vlan_vids_del_by_dev(port_dev, dev);
++	dev_uc_unsync(port_dev, dev);
++	dev_mc_unsync(port_dev, dev);
+ 	dev_close(port_dev);
+ 	team_port_leave(team, port);
+ 	team_port_set_orig_dev_addr(port);
 
 
