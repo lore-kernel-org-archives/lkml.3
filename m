@@ -1,68 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3CRX07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:26:59 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:61430 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3CRX05 (ORCPT
+	id S1755817Ab3CRX1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:27:36 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:36596 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab3CRX1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:26:57 -0400
+	Mon, 18 Mar 2013 19:27:34 -0400
+Date: Mon, 18 Mar 2013 16:28:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] TTY: port hangup and close fixes
+Message-ID: <20130318232850.GA20477@kroah.com>
+References: <51361724.4050107@suse.cz>
+ <1362668153-10972-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51479AAD.7040209@zytor.com>
-References: <514783B4.2030401@zytor.com>
-	<1363641957-5247-1-git-send-email-yinghai@kernel.org>
-	<51479AAD.7040209@zytor.com>
-Date: Mon, 18 Mar 2013 16:26:57 -0700
-X-Google-Sender-Auth: ZBmM9jWzVi-GWHEgNNFNPJ9JOQQ
-Message-ID: <CAE9FiQXFabEpW0SpJZ+88zMZmQvExTzXU7+MOqBRx-JD61aJPg@mail.gmail.com>
-Subject: Re: [PATCH v3] x86, kdump: Set crashkernel_low automatically
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362668153-10972-1-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 3:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/18/2013 02:25 PM, Yinghai Lu wrote:
->> Current code does not set low range for crashkernel if the user
->> does not specify that.
->>
->> That cause regressions on system that does not support intel_iommu
->> properly.
->>
->> Chao said that his system does work well on 3.8 without extra parameter.
->> even iommu does not work with kdump.
->>
->> Set crashkernel_low automatically if the user does not specify that.
->>
->> For system that does support IOMMU with kdump properly, user could
->> specify crashkernel_low=0 to save that 72M low ram.
->>
->> -v3: add swiotlb_size() according to Konrad.
->>
->> Reported-by: WANG Chao <chaowang@redhat.com>
->> Tested-by: WANG Chao <chaowang@redhat.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
-> Can we get a bit more of an explanation instead of "and etc 8M"?  At
-> least a hint of what kind of objects would go in there...
+On Thu, Mar 07, 2013 at 03:55:47PM +0100, Johan Hovold wrote:
+> These patches against 3.9-rc1 fix a few issues with tty-port hangup and
+> close.
 
-now only have:
-swiotlb overflow buffer
+all now applied, thanks.
 
-        v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
-                                                PAGE_ALIGN(io_tlb_overflow));
-
-and
-     /*
-      * When the IOMMU overflows we return a fallback buffer. This
-sets the size.
-     */
-     static unsigned long io_tlb_overflow = 32*1024;
-
-so it is 32K, and I round it to 8M.
+greg k-h
