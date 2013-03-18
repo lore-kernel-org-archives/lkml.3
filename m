@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab3CRV2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:28:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45893 "EHLO
+	id S933297Ab3CRV2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:28:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab3CRVIB (ORCPT
+	with ESMTP id S1752756Ab3CRVIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:01 -0400
+	Mon, 18 Mar 2013 17:08:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 29/48] btrfs: use rcu_barrier() to wait for bdev puts at unmount
-Date: Mon, 18 Mar 2013 14:08:37 -0700
-Message-Id: <20130318210812.316888505@linuxfoundation.org>
+        Peter Korsgaard <jacmet@sunsite.dk>, Johan Hovold <jhovold@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 30/48] atmel_lcdfb: fix 16-bpp modes on older SOCs
+Date: Mon, 18 Mar 2013 14:08:38 -0700
+Message-Id: <20130318210812.387223270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,58 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit bc178622d40d87e75abc131007342429c9b03351 upstream.
+commit a79eac7165ed62114e6ca197195aa5060a54f137 upstream.
 
-Doing this would reliably fail with -EBUSY for me:
+Fix regression introduced by commit 787f9fd23283 ("atmel_lcdfb: support
+16bit BGR:565 mode, remove unsupported 15bit modes") which broke 16-bpp
+modes for older SOCs which use IBGR:555 (msb is intensity) rather
+than BGR:565.
 
-# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
-...
-unable to open /dev/sdb2: Device or resource busy
+Use SOC-type to determine the pixel layout.
 
-because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
+Tested on at91sam9263 and at91sam9g45.
 
-Using systemtap to track bdev gets & puts shows a kworker thread doing a
-blkdev put after mkfs attempts a get; this is left over from the unmount
-path:
-
-btrfs_close_devices
-	__btrfs_close_devices
-		call_rcu(&device->rcu, free_device);
-			free_device
-				INIT_WORK(&device->rcu_work, __free_device);
-				schedule_work(&device->rcu_work);
-
-so unmount might complete before __free_device fires & does its blkdev_put.
-
-Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
-until all blkdev_put()s are done, and the device is truly free once
-unmount completes.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/volumes.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/video/atmel_lcdfb.c |   22 +++++++++++++++-------
+ include/video/atmel_lcdc.h  |    1 +
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -591,6 +591,12 @@ int btrfs_close_devices(struct btrfs_fs_
- 		__btrfs_close_devices(fs_devices);
- 		free_fs_devices(fs_devices);
- 	}
-+	/*
-+	 * Wait for rcu kworkers under __btrfs_close_devices
-+	 * to finish all blkdev_puts so device is really
-+	 * free when umount is done.
-+	 */
-+	rcu_barrier();
- 	return ret;
- }
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -422,17 +422,22 @@ static int atmel_lcdfb_check_var(struct
+ 			= var->bits_per_pixel;
+ 		break;
+ 	case 16:
++		/* Older SOCs use IBGR:555 rather than BGR:565. */
++		if (sinfo->have_intensity_bit)
++			var->green.length = 5;
++		else
++			var->green.length = 6;
++
+ 		if (sinfo->lcd_wiring_mode == ATMEL_LCDC_WIRING_RGB) {
+-			/* RGB:565 mode */
+-			var->red.offset = 11;
++			/* RGB:5X5 mode */
++			var->red.offset = var->green.length + 5;
+ 			var->blue.offset = 0;
+ 		} else {
+-			/* BGR:565 mode */
++			/* BGR:5X5 mode */
+ 			var->red.offset = 0;
+-			var->blue.offset = 11;
++			var->blue.offset = var->green.length + 5;
+ 		}
+ 		var->green.offset = 5;
+-		var->green.length = 6;
+ 		var->red.length = var->blue.length = 5;
+ 		break;
+ 	case 32:
+@@ -679,8 +684,7 @@ static int atmel_lcdfb_setcolreg(unsigne
  
+ 	case FB_VISUAL_PSEUDOCOLOR:
+ 		if (regno < 256) {
+-			if (cpu_is_at91sam9261() || cpu_is_at91sam9263()
+-			    || cpu_is_at91sam9rl()) {
++			if (sinfo->have_intensity_bit) {
+ 				/* old style I+BGR:555 */
+ 				val  = ((red   >> 11) & 0x001f);
+ 				val |= ((green >>  6) & 0x03e0);
+@@ -870,6 +874,10 @@ static int __init atmel_lcdfb_probe(stru
+ 	}
+ 	sinfo->info = info;
+ 	sinfo->pdev = pdev;
++	if (cpu_is_at91sam9261() || cpu_is_at91sam9263() ||
++							cpu_is_at91sam9rl()) {
++		sinfo->have_intensity_bit = true;
++	}
+ 
+ 	strcpy(info->fix.id, sinfo->pdev->name);
+ 	info->flags = ATMEL_LCDFB_FBINFO_DEFAULT;
+--- a/include/video/atmel_lcdc.h
++++ b/include/video/atmel_lcdc.h
+@@ -62,6 +62,7 @@ struct atmel_lcdfb_info {
+ 	void (*atmel_lcdfb_power_control)(int on);
+ 	struct fb_monspecs	*default_monspecs;
+ 	u32			pseudo_palette[16];
++	bool			have_intensity_bit;
+ };
+ 
+ #define ATMEL_LCDC_DMABADDR1	0x00
 
 
