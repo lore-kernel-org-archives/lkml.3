@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab3CREbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33428 "EHLO
+	id S1752510Ab3CREez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:34:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33717 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751561Ab3CREaR (ORCPT
+	by vger.kernel.org with ESMTP id S1752302Ab3CREbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:17 -0400
-Message-Id: <20130318042148.811176989@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:13 -0400
+Message-Id: <20130318042146.263343934@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:31 +0000
+Date: Mon, 18 Mar 2013 04:22:04 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 47/82] USB: option: add Huawei E5331
+Cc: akpm@linux-foundation.org,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 20/82] drm/i915: Dont clobber crtc->fb when queue_flip fails
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,29 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-commit daec90e7382cbd0e73eb6861109b3da91e5ab1f3 upstream.
+commit 4a35f83b2b7c6aae3fc0d1c4554fdc99dc33ad07 upstream.
 
-Another device using CDC ACM with vendor specific protocol to mark
-serial functions.
+Restore crtc->fb to the old framebuffer if queue_flip fails.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+While at it, kill the pointless intel_fb temp variable.
+
+v2: Update crtc->fb before queue_flip and restore it back
+    after a failure.
+
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-and-Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_display.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -579,6 +579,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
- 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c1f, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7280,8 +7280,8 @@ static int intel_crtc_page_flip(struct d
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	struct intel_framebuffer *intel_fb;
+-	struct drm_i915_gem_object *obj;
++	struct drm_framebuffer *old_fb = crtc->fb;
++	struct drm_i915_gem_object *obj = to_intel_framebuffer(fb)->obj;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_unpin_work *work;
+ 	unsigned long flags;
+@@ -7293,8 +7293,7 @@ static int intel_crtc_page_flip(struct d
+ 
+ 	work->event = event;
+ 	work->dev = crtc->dev;
+-	intel_fb = to_intel_framebuffer(crtc->fb);
+-	work->old_fb_obj = intel_fb->obj;
++	work->old_fb_obj = to_intel_framebuffer(old_fb)->obj;
+ 	INIT_WORK(&work->work, intel_unpin_work_fn);
+ 
+ 	ret = drm_vblank_get(dev, intel_crtc->pipe);
+@@ -7314,9 +7313,6 @@ static int intel_crtc_page_flip(struct d
+ 	intel_crtc->unpin_work = work;
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 
+-	intel_fb = to_intel_framebuffer(fb);
+-	obj = intel_fb->obj;
+-
+ 	mutex_lock(&dev->struct_mutex);
+ 
+ 	/* Reference the objects for the scheduled work. */
+@@ -7347,6 +7343,7 @@ static int intel_crtc_page_flip(struct d
+ 
+ cleanup_pending:
+ 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
++	crtc->fb = old_fb;
+ 	drm_gem_object_unreference(&work->old_fb_obj->base);
+ 	drm_gem_object_unreference(&obj->base);
+ 	mutex_unlock(&dev->struct_mutex);
 
 
