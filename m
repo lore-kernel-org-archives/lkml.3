@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab3CRPZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:25:15 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:54707 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab3CRPZJ (ORCPT
+	id S1754025Ab3CRPZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:25:20 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:44129 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab3CRPZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:25:09 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
-Cc: linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH V3 7/7] fbcon: queue work on any cpu
-Date: Mon, 18 Mar 2013 20:53:29 +0530
-Message-Id: <e82c429f56d058cb6e2bbcad40232c11a4be511a.1363617402.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1363617402.git.viresh.kumar@linaro.org>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1363617402.git.viresh.kumar@linaro.org>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
+	Mon, 18 Mar 2013 11:25:16 -0400
+Date: Mon, 18 Mar 2013 08:26:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Clark Williams <williams@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [rttest] WARNING: at drivers/base/core.c:569 device_create_file()
+Message-ID: <20130318152631.GC3249@kroah.com>
+References: <20130318135234.GA31564@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130318135234.GA31564@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fbcon uses workqueues and it has no real dependency of scheduling these on the
-cpu which scheduled them.
+On Mon, Mar 18, 2013 at 09:52:34PM +0800, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
 
-On a idle system, it is observed that and idle cpu wakes up few times just to
-service this work. It would be better if we can schedule it on a cpu which isn't
-idle to save on power.
+Adding the owners of the kernel/rtmutext-tester.c file.
 
-By idle cpu (from scheduler's perspective) we mean:
-- Current task is idle task
-- nr_running == 0
-- wake_list is empty
+> 
+> commit 8f46baaa7ec6cd0851794020b31958e64679dd26
+> Author: Felipe Balbi <balbi@ti.com>
+> Date:   Wed Feb 20 10:31:42 2013 +0200
+> 
+>     base: core: WARN() about bogus permissions on device attributes
+>     
+>     Whenever a struct device_attribute is registered
+>     with mismatched permissions - read permission without
+>     a show routine or write permission without store
+>     routine - we will issue a big warning so we catch
+>     those early enough.
+>     
+>     Signed-off-by: Felipe Balbi <balbi@ti.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Judging from the dmesg, CC the rttest developers for possible fixes.
+> 
+> [   11.581068] bus: 'rttest': add device rttest0
+> [   11.581813] ------------[ cut here ]------------
+> [   11.582568] WARNING: at /c/kernel-tests/src/linux/drivers/base/core.c:569 device_create_file+0x5a/0xa0()
+> [   11.584035] Write permission without 'store'
+> [   11.584793] Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc2-next-20130318 #21
+> [   11.585902] Call Trace:
+> [   11.586318]  [<8102d888>] warn_slowpath_common+0x68/0xa0
+> [   11.587146]  [<8151b77a>] ? device_create_file+0x5a/0xa0
+> [   11.587982]  [<8151b77a>] ? device_create_file+0x5a/0xa0
+> [   11.588820]  [<8102d91e>] warn_slowpath_fmt+0x2e/0x30
+> [   11.589618]  [<8151b77a>] device_create_file+0x5a/0xa0
+> [   11.590523]  [<81081faa>] init_rttest+0xaa/0x150
 
-This patch replaces schedule_work() routine with queue_work_on_any_cpu()
-sibling with system_wq as workqueue.
+Turns out that the sysfs attributes this function (init_rttest()) is
+creating, isn't correct.  The "command" file is mode 0600, yet has no
+read function, and the "status" file is the same mode, with no write
+function.  These should be fixed, which is what the patch from Felipe is
+pointing out.
 
-This routine would look for the closest (via scheduling domains) non-idle cpu
-(non-idle from schedulers perspective). If the current cpu is not idle or all
-cpus are idle, work will be scheduled on local cpu.
+Don't shoot the messenger :)
 
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: linux-fbdev@vger.kernel.org
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/video/console/fbcon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+thanks,
 
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index 3cd6759..a900997 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -404,7 +404,7 @@ static void cursor_timer_handler(unsigned long dev_addr)
- 	struct fb_info *info = (struct fb_info *) dev_addr;
- 	struct fbcon_ops *ops = info->fbcon_par;
- 
--	schedule_work(&info->queue);
-+	queue_work_on_any_cpu(system_wq, &info->queue);
- 	mod_timer(&ops->cursor_timer, jiffies + HZ/5);
- }
- 
--- 
-1.7.12.rc2.18.g61b472e
-
+greg k-h
