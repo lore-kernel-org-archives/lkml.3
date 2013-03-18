@@ -1,84 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3CRJcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 05:32:15 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20861 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab3CRJcM (ORCPT
+	id S1753868Ab3CRJcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 05:32:20 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8139 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab3CRJcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 05:32:12 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-28-5146df1b1cf1
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <01b701ce23bb$1b79b2a0$526d17e0$%han@samsung.com>
-In-reply-to: <01b701ce23bb$1b79b2a0$526d17e0$%han@samsung.com>
-Subject: [PATCH 08/10] rtc: rtc-tps6586x: switch to using SIMPLE_DEV_PM_OPS
-Date: Mon, 18 Mar 2013 18:32:11 +0900
-Message-id: <01be01ce23bb$77a0da90$66e28fb0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4juxtMJTZWEDnPSfOGR4wzonE6SAAAFCfQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zY13p+26BBp8nKVpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MvdMfMRZsYqs4uGw5cwPjRtYuRk4OCQETicczT7FB2GISF+6t
-	B7K5OIQEljFKrJr2gxmmaPObDjBbSGARo8SOTQIQRbOZJLo2r2UHSbAJqEl8+XIYyObgEBHQ
-	l2hr0QCpYRboZZQ407ubHaLZVmLetcWMIDangJ3E1v5JYFcIC3hLrJp1FmwBi4CqRNOaHiYQ
-	mxeofunVDnYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMoPslRBQl3j0VxckLCJgJPG4+yA7
-	RImIxL4X7xhB7pEQWMYusXPTbUaIXQIS3yYfYoHolZXYdADqX0mJgytusExglJiFZPMsJJtn
-	Idk8C8mKBYwsqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzFCIqt/B+PdA9aHGJOB1k9klhJN
-	zgdGZl5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUa
-	GBVmMatkMGtXLvu90mD1nM5Zi40ikw/2KXz/098rtUltwoQ5/67MklT4snTH7Eb76/kXk95r
-	OMceEkqO/LnvoMDG8wfrfMUlIzYquedk7RO3T1/P6Pjqxs5XT7SO9Hpx272JnzxTIdPTLCjg
-	QeqGF69iAq7Z6yqoXzzzb/7Kpy7e6V2i3aWpk5VYijMSDbWYi4oTAXPXCAHCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgK70fbdAg4s7ZCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxt7pjxgLNrFVHFy2nLmB
-	cSNrFyMnh4SAicTmNx3MELaYxIV769lAbCGBRYwSOzYJdDFyAdmzmSS6Nq9lB0mwCahJfPly
-	GMjm4BAR0Jdoa9EAqWEW6GWUONO7mx2i2VZi3rXFjCA2p4CdxNb+SWDLhAW8JVbNOgu2jEVA
-	VaJpTQ8TiM0LVL/0agc7hC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5lB9koIqEs8+qsLEhYR
-	MJJ43H2QHaJERGLfi3eMExiFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWle
-	ul5yfu4mRnDcPpPawbiyweIQowAHoxIP7471boFCrIllxZW5hxglOJiVRHgdbwOFeFMSK6tS
-	i/Lji0pzUosPMSYDPTqRWUo0OR+YUvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKa
-	nZpakFoEs4WJg1OqgdFousbHnm5GHcGXJ4zP/CzW39T85ZbkdhV/Va0QmxWzP7FFH9/P8JA9
-	cc+VnU67dhy/qXXMf+rlSW4aB/dxXj9psILhj8chvXMVh5589b5kdzVqmv/cmT/Fam5b1l6R
-	mPOJqY0x3DzqOHPm6l/d3Vbt/1WnWO83n79wqVrpO93Pc4Kq555gcctUYinOSDTUYi4qTgQA
-	08t7fR8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Mar 2013 05:32:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 18 Mar 2013 02:32:16 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
+        <linux-tegra@vger.kernel.org>, <lrg@ti.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/2] regulator: palmas: add input supply names
+Date: Mon, 18 Mar 2013 14:59:48 +0530
+Message-ID: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to using SIMPLE_DEV_PM_OPS  macro to declare the driver's
-pm_ops. It reduces code size.
+Palmas regulator support the different input supply pins for each of
+the rails. Fill the regulator info data with their input supply pin
+names.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+The pin supply names is passed to regulator_register() only when there
+is valid regulator_init_data. If regulator_init_data is not present
+for the rail then it is assumed that given rail's input pin is left
+unconnected.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/rtc/rtc-tps6586x.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/regulator/palmas-regulator.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/rtc/rtc-tps6586x.c b/drivers/rtc/rtc-tps6586x.c
-index b6aab9f..badfea4 100644
---- a/drivers/rtc/rtc-tps6586x.c
-+++ b/drivers/rtc/rtc-tps6586x.c
-@@ -333,9 +333,8 @@ static int tps6586x_rtc_resume(struct device *dev)
- }
- #endif
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 4a45942..119d83b 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -29,6 +29,7 @@
  
--static const struct dev_pm_ops tps6586x_pm_ops = {
--	SET_SYSTEM_SLEEP_PM_OPS(tps6586x_rtc_suspend, tps6586x_rtc_resume)
--};
-+static SIMPLE_DEV_PM_OPS(tps6586x_pm_ops, tps6586x_rtc_suspend,
-+			tps6586x_rtc_resume);
+ struct regs_info {
+ 	char	*name;
++	char	*sname;
+ 	u8	vsel_addr;
+ 	u8	ctrl_addr;
+ 	u8	tstep_addr;
+@@ -37,110 +38,131 @@ struct regs_info {
+ static const struct regs_info palmas_regs_info[] = {
+ 	{
+ 		.name		= "SMPS12",
++		.sname		= "smps1-in",
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS123",
++		.sname		= "smps1-in",
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS3",
++		.sname		= "smps3-in",
+ 		.vsel_addr	= PALMAS_SMPS3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS3_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS45",
++		.sname		= "smps4-in",
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS457",
++		.sname		= "smps4-in",
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS6",
++		.sname		= "smps6-in",
+ 		.vsel_addr	= PALMAS_SMPS6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS6_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS6_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS7",
++		.sname		= "smps7-in",
+ 		.vsel_addr	= PALMAS_SMPS7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS7_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS8",
++		.sname		= "smps8-in",
+ 		.vsel_addr	= PALMAS_SMPS8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS8_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS8_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS9",
++		.sname		= "smps9-in",
+ 		.vsel_addr	= PALMAS_SMPS9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS10",
++		.sname		= "smps10-in",
+ 	},
+ 	{
+ 		.name		= "LDO1",
++		.sname		= "ldo1-in",
+ 		.vsel_addr	= PALMAS_LDO1_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO1_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO2",
++		.sname		= "ldo2-in",
+ 		.vsel_addr	= PALMAS_LDO2_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO2_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO3",
++		.sname		= "ldo3-in",
+ 		.vsel_addr	= PALMAS_LDO3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO3_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO4",
++		.sname		= "ldo4-in",
+ 		.vsel_addr	= PALMAS_LDO4_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO4_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO5",
++		.sname		= "ldo5-in",
+ 		.vsel_addr	= PALMAS_LDO5_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO5_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO6",
++		.sname		= "ldo6-in",
+ 		.vsel_addr	= PALMAS_LDO6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO6_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO7",
++		.sname		= "ldo7-in",
+ 		.vsel_addr	= PALMAS_LDO7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO7_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO8",
++		.sname		= "ldo8-in",
+ 		.vsel_addr	= PALMAS_LDO8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO8_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO9",
++		.sname		= "ldo9-in",
+ 		.vsel_addr	= PALMAS_LDO9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO9_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDOLN",
++		.sname		= "ldoln-in",
+ 		.vsel_addr	= PALMAS_LDOLN_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOLN_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDOUSB",
++		.sname		= "ldousb-in",
+ 		.vsel_addr	= PALMAS_LDOUSB_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOUSB_CTRL,
+ 	},
+@@ -710,6 +732,9 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 		else
+ 			config.init_data = NULL;
  
- static struct platform_driver tps6586x_rtc_driver = {
- 	.driver	= {
++		if (config.init_data)
++			pmic->desc[id].supply_name = palmas_regs_info[id].sname;
++
+ 		config.of_node = palmas_matches[id].of_node;
+ 
+ 		rdev = regulator_register(&pmic->desc[id], &config);
+@@ -756,6 +781,9 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 		else
+ 			config.init_data = NULL;
+ 
++		if (config.init_data)
++			pmic->desc[id].supply_name = palmas_regs_info[id].sname;
++
+ 		config.of_node = palmas_matches[id].of_node;
+ 
+ 		rdev = regulator_register(&pmic->desc[id], &config);
 -- 
-1.7.2.5
-
+1.7.1.1
 
