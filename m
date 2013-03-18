@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3CRSNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:13:54 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:60758 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab3CRSNv (ORCPT
+	id S1754154Ab3CRSQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:16:11 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:42675 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3CRSQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:13:51 -0400
+	Mon, 18 Mar 2013 14:16:09 -0400
+Date: Mon, 18 Mar 2013 15:16:01 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2013-03-18
+Message-ID: <20130318181601.GB3072@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAPWTe+JzznuWYKksAfxkD=u9kv8DuAF4v2AWVxd2OUeDtCYKBA@mail.gmail.com>
-References: <1363111995-26866-1-git-send-email-silviupopescu1990@gmail.com>
-	<20130313.053145.2200448840921851390.davem@davemloft.net>
-	<CAPWTe+JzznuWYKksAfxkD=u9kv8DuAF4v2AWVxd2OUeDtCYKBA@mail.gmail.com>
-Date: Mon, 18 Mar 2013 20:13:50 +0200
-Message-ID: <CAPWTe+Kfr=zD6oJsfX3W8Ze1iH+CoEHx5FXo4YaVtQuMHD5k_g@mail.gmail.com>
-Subject: Re: [PATCH] bluetooth: use PTR_RET instead of IS_ERR + PTR_ERR
-From: Silviu Popescu <silviupopescu1990@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org, gustavo@padovan.org,
-        johan.hedberg@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 8:05 PM, Silviu Popescu
-<silviupopescu1990@gmail.com> wrote:
-> On Wed, Mar 13, 2013 at 11:31 AM, David Miller <davem@davemloft.net> wrote:
->> From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
->> Date: Tue, 12 Mar 2013 20:13:15 +0200
->>
->>> @@ -590,10 +590,7 @@ int __init bt_sysfs_init(void)
->>>       bt_debugfs = debugfs_create_dir("bluetooth", NULL);
->>>
->>>       bt_class = class_create(THIS_MODULE, "bluetooth");
->>> -     if (IS_ERR(bt_class))
->>> -             return PTR_ERR(bt_class);
->>> -
->>> -     return 0;
->>> +     return PTR_RET(bt_class)
->>
->> Don't bother submitting patches you aren't even going to try
->> to compile.
->>
->> I'm rejecting all of your current submissions.  Resubmit them
->> when you feel like typing 'make' from time to time.
->>
->>
->
-> Sorry for the trouble caused and sorry for the late reply.
-> That being said, I'd like to understand a bit better what exactly I messed up.
-> I've just pulled the latest revision of the mainline kernel and made
-> the changes in this patch.
-> I've tried with make defconfig (which would be x86_64_defconfig in my
-> case), followed by
-> make menuconfig to select the bluetooth options and make allyesconfig.
-> Both defconfig and allyesconfig compile successfully on my system.
-> Would you be so kind as to tell me what error you have encountered?
-> Or perhaps enlighten me as to what I'm still doing wrong. I'd like to
-> learn from my mistakes.
 
-Please ignore this gratuitous stupidity.
-The right patch was applied locally, the wrong one sent to the list.
-I'll resubmit the proper one.
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Silviu Popescu
+Hi John,
+
+I put together 3 fixes intended for 3.9, there are support for two new devices
+and a NULL dereference fix in the SCO code.
+
+Please pull or let me know of any problem. Thanks!
+
+        Gustavo
+
+---
+The following changes since commit 94a32d10f47b637ae24b78b1ddc7ef0e8396fda4:
+
+  Bluetooth: Device 0cf3:3008 should map AR 3012 (2013-03-11 18:04:54 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to ebaf5795ef57a70a042ea259448a465024e2821d:
+
+  Bluetooth: Add support for Dell[QCA 0cf3:817a] (2013-03-18 14:14:37 -0300)
+
+----------------------------------------------------------------
+Ming Lei (2):
+      Bluetooth: Add support for Dell[QCA 0cf3:0036]
+      Bluetooth: Add support for Dell[QCA 0cf3:817a]
+
+Vinicius Costa Gomes (1):
+      Bluetooth: Fix not closing SCO sockets in the BT_CONNECT2 state
+
+ drivers/bluetooth/ath3k.c | 4 ++++
+ drivers/bluetooth/btusb.c | 2 ++
+ net/bluetooth/sco.c       | 1 +
+ 3 files changed, 7 insertions(+)
+
+--NzB8fVQJ5HfG6fxh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRR1nhAAoJEPs3PUX4s20oX2gQAJUTAT8Cb6PD4ZuIRNK5fBP1
+uy9idu1SPWkHcFfX27ODLANceYmdvuCpwX4ieceQNg5alnaWuOmxPnCrnpPBsQqD
+L5nkFa1f7vkYZYKS8VRhBXTByKfV+vl5gnKcMzNCQ9Ffka+BdSCOP1QOPIQTKsT4
+dAXRweLSo7ZzQj3m/JspvjfFbdUumA9o7DWuEAKk6P06dqcfz22bZwkLipRJbWvx
+mpbvb07/XRv6+EWh7ULWB33H91E4Hge9lpfqerWonlWBJpLM7OeAd8BARPkCIW8C
+5mrgh997z5+eGl/qPmJ8NFnqwZ5GSZkUswUFibqQKrLUTzJ5lsRzwTQawsqIe/gy
+LNdYB8KTyn1qYpvv+dMeCCb1j2kJBhAkXfIv2xcfc0GJhWQsYqy245KK2YuBd9vv
+oBfIkCf6Plndq8UP3ggovRP4w8wvuDowRinp+cKoFlhjbkgC/AXklzLBjMMtuSRy
+hrVZdOvx8KzgrniOTDZNb5rE4S4rfE2wsOA7uiqbF7euRqDXz/F9Sv75L2UwpLHR
+ygyyN4yYn607yHW7BmqgV3hxG+zG0iJ4s0nntP1snGh3c8EiA202kvybfe4hRS41
+1KZMNpDXWUaSnBIXRxkLP2KLy2Vqj8+Jv/X51KQGJND933maEzHUDZbvVNKEG63b
+JunQybt12ZesJQYGZHbL
+=dvVz
+-----END PGP SIGNATURE-----
+
+--NzB8fVQJ5HfG6fxh--
