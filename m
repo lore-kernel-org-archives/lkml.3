@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab3CRBq6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 21:46:58 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49851 "EHLO
+	id S1751526Ab3CRBq4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 21:46:56 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49856 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab3CRBqN (ORCPT
+	with ESMTP id S1751406Ab3CRBqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Mar 2013 21:46:13 -0400
 X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 17 Mar 2013 20:46:09 -0500
+  Sun, 17 Mar 2013 20:46:08 -0500
 X-Originating-IP: 108.223.40.66
 From: Guenter Roeck <linux@roeck-us.net>
 To: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
 Cc: Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 8/8] hwmon: (tmp401) Convert to devm_hwmon_device_register API
-Date: Sun, 17 Mar 2013 18:45:57 -0700
-Message-Id: <1363571157-16273-9-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 7/8] hwmon: (max16065) Convert to devm_hwmon_device_register API
+Date: Sun, 17 Mar 2013 18:45:56 -0700
+Message-Id: <1363571157-16273-8-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1363571157-16273-1-git-send-email-linux@roeck-us.net>
 References: <1363571157-16273-1-git-send-email-linux@roeck-us.net>
@@ -27,305 +27,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/tmp401.c |  184 ++++++++++++++++++++++++------------------------
- 1 file changed, 92 insertions(+), 92 deletions(-)
+ drivers/hwmon/max16065.c |  103 +++++++++++++++++++++-------------------------
+ 1 file changed, 47 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/hwmon/tmp401.c b/drivers/hwmon/tmp401.c
-index c85f696..69b5293 100644
---- a/drivers/hwmon/tmp401.c
-+++ b/drivers/hwmon/tmp401.c
-@@ -108,6 +108,7 @@ MODULE_DEVICE_TABLE(i2c, tmp401_id);
- 
- struct tmp401_data {
+diff --git a/drivers/hwmon/max16065.c b/drivers/hwmon/max16065.c
+index 2fa2c02..cb05219 100644
+--- a/drivers/hwmon/max16065.c
++++ b/drivers/hwmon/max16065.c
+@@ -84,6 +84,7 @@ static const bool max16065_have_current[] = {
+ struct max16065_data {
+ 	enum chips type;
  	struct device *hwmon_dev;
-+	const struct attribute_group *groups[3];
++	const struct attribute_group *groups[4];
  	struct mutex update_lock;
- 	char valid; /* zero until following fields are valid */
+ 	bool valid;
  	unsigned long last_updated; /* in jiffies */
-@@ -213,7 +214,7 @@ static struct tmp401_data *tmp401_update_device_reg16(
+@@ -144,7 +145,7 @@ static int max16065_read_adc(struct i2c_client *client, int reg)
  
- static struct tmp401_data *tmp401_update_device(struct device *dev)
+ static struct max16065_data *max16065_update_device(struct device *dev)
  {
 -	struct i2c_client *client = to_i2c_client(dev);
 +	struct i2c_client *client = to_i2c_client(dev->parent);
- 	struct tmp401_data *data = i2c_get_clientdata(client);
+ 	struct max16065_data *data = i2c_get_clientdata(client);
  
  	mutex_lock(&data->update_lock);
-@@ -329,6 +330,7 @@ static ssize_t show_status(struct device *dev,
- static ssize_t store_temp_min(struct device *dev, struct device_attribute
- 	*devattr, const char *buf, size_t count)
+@@ -186,7 +187,7 @@ static ssize_t max16065_show_alarm(struct device *dev,
+ 
+ 	val &= (1 << attr2->index);
+ 	if (val)
+-		i2c_smbus_write_byte_data(to_i2c_client(dev),
++		i2c_smbus_write_byte_data(to_i2c_client(dev->parent),
+ 					  MAX16065_FAULT(attr2->nr), val);
+ 
+ 	return snprintf(buf, PAGE_SIZE, "%d\n", !!val);
+@@ -223,7 +224,7 @@ static ssize_t max16065_set_limit(struct device *dev,
+ 				  const char *buf, size_t count)
  {
+ 	struct sensor_device_attribute_2 *attr2 = to_sensor_dev_attr_2(da);
+-	struct i2c_client *client = to_i2c_client(dev);
 +	struct i2c_client *client = to_i2c_client(dev->parent);
- 	int index = to_sensor_dev_attr(devattr)->index;
- 	struct tmp401_data *data = tmp401_update_device(dev);
- 	long val;
-@@ -341,9 +343,9 @@ static ssize_t store_temp_min(struct device *dev, struct device_attribute
- 
- 	mutex_lock(&data->update_lock);
- 
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(client,
- 		TMP401_TEMP_LOW_LIMIT_MSB_WRITE[index], reg >> 8);
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(client,
- 		TMP401_TEMP_LOW_LIMIT_LSB[index], reg & 0xFF);
- 
- 	data->temp_low[index] = reg;
-@@ -356,6 +358,7 @@ static ssize_t store_temp_min(struct device *dev, struct device_attribute
- static ssize_t store_temp_max(struct device *dev, struct device_attribute
- 	*devattr, const char *buf, size_t count)
+ 	struct max16065_data *data = i2c_get_clientdata(client);
+ 	unsigned long val;
+ 	int err;
+@@ -250,7 +251,7 @@ static ssize_t max16065_show_limit(struct device *dev,
+ 				   struct device_attribute *da, char *buf)
  {
+ 	struct sensor_device_attribute_2 *attr2 = to_sensor_dev_attr_2(da);
+-	struct i2c_client *client = to_i2c_client(dev);
 +	struct i2c_client *client = to_i2c_client(dev->parent);
- 	int index = to_sensor_dev_attr(devattr)->index;
- 	struct tmp401_data *data = tmp401_update_device(dev);
- 	long val;
-@@ -368,9 +371,9 @@ static ssize_t store_temp_max(struct device *dev, struct device_attribute
+ 	struct max16065_data *data = i2c_get_clientdata(client);
  
- 	mutex_lock(&data->update_lock);
- 
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(client,
- 		TMP401_TEMP_HIGH_LIMIT_MSB_WRITE[index], reg >> 8);
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(client,
- 		TMP401_TEMP_HIGH_LIMIT_LSB[index], reg & 0xFF);
- 
- 	data->temp_high[index] = reg;
-@@ -395,7 +398,7 @@ static ssize_t store_temp_crit(struct device *dev, struct device_attribute
- 
- 	mutex_lock(&data->update_lock);
- 
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(to_i2c_client(dev->parent),
- 		TMP401_TEMP_CRIT_LIMIT[index], reg);
- 
- 	data->temp_crit[index] = reg;
-@@ -427,7 +430,7 @@ static ssize_t store_temp_crit_hyst(struct device *dev, struct device_attribute
- 	val = clamp_val(val, temp - 255000, temp);
- 	reg = ((temp - val) + 500) / 1000;
- 
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(to_i2c_client(dev->parent),
- 		TMP401_TEMP_CRIT_HYST, reg);
- 
- 	data->temp_crit_hyst = reg;
-@@ -455,44 +458,68 @@ static ssize_t reset_temp_history(struct device *dev,
- 			" supported. Use 1 to reset the history!\n", val);
- 		return -EINVAL;
- 	}
--	i2c_smbus_write_byte_data(to_i2c_client(dev),
-+	i2c_smbus_write_byte_data(to_i2c_client(dev->parent),
- 		TMP411_TEMP_LOWEST_MSB[0], val);
- 
- 	return count;
- }
- 
--static struct sensor_device_attribute tmp401_attr[] = {
--	SENSOR_ATTR(temp1_input, S_IRUGO, show_temp_value, NULL, 0),
--	SENSOR_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_temp_min,
--		    store_temp_min, 0),
--	SENSOR_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp_max,
--		    store_temp_max, 0),
--	SENSOR_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_temp_crit,
--		    store_temp_crit, 0),
--	SENSOR_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO, show_temp_crit_hyst,
--		    store_temp_crit_hyst, 0),
--	SENSOR_ATTR(temp1_min_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_LOCAL_LOW),
--	SENSOR_ATTR(temp1_max_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_LOCAL_HIGH),
--	SENSOR_ATTR(temp1_crit_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_LOCAL_CRIT),
--	SENSOR_ATTR(temp2_input, S_IRUGO, show_temp_value, NULL, 1),
--	SENSOR_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp_min,
--		    store_temp_min, 1),
--	SENSOR_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp_max,
--		    store_temp_max, 1),
--	SENSOR_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp_crit,
--		    store_temp_crit, 1),
--	SENSOR_ATTR(temp2_crit_hyst, S_IRUGO, show_temp_crit_hyst, NULL, 1),
--	SENSOR_ATTR(temp2_fault, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_REMOTE_OPEN),
--	SENSOR_ATTR(temp2_min_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_REMOTE_LOW),
--	SENSOR_ATTR(temp2_max_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_REMOTE_HIGH),
--	SENSOR_ATTR(temp2_crit_alarm, S_IRUGO, show_status, NULL,
--		    TMP401_STATUS_REMOTE_CRIT),
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp_value, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_temp_min,
-+			  store_temp_min, 0);
-+static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp_max,
-+			  store_temp_max, 0);
-+static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_temp_crit,
-+			  store_temp_crit, 0);
-+static SENSOR_DEVICE_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO,
-+			  show_temp_crit_hyst, store_temp_crit_hyst, 0);
-+static SENSOR_DEVICE_ATTR(temp1_min_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_LOCAL_LOW);
-+static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_LOCAL_HIGH);
-+static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_LOCAL_CRIT);
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp_value, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp_min,
-+			  store_temp_min, 1);
-+static SENSOR_DEVICE_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp_max,
-+			  store_temp_max, 1);
-+static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp_crit,
-+			  store_temp_crit, 1);
-+static SENSOR_DEVICE_ATTR(temp2_crit_hyst, S_IRUGO, show_temp_crit_hyst,
-+			  NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp2_fault, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_REMOTE_OPEN);
-+static SENSOR_DEVICE_ATTR(temp2_min_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_REMOTE_LOW);
-+static SENSOR_DEVICE_ATTR(temp2_max_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_REMOTE_HIGH);
-+static SENSOR_DEVICE_ATTR(temp2_crit_alarm, S_IRUGO, show_status, NULL,
-+			  TMP401_STATUS_REMOTE_CRIT);
-+
-+static struct attribute *tmp401_attributes[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_temp1_min.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
-+	&sensor_dev_attr_temp1_min_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+	&sensor_dev_attr_temp2_min.dev_attr.attr,
-+	&sensor_dev_attr_temp2_max.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
-+	&sensor_dev_attr_temp2_fault.dev_attr.attr,
-+	&sensor_dev_attr_temp2_min_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group tmp401_group = {
-+	.attrs = tmp401_attributes,
+ 	return snprintf(buf, PAGE_SIZE, "%d\n",
+@@ -516,36 +517,58 @@ static struct attribute *max16065_max_attributes[] = {
+ 	NULL
  };
  
- /*
-@@ -502,12 +529,24 @@ static struct sensor_device_attribute tmp401_attr[] = {
-  * minimum and maximum register reset for both the local
-  * and remote channels.
-  */
--static struct sensor_device_attribute tmp411_attr[] = {
--	SENSOR_ATTR(temp1_highest, S_IRUGO, show_temp_highest, NULL, 0),
--	SENSOR_ATTR(temp1_lowest, S_IRUGO, show_temp_lowest, NULL, 0),
--	SENSOR_ATTR(temp2_highest, S_IRUGO, show_temp_highest, NULL, 1),
--	SENSOR_ATTR(temp2_lowest, S_IRUGO, show_temp_lowest, NULL, 1),
--	SENSOR_ATTR(temp_reset_history, S_IWUSR, NULL, reset_temp_history, 0),
-+static SENSOR_DEVICE_ATTR(temp1_highest, S_IRUGO, show_temp_highest, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp1_lowest, S_IRUGO, show_temp_lowest, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp2_highest, S_IRUGO, show_temp_highest, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp2_lowest, S_IRUGO, show_temp_lowest, NULL, 1);
-+static SENSOR_DEVICE_ATTR(temp_reset_history, S_IWUSR, NULL, reset_temp_history,
-+			  0);
++static umode_t max16065_basic_is_visible(struct kobject *kobj,
++					 struct attribute *attr, int index)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct i2c_client *client = to_i2c_client(dev->parent);
++	struct max16065_data *data = i2c_get_clientdata(client);
++	int channel = index / 4;
 +
-+static struct attribute *tmp411_attributes[] = {
-+	&sensor_dev_attr_temp1_highest.dev_attr.attr,
-+	&sensor_dev_attr_temp1_lowest.dev_attr.attr,
-+	&sensor_dev_attr_temp2_highest.dev_attr.attr,
-+	&sensor_dev_attr_temp2_lowest.dev_attr.attr,
-+	&sensor_dev_attr_temp_reset_history.dev_attr.attr,
-+	NULL
-+};
++	if (channel >= data->num_adc || !data->range[channel])
++		return 0;
 +
-+static const struct attribute_group tmp411_group = {
-+	.attrs = tmp411_attributes,
++	return attr->mode;
++}
++
+ static const struct attribute_group max16065_basic_group = {
+ 	.attrs = max16065_basic_attributes,
++	.is_visible = max16065_basic_is_visible,
  };
  
- /*
-@@ -577,30 +616,9 @@ static int tmp401_detect(struct i2c_client *client,
- 	return 0;
- }
+ static const struct attribute_group max16065_current_group = {
+ 	.attrs = max16065_current_attributes,
+ };
  
--static int tmp401_remove(struct i2c_client *client)
++static umode_t max16065_limit_is_visible(struct kobject *kobj,
++					 struct attribute *attr, int index)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct i2c_client *client = to_i2c_client(dev->parent);
++	struct max16065_data *data = i2c_get_clientdata(client);
++
++	if (index >= data->num_adc || !data->range[index])
++		return 0;
++
++	return attr->mode;
++}
++
+ static const struct attribute_group max16065_min_group = {
+ 	.attrs = max16065_min_attributes,
++	.is_visible = max16065_limit_is_visible,
+ };
+ 
+ static const struct attribute_group max16065_max_group = {
+ 	.attrs = max16065_max_attributes,
++	.is_visible = max16065_limit_is_visible,
+ };
+ 
+-static void max16065_cleanup(struct i2c_client *client)
 -{
--	struct tmp401_data *data = i2c_get_clientdata(client);
--	int i;
--
--	if (data->hwmon_dev)
--		hwmon_device_unregister(data->hwmon_dev);
--
--	for (i = 0; i < ARRAY_SIZE(tmp401_attr); i++)
--		device_remove_file(&client->dev, &tmp401_attr[i].dev_attr);
--
--	if (data->kind == tmp411) {
--		for (i = 0; i < ARRAY_SIZE(tmp411_attr); i++)
--			device_remove_file(&client->dev,
--					   &tmp411_attr[i].dev_attr);
--	}
--
--	return 0;
+-	sysfs_remove_group(&client->dev.kobj, &max16065_max_group);
+-	sysfs_remove_group(&client->dev.kobj, &max16065_min_group);
+-	sysfs_remove_group(&client->dev.kobj, &max16065_current_group);
+-	sysfs_remove_group(&client->dev.kobj, &max16065_basic_group);
 -}
 -
- static int tmp401_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
+ static int max16065_probe(struct i2c_client *client,
+ 			  const struct i2c_device_id *id)
  {
--	int i, err = 0;
- 	struct tmp401_data *data;
- 	const char *names[] = { "TMP401", "TMP411" };
+ 	struct i2c_adapter *adapter = client->adapter;
+ 	struct max16065_data *data;
+-	int i, j, val, ret;
++	int i, j, val, group = 0;
+ 	bool have_secondary;		/* true if chip has secondary limits */
+ 	bool secondary_is_max = false;	/* secondary limits reflect max */
  
-@@ -617,37 +635,20 @@ static int tmp401_probe(struct i2c_client *client,
- 	tmp401_init_client(client);
+@@ -597,37 +620,17 @@ static int max16065_probe(struct i2c_client *client,
+ 	}
  
  	/* Register sysfs hooks */
--	for (i = 0; i < ARRAY_SIZE(tmp401_attr); i++) {
--		err = device_create_file(&client->dev,
--					 &tmp401_attr[i].dev_attr);
--		if (err)
--			goto exit_remove;
+-	for (i = 0; i < data->num_adc * 4; i++) {
+-		/* Do not create sysfs entry if channel is disabled */
+-		if (!data->range[i / 4])
+-			continue;
+-
+-		ret = sysfs_create_file(&client->dev.kobj,
+-					max16065_basic_attributes[i]);
+-		if (unlikely(ret))
+-			goto out;
 -	}
-+	data->groups[0] = &tmp401_group;
++	data->groups[group++] = &max16065_basic_group;
  
- 	/* Register additional tmp411 sysfs hooks */
--	if (data->kind == tmp411) {
--		for (i = 0; i < ARRAY_SIZE(tmp411_attr); i++) {
--			err = device_create_file(&client->dev,
--						 &tmp411_attr[i].dev_attr);
--			if (err)
--				goto exit_remove;
+ 	if (have_secondary) {
+-		struct attribute **attr = secondary_is_max ?
+-		  max16065_max_attributes : max16065_min_attributes;
+-
+-		for (i = 0; i < data->num_adc; i++) {
+-			if (!data->range[i])
+-				continue;
+-
+-			ret = sysfs_create_file(&client->dev.kobj, attr[i]);
+-			if (unlikely(ret))
+-				goto out;
 -		}
--	}
-+	if (data->kind == tmp411)
-+		data->groups[1] = &tmp411_group;
++		data->groups[group++] =
++		  secondary_is_max ? &max16065_max_group : &max16065_min_group;
+ 	}
+ 
+ 	if (data->have_current) {
+ 		val = i2c_smbus_read_byte_data(client, MAX16065_CURR_CONTROL);
+-		if (unlikely(val < 0)) {
+-			ret = val;
+-			goto out;
+-		}
++		if (unlikely(val < 0))
++			return val;
+ 		if (val & MAX16065_CURR_ENABLE) {
+ 			/*
+ 			 * Current gain is 6, 12, 24, 48 based on values in
+@@ -636,34 +639,22 @@ static int max16065_probe(struct i2c_client *client,
+ 			data->curr_gain = 6 << ((val >> 2) & 0x03);
+ 			data->range[MAX16065_NUM_ADC]
+ 			  = max16065_csp_adc_range[(val >> 1) & 0x01];
+-			ret = sysfs_create_group(&client->dev.kobj,
+-						 &max16065_current_group);
+-			if (unlikely(ret))
+-				goto out;
++			data->groups[group++] = &max16065_current_group;
+ 		} else {
+ 			data->have_current = false;
+ 		}
+ 	}
  
 -	data->hwmon_dev = hwmon_device_register(&client->dev);
--	if (IS_ERR(data->hwmon_dev)) {
--		err = PTR_ERR(data->hwmon_dev);
--		data->hwmon_dev = NULL;
--		goto exit_remove;
+-	if (unlikely(IS_ERR(data->hwmon_dev))) {
+-		ret = PTR_ERR(data->hwmon_dev);
+-		goto out;
 -	}
+-	return 0;
 +	data->hwmon_dev = devm_hwmon_device_register(&client->dev,
 +						     data->groups, id->name);
-+	if (IS_ERR(data->hwmon_dev))
++	if (unlikely(IS_ERR(data->hwmon_dev)))
 +		return PTR_ERR(data->hwmon_dev);
  
- 	dev_info(&client->dev, "Detected TI %s chip\n", names[data->kind]);
- 
- 	return 0;
--
--exit_remove:
--	tmp401_remove(client);
--	return err;
+-out:
+-	max16065_cleanup(client);
+-	return ret;
++	return 0;
  }
  
- static struct i2c_driver tmp401_driver = {
-@@ -656,7 +657,6 @@ static struct i2c_driver tmp401_driver = {
- 		.name	= "tmp401",
- 	},
- 	.probe		= tmp401_probe,
--	.remove		= tmp401_remove,
- 	.id_table	= tmp401_id,
- 	.detect		= tmp401_detect,
- 	.address_list	= normal_i2c,
+ static int max16065_remove(struct i2c_client *client)
+ {
+-	struct max16065_data *data = i2c_get_clientdata(client);
+-
+-	hwmon_device_unregister(data->hwmon_dev);
+-	max16065_cleanup(client);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.7
 
