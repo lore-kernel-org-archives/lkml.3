@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3CRQEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:04:00 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45326 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3CRQD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:03:58 -0400
-Date: Mon, 18 Mar 2013 09:05:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Li Fei <fei.li@intel.com>
-Cc: rjw@sisk.pl, akpm@linux-foundation.org, ldewangan@nvidia.com,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Subject: Re: [PATCH] pm: print the name of failed suspend function for
- platform device
-Message-ID: <20130318160514.GE3887@kroah.com>
-References: <1363586303.9792.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	id S1753389Ab3CRQFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:05:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab3CRQFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:05:42 -0400
+Date: Mon, 18 Mar 2013 17:03:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Feng Hong <hongfeng@marvell.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH 0/2] finx argv_split() vs sysctl race
+Message-ID: <20130318160323.GA10981@redhat.com>
+References: <20130313174705.GB28083@redhat.com> <20130314152819.7fb1242b493e8bad2d34671b@linux-foundation.org> <20130315163916.GA31995@redhat.com> <20130316202327.GA18613@redhat.com> <20130316203221.GT11268@two.firstfloor.org> <20130316204539.GA19462@redhat.com> <20130316205634.GU11268@two.firstfloor.org> <20130316212351.GA21190@redhat.com> <20130316215440.GV11268@two.firstfloor.org> <20130317141555.GA25236@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363586303.9792.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130317141555.GA25236@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 01:58:23PM +0800, Li Fei wrote:
-> 
-> Print more info when platform device suspend function failed.
-> Without this patch, we can not get the real platform device suspend
-> API info.
-> 
-> Example without this patch:
-> pm_op(): platform_pm_suspend+0x0/0x50 returns -11
-> PM: Device power.0 failed to suspend: error -11
-> 
-> And with this patch:
-> platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
-> pm_op(): platform_pm_suspend+0x0/0x80 returns -11
-> PM: Device power.0 failed to suspend: error -11
+On 03/17, Oleg Nesterov wrote:
+>
+> Ah, I didn't mean the patch makes sense because of optimization. My
+> point was, we can fix the race without making this code worse (in fact
+> it tries to make the code better but this is subjective).
 
-How does that help someone out?  One extra line?  What is that going to
-allow a user to now do?
+OK, I am stupid.  argv_free() passes the wrong poiinter to kfree().
+I am sendind v2 in reply to 1/2, sorry for noise.
 
-greg k-h
+Oleg.
+
