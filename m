@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3CRUF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:05:29 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33154 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab3CRUF1 (ORCPT
+	id S1754748Ab3CRUG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:06:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38983 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab3CRUG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:05:27 -0400
-Date: Mon, 18 Mar 2013 16:05:23 -0400 (EDT)
-Message-Id: <20130318.160523.1621054103077556675.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, asias@redhat.com, nab@linux-iscsi.org,
-        target-devel@vger.kernel.org
-Subject: Re: [PULL] vhost: tcm_vhost fixes for 3.9
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130318195443.GB19761@redhat.com>
-References: <20130318112003.GA7809@redhat.com>
-	<20130318.130136.1629094222097780420.davem@davemloft.net>
-	<20130318195443.GB19761@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 18 Mar 2013 13:05:31 -0700 (PDT)
+	Mon, 18 Mar 2013 16:06:56 -0400
+Date: Mon, 18 Mar 2013 13:05:25 -0700
+From: tip-bot for CQ Tang <tipbot@zytor.com>
+Message-ID: <tip-66db3feb486c01349f767b98ebb10b0c3d2d021b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        cq.tang@intel.com, stable@vger.kernel.org, tglx@linutronix.de,
+        mike.marciniszyn@intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        cq.tang@intel.com, stable@vger.kernel.org, tglx@linutronix.de,
+        mike.marciniszyn@intel.com, hpa@linux.intel.com
+In-Reply-To: <20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com>
+References: <20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-64:
+  Fix the failure case in copy_user_handle_tail()
+Git-Commit-ID: 66db3feb486c01349f767b98ebb10b0c3d2d021b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 13:05:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 18 Mar 2013 21:54:43 +0200
+Commit-ID:  66db3feb486c01349f767b98ebb10b0c3d2d021b
+Gitweb:     http://git.kernel.org/tip/66db3feb486c01349f767b98ebb10b0c3d2d021b
+Author:     CQ Tang <cq.tang@intel.com>
+AuthorDate: Mon, 18 Mar 2013 11:02:21 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 18 Mar 2013 11:32:03 -0700
 
-> On Mon, Mar 18, 2013 at 01:01:36PM -0400, David Miller wrote:
->> From: "Michael S. Tsirkin" <mst@redhat.com>
->> Date: Mon, 18 Mar 2013 13:20:03 +0200
->> 
->> > The following changes since commit 8c6216d7f118a128678270824b6a1286a63863ca:
->> > 
->> >   Revert "ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally" (2013-03-16 23:00:41 -0400)
->> > 
->> > are available in the git repository at:
->> > 
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
->> > 
->> > for you to fetch changes up to deb7cb067dabd3be625eaf5495da8bdc97377fc1:
->> > 
->> >   tcm_vhost: Flush vhost_work in vhost_scsi_flush() (2013-03-17 13:04:14 +0200)
->> 
->> This is a scsi driver, I therefore don't think this pull request is for me.
->> 
->> Please avoid such confusion in the future, and don't use branch names
->> like "vhost-net" for SCSI driver fixes.
->> 
->> Thanks.
-> 
-> We are sharing quite a bit of code, so it's a common tree.
-> There was a vhost-net patch there too but you picked it up
-> directly so I dropped that and what's left is vhost-scsi.
-> Typically vhost-net dominates so I'm just used to merging all vhost
-> things through you but if you think it's wrong I can send it directly to
-> Linus.
+x86-64: Fix the failure case in copy_user_handle_tail()
 
-Just like any other "bus" or "layer" for drivers, you should
-really just send the networking bits my way.
+The increment of "to" in copy_user_handle_tail() will have incremented
+before a failure has been noted.  This causes us to skip a byte in the
+failure case.
 
-Now, in situations where some generic vhost infrastructure is
-necessary for a vhost-net specific change, that might be a
-situation where we can merge the infrastructure change into
-my tree so that the networking bits can go in too.
+Only do the increment when assured there is no failure.
+
+Signed-off-by: CQ Tang <cq.tang@intel.com>
+Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/lib/usercopy_64.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
+index 05928aa..906fea3 100644
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -74,10 +74,10 @@ copy_user_handle_tail(char *to, char *from, unsigned len, unsigned zerorest)
+ 	char c;
+ 	unsigned zero_len;
+ 
+-	for (; len; --len) {
++	for (; len; --len, to++) {
+ 		if (__get_user_nocheck(c, from++, sizeof(char)))
+ 			break;
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, to, sizeof(char)))
+ 			break;
+ 	}
+ 
