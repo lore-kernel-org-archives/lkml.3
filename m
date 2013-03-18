@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab3CRQ2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:28:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49430
+	id S1753993Ab3CRQ3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:29:55 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49418
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753005Ab3CRQ0E (ORCPT
+	by vger.kernel.org with ESMTP id S1752941Ab3CRQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:26:04 -0400
+	Mon, 18 Mar 2013 12:25:59 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/54] tools/vm: Switch to liblk library
-Date: Mon, 18 Mar 2013 13:24:57 -0300
-Message-Id: <1363623939-10748-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 42/54] perf tools: Remove duplicated page_size definition
+Date: Mon, 18 Mar 2013 13:25:27 -0300
+Message-Id: <1363623939-10748-43-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
@@ -26,169 +29,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-page-flags.c had some older version of debugfs_mount copied from perf so
-convert it to using the version in the tools library.
+It's defined in util/util.c and gets set from the begining of perf run.
+No need to duplicate it.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/1361374353-30385-8-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1363173585-9754-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/vm/Makefile     |   17 ++++++++--
- tools/vm/page-types.c |   85 ++++---------------------------------------------
- 2 files changed, 21 insertions(+), 81 deletions(-)
+ tools/perf/util/trace-event-info.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/tools/vm/Makefile b/tools/vm/Makefile
-index 8e30e5c..24e9ddd 100644
---- a/tools/vm/Makefile
-+++ b/tools/vm/Makefile
-@@ -1,11 +1,22 @@
- # Makefile for vm tools
-+#
-+TARGETS=page-types slabinfo
-+
-+LK_DIR = ../lib/lk
-+LIBLK = $(LK_DIR)/liblk.a
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 3c452b5..5729f43 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -43,8 +43,6 @@
  
- CC = $(CROSS_COMPILE)gcc
--CFLAGS = -Wall -Wextra
-+CFLAGS = -Wall -Wextra -I../lib/
-+LDFLAGS = $(LIBLK)
-+
-+$(TARGETS): liblk
-+
-+liblk:
-+	make -C $(LK_DIR)
+ #define VERSION "0.5"
  
--all: page-types slabinfo
- %: %.c
--	$(CC) $(CFLAGS) -o $@ $^
-+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
- 
- clean:
- 	$(RM) page-types slabinfo
-+	make -C ../lib/lk clean
-diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
-index b76edf2..71c9c25 100644
---- a/tools/vm/page-types.c
-+++ b/tools/vm/page-types.c
-@@ -36,7 +36,7 @@
- #include <sys/statfs.h>
- #include "../../include/uapi/linux/magic.h"
- #include "../../include/uapi/linux/kernel-page-flags.h"
+-unsigned int page_size;
 -
-+#include <lk/debugfs.h>
+ static const char *output_file = "trace.info";
+ static int output_fd;
  
- #ifndef MAX_PATH
- # define MAX_PATH 256
-@@ -178,7 +178,7 @@ static int		kpageflags_fd;
- static int		opt_hwpoison;
- static int		opt_unpoison;
+@@ -431,7 +429,6 @@ static void tracing_data_header(void)
+ 	write_or_die(buf, 1);
  
--static char		hwpoison_debug_fs[MAX_PATH+1];
-+static char		*hwpoison_debug_fs;
- static int		hwpoison_inject_fd;
- static int		hwpoison_forget_fd;
- 
-@@ -458,81 +458,6 @@ static uint64_t kpageflags_flags(uint64_t flags)
- 	return flags;
+ 	/* save page_size */
+-	page_size = sysconf(_SC_PAGESIZE);
+ 	write_or_die(&page_size, 4);
  }
  
--/* verify that a mountpoint is actually a debugfs instance */
--static int debugfs_valid_mountpoint(const char *debugfs)
--{
--	struct statfs st_fs;
--
--	if (statfs(debugfs, &st_fs) < 0)
--		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
--		return -ENOENT;
--
--	return 0;
--}
--
--/* find the path to the mounted debugfs */
--static const char *debugfs_find_mountpoint(void)
--{
--	const char *const *ptr;
--	char type[100];
--	FILE *fp;
--
--	ptr = debugfs_known_mountpoints;
--	while (*ptr) {
--		if (debugfs_valid_mountpoint(*ptr) == 0) {
--			strcpy(hwpoison_debug_fs, *ptr);
--			return hwpoison_debug_fs;
--		}
--		ptr++;
--	}
--
--	/* give up and parse /proc/mounts */
--	fp = fopen("/proc/mounts", "r");
--	if (fp == NULL)
--		perror("Can't open /proc/mounts for read");
--
--	while (fscanf(fp, "%*s %"
--		      STR(MAX_PATH)
--		      "s %99s %*s %*d %*d\n",
--		      hwpoison_debug_fs, type) == 2) {
--		if (strcmp(type, "debugfs") == 0)
--			break;
--	}
--	fclose(fp);
--
--	if (strcmp(type, "debugfs") != 0)
--		return NULL;
--
--	return hwpoison_debug_fs;
--}
--
--/* mount the debugfs somewhere if it's not mounted */
--
--static void debugfs_mount(void)
--{
--	const char *const *ptr;
--
--	/* see if it's already mounted */
--	if (debugfs_find_mountpoint())
--		return;
--
--	ptr = debugfs_known_mountpoints;
--	while (*ptr) {
--		if (mount(NULL, *ptr, "debugfs", 0, NULL) == 0) {
--			/* save the mountpoint */
--			strcpy(hwpoison_debug_fs, *ptr);
--			break;
--		}
--		ptr++;
--	}
--
--	if (*ptr == NULL) {
--		perror("mount debugfs");
--		exit(EXIT_FAILURE);
--	}
--}
--
- /*
-  * page actions
-  */
-@@ -541,7 +466,11 @@ static void prepare_hwpoison_fd(void)
- {
- 	char buf[MAX_PATH + 1];
- 
--	debugfs_mount();
-+	hwpoison_debug_fs = debugfs_mount(NULL);
-+	if (!hwpoison_debug_fs) {
-+		perror("mount debugfs");
-+		exit(EXIT_FAILURE);
-+	}
- 
- 	if (opt_hwpoison && !hwpoison_inject_fd) {
- 		snprintf(buf, MAX_PATH, "%s/hwpoison/corrupt-pfn",
 -- 
 1.7.1
 
