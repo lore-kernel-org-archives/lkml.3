@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab3CRW4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:56:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754380Ab3CRW4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 18:56:46 -0400
-Date: Mon, 18 Mar 2013 18:04:18 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linaro-kernel@lists.linaro.org,
-        Gleb Natapov <gleb@redhat.com>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: allow host header to be included even for
- !CONFIG_KVM
-Message-ID: <20130318210418.GB16985@amt.cnet>
-References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
+	id S1754942Ab3CRW7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:59:16 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34600 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab3CRW7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 18:59:14 -0400
+Date: Mon, 18 Mar 2013 16:00:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ 29/75] perf,x86: fix kernel crash with PEBS/BTS after
+ suspend/resume
+Message-ID: <20130318230030.GA26221@kroah.com>
+References: <20130318210510.203500214@linuxfoundation.org>
+ <20130318210512.334023372@linuxfoundation.org>
+ <CABPqkBQquwGc6S3Jfz1tgm2SZhA3pFuSC8xvAojLFk-6G3gqAA@mail.gmail.com>
+ <20130318212046.GA13813@kroah.com>
+ <CABPqkBQQvykujp6rV2PipRKNRP2s+DLT7J-YUWJVabQsCi34rQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363306426-27209-1-git-send-email-khilman@linaro.org>
+In-Reply-To: <CABPqkBQQvykujp6rV2PipRKNRP2s+DLT7J-YUWJVabQsCi34rQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 05:13:46PM -0700, Kevin Hilman wrote:
-> The new context tracking subsystem unconditionally includes kvm_host.h
-> headers for the guest enter/exit macros.  This causes a compile
-> failure when KVM is not enabled.
-> 
-> Fix by adding an IS_ENABLED(CONFIG_KVM) check to kvm_host so it can
-> be included/compiled even when KVM is not enabled.
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
-> Applies on v3.9-rc2
-> 
->  include/linux/kvm_host.h | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+On Mon, Mar 18, 2013 at 10:35:27PM +0100, Stephane Eranian wrote:
+> On Mon, Mar 18, 2013 at 10:20 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Mar 18, 2013 at 10:11:28PM +0100, Stephane Eranian wrote:
+> >> On Mon, Mar 18, 2013 at 10:06 PM, Greg Kroah-Hartman
+> >> <gregkh@linuxfoundation.org> wrote:
+> >> > 3.8-stable review patch.  If anyone has any objections, please let me know.
+> >> >
+> >> Greg, you also need to pick David Rientjes patch to fix compilation on
+> >> non X86 architectures.
+> >
+> > What git commit id would that be?  I thought I picked up everything that
+> > was needed after this one went in, what did I miss?
+> >
+> Talking about this particular patch: https://lkml.org/lkml/2013/3/17/183
+> Don't know if it's in already.
 
-Applied and queued for v3.9, thanks.
+Yes, it is.
 
+thanks,
+
+greg k-h
