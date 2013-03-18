@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3CREav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:30:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33382 "EHLO
+	id S1752020Ab3CREar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:30:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33381 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab3CREaC (ORCPT
+	by vger.kernel.org with ESMTP id S1751250Ab3CREaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:02 -0400
-Message-Id: <20130318042145.749666600@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:03 -0400
+Message-Id: <20130318042145.067262763@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:59 +0000
+Date: Mon, 18 Mar 2013 04:21:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Avinash Patil <patila@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Yogesh Ashok Powar <yogeshp@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/82] mwifiex: correct sleep delay counter
+Cc: akpm@linux-foundation.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        =?ISO-8859-15?q?Martin=20Storsj=C3=B6?= <martin@martin.st>
+Subject: [ 08/82] ARM: VFP: fix emulation of second VFP instruction
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,33 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 3e7a4ff7c5b6423ddb644df9c41b8b6d2fb79d30 upstream.
+commit 5e4ba617c1b584b2e376f31a63bd4e734109318a upstream.
 
-Maximum delay for waking up card is 50 ms. Because of typo in
-counter, this delay goes to 500ms. This patch fixes the bug.
+Martin Storsjö reports that the sequence:
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+        ee312ac1        vsub.f32        s4, s3, s2
+        ee702ac0        vsub.f32        s5, s1, s0
+        e59f0028        ldr             r0, [pc, #40]
+        ee111a90        vmov            r1, s3
+
+on Raspberry Pi (implementor 41 architecture 1 part 20 variant b rev 5)
+where s3 is a denormal and s2 is zero results in incorrect behaviour -
+the instruction "vsub.f32 s5, s1, s0" is not executed:
+
+        VFP: bounce: trigger ee111a90 fpexc d0000780
+        VFP: emulate: INST=0xee312ac1 SCR=0x00000000
+        ...
+
+As we can see, the instruction triggering the exception is the "vmov"
+instruction, and we emulate the "vsub.f32 s4, s3, s2" but fail to
+properly take account of the FPEXC_FP2V flag in FPEXC.  This is because
+the test for the second instruction register being valid is bogus, and
+will always skip emulation of the second instruction.
+
+Reported-by: Martin Storsjö <martin@martin.st>
+Tested-by: Martin Storsjö <martin@martin.st>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/mwifiex/pcie.c |    2 +-
+ arch/arm/vfp/vfpmodule.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -290,7 +290,7 @@ static int mwifiex_pm_wakeup_card(struct
- 		i++;
- 		udelay(10);
- 		/* 50ms max wait */
--		if (i == 50000)
-+		if (i == 5000)
- 			break;
- 	}
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -409,7 +409,7 @@ void VFP_bounce(u32 trigger, u32 fpexc,
+ 	 * If there isn't a second FP instruction, exit now. Note that
+ 	 * the FPEXC.FP2V bit is valid only if FPEXC.EX is 1.
+ 	 */
+-	if (fpexc ^ (FPEXC_EX | FPEXC_FP2V))
++	if ((fpexc & (FPEXC_EX | FPEXC_FP2V)) != (FPEXC_EX | FPEXC_FP2V))
+ 		goto exit;
  
+ 	/*
 
 
