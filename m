@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3CRLvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:51:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36997 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab3CRLvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:51:49 -0400
-Date: Mon, 18 Mar 2013 12:51:45 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915: Flush writes to GMBUS registers
-In-Reply-To: <1363605185-4030-1-git-send-email-chris@chris-wilson.co.uk>
-Message-ID: <alpine.LNX.2.00.1303181251040.9529@pobox.suse.cz>
-References: <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <1363605185-4030-1-git-send-email-chris@chris-wilson.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753293Ab3CRL5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:57:41 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:47742 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3CRL5j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 07:57:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1363601689.2412.12.camel@dabdike.int.hansenpartnership.com>
+References: <1363508951-3011-1-git-send-email-linkinjeon@gmail.com>
+	<1363601689.2412.12.camel@dabdike.int.hansenpartnership.com>
+Date: Mon, 18 Mar 2013 20:57:38 +0900
+Message-ID: <CAKYAXd-thiuWagZPf8825=eKLQPyx3w+h5vzKXn_O_g7n9CpDg@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI]: print the msgbytes and statusbyte from scsi result
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013, Chris Wilson wrote:
+2013/3/18, James Bottomley <James.Bottomley@hansenpartnership.com>:
+> On Sun, 2013-03-17 at 17:29 +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Introduce msgbyte and statusbyte in the prints as part of the
+>> result which is returned by the lower layer driver in response to
+>> SCSI command issued, in case of any error conditions.
+>>
+>> Purpose of adding these prints is to convey, during any I/O
+>> error case, which condition exactly has happened in lower device and
+>> from the prints we can directly deduce, what is the status of command
+>> issued. This will help to quickly debug the scenario and also making
+>> a test case to create new scenarios.
+>>
+>> Also change the printk to more appropriate pr_* macro.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  drivers/scsi/constants.c |    6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
+>> index 76e4c03..77bb1dc 100644
+>> --- a/drivers/scsi/constants.c
+>> +++ b/drivers/scsi/constants.c
+>> @@ -1445,8 +1445,10 @@ void scsi_show_result(int result)
+>>
+>>  void scsi_show_result(int result)
+>>  {
+>> -	printk("Result: hostbyte=0x%02x driverbyte=0x%02x\n",
+>> -	       host_byte(result), driver_byte(result));
+>> +	pr_info("Result: hostbyte=0x%02x driverbyte=0x%02x"
+>> +			"msgbyte=0x%02x statusbyte=0x%02x\n",
+>> +	       host_byte(result), driver_byte(result), msg_byte(result),
+>> +							status_byte(result));
+Hi James.
+>
+> You didn't test this, did you? If you did, you'd have noticed the change
+> from printk to pr_info gives you an unwanted "6" in the message.
+Yes, we tested with "printk" version of the patch, but before sending
+the patch, when we checked for issues using "checkpatch.pl" it showed
+warning.
+So, we thought that to be a cosmetic change and replaced the printk
+with  pr_info. Sorry, if below your douting is clear, I will change
+log level as current one.
 
-> If we do not complete the writes to the GMBUS registers, they remain
-> active for an indefinite period of time afterwards, even causing
-> spurious interrupts on gm45.
-> 
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz
-> Cc: Shawn Starr <shawn.starr@rogers.com>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+>
+> Also, what are you hoping to achieve? scsi_show_result() is only used by
+> sd in a very few special command situations.  I can't believe the msg
+> byte would be anything other than zero and the status byte check
+> condition.
+Regarding the introduction of additional information in prints.
+We encountered an error with error logs like:
+[ 131.673096] sd 0:0:0:0: [sda] Result: hostbyte=0x00 driverbyte=0x08
+[ 131.679038] sd 0:0:0:0: [sda] Sense Key : 0xb [current]
+[ 131.684801] sd 0:0:0:0: [sda] ASC=0x8 ASCQ=0x3
+[ 131.689241] sd 0:0:0:0: [sda] CDB: cdb[0]=0x2a: 2a 00 00 cb 0c 00 00 00 f0 00
 
-Unfortunately I can't provide my Tested-by or Acked-by for this, as I am 
-still seeing the "nobody cared" for irq 16 with this patch applied.
+Looking at the logs it was clear it was due "ABORTED command" but we
+wanted to check in the code if there was any retry in such case:
+In ‘scsi_decide_disposition’ there are "3" main conditions
 
-> ---
->  drivers/gpu/drm/i915/intel_i2c.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> index acf8aec..ca6c17e 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -64,6 +64,7 @@ intel_i2c_reset(struct drm_device *dev)
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
->  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
-> +	POSTING_READ(dev_priv->gpio_mmio_base + GMBUS4);
->  }
->  
->  static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
-> @@ -232,6 +233,7 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
->  	finish_wait(&dev_priv->gmbus_wait_queue, &wait);
->  
->  	I915_WRITE(GMBUS4 + reg_offset, 0);
-> +	POSTING_READ(GMBUS4 + reg_offset);
->  
->  	if (gmbus2 & GMBUS_SATOER)
->  		return -ENXIO;
-> @@ -257,6 +259,7 @@ gmbus_wait_idle(struct drm_i915_private *dev_priv)
->  	ret = wait_event_timeout(dev_priv->gmbus_wait_queue, C, 10);
->  
->  	I915_WRITE(GMBUS4 + reg_offset, 0);
-> +	POSTING_READ(GMBUS4 + reg_offset);
->  
->  	if (ret)
->  		return 0;
-> @@ -486,6 +489,7 @@ timeout:
->  	ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
->  
->  out:
-> +	POSTING_READ(GMBUS0 + dev_priv->gpio_mmio_base);
->  	mutex_unlock(&dev_priv->gmbus_mutex);
->  	return ret;
->  }
-> -- 
-> 1.7.10.4
-> 
+switch (host_byte(scmd->result)) -> this returned "DID_OK"
+        if (msg_byte(scmd->result) != COMMAND_COMPLETE)
+                return FAILED;
 
--- 
-Jiri Kosina
-SUSE Labs
+And the last was:
+switch (status_byte(scmd->result)) {
+…
+    case TASK_ABORTED:
+                goto maybe_retry;
+    case CHECK_CONDITION:
+…
+
+So, if the status/host bytes were known - we could have directly
+deduced from the code. Instead we needed to introduce prints and then
+check the path.
+
+Thanks.
+>
+> James
+>
+>
+>
