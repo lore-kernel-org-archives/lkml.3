@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3CROYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:24:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57996 "EHLO mx1.redhat.com"
+	id S1752948Ab3CROZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:25:49 -0400
+Received: from tundra.namei.org ([65.99.196.166]:59936 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab3CROYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:24:39 -0400
-Date: Mon, 18 Mar 2013 09:55:48 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] HID: usbhid: quirk for Realtek Multi-card reader
-Message-ID: <20130318135548.GC11243@hansolo.jdub.homelinux.org>
-References: <20130318134542.GA11243@hansolo.jdub.homelinux.org>
- <alpine.LNX.2.00.1303181451550.9529@pobox.suse.cz>
+	id S1751866Ab3CROZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 10:25:47 -0400
+Date: Tue, 19 Mar 2013 01:25:59 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [GIT] SELinux xfrm kmalloc fix
+Message-ID: <alpine.LRH.2.02.1303190124250.26319@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303181451550.9529@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 02:52:32PM +0100, Jiri Kosina wrote:
-> On Mon, 18 Mar 2013, Josh Boyer wrote:
-> 
-> > This device has an odd HID entry 
-> 
-> I can't really say I understand this portion of the changelog.
+Please apply.
 
-I just took it from what Hans said in the bug.  I believe I might have
-misunderstood.
+The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
-> I will rephrase it a little bit and apply, thanks.
+  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
 
-Sounds good.  Thank you.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
-josh
+Dan Carpenter (1):
+      selinux: use GFP_ATOMIC under spin_lock
+
+ security/selinux/xfrm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Sat Mar 16 12:48:11 2013 +0300
+
+    selinux: use GFP_ATOMIC under spin_lock
+    
+    The call tree here is:
+    
+    sk_clone_lock()              <- takes bh_lock_sock(newsk);
+    xfrm_sk_clone_policy()
+    __xfrm_sk_clone_policy()
+    clone_policy()               <- uses GFP_ATOMIC for allocations
+    security_xfrm_policy_clone()
+    security_ops->xfrm_policy_clone_security()
+    selinux_xfrm_policy_clone()
+    
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Cc: stable@kernel.org
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
+index 48665ec..8ab2951 100644
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfrm_sec_ctx *old_ctx,
+ 
+ 	if (old_ctx) {
+ 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
+-				  GFP_KERNEL);
++				  GFP_ATOMIC);
+ 		if (!new_ctx)
+ 			return -ENOMEM;
+ 
