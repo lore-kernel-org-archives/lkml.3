@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab3CRVOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:14:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46141 "EHLO
+	id S932419Ab3CRVKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:10:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab3CRVK0 (ORCPT
+	with ESMTP id S1756664Ab3CRVKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:26 -0400
+	Mon, 18 Mar 2013 17:10:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/40] l2tp: Restore socket refcount when sendmsg succeeds
-Date: Mon, 18 Mar 2013 14:11:09 -0700
-Message-Id: <20130318211018.485624552@linuxfoundation.org>
+        Phileas Fogg <phileas-fogg@mail.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 20/40] powerpc: Fix cputable entry for 970MP rev 1.0
+Date: Mon, 18 Mar 2013 14:10:58 -0700
+Message-Id: <20130318211017.697440300@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -27,41 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
 
-[ Upstream commit 8b82547e33e85fc24d4d172a93c796de1fefa81a ]
+Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
+the entry for the 970MP rev 1.0 processor when moving some CPU
+features bits to the MMU feature bit mask. This breaks booting
+on some rare G5 models using that chip revision.
 
-The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
-reference counter after successful transmissions. Any successful
-sendmsg() call from userspace will then increase the reference counter
-forever, thus preventing the kernel's session and tunnel data from
-being freed later on.
-
-The problem only happens when writing directly on L2TP sockets.
-PPP sockets attached to L2TP are unaffected as the PPP subsystem
-uses pppol2tp_xmit() which symmetrically increase/decrease reference
-counters.
-
-This patch adds the missing call to sock_put() before returning from
-pppol2tp_sendmsg().
-
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/l2tp/l2tp_ppp.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -360,6 +360,7 @@ static int pppol2tp_sendmsg(struct kiocb
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
- 
- 	sock_put(ps->tunnel_sock);
-+	sock_put(sk);
- 
- 	return error;
- 
+---
+ arch/powerpc/kernel/cputable.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -268,7 +268,7 @@ static struct cpu_spec __initdata cpu_sp
+ 		.cpu_features		= CPU_FTRS_PPC970,
+ 		.cpu_user_features	= COMMON_USER_POWER4 |
+ 			PPC_FEATURE_HAS_ALTIVEC_COMP,
+-		.mmu_features		= MMU_FTR_HPTE_TABLE,
++		.mmu_features		= MMU_FTRS_PPC970,
+ 		.icache_bsize		= 128,
+ 		.dcache_bsize		= 128,
+ 		.num_pmcs		= 8,
 
 
