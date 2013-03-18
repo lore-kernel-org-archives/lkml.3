@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3CRVG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45602 "EHLO
+	id S934063Ab3CRVzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:55:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45612 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab3CRVGz (ORCPT
+	with ESMTP id S1755574Ab3CRVG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:55 -0400
+	Mon, 18 Mar 2013 17:06:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcin Jurkowski <marcin1j@gmail.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>, Josh Boyer <jwboyer@gmail.com>,
-        Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [ 35/75] w1: fix oops when w1_search is called from netlink connector
-Date: Mon, 18 Mar 2013 14:06:58 -0700
-Message-Id: <20130318210512.746394425@linuxfoundation.org>
+        Phileas Fogg <phileas-fogg@mail.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 37/75] powerpc: Fix cputable entry for 970MP rev 1.0
+Date: Mon, 18 Mar 2013 14:07:00 -0700
+Message-Id: <20130318210512.887750516@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -28,53 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Jurkowski <marcin1j@gmail.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
+commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
 
-On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
-> This is the bad commit I found doing git bisect:
-> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
-> commit 04f482faf50535229a5a5c8d629cf963899f857c
-> Author: Patrick McHardy <kaber@trash.net>
-> Date:   Mon Mar 28 08:39:36 2011 +0000
+Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
+the entry for the 970MP rev 1.0 processor when moving some CPU
+features bits to the MMU feature bit mask. This breaks booting
+on some rare G5 models using that chip revision.
 
-Good job. I was too lazy to bisect for bad commit;)
-
-Reading the code I found problematic kthread_should_stop call from netlink
-connector which causes the oops. After applying a patch, I've been testing
-owfs+w1 setup for nearly two days and it seems to work very reliable (no
-hangs, no memleaks etc).
-More detailed description and possible fix is given below:
-
-Function w1_search can be called from either kthread or netlink callback.
-While the former works fine, the latter causes oops due to kthread_should_stop
-invocation.
-
-This patch adds a check if w1_search is serving netlink command, skipping
-kthread_should_stop invocation if so.
-
-Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/w1/w1.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/cputable.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -924,7 +924,8 @@ void w1_search(struct w1_master *dev, u8
- 			tmp64 = (triplet_ret >> 2);
- 			rn |= (tmp64 << i);
- 
--			if (kthread_should_stop()) {
-+			/* ensure we're called from kthread and not by netlink callback */
-+			if (!dev->priv && kthread_should_stop()) {
- 				mutex_unlock(&dev->bus_mutex);
- 				dev_dbg(&dev->dev, "Abort w1_search\n");
- 				return;
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -275,7 +275,7 @@ static struct cpu_spec __initdata cpu_sp
+ 		.cpu_features		= CPU_FTRS_PPC970,
+ 		.cpu_user_features	= COMMON_USER_POWER4 |
+ 			PPC_FEATURE_HAS_ALTIVEC_COMP,
+-		.mmu_features		= MMU_FTR_HPTE_TABLE,
++		.mmu_features		= MMU_FTRS_PPC970,
+ 		.icache_bsize		= 128,
+ 		.dcache_bsize		= 128,
+ 		.num_pmcs		= 8,
 
 
