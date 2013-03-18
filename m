@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab3CRMJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:09:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:12007 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab3CRMJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:09:27 -0400
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="30279932"
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="418885370"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Andrei Epure <epure.andrei@gmail.com>
-CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ath: changed kmalloc to kmemdup
-References: <1362919199-16292-1-git-send-email-epure.andrei@gmail.com>
-Date: Mon, 18 Mar 2013 14:09:22 +0200
-In-Reply-To: <1362919199-16292-1-git-send-email-epure.andrei@gmail.com>
-	(Andrei Epure's message of "Sun, 10 Mar 2013 14:39:58 +0200")
-Message-ID: <878v5k9afh.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753356Ab3CRMLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:11:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33188 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129Ab3CRMLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 08:11:23 -0400
+Date: Mon, 18 Mar 2013 13:11:12 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Robert Richter <rric@kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 2/3] perf: Add persistent event facilities
+Message-ID: <20130318121112.GA8879@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Namhyung Kim <namhyung@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Ingo Molnar <mingo@kernel.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Robert Richter <rric@kernel.org>, Borislav Petkov <bp@suse.de>
+References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+ <1363352789-17991-3-git-send-email-bp@alien8.de>
+ <878v5ljcix.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <878v5ljcix.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrei Epure <epure.andrei@gmail.com> writes:
+Hi,
 
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
-> ---
->  drivers/net/wireless/ath/ath6kl/usb.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+On Mon, Mar 18, 2013 at 06:13:58PM +0900, Namhyung Kim wrote:
+> > -static void ring_buffer_put(struct ring_buffer *rb)
+> > +void perf_ring_buffer_put(struct ring_buffer *rb)
+> 
+> Why did you rename this function?
+
+Yeah, actually that's not needed.
+
+However, the perf ring buffer function naming is kinda inconsistent:
+
+ring_buffer_*
+rb_*
+
+Since we're keeping those internal to perf, they maybe should have the
+same prefix, no?
+
+I vote for "rb_" because it is shorter. :)
+
+> > + err_event_file:
+> > +	perf_event_release_kernel(event);
+> 
+> It needs to reset event to ERR_PTR(-ENOMEM) ?
+
+Yeah, the error path in this function is kinda clumsy, I'll do some more
+staring at how to make it simpler/better.
+
+[ … ]
+
+> > +	__list_del(desc->plist.prev, desc->plist.next);
+> 
+> Why not using list_del(&desc->plist) ?
+
+Will do.
+
+[ … ]
+
+> > + err_event_file:
+> > +	put_unused_fd(event_fd);
 >
-> diff --git a/drivers/net/wireless/ath/ath6kl/usb.c b/drivers/net/wireless/ath/ath6kl/usb.c
-> index 5fcd342..ffa1daa 100644
-> --- a/drivers/net/wireless/ath/ath6kl/usb.c
-> +++ b/drivers/net/wireless/ath/ath6kl/usb.c
-> @@ -856,11 +856,9 @@ static int ath6kl_usb_submit_ctrl_out(struct ath6kl_usb *ar_usb,
->  	int ret;
->  
->  	if (size > 0) {
-> -		buf = kmalloc(size, GFP_KERNEL);
-> +		buf = kmemdup(data, size, GFP_KERNEL);
->  		if (buf == NULL)
->  			return -ENOMEM;
-> -
-> -		memcpy(buf, data, size);
->  	}
+> Isn't it safe to have event_fd of -1 in case not found? Anyway, if
+> it's returned to the user space directly, it's better having more
+> meaningful error code IMHO.
 
-Thanks, applied to ath6kl.git.
+Yeah, I rewrote that one in the meantime to use a helper and it is
+cleaner now.
+
+Thanks for the review!
 
 -- 
-Kalle Valo
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
