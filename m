@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3CRNru (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:47:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab3CRNrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:47:47 -0400
-Date: Mon, 18 Mar 2013 09:47:02 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hdegoede@redhat.com
-Subject: [PATCH] HID: usbhid: quirk for MSI GX680R led panel
-Message-ID: <20130318134702.GB11243@hansolo.jdub.homelinux.org>
+	id S1753342Ab3CRNsV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:48:21 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:49214 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab3CRNsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 09:48:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <30907273.148421363318130664.JavaMail.weblogic@epv6ml07>
+References: <30907273.148421363318130664.JavaMail.weblogic@epv6ml07>
+Date: Mon, 18 Mar 2013 19:18:18 +0530
+Message-ID: <CAFp+6iHSus67LkFJsT-DhF3go=bvepV8nGquzF96oF2bHotFxw@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: ehci-s5p: Use devm for requesting ehci_vbus_gpio
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Felipe Balbi <balbi@ti.com>, Alexander Graf <agraf@suse.de>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This keyboard backlight device causes a 10 second delay to boot.  Add it
-to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
+Hi,
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=907221
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- drivers/hid/hid-ids.h           | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 4 insertions(+)
+On Fri, Mar 15, 2013 at 8:58 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Friday, March 15, 2013 12:16 PM, Doug Anderson wrote:
+>>
+>> The ehci_vbus_gpio is requested but never freed.  This can cause
+>> problems with deferred probes and would cause problems if
+>> s5p_ehci_remove was ever called.  Use devm to fix this.
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+>
+>
+> Best regards,
+> Jingoo Han
+>
+>> ---
+>> Changes in v2:
+>> - &pdev->dev => dev elsewhere in s5p_setup_vbus_gpio()
+>>
+>>  drivers/usb/host/ehci-s5p.c | 11 ++++++-----
+>>  1 file changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+>> index 20ebf6a..738490e 100644
+>> --- a/drivers/usb/host/ehci-s5p.c
+>> +++ b/drivers/usb/host/ehci-s5p.c
+>> @@ -92,20 +92,21 @@ static void s5p_ehci_phy_disable(struct s5p_ehci_hcd *s5p_ehci)
+>>
+>>  static void s5p_setup_vbus_gpio(struct platform_device *pdev)
+>>  {
+>> +     struct device *dev = &pdev->dev;
+>>       int err;
+>>       int gpio;
+>>
+>> -     if (!pdev->dev.of_node)
+>> +     if (!dev->of_node)
+>>               return;
+>>
+>> -     gpio = of_get_named_gpio(pdev->dev.of_node,
+>> -                     "samsung,vbus-gpio", 0);
+>> +     gpio = of_get_named_gpio(dev->of_node, "samsung,vbus-gpio", 0);
+>>       if (!gpio_is_valid(gpio))
+>>               return;
+>>
+>> -     err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
+>> +     err = devm_gpio_request_one(dev, gpio, GPIOF_OUT_INIT_HIGH,
+>> +                                 "ehci_vbus_gpio");
+>>       if (err)
+>> -             dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
+>> +             dev_err(dev, "can't request ehci vbus gpio %d", gpio);
+>>  }
+>>
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index d1063e9..c438877 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -590,6 +590,9 @@
- #define USB_VENDOR_ID_MONTEREY		0x0566
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
- 
-+#define USB_VENDOR_ID_MSI		0x1770
-+#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
-+
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
- 
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index e991d81..476c984 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -73,6 +73,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
-+	{ USB_VENDIR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
+tested this patch with smdk5250 h/w.
+
+Without this patch get following kernel message (since ehci-s5p's
+probe was being deferred
+due to unavailability of PHY and we were trying to request gpio once again) :
+[    1.175000] s5p-ehci 12110000.usb: can't request ehci vbus gpio 177
+
+which however goes away after applying this patch.
+
+Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+
+
 -- 
-1.8.1.2
-
+Thanks & Regards
+Vivek
