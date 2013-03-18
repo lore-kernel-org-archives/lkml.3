@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3CRPYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:24:41 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:55507 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3CRPYi (ORCPT
+	id S1753968Ab3CRPYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:24:51 -0400
+Received: from mail-da0-f44.google.com ([209.85.210.44]:58697 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3CRPYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:24:38 -0400
+	Mon, 18 Mar 2013 11:24:49 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
         tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
@@ -15,11 +15,11 @@ Cc: linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
         Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
         linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH V3 4/7] PHYLIB: queue work on any cpu
-Date: Mon, 18 Mar 2013 20:53:26 +0530
-Message-Id: <9a366f17b93a5e18777360481c94e6db763b45b7.1363617402.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH V3 5/7] mmc: queue work on any cpu
+Date: Mon, 18 Mar 2013 20:53:27 +0530
+Message-Id: <08070dbf56439c84b8c25837c2049ff8e8eafd6e.1363617402.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1363617402.git.viresh.kumar@linaro.org>
 References: <cover.1363617402.git.viresh.kumar@linaro.org>
@@ -29,7 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Phylib uses workqueues for multiple purposes. There is no real dependency of
+mmc uses workqueues for running mmc_rescan(). There is no real dependency of
 scheduling these on the cpu which scheduled them.
 
 On a idle system, it is observed that and idle cpu wakes up many times just to
@@ -41,62 +41,33 @@ By idle cpu (from scheduler's perspective) we mean:
 - nr_running == 0
 - wake_list is empty
 
-This patch replaces the schedule_work() and schedule_delayed_work() routines
-with their queue_[delayed_]work_on_any_cpu() siblings with system_wq as
-parameter.
+This patch replaces the queue_delayed_work() with
+queue_delayed_work_on_any_cpu() siblings.
 
-These routines would look for the closest (via scheduling domains) non-idle cpu
+This routine would look for the closest (via scheduling domains) non-idle cpu
 (non-idle from schedulers perspective). If the current cpu is not idle or all
 cpus are idle, work will be scheduled on local cpu.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/net/phy/phy.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/mmc/core/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index 298b4c2..a517706 100644
---- a/drivers/net/phy/phy.c
-+++ b/drivers/net/phy/phy.c
-@@ -439,7 +439,7 @@ void phy_start_machine(struct phy_device *phydev,
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 9290bb5..adf331a 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -85,7 +85,7 @@ MODULE_PARM_DESC(
+ static int mmc_schedule_delayed_work(struct delayed_work *work,
+ 				     unsigned long delay)
  {
- 	phydev->adjust_state = handler;
- 
--	schedule_delayed_work(&phydev->state_queue, HZ);
-+	queue_delayed_work_on_any_cpu(system_wq, &phydev->state_queue, HZ);
+-	return queue_delayed_work(workqueue, work, delay);
++	return queue_delayed_work_on_any_cpu(workqueue, work, delay);
  }
  
- /**
-@@ -527,7 +527,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
- 	disable_irq_nosync(irq);
- 	atomic_inc(&phydev->irq_disable);
- 
--	schedule_work(&phydev->phy_queue);
-+	queue_work_on_any_cpu(system_wq, &phydev->phy_queue);
- 
- 	return IRQ_HANDLED;
- }
-@@ -682,7 +682,7 @@ static void phy_change(struct work_struct *work)
- 
- 	/* reschedule state queue work to run as soon as possible */
- 	cancel_delayed_work_sync(&phydev->state_queue);
--	schedule_delayed_work(&phydev->state_queue, 0);
-+	queue_delayed_work_on_any_cpu(system_wq, &phydev->state_queue, 0);
- 
- 	return;
- 
-@@ -966,7 +966,8 @@ void phy_state_machine(struct work_struct *work)
- 	if (err < 0)
- 		phy_error(phydev);
- 
--	schedule_delayed_work(&phydev->state_queue, PHY_STATE_TIME * HZ);
-+	queue_delayed_work_on_any_cpu(system_wq, &phydev->state_queue,
-+			PHY_STATE_TIME * HZ);
- }
- 
- static inline void mmd_phy_indirect(struct mii_bus *bus, int prtad, int devad,
+ /*
 -- 
 1.7.12.rc2.18.g61b472e
 
