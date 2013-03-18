@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3CRQ3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:29:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49421
+	id S1753808Ab3CRQ3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:29:52 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49419
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752510Ab3CRQ0A (ORCPT
+	by vger.kernel.org with ESMTP id S1752960Ab3CRQ0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 12:26:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/54] tools lib lk: Fix _FORTIFY_SOURCE builds
-Date: Mon, 18 Mar 2013 13:24:58 -0300
-Message-Id: <1363623939-10748-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 46/54] perf evlist: Introduce perf_evlist__close()
+Date: Mon, 18 Mar 2013 13:25:31 -0300
+Message-Id: <1363623939-10748-47-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
@@ -24,42 +27,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Jiri Olsa triggers the following build error:
+It's a pair of perf_evlist__open().
 
-    SUBDIR ../lib/lk/
-    CC debugfs.o
-In file included from /usr/include/errno.h:29:0,
-                 from debugfs.c:1:
-/usr/include/features.h:314:4: error: #warning _FORTIFY_SOURCE requires compiling with optimization (-O) [-Werror=cpp]
-
-This is because enabling buffer overflow checks through _FORTIFY_SOURCE
-require compiler optimizations to be enabled too. However, those are
-not. Enable them by simply copying the perf optimization level. It can
-be expanded later if we want to support debug builds, etc.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1362338733-8718-1-git-send-email-bp@alien8.de
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1363326533-3310-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lk/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/evlist.c |   19 ++++++++++++-------
+ tools/perf/util/evlist.h |    1 +
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 8cf576f..926cbf3 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -10,7 +10,7 @@ LIB_OBJS += $(OUTPUT)debugfs.o
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 5b012b8..1344fbd 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -721,10 +721,20 @@ void perf_evlist__set_selected(struct perf_evlist *evlist,
+ 	evlist->selected = evsel;
+ }
  
- LIBFILE = liblk.a
++void perf_evlist__close(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++	int ncpus = cpu_map__nr(evlist->cpus);
++	int nthreads = thread_map__nr(evlist->threads);
++
++	list_for_each_entry_reverse(evsel, &evlist->entries, node)
++		perf_evsel__close(evsel, ncpus, nthreads);
++}
++
+ int perf_evlist__open(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel;
+-	int err, ncpus, nthreads;
++	int err;
  
--CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads);
+@@ -734,12 +744,7 @@ int perf_evlist__open(struct perf_evlist *evlist)
+ 
+ 	return 0;
+ out_err:
+-	ncpus = cpu_map__nr(evlist->cpus);
+-	nthreads = thread_map__nr(evlist->threads);
+-
+-	list_for_each_entry_reverse(evsel, &evlist->entries, node)
+-		perf_evsel__close(evsel, ncpus, nthreads);
+-
++	perf_evlist__close(evlist);
+ 	errno = -err;
+ 	return err;
+ }
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index c096da7..0583d36 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -81,6 +81,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
+ 
+ int perf_evlist__open(struct perf_evlist *evlist);
++void perf_evlist__close(struct perf_evlist *evlist);
+ 
+ void perf_evlist__config(struct perf_evlist *evlist,
+ 			 struct perf_record_opts *opts);
 -- 
 1.7.1
 
