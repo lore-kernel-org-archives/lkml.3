@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933228Ab3CRV1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:27:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45942 "EHLO
+	id S933245Ab3CRV1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:27:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45938 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab3CRVIH (ORCPT
+	with ESMTP id S1756336Ab3CRVIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:07 -0400
+	Mon, 18 Mar 2013 17:08:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 27/48] s390: critical section cleanup vs. machine checks
-Date: Mon, 18 Mar 2013 14:08:35 -0700
-Message-Id: <20130318210812.178014375@linuxfoundation.org>
+        =?ISO-8859-15?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 36/48] drm/i915: Increase the RC6p threshold.
+Date: Mon, 18 Mar 2013 14:08:44 -0700
+Message-Id: <20130318210812.797825940@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,54 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Stéphane Marchesin <marcheu@chromium.org>
 
-commit 6551fbdfd8b85d1ab5822ac98abb4fb449bcfae0 upstream.
+commit 0920a48719f1ceefc909387a64f97563848c7854 upstream.
 
-The current machine check code uses the registers stored by the machine
-in the lowcore at __LC_GPREGS_SAVE_AREA as the registers of the interrupted
-context. The registers 0-7 of a user process can get clobbered if a machine
-checks interrupts the execution of a critical section in entry[64].S.
+This increases GEN6_RC6p_THRESHOLD from 100000 to 150000. For some
+reason this avoids the gen6_gt_check_fifodbg.isra warnings and
+associated GPU lockups, which makes my ivy bridge machine stable.
 
-The reason is that the critical section cleanup code may need to modify
-the PSW and the registers for the previous context to get to the end of a
-critical section. If registers 0-7 have to be replaced the relevant copy
-will be in the registers, which invalidates the copy in the lowcore. The
-machine check handler needs to explicitly store registers 0-7 to the stack.
-
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/entry.S   |    3 ++-
- arch/s390/kernel/entry64.S |    5 +++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kernel/entry.S
-+++ b/arch/s390/kernel/entry.S
-@@ -669,7 +669,8 @@ ENTRY(mcck_int_handler)
- 	UPDATE_VTIME %r14,%r15,__LC_MCCK_ENTER_TIMER
- mcck_skip:
- 	SWITCH_ASYNC __LC_GPREGS_SAVE_AREA+32,__LC_PANIC_STACK,PAGE_SHIFT
--	mvc	__PT_R0(64,%r11),__LC_GPREGS_SAVE_AREA
-+	stm	%r0,%r7,__PT_R0(%r11)
-+	mvc	__PT_R8(32,%r11),__LC_GPREGS_SAVE_AREA+32
- 	stm	%r8,%r9,__PT_PSW(%r11)
- 	xc	__SF_BACKCHAIN(4,%r15),__SF_BACKCHAIN(%r15)
- 	l	%r1,BASED(.Ldo_machine_check)
---- a/arch/s390/kernel/entry64.S
-+++ b/arch/s390/kernel/entry64.S
-@@ -689,8 +689,9 @@ ENTRY(mcck_int_handler)
- 	UPDATE_VTIME %r14,__LC_MCCK_ENTER_TIMER
- 	LAST_BREAK %r14
- mcck_skip:
--	lghi	%r14,__LC_GPREGS_SAVE_AREA
--	mvc	__PT_R0(128,%r11),0(%r14)
-+	lghi	%r14,__LC_GPREGS_SAVE_AREA+64
-+	stmg	%r0,%r7,__PT_R0(%r11)
-+	mvc	__PT_R8(64,%r11),0(%r14)
- 	stmg	%r8,%r9,__PT_PSW(%r11)
- 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
- 	lgr	%r2,%r11		# pass pointer to pt_regs
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8364,7 +8364,7 @@ void gen6_enable_rps(struct drm_i915_pri
+ 	I915_WRITE(GEN6_RC_SLEEP, 0);
+ 	I915_WRITE(GEN6_RC1e_THRESHOLD, 1000);
+ 	I915_WRITE(GEN6_RC6_THRESHOLD, 50000);
+-	I915_WRITE(GEN6_RC6p_THRESHOLD, 100000);
++	I915_WRITE(GEN6_RC6p_THRESHOLD, 150000);
+ 	I915_WRITE(GEN6_RC6pp_THRESHOLD, 64000); /* unused */
+ 
+ 	rc6_mode = intel_enable_rc6(dev_priv->dev);
 
 
