@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab3CRVhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:37:23 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43570 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab3CRVhS (ORCPT
+	id S933628Ab3CRVhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:37:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45180 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933182Ab3CRVhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:37:18 -0400
+	Mon, 18 Mar 2013 17:37:34 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,116 +17,186 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/15] rcu: Rename n_nocb_gp_requests to need_future_gp
-Date: Mon, 18 Mar 2013 14:36:48 -0700
-Message-Id: <1363642610-21390-13-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/15] rcu: Add event tracing for no-CBs CPUs' grace periods
+Date: Mon, 18 Mar 2013 14:36:40 -0700
+Message-Id: <1363642610-21390-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130318213608.GA20296@linux.vnet.ibm.com>
  <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-5406-0000-0000-0000067F0CBC
+x-cbid: 13031821-3620-0000-0000-000001AC939A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-CPUs going idle need to be able to indicate their need for future grace
-periods.  A mechanism for doing this already exists for no-callbacks
-CPUs, so the idea is to re-use that mechanism.  This commit therefore
-moves the ->n_nocb_gp_requests field of the rcu_node structure out from
-under the CONFIG_RCU_NOCB_CPU #ifdef and renames it to ->need_future_gp.
-
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.h        |  4 ++--
- kernel/rcutree_plugin.h | 18 +++++++++---------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ include/trace/events/rcu.h | 55 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/rcutree_plugin.h    | 30 +++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 96a27f9..034b524 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -194,9 +194,9 @@ struct rcu_node {
- #ifdef CONFIG_RCU_NOCB_CPU
- 	wait_queue_head_t nocb_gp_wq[2];
- 				/* Place for rcu_nocb_kthread() to wait GP. */
--	int n_nocb_gp_requests[2];
--				/* Counts of upcoming no-CB GP requests. */
- #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
-+	int need_future_gp[2];
-+				/* Counts of upcoming no-CB GP requests. */
- 	raw_spinlock_t fqslock ____cacheline_internodealigned_in_smp;
- } ____cacheline_internodealigned_in_smp;
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index 1918e83..cdfed6d 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -72,6 +72,58 @@ TRACE_EVENT(rcu_grace_period,
+ );
  
+ /*
++ * Tracepoint for no-callbacks grace-period events.  The caller should
++ * pull the data from the rcu_node structure, other than rcuname, which
++ * comes from the rcu_state structure, and event, which is one of the
++ * following:
++ *
++ * "Startleaf": Request a nocb grace period based on leaf-node data.
++ * "Startedleaf": Leaf-node start proved sufficient.
++ * "Startedleafroot": Leaf-node start proved sufficient after checking root.
++ * "Startedroot": Requested a nocb grace period based on root-node data.
++ * "StartWait": Start waiting for the requested grace period.
++ * "ResumeWait": Resume waiting after signal.
++ * "EndWait": Complete wait.
++ * "Cleanup": Clean up rcu_node structure after previous GP.
++ * "CleanupMore": Clean up, and another no-CB GP is needed.
++ */
++TRACE_EVENT(rcu_nocb_grace_period,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
++		 unsigned long c, u8 level, int grplo, int grphi,
++		 char *gpevent),
++
++	TP_ARGS(rcuname, gpnum, completed, c, level, grplo, grphi, gpevent),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(unsigned long, completed)
++		__field(unsigned long, c)
++		__field(u8, level)
++		__field(int, grplo)
++		__field(int, grphi)
++		__field(char *, gpevent)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->completed = completed;
++		__entry->c = c;
++		__entry->level = level;
++		__entry->grplo = grplo;
++		__entry->grphi = grphi;
++		__entry->gpevent = gpevent;
++	),
++
++	TP_printk("%s %lu %lu %lu %u %d %d %s",
++		  __entry->rcuname, __entry->gpnum, __entry->completed,
++		  __entry->c, __entry->level, __entry->grplo, __entry->grphi,
++		  __entry->gpevent)
++);
++
++/*
+  * Tracepoint for grace-period-initialization events.  These are
+  * distinguished by the type of RCU, the new grace-period number, the
+  * rcu_node structure level, the starting and ending CPU covered by the
+@@ -601,6 +653,9 @@ TRACE_EVENT(rcu_barrier,
+ #define trace_rcu_grace_period(rcuname, gpnum, gpevent) do { } while (0)
+ #define trace_rcu_grace_period_init(rcuname, gpnum, level, grplo, grphi, \
+ 				    qsmask) do { } while (0)
++#define trace_rcu_nocb_grace_period(rcuname, gpnum, completed, c, \
++				    level, grplo, grphi, event) \
++				    do { } while (0)
+ #define trace_rcu_preempt_task(rcuname, pid, gpnum) do { } while (0)
+ #define trace_rcu_unlock_preempted_task(rcuname, gpnum, pid) do { } while (0)
+ #define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, \
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 073ded2..f3f0020 100644
+index 7225a5a..e32236e 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -2018,7 +2018,7 @@ static int rcu_nocb_needs_gp(struct rcu_state *rsp)
- {
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
--	return rnp->n_nocb_gp_requests[(ACCESS_ONCE(rnp->completed) + 1) & 0x1];
-+	return rnp->need_future_gp[(ACCESS_ONCE(rnp->completed) + 1) & 0x1];
- }
- 
- /*
-@@ -2032,8 +2032,8 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- 	int needmore;
- 
+@@ -2201,6 +2201,9 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
  	wake_up_all(&rnp->nocb_gp_wq[c & 0x1]);
--	rnp->n_nocb_gp_requests[c & 0x1] = 0;
--	needmore = rnp->n_nocb_gp_requests[(c + 1) & 0x1];
-+	rnp->need_future_gp[c & 0x1] = 0;
-+	needmore = rnp->need_future_gp[(c + 1) & 0x1];
- 	trace_rcu_future_grace_period(rsp->name, rnp->gpnum, rnp->completed,
- 				      c, rnp->level, rnp->grplo, rnp->grphi,
- 				      needmore ? "CleanupMore" : "Cleanup");
-@@ -2041,7 +2041,7 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+ 	rnp->n_nocb_gp_requests[c & 0x1] = 0;
+ 	needmore = rnp->n_nocb_gp_requests[(c + 1) & 0x1];
++	trace_rcu_nocb_grace_period(rsp->name, rnp->gpnum, rnp->completed,
++				    c, rnp->level, rnp->grplo, rnp->grphi,
++				    needmore ? "CleanupMore" : "Cleanup");
+ 	return needmore;
  }
  
- /*
-- * Set the root rcu_node structure's ->n_nocb_gp_requests field
-+ * Set the root rcu_node structure's ->need_future_gp field
-  * based on the sum of those of all rcu_node structures.  This does
-  * double-count the root rcu_node structure's requests, but this
-  * is necessary to handle the possibility of a rcu_nocb_kthread()
-@@ -2050,7 +2050,7 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-  */
- static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
- {
--	rnp->n_nocb_gp_requests[(rnp->completed + 1) & 0x1] += nrq;
-+	rnp->need_future_gp[(rnp->completed + 1) & 0x1] += nrq;
- }
- 
- static void rcu_init_one_nocb(struct rcu_node *rnp)
-@@ -2181,7 +2181,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 	c = rnp->completed + 2;
+@@ -2347,6 +2350,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
  
  	/* Count our request for a grace period. */
--	rnp->n_nocb_gp_requests[c & 0x1]++;
-+	rnp->need_future_gp[c & 0x1]++;
- 	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
- 				      rnp->completed, c, rnp->level,
- 				      rnp->grplo, rnp->grphi, "Startleaf");
-@@ -2225,10 +2225,10 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 			 * Adjust counters accordingly and start the
- 			 * needed grace period.
- 			 */
--			rnp->n_nocb_gp_requests[c & 0x1]--;
-+			rnp->need_future_gp[c & 0x1]--;
+ 	rnp->n_nocb_gp_requests[c & 0x1]++;
++	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
++				    c, rnp->level, rnp->grplo, rnp->grphi,
++				    "Startleaf");
+ 
+ 	if (rnp->gpnum != rnp->completed) {
+ 
+@@ -2355,6 +2361,10 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 		 * is in progress, so we are done.  When this grace
+ 		 * period ends, our request will be acted upon.
+ 		 */
++		trace_rcu_nocb_grace_period(rdp->rsp->name,
++					    rnp->gpnum, rnp->completed, c,
++					    rnp->level, rnp->grplo, rnp->grphi,
++					    "Startedleaf");
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 	} else {
+@@ -2366,6 +2376,11 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 		if (rnp != rnp_root)
+ 			raw_spin_lock(&rnp_root->lock); /* irqs disabled. */
+ 		if (rnp_root->gpnum != rnp_root->completed) {
++			trace_rcu_nocb_grace_period(rdp->rsp->name,
++						    rnp->gpnum, rnp->completed,
++						    c, rnp->level,
++						    rnp->grplo, rnp->grphi,
++						    "Startedleafroot");
+ 			raw_spin_unlock(&rnp_root->lock); /* irqs disabled. */
+ 		} else {
+ 
+@@ -2381,6 +2396,11 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
  			c = rnp_root->completed + 1;
--			rnp->n_nocb_gp_requests[c & 0x1]++;
--			rnp_root->n_nocb_gp_requests[c & 0x1]++;
-+			rnp->need_future_gp[c & 0x1]++;
-+			rnp_root->need_future_gp[c & 0x1]++;
- 			trace_rcu_future_grace_period(rdp->rsp->name,
- 						      rnp->gpnum,
- 						      rnp->completed,
+ 			rnp->n_nocb_gp_requests[c & 0x1]++;
+ 			rnp_root->n_nocb_gp_requests[c & 0x1]++;
++			trace_rcu_nocb_grace_period(rdp->rsp->name,
++						    rnp->gpnum, rnp->completed,
++						    c, rnp->level,
++						    rnp->grplo, rnp->grphi,
++						    "Startedroot");
+ 			local_save_flags(flags1);
+ 			rcu_start_gp(rdp->rsp, flags1); /* Rlses ->lock. */
+ 		}
+@@ -2396,6 +2416,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	 * Wait for the grace period.  Do so interruptibly to avoid messing
+ 	 * up the load average.
+ 	 */
++	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
++				    c, rnp->level, rnp->grplo, rnp->grphi,
++				    "StartWait");
+ 	for (;;) {
+ 		wait_event_interruptible(
+ 			rnp->nocb_gp_wq[c & 0x1],
+@@ -2403,7 +2426,14 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 		if (likely(d))
+ 			break;
+ 		flush_signals(current);
++		trace_rcu_nocb_grace_period(rdp->rsp->name,
++					    rnp->gpnum, rnp->completed, c,
++					    rnp->level, rnp->grplo, rnp->grphi,
++					    "ResumeWait");
+ 	}
++	trace_rcu_nocb_grace_period(rdp->rsp->name, rnp->gpnum, rnp->completed,
++				    c, rnp->level, rnp->grplo, rnp->grphi,
++				    "EndWait");
+ 	smp_mb(); /* Ensure that CB invocation happens after GP end. */
+ }
+ 
 -- 
 1.8.1.5
 
