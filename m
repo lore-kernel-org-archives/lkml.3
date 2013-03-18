@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3CRVMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:12:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46172 "EHLO
+	id S932515Ab3CRVKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:10:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab3CRVKb (ORCPT
+	with ESMTP id S1756707Ab3CRVKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:31 -0400
+	Mon, 18 Mar 2013 17:10:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/40] rtnl: fix info leak on RTM_GETLINK request for VF devices
-Date: Mon, 18 Mar 2013 14:11:17 -0700
-Message-Id: <20130318211019.067771518@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 21/40] selinux: use GFP_ATOMIC under spin_lock
+Date: Mon, 18 Mar 2013 14:10:59 -0700
+Message-Id: <20130318211017.768253164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -27,33 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-From: Mathias Krause <minipli@googlemail.com>
+commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34 upstream.
 
-[ Upstream commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 ]
+The call tree here is:
 
-Initialize the mac address buffer with 0 as the driver specific function
-will probably not fill the whole buffer. In fact, all in-kernel drivers
-fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
-bytes. Therefore we currently leak 26 bytes of stack memory to userland
-via the netlink interface.
+sk_clone_lock()              <- takes bh_lock_sock(newsk);
+xfrm_sk_clone_policy()
+__xfrm_sk_clone_policy()
+clone_policy()               <- uses GFP_ATOMIC for allocations
+security_xfrm_policy_clone()
+security_ops->xfrm_policy_clone_security()
+selinux_xfrm_policy_clone()
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/rtnetlink.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -963,6 +963,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
- 			struct ifla_vf_mac vf_mac;
- 			struct ifla_vf_vlan vf_vlan;
- 			struct ifla_vf_tx_rate vf_tx_rate;
-+			memset(ivi.mac, 0, sizeof(ivi.mac));
- 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
- 				break;
- 			vf_mac.vf = vf_vlan.vf = vf_tx_rate.vf = ivi.vf;
+---
+ security/selinux/xfrm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfr
+ 
+ 	if (old_ctx) {
+ 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
+-				  GFP_KERNEL);
++				  GFP_ATOMIC);
+ 		if (!new_ctx)
+ 			return -ENOMEM;
+ 
 
 
