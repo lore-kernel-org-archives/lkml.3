@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab3CRWDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:03:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45495 "EHLO
+	id S1757037Ab3CRWD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:03:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab3CRVGe (ORCPT
+	with ESMTP id S1755221Ab3CRVGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:34 -0400
+	Mon, 18 Mar 2013 17:06:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Schmiedl <christian.schmiedl@gemalto.com>
-Subject: [ 09/75] USB: added support for Cinterions products AH6 and PLS8
-Date: Mon, 18 Mar 2013 14:06:32 -0700
-Message-Id: <20130318210510.925379969@linuxfoundation.org>
+        "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [ 08/75] usb: cp210x new Vendor/Device IDs
+Date: Mon, 18 Mar 2013 14:06:31 -0700
+Message-Id: <20130318210510.856141583@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,39 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Schmiedl <christian.schmiedl@gemalto.com>
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-commit 1941138e1c024ecb5bd797d414928d3eb94d8662 upstream.
+commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
 
-add support for Cinterion's products AH6 and PLS8 by adding Product IDs
-and USB_DEVICE tuples.
+This patch adds support for the Lake Shore Cryotronics devices to
+the CP210x driver.
 
-Signed-off-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
+These lines are ported from cp210x driver distributed by Lake Shore web site:
+   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
+and licensed under the terms of GPLv2.
+
+Moreover, I've tested this changes with Lake Shore 335 in my labs.
+
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -341,6 +341,8 @@ static void option_instat_callback(struc
- #define CINTERION_PRODUCT_EU3_E			0x0051
- #define CINTERION_PRODUCT_EU3_P			0x0052
- #define CINTERION_PRODUCT_PH8			0x0053
-+#define CINTERION_PRODUCT_AH6			0x0055
-+#define CINTERION_PRODUCT_PLS8			0x0060
- 
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
-@@ -1261,6 +1263,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -150,6 +150,25 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
++	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
++	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
++	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
++	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
++	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
+ 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
+ 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
+ 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
 
 
