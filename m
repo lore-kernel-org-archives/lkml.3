@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3CRUzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:55:38 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56809 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab3CRUzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:55:35 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 1/2] rcu: Make bugginess of code sample more evident
-Date: Mon, 18 Mar 2013 13:55:07 -0700
-Message-Id: <1363640108-15508-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031820-5518-0000-0000-00000CA80A88
+	id S1754220Ab3CRU5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:57:50 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:36941 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354Ab3CRU5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 16:57:49 -0400
+From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe section
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+	<CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
+	<514023AA.4070004@hitachi.com> <847glb8m4i.fsf@sauna.l.org>
+	<51408349.8080800@hitachi.com>
+Date: Mon, 18 Mar 2013 22:57:35 +0200
+In-Reply-To: <51408349.8080800@hitachi.com> (Masami Hiramatsu's message of
+	"Wed, 13 Mar 2013 22:46:49 +0900")
+Message-ID: <84li9ke88w.fsf@sauna.l.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+> Thank you for reporting!!
 
-One of the code samples in whatisRCU.txt shows a bug, but someone scanning
-the document quickly might mistake it for a valid use of RCU.  Add some
-screaming comments to help keep speed-readers on track.
+Thanks for fixing these! I spent some time trying to automate the
+process of finding sensitive functions and eventually resorted into
+booting a kvm instance with a minimal initrd to test every single
+function in a clean and reproducible environment.
 
-Reported-by: Nathan Zimmer <nzimmer@sgi.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/RCU/whatisRCU.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I found 7 more cases where calling register_kprobe() leads to an instant
+kernel panic:
 
-diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
-index 0cc7820..10df0b8 100644
---- a/Documentation/RCU/whatisRCU.txt
-+++ b/Documentation/RCU/whatisRCU.txt
-@@ -265,9 +265,9 @@ rcu_dereference()
- 		rcu_read_lock();
- 		p = rcu_dereference(head.next);
- 		rcu_read_unlock();
--		x = p->address;
-+		x = p->address;	/* BUG!!! */
- 		rcu_read_lock();
--		y = p->data;
-+		y = p->data;	/* BUG!!! */
- 		rcu_read_unlock();
- 
- 	Holding a reference from one RCU read-side critical section
--- 
-1.8.1.5
+__flush_tlb_single
+native_flush_tlb
+native_safe_halt
+native_set_pgd
+native_set_pmd
+native_set_pud
+native_write_cr0
 
+You can see full kernel console output for each function at
+http://lindi.iki.fi/lindi/linux/kprobes/panics_2013-03-18/
