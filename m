@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab3CRLBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:01:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34414 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab3CRLBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:01:37 -0400
-Date: Mon, 18 Mar 2013 12:01:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com
-Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations
- for ballooning
-Message-ID: <20130318110136.GH10192@dhcp22.suse.cz>
-References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
- <1363470125-24606-1-git-send-email-kys@microsoft.com>
- <1363470125-24606-2-git-send-email-kys@microsoft.com>
- <20130318105257.GG10192@dhcp22.suse.cz>
+	id S1753907Ab3CRLCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:02:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34045 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3CRLCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 07:02:03 -0400
+Date: Mon, 18 Mar 2013 04:00:46 -0700
+From: tip-bot for anish kumar <tipbot@zytor.com>
+Message-ID: <tip-b66a2356d7108a15b8b5c9b8e6213e05ead22cd6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        anish198519851985@gmail.com, tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        anish198519851985@gmail.com, tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1363113848-18344-1-git-send-email-dzickus@redhat.com>
+References: <1363113848-18344-1-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] watchdog:
+  Add comments to explain the watchdog_disabled variable
+Git-Commit-ID: b66a2356d7108a15b8b5c9b8e6213e05ead22cd6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130318105257.GG10192@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 04:00:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-03-13 11:52:57, Michal Hocko wrote:
-> On Sat 16-03-13 14:42:05, K. Y. Srinivasan wrote:
-> > While ballooning memory out of the guest, attempt 2M allocations first.
-> > If 2M allocations fail, then go for 4K allocations. In cases where we
-> > have performed 2M allocations, split this 2M page so that we can free this
-> > page at 4K granularity (when the host returns the memory).
-> 
-> Maybe I am missing something but what is the advantage of 2M allocation
-> when you split it up immediately so you are not using it as a huge page?
+Commit-ID:  b66a2356d7108a15b8b5c9b8e6213e05ead22cd6
+Gitweb:     http://git.kernel.org/tip/b66a2356d7108a15b8b5c9b8e6213e05ead22cd6
+Author:     anish kumar <anish198519851985@gmail.com>
+AuthorDate: Tue, 12 Mar 2013 14:44:08 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 14 Mar 2013 08:24:05 +0100
 
-OK, it seems that Patch 1/2 says some advantages. That description
-should be part of this patch IMO.
-You are saying that a) it reduces fragmentation on the host b) it makes
-ballooning more effective.
+watchdog: Add comments to explain the watchdog_disabled variable
 
-Have you measured any effects on the ability to allocate huge pages on
-the host? What prevents from depleting high order pages on the host with
-many guests? Also have you measured any effect on THP allocation success
-rate on the host?
+The watchdog_disabled flag is a bit cryptic. However it's
+usefulness is multifold. Uses are:
 
-Could you clarify how this helps ballooning when you split the page
-right after you allocate it?
--- 
-Michal Hocko
-SUSE Labs
+ 1. Check if smpboot_register_percpu_thread function passed.
+
+ 2. Makes sure that user enables and disables the watchdog in
+    sequence i.e. enable watchdog->disable watchdog->enable watchdog
+    Unlike enable watchdog->enable watchdog which is wrong.
+
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+[small text cleanups]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: chuansheng.liu@intel.com
+Cc: paulmck@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1363113848-18344-1-git-send-email-dzickus@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/watchdog.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 4a94467..05039e3 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -517,6 +517,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+ 		return ret;
+ 
+ 	set_sample_period();
++	/*
++	 * Watchdog threads shouldn't be enabled if they are
++	 * disabled. The 'watchdog_disabled' variable check in
++	 * watchdog_*_all_cpus() function takes care of this.
++	 */
+ 	if (watchdog_enabled && watchdog_thresh)
+ 		watchdog_enable_all_cpus();
+ 	else
