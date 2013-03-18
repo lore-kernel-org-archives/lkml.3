@@ -1,66 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3CROQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:16:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56085 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751986Ab3CROQ5 (ORCPT
+	id S1753396Ab3CROWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:22:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61355 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab3CROWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:16:57 -0400
-Date: Mon, 18 Mar 2013 10:16:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Yuan-Hsin Chen <yuanlmm@gmail.com>, <gregkh@linuxfoundation.org>,
-        <sarah.a.sharp@linux.intel.com>, <Julia.Lawall@lip6.fr>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, <john453@faraday-tech.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-In-Reply-To: <20130318101854.GQ17135@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1303181010540.1922-100000@iolanthe.rowland.org>
+	Mon, 18 Mar 2013 10:22:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc fixes for v3.9-rc3
+Date: Mon, 18 Mar 2013 14:22:14 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303181422.14942.arnd@arndb.de>
+X-Provags-ID: V02:K0:fcQtUipCIPAcCSoLbuCZz6kuVUzGuk9OJJu9hDiNNTV
+ n7SphCvFMRorNGZam+zjdF1wOGki1amFxNT3SUnJ9i6/tLLqJr
+ 15B49udvB0ubVTyORROutHoo6JNxYdqZvadjSPpcc/1BC2HjaH
+ Qslp+8t8hyRSHh+/blGZLVMDtMKP/N/7Sz1tBXfRkUm231Gmd8
+ PD2uGdNbpK2bPVK4rTsPjuOmOVGp3bw8tKzZ2ekJ+/iPCHynpV
+ xR+4mQuaj6t3AOop1zKkNu+eJiplXYZ9r16rBRgi+NoI2lWxn6
+ f6ENia4A0aqXfKkA25b9M9jnWFmrHJP7tfxiH95VaeMv/I9gug
+ yL+OgEfphmrBUivF5uaU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013, Felipe Balbi wrote:
+The following changes since commit 27f423fe120df3a7488dd750b4e0508f03c325b6:
 
-> On Mon, Mar 18, 2013 at 06:06:18PM +0800, Yuan-Hsin Chen wrote:
-> > Hi,
-> > 
-> > I tried to modify fusbh200 hcd driver following ehci-platform.c.
-> > However, the register definition of fusbh200 is partially incompatible
-> > to ehci. For fusbh200, only the elements between "command" and
-> > "async_next" in struct ehci_regs are consistent with ehci which means
+  ARM: spear3xx: Use correct pl080 header file (2013-03-12 10:56:32 +0100)
 
-What about the port_status registers?  They're not between command and
-async_next.  If they aren't consistent with EHCI, it makes things a lot
-more complicated.
+are available in the git repository at:
 
-> > it would cause copious modification and duplication of ehci hcd
-> > driver. For example, there is no "configured_flag" register in
-> > fusbh200 controller, yet, ehci hcd driver accesses "configured_flag"
-> > in function ehci_run which would cause compile errors. Therefore,
-> > maybe my first patch which refers to oxu210hp-hcd is a better
-> > solution?
-> 
-> why don't you just add a quirk flag to ehci struct so that it knows it
-> shouldn't access CONFIGFLAG register when that's non-existent ?
-> 
-> There are only 5 uses of configured_flag in ehci-hcd.c, so it should be
-> easy to wrap that around a flag check.
+  git+ssh://gitolite@ra.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
 
-Two of those uses turn configured_flag on and two of them turn it off.  
-However, one of the uses tests its value (the first one in
-ehci_resume).  How would that be handled if configured_flag doesn't
-exist?
+for you to fetch changes up to b4811bacbc68f6e17d442df88f98afaa9394d4f5:
 
-> Alan, would you have a better idea ? Looks like this is a non-standard
-> EHCI implementation.
+  ARM: fix CONFIG_VIRT_TO_BUS handling (2013-03-18 13:49:57 +0000)
 
-Yes, it does.  If all we need is to protect four or five accesses with 
-a quirk flag, that's okay with me.
+----------------------------------------------------------------
+arm-soc: bug fixes for 3.9-rc3
 
-Alan Stern
+Things are calming down for arm-soc as well. This set of bug fixes is
+dominated in size by the at91 platform bug fixes. Some of them were
+meant to go through the framebuffer tree during the merge window, but
+since the framebuffer maintainer could not be reached, I offered to
+take them here. The other notable at91 change is the addition of pinctrl
+definitions to fix the NAND controller.
 
+The rest are mostly simple regression fixes:
+
+* Our removal of VIRT_TO_BUS conflicted with Stephen Rothwell's
+  renaming of the Kconfig symbol. You will get a trivial merge conflict
+  here, we still want to remove it.
+* missing bits for clocks on imx and s5pv210
+* missing header inclusions in mmp and shmobile
+* typos in s5pv210 camera and vt8500 clock support code
+
+and three trivial fixes for pre-3.8 bugs:
+
+* an old bogus build warning in the joystick driver
+* a misleading Kconfig description
+* a NULL pointer check on davinci
+----------------------------------------------------------------
+Please note that the branch is based on the previous fixes tag that got
+pulled into v3.9-rc3, since some of the patches were applied before 
+the old tag got merged.
+
+----------------------------------------------------------------
+
+Arnd Bergmann (12):
+      Merge tag 'davinci-for-v3.9-rc/fixes' of git://git.kernel.org/.../nsekhar/linux-davinci into fixes
+      clk: vt8500: Fix "fix device clock divisor calculations"
+      [media] s5p-fimc: fix s5pv210 build
+      input/joystick: use get_cycles on ARM
+      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+      Merge branch 'v3.9-samsung-fixes-1' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+      Merge at91 lcdfb bug fixes into fixes
+      Merge branch 'armsoc/fix' of git://github.com/hzhuang1/linux into fixes
+      Merge tag 'arm-imx-fixes-for-3.9-rc' of git://git.pengutronix.de/git/imx/linux-2.6 into fixes
+      Merge tag 'renesas-fixes-for-v3.9' of git://git.kernel.org/.../horms/renesas into fixes
+      ARM: fix CONFIG_VIRT_TO_BUS handling
+      Merge tag 'v3.9-rc3' into fixes
+
+
+Haojian Zhuang (1):
+      ARM: mmp: add platform_device head file in gplugd
+
+Johan Hovold (2):
+      atmel_lcdfb: fix 16-bpp modes on older SOCs
+      ARM: at91: fix LCD-wiring mode
+
+Ludovic Desroches (2):
+      ARM: at91: add gpio suspend/resume support when using pinctrl
+      ARM: at91: fix infinite loop in at91_irq_suspend/resume
+
+Matt Porter (1):
+      ARM: davinci: edma: fix dmaengine induced null pointer dereference on da830
+
+Padmavathi Venna (1):
+      ARM: EXYNOS: Add #dma-cells for generic dma binding support for PL330
+
+Richard Genoud (2):
+      ARM: at91: dt: at91sam9x5: correct NAND pins comments
+      ARM: at91: dt: at91sam9x5: complete NAND pinctrl
+
+Sascha Hauer (2):
+      ARM: i.MX25: Fix DT compilation
+      ARM: i.MX35: enable MAX clock
+
+Simon Horman (1):
+      ARM: shmobile: marzen: Include mmc/host.h
+
+Stephen Boyd (1):
+      ARM: Scorpion is a v7 architecture, not v6
+
+Sylwester Nawrocki (1):
+      ARM: S5PV210: Fix PL330 DMA controller clkdev entries
+
+ arch/arm/Kconfig                       | 11 ++++-------
+ arch/arm/boot/dts/at91sam9x5.dtsi      | 28 ++++++++++++++++++++++++++--
+ arch/arm/boot/dts/exynos4.dtsi         |  9 +++++++++
+ arch/arm/boot/dts/exynos5440.dtsi      |  6 ++++++
+ arch/arm/mach-at91/include/mach/gpio.h |  8 ++++++++
+ arch/arm/mach-at91/irq.c               | 20 ++++++++------------
+ arch/arm/mach-at91/pm.c                | 10 ++++++++--
+ arch/arm/mach-davinci/dma.c            |  3 +++
+ arch/arm/mach-footbridge/Kconfig       |  1 +
+ arch/arm/mach-imx/clk-imx35.c          |  1 +
+ arch/arm/mach-imx/imx25-dt.c           |  5 +++++
+ arch/arm/mach-mmp/gplugd.c             |  1 +
+ arch/arm/mach-s5pv210/clock.c          | 36 ++++++++++++++++++------------------
+ arch/arm/mach-s5pv210/mach-goni.c      |  2 +-
+ arch/arm/mach-shmobile/board-marzen.c  |  1 +
+ drivers/clk/clk-vt8500.c               |  2 +-
+ drivers/input/joystick/analog.c        |  8 ++------
+ drivers/pinctrl/pinctrl-at91.c         | 61 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/video/atmel_lcdfb.c            | 22 +++++++++++++++-------
+ include/video/atmel_lcdc.h             |  2 +-
+ 20 files changed, 179 insertions(+), 58 deletions(-)
