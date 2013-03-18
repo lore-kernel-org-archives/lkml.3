@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3CRVGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45594 "EHLO
+	id S934091Ab3CRV4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:56:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45600 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab3CRVGx (ORCPT
+	with ESMTP id S1755534Ab3CRVGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:53 -0400
+	Mon, 18 Mar 2013 17:06:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [ 23/75] tty: serial: fix typo "SERIAL_S3C2412"
-Date: Mon, 18 Mar 2013 14:06:46 -0700
-Message-Id: <20130318210511.908272377@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 45/75] s390: critical section cleanup vs. machine checks
+Date: Mon, 18 Mar 2013 14:07:08 -0700
+Message-Id: <20130318210513.493721358@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,33 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit c51d41a1dd8f23a06a4ed651ebb9617de7f59368 upstream.
+commit 6551fbdfd8b85d1ab5822ac98abb4fb449bcfae0 upstream.
 
-The Kconfig symbol SERIAL_S3C2412 got removed in commit
-da121506eb03ee5daea55404709110b798bd61d9 ("serial: samsung: merge
-probe() function from all SoC specific extensions"). But it also added a
-last reference to that symbol. The commit and the tree make clear that
-CPU_S3C2412 should have been used instead.
+The current machine check code uses the registers stored by the machine
+in the lowcore at __LC_GPREGS_SAVE_AREA as the registers of the interrupted
+context. The registers 0-7 of a user process can get clobbered if a machine
+checks interrupts the execution of a critical section in entry[64].S.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+The reason is that the critical section cleanup code may need to modify
+the PSW and the registers for the previous context to get to the end of a
+critical section. If registers 0-7 have to be replaced the relevant copy
+will be in the registers, which invalidates the copy in the lowcore. The
+machine check handler needs to explicitly store registers 0-7 to the stack.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/kernel/entry.S   |    3 ++-
+ arch/s390/kernel/entry64.S |    5 +++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -209,7 +209,7 @@ config SERIAL_SAMSUNG
- config SERIAL_SAMSUNG_UARTS_4
- 	bool
- 	depends on PLAT_SAMSUNG
--	default y if !(CPU_S3C2410 || SERIAL_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
-+	default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
- 	help
- 	  Internal node for the common case of 4 Samsung compatible UARTs
- 
+--- a/arch/s390/kernel/entry.S
++++ b/arch/s390/kernel/entry.S
+@@ -636,7 +636,8 @@ ENTRY(mcck_int_handler)
+ 	UPDATE_VTIME %r14,%r15,__LC_MCCK_ENTER_TIMER
+ mcck_skip:
+ 	SWITCH_ASYNC __LC_GPREGS_SAVE_AREA+32,__LC_PANIC_STACK,PAGE_SHIFT
+-	mvc	__PT_R0(64,%r11),__LC_GPREGS_SAVE_AREA
++	stm	%r0,%r7,__PT_R0(%r11)
++	mvc	__PT_R8(32,%r11),__LC_GPREGS_SAVE_AREA+32
+ 	stm	%r8,%r9,__PT_PSW(%r11)
+ 	xc	__SF_BACKCHAIN(4,%r15),__SF_BACKCHAIN(%r15)
+ 	l	%r1,BASED(.Ldo_machine_check)
+--- a/arch/s390/kernel/entry64.S
++++ b/arch/s390/kernel/entry64.S
+@@ -678,8 +678,9 @@ ENTRY(mcck_int_handler)
+ 	UPDATE_VTIME %r14,__LC_MCCK_ENTER_TIMER
+ 	LAST_BREAK %r14
+ mcck_skip:
+-	lghi	%r14,__LC_GPREGS_SAVE_AREA
+-	mvc	__PT_R0(128,%r11),0(%r14)
++	lghi	%r14,__LC_GPREGS_SAVE_AREA+64
++	stmg	%r0,%r7,__PT_R0(%r11)
++	mvc	__PT_R8(64,%r11),0(%r14)
+ 	stmg	%r8,%r9,__PT_PSW(%r11)
+ 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
+ 	lgr	%r2,%r11		# pass pointer to pt_regs
 
 
