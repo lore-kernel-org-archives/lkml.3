@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933351Ab3CRVoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:44:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45803 "EHLO
+	id S933823Ab3CRVpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:45:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114Ab3CRVHo (ORCPT
+	with ESMTP id S1755671Ab3CRVHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:44 -0400
+	Mon, 18 Mar 2013 17:07:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [ 05/48] USB: cdc-wdm: fix buffer overflow
-Date: Mon, 18 Mar 2013 14:08:13 -0700
-Message-Id: <20130318210810.637423432@linuxfoundation.org>
+        =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 04/48] USB: option: add Huawei E5331
+Date: Mon, 18 Mar 2013 14:08:12 -0700
+Message-Id: <20130318210810.562913521@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,87 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
+commit daec90e7382cbd0e73eb6861109b3da91e5ab1f3 upstream.
 
-The buffer for responses must not overflow.
-If this would happen, set a flag, drop the data and return
-an error after user space has read all remaining data.
+Another device using CDC ACM with vendor specific protocol to mark
+serial functions.
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -81,6 +81,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
- #define WDM_RESPONDING		7
- #define WDM_SUSPENDING		8
- #define WDM_RESETTING		9
-+#define WDM_OVERFLOW		10
- 
- #define WDM_MAX			16
- 
-@@ -180,6 +181,7 @@ static void wdm_in_callback(struct urb *
- {
- 	struct wdm_device *desc = urb->context;
- 	int status = urb->status;
-+	int length = urb->actual_length;
- 
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_RESPONDING, &desc->flags);
-@@ -210,9 +212,17 @@ static void wdm_in_callback(struct urb *
- 	}
- 
- 	desc->rerr = status;
--	desc->reslength = urb->actual_length;
--	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
--	desc->length += desc->reslength;
-+	if (length + desc->length > desc->wMaxCommand) {
-+		/* The buffer would overflow */
-+		set_bit(WDM_OVERFLOW, &desc->flags);
-+	} else {
-+		/* we may already be in overflow */
-+		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			memmove(desc->ubuf + desc->length, desc->inbuf, length);
-+			desc->length += length;
-+			desc->reslength = length;
-+		}
-+	}
- skip_error:
- 	wake_up(&desc->wait);
- 
-@@ -457,6 +467,11 @@ retry:
- 			rv = -ENODEV;
- 			goto err;
- 		}
-+		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			clear_bit(WDM_OVERFLOW, &desc->flags);
-+			rv = -ENOBUFS;
-+			goto err;
-+		}
- 		i++;
- 		if (file->f_flags & O_NONBLOCK) {
- 			if (!test_bit(WDM_READ, &desc->flags)) {
-@@ -500,6 +515,7 @@ retry:
- 			spin_unlock_irq(&desc->iuspin);
- 			goto retry;
- 		}
-+
- 		if (!desc->reslength) { /* zero length read */
- 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
- 			clear_bit(WDM_READ, &desc->flags);
-@@ -1023,6 +1039,7 @@ static int wdm_post_reset(struct usb_int
- 	struct wdm_device *desc = wdm_find_device(intf);
- 	int rv;
- 
-+	clear_bit(WDM_OVERFLOW, &desc->flags);
- 	clear_bit(WDM_RESETTING, &desc->flags);
- 	rv = recover_from_urb_loss(desc);
- 	mutex_unlock(&desc->wlock);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -579,6 +579,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c1f, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
 
 
