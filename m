@@ -1,158 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3CRPow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:44:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46649 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab3CRPou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:44:50 -0400
-Message-ID: <514736D4.4070906@ti.com>
-Date: Mon, 18 Mar 2013 21:16:28 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753718Ab3CRPrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:47:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58575 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab3CRPrb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:47:31 -0400
+Message-ID: <5147370F.9030500@wwwdotorg.org>
+Date: Mon, 18 Mar 2013 09:47:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
- supports 'has_ossr'
-References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com> <51406BA7.8010306@arm.com> <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites> <5146B972.1010002@ti.com> <20130318150724.GC28585@mudshark.cambridge.arm.com>
-In-Reply-To: <20130318150724.GC28585@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: arm@kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH 1/7] kbuild: create an "include chroot" for DT bindings
+References: <1362594183-21523-1-git-send-email-swarren@wwwdotorg.org> <20130318151348.GB4713@S2101-09.ap.freescale.net>
+In-Reply-To: <20130318151348.GB4713@S2101-09.ap.freescale.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 March 2013 08:37 PM, Will Deacon wrote:
-> Hi Santosh,
-> 
-> On Mon, Mar 18, 2013 at 06:51:30AM +0000, Santosh Shilimkar wrote:
->> On Friday 15 March 2013 10:30 AM, Will Deacon wrote:
->>> Furthermore, I was under the impression that hw_breakpoint did actually
->>> work on panda, which implies that a cold boot *does* manage to reset the
->>> registers (can you please confirm this by looking in your dmesg during
->>> boot?). In that case, it seems as though a PM cycle is powering down a
->>> bunch of debug logic that was powered up during boot, and then we trip over
->>> because we can't access the register bank.
->>>
->> Actually it seems to be without PM. Thanks to analysis from Lokesh, the issue
->> can be seen even with just suspend or cpu hotplug. So cold boot as such is
->> fine.
-> 
-> Right, so what you're saying is that monitor-mode hardware debug only works
-> until the first pm/suspend/hotplug operation, then it's dead in the water?
-> 
->>> The proper solution to this problem requires us to establish exactly what is
->>> turning off the debug registers, and then having an OMAP PM notifier to
->>> enable it again. Assuming this has always been the case, I expect hardware
->>> debug across PM fails silently with older kernels.
->>>
->> This has been always the case it seems with CPU power cycle.
->> After the CPU is power cycled, 'DBGAUTHSTATUS' reads '0xaa' rather
->> than '0xaf' which means 'DBGEN = 0' and hence code fails to enable
->> monitor mode. This happens on both secure and GP devices and it can not
->> be patched since the secure code is ROM'ed. We didn't notice so far
->> because hw_breakpoint support was not default enabled on OMAP till the
->> multi-platform build.
-> 
-> That really sucks :( Does this affect all OMAP-based boards?
-> 
-All OMAP4 based boards..
-
->>>> I was also wondering whether we should just warn once rather
->>>> than continuous warnings in the notifier. Patch is end of the
->>>> email.
->>>
->>> Could do, but I'd like to see a fix for the real issue before we simply hide
->>> the warnings :)
->>>
->> Agree here too. As evident above, the feature won't work on OMAP4
->> devices with PM and hence some solution is needed.
+On 03/18/2013 09:13 AM, Shawn Guo wrote:
+> On Wed, Mar 06, 2013 at 11:22:57AM -0700, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
 >>
->> What you think of below ?
-> 
-> Comments inline...
-> 
+>> The recent dtc+cpp support allows header files and C pre-processor
+>> defines/macros to be used when compiling device tree files. These
+>> headers will typically define various constants that are part of the
+>> device tree bindings.
 >>
->> From d74b4264f6a5967b0f7ada96aad77ab0ac30dbed Mon Sep 17 00:00:00 2001
->> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Date: Mon, 18 Mar 2013 11:59:04 +0530
->> Subject: [PATCH] ARM: hw_breakpoints: Check for CPU debug availability before
->>  enabling it
+>> The original patch which set up the dtc+cpp include path only considered
+>> using those headers from device tree files. However, most are also
+>> useful for kernel code which needs to interpret the device tree.
 >>
->> CPU debug features like hardware break, watchpoints can be used only when
->> the debug mode is enabled and available for non-secure mode.
+>> In both the DT files and the kernel, I'd like to include the DT-related
+>> headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
+>> That will simplify any text which discusses the DT header locations.
 >>
->> Hence check 'DBGAUTHSTATUS.DBGEN' before proceeding to enable the
->> features.
+>> Creating a <dt-bindings/> for kernel source to use is as simple as
+>> placing files into include/dt-bindings/.
 >>
->> Thanks to Will for pointers and Lokesh for the analysis of the issue on
->> OMAP4 where after a CPU power cycle, debug mode gets disabled.
+>> However, when compiling DT files, the include path should be restricted
+>> so that only the dt-bindings path is available; arbitrary kernel headers
+>> shouldn't be exposed. For this reason, create a specific include
+>> directory for use by dtc+cpp, and symlink dt-bindings from there to the
+>> actual location of include/dt-bindings/. For want of a better location,
+>> place this "include chroot" into the existing dts/ directory.
 >>
->> Cc: Will Deacon <Will.Deacon@arm.com>
+>> arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
 >>
->> Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Some headers used by device tree files may not be useful to the kernel;
+>> they may be used simply to aid in constructing the DT file (e.g. macros
+>> to create a node), but not define any information that the kernel needs
+>> to share. These may be placed directly into arch/*/boot/dts/ along with
+>> the DT files themselves.
+>>
+>> Cc: Shawn Guo <shawn.guo@linaro.org>
+>> Cc: Hiroshi Doyu <hdoyu@nvidia.com>
+>> Acked-by: Michal Marek <mmarek@suse.cz>
+>> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+>> Acked-by: Rob Herring <rob.herring@calxeda.com>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 >> ---
->>  arch/arm/kernel/hw_breakpoint.c |    8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
->> index 96093b7..683a7cf 100644
->> --- a/arch/arm/kernel/hw_breakpoint.c
->> +++ b/arch/arm/kernel/hw_breakpoint.c
->> @@ -930,6 +930,14 @@ static void reset_ctrl_regs(void *unused)
->>  	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
->>  	u32 val;
->>  
->> +	/* Check if we have access to CPU debug features */
->> +	ARM_DBG_READ(c7, c14, 6, val);
->> +	if ((val & 0x1) == 0) {
->> +		pr_warn_once("CPU %d debug is unavailable\n", cpu);
->> +		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
->> +		return;
->> +	}
+>> This first patch was previously posted separately as V2. I'm including
+>> it here to keep it with the whole series. I hope this series can be
+>> applied as a topic branch in arm-soc.
 > 
-> There are a few of problems here:
-> 
-> 	1. That is only checking for non-secure access, which precludes
-> 	   running Linux in secure mode.
-> 
-We can check bit 4 as well to take care linux running in secure mode.
+> So no comments on the series means that we can start maintain it on
+> a topic branch, so that people can base their works on it?
 
-> 	2. DBGAUTHSTATUS accesses are UNPREDICTABLE when the double-lock is
-> 	   set for v7.1 processors.
->
-> 	3. DBGAUTHSTATUS doesn't exist in ARMv6.
-> 
-We cans skip the code for these versions like...
-	if (!ARM_DEBUG_ARCH_V7_ECP14 == get_debug_arch())
-		goto skip_dbgsts_read;
-
-> 	4. CPUs without the security extensions have DBGAUTHSTATUS.NSE == 0
->
-Which bit is that ? I don't find this bit in Cortex-A9 docs. With all
-these checks, may be a separate function like 'is_debug_available()'
-would be better.
- 
-> 	5. Accessing DBGAUTHSTATUS requires DBGEN to be driven high.
-> 	   Assuming that your pr_warn_once is emitted, this implies that
-> 	   DBGEN is driven high from cold boot, yet the NSE bit is low,
-> 	   implying that DBGEN is also low. That's contradictory, so I have
-> 	   no idea what's going on...
->
-Me neither. The warning is emitted at least.
- 
-> Apart from that, it's fine!
-> 
-If you agree, I can update patch accordingly.
-BTW, do you have any better trick to take care of
-above scenraio ?
-
-Regards,
-Santosh
+I was thinking of reposting the series today due to lack of responses,
+so that the content was freshly available in people's inboxes.
