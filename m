@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab3CRVHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45816 "EHLO
+	id S933340Ab3CRVcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:32:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab3CRVHr (ORCPT
+	with ESMTP id S932076Ab3CRVHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:47 -0400
+	Mon, 18 Mar 2013 17:07:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Subject: [ 06/48] usb: cp210x new Vendor/Device IDs
-Date: Mon, 18 Mar 2013 14:08:14 -0700
-Message-Id: <20130318210810.705368214@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jan Kara <jack@suse.cz>
+Subject: [ 13/48] ext3: Fix format string issues
+Date: Mon, 18 Mar 2013 14:08:21 -0700
+Message-Id: <20130318210811.187323354@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,53 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
+commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
 
-This patch adds support for the Lake Shore Cryotronics devices to
-the CP210x driver.
+ext3_msg() takes the printk prefix as the second parameter and the
+format string as the third parameter. Two callers of ext3_msg omit the
+prefix and pass the format string as the second parameter and the first
+parameter to the format string as the third parameter. In both cases
+this string comes from an arbitrary source. Which means the string may
+contain format string characters, which will
+lead to undefined and potentially harmful behavior.
 
-These lines are ported from cp210x driver distributed by Lake Shore web site:
-   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
-and licensed under the terms of GPLv2.
+The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
+in ext3") and is fixed by this patch.
 
-Moreover, I've tested this changes with Lake Shore 335 in my labs.
-
-Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ fs/ext3/super.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -156,6 +156,25 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
-+	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
-+	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
-+	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
-+	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
- 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
- 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
- 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -364,7 +364,7 @@ static struct block_device *ext3_blkdev_
+ 	return bdev;
+ 
+ fail:
+-	ext3_msg(sb, "error: failed to open journal device %s: %ld",
++	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
+ 		__bdevname(dev, b), PTR_ERR(bdev));
+ 
+ 	return NULL;
+@@ -891,7 +891,7 @@ static ext3_fsblk_t get_sb_block(void **
+ 	/*todo: use simple_strtoll with >32bit ext3 */
+ 	sb_block = simple_strtoul(options, &options, 0);
+ 	if (*options && *options != ',') {
+-		ext3_msg(sb, "error: invalid sb specification: %s",
++		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
+ 		       (char *) *data);
+ 		return 1;
+ 	}
 
 
