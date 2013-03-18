@@ -1,58 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3CRPEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:04:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51906 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab3CRPD7 (ORCPT
+	id S1753670Ab3CRPHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:07:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65142 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751780Ab3CRPHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:03:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
-Date: Mon, 18 Mar 2013 15:03:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
-        linux@arm.linux.org.uk, linux-mmc@vger.kernel.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org
-References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com> <201303151125.53999.arnd@arndb.de> <CACmBeS3aXs9vhc5ZYPbz5bjsYsSa6EzM12H4uPv706x0zU_5iw@mail.gmail.com>
-In-Reply-To: <CACmBeS3aXs9vhc5ZYPbz5bjsYsSa6EzM12H4uPv706x0zU_5iw@mail.gmail.com>
+	Mon, 18 Mar 2013 11:07:40 -0400
+Date: Mon, 18 Mar 2013 15:07:24 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if
+ system supports 'has_ossr'
+Message-ID: <20130318150724.GC28585@mudshark.cambridge.arm.com>
+References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com>
+ <51406BA7.8010306@arm.com>
+ <51407120.7030709@ti.com>
+ <51417E58.5050501@ti.com>
+ <20130315050014.GA15706@tiny-lites>
+ <5146B972.1010002@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303181503.49491.arnd@arndb.de>
-X-Provags-ID: V02:K0:Mj0MxUEM9M1IC/u0B9tKnyZN3GfBPbucpIEKj0rOxvv
- /q8363YuD+SD06S2f03liKnapWfOKMu9b4bR8EFErkKAeb8P2W
- oXQgDgr2n1Kb2h0sKX/7ts9K07kZdmZARlX54s0FmVW7chbRf+
- hz6ztXYzF6FOA1Z28NzoZ57rVoAcRk5tLfapX5h+VoW2HyZKGW
- XfGOXZi7q+h1bS8oHpJKsWtguYjDLFh54NSvkJS5xEwMvtcqo9
- Tva6vRcnh0GvjBEPn2DEnk0pwbv2EIp2hfZmqMNmRQrUCySHf3
- gZI8OV69JAONzEpZmkKIRbWg9/5/hz+CW7/Njl4ASMv7D3zUPI
- Y24y5h1hejRVIeD1vVBg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5146B972.1010002@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 17 March 2013, Jonas Jensen wrote:
-> Thank you for the feedback.
-> 
-> Some of the changes are sure to be a challenge for me, but I want to
-> move this forward, and having a list helps.
-> 
-> 3.2.40 is as far as it'll go right now, nothing prints to UART
-> starting with 3.3.8 (last tested, it's somewhere around there).
-> 
-> I have been advised to enable early_printk (by landley on freenode IRC #edev).
+Hi Santosh,
 
-Yes, that is a good idea. I would also suggest that you don't try to port
-all the code at once a few kernel versions at a time, but that you instead
-move straight to the latest kernel, and basically start a new port one driver
-at a time. Take one of the newer ports (highbank, virt, bcm, ...) as examples.
+On Mon, Mar 18, 2013 at 06:51:30AM +0000, Santosh Shilimkar wrote:
+> On Friday 15 March 2013 10:30 AM, Will Deacon wrote:
+> > Furthermore, I was under the impression that hw_breakpoint did actually
+> > work on panda, which implies that a cold boot *does* manage to reset the
+> > registers (can you please confirm this by looking in your dmesg during
+> > boot?). In that case, it seems as though a PM cycle is powering down a
+> > bunch of debug logic that was powered up during boot, and then we trip over
+> > because we can't access the register bank.
+> > 
+> Actually it seems to be without PM. Thanks to analysis from Lokesh, the issue
+> can be seen even with just suspend or cpu hotplug. So cold boot as such is
+> fine.
 
-Since most of the code is now in drivers/ directories rather than arch/arm,
-you can actually start getting stuff upstream before you have completed all
-of it. If you have questions, I recommend asking on the #armlinux channel
-on freenode, or here on the mailing list.
+Right, so what you're saying is that monitor-mode hardware debug only works
+until the first pm/suspend/hotplug operation, then it's dead in the water?
 
-	Arnd
+> > The proper solution to this problem requires us to establish exactly what is
+> > turning off the debug registers, and then having an OMAP PM notifier to
+> > enable it again. Assuming this has always been the case, I expect hardware
+> > debug across PM fails silently with older kernels.
+> > 
+> This has been always the case it seems with CPU power cycle.
+> After the CPU is power cycled, 'DBGAUTHSTATUS' reads '0xaa' rather
+> than '0xaf' which means 'DBGEN = 0' and hence code fails to enable
+> monitor mode. This happens on both secure and GP devices and it can not
+> be patched since the secure code is ROM'ed. We didn't notice so far
+> because hw_breakpoint support was not default enabled on OMAP till the
+> multi-platform build.
+
+That really sucks :( Does this affect all OMAP-based boards?
+
+> >> I was also wondering whether we should just warn once rather
+> >> than continuous warnings in the notifier. Patch is end of the
+> >> email.
+> > 
+> > Could do, but I'd like to see a fix for the real issue before we simply hide
+> > the warnings :)
+> > 
+> Agree here too. As evident above, the feature won't work on OMAP4
+> devices with PM and hence some solution is needed.
+> 
+> What you think of below ?
+
+Comments inline...
+
+> 
+> From d74b4264f6a5967b0f7ada96aad77ab0ac30dbed Mon Sep 17 00:00:00 2001
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Mon, 18 Mar 2013 11:59:04 +0530
+> Subject: [PATCH] ARM: hw_breakpoints: Check for CPU debug availability before
+>  enabling it
+> 
+> CPU debug features like hardware break, watchpoints can be used only when
+> the debug mode is enabled and available for non-secure mode.
+> 
+> Hence check 'DBGAUTHSTATUS.DBGEN' before proceeding to enable the
+> features.
+> 
+> Thanks to Will for pointers and Lokesh for the analysis of the issue on
+> OMAP4 where after a CPU power cycle, debug mode gets disabled.
+> 
+> Cc: Will Deacon <Will.Deacon@arm.com>
+> 
+> Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  arch/arm/kernel/hw_breakpoint.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+> index 96093b7..683a7cf 100644
+> --- a/arch/arm/kernel/hw_breakpoint.c
+> +++ b/arch/arm/kernel/hw_breakpoint.c
+> @@ -930,6 +930,14 @@ static void reset_ctrl_regs(void *unused)
+>  	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
+>  	u32 val;
+>  
+> +	/* Check if we have access to CPU debug features */
+> +	ARM_DBG_READ(c7, c14, 6, val);
+> +	if ((val & 0x1) == 0) {
+> +		pr_warn_once("CPU %d debug is unavailable\n", cpu);
+> +		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
+> +		return;
+> +	}
+
+There are a few of problems here:
+
+	1. That is only checking for non-secure access, which precludes
+	   running Linux in secure mode.
+
+	2. DBGAUTHSTATUS accesses are UNPREDICTABLE when the double-lock is
+	   set for v7.1 processors.
+
+	3. DBGAUTHSTATUS doesn't exist in ARMv6.
+
+	4. CPUs without the security extensions have DBGAUTHSTATUS.NSE == 0
+
+	5. Accessing DBGAUTHSTATUS requires DBGEN to be driven high.
+	   Assuming that your pr_warn_once is emitted, this implies that
+	   DBGEN is driven high from cold boot, yet the NSE bit is low,
+	   implying that DBGEN is also low. That's contradictory, so I have
+	   no idea what's going on...
+
+Apart from that, it's fine!
+
+Will
