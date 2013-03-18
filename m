@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab3CREli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:41:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33603 "EHLO
+	id S1751969Ab3CREan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:30:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33389 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752007Ab3CREar (ORCPT
+	by vger.kernel.org with ESMTP id S1751322Ab3CREaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:47 -0400
-Message-Id: <20130318042149.371408125@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:03 -0400
+Message-Id: <20130318042144.828839007@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:37 +0000
+Date: Mon, 18 Mar 2013 04:21:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, "Matwey V. Kornilov" <matwey@sai.msu.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 53/82] usb: cp210x new Vendor/Device IDs
+Cc: akpm@linux-foundation.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 06/82] [SCSI] storvsc: Initialize the sglist
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,53 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
+commit 9d2696e658ef4f209955ddaa987d43f1a1bd81a1 upstream.
 
-This patch adds support for the Lake Shore Cryotronics devices to
-the CP210x driver.
+Properly initialize scatterlist before using it.
 
-These lines are ported from cp210x driver distributed by Lake Shore web site:
-   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
-and licensed under the terms of GPLv2.
-
-Moreover, I've tested this changes with Lake Shore 335 in my labs.
-
-Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/staging/hv/storvsc_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -156,6 +156,25 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
-+	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
-+	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
-+	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
-+	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
- 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
- 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
- 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -815,6 +815,7 @@ static struct scatterlist *create_bounce
+ 	if (!bounce_sgl)
+ 		return NULL;
+ 
++	sg_init_table(bounce_sgl, num_pages);
+ 	for (i = 0; i < num_pages; i++) {
+ 		page_buf = alloc_page(GFP_ATOMIC);
+ 		if (!page_buf)
 
 
