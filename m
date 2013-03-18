@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab3CRErU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:47:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33456 "EHLO
+	id S1752808Ab3CRErS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:47:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33439 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751662Ab3CREaU (ORCPT
+	by vger.kernel.org with ESMTP id S1751602Ab3CREaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:20 -0400
-Message-Id: <20130318042151.447883600@decadent.org.uk>
+Message-Id: <20130318042151.223567367@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:58 +0000
+Date: Mon, 18 Mar 2013 04:22:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Paul Kot <pawlkt@gmail.com>,
-        Sven Eckelmann <sven@narfation.org>,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: [ 74/82] batman-adv: bat_socket_read missing checks
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 72/82] USB: Rip out recursive call on warm port reset.
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +27,273 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Kot <pawlkt@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit c00b6856fc642b234895cfabd15b289e76726430 upstream.
+commit a24a6078754f28528bc91e7e7b3e6ae86bd936d8 upstream.
 
-Writing a icmp_packet_rr and then reading icmp_packet can lead to kernel
-memory corruption, if __user *buf is just below TASK_SIZE.
+When a hot reset fails on a USB 3.0 port, the current port reset code
+recursively calls hub_port_reset inside hub_port_wait_reset.  This isn't
+ideal, since we should avoid recursive calls in the kernel, and it also
+doesn't allow us to issue multiple warm resets on reset failures.
 
-Signed-off-by: Paul Kot <pawlkt@gmail.com>
-[sven@narfation.org: made it checkpatch clean]
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Rip out the recursive call.  Instead, add code to hub_port_reset to
+issue a warm reset if the hot reset fails, and try multiple warm resets
+before giving up on the port.
+
+In hub_port_wait_reset, remove the recursive call and re-indent.  The
+code is basically the same, except:
+
+1. It bails out early if the port has transitioned to Inactive or
+Compliance Mode after the reset completed.
+
+2. It doesn't consider a connect status change to be a failed reset.  If
+multiple warm resets needed to be issued, the connect status may have
+changed, so we need to ignore that and look at the port link state
+instead.  hub_port_reset will now do that.
+
+3. It unconditionally sets udev->speed on all types of successful
+resets.  The old recursive code would set the port speed when the second
+hub_port_reset returned.
+
+The old code did not handle connected devices needing a warm reset well.
+There were only two situations that the old code handled correctly: an
+empty port needing a warm reset, and a hot reset that migrated to a warm
+reset.
+
+When an empty port needed a warm reset, hub_port_reset was called with
+the warm variable set.  The code in hub_port_finish_reset would skip
+telling the USB core and the xHC host that the device was reset, because
+otherwise that would result in a NULL pointer dereference.
+
+When a USB 3.0 device reset migrated to a warm reset, the recursive call
+made the call stack look like this:
+
+hub_port_reset(warm = false)
+        hub_wait_port_reset(warm = false)
+                hub_port_reset(warm = true)
+                        hub_wait_port_reset(warm = true)
+                        hub_port_finish_reset(warm = true)
+                        (return up the call stack to the first wait)
+
+        hub_port_finish_reset(warm = false)
+
+The old code didn't want to notify the USB core or the xHC host of device reset
+twice, so it only did it in the second call to hub_port_finish_reset,
+when warm was set to false.  This was necessary because
+before patch two ("USB: Ignore xHCI Reset Device status."), the USB core
+would pay attention to the xHC Reset Device command error status, and
+the second call would always fail.
+
+Now that we no longer have the recursive call, and warm can change from
+false to true in hub_port_reset, we need to have hub_port_finish_reset
+unconditionally notify the USB core and the xHC of the device reset.
+
+In hub_port_finish_reset, unconditionally clear the connect status
+change (CSC) bit for USB 3.0 hubs when the port reset is done.  If we
+had to issue multiple warm resets for a device, that bit may have been
+set if the device went into SS.Inactive and then was successfully warm
+reset.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/batman-adv/icmp_socket.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |  150 ++++++++++++++++++++++--------------------------
+ 1 files changed, 68 insertions(+), 82 deletions(-)
 
---- a/net/batman-adv/icmp_socket.c
-+++ b/net/batman-adv/icmp_socket.c
-@@ -136,8 +136,8 @@ static ssize_t bat_socket_read(struct fi
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2148,73 +2148,35 @@ static int hub_port_wait_reset(struct us
+ 		if ((portstatus & USB_PORT_STAT_RESET))
+ 			goto delay;
  
- 	spin_unlock_bh(&socket_client->lock);
+-		/*
+-		 * Some buggy devices require a warm reset to be issued even
+-		 * when the port appears not to be connected.
++		if (hub_port_warm_reset_required(hub, portstatus))
++			return -ENOTCONN;
++
++		/* Device went away? */
++		if (!(portstatus & USB_PORT_STAT_CONNECTION))
++			return -ENOTCONN;
++
++		/* bomb out completely if the connection bounced.  A USB 3.0
++		 * connection may bounce if multiple warm resets were issued,
++		 * but the device may have successfully re-connected. Ignore it.
+ 		 */
+-		if (!warm) {
+-			/*
+-			 * Some buggy devices can cause an NEC host controller
+-			 * to transition to the "Error" state after a hot port
+-			 * reset.  This will show up as the port state in
+-			 * "Inactive", and the port may also report a
+-			 * disconnect.  Forcing a warm port reset seems to make
+-			 * the device work.
+-			 *
+-			 * See https://bugzilla.kernel.org/show_bug.cgi?id=41752
+-			 */
+-			if (hub_port_warm_reset_required(hub, portstatus)) {
+-				int ret;
++		if (!hub_is_superspeed(hub->hdev) &&
++				(portchange & USB_PORT_STAT_C_CONNECTION))
++			return -ENOTCONN;
  
--	error = __copy_to_user(buf, &socket_packet->icmp_packet,
--			       socket_packet->icmp_len);
-+	error = copy_to_user(buf, &socket_packet->icmp_packet,
-+			     socket_packet->icmp_len);
+-				if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_CONNECTION);
+-				if (portchange & USB_PORT_STAT_C_LINK_STATE)
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_PORT_LINK_STATE);
+-				if (portchange & USB_PORT_STAT_C_RESET)
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_RESET);
+-				dev_dbg(hub->intfdev, "hot reset failed, warm reset port %d\n",
+-						port1);
+-				ret = hub_port_reset(hub, port1,
+-						udev, HUB_BH_RESET_TIME,
+-						true);
+-				if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-					clear_port_feature(hub->hdev, port1,
+-							USB_PORT_FEAT_C_CONNECTION);
+-				return ret;
+-			}
+-			/* Device went away? */
+-			if (!(portstatus & USB_PORT_STAT_CONNECTION))
+-				return -ENOTCONN;
+-
+-			/* bomb out completely if the connection bounced */
+-			if ((portchange & USB_PORT_STAT_C_CONNECTION))
+-				return -ENOTCONN;
+-
+-			if ((portstatus & USB_PORT_STAT_ENABLE)) {
+-				if (!udev)
+-					return 0;
+-
+-				if (hub_is_wusb(hub))
+-					udev->speed = USB_SPEED_WIRELESS;
+-				else if (hub_is_superspeed(hub->hdev))
+-					udev->speed = USB_SPEED_SUPER;
+-				else if (portstatus & USB_PORT_STAT_HIGH_SPEED)
+-					udev->speed = USB_SPEED_HIGH;
+-				else if (portstatus & USB_PORT_STAT_LOW_SPEED)
+-					udev->speed = USB_SPEED_LOW;
+-				else
+-					udev->speed = USB_SPEED_FULL;
++		if ((portstatus & USB_PORT_STAT_ENABLE)) {
++			if (!udev)
+ 				return 0;
+-			}
+-		} else {
+-			if (!(portstatus & USB_PORT_STAT_CONNECTION) ||
+-					hub_port_warm_reset_required(hub,
+-						portstatus))
+-				return -ENOTCONN;
  
- 	packet_len = socket_packet->icmp_len;
- 	kfree(socket_packet);
++			if (hub_is_wusb(hub))
++				udev->speed = USB_SPEED_WIRELESS;
++			else if (hub_is_superspeed(hub->hdev))
++				udev->speed = USB_SPEED_SUPER;
++			else if (portstatus & USB_PORT_STAT_HIGH_SPEED)
++				udev->speed = USB_SPEED_HIGH;
++			else if (portstatus & USB_PORT_STAT_LOW_SPEED)
++				udev->speed = USB_SPEED_LOW;
++			else
++				udev->speed = USB_SPEED_FULL;
+ 			return 0;
+ 		}
+ 
+@@ -2232,23 +2194,21 @@ delay:
+ }
+ 
+ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+-			struct usb_device *udev, int *status, bool warm)
++			struct usb_device *udev, int *status)
+ {
+ 	switch (*status) {
+ 	case 0:
+-		if (!warm) {
+-			struct usb_hcd *hcd;
+-			/* TRSTRCY = 10 ms; plus some extra */
+-			msleep(10 + 40);
+-			if (udev) {
+-				update_devnum(udev, 0);
+-				hcd = bus_to_hcd(udev->bus);
+-				/* The xHC may think the device is already
+-				 * reset, so ignore the status.
+-				 */
+-				if (hcd->driver->reset_device)
+-					hcd->driver->reset_device(hcd, udev);
+-			}
++		/* TRSTRCY = 10 ms; plus some extra */
++		msleep(10 + 40);
++		if (udev) {
++			struct usb_hcd *hcd = bus_to_hcd(udev->bus);
++
++			update_devnum(udev, 0);
++			/* The xHC may think the device is already reset,
++			 * so ignore the status.
++			 */
++			if (hcd->driver->reset_device)
++				hcd->driver->reset_device(hcd, udev);
+ 		}
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
+@@ -2261,8 +2221,10 @@ static void hub_port_finish_reset(struct
+ 					USB_PORT_FEAT_C_BH_PORT_RESET);
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_PORT_LINK_STATE);
++			clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_CONNECTION);
+ 		}
+-		if (!warm && udev)
++		if (udev)
+ 			usb_set_device_state(udev, *status
+ 					? USB_STATE_NOTATTACHED
+ 					: USB_STATE_DEFAULT);
+@@ -2275,6 +2237,7 @@ static int hub_port_reset(struct usb_hub
+ 			struct usb_device *udev, unsigned int delay, bool warm)
+ {
+ 	int i, status;
++	u16 portchange, portstatus;
+ 
+ 	if (!hub_is_superspeed(hub->hdev)) {
+ 		if (warm) {
+@@ -2306,10 +2269,33 @@ static int hub_port_reset(struct usb_hub
+ 						status);
+ 		}
+ 
+-		/* return on disconnect or reset */
++		/* Check for disconnect or reset */
+ 		if (status == 0 || status == -ENOTCONN || status == -ENODEV) {
+-			hub_port_finish_reset(hub, port1, udev, &status, warm);
+-			goto done;
++			hub_port_finish_reset(hub, port1, udev, &status);
++
++			if (!hub_is_superspeed(hub->hdev))
++				goto done;
++
++			/*
++			 * If a USB 3.0 device migrates from reset to an error
++			 * state, re-issue the warm reset.
++			 */
++			if (hub_port_status(hub, port1,
++					&portstatus, &portchange) < 0)
++				goto done;
++
++			if (!hub_port_warm_reset_required(hub, portstatus))
++				goto done;
++
++			/*
++			 * If the port is in SS.Inactive or Compliance Mode, the
++			 * hot or warm reset failed.  Try another warm reset.
++			 */
++			if (!warm) {
++				dev_dbg(hub->intfdev, "hot reset failed, warm reset port %d\n",
++						port1);
++				warm = true;
++			}
+ 		}
+ 
+ 		dev_dbg (hub->intfdev,
 
 
