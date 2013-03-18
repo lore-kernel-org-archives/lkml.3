@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab3CRWDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:03:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45498 "EHLO
+	id S1755283Ab3CRVGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:06:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45483 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3CRVGf (ORCPT
+	with ESMTP id S1755048Ab3CRVGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:35 -0400
+	Mon, 18 Mar 2013 17:06:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Conklin <sconklin@canonical.com>
-Subject: [ 10/75] usb: serial: Add Rigblaster Advantage to device table
-Date: Mon, 18 Mar 2013 14:06:33 -0700
-Message-Id: <20130318210510.997507513@linuxfoundation.org>
+        Oliver Neukum <oliver@neukum.org>
+Subject: [ 05/75] USB: cdc-wdm: fix buffer overflow
+Date: Mon, 18 Mar 2013 14:06:28 -0700
+Message-Id: <20130318210510.646717843@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,30 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Conklin <sconklin@canonical.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit a57e82a18779ab8a5e5a1f5841cef937cf578913 upstream.
+commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
 
-The Rigblaster Advantage is an amateur radio interface sold by West Mountain
-Radio. It contains a cp210x serial interface but the device ID is not in
-the driver.
+The buffer for responses must not overflow.
+If this would happen, set a flag, drop the data and return
+an error after user space has read all remaining data.
 
-Signed-off-by: Steve Conklin <sconklin@canonical.com>
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/class/cdc-wdm.c |   23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -85,6 +85,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x813F) }, /* Tams Master Easy Control */
- 	{ USB_DEVICE(0x10C4, 0x814A) }, /* West Mountain Radio RIGblaster P&P */
- 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
-+	{ USB_DEVICE(0x2405, 0x0003) }, /* West Mountain Radio RIGblaster Advantage */
- 	{ USB_DEVICE(0x10C4, 0x8156) }, /* B&G H3000 link cable */
- 	{ USB_DEVICE(0x10C4, 0x815E) }, /* Helicomm IP-Link 1220-DVM */
- 	{ USB_DEVICE(0x10C4, 0x815F) }, /* Timewave HamLinkUSB */
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -56,6 +56,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
+ #define WDM_RESPONDING		7
+ #define WDM_SUSPENDING		8
+ #define WDM_RESETTING		9
++#define WDM_OVERFLOW		10
+ 
+ #define WDM_MAX			16
+ 
+@@ -155,6 +156,7 @@ static void wdm_in_callback(struct urb *
+ {
+ 	struct wdm_device *desc = urb->context;
+ 	int status = urb->status;
++	int length = urb->actual_length;
+ 
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_RESPONDING, &desc->flags);
+@@ -185,9 +187,17 @@ static void wdm_in_callback(struct urb *
+ 	}
+ 
+ 	desc->rerr = status;
+-	desc->reslength = urb->actual_length;
+-	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
+-	desc->length += desc->reslength;
++	if (length + desc->length > desc->wMaxCommand) {
++		/* The buffer would overflow */
++		set_bit(WDM_OVERFLOW, &desc->flags);
++	} else {
++		/* we may already be in overflow */
++		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
++			memmove(desc->ubuf + desc->length, desc->inbuf, length);
++			desc->length += length;
++			desc->reslength = length;
++		}
++	}
+ skip_error:
+ 	wake_up(&desc->wait);
+ 
+@@ -435,6 +445,11 @@ retry:
+ 			rv = -ENODEV;
+ 			goto err;
+ 		}
++		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
++			clear_bit(WDM_OVERFLOW, &desc->flags);
++			rv = -ENOBUFS;
++			goto err;
++		}
+ 		i++;
+ 		if (file->f_flags & O_NONBLOCK) {
+ 			if (!test_bit(WDM_READ, &desc->flags)) {
+@@ -478,6 +493,7 @@ retry:
+ 			spin_unlock_irq(&desc->iuspin);
+ 			goto retry;
+ 		}
++
+ 		if (!desc->reslength) { /* zero length read */
+ 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
+ 			clear_bit(WDM_READ, &desc->flags);
+@@ -1004,6 +1020,7 @@ static int wdm_post_reset(struct usb_int
+ 	struct wdm_device *desc = wdm_find_device(intf);
+ 	int rv;
+ 
++	clear_bit(WDM_OVERFLOW, &desc->flags);
+ 	clear_bit(WDM_RESETTING, &desc->flags);
+ 	rv = recover_from_urb_loss(desc);
+ 	mutex_unlock(&desc->wlock);
 
 
