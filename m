@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab3CRWFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:05:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45477 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab3CRVG3 (ORCPT
+	id S933386Ab3CRWGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:06:50 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47808 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754479Ab3CRWGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:29 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 02/75] xen/pciback: Dont disable a PCI device that is already disabled.
-Date: Mon, 18 Mar 2013 14:06:25 -0700
-Message-Id: <20130318210510.387856643@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
-References: <20130318210510.203500214@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Mar 2013 18:06:47 -0400
+X-Sasl-enc: yRS1kHPv6/NZrSui4xgQeQ1y/zvZeoTjgGdI70lJHZHa 1363644406
+From: Alan Ott <alan@signal11.us>
+To: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH 1/4] mrf24j40: pinctrl support
+Date: Mon, 18 Mar 2013 18:06:40 -0400
+Message-Id: <1363644403-11003-2-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1363644403-11003-1-git-send-email-alan@signal11.us>
+References: <1363644403-11003-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+Activate pinctrl settings when used with a DT system.
 
-------------------
-
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-commit bdc5c1812cea6efe1aaefb3131fcba28cd0b2b68 upstream.
-
-While shuting down a HVM guest with pci devices passed through we
-get this:
-
-pciback 0000:04:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100002)
-------------[ cut here ]------------
-WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x88/0xa0()
-Hardware name: MS-7640
-Device pciback
-disabling already-disabled device
-Modules linked in:
-Pid: 53, comm: xenwatch Not tainted 3.9.0-rc1-20130304a+ #1
-Call Trace:
- [<ffffffff8106994a>] warn_slowpath_common+0x7a/0xc0
- [<ffffffff81069a31>] warn_slowpath_fmt+0x41/0x50
- [<ffffffff813cf288>] pci_disable_device+0x88/0xa0
- [<ffffffff814554a7>] xen_pcibk_reset_device+0x37/0xd0
- [<ffffffff81454b6f>] ? pcistub_put_pci_dev+0x6f/0x120
- [<ffffffff81454b8d>] pcistub_put_pci_dev+0x8d/0x120
- [<ffffffff814582a9>] __xen_pcibk_release_devices+0x59/0xa0
-
-This fixes the bug.
-
-Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- drivers/xen/xen-pciback/pciback_ops.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ieee802154/mrf24j40.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/xen/xen-pciback/pciback_ops.c
-+++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -113,7 +113,8 @@ void xen_pcibk_reset_device(struct pci_d
- 		if (dev->msi_enabled)
- 			pci_disable_msi(dev);
- #endif
--		pci_disable_device(dev);
-+		if (pci_is_enabled(dev))
-+			pci_disable_device(dev);
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index 3f2c7aa..3106895 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -22,6 +22,7 @@
+ #include <linux/spi/spi.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <linux/pinctrl/consumer.h>
+ #include <net/wpan-phy.h>
+ #include <net/mac802154.h>
  
- 		pci_write_config_word(dev, PCI_COMMAND, 0);
+@@ -623,6 +624,7 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	int ret = -ENOMEM;
+ 	u8 val;
+ 	struct mrf24j40 *devrec;
++	struct pinctrl *pinctrl;
  
-
+ 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
+ 
+@@ -633,6 +635,11 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	if (!devrec->buf)
+ 		goto err_buf;
+ 
++	pinctrl = devm_pinctrl_get_select_default(&spi->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&spi->dev,
++			"pinctrl pins are not configured from the driver");
++
+ 	spi->mode = SPI_MODE_0; /* TODO: Is this appropriate for right here? */
+ 	if (spi->max_speed_hz > MAX_SPI_SPEED_HZ)
+ 		spi->max_speed_hz = MAX_SPI_SPEED_HZ;
+-- 
+1.7.11.2
 
