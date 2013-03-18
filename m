@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab3CRQ3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:29:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36469 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab3CRQ0B (ORCPT
+	id S1754055Ab3CRQco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:32:44 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49409
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752877Ab3CRQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:26:01 -0400
+	Mon, 18 Mar 2013 12:25:59 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/54] perf tests: Add attr record -C cpu test
-Date: Mon, 18 Mar 2013 13:24:53 -0300
-Message-Id: <1363623939-10748-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 31/54] perf annotate/gtk: Support event group view on GTK
+Date: Mon, 18 Mar 2013 13:25:16 -0300
+Message-Id: <1363623939-10748-32-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Adding test to validate perf_event_attr data for command:
-  'record -C 0'
+Add support for event group view to GTK annotation browser.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1361785972-7431-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1362462812-30885-13-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/attr/test-record-C0 |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/tests/attr/test-record-C0
+ tools/perf/ui/gtk/annotate.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/attr/test-record-C0 b/tools/perf/tests/attr/test-record-C0
-new file mode 100644
-index 0000000..d6a7e43
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-C0
-@@ -0,0 +1,13 @@
-+[config]
-+command = record
-+args    = -C 0 kill >/dev/null 2>&1
+diff --git a/tools/perf/ui/gtk/annotate.c b/tools/perf/ui/gtk/annotate.c
+index 6e2fc7e..f538794 100644
+--- a/tools/perf/ui/gtk/annotate.c
++++ b/tools/perf/ui/gtk/annotate.c
+@@ -33,7 +33,7 @@ static int perf_gtk__get_percent(char *buf, size_t size, struct symbol *sym,
+ 		return 0;
+ 
+ 	symhist = annotation__histogram(symbol__annotation(sym), evidx);
+-	if (!symhist->addr[dl->offset])
++	if (!symbol_conf.event_group && !symhist->addr[dl->offset])
+ 		return 0;
+ 
+ 	percent = 100.0 * symhist->addr[dl->offset] / symhist->sum;
+@@ -119,10 +119,24 @@ static int perf_gtk__annotate_symbol(GtkWidget *window, struct symbol *sym,
+ 
+ 	list_for_each_entry(pos, &notes->src->source, node) {
+ 		GtkTreeIter iter;
++		int ret = 0;
+ 
+ 		gtk_list_store_append(store, &iter);
+ 
+-		if (perf_gtk__get_percent(s, sizeof(s), sym, pos, evsel->idx))
++		if (perf_evsel__is_group_event(evsel)) {
++			for (i = 0; i < evsel->nr_members; i++) {
++				ret += perf_gtk__get_percent(s + ret,
++							     sizeof(s) - ret,
++							     sym, pos,
++							     evsel->idx + i);
++				ret += scnprintf(s + ret, sizeof(s) - ret, " ");
++			}
++		} else {
++			ret = perf_gtk__get_percent(s, sizeof(s), sym, pos,
++						    evsel->idx);
++		}
 +
-+[event:base-record]
-+cpu=0
-+
-+# no enable on exec for CPU attached
-+enable_on_exec=0
-+
-+# PERF_SAMPLE_IP | PERF_SAMPLE_TID PERF_SAMPLE_TIME | # PERF_SAMPLE_PERIOD
-+# + PERF_SAMPLE_CPU added by -C 0
-+sample_type=391
++		if (ret)
+ 			gtk_list_store_set(store, &iter, ANN_COL__PERCENT, s, -1);
+ 		if (perf_gtk__get_offset(s, sizeof(s), sym, map, pos))
+ 			gtk_list_store_set(store, &iter, ANN_COL__OFFSET, s, -1);
 -- 
 1.7.1
 
