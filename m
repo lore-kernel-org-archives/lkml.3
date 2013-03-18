@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab3CRVxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:53:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51364 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3CRVxn (ORCPT
+	id S1755630Ab3CRVHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45615 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755528Ab3CRVG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:53:43 -0400
-Date: Mon, 18 Mar 2013 21:53:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Message-ID: <20130318215333.GE21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
- <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
- <1944.1363525619@warthog.procyon.org.uk>
- <20130318153936.GB28508@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318153936.GB28508@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Mar 2013 17:06:58 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 38/75] powerpc: Make VSID_BITS* dependency explicit
+Date: Mon, 18 Mar 2013 14:07:01 -0700
+Message-Id: <20130318210512.957002428@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
+References: <20130318210510.203500214@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 04:39:36PM +0100, Jan Kara wrote:
->   IMO the deadlock is real. In freeze_super() we wait for all writers to
-> the filesystem to finish while blocking beginning of any further writes. So
-> we have a deadlock scenario like:
-> 
->   THREAD1		THREAD2				THREAD3
-> mnt_want_write()	mutex_lock(&inode->i_mutex);
-> ...							freeze_super()
-> block on mutex_lock(&inode->i_mutex)
-> 							  sb_wait_write(sb, SB_FREEZE_WRITE);
-> 			block in sb_start_write()
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-The bug is on fsfreeze side and this is not the only problem related to it.
-I've missed the implications when I applied "fs: Add freezing handling
-to mnt_want_write() / mnt_drop_write()" last June ;-/
+------------------
 
-The thing is, until then mnt_want_write() used to be a counter; it could be
-nested.  Now any such nesting is a deadlock you've just described.  This
-is seriously wrong, IMO.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-BTW, having sb_start_write() buried in individual ->splice_write() is
-asking for trouble; could you describe the rules for that?  E.g. where
-does it nest wrt filesystem-private locks?  XFS iolock, for example...
+commit e39d1a471484662620651cd9520250d33843f235 upstream.
+
+VSID_BITS and VSID_BITS_1T depends on the context bits  and user esid
+bits. Make the dependency explicit
+
+Acked-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/include/asm/mmu-hash64.h |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+--- a/arch/powerpc/include/asm/mmu-hash64.h
++++ b/arch/powerpc/include/asm/mmu-hash64.h
+@@ -381,21 +381,22 @@ extern void slb_set_size(u16 size);
+  * hash collisions.
+  */
+ 
++#define CONTEXT_BITS		19
++#define USER_ESID_BITS		18
++#define USER_ESID_BITS_1T	6
++
+ /*
+  * This should be computed such that protovosid * vsid_mulitplier
+  * doesn't overflow 64 bits. It should also be co-prime to vsid_modulus
+  */
+ #define VSID_MULTIPLIER_256M	ASM_CONST(12538073)	/* 24-bit prime */
+-#define VSID_BITS_256M		38
++#define VSID_BITS_256M		(CONTEXT_BITS + USER_ESID_BITS + 1)
+ #define VSID_MODULUS_256M	((1UL<<VSID_BITS_256M)-1)
+ 
+ #define VSID_MULTIPLIER_1T	ASM_CONST(12538073)	/* 24-bit prime */
+-#define VSID_BITS_1T		26
++#define VSID_BITS_1T		(CONTEXT_BITS + USER_ESID_BITS_1T + 1)
+ #define VSID_MODULUS_1T		((1UL<<VSID_BITS_1T)-1)
+ 
+-#define CONTEXT_BITS		19
+-#define USER_ESID_BITS		18
+-#define USER_ESID_BITS_1T	6
+ 
+ #define USER_VSID_RANGE	(1UL << (USER_ESID_BITS + SID_SHIFT))
+ 
+
+
