@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3CRV1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:27:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45946 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756372Ab3CRVIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756371Ab3CRVIH (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Mar 2013 17:08:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45922 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305Ab3CRVIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:08:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 47/48] dcbnl: fix various netlink info leaks
-Date: Mon, 18 Mar 2013 14:08:55 -0700
-Message-Id: <20130318210813.566011616@linuxfoundation.org>
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 34/48] loopdev: fix a deadlock
+Date: Mon, 18 Mar 2013 14:08:42 -0700
+Message-Id: <20130318210812.653678837@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,87 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-From: Mathias Krause <minipli@googlemail.com>
+commit 5370019dc2d2c2ff90e95d181468071362934f3a upstream.
 
-[ Upstream commit 29cd8ae0e1a39e239a3a7b67da1986add1199fc0 ]
+bd_mutex and lo_ctl_mutex can be held in different order.
 
-The dcb netlink interface leaks stack memory in various places:
-* perm_addr[] buffer is only filled at max with 12 of the 32 bytes but
-  copied completely,
-* no in-kernel driver fills all fields of an IEEE 802.1Qaz subcommand,
-  so we're leaking up to 58 bytes for ieee_ets structs, up to 136 bytes
-  for ieee_pfc structs, etc.,
-* the same is true for CEE -- no in-kernel driver fills the whole
-  struct,
+Path #1:
 
-Prevent all of the above stack info leaks by properly initializing the
-buffers/structures involved.
+blkdev_open
+ blkdev_get
+  __blkdev_get (hold bd_mutex)
+   lo_open (hold lo_ctl_mutex)
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Path #2:
+
+blkdev_ioctl
+ lo_ioctl (hold lo_ctl_mutex)
+  lo_set_capacity (hold bd_mutex)
+
+Lockdep does not report it, because path #2 actually holds a subclass of
+lo_ctl_mutex.  This subclass seems creep into the code by mistake.  The
+patch author actually just mentioned it in the changelog, see commit
+f028f3b2 ("loop: fix circular locking in loop_clr_fd()"), also see:
+
+	http://marc.info/?l=linux-kernel&m=123806169129727&w=2
+
+Path #2 hold bd_mutex to call bd_set_size(), I've protected it
+with i_mutex in a previous patch, so drop bd_mutex at this site.
+
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/dcb/dcbnl.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/net/dcb/dcbnl.c
-+++ b/net/dcb/dcbnl.c
-@@ -336,6 +336,7 @@ static int dcbnl_getperm_hwaddr(struct n
- 	dcb->dcb_family = AF_UNSPEC;
- 	dcb->cmd = DCB_CMD_GPERM_HWADDR;
+---
+ drivers/block/loop.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1263,11 +1263,9 @@ static int loop_set_capacity(struct loop
+ 	/* the width of sector_t may be narrow for bit-shift */
+ 	sz = sec;
+ 	sz <<= 9;
+-	mutex_lock(&bdev->bd_mutex);
+ 	bd_set_size(bdev, sz);
+ 	/* let user-space know about the new size */
+ 	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+-	mutex_unlock(&bdev->bd_mutex);
  
-+	memset(perm_addr, 0, sizeof(perm_addr));
- 	netdev->dcbnl_ops->getpermhwaddr(netdev, perm_addr);
- 
- 	ret = nla_put(dcbnl_skb, DCB_ATTR_PERM_HWADDR, sizeof(perm_addr),
-@@ -1238,6 +1239,7 @@ static int dcbnl_ieee_fill(struct sk_buf
- 
- 	if (ops->ieee_getets) {
- 		struct ieee_ets ets;
-+		memset(&ets, 0, sizeof(ets));
- 		err = ops->ieee_getets(netdev, &ets);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_IEEE_ETS, sizeof(ets), &ets);
-@@ -1245,6 +1247,7 @@ static int dcbnl_ieee_fill(struct sk_buf
- 
- 	if (ops->ieee_getpfc) {
- 		struct ieee_pfc pfc;
-+		memset(&pfc, 0, sizeof(pfc));
- 		err = ops->ieee_getpfc(netdev, &pfc);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_IEEE_PFC, sizeof(pfc), &pfc);
-@@ -1277,6 +1280,7 @@ static int dcbnl_ieee_fill(struct sk_buf
- 	/* get peer info if available */
- 	if (ops->ieee_peer_getets) {
- 		struct ieee_ets ets;
-+		memset(&ets, 0, sizeof(ets));
- 		err = ops->ieee_peer_getets(netdev, &ets);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_IEEE_PEER_ETS, sizeof(ets), &ets);
-@@ -1284,6 +1288,7 @@ static int dcbnl_ieee_fill(struct sk_buf
- 
- 	if (ops->ieee_peer_getpfc) {
- 		struct ieee_pfc pfc;
-+		memset(&pfc, 0, sizeof(pfc));
- 		err = ops->ieee_peer_getpfc(netdev, &pfc);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_IEEE_PEER_PFC, sizeof(pfc), &pfc);
-@@ -1463,6 +1468,7 @@ static int dcbnl_cee_fill(struct sk_buff
- 	/* peer info if available */
- 	if (ops->cee_peer_getpg) {
- 		struct cee_pg pg;
-+		memset(&pg, 0, sizeof(pg));
- 		err = ops->cee_peer_getpg(netdev, &pg);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_CEE_PEER_PG, sizeof(pg), &pg);
-@@ -1470,6 +1476,7 @@ static int dcbnl_cee_fill(struct sk_buff
- 
- 	if (ops->cee_peer_getpfc) {
- 		struct cee_pfc pfc;
-+		memset(&pfc, 0, sizeof(pfc));
- 		err = ops->cee_peer_getpfc(netdev, &pfc);
- 		if (!err)
- 			NLA_PUT(skb, DCB_ATTR_CEE_PEER_PFC, sizeof(pfc), &pfc);
+  out:
+ 	return err;
 
 
