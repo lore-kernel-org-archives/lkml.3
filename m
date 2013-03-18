@@ -1,34 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab3CRNzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:55:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43897 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab3CRNzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:55:00 -0400
-Date: Mon, 18 Mar 2013 14:54:58 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hdegoede@redhat.com
-Subject: Re: [PATCH] HID: usbhid: quirk for MSI GX680R led panel
-In-Reply-To: <20130318134702.GB11243@hansolo.jdub.homelinux.org>
-Message-ID: <alpine.LNX.2.00.1303181454500.9529@pobox.suse.cz>
-References: <20130318134702.GB11243@hansolo.jdub.homelinux.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752886Ab3CRN6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:58:13 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:54679 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3CRN6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 09:58:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <51471B85.5060404@broadcom.com>
+References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
+	<51471B85.5060404@broadcom.com>
+Date: Mon, 18 Mar 2013 14:58:08 +0100
+Message-ID: <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
+Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Piotr Haber <phaber@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013, Josh Boyer wrote:
+Hi Piotr
 
-> This keyboard backlight device causes a 10 second delay to boot.  Add it
-> to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
+On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
+> On 03/18/13 11:45, David Herrmann wrote:
+>> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
+>> wireless AP reconnection on: (14e4:4727)
+>>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
+>>
+>> Any attempt to reconnect to an AP results in timeouts no matter how near to the
+>> AP I am:
+>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
+>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
+>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
+>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
+>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
+>> ---
+>> Hi
+>>
+>> I tried coming up with a fix instead of reverting this commit, but the commit is
+>> way to big for me to understand what's going on. Sorry.
+>>
+>> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
+>> one time, but any further attempt resulted in:
+>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
+>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
+>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
+>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
+>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
+>>
+>> Even sitting right next to the AP didn't help so I started bisecting and it
+>> turned out to be:
+>>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
+>> Please revert it.
+>>
+>> Thanks
+>> David
+>>
+> Hi,
+> unfortunately this is not a first report of this patch breaking 4313 for some users.
+> I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
+> successfully in our test setup.
+> Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
+> <debugfs_mount>/brcmsmac/bcma0:0/hardware
 
-Applied, thanks.
+Hi
 
--- 
-Jiri Kosina
-SUSE Labs
+$ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
+board vendor: 185f
+board type: 51a
+board revision: 1408
+board flags: 8402a01
+board flags2: 880
+firmware revision: 262032b
+
+I can also try partial reverts of that commit, but I really don't know
+which parts might be important.
+
+Thanks
+David
