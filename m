@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab3CREgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:36:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33659 "EHLO
+	id S1752258Ab3CREbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:31:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33394 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752215Ab3CREbJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751324Ab3CREaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:31:09 -0400
-Message-Id: <20130318042147.156049633@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:04 -0400
+Message-Id: <20130318042145.861311995@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:13 +0000
+Date: Mon, 18 Mar 2013 04:22:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [ 29/82] iwlwifi: always copy first 16 bytes of commands
+Cc: akpm@linux-foundation.org, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 16/82] cifs: ensure that cifs_get_root() only traverses directories
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,192 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 8a964f44e01ad3bbc208c3e80d931ba91b9ea786 upstream.
+commit ce2ac52105aa663056dfc17966ebed1bf93e6e64 upstream.
 
-The FH hardware will always write back to the scratch field
-in commands, even host commands not just TX commands, which
-can overwrite parts of the command. This is problematic if
-the command is re-used (with IWL_HCMD_DFL_NOCOPY) and can
-cause calibration issues.
+Kjell Braden reported this oops:
 
-Address this problem by always putting at least the first
-16 bytes into the buffer we also use for the command header
-and therefore make the DMA engine write back into this.
+[  833.211970] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  833.212816] IP: [<          (null)>]           (null)
+[  833.213280] PGD 1b9b2067 PUD e9f7067 PMD 0
+[  833.213874] Oops: 0010 [#1] SMP
+[  833.214344] CPU 0
+[  833.214458] Modules linked in: des_generic md4 nls_utf8 cifs vboxvideo drm snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq bnep rfcomm snd_timer bluetooth snd_seq_device ppdev snd vboxguest parport_pc joydev mac_hid soundcore snd_page_alloc psmouse i2c_piix4 serio_raw lp parport usbhid hid e1000
+[  833.215629]
+[  833.215629] Pid: 1752, comm: mount.cifs Not tainted 3.0.0-rc7-bisectcifs-fec11dd9a0+ #18 innotek GmbH VirtualBox/VirtualBox
+[  833.215629] RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+[  833.215629] RSP: 0018:ffff8800119c9c50  EFLAGS: 00010282
+[  833.215629] RAX: ffffffffa02186c0 RBX: ffff88000c427780 RCX: 0000000000000000
+[  833.215629] RDX: 0000000000000000 RSI: ffff88000c427780 RDI: ffff88000c4362e8
+[  833.215629] RBP: ffff8800119c9c88 R08: ffff88001fc15e30 R09: 00000000d69515c7
+[  833.215629] R10: ffffffffa0201972 R11: ffff88000e8f6a28 R12: ffff88000c4362e8
+[  833.215629] R13: 0000000000000000 R14: 0000000000000000 R15: ffff88001181aaa6
+[  833.215629] FS:  00007f2986171700(0000) GS:ffff88001fc00000(0000) knlGS:0000000000000000
+[  833.215629] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  833.215629] CR2: 0000000000000000 CR3: 000000001b982000 CR4: 00000000000006f0
+[  833.215629] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  833.215629] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  833.215629] Process mount.cifs (pid: 1752, threadinfo ffff8800119c8000, task ffff88001c1c16f0)
+[  833.215629] Stack:
+[  833.215629]  ffffffff8116a9b5 ffff8800119c9c88 ffffffff81178075 0000000000000286
+[  833.215629]  0000000000000000 ffff88000c4276c0 ffff8800119c9ce8 ffff8800119c9cc8
+[  833.215629]  ffffffff8116b06e ffff88001bc6fc00 ffff88000c4276c0 ffff88000c4276c0
+[  833.215629] Call Trace:
+[  833.215629]  [<ffffffff8116a9b5>] ? d_alloc_and_lookup+0x45/0x90
+[  833.215629]  [<ffffffff81178075>] ? d_lookup+0x35/0x60
+[  833.215629]  [<ffffffff8116b06e>] __lookup_hash.part.14+0x9e/0xc0
+[  833.215629]  [<ffffffff8116b1d6>] lookup_one_len+0x146/0x1e0
+[  833.215629]  [<ffffffff815e4f7e>] ? _raw_spin_lock+0xe/0x20
+[  833.215629]  [<ffffffffa01eef0d>] cifs_do_mount+0x26d/0x500 [cifs]
+[  833.215629]  [<ffffffff81163bd3>] mount_fs+0x43/0x1b0
+[  833.215629]  [<ffffffff8117d41a>] vfs_kern_mount+0x6a/0xd0
+[  833.215629]  [<ffffffff8117e584>] do_kern_mount+0x54/0x110
+[  833.215629]  [<ffffffff8117fdc2>] do_mount+0x262/0x840
+[  833.215629]  [<ffffffff81108a0e>] ? __get_free_pages+0xe/0x50
+[  833.215629]  [<ffffffff8117f9ca>] ? copy_mount_options+0x3a/0x180
+[  833.215629]  [<ffffffff8118075d>] sys_mount+0x8d/0xe0
+[  833.215629]  [<ffffffff815ece82>] system_call_fastpath+0x16/0x1b
+[  833.215629] Code:  Bad RIP value.
+[  833.215629] RIP  [<          (null)>]           (null)
+[  833.215629]  RSP <ffff8800119c9c50>
+[  833.215629] CR2: 0000000000000000
+[  833.238525] ---[ end trace ec00758b8d44f529 ]---
 
-For commands that are smaller than 16 bytes also always map
-enough memory for the DMA engine to write back to.
+When walking down the path on the server, it's possible to hit a
+symlink. The path walking code assumes that the caller will handle that
+situation properly, but cifs_get_root() isn't set up for it. This patch
+prevents the oops by simply returning an error.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop the IWL_HCMD_DFL_DUP handling
- - Fix descriptor addresses and lengths for tracepoint, but otherwise
-   leave it unchanged]
+A better solution would be to try and chase the symlinks here, but that's
+fairly complicated to handle.
+
+Fixes:
+
+    https://bugzilla.kernel.org/show_bug.cgi?id=53221
+
+Reported-and-tested-by: Kjell Braden <afflux@pentabarf.de>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-@@ -180,6 +180,15 @@ struct iwl_queue {
- #define TFD_TX_CMD_SLOTS 256
- #define TFD_CMD_SLOTS 32
- 
-+/*
-+ * The FH will write back to the first TB only, so we need
-+ * to copy some data into the buffer regardless of whether
-+ * it should be mapped or not. This indicates how much to
-+ * copy, even for HCMDs it must be big enough to fit the
-+ * DRAM scratch from the TX cmd, at least 16 bytes.
-+ */
-+#define IWL_HCMD_MIN_COPY_SIZE	16
-+
- struct iwl_tx_queue {
- 	struct iwl_queue q;
- 	struct iwl_tfd *tfds;
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-@@ -688,11 +688,13 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	dma_addr_t phys_addr;
- 	unsigned long flags;
- 	u32 idx;
--	u16 copy_size, cmd_size;
-+	u16 copy_size, cmd_size, dma_size;
- 	bool is_ct_kill = false;
- 	bool had_nocopy = false;
- 	int i;
- 	u8 *cmd_dest;
-+	const u8 *cmddata[IWL_MAX_CMD_TFDS];
-+	u16 cmdlen[IWL_MAX_CMD_TFDS];
- #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
- 	const void *trace_bufs[IWL_MAX_CMD_TFDS + 1] = {};
- 	int trace_lens[IWL_MAX_CMD_TFDS + 1] = {};
-@@ -717,15 +719,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	BUILD_BUG_ON(IWL_MAX_CMD_TFDS > IWL_NUM_OF_TBS - 1);
- 
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
-+		cmddata[i] = cmd->data[i];
-+		cmdlen[i] = cmd->len[i];
-+
- 		if (!cmd->len[i])
- 			continue;
-+
-+		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
-+		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
-+			int copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
-+
-+			if (copy > cmdlen[i])
-+				copy = cmdlen[i];
-+			cmdlen[i] -= copy;
-+			cmddata[i] += copy;
-+			copy_size += copy;
-+		}
-+
- 		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY) {
- 			had_nocopy = true;
- 		} else {
- 			/* NOCOPY must not be followed by normal! */
- 			if (WARN_ON(had_nocopy))
- 				return -EINVAL;
--			copy_size += cmd->len[i];
-+			copy_size += cmdlen[i];
+ fs/cifs/cifsfs.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -561,6 +561,11 @@ cifs_get_root(struct smb_vol *vol, struc
+ 			dentry = ERR_PTR(-ENOENT);
+ 			break;
  		}
- 		cmd_size += cmd->len[i];
- 	}
-@@ -778,13 +795,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	/* and copy the data that needs to be copied */
- 
- 	cmd_dest = out_cmd->payload;
-+	copy_size = sizeof(out_cmd->hdr);
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
--		if (!cmd->len[i])
-+		int copy = 0;
-+
-+		if (!cmd->len)
- 			continue;
--		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY)
--			break;
--		memcpy(cmd_dest, cmd->data[i], cmd->len[i]);
--		cmd_dest += cmd->len[i];
-+
-+		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
-+		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
-+			copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
-+
-+			if (copy > cmd->len[i])
-+				copy = cmd->len[i];
++		if (!S_ISDIR(dir->i_mode)) {
++			dput(dentry);
++			dentry = ERR_PTR(-ENOTDIR);
++			break;
 +		}
-+
-+		/* copy everything if not nocopy/dup */
-+		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
-+			copy = cmd->len[i];
-+
-+		if (copy) {
-+			memcpy(cmd_dest, cmd->data[i], copy);
-+			cmd_dest += copy;
-+			copy_size += copy;
-+		}
- 	}
  
- 	IWL_DEBUG_HC(trans, "Sending command %s (#%x), seq: 0x%04X, "
-@@ -794,7 +828,14 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 			le16_to_cpu(out_cmd->hdr.sequence), cmd_size,
- 			q->write_ptr, idx, trans->shrd->cmd_queue);
- 
--	phys_addr = dma_map_single(bus(trans)->dev, &out_cmd->hdr, copy_size,
-+	/*
-+	 * If the entire command is smaller than IWL_HCMD_MIN_COPY_SIZE, we must
-+	 * still map at least that many bytes for the hardware to write back to.
-+	 * We have enough space, so that's not a problem.
-+	 */
-+	dma_size = max_t(u16, copy_size, IWL_HCMD_MIN_COPY_SIZE);
-+
-+	phys_addr = dma_map_single(bus(trans)->dev, &out_cmd->hdr, dma_size,
- 				DMA_BIDIRECTIONAL);
- 	if (unlikely(dma_mapping_error(bus(trans)->dev, phys_addr))) {
- 		idx = -ENOMEM;
-@@ -802,7 +843,7 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	}
- 
- 	dma_unmap_addr_set(out_meta, mapping, phys_addr);
--	dma_unmap_len_set(out_meta, len, copy_size);
-+	dma_unmap_len_set(out_meta, len, dma_size);
- 
- 	iwlagn_txq_attach_buf_to_tfd(trans, txq,
- 					phys_addr, copy_size, 1);
-@@ -812,14 +853,15 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	trace_idx = 1;
- #endif
- 
-+	/* map the remaining (adjusted) nocopy/dup fragments */
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
--		if (!cmd->len[i])
-+		if (!cmdlen[i])
- 			continue;
- 		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
- 			continue;
- 		phys_addr = dma_map_single(bus(trans)->dev,
--					   (void *)cmd->data[i],
--					   cmd->len[i], DMA_BIDIRECTIONAL);
-+					   (void *)cmddata[i],
-+					   cmdlen[i], DMA_BIDIRECTIONAL);
- 		if (dma_mapping_error(bus(trans)->dev, phys_addr)) {
- 			iwlagn_unmap_tfd(trans, out_meta,
- 					 &txq->tfds[q->write_ptr],
-@@ -829,10 +871,10 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 		}
- 
- 		iwlagn_txq_attach_buf_to_tfd(trans, txq, phys_addr,
--					     cmd->len[i], 0);
-+					     cmdlen[i], 0);
- #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
--		trace_bufs[trace_idx] = cmd->data[i];
--		trace_lens[trace_idx] = cmd->len[i];
-+		trace_bufs[trace_idx] = cmddata[i];
-+		trace_lens[trace_idx] = cmdlen[i];
- 		trace_idx++;
- #endif
- 	}
+ 		/* skip separators */
+ 		while (*s == sep)
 
 
