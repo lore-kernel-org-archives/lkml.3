@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3CRVIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:08:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45991 "EHLO
+	id S1756435Ab3CRVIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:08:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab3CRVIP (ORCPT
+	with ESMTP id S1756323Ab3CRVIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:15 -0400
+	Mon, 18 Mar 2013 17:08:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 46/48] rtnl: fix info leak on RTM_GETLINK request for VF devices
-Date: Mon, 18 Mar 2013 14:08:54 -0700
-Message-Id: <20130318210813.498678407@linuxfoundation.org>
+Subject: [ 41/48] tun: add a missing nf_reset() in tun_net_xmit()
+Date: Mon, 18 Mar 2013 14:08:49 -0700
+Message-Id: <20130318210813.158043808@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -28,32 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 ]
+[ Upstream commit f8af75f3517a24838a36eb5797a1a3e60bf9e276 ]
 
-Initialize the mac address buffer with 0 as the driver specific function
-will probably not fill the whole buffer. In fact, all in-kernel drivers
-fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
-bytes. Therefore we currently leak 26 bytes of stack memory to userland
-via the netlink interface.
+Dave reported following crash :
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+general protection fault: 0000 [#1] SMP
+CPU 2
+Pid: 25407, comm: qemu-kvm Not tainted 3.7.9-205.fc18.x86_64 #1 Hewlett-Packard HP Z400 Workstation/0B4Ch
+RIP: 0010:[<ffffffffa0399bd5>]  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+RSP: 0018:ffff880276913d78  EFLAGS: 00010206
+RAX: 50626b6b7876376c RBX: ffff88026e530d68 RCX: ffff88028d158e00
+RDX: ffff88026d0d5470 RSI: 0000000000000011 RDI: 0000000000000002
+RBP: ffff880276913d88 R08: 0000000000000000 R09: ffff880295002900
+R10: 0000000000000000 R11: 0000000000000003 R12: ffffffff81ca3b40
+R13: ffffffff8151a8e0 R14: ffff880270875000 R15: 0000000000000002
+FS:  00007ff3bce38a00(0000) GS:ffff88029fc40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fd1430bd000 CR3: 000000027042b000 CR4: 00000000000027e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process qemu-kvm (pid: 25407, threadinfo ffff880276912000, task ffff88028c369720)
+Stack:
+ ffff880156f59100 ffff880156f59100 ffff880276913d98 ffffffff815534f7
+ ffff880276913db8 ffffffff8151a74b ffff880270875000 ffff880156f59100
+ ffff880276913dd8 ffffffff8151a5a6 ffff880276913dd8 ffff88026d0d5470
+Call Trace:
+ [<ffffffff815534f7>] nf_conntrack_destroy+0x17/0x20
+ [<ffffffff8151a74b>] skb_release_head_state+0x7b/0x100
+ [<ffffffff8151a5a6>] __kfree_skb+0x16/0xa0
+ [<ffffffff8151a666>] kfree_skb+0x36/0xa0
+ [<ffffffff8151a8e0>] skb_queue_purge+0x20/0x40
+ [<ffffffffa02205f7>] __tun_detach+0x117/0x140 [tun]
+ [<ffffffffa022184c>] tun_chr_close+0x3c/0xd0 [tun]
+ [<ffffffff8119669c>] __fput+0xec/0x240
+ [<ffffffff811967fe>] ____fput+0xe/0x10
+ [<ffffffff8107eb27>] task_work_run+0xa7/0xe0
+ [<ffffffff810149e1>] do_notify_resume+0x71/0xb0
+ [<ffffffff81640152>] int_signal+0x12/0x17
+Code: 00 00 04 48 89 e5 41 54 53 48 89 fb 4c 8b a7 e8 00 00 00 0f 85 de 00 00 00 0f b6 73 3e 0f b7 7b 2a e8 10 40 00 00 48 85 c0 74 0e <48> 8b 40 28 48 85 c0 74 05 48 89 df ff d0 48 c7 c7 08 6a 3a a0
+RIP  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+ RSP <ffff880276913d78>
+
+This is because tun_net_xmit() needs to call nf_reset()
+before queuing skb into receive_queue
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/tun.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -975,6 +975,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
- 			 * report anything.
- 			 */
- 			ivi.spoofchk = -1;
-+			memset(ivi.mac, 0, sizeof(ivi.mac));
- 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
- 				break;
- 			vf_mac.vf =
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -417,6 +417,8 @@ static netdev_tx_t tun_net_xmit(struct s
+ 	 * for indefinite time. */
+ 	skb_orphan(skb);
+ 
++	nf_reset(skb);
++
+ 	/* Enqueue packet */
+ 	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
+ 
 
 
