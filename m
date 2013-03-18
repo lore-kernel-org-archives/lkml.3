@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3CRIKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:10:36 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1499 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3CRIKd convert rfc822-to-8bit (ORCPT
+	id S1752054Ab3CRIMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:12:44 -0400
+Received: from smtp-vbr8.xs4all.nl ([194.109.24.28]:4550 "EHLO
+	smtp-vbr8.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3CRIMm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:10:33 -0400
-X-Greylist: delayed 695 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 04:10:32 EDT
+	Mon, 18 Mar 2013 04:12:42 -0400
 From: Hans Verkuil <hverkuil@xs4all.nl>
 To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: Re: [RFC V1 2/8] smi2021: Add smi2021_main.c
-Date: Mon, 18 Mar 2013 08:58:47 +0100
+Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
+Date: Mon, 18 Mar 2013 09:12:31 +0100
 User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         elezegarcia@gmail.com
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
+In-Reply-To: <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201303180858.47329.hverkuil@xs4all.nl>
+Message-Id: <201303180912.31603.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon Arne,
-
-Here is my review of this driver.
-
-Regards,
-
-	Hans
-
-On Thu March 14 2013 15:06:58 Jon Arne Jørgensen wrote:
-> This is the core of the smi2021 module.
-> It will register the module with the kernel, and register the
-> usb probe function.
+On Thu March 14 2013 15:07:00 Jon Arne Jørgensen wrote:
+> This file is responsible for registering the device with the v4l2 subsystem,
+> and the communication with v4l2.
+> Most of the v4l2 ioctls are just passed on to vidbuf2.
 > 
 > Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
 > ---
->  drivers/media/usb/smi2021/smi2021_main.c | 339 +++++++++++++++++++++++++++++++
->  1 file changed, 339 insertions(+)
->  create mode 100644 drivers/media/usb/smi2021/smi2021_main.c
+>  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
+>  1 file changed, 566 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
 > 
-> diff --git a/drivers/media/usb/smi2021/smi2021_main.c b/drivers/media/usb/smi2021/smi2021_main.c
+> diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
 > new file mode 100644
-> index 0000000..cc600e7
+> index 0000000..d402093
 > --- /dev/null
-> +++ b/drivers/media/usb/smi2021/smi2021_main.c
-> @@ -0,0 +1,339 @@
+> +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> @@ -0,0 +1,566 @@
 > +/*******************************************************************************
-> + * smi2021_main.c                                                              *
+> + * smi2021_v4l2.c                                                              *
 > + *                                                                             *
-> + * USB Driver for SMI2021 - EasyCAP                                            *
+> + * USB Driver for smi2021 - EasyCap                                            *
 > + * USB ID 1c88:003c                                                            *
 > + *                                                                             *
 > + * *****************************************************************************
@@ -88,325 +79,572 @@ On Thu March 14 2013 15:06:58 Jon Arne Jørgensen wrote:
 > +
 > +#include "smi2021.h"
 > +
-> +#define VENDOR_ID 0x1c88
-> +
-> +static unsigned int imput;
-> +module_param(imput, int, 0644);
-> +MODULE_PARM_DESC(input, "Set default input");
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Jon Arne Jørgensen <jonjon.arnearne--a.t--gmail.com>");
-> +MODULE_DESCRIPTION("SMI2021 - EasyCap");
-> +MODULE_VERSION(SMI2021_DRIVER_VERSION);
-> +
-> +
-> +struct usb_device_id smi2021_usb_device_id_table[] = {
+> +static struct smi2021_fmt format[] = {
 
-Should be static const
+const.
 
-> +	{ USB_DEVICE(VENDOR_ID, 0x003c) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003d) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003e) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003f) },
-> +	{ }
+> +	{
+> +		.name = "16bpp YU2, 4:2:2, packed",
+> +		.fourcc = V4L2_PIX_FMT_UYVY,
+> +		.depth = 16,
+> +	}
 > +};
 > +
-> +MODULE_DEVICE_TABLE(usb, smi2021_usb_device_id_table);
-> +
-> +static unsigned short saa7113_addrs[] = {
-> +	0x4a,
-> +	I2C_CLIENT_END
+> +static const int inputs = 2;
+> +static struct smi2021_input input[] = {
+> +	{
+> +		.name = "Composite",
+> +		.type = SAA7115_COMPOSITE0,
+> +	},
+> +	{
+> +		.name = "S-Video",
+> +		.type = SAA7115_SVIDEO1,
+> +	}
 > +};
 
-Don't use this. See below for more info.
+const
 
 > +
-> +/******************************************************************************/
-> +/*                                                                            */
-> +/*          Write to saa7113                                                  */
-> +/*                                                                            */
-> +/******************************************************************************/
-> +
-> +inline int transfer_usb_ctrl(struct smi2021_dev *dev, u8 *data, int len)
+> +static void smi2021_set_input(struct smi2021_dev *dev)
 > +{
-> +	return usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
+> +	if (dev->udev == NULL)
+> +		return;
+
+These udev tests are unnecessary. Once the video_unregister is called no
+new ioctls or file operations (except release()) can ever be issued.
+
+> +
+> +	if (dev->ctl_input >= inputs) {
+> +		smi2021_err("BUG: ctl_input to big!\n");
+> +		return;
+> +	}
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_routing,
+> +		input[dev->ctl_input].type, 0, 0);
+> +}
+> +
+> +static int smi2021_start_streaming(struct smi2021_dev *dev)
+> +{
+> +	u8 data[2];
+> +	int i, rc = 0;
+
+Extra newline.
+
+> +	data[0] = 0x01;
+> +	data[1] = 0x05;
+> +
+> +	if (!dev->udev)
+> +		return -ENODEV;
+> +
+> +	dev->sync_state = HSYNC;
+> +	dev->buf_count = 0;
+> +
+> +	if (mutex_lock_interruptible(&dev->v4l2_lock))
+> +		return -ERESTARTSYS;
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 1);
+> +
+> +	/* The saa 7115 driver sets these wrong,
+> +	 * this leads to sync issues.
+> +	 * V_GATE1_START
+> +	 * V_GATE1_STOP
+> +	 * V_GATE1_MSB
+> +	 * All these should be 0x00 for this device.
+> +	 */
+> +	smi2021_write_reg(dev, 0x4a, 0x15, 0x00);
+> +	smi2021_write_reg(dev, 0x4a, 0x16, 0x00);
+> +	smi2021_write_reg(dev, 0x4a, 0x17, 0x00);
+> +
+> +	rc = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
 > +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-> +			0x0b, 0x00,
-> +			data, len, 1000);
-> +}
-> +
-> +int smi2021_write_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 val)
-> +{
-> +	int rc;
-> +	u8 snd_data[8];
-> +
-> +	memset(snd_data, 0x00, 8);
-> +
-> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
-> +	snd_data[SMI2021_CTRL_ADDR] = addr;
-> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
-> +
-> +	if (addr) {
-> +		/* This is I2C data for the saa7113 chip */
-> +		snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xc0;
-> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x01;
-> +
-> +		snd_data[SMI2021_CTRL_I2C_REG] = reg;
-> +		snd_data[SMI2021_CTRL_I2C_VAL] = val;
-> +	} else {
-> +		/* This is register settings for the smi2021 chip */
-> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x82;
-> +
-> +		snd_data[SMI2021_CTRL_REG_HI] = __cpu_to_be16(reg) >> 8;
-> +		snd_data[SMI2021_CTRL_REG_LO] = __cpu_to_be16(reg);
-
-This looks really weird. On a little endian system REG_HI is now initialized
-with the LSB, not MSB and the other way around on a big endian system.
-The _cpu_to_be16 certainly doesn't belong here.
-
-> +
-> +	}
-> +
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
+> +			0x01, 0x00, data, sizeof(data), 1000);
 > +	if (rc < 0) {
-> +		smi2021_warn("write failed on register 0x%x, errno: %d\n",
-> +			reg, rc);
-> +		return rc;
+> +		smi2021_err("Could not start device!\n");
+> +		goto out_unlock;
 > +	}
 > +
-> +	return 0;
-> +}
+> +	/* It's mandatory to set alt interface before allocating isoc buffer */
+> +	usb_set_interface(dev->udev, 0, 2);
 > +
-> +int smi2021_read_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 *val)
-> +{
-> +	int rc;
-> +	u8 rcv_data[13];
-> +	u8 snd_data[8];
-> +	memset(rcv_data, 0x00, 13);
-> +	memset(snd_data, 0x00, 8);
+> +	smi2021_write_reg(dev, 0, 0x1740, 0x1d);
 > +
-> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
-> +	snd_data[SMI2021_CTRL_ADDR] = addr;
-> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0x84;
-> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
-> +	snd_data[SMI2021_CTRL_I2C_REG] = reg;
-> +
-> +	*val = 0;
-> +
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
-> +	if (rc < 0) {
-> +		smi2021_warn(
-> +			"1st pass failing to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
+> +	if (!dev->isoc_ctl.num_bufs) {
+> +		rc = smi2021_alloc_isoc(dev);
+> +		if (rc < 0)
+> +			goto out_stop_hw;
 > +	}
 > +
-> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xa0;
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
-> +	if (rc < 0) {
-> +		smi2021_warn(
-> +			"2nd pass failing to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	rc = usb_control_msg(dev->udev,
-> +		usb_rcvctrlpipe(dev->udev, 0x80), 0x01,
-> +		USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-> +		0x0b, 0x00, rcv_data, 13, 1000);
-> +	if (rc < 0) {
-> +		smi2021_warn("Failed to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	*val = rcv_data[SMI2021_CTRL_I2C_RCV_VAL];
-> +	return 0;
-> +}
-> +
-> +static void smi2021_reset_device(struct smi2021_dev *dev)
-> +{
-> +	smi2021_write_reg(dev, 0, 0x3a, 0x80);
-> +	smi2021_write_reg(dev, 0, 0x3b, 0x80);
-> +	smi2021_write_reg(dev, 0, 0x3b, 0x00);
-> +}
-> +
-> +static void release_v4l2_dev(struct v4l2_device *v4l2_dev)
-> +{
-> +	struct smi2021_dev *dev = container_of(v4l2_dev, struct smi2021_dev,
-> +								v4l2_dev);
-> +	smi2021_dbg("Releasing all resources\n");
-> +
-> +	smi2021_i2c_unregister(dev);
-> +
-> +	v4l2_ctrl_handler_free(&dev->ctrl_handler);
-> +	v4l2_device_unregister(&dev->v4l2_dev);
-> +	kfree(dev);
-> +}
-> +
-> +#define hb_mult(w_max_packet_size) (1 + (((w_max_packet_size) >> 11) & 0x03))
-> +
-> +static int smi2021_scan_usb(struct usb_interface *intf, struct usb_device *udev)
-> +{
-> +	int i, e, ifnum, sizedescr, size;
-> +	const struct usb_endpoint_descriptor *desc;
-> +	ifnum = intf->altsetting[0].desc.bInterfaceNumber;
-> +
-> +	for (i = 0; i < intf->num_altsetting; i++) {
-> +		for (e = 0; e < intf->altsetting[i].desc.bNumEndpoints; e++) {
-> +			desc = &intf->altsetting[i].endpoint[e].desc;
-> +			sizedescr = le16_to_cpu(desc->wMaxPacketSize);
-> +			size = sizedescr & 0x7ff;
-> +
-> +			if (udev->speed == USB_SPEED_HIGH)
-> +				size = size * hb_mult(sizedescr);
+> +	/* submit urbs and enable IRQ */
+> +	for (i = 0; i < dev->isoc_ctl.num_bufs; i++) {
+> +		rc = usb_submit_urb(dev->isoc_ctl.urb[i], GFP_KERNEL);
+> +		if (rc) {
+> +			smi2021_err("cannot submit urb[%d] (%d)\n", i, rc);
+> +			goto out_uninit;
 > +		}
 > +	}
-> +	return 0;
-> +}
 > +
-> +/******************************************************************************/
-> +/*                                                                            */
-> +/*          DEVICE  -  PROBE   &   DISCONNECT                                 */
-> +/*                                                                            */
-> +/******************************************************************************/
-> +static int smi2021_usb_probe(struct usb_interface *intf,
-> +					const struct usb_device_id *devid)
-> +{
-> +	int rc = 0;
-> +	struct usb_device *udev = interface_to_usbdev(intf);
-> +	struct smi2021_dev *dev;
+> +	mutex_unlock(&dev->v4l2_lock);
 > +
-> +	if (udev == (struct usb_device *)NULL) {
-> +		smi2021_err("device is NULL\n");
-> +		return -EFAULT;
-> +	}
-> +
-> +	smi2021_scan_usb(intf, udev);
-> +
-> +	dev = kzalloc(sizeof(struct smi2021_dev), GFP_KERNEL);
-> +	if (dev == NULL)
-> +		return -ENOMEM;
-> +
-> +	dev->udev = udev;
-> +	dev->dev = &intf->dev;
-> +	usb_set_intfdata(intf, dev);
-> +
-> +	/* Initialize videobuf2 stuff */
-> +	rc = smi2021_vb2_setup(dev);
-> +	if (rc < 0)
-> +		goto free_err;
-> +
-> +	spin_lock_init(&dev->buf_lock);
-> +	mutex_init(&dev->v4l2_lock);
-> +	mutex_init(&dev->vb_queue_lock);
-> +
-> +	rc = v4l2_ctrl_handler_init(&dev->ctrl_handler, 0);
-> +	if (rc) {
-> +		smi2021_err("v4l2_ctrl_handler_init failed with: %d\n", rc);
-> +		goto free_err;
-> +	}
-> +
-> +	dev->v4l2_dev.release = release_v4l2_dev;
-> +	dev->v4l2_dev.ctrl_handler = &dev->ctrl_handler;
-> +	rc = v4l2_device_register(dev->dev, &dev->v4l2_dev);
-> +	if (rc) {
-> +		smi2021_err("v4l2_device_register failed with %d\n", rc);
-> +		goto free_ctrl;
-> +	}
-> +
-> +	smi2021_reset_device(dev);
-> +
-> +	rc = smi2021_i2c_register(dev);
-> +	if (rc < 0)
-> +		goto unreg_v4l2;
-> +
-> +	dev->sd_saa7113 = v4l2_i2c_new_subdev(&dev->v4l2_dev, &dev->i2c_adap,
-> +		"saa7113", 0, saa7113_addrs);
-
-Fill in the addr argument directly and use NULL for probe_addrs. Probing is
-not something new drivers should do.
-
-See also my comments in the i2c.c review.
-
-> +
-> +	smi2021_dbg("Driver version %s successfully loaded\n",
-> +			SMI2021_DRIVER_VERSION);
-> +
-> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, reset, 0);
-> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
-> +
-> +	rc = smi2021_snd_register(dev);
-> +	if (rc < 0)
-> +		goto unreg_i2c;
-> +
-> +	rc = smi2021_video_register(dev);
-> +	if (rc < 0)
-> +		goto unreg_snd;
-> +
+> +	smi2021_dbg("Streaming started!");
 > +	return 0;
 > +
-> +unreg_snd:
-> +	smi2021_snd_unregister(dev);
-> +unreg_i2c:
-> +	smi2021_i2c_unregister(dev);
-> +unreg_v4l2:
-> +	v4l2_device_unregister(&dev->v4l2_dev);
-> +free_ctrl:
-> +	v4l2_ctrl_handler_free(&dev->ctrl_handler);
-> +free_err:
-> +	kfree(dev);
+> +out_uninit:
+> +	smi2021_uninit_isoc(dev);
+> +out_stop_hw:
+> +	usb_set_interface(dev->udev, 0, 0);
+> +	smi2021_clear_queue(dev);
+> +
+> +out_unlock:
+> +	mutex_unlock(&dev->v4l2_lock);
 > +
 > +	return rc;
 > +}
 > +
-> +static void smi2021_usb_disconnect(struct usb_interface *intf)
+> +/* Must be called with v4l2_lock hold */
+> +static void smi2021_stop_hw(struct smi2021_dev *dev)
 > +{
-> +	struct smi2021_dev *dev = usb_get_intfdata(intf);
+> +	int rc = 0;
+> +	u8 data[] = { 0x01, 0x03 };
 > +
-> +	smi2021_dbg("Going for release!\n");
+> +	if (!dev->udev)
+> +		return;
 > +
-> +	usb_set_intfdata(intf, NULL);
+> +	usb_set_interface(dev->udev, 0, 0);
 > +
-> +	mutex_lock(&dev->vb_queue_lock);
-> +	mutex_lock(&dev->v4l2_lock);
+> +	rc = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
+> +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0x01, 0x00, data, sizeof(data), 1000);
+> +	if (rc < 0)
+> +		smi2021_err("Could not stop device!\n");
 > +
-> +	smi2021_uninit_isoc(dev);
-> +	smi2021_clear_queue(dev);
-> +
-> +	video_unregister_device(&dev->vdev);
-> +	v4l2_device_disconnect(&dev->v4l2_dev);
-> +
-> +	/* This way current users can detect device is gone */
-> +	dev->udev = NULL;
-> +
-> +	mutex_unlock(&dev->v4l2_lock);
-> +	mutex_unlock(&dev->vb_queue_lock);
-> +
-> +	smi2021_snd_unregister(dev);
-> +
-> +	/*
-> +	 * This calls release_v4l2_dev if it's the last reference.
-> +	 * Otherwise, the release is postponed until there are no users left.
-> +	 */
-> +	v4l2_device_put(&dev->v4l2_dev);
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
 > +}
 > +
-> +/******************************************************************************/
-> +/*                                                                            */
-> +/*            MODULE  -  INIT  &  EXIT                                        */
-> +/*                                                                            */
-> +/******************************************************************************/
+> +static int smi2021_stop_streaming(struct smi2021_dev *dev)
+> +{
+> +	/* HACK: Stop the audio subsystem,
+> +	 * without this, the pcm middle-layer will hang waiting for more data.
+> +	 *
+> +	 * Is there a better way to do this?
+> +	 */
+> +	if (dev->pcm_substream && dev->pcm_substream->runtime) {
+> +		struct snd_pcm_runtime *runtime = dev->pcm_substream->runtime;
+> +		if (runtime->status) {
+> +			runtime->status->state = SNDRV_PCM_STATE_DRAINING;
+> +			wake_up(&runtime->sleep);
+> +		}
+> +	}
 > +
-> +struct usb_driver smi2021_usb_driver = {
-> +	.name = "smi2021",
-> +	.id_table = smi2021_usb_device_id_table,
-> +	.probe = smi2021_usb_probe,
-> +	.disconnect = smi2021_usb_disconnect
+> +	if (mutex_lock_interruptible(&dev->v4l2_lock))
+> +		return -ERESTARTSYS;
+> +
+> +	smi2021_cancel_isoc(dev);
+> +	smi2021_free_isoc(dev);
+> +	smi2021_stop_hw(dev);
+> +	smi2021_clear_queue(dev);
+> +
+> +	smi2021_dbg("Streaming stopped!\n");
+> +
+> +	mutex_unlock(&dev->v4l2_lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct v4l2_file_operations smi2021_fops = {
+> +	.owner = THIS_MODULE,
+> +	.open = v4l2_fh_open,
+> +	.release = vb2_fop_release,
+> +	.read = vb2_fop_read,
+> +	.poll = vb2_fop_poll,
+> +	.mmap = vb2_fop_mmap,
+> +	.unlocked_ioctl = video_ioctl2,
 > +};
 > +
-> +module_usb_driver(smi2021_usb_driver);
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          Vidioc IOCTLS                                                     */
+> +/*                                                                            */
+> +/******************************************************************************/
 > +
+> +static int vidioc_enum_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_fmtdesc *f)
+> +{
+> +	if (f->index != 0)
+> +		return -EINVAL;
+> +
+> +	strlcpy(f->description, format[f->index].name, sizeof(f->description));
+> +	f->pixelformat = format[f->index].fourcc;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_querycap(struct file *file, void *priv,
+> +			struct v4l2_capability *cap)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	strcpy(cap->driver, "smi2021");
+> +	strcpy(cap->card, "smi2021");
+> +	usb_make_path(dev->udev, cap->bus_info, sizeof(cap->bus_info));
+> +	cap->device_caps =
+> +		V4L2_CAP_VIDEO_CAPTURE |
+> +		V4L2_CAP_STREAMING |
+> +		V4L2_CAP_READWRITE;
+> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	f->fmt.pix.pixelformat = dev->fmt->fourcc;
+> +	f->fmt.pix.width = dev->width;
+> +	f->fmt.pix.height = dev->height;
+> +	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
+> +	f->fmt.pix.bytesperline = dev->width * 2;
+> +	f->fmt.pix.sizeimage = dev->height * f->fmt.pix.bytesperline;
+> +	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
+> +	f->fmt.pix.priv = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	f->fmt.pix.pixelformat = dev->fmt->fourcc;
+> +	f->fmt.pix.width = dev->width;
+> +	f->fmt.pix.height = dev->height;
+> +	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
+> +	f->fmt.pix.bytesperline = dev->width * 2;
+> +	f->fmt.pix.sizeimage = dev->height * f->fmt.pix.bytesperline;
+> +	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
+> +	f->fmt.pix.priv = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+> +			struct v4l2_format *f)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +	struct vb2_queue *q = &dev->vb_vidq;
+> +
+> +	if (vb2_is_busy(q))
+> +		return -EBUSY;
+> +
+> +	vidioc_try_fmt_vid_cap(file, priv, f);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_querystd(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, querystd, norm);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_std(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	*norm = dev->norm;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id *norm)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +	struct vb2_queue *q = &dev->vb_vidq;
+> +
+> +	if (vb2_is_busy(q))
+> +		return -EBUSY;
+> +
+> +	if (!dev->udev)
+> +		return -ENODEV;
+> +
+> +	dev->norm = *norm;
+> +	if (dev->norm & V4L2_STD_525_60) {
+> +		dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +		dev->height = SMI2021_NTSC_LINES;
+> +	} else if (dev->norm & V4L2_STD_625_50) {
+> +		dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +		dev->height =  SMI2021_PAL_LINES;
+> +	} else {
+> +		smi2021_err("Invalid standard\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_std, dev->norm);
+> +	return 0;
+> +}
+> +
+> +static int vidioc_enum_input(struct file *file, void *priv,
+> +				struct v4l2_input *i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	if (i->index >= inputs)
+> +		return -EINVAL;
+> +
+> +	strlcpy(i->name, input[i->index].name, sizeof(i->name));
+> +	i->type = V4L2_INPUT_TYPE_CAMERA;
+> +	i->std = dev->vdev.tvnorms;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_input(struct file *file, void *priv, unsigned int *i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+
+newline
+
+> +	*i = dev->ctl_input;
+> +	return 0;
+> +}
+> +
+> +static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
+> +{
+> +	struct smi2021_dev *dev = video_drvdata(file);
+> +
+> +	if (i >= inputs)
+> +		return -EINVAL;
+> +
+> +	dev->ctl_input = i;
+> +	smi2021_set_input(dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int vidioc_g_chip_ident(struct file *file, void *priv,
+> +			struct v4l2_dbg_chip_ident *chip)
+> +{
+> +	switch (chip->match.type) {
+> +	case V4L2_CHIP_MATCH_HOST:
+> +		chip->ident = V4L2_IDENT_NONE;
+> +		chip->revision = 0;
+> +		return 0;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static const struct v4l2_ioctl_ops smi2021_ioctl_ops = {
+> +	.vidioc_querycap		= vidioc_querycap,
+> +	.vidioc_enum_fmt_vid_cap	= vidioc_enum_fmt_vid_cap,
+> +	.vidioc_g_fmt_vid_cap		= vidioc_g_fmt_vid_cap,
+> +	.vidioc_try_fmt_vid_cap		= vidioc_try_fmt_vid_cap,
+> +	.vidioc_s_fmt_vid_cap		= vidioc_s_fmt_vid_cap,
+> +	.vidioc_querystd		= vidioc_querystd,
+> +	.vidioc_g_std			= vidioc_g_std,
+> +	.vidioc_s_std			= vidioc_s_std,
+> +	.vidioc_enum_input		= vidioc_enum_input,
+> +	.vidioc_g_input			= vidioc_g_input,
+> +	.vidioc_s_input			= vidioc_s_input,
+> +
+> +	/* vb2 handle these */
+> +	.vidioc_reqbufs			= vb2_ioctl_reqbufs,
+> +	.vidioc_create_bufs		= vb2_ioctl_create_bufs,
+> +	.vidioc_querybuf		= vb2_ioctl_querybuf,
+> +	.vidioc_qbuf			= vb2_ioctl_qbuf,
+> +	.vidioc_dqbuf			= vb2_ioctl_dqbuf,
+> +	.vidioc_streamon		= vb2_ioctl_streamon,
+> +	.vidioc_streamoff		= vb2_ioctl_streamoff,
+> +
+> +	.vidioc_log_status		= v4l2_ctrl_log_status,
+> +	.vidioc_subscribe_event		= v4l2_ctrl_subscribe_event,
+> +	.vidioc_unsubscribe_event	= v4l2_event_unsubscribe,
+> +	.vidioc_g_chip_ident		= vidioc_g_chip_ident,
+> +
+> +};
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          Videobuf2 operations                                              */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +static int queue_setup(struct vb2_queue *vq,
+> +				const struct v4l2_format *v4l2_fmt,
+> +				unsigned int *nbuffers, unsigned int *nplanes,
+> +				unsigned int sizes[], void *alloc_ctxs[])
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+> +	unsigned long size;
+> +
+> +	size = dev->width * dev->height * 2;
+> +
+> +	*nbuffers = clamp_t(unsigned int, *nbuffers, 2, 4);
+> +
+> +	/* Packed color format */
+> +	*nplanes = 1;
+> +	sizes[0] = size;
+> +
+> +	return 0;
+> +}
+> +
+> +static void buffer_queue(struct vb2_buffer *vb)
+> +{
+> +	unsigned long flags;
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
+> +	struct smi2021_buffer *buf = container_of(vb, struct smi2021_buffer,
+> +							vb);
+
+Just put this in one line, the dangling vb looks odd.
+
+> +
+> +	spin_lock_irqsave(&dev->buf_lock, flags);
+> +	if (!dev->udev) {
+> +		/*
+> +		 * If the device is disconnected return the buffer to userspace
+> +		 * directly. The next QBUF call will fail with -ENODEV.
+> +		 */
+> +		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +	} else {
+> +		buf->mem = vb2_plane_vaddr(vb, 0);
+> +		buf->length = vb2_plane_size(vb, 0);
+> +
+> +		buf->pos = 0;
+> +		buf->trc_av = 0;
+> +		buf->in_blank = true;
+> +		buf->second_field = false;
+> +
+> +		if (buf->length < dev->width * dev->height * 2)
+> +			vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +		else
+> +			list_add_tail(&buf->list, &dev->avail_bufs);
+> +	}
+> +	spin_unlock_irqrestore(&dev->buf_lock, flags);
+> +}
+> +
+> +static int start_streaming(struct vb2_queue *vq, unsigned int count)
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+
+newline
+
+> +	return smi2021_start_streaming(dev);
+
+Why not move smi2021_start_streaming in here?
+
+> +}
+> +
+> +static int stop_streaming(struct vb2_queue *vq)
+> +{
+> +	struct smi2021_dev *dev = vb2_get_drv_priv(vq);
+
+newline
+
+> +	return smi2021_stop_streaming(dev);
+
+same question.
+
+> +}
+> +
+> +static struct vb2_ops smi2021_video_qops = {
+> +	.queue_setup		= queue_setup,
+> +	.buf_queue		= buffer_queue,
+> +	.start_streaming	= start_streaming,
+> +	.stop_streaming		= stop_streaming,
+> +	.wait_prepare		= vb2_ops_wait_prepare,
+> +	.wait_finish		= vb2_ops_wait_finish,
+> +};
+> +
+> +static struct video_device v4l2_template = {
+> +	.name			= "easycap_smi2021_dc60",
+> +	.tvnorms		= V4L2_STD_625_50 | V4L2_STD_525_60,
+
+Use V4L2_STD_ALL.
+
+> +	.fops			= &smi2021_fops,
+> +	.ioctl_ops		= &smi2021_ioctl_ops,
+> +	.release		= video_device_release_empty,
+> +};
+> +
+> +/* Must be called with both v4l2_lock and vb_queue_lock hold */
+> +void smi2021_clear_queue(struct smi2021_dev *dev)
+> +{
+> +	struct smi2021_buffer *buf;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&dev->buf_lock, flags);
+> +	while (!list_empty(&dev->avail_bufs)) {
+> +		buf = list_first_entry(&dev->avail_bufs,
+> +			struct smi2021_buffer, list);
+> +		list_del(&buf->list);
+> +		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+> +	}
+> +	dev->isoc_ctl.buf = NULL;
+> +	spin_unlock_irqrestore(&dev->buf_lock, flags);
+> +}
+> +
+> +int smi2021_vb2_setup(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +	struct vb2_queue *q;
+> +
+> +	q = &dev->vb_vidq;
+> +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
+> +	q->drv_priv = dev;
+> +	q->buf_struct_size = sizeof(struct smi2021_buffer);
+> +	q->ops = &smi2021_video_qops;
+> +	q->mem_ops = &vb2_vmalloc_memops;
+> +
+> +	rc = vb2_queue_init(q);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	/* Initialize video dma queue */
+> +	INIT_LIST_HEAD(&dev->avail_bufs);
+> +
+> +	return 0;
+> +}
+> +
+> +int smi2021_video_register(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +
+> +	dev->vdev = v4l2_template;
+> +	dev->vdev.debug = 0;
+
+No need for this, it's already 0.
+
+> +	dev->vdev.queue = &dev->vb_vidq;
+> +
+> +	dev->vdev.lock = &dev->v4l2_lock;
+> +	dev->vdev.queue->lock = &dev->vb_queue_lock;
+> +
+> +	dev->vdev.v4l2_dev = &dev->v4l2_dev;
+> +	set_bit(V4L2_FL_USE_FH_PRIO, &dev->vdev.flags);
+> +
+> +	/* PAL is default */
+> +	dev->norm = V4L2_STD_PAL;
+> +	dev->width = SMI2021_BYTES_PER_LINE / 2;
+> +	dev->height = SMI2021_PAL_LINES;
+> +
+> +	dev->fmt = &format[0];
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_std, dev->norm);
+> +	smi2021_set_input(dev);
+> +
+> +	video_set_drvdata(&dev->vdev, dev);
+> +	rc = video_register_device(&dev->vdev, VFL_TYPE_GRABBER, -1);
+> +	if (rc < 0) {
+> +		smi2021_err("video_register_device failed %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	v4l2_info(&dev->v4l2_dev, "V4L2 device registered as %s\n",
+> +		video_device_node_name(&dev->vdev));
+> +
+> +	return 0;
+> +}
 > 
 
 Regards,
