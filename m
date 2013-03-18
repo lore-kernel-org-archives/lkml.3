@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3CREbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33355 "EHLO
+	id S1752244Ab3CREkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:40:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33624 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750773Ab3CREaB (ORCPT
+	by vger.kernel.org with ESMTP id S1752134Ab3CREa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:01 -0400
-Message-Id: <20130318042145.344260218@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:59 -0400
+Message-Id: <20130318042148.105694937@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:55 +0000
+Date: Mon, 18 Mar 2013 04:22:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, NeilBrown <neilb@suse.de>
-Subject: [ 11/82] md: raid0: fix error return from create_stripe_zones.
+Cc: akpm@linux-foundation.org, Josh Boyer <jwboyer@redhat.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 40/82] efi: be more paranoid about available space when  creating variables
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,39 +28,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 58ebb34c49fcfcaa029e4b1c1453d92583900f9a upstream.
+commit 68d929862e29a8b52a7f2f2f86a0600423b093cd upstream.
 
-Create_stripe_zones returns an error slightly differently to
-raid0_run and to raid0_takeover_*.
+UEFI variables are typically stored in flash. For various reasons, avaiable
+space is typically not reclaimed immediately upon the deletion of a
+variable - instead, the system will garbage collect during initialisation
+after a reboot.
 
-The error returned used by the second was wrong and an error would
-result in mddev->private being set to NULL and sooner or later a
-crash.
+Some systems appear to handle this garbage collection extremely poorly,
+failing if more than 50% of the system flash is in use. This can result in
+the machine refusing to boot. The safest thing to do for the moment is to
+forbid writes if they'd end up using more than half of the storage space.
+We can make this more finegrained later if we come up with a method for
+identifying the broken machines.
 
-So never return NULL, return ERR_PTR(err), not NULL from
-create_stripe_zones.
-
-This bug has been present since 2.6.35 so the fix is suitable
-for any kernel since then.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[bwh: Backported to 3.2:
+ - Drop efivarfs changes and unused check_var_size()
+ - Add error codes to include/linux/efi.h, added upstream by
+   commit 5d9db883761a ('efi: Add support for a UEFI variable filesystem')
+ - Add efi_status_to_err(), added upstream by commit 7253eaba7b17
+   ('efivarfs: Return an error if we fail to read a variable')]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid0.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firmware/efivars.c | 106 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 79 insertions(+), 27 deletions(-)
 
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -286,7 +286,7 @@ abort:
- 	kfree(conf->strip_zone);
- 	kfree(conf->devlist);
- 	kfree(conf);
--	*private_conf = NULL;
-+	*private_conf = ERR_PTR(err);
- 	return err;
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -406,6 +406,30 @@ get_var_data(struct efivars *efivars, st
+ 	return status;
  }
  
++static efi_status_t
++check_var_size_locked(struct efivars *efivars, u32 attributes,
++			unsigned long size)
++{
++	u64 storage_size, remaining_size, max_size;
++	efi_status_t status;
++	const struct efivar_operations *fops = efivars->ops;
++
++	if (!efivars->ops->query_variable_info)
++		return EFI_UNSUPPORTED;
++
++	status = fops->query_variable_info(attributes, &storage_size,
++					   &remaining_size, &max_size);
++
++	if (status != EFI_SUCCESS)
++		return status;
++
++	if (!storage_size || size > remaining_size || size > max_size ||
++	    (remaining_size - size) < (storage_size / 2))
++		return EFI_OUT_OF_RESOURCES;
++
++	return status;
++}
++
+ static ssize_t
+ efivar_guid_read(struct efivar_entry *entry, char *buf)
+ {
+@@ -527,11 +551,16 @@ efivar_store_raw(struct efivar_entry *en
+ 	}
+ 
+ 	spin_lock_irq(&efivars->lock);
+-	status = efivars->ops->set_variable(new_var->VariableName,
+-					    &new_var->VendorGuid,
+-					    new_var->Attributes,
+-					    new_var->DataSize,
+-					    new_var->Data);
++
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
++		status = efivars->ops->set_variable(new_var->VariableName,
++						    &new_var->VendorGuid,
++						    new_var->Attributes,
++						    new_var->DataSize,
++						    new_var->Data);
+ 
+ 	spin_unlock_irq(&efivars->lock);
+ 
+@@ -638,6 +667,36 @@ efivar_unregister(struct efivar_entry *v
+ 	kobject_put(&var->kobj);
+ }
+ 
++static int efi_status_to_err(efi_status_t status)
++{
++	int err;
++
++	switch (status) {
++	case EFI_INVALID_PARAMETER:
++		err = -EINVAL;
++		break;
++	case EFI_OUT_OF_RESOURCES:
++		err = -ENOSPC;
++		break;
++	case EFI_DEVICE_ERROR:
++		err = -EIO;
++		break;
++	case EFI_WRITE_PROTECTED:
++		err = -EROFS;
++		break;
++	case EFI_SECURITY_VIOLATION:
++		err = -EACCES;
++		break;
++	case EFI_NOT_FOUND:
++		err = -ENOENT;
++		break;
++	default:
++		err = -EINVAL;
++	}
++
++	return err;
++}
++
+ #ifdef CONFIG_PSTORE
+ 
+ static int efi_pstore_open(struct pstore_info *psi)
+@@ -707,7 +766,6 @@ static int efi_pstore_write(enum pstore_
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
+-	u64 storage_space, remaining_space, max_variable_size;
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	unsigned long flags;
+ 
+@@ -721,11 +779,11 @@ static int efi_pstore_write(enum pstore_
+ 	 * size: a size of logging data
+ 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
+ 	 */
+-	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
+-						   &storage_space,
+-						   &remaining_space,
+-						   &max_variable_size);
+-	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++
++	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
++					 size + DUMP_NAME_LEN * 2);
++
++	if (status) {
+ 		spin_unlock_irqrestore(&efivars->lock, flags);
+ 		*id = part;
+ 		return -ENOSPC;
+@@ -872,6 +930,14 @@ static ssize_t efivar_create(struct file
+ 		return -EINVAL;
+ 	}
+ 
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status && status != EFI_UNSUPPORTED) {
++		spin_unlock_irq(&efivars->lock);
++		return efi_status_to_err(status);
++	}
++
+ 	/* now *really* create the variable via EFI */
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -30,7 +30,12 @@
+ #define EFI_UNSUPPORTED		( 3 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_BAD_BUFFER_SIZE     ( 4 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_BUFFER_TOO_SMALL	( 5 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_NOT_READY		( 6 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_DEVICE_ERROR	( 7 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_WRITE_PROTECTED	( 8 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_OUT_OF_RESOURCES	( 9 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_NOT_FOUND		(14 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_SECURITY_VIOLATION	(26 | (1UL << (BITS_PER_LONG-1)))
+ 
+ typedef unsigned long efi_status_t;
+ typedef u8 efi_bool_t;
 
 
