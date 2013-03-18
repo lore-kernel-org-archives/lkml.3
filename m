@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab3CREbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33430 "EHLO
+	id S1752537Ab3CREgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:36:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33704 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751563Ab3CREaS (ORCPT
+	by vger.kernel.org with ESMTP id S1752288Ab3CREbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:18 -0400
-Message-Id: <20130318042152.107067585@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:11 -0400
+Message-Id: <20130318042146.472232541@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:23:05 +0000
+Date: Mon, 18 Mar 2013 04:22:06 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Sandeen <sandeen@redhat.com>,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 81/82] btrfs: use rcu_barrier() to wait for bdev puts at unmount
+Cc: akpm@linux-foundation.org, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 22/82] hwmon: (pmbus/ltc2978) Fix peak attribute handling
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,57 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit bc178622d40d87e75abc131007342429c9b03351 upstream.
+commit dbd712c2272764a536e29ad6841dba74989a39d9 upstream.
 
-Doing this would reliably fail with -EBUSY for me:
+Peak attributes were not initialized and cleared correctly.
+Also, temp2_max is only supported on page 0 and thus does not need to be
+an array.
 
-# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
-...
-unable to open /dev/sdb2: Device or resource busy
-
-because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
-
-Using systemtap to track bdev gets & puts shows a kworker thread doing a
-blkdev put after mkfs attempts a get; this is left over from the unmount
-path:
-
-btrfs_close_devices
-	__btrfs_close_devices
-		call_rcu(&device->rcu, free_device);
-			free_device
-				INIT_WORK(&device->rcu_work, __free_device);
-				schedule_work(&device->rcu_work);
-
-so unmount might complete before __free_device fires & does its blkdev_put.
-
-Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
-until all blkdev_put()s are done, and the device is truly free once
-unmount completes.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/volumes.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/hwmon/pmbus/ltc2978.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -577,6 +577,12 @@ int btrfs_close_devices(struct btrfs_fs_
- 		__btrfs_close_devices(fs_devices);
- 		free_fs_devices(fs_devices);
- 	}
-+	/*
-+	 * Wait for rcu kworkers under __btrfs_close_devices
-+	 * to finish all blkdev_puts so device is really
-+	 * free when umount is done.
-+	 */
-+	rcu_barrier();
- 	return ret;
- }
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -62,7 +62,7 @@ struct ltc2978_data {
+ 	int temp_min, temp_max;
+ 	int vout_min[8], vout_max[8];
+ 	int iout_max[2];
+-	int temp2_max[2];
++	int temp2_max;
+ 	struct pmbus_driver_info info;
+ };
  
+@@ -204,10 +204,9 @@ static int ltc3880_read_word_data(struct
+ 		ret = pmbus_read_word_data(client, page,
+ 					   LTC3880_MFR_TEMPERATURE2_PEAK);
+ 		if (ret >= 0) {
+-			if (lin11_to_val(ret)
+-			    > lin11_to_val(data->temp2_max[page]))
+-				data->temp2_max[page] = ret;
+-			ret = data->temp2_max[page];
++			if (lin11_to_val(ret) > lin11_to_val(data->temp2_max))
++				data->temp2_max = ret;
++			ret = data->temp2_max;
+ 		}
+ 		break;
+ 	case PMBUS_VIRT_READ_VIN_MIN:
+@@ -248,11 +247,11 @@ static int ltc2978_write_word_data(struc
+ 
+ 	switch (reg) {
+ 	case PMBUS_VIRT_RESET_IOUT_HISTORY:
+-		data->iout_max[page] = 0x7fff;
++		data->iout_max[page] = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	case PMBUS_VIRT_RESET_TEMP2_HISTORY:
+-		data->temp2_max[page] = 0x7fff;
++		data->temp2_max = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
+@@ -262,12 +261,12 @@ static int ltc2978_write_word_data(struc
+ 		break;
+ 	case PMBUS_VIRT_RESET_VIN_HISTORY:
+ 		data->vin_min = 0x7bff;
+-		data->vin_max = 0;
++		data->vin_max = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
+ 		data->temp_min = 0x7bff;
+-		data->temp_max = 0x7fff;
++		data->temp_max = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	default:
+@@ -323,10 +322,11 @@ static int ltc2978_probe(struct i2c_clie
+ 	info = &data->info;
+ 	info->write_word_data = ltc2978_write_word_data;
+ 
+-	data->vout_min[0] = 0xffff;
+ 	data->vin_min = 0x7bff;
++	data->vin_max = 0x7c00;
+ 	data->temp_min = 0x7bff;
+-	data->temp_max = 0x7fff;
++	data->temp_max = 0x7c00;
++	data->temp2_max = 0x7c00;
+ 
+ 	switch (id->driver_data) {
+ 	case ltc2978:
+@@ -338,7 +338,6 @@ static int ltc2978_probe(struct i2c_clie
+ 		for (i = 1; i < 8; i++) {
+ 			info->func[i] = PMBUS_HAVE_VOUT
+ 			  | PMBUS_HAVE_STATUS_VOUT;
+-			data->vout_min[i] = 0xffff;
+ 		}
+ 		break;
+ 	case ltc3880:
+@@ -354,12 +353,15 @@ static int ltc2978_probe(struct i2c_clie
+ 		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT
+ 		  | PMBUS_HAVE_POUT
+ 		  | PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP;
+-		data->vout_min[1] = 0xffff;
++		data->iout_max[0] = 0x7c00;
++		data->iout_max[1] = 0x7c00;
+ 		break;
+ 	default:
+ 		ret = -ENODEV;
+ 		goto err_mem;
+ 	}
++	for (i = 0; i < info->pages; i++)
++		data->vout_min[i] = 0xffff;
+ 
+ 	ret = pmbus_do_probe(client, id, info);
+ 	if (ret)
 
 
