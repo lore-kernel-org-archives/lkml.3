@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab3CRI3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:29:19 -0400
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:2183 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab3CRI3S convert rfc822-to-8bit (ORCPT
+	id S1752635Ab3CRIaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:30:09 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:43520 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3CRIaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:29:18 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
-Date: Mon, 18 Mar 2013 09:29:07 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
+	Mon, 18 Mar 2013 04:30:06 -0400
+Date: Mon, 18 Mar 2013 09:32:51 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: drm/i915: new warning (regression) in 3.7.10 and 3.8.3
+Message-ID: <20130318083251.GQ9021@phenom.ffwll.local>
+Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	David Airlie <airlied@linux.ie>
+References: <20130316122849.GA3753@netboy.at.omicron.at>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303180929.07864.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130316122849.GA3753@netboy.at.omicron.at>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu March 14 2013 15:07:00 Jon Arne Jørgensen wrote:
-> This file is responsible for registering the device with the v4l2 subsystem,
-> and the communication with v4l2.
-> Most of the v4l2 ioctls are just passed on to vidbuf2.
+On Sat, Mar 16, 2013 at 01:28:50PM +0100, Richard Cochran wrote:
 > 
-> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> ---
->  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
->  1 file changed, 566 insertions(+)
->  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
+> I have an Acer Aspire One netbook, and on it I get the following
+> warning when closing and opening the lid. I think this warning first
+> appeared in 3.7.
 > 
-> diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
-> new file mode 100644
-> index 0000000..d402093
-> --- /dev/null
-> +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
-> @@ -0,0 +1,566 @@
+> Does this need fixing? If so, who can do it?
 
-...
+Another pesky BIOS which changes the display state behind our back on lid
+closing! Should be duct-tapped over with
 
-> +int smi2021_vb2_setup(struct smi2021_dev *dev)
-> +{
-> +	int rc;
-> +	struct vb2_queue *q;
-> +
-> +	q = &dev->vb_vidq;
-> +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
-> +	q->drv_priv = dev;
-> +	q->buf_struct_size = sizeof(struct smi2021_buffer);
-> +	q->ops = &smi2021_video_qops;
-> +	q->mem_ops = &vb2_vmalloc_memops;
+commit 45e2b5f640b3766da3eda48f6c35f088155c06f3
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Nov 23 18:16:34 2012 +0100
 
-q->timestamp_type isn't filled in.
+    drm/i915: force restore on lid open
 
-For that matter, neither the sequence number nor the timestamp are filled in
-in v4l2_buffer during capturing.
+which is in 3.8.
 
-You need to add a buf_finish op to fill those in (use v4l2_timestamp() for the
-timestamp).
-
-Regards,
-
-	Hans
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
