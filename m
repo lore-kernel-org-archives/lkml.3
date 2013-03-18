@@ -1,222 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3CRPDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:03:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44001 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab3CRPDA (ORCPT
+	id S1753426Ab3CRPEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:04:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51906 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3CRPD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:03:00 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 8/8] staging: ti-soc-thermal: fix several kernel-doc warnings and error
-Date: Mon, 18 Mar 2013 10:59:16 -0400
-Message-ID: <1363618756-15851-9-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
-In-Reply-To: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
-References: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
+	Mon, 18 Mar 2013 11:03:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
+Date: Mon, 18 Mar 2013 15:03:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
+        linux@arm.linux.org.uk, linux-mmc@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com> <201303151125.53999.arnd@arndb.de> <CACmBeS3aXs9vhc5ZYPbz5bjsYsSa6EzM12H4uPv706x0zU_5iw@mail.gmail.com>
+In-Reply-To: <CACmBeS3aXs9vhc5ZYPbz5bjsYsSa6EzM12H4uPv706x0zU_5iw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303181503.49491.arnd@arndb.de>
+X-Provags-ID: V02:K0:Mj0MxUEM9M1IC/u0B9tKnyZN3GfBPbucpIEKj0rOxvv
+ /q8363YuD+SD06S2f03liKnapWfOKMu9b4bR8EFErkKAeb8P2W
+ oXQgDgr2n1Kb2h0sKX/7ts9K07kZdmZARlX54s0FmVW7chbRf+
+ hz6ztXYzF6FOA1Z28NzoZ57rVoAcRk5tLfapX5h+VoW2HyZKGW
+ XfGOXZi7q+h1bS8oHpJKsWtguYjDLFh54NSvkJS5xEwMvtcqo9
+ Tva6vRcnh0GvjBEPn2DEnk0pwbv2EIp2hfZmqMNmRQrUCySHf3
+ gZI8OV69JAONzEpZmkKIRbWg9/5/hz+CW7/Njl4ASMv7D3zUPI
+ Y24y5h1hejRVIeD1vVBg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the documentation to remove
-all warnings and errors reported by scripts/kernel-doc.
-Most are missing arguments due to wrong format.
+On Sunday 17 March 2013, Jonas Jensen wrote:
+> Thank you for the feedback.
+> 
+> Some of the changes are sure to be a challenge for me, but I want to
+> move this forward, and having a list helps.
+> 
+> 3.2.40 is as far as it'll go right now, nothing prints to UART
+> starting with 3.3.8 (last tested, it's somewhere around there).
+> 
+> I have been advised to enable early_printk (by landley on freenode IRC #edev).
 
-Cc: Nishanth Menon <nm@ti.com>
+Yes, that is a good idea. I would also suggest that you don't try to port
+all the code at once a few kernel versions at a time, but that you instead
+move straight to the latest kernel, and basically start a new port one driver
+at a time. Take one of the newer ports (highbank, virt, bcm, ...) as examples.
 
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Since most of the code is now in drivers/ directories rather than arch/arm,
+you can actually start getting stuff upstream before you have completed all
+of it. If you have questions, I recommend asking on the #armlinux channel
+on freenode, or here on the mailing list.
 
-diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-index 4382c0c..ca1b02d 100644
---- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
-+++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-@@ -341,6 +341,7 @@ exit:
- /**
-  * ti_bandgap_unmask_interrupts() - unmasks the events of thot & tcold
-  * @bgp: struct ti_bandgap pointer
-+ * @id: bandgap sensor id
-  * @t_hot: hot temperature value to trigger alert signal
-  * @t_cold: cold temperature value to trigger alert signal
-  *
-@@ -572,9 +573,9 @@ exit:
- 
- /**
-  * ti_bandgap_read_thot() - reads sensor current thot
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @thot - resulting current thot value
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @thot: resulting current thot value
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -585,9 +586,9 @@ int ti_bandgap_read_thot(struct ti_bandgap *bgp, int id, int *thot)
- 
- /**
-  * ti_bandgap_write_thot() - sets sensor current thot
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @val - desired thot value
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @val: desired thot value
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -598,9 +599,9 @@ int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val)
- 
- /**
-  * ti_bandgap_read_tcold() - reads sensor current tcold
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @tcold - resulting current tcold value
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @tcold: resulting current tcold value
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -611,9 +612,9 @@ int ti_bandgap_read_tcold(struct ti_bandgap *bgp, int id, int *tcold)
- 
- /**
-  * ti_bandgap_write_tcold() - sets the sensor tcold
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @val - desired tcold value
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @val: desired tcold value
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -624,9 +625,9 @@ int ti_bandgap_write_tcold(struct ti_bandgap *bgp, int id, int val)
- 
- /**
-  * ti_bandgap_read_update_interval() - read the sensor update interval
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @interval - resulting update interval in miliseconds
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @interval: resulting update interval in miliseconds
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -656,9 +657,9 @@ int ti_bandgap_read_update_interval(struct ti_bandgap *bgp, int id,
- 
- /**
-  * ti_bandgap_write_update_interval() - set the update interval
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @interval - desired update interval in miliseconds
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @interval: desired update interval in miliseconds
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -682,9 +683,9 @@ int ti_bandgap_write_update_interval(struct ti_bandgap *bgp,
- 
- /**
-  * ti_bandgap_read_temperature() - report current temperature
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @temperature - resulting temperature
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @temperature: resulting temperature
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -714,9 +715,9 @@ int ti_bandgap_read_temperature(struct ti_bandgap *bgp, int id,
- /**
-  * ti_bandgap_set_sensor_data() - helper function to store thermal
-  * framework related data.
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-- * @data - thermal framework related data to be stored
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-+ * @data: thermal framework related data to be stored
-  *
-  * returns 0 on success or the proper error code
-  */
-@@ -734,8 +735,8 @@ int ti_bandgap_set_sensor_data(struct ti_bandgap *bgp, int id, void *data)
- /**
-  * ti_bandgap_get_sensor_data() - helper function to get thermal
-  * framework related data.
-- * @bgp - pointer to bandgap instance
-- * @id - sensor id
-+ * @bgp: pointer to bandgap instance
-+ * @id: sensor id
-  *
-  * returns data stored by set function with sensor id on success or NULL
-  */
-@@ -877,16 +878,15 @@ static int ti_bandgap_talert_init(struct ti_bandgap *bgp,
- 	return 0;
- }
- 
-+static const struct of_device_id of_ti_bandgap_match[];
- /**
-  * ti_bandgap_build() - parse DT and setup a struct ti_bandgap
-- * @bgp: pointer to struct ti_bandgap
-  * @pdev: pointer to device struct platform_device
-  *
-  * Used to read the device tree properties accordingly to the bandgap
-  * matching version. Based on bandgap version and its capabilities it
-  * will build a struct ti_bandgap out of the required DT entries.
-  */
--static const struct of_device_id of_ti_bandgap_match[];
- static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- {
- 	struct device_node *node = pdev->dev.of_node;
-diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.h b/drivers/staging/ti-soc-thermal/ti-bandgap.h
-index 66bbd07..0ddf314 100644
---- a/drivers/staging/ti-soc-thermal/ti-bandgap.h
-+++ b/drivers/staging/ti-soc-thermal/ti-bandgap.h
-@@ -225,7 +225,7 @@ struct temp_sensor_regval {
-  * @regval: temperature sensor register values
-  * @fclock: pointer to functional clock of temperature sensor
-  * @div_clk: pointer to divider clock of temperature sensor fclk
-- * @bg_mutex: mutex for ti_bandgap structure
-+ * @lock: spinlock for ti_bandgap structure
-  * @irq: MPU IRQ number for thermal alert
-  * @tshut_gpio: GPIO where Tshut signal is routed
-  * @clk_rate: Holds current clock rate
-@@ -253,7 +253,7 @@ struct ti_bandgap {
-  * @registers: pointer to the list of register offsets and bitfields
-  * @domain: the name of the domain where the sensor is located
-  * @slope: sensor gradient slope info for hotspot extrapolation equation
-- * @const: sensor gradient const info for hotspot extrapolation equation
-+ * @constant: sensor gradient const info for hotspot extrapolation equation
-  * @slope_pcb: sensor gradient slope info for hotspot extrapolation equation
-  *             with no external influence
-  * @constant_pcb: sensor gradient const info for hotspot extrapolation equation
-@@ -281,7 +281,7 @@ struct ti_temp_sensor {
- };
- 
- /**
-- * DOC: omap bandgap feature types
-+ * DOC: ti bandgap feature types
-  *
-  * TI_BANDGAP_FEATURE_TSHUT - used when the thermal shutdown signal output
-  *      of a bandgap device instance is routed to the processor. This means
-@@ -325,7 +325,7 @@ struct ti_temp_sensor {
- 			((b)->conf->features & TI_BANDGAP_FEATURE_ ## f)
- 
- /**
-- * struct ti_bandgap_data - omap bandgap data configuration structure
-+ * struct ti_bandgap_data - ti bandgap data configuration structure
-  * @features: a bitwise flag set to describe the device features
-  * @conv_table: Pointer to ADC to temperature conversion table
-  * @adc_start_val: ADC conversion table starting value
--- 
-1.7.7.1.488.ge8e1c
-
+	Arnd
