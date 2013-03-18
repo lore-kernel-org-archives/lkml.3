@@ -1,77 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab3CRL1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:27:20 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:37509 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab3CRL1S (ORCPT
+	id S1751986Ab3CRL2D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:28:03 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:39451 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3CRL2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:27:18 -0400
+	Mon, 18 Mar 2013 07:28:00 -0400
+X-IronPort-AV: E=Sophos;i="4.84,863,1355097600"; 
+   d="scan'208";a="13127027"
+From: George Dunlap <george.dunlap@eu.citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: George Dunlap <george.dunlap@eu.citrix.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, <x86@kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>
+Subject: [PATCH v2] perf: Check all MSRs before passing hw check
+Date: Mon, 18 Mar 2013 11:27:25 +0000
+Message-ID: <1363606045-6805-1-git-send-email-george.dunlap@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130314225940.GQ21522@ZenIV.linux.org.uk>
-References: <1363102908-28956-1-git-send-email-miklos@szeredi.hu>
-	<CA+55aFzRzwJs1qwjhBstAQzXC0rqn5COM6-7cgD3UsygSvTQ-Q@mail.gmail.com>
-	<20130312222350.GK21522@ZenIV.linux.org.uk>
-	<20130313185249.GL21522@ZenIV.linux.org.uk>
-	<CAJfpeguViuL52fYw922KU1YxRs2YyD=T6tdFVg+buJPw7YUV_Q@mail.gmail.com>
-	<20130313231918.GP21522@ZenIV.linux.org.uk>
-	<CAJfpegsCirmYYimr6Nn4Q4Kdc7rMYaxWhk+fsmp+BLp6mjb_MQ@mail.gmail.com>
-	<20130314225940.GQ21522@ZenIV.linux.org.uk>
-Date: Mon, 18 Mar 2013 12:27:15 +0100
-Message-ID: <CAJfpeguhZLQWz4bvyJoaB2BLkzu2Op68_woUaBts2tCqECndcQ@mail.gmail.com>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, David Howells <dhowells@redhat.com>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 11:59 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> Huh?
->         * from st_mode point of view, it's not going to conflict with
-> anything; FFS "entry type" matches bits 12..15 of mode_t, and the value
-> picked by whoever had first implemented whiteouts had been chosen so
-> that it would not clash with any existing values.  We have
-> #define S_IFMT  00170000
-> #define S_IFSOCK 0140000
-> #define S_IFLNK  0120000
-> #define S_IFREG  0100000
-> #define S_IFBLK  0060000
-> #define S_IFDIR  0040000
-> #define S_IFCHR  0020000
-> #define S_IFIFO  0010000
-> and this sucker would've been 0160000; new filesystem object types are not
-> frequently introduced, to put it mildly, so I wouldn't expect clashes.
+check_hw_exists has a number of checks which go to two exit paths:
+msr_fail and bios_fail.  Checks classified as msr_fail will cause
+check_hw_exists() to return false, causing the PMU not to be used;
+bios_fail checks will only cause a warning to be printed, but will
+return true.
 
-I'm worried exactly because new filetypes are introduced so
-infrequently.  No such thing happened during the lifetime of Linux,
-AFAICT.  Backup/restore tools are not going to handle it.  File
-managers are not going to show anything sane (and quite possibly some
-will simply crash).
+The problem is that if there are both msr failures and bios failures,
+and the routine hits a bios_fail check first, it will exit early and
+return true, not finishing the rest of the msr checks.  If those msrs
+are in fact broken, it will cause them to be used erroneously.
 
-Yes, all that can be fixed, but it will be a slow and painful process,
-since union/overlay type filesystems are themselves quite specialized
-and problems are not going to be shaken out quickly with userspace
-interaction.  On the other hand if a whiteout is exported to userspace
-as a symlink with xattrs, there will be much less of those problems.
+In the case of a Xen PV VM, the guest OS has read access to all the
+MSRs, but write access is white-listed to supported features.  Writes
+to unsupported MSRs have no effect.  The PMU MSRs are not (typically)
+supported, because they are expensive to save and restore on a VM
+context switch.  One of the "msr_fail" checks is supposed to detect
+this circumstance (ether for Xen or KVM) and disable the harware PMU.
 
-BTW I'm not against adding whiteout support to the VFS and possibly to
-filesystems to clean up the security uglilness and optimize storage.
+However, on one of my AMD boxen, there is (apparently) a broken BIOS
+which triggers one of the bios_fail checks.  In particular,
+MSR_K7_EVNTSEL0 has the ARCH_PERFMON_EVENTSEL_ENABLE bit set.  The
+guest kernel detects this because it has read access to all MSRs, and
+causes it to skip the rest of the checks and try to use the
+non-existent hardware PMU.  This minimally causes a lot of useless
+instruction emulation and Xen console spam; it may cause other issues
+with the watchdog as well.
 
-But I think the most important aspect is the userspace interface and
-I'm far from sure that a new filetype is the best solution here.
+This changset causes check_hw_exists() to go through all of the msr
+checks, failing and returning false if any of them fail.  This makes
+sure that a guest running under Xen without a virtual PMU will detect
+that there is no functioning PMU and not attempt to use it.
 
-Thanks,
-Miklos
+This problem affects kernels as far back as 3.2, and should thus be
+considered for backport.
+
+v2:
+ - Print the warning when the event happens so the reg,val make sense
+ - But print it only for the first such instance
+ - Update changelog to include details of failing system
+
+Signed-off-by: George Dunlap <george.dunlap@eu.citrix.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: x86@kernel.org
+CC: Ian Campbell <ian.campbell@citrix.com>
+CC: David Vrabel <david.vrabel@citrix.com>
+CC: Andrew Cooper <andrew.cooper3@citrix.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6774c17..5e2b4d6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -182,6 +182,19 @@ static bool check_hw_exists(void)
+ {
+ 	u64 val, val_new = ~0;
+ 	int i, reg, ret = 0;
++	int bios_fail = 0;
++
++#define BIOS_FAIL(_r, _v) \
++do {							\
++	/* 						\
++	 * We still allow the PMU driver to operate: 	\
++	 */ 						\
++	if (!bios_fail) { 				\
++		bios_fail = 1; 				\
++		printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n"); \
++		printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", _r, _v); \
++        } 						\
++} while(0)
+ 
+ 	/*
+ 	 * Check to see if the BIOS enabled any of the counters, if so
+@@ -192,8 +205,8 @@ static bool check_hw_exists(void)
+ 		ret = rdmsrl_safe(reg, &val);
+ 		if (ret)
+ 			goto msr_fail;
+-		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+-			goto bios_fail;
++		if (val & ARCH_PERFMON_EVENTSEL_ENABLE) 
++			BIOS_FAIL(reg, val);
+ 	}
+ 
+ 	if (x86_pmu.num_counters_fixed) {
+@@ -203,10 +216,12 @@ static bool check_hw_exists(void)
+ 			goto msr_fail;
+ 		for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
+ 			if (val & (0x03 << i*4))
+-				goto bios_fail;
++				BIOS_FAIL(reg, val);
+ 		}
+ 	}
+ 
++#undef BIOS_FAIL
++
+ 	/*
+ 	 * Read the current value, change it and read it back to see if it
+ 	 * matches, this is needed to detect certain hardware emulators
+@@ -223,15 +238,6 @@ static bool check_hw_exists(void)
+ 
+ 	return true;
+ 
+-bios_fail:
+-	/*
+-	 * We still allow the PMU driver to operate:
+-	 */
+-	printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
+-	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg, val);
+-
+-	return true;
+-
+ msr_fail:
+ 	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
+ 	printk(KERN_ERR "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
+-- 
+1.7.9.5
+
