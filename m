@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3CRVHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45789 "EHLO
+	id S933803Ab3CRVnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:43:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3CRVHl (ORCPT
+	with ESMTP id S1756206Ab3CRVHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:41 -0400
+	Mon, 18 Mar 2013 17:07:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 01/48] qcaux: add Franklin U600
-Date: Mon, 18 Mar 2013 14:08:09 -0700
-Message-Id: <20130318210810.362750539@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: [ 16/48] TTY: do not reset masters packet mode
+Date: Mon, 18 Mar 2013 14:08:24 -0700
+Message-Id: <20130318210811.398544325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,29 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 2d90e63603ac235aecd7d20e234616e0682c8b1f upstream.
+commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
 
-4 ports; AT/PPP is standard CDC-ACM.  The other three (added by this
-patch) are QCDM/DIAG, possibly GPS, and unknown.
+Now that login from util-linux is forced to drop all references to a
+TTY which it wants to hangup (to reach reference count 1) we are
+seeing issues with telnet. When login closes its last reference to the
+slave PTY, it also resets packet mode on the *master* side. And we
+have a race here.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+What telnet does is fork+exec of `login'. Then there are two
+scenarios:
+* `login' closes the slave TTY and resets thus master's packet mode,
+  but even now telnet properly sets the mode, or
+* `telnetd' sets packet mode on the master, `login' closes the slave
+  TTY and resets master's packet mode.
+
+The former case is OK. However the latter happens in much more cases,
+by the order of magnitude to be precise. So when one tries to login to
+such a messed telnet setup, they see the following:
+inux login:
+            ogin incorrect
+
+Note the missing first letters -- telnet thinks it is still in the
+packet mode, so when it receives "linux login" from `login', it
+considers "l" as the type of the packet and strips it.
+
+SuS does not mention how the implementation should behave. Both BSDs I
+checked (Free and Net) do not reset the flag upon the last close.
+
+By this I am resurrecting an old bug, see References. We are hitting
+it regularly now, i.e. with updated util-linux, ergo login.
+
+Here, I am changing a behavior introduced back in 2.1 times. It would
+better have a long time testing before goes upstream.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Bryan Mason <bmason@redhat.com>
+References: https://lkml.org/lkml/2009/11/11/223
+References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
+References: https://bugzilla.novell.com/show_bug.cgi?id=797042
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcaux.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/pty.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/serial/qcaux.c
-+++ b/drivers/usb/serial/qcaux.c
-@@ -69,6 +69,7 @@ static struct usb_device_id id_table[] =
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfd, 0xff) },  /* NMEA */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfe, 0xff) },  /* WMC */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xff, 0xff) },  /* DIAG */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1fac, 0x0151, 0xff, 0xff, 0xff) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -47,7 +47,6 @@ static void pty_close(struct tty_struct
+ 	tty->packet = 0;
+ 	if (!tty->link)
+ 		return;
+-	tty->link->packet = 0;
+ 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+ 	wake_up_interruptible(&tty->link->read_wait);
+ 	wake_up_interruptible(&tty->link->write_wait);
 
 
