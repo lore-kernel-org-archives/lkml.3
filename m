@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3CRI2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:28:14 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1636 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751644Ab3CRI2K (ORCPT
+	id S1752605Ab3CRI3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:29:19 -0400
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:2183 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab3CRI3S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:28:10 -0400
-From: <oskar.andero@sonymobile.com>
-Date: Mon, 18 Mar 2013 09:28:07 +0100
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "Bengtsson, Truls" <Truls.Bengtsson@sonymobile.com>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>
-Subject: Re: [RFC PATCH 1/1] usb: f_rndis: Avoid to use ERROR macro if cdev
- can be null
-Message-ID: <20130318082807.GA22001@caracas.corpusers.net>
-References: <1362747220-2204-1-git-send-email-oskar.andero@sonymobile.com>
- <1362747220-2204-2-git-send-email-oskar.andero@sonymobile.com>
- <513A426A.9060903@cogentembedded.com>
- <20130308201639.GB14787@kroah.com>
+	Mon, 18 Mar 2013 04:29:18 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
+Date: Mon, 18 Mar 2013 09:29:07 +0100
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elezegarcia@gmail.com
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
+In-Reply-To: <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130308201639.GB14787@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201303180929.07864.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21:16 Fri 08 Mar     , Greg Kroah-Hartman wrote:
-> On Fri, Mar 08, 2013 at 11:56:26PM +0400, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 08-03-2013 16:53, oskar.andero@sonymobile.com wrote:
-> > 
-> > >From: Truls Bengtsson <truls.bengtsson@sonymobile.com>
-> > 
-> > >The udc_irq service runs the isr_tr_complete_handler which in turn
-> > >"nukes" the endpoints, including a call to rndis_response_complete,
-> > >if appropriate. If the rndis_msg_parser fails here, an error will
-> > >be printed using a dev_err call (through the ERROR() macro).
-> > 
-> > >However, if the usb cable was just disconnected the device (cdev)
-> > >might not be available and will be null. Since the dev_err macro will
-> > >dereference the cdev pointer we get a null pointer exception.
-> > 
-> > >Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> > >Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
-> > >Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> > >---
-> > >  drivers/usb/gadget/f_rndis.c |    4 ++--
-> > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > >diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-> > >index 71beeb8..41b5ebd 100644
-> > >--- a/drivers/usb/gadget/f_rndis.c
-> > >+++ b/drivers/usb/gadget/f_rndis.c
-> > >@@ -6,6 +6,7 @@
-> > >   * Copyright (C) 2008 Nokia Corporation
-> > >   * Copyright (C) 2009 Samsung Electronics
-> > >   *                    Author: Michal Nazarewicz (mina86@mina86.com)
-> > >+ * Copyright (C) 2013 Sony Mobile Communications AB.
-> > 
-> >    Your change seems too insignificant to add a copyright.
+On Thu March 14 2013 15:07:00 Jon Arne Jørgensen wrote:
+> This file is responsible for registering the device with the v4l2 subsystem,
+> and the communication with v4l2.
+> Most of the v4l2 ioctls are just passed on to vidbuf2.
 > 
-> You are right, it legally is.  Truls, please consult your company's
-> lawyers if you have questions about this, you can not assert copyright
-> over a file for a 2 line change, that's not allowed at all in any
-> jurisdiction I know of.
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
+>  1 file changed, 566 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
 > 
-> Because of that, I can not accept this change, sorry.
+> diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> new file mode 100644
+> index 0000000..d402093
+> --- /dev/null
+> +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> @@ -0,0 +1,566 @@
 
-Thanks for your input guys and I totally agree with you! However, I was
-expecting more comments on the cover-letter, or should I take it that this
-solution is acceptable?
+...
 
--Oskar
+> +int smi2021_vb2_setup(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +	struct vb2_queue *q;
+> +
+> +	q = &dev->vb_vidq;
+> +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
+> +	q->drv_priv = dev;
+> +	q->buf_struct_size = sizeof(struct smi2021_buffer);
+> +	q->ops = &smi2021_video_qops;
+> +	q->mem_ops = &vb2_vmalloc_memops;
+
+q->timestamp_type isn't filled in.
+
+For that matter, neither the sequence number nor the timestamp are filled in
+in v4l2_buffer during capturing.
+
+You need to add a buf_finish op to fill those in (use v4l2_timestamp() for the
+timestamp).
+
+Regards,
+
+	Hans
