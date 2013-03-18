@@ -1,43 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3CRKxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 06:53:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34017 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab3CRKxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:53:02 -0400
-Date: Mon, 18 Mar 2013 11:52:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com
-Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations
- for ballooning
-Message-ID: <20130318105257.GG10192@dhcp22.suse.cz>
-References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
- <1363470125-24606-1-git-send-email-kys@microsoft.com>
- <1363470125-24606-2-git-send-email-kys@microsoft.com>
+	id S1753028Ab3CRKyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 06:54:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33913 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab3CRKx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 06:53:57 -0400
+Date: Mon, 18 Mar 2013 03:52:33 -0700
+From: tip-bot for Marcin Slusarz <tipbot@zytor.com>
+Message-ID: <tip-d2f32479e5526a1ab3b4e43910fcb279871524ce@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, marcin.slusarz@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        marcin.slusarz@gmail.com, tglx@linutronix.de
+In-Reply-To: <1361113416-8662-1-git-send-email-marcin.slusarz@gmail.com>
+References: <1361113416-8662-1-git-send-email-marcin.slusarz@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: check if -DFORTIFY_SOURCE=
+ 2 is allowed
+Git-Commit-ID: d2f32479e5526a1ab3b4e43910fcb279871524ce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1363470125-24606-2-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:52:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 16-03-13 14:42:05, K. Y. Srinivasan wrote:
-> While ballooning memory out of the guest, attempt 2M allocations first.
-> If 2M allocations fail, then go for 4K allocations. In cases where we
-> have performed 2M allocations, split this 2M page so that we can free this
-> page at 4K granularity (when the host returns the memory).
+Commit-ID:  d2f32479e5526a1ab3b4e43910fcb279871524ce
+Gitweb:     http://git.kernel.org/tip/d2f32479e5526a1ab3b4e43910fcb279871524ce
+Author:     Marcin Slusarz <marcin.slusarz@gmail.com>
+AuthorDate: Sun, 17 Feb 2013 16:03:36 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 13 Mar 2013 16:57:27 -0300
 
-Maybe I am missing something but what is the advantage of 2M allocation
-when you split it up immediately so you are not using it as a huge page?
+perf tools: check if -DFORTIFY_SOURCE=2 is allowed
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+It seems gcc (4.7.2) defines _FORTIFY_SOURCE internally and becomes
+confused when it sees another definition in flags.
+
+For me, build failed like this:
+
+CHK glibc
+Makefile:548: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static. Stop.
+
+and only with V=1 it printed:
+
+<command-line>:0:0: error: "_FORTIFY_SOURCE" redefined [-Werror]
+<stdin>:1:0: note: this is the location of the previous definition
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1361113416-8662-1-git-send-email-marcin.slusarz@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a2108ca..bb74c79 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -95,7 +95,7 @@ ifeq ("$(origin DEBUG)", "command line")
+   PERF_DEBUG = $(DEBUG)
+ endif
+ ifndef PERF_DEBUG
+-  CFLAGS_OPTIMIZE = -O6 -D_FORTIFY_SOURCE=2
++  CFLAGS_OPTIMIZE = -O6
+ endif
+ 
+ ifdef PARSER_DEBUG
+@@ -180,6 +180,12 @@ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-W
+        CFLAGS := $(CFLAGS) -Wvolatile-register-var
+ endif
+ 
++ifndef PERF_DEBUG
++	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
++	endif
++endif
++
+ ### --- END CONFIGURATION SECTION ---
+ 
+ ifeq ($(srctree),)
