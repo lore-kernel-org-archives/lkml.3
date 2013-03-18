@@ -1,186 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3CRTPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 15:15:43 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33344 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3CRTPk (ORCPT
+	id S1754782Ab3CRTQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 15:16:23 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:33156 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3CRTQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 15:15:40 -0400
-Date: Mon, 18 Mar 2013 15:13:41 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        senthilb@qca.qualcomm.com
-Subject: Re: [PATCH] ath9k : Fix ieee80211 work while going to suspend
-Message-ID: <20130318191340.GA28919@tuxdriver.com>
-References: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com>
+	Mon, 18 Mar 2013 15:16:20 -0400
+Date: Mon, 18 Mar 2013 20:19:03 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Yinghai Lu <yinghai@kernel.org>, Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [3.9-rc1] irq 16: nobody cared (was [3.9-rc1] very poor
+ interrupt responses)
+Message-ID: <20130318191903.GS9021@phenom.ffwll.local>
+Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Harald Arnesen <skogtun.linux@gmail.com>,
+	Kernel development list <linux-kernel@vger.kernel.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Thomas Meyer <thomas@m3y3r.de>,
+	Shawn Starr <shawn.starr@rogers.com>,
+	USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+	Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+	Imre Deak <imre.deak@intel.com>,
+	Daniel Kurtz <djkurtz@chromium.org>,
+	dri-devel@lists.freedesktop.org
+References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org>
+ <1460519.ejNFI1DrGk@vostro.rjw.lan>
+ <1363280764.26318.4.camel@thor.lan>
+ <5657408.cYX6iimiA4@vostro.rjw.lan>
+ <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
+ <5142E7F0.4020002@gmail.com>
+ <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
+ <alpine.LNX.2.00.1303151609480.9529@pobox.suse.cz>
+ <CAE9FiQUqPTUqPOzANnxpdfoRYPr+OiU5pFEoLKRiOFHd9Py4XQ@mail.gmail.com>
+ <alpine.LNX.2.00.1303181010080.9529@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1303181010080.9529@pobox.suse.cz>
+X-Operating-System: Linux phenom 3.7.0-rc4+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments from the ath9k folks?
+On Mon, Mar 18, 2013 at 10:12:49AM +0100, Jiri Kosina wrote:
+> On Fri, 15 Mar 2013, Yinghai Lu wrote:
+> 
+> > > Just a datapoint -- I have put a trivial debugging patch in place, and it
+> > > reveals that "nobody cared" for irq 16 happens long after last
+> > >
+> > >         I915_WRITE(GMBUS4 + reg_offset, 0);
+> > >
+> > > has been performed in gmbus_wait_hw_status(). On the other hand, if I
+> > > comment out both GMBUS4 register offset writes in gmbus_wait_hw_status(),
+> > > then it of course falls back to GPIO bit-banging, but the "nobody cared"
+> > > for irq 16 is gone.
+> > >
+> > > So it seems like something gets severely confused by the I915_WRITE to
+> > > GMBUS4 + reg_offset. So far this seems to have been reported solely on
+> > > Lenovos as far as I can see (although a completely different types), so it
+> > > might be some platform-specific quirk?
+> > >
+> > > Honestly, I still don't understand how all the GMBUS stuff relates to IRQ
+> > > 16 at all.
+> > 
+> > that device is using
+> > i915 0000:00:02.0: irq 44 for MSI/MSI-X
+> > 
+> > so can you try to boot with pci=nomsi?
+> 
+> Yes, switching from MSI to IO-APIC-fasteoi makes the report about lost 
+> interrupts go away.
+> 
+> My understanding from the other mail is that DAniel Vetter already has an 
+> idea what might be going wrong with IRQ acking on GM45 chipsets; hopefully 
+> this datapoint regarding MSI will fit into it.
 
-On Sat, Mar 16, 2013 at 12:38:14PM -0400, Parag Warudkar wrote:
-> During suspend below warning is seen when ath9k is active.  Attached
-> patch fixes the warning for me. Tested to work across few
-> suspend-resume cycles.
-> 
-> 
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642939] WARNING: at
-> net/mac80211/util.c:599 ieee80211_can_queue_work.isra.7+0x32/0x40
-> [mac80211]()
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642940] Hardware name: iMac12,1
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642941] queueing ieee80211
-> work while going to suspend
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642972] Modules linked in:
-> joydev hid_logitech_dj zfs(POF) bridge stp llc zunicode(POF) zavl(POF)
-> zcommon(POF) znvpair(POF) spl(OF) zlib_deflate be2iscsi
-> iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio
-> libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core
-> iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi rfcomm bnep
-> nls_utf8 hfsplus btusb uvcvideo videobuf2_vmalloc videobuf2_memops
-> videobuf2_core videodev bluetooth media coretemp snd_hda_codec_hdmi
-> snd_hda_codec_cirrus snd_hda_intel snd_hda_codec snd_hwdep snd_seq
-> snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore arc4
-> ath9k ath9k_common microcode ath9k_hw ath mac80211 iTCO_wdt
-> iTCO_vendor_support cfg80211 lpc_ich mei mfd_core rfkill i2c_i801
-> applesmc apple_bl input_polldev vhost_net tun macvtap macvlan
-> kvm_intel kvm binfmt_misc uinput usb_storage crc32c_intel radeon ttm
-> i915 ghash_clmulni_intel firewire_ohci firewire_core i2c_algo_bit
-> drm_kms_helper crc_itu_t drm tg3 ptp pps_core i2c_core video sunrpc
-> [last unloaded: iptable_mangle]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642985] Pid: 0, comm:
-> swapper/0 Tainted: PF          O 3.8.2-206.fc18.x86_64 #1
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642986] Call Trace:
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642992]  <IRQ>
-> [<ffffffff8105e61f>] warn_slowpath_common+0x7f/0xc0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643009]
-> [<ffffffffa0581420>] ? ath_start_rx_poll+0x70/0x70 [ath9k]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643011]
-> [<ffffffff8105e716>] warn_slowpath_fmt+0x46/0x50
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643018]
-> [<ffffffffa045b542>] ieee80211_can_queue_work.isra.7+0x32/0x40
-> [mac80211]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643024]
-> [<ffffffffa045b5de>] ieee80211_queue_work+0x2e/0x50 [mac80211]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643027]
-> [<ffffffffa0581438>] ath_rx_poll+0x18/0x20 [ath9k]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643029]
-> [<ffffffff8106d0aa>] call_timer_fn+0x3a/0x120
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643032]
-> [<ffffffffa0581420>] ? ath_start_rx_poll+0x70/0x70 [ath9k]
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643034]
-> [<ffffffff814fb240>] ? cpufreq_p4_target+0x120/0x120
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643035]
-> [<ffffffff8106ee3e>] run_timer_softirq+0x1fe/0x2b0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643037]
-> [<ffffffff814fb240>] ? cpufreq_p4_target+0x120/0x120
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643038]
-> [<ffffffff81066cd0>] __do_softirq+0xd0/0x210
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643040]
-> [<ffffffff8101b913>] ? native_sched_clock+0x13/0x80
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643041]
-> [<ffffffff814fb240>] ? cpufreq_p4_target+0x120/0x120
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643043]
-> [<ffffffff8165985c>] call_softirq+0x1c/0x30
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643045]
-> [<ffffffff810162a5>] do_softirq+0x75/0xb0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643046]
-> [<ffffffff81066fa5>] irq_exit+0xb5/0xc0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643048]
-> [<ffffffff8165a1de>] smp_apic_timer_interrupt+0x6e/0x99
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643049]
-> [<ffffffff8165911d>] apic_timer_interrupt+0x6d/0x80
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643052]  <EOI>
-> [<ffffffff810868ce>] ? __hrtimer_start_range_ns+0x1be/0x400
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643053]
-> [<ffffffff814fbc30>] ? cpuidle_wrap_enter+0x50/0xa0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643054]
-> [<ffffffff814fbc29>] ? cpuidle_wrap_enter+0x49/0xa0
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643056]
-> [<ffffffff814fbc90>] cpuidle_enter_tk+0x10/0x20
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643057]
-> [<ffffffff814fb8c9>] cpuidle_idle_call+0xa9/0x260
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643058]
-> [<ffffffff8101d45f>] cpu_idle+0xaf/0x120
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643061]
-> [<ffffffff81634522>] rest_init+0x72/0x80
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643063]
-> [<ffffffff81d00c40>] start_kernel+0x3d1/0x3de
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643065]
-> [<ffffffff81d0066e>] ? repair_env_string+0x5e/0x5e
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643066]
-> [<ffffffff81d00356>] x86_64_start_reservations+0x131/0x135
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643068]
-> [<ffffffff81d0045a>] x86_64_start_kernel+0x100/0x10f
-> Mar 16 09:39:17 Parags-iMac kernel: [ 3993.643068] ---[ end trace
-> 5595a7f5dd9a2949 ]---
-> 
-> Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
-> 
-> diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h
-> b/drivers/net/wireless/ath/ath9k/ath9k.h
-> index a56b241..b3088a1 100644
-> --- a/drivers/net/wireless/ath/ath9k/ath9k.h
-> +++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-> @@ -764,6 +764,7 @@ struct ath_softc {
->   atomic_t wow_got_bmiss_intr;
->   atomic_t wow_sleep_proc_intr; /* in the middle of WoW sleep ? */
->   u32 wow_intr_before_sleep;
-> + bool suspending;
->  #endif
->  };
-> 
-> diff --git a/drivers/net/wireless/ath/ath9k/link.c
-> b/drivers/net/wireless/ath/ath9k/link.c
-> index ade3afb..fa77e19 100644
-> --- a/drivers/net/wireless/ath/ath9k/link.c
-> +++ b/drivers/net/wireless/ath/ath9k/link.c
-> @@ -158,7 +158,8 @@ void ath_start_rx_poll(struct ath_softc *sc, u8 nbeacon)
->  {
->   if (!AR_SREV_9300(sc->sc_ah))
->   return;
-> -
-> + if (sc->suspending)
-> + return;
->   if (!test_bit(SC_OP_PRIM_STA_VIF, &sc->sc_flags))
->   return;
-> 
-> diff --git a/drivers/net/wireless/ath/ath9k/main.c
-> b/drivers/net/wireless/ath/ath9k/main.c
-> index 6e66f9c..0cf88b7 100644
-> --- a/drivers/net/wireless/ath/ath9k/main.c
-> +++ b/drivers/net/wireless/ath/ath9k/main.c
-> @@ -2150,7 +2150,7 @@ static int ath9k_suspend(struct ieee80211_hw *hw,
->   int ret = 0;
-> 
->   mutex_lock(&sc->mutex);
-> -
-> + sc->suspending = 1;
->   ath_cancel_work(sc);
->   ath_stop_ani(sc);
->   del_timer_sync(&sc->rx_poll_timer);
-> @@ -2288,6 +2288,7 @@ static int ath9k_resume(struct ieee80211_hw *hw)
->   ath9k_start_btcoex(sc);
-> 
->   ath9k_ps_restore(sc);
-> + sc->suspending = 0;
->   mutex_unlock(&sc->mutex);
-> 
->   return 0;
+Yep, there's a big comment in the irq handler for that chipset that we
+have a gaping race with when using MSI interrupts. Although the comment
+bodly claims that the race is small enough to avoid the dreaded "nobody
+cared" message. Looks like gmbus is good at hitting that race - on newer
+chips it already brought up a similar race in handling pch interrupts.
 
+Can you please give the below patch a whirl? It removes the probably race
+msi race avoidance code and replaces it with the same trick Paulo used to
+fix pch irq handling races.
 
-
+Thanks, Daniel
+---
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 3c7bb04..13de12e 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -2684,7 +2684,7 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
+ {
+ 	struct drm_device *dev = (struct drm_device *) arg;
+ 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
+-	u32 iir, new_iir;
++	u32 iir, new_iir, ier;
+ 	u32 pipe_stats[I915_MAX_PIPES];
+ 	unsigned long irqflags;
+ 	int irq_received;
+@@ -2692,9 +2692,14 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
+ 
+ 	atomic_inc(&dev_priv->irq_received);
+ 
++	/* irq race avoidance, copy&pasta from Paulo's PCH irq fix */
++	ier = I915_READ(IER);
++	I915_WRITE(IER, 0);
++	POSTING_READ(IER);
++
+ 	iir = I915_READ(IIR);
+ 
+-	for (;;) {
++	do {
+ 		bool blc_event = false;
+ 
+ 		irq_received = iir != 0;
+@@ -2792,7 +2797,10 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
+ 		 * stray interrupts.
+ 		 */
+ 		iir = new_iir;
+-	}
++	} while (0);
++
++	I915_WRITE(IER, ier);
++	POSTING_READ(IER);
+ 
+ 	i915_update_dri1_breadcrumb(dev);
+ 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
