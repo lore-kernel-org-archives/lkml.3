@@ -1,43 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab3CRVTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:19:37 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:49075 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab3CRVTa (ORCPT
+	id S932902Ab3CRVTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:19:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46092 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932261Ab3CRVKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:19:30 -0400
-Date: Mon, 18 Mar 2013 14:20:46 -0700
+	Mon, 18 Mar 2013 17:10:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [ 29/75] perf,x86: fix kernel crash with PEBS/BTS after
- suspend/resume
-Message-ID: <20130318212046.GA13813@kroah.com>
-References: <20130318210510.203500214@linuxfoundation.org>
- <20130318210512.334023372@linuxfoundation.org>
- <CABPqkBQquwGc6S3Jfz1tgm2SZhA3pFuSC8xvAojLFk-6G3gqAA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQquwGc6S3Jfz1tgm2SZhA3pFuSC8xvAojLFk-6G3gqAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>, Shuah Khan <shuah.khan@hp.com>
+Subject: [ 22/40] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
+Date: Mon, 18 Mar 2013 14:11:00 -0700
+Message-Id: <20130318211017.837471290@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
+References: <20130318211016.254453918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 10:11:28PM +0100, Stephane Eranian wrote:
-> On Mon, Mar 18, 2013 at 10:06 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > 3.8-stable review patch.  If anyone has any objections, please let me know.
-> >
-> Greg, you also need to pick David Rientjes patch to fix compilation on
-> non X86 architectures.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-What git commit id would that be?  I thought I picked up everything that
-was needed after this one went in, what did I miss?
+------------------
 
-thanks,
+From: Stephane Eranian <eranian@google.com>
 
-greg k-h
+commit 1d9d8639c063caf6efc2447f5f26aa637f844ff6 upstream.
+
+This patch fixes a kernel crash when using precise sampling (PEBS)
+after a suspend/resume. Turns out the CPU notifier code is not invoked
+on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
+by the kernel and keeps it power-on/resume value of 0 causing any PEBS
+measurement to crash when running on CPU0.
+
+The workaround is to add a hook in the actual resume code to restore
+the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
+the DS_AREA will be restored twice but this is harmless.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 ++++++++
+ arch/x86/power/cpu.c                      |    2 ++
+ include/linux/perf_event.h                |    2 ++
+ 3 files changed, 12 insertions(+)
+
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -754,6 +754,14 @@ static void intel_ds_init(void)
+ 	}
+ }
+ 
++void perf_restore_debug_store(void)
++{
++	if (!x86_pmu.bts && !x86_pmu.pebs)
++		return;
++
++	init_debug_store_on_cpu(smp_processor_id());
++}
++
+ #else /* CONFIG_CPU_SUP_INTEL */
+ 
+ static void reserve_ds_buffers(void)
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -10,6 +10,7 @@
+ 
+ #include <linux/suspend.h>
+ #include <linux/smp.h>
++#include <linux/perf_event.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/proto.h>
+@@ -224,6 +225,7 @@ static void __restore_processor_state(st
+ 
+ 	do_fpu_end();
+ 	mtrr_bp_restore();
++	perf_restore_debug_store();
+ }
+ 
+ /* Needed by apm.c */
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1153,6 +1153,7 @@ extern void perf_swevent_put_recursion_c
+ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
+ extern void perf_event_task_tick(void);
++extern void perf_restore_debug_store(void);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *task)			{ }
+@@ -1187,6 +1188,7 @@ static inline void perf_swevent_put_recu
+ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
+ static inline void perf_event_task_tick(void)				{ }
++static inline void perf_restore_debug_store(void)			{ }
+ #endif
+ 
+ #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
+
+
