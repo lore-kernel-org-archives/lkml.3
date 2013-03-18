@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab3CRNqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:46:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab3CRNqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:46:30 -0400
-Date: Mon, 18 Mar 2013 09:45:42 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] HID: usbhid: quirk for Realtek Multi-card reader
-Message-ID: <20130318134542.GA11243@hansolo.jdub.homelinux.org>
+	id S1753250Ab3CRNql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:46:41 -0400
+Received: from [207.46.163.238] ([207.46.163.238]:28881 "EHLO
+	na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753059Ab3CRNqi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 09:46:38 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>
+Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations
+ for ballooning
+Thread-Topic: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations
+ for ballooning
+Thread-Index: AQHOIor1LgHvUCf0sk63c922DTSOMZirSGmAgAArsPA=
+Date: Mon, 18 Mar 2013 13:44:05 +0000
+Message-ID: <1701384b10204014b53acecb006521b0@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
+ <1363470125-24606-1-git-send-email-kys@microsoft.com>
+ <1363470125-24606-2-git-send-email-kys@microsoft.com>
+ <20130318105257.GG10192@dhcp22.suse.cz>
+In-Reply-To: <20130318105257.GG10192@dhcp22.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(24454001)(51704002)(199002)(189002)(377454001)(377424002)(46102001)(77982001)(54356001)(23726001)(5343635001)(56776001)(6806001)(79102001)(4396001)(16676001)(59766001)(47736001)(33646001)(51856001)(50466001)(47976001)(49866001)(50986001)(66066001)(74662001)(65816001)(47446002)(56816002)(74502001)(47776003)(69226001)(46406002)(80022001)(76482001)(63696002)(44976002)(31966008)(53806001)(20776003)(54316002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB015;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 07891BF289
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This device has an odd HID entry and causes a 10 second delay in boot.
-Add this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS.
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=806587
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- drivers/hid/hid-ids.h           | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 4 insertions(+)
+> -----Original Message-----
+> From: Michal Hocko [mailto:mhocko@suse.cz]
+> Sent: Monday, March 18, 2013 6:53 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com
+> Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Support 2M page allocations for
+> ballooning
+> 
+> On Sat 16-03-13 14:42:05, K. Y. Srinivasan wrote:
+> > While ballooning memory out of the guest, attempt 2M allocations first.
+> > If 2M allocations fail, then go for 4K allocations. In cases where we
+> > have performed 2M allocations, split this 2M page so that we can free this
+> > page at 4K granularity (when the host returns the memory).
+> 
+> Maybe I am missing something but what is the advantage of 2M allocation
+> when you split it up immediately so you are not using it as a huge page?
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 92e47e5..d1063e9 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -684,6 +684,9 @@
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001		0x3001
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
- 
-+#define USB_VENDOR_ID_REALTEK		0x0bda
-+#define USB_DEVICE_ID_REALTEK_READER	0x0152
-+
- #define USB_VENDOR_ID_ROCCAT		0x1e7d
- #define USB_DEVICE_ID_ROCCAT_ARVO	0x30d4
- #define USB_DEVICE_ID_ROCCAT_ISKU	0x319c
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index e0e6abf..e991d81 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -80,6 +80,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
--- 
-1.8.1.2
+The Hyper-V ballooning protocol specifies the pages being ballooned as page ranges -
+start_pfn: number_of_pfns. So, when the guest balloon is inflating and I am able to
+allocate 2M pages, I will be able to represent 512 contiguous pages in one 64 bit entry and this makes
+the ballooning operation that much more efficient. The reason I split the page is that the host does not
+guarantee that when it returns the memory to the guest, it will return in any particular granularity and so
+I have to be able to free this memory in 4K granularity. This is the corner case that I will have to handle.
+
+Regards,
+
+K. Y
+> 
+> [...]
+> --
+> Michal Hocko
+> SUSE Labs
+> 
+
 
