@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3CROlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:41:02 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:63763 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3CROk7 (ORCPT
+	id S1753234Ab3CROmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:42:54 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:41726 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3CROmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:40:59 -0400
+	Mon, 18 Mar 2013 10:42:52 -0400
+Date: Mon, 18 Mar 2013 11:42:43 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 2/2] perf tests: Add a test case for checking sw clock
+ event frequency
+Message-ID: <20130318144243.GA3351@ghostprotocols.net>
+References: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
+ <1363574507-18808-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130317230812.GE4977@n2100.arm.linux.org.uk>
-References: <CAM16m2=6S11d+eSSwQJ2f=nO6dM4K-dGKf3TR-z0nyBUyw=YxQ@mail.gmail.com>
-	<20130315181449.GX4977@n2100.arm.linux.org.uk>
-	<CAM16m2n_Of0MJNtUsrL0MS2cXBZUHg9RzjSHcboDiHKB3s0cdw@mail.gmail.com>
-	<20130317200543.GA20174@mudshark.cambridge.arm.com>
-	<20130317230812.GE4977@n2100.arm.linux.org.uk>
-Date: Mon, 18 Mar 2013 22:40:56 +0800
-Message-ID: <CAM16m2kHp46rgiivUt7EL1Dr06b4UobzT3aXgPZOpFJP-FkTSA@mail.gmail.com>
-Subject: Re: udelay function delays the wrong time interval in multiprocessor
- system, if ARCH_HAS_READ_CURRENT_TIMER is not defined and on current timer is used.
-From: chpoph <chpoph@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363574507-18808-2-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Sun, Mar 17, 2013 at 08:05:43PM +0000, Will Deacon wrote:
->Do you actually have an ARM platform that can scale the CPU frequencies
-independently?
+Em Mon, Mar 18, 2013 at 11:41:47AM +0900, Namhyung Kim escreveu:
+> +static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+> +{
+> +	int i, err = -1;
+> +	volatile int tmp = 0;
+> +	u64 total_periods = 0;
+> +	int nr_samples = 0;
+> +	union perf_event *event;
+> +	struct perf_evsel *evsel;
+> +	struct perf_evlist *evlist;
+> +	struct perf_event_attr attr = {
+> +		.type = PERF_TYPE_SOFTWARE,
+> +		.config = clock_id,
+> +		.sample_type = PERF_SAMPLE_PERIOD,
+> +		.exclude_kernel = 1,
+> +		.disabled = 1,
+> +		.freq = 1,
+> +		.sample_freq = 10000,
+> +	};
 
-Yes,  my smart phone use Qualcomm's 8x25 and 8064 platform, which can
-scale the CPU frequencies independently. I test the delay loop, the
-phone can't get accurate delayed time intervals. I think there are
-four reasons: the task scheduling, IRQ handling, memory accessing, and
-udelay may be called between CPU frequency changing and
-loops_per_jiffy changing. The system's performance decreased greatly
-after adding preempt_{enable, disable}.
+In some compilers we get:
 
-I used the current timer to delay a time period at last, the timer's
-frequency is constant.
+tests/sw-clock.c: In function ‘__test__sw_clock_freq’:
+tests/sw-clock.c:35: error: unknown field ‘sample_freq’ specified in initializer
+
+So I'm moving the initialization to outside the struct named initialization block, i.e.:
+
+@@ -32,9 +32,10 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+                .exclude_kernel = 1,
+                .disabled = 1,
+                .freq = 1,
+-               .sample_freq = 10000,
+        };
+ 
++       attr.sample_freq = 10000;
++
+
+- Arnaldo
