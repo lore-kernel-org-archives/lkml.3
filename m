@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab3CRVNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:13:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46149 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467Ab3CRVK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lorenzo Colitti <lorenzo@google.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/40] net: ipv6: Dont purge default router if accept_ra=2
-Date: Mon, 18 Mar 2013 14:11:11 -0700
-Message-Id: <20130318211018.627949528@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
-References: <20130318211016.254453918@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S932666Ab3CRVNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:13:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754032Ab3CRVNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:13:44 -0400
+Date: Mon, 18 Mar 2013 23:14:18 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: David Miller <davem@davemloft.net>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com,
+        target-devel@vger.kernel.org
+Subject: Re: [PULL] vhost: tcm_vhost fixes for 3.9
+Message-ID: <20130318211418.GA20406@redhat.com>
+References: <20130318112003.GA7809@redhat.com>
+ <20130318.130136.1629094222097780420.davem@davemloft.net>
+ <20130318195443.GB19761@redhat.com>
+ <1363641003.3156.43.camel@haakon2.linux-iscsi.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363641003.3156.43.camel@haakon2.linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Mar 18, 2013 at 02:10:03PM -0700, Nicholas A. Bellinger wrote:
+> On Mon, 2013-03-18 at 21:54 +0200, Michael S. Tsirkin wrote:
+> > On Mon, Mar 18, 2013 at 01:01:36PM -0400, David Miller wrote:
+> > > From: "Michael S. Tsirkin" <mst@redhat.com>
+> > > Date: Mon, 18 Mar 2013 13:20:03 +0200
+> > > 
+> > > > The following changes since commit 8c6216d7f118a128678270824b6a1286a63863ca:
+> > > > 
+> > > >   Revert "ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally" (2013-03-16 23:00:41 -0400)
+> > > > 
+> > > > are available in the git repository at:
+> > > > 
+> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+> > > > 
+> > > > for you to fetch changes up to deb7cb067dabd3be625eaf5495da8bdc97377fc1:
+> > > > 
+> > > >   tcm_vhost: Flush vhost_work in vhost_scsi_flush() (2013-03-17 13:04:14 +0200)
+> > > 
+> > > This is a scsi driver, I therefore don't think this pull request is for me.
+> > > 
+> > > Please avoid such confusion in the future, and don't use branch names
+> > > like "vhost-net" for SCSI driver fixes.
+> > > 
+> > > Thanks.
+> > 
+> > We are sharing quite a bit of code, so it's a common tree.
+> > There was a vhost-net patch there too but you picked it up
+> > directly so I dropped that and what's left is vhost-scsi.
+> > Typically vhost-net dominates so I'm just used to merging all vhost
+> > things through you but if you think it's wrong I can send it directly to
+> > Linus.
+> > 
+> 
+> I'll be sending out a target-pending 3.9-rc-fixes pull request later in
+> the week, and am happy to include this series if you'd like.
+> 
+> --nab
 
-------------------
+Sure, go ahead. You can add
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+to the patches.
 
-
-From: Lorenzo Colitti <lorenzo@google.com>
-
-[ Upstream commit 3e8b0ac3e41e3c882222a5522d5df7212438ab51 ]
-
-Setting net.ipv6.conf.<interface>.accept_ra=2 causes the kernel
-to accept RAs even when forwarding is enabled. However, enabling
-forwarding purges all default routes on the system, breaking
-connectivity until the next RA is received. Fix this by not
-purging default routes on interfaces that have accept_ra=2.
-
-Signed-off-by: Lorenzo Colitti <lorenzo@google.com>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1885,7 +1885,8 @@ void rt6_purge_dflt_routers(struct net *
- restart:
- 	read_lock_bh(&table->tb6_lock);
- 	for (rt = table->tb6_root.leaf; rt; rt = rt->dst.rt6_next) {
--		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) {
-+		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF) &&
-+		    (!rt->rt6i_idev || rt->rt6i_idev->cnf.accept_ra != 2)) {
- 			dst_hold(&rt->dst);
- 			read_unlock_bh(&table->tb6_lock);
- 			ip6_del_rt(rt);
-
-
+-- 
+MST
