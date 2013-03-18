@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3CREfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:35:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33710 "EHLO
+	id S1752399Ab3CREfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:35:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33703 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751563Ab3CREbN (ORCPT
+	by vger.kernel.org with ESMTP id S1751796Ab3CREbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:31:13 -0400
-Message-Id: <20130318042146.162171116@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:12 -0400
+Message-Id: <20130318042146.567423109@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:03 +0000
+Date: Mon, 18 Mar 2013 04:22:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Chao Yang <chyang@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 19/82] dm snapshot: add missing module aliases
+Cc: akpm@linux-foundation.org, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 23/82] hwmon: (pmbus/ltc2978) Use detected chip ID to select supported
+ functionality
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,30 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 23cb21092eb9dcec9d3604b68d95192b79915890 upstream.
+commit f366fccd0809f13ba20d64cae3c83f7338c88af7 upstream.
 
-Add module aliases so that autoloading works correctly if the user
-tries to activate "snapshot-origin" or "snapshot-merge" targets.
+We read the chip ID from the chip, use it to determine if the chip ID provided
+to the driver is correct, and report it if wrong. We should also use the
+correct chip ID to select supported functionality.
 
-Reference: https://bugzilla.redhat.com/889973
-
-Reported-by: Chao Yang <chyang@redhat.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-snap.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/pmbus/ltc2978.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -2323,3 +2323,5 @@ module_exit(dm_snapshot_exit);
- MODULE_DESCRIPTION(DM_NAME " snapshot target");
- MODULE_AUTHOR("Joe Thornber");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("dm-snapshot-origin");
-+MODULE_ALIAS("dm-snapshot-merge");
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -328,7 +328,7 @@ static int ltc2978_probe(struct i2c_clie
+ 	data->temp_max = 0x7c00;
+ 	data->temp2_max = 0x7c00;
+ 
+-	switch (id->driver_data) {
++	switch (data->id) {
+ 	case ltc2978:
+ 		info->read_word_data = ltc2978_read_word_data;
+ 		info->pages = 8;
 
 
