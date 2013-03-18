@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab3CRVt1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:49:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
+	id S933936Ab3CRVtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:49:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755864Ab3CRVHQ (ORCPT
+	with ESMTP id S1755853Ab3CRVHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:16 -0400
+	Mon, 18 Mar 2013 17:07:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guo Chao <yan@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "M. Hindess" <hindessm@uk.ibm.com>,
-        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [ 55/75] loopdev: remove an user triggerable oops
-Date: Mon, 18 Mar 2013 14:07:18 -0700
-Message-Id: <20130318210514.216608452@linuxfoundation.org>
+        Veaceslav Falico <vfalico@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 64/75] bonding: fire NETDEV_RELEASE event only on 0 slaves
+Date: Mon, 18 Mar 2013 14:07:27 -0700
+Message-Id: <20130318210514.871343760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -31,83 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit b1a6650406875b9097a032eed89af50682fe1160 upstream.
+From: Veaceslav Falico <vfalico@redhat.com>
 
-When loopdev is built as module and we pass an invalid parameter,
-loop_init() will return directly without deregister misc device, which
-will cause an oops when insert loop module next time because we left some
-garbage in the misc device list.
+[ Upstream commit 80028ea1c0afc24d4ddeb8dd2a9992fff03616ca ]
 
-Test case:
-sudo modprobe loop max_part=1024
-(failed due to invalid parameter)
-sudo modprobe loop
-(oops)
+Currently, if we set up netconsole over bonding and release a slave,
+netconsole will stop logging on the whole bonding device. Change the
+behavior to stop the netconsole only when the last slave is released.
 
-Clean up nicely to avoid such oops.
-
-Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: M. Hindess <hindessm@uk.ibm.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/loop.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/net/bonding/bond_main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1856,11 +1856,15 @@ static int __init loop_init(void)
- 		max_part = (1UL << part_shift) - 1;
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1943,7 +1943,6 @@ int bond_release(struct net_device *bond
  	}
  
--	if ((1UL << part_shift) > DISK_MAX_PARTS)
--		return -EINVAL;
-+	if ((1UL << part_shift) > DISK_MAX_PARTS) {
-+		err = -EINVAL;
-+		goto misc_out;
+ 	block_netpoll_tx();
+-	call_netdevice_notifiers(NETDEV_RELEASE, bond_dev);
+ 	write_lock_bh(&bond->lock);
+ 
+ 	slave = bond_get_slave_by_dev(bond, slave_dev);
+@@ -2047,8 +2046,10 @@ int bond_release(struct net_device *bond
+ 	write_unlock_bh(&bond->lock);
+ 	unblock_netpoll_tx();
+ 
+-	if (bond->slave_cnt == 0)
++	if (bond->slave_cnt == 0) {
+ 		call_netdevice_notifiers(NETDEV_CHANGEADDR, bond->dev);
++		call_netdevice_notifiers(NETDEV_RELEASE, bond->dev);
 +	}
  
--	if (max_loop > 1UL << (MINORBITS - part_shift))
--		return -EINVAL;
-+	if (max_loop > 1UL << (MINORBITS - part_shift)) {
-+		err = -EINVAL;
-+		goto misc_out;
-+	}
- 
- 	/*
- 	 * If max_loop is specified, create that many devices upfront.
-@@ -1878,8 +1882,10 @@ static int __init loop_init(void)
- 		range = 1UL << MINORBITS;
- 	}
- 
--	if (register_blkdev(LOOP_MAJOR, "loop"))
--		return -EIO;
-+	if (register_blkdev(LOOP_MAJOR, "loop")) {
-+		err = -EIO;
-+		goto misc_out;
-+	}
- 
- 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
- 				  THIS_MODULE, loop_probe, NULL, NULL);
-@@ -1892,6 +1898,10 @@ static int __init loop_init(void)
- 
- 	printk(KERN_INFO "loop: module loaded\n");
- 	return 0;
-+
-+misc_out:
-+	misc_deregister(&loop_misc);
-+	return err;
- }
- 
- static int loop_exit_cb(int id, void *ptr, void *data)
+ 	bond_compute_features(bond);
+ 	if (!(bond_dev->features & NETIF_F_VLAN_CHALLENGED) &&
 
 
