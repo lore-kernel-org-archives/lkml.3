@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3CREsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:48:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33443 "EHLO
+	id S1752822Ab3CREsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:48:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33445 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751608Ab3CREaS (ORCPT
+	by vger.kernel.org with ESMTP id S1751645Ab3CREaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:18 -0400
-Message-Id: <20130318042151.129480243@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:19 -0400
+Message-Id: <20130318042150.936654279@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:55 +0000
+Date: Mon, 18 Mar 2013 04:22:53 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 71/82] USB: Prepare for refactoring by adding extra udev  checks.
+Cc: akpm@linux-foundation.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [ 69/82] Fix: compat_rw_copy_check_uvector() misuse in aio, readv, writev,
+ and security keys
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,68 +30,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit 2d4fa940f99663c82ba55b2244638833b388e4e2 upstream.
+commit 8aec0f5d4137532de14e6554fd5dd201ff3a3c49 upstream.
 
-The next patch will refactor the hub port code to rip out the recursive
-call to hub_port_reset on a failed hot reset.  In preparation for that,
-make sure all code paths can deal with being called with a NULL udev.
-The usb_device will not be valid if warm reset was issued because a port
-transitioned to the Inactive or Compliance Mode on a device connect.
+Looking at mm/process_vm_access.c:process_vm_rw() and comparing it to
+compat_process_vm_rw() shows that the compatibility code requires an
+explicit "access_ok()" check before calling
+compat_rw_copy_check_uvector(). The same difference seems to appear when
+we compare fs/read_write.c:do_readv_writev() to
+fs/compat.c:compat_do_readv_writev().
 
-This patch should have no effect on current behavior.
+This subtle difference between the compat and non-compat requirements
+should probably be debated, as it seems to be error-prone. In fact,
+there are two others sites that use this function in the Linux kernel,
+and they both seem to get it wrong:
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Now shifting our attention to fs/aio.c, we see that aio_setup_iocb()
+also ends up calling compat_rw_copy_check_uvector() through
+aio_setup_vectored_rw(). Unfortunately, the access_ok() check appears to
+be missing. Same situation for
+security/keys/compat.c:compat_keyctl_instantiate_key_iov().
+
+I propose that we add the access_ok() check directly into
+compat_rw_copy_check_uvector(), so callers don't have to worry about it,
+and it therefore makes the compat call code similar to its non-compat
+counterpart. Place the access_ok() check in the same location where
+copy_from_user() can trigger a -EFAULT error in the non-compat code, so
+the ABI behaviors are alike on both compat and non-compat.
+
+While we are here, fix compat_do_readv_writev() so it checks for
+compat_rw_copy_check_uvector() negative return values.
+
+And also, fix a memory leak in compat_keyctl_instantiate_key_iov() error
+handling.
+
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+ fs/compat.c            |   15 +++++++--------
+ mm/process_vm_access.c |    8 --------
+ security/keys/compat.c |    4 ++--
+ 3 files changed, 9 insertions(+), 18 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2194,6 +2194,9 @@ static int hub_port_wait_reset(struct us
- 				return -ENOTCONN;
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -572,6 +572,10 @@ ssize_t compat_rw_copy_check_uvector(int
+ 	}
+ 	*ret_pointer = iov;
  
- 			if ((portstatus & USB_PORT_STAT_ENABLE)) {
-+				if (!udev)
-+					return 0;
++	ret = -EFAULT;
++	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
++		goto out;
 +
- 				if (hub_is_wusb(hub))
- 					udev->speed = USB_SPEED_WIRELESS;
- 				else if (hub_is_superspeed(hub->hdev))
-@@ -2237,13 +2240,15 @@ static void hub_port_finish_reset(struct
- 			struct usb_hcd *hcd;
- 			/* TRSTRCY = 10 ms; plus some extra */
- 			msleep(10 + 40);
--			update_devnum(udev, 0);
--			hcd = bus_to_hcd(udev->bus);
--			/* The xHC may think the device is already reset,
--			 * so ignore the status.
--			 */
--			if (hcd->driver->reset_device)
--				hcd->driver->reset_device(hcd, udev);
-+			if (udev) {
-+				update_devnum(udev, 0);
-+				hcd = bus_to_hcd(udev->bus);
-+				/* The xHC may think the device is already
-+				 * reset, so ignore the status.
-+				 */
-+				if (hcd->driver->reset_device)
-+					hcd->driver->reset_device(hcd, udev);
-+			}
- 		}
- 		/* FALL THROUGH */
- 	case -ENOTCONN:
-@@ -2257,7 +2262,7 @@ static void hub_port_finish_reset(struct
- 			clear_port_feature(hub->hdev, port1,
- 					USB_PORT_FEAT_C_PORT_LINK_STATE);
- 		}
--		if (!warm)
-+		if (!warm && udev)
- 			usb_set_device_state(udev, *status
- 					? USB_STATE_NOTATTACHED
- 					: USB_STATE_DEFAULT);
+ 	/*
+ 	 * Single unix specification:
+ 	 * We should -EINVAL if an element length is not >= 0 and fitting an
+@@ -1103,17 +1107,12 @@ static ssize_t compat_do_readv_writev(in
+ 	if (!file->f_op)
+ 		goto out;
+ 
+-	ret = -EFAULT;
+-	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
+-		goto out;
+-
+-	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
++	ret = compat_rw_copy_check_uvector(type, uvector, nr_segs,
+ 					       UIO_FASTIOV, iovstack, &iov, 1);
+-	if (tot_len == 0) {
+-		ret = 0;
++	if (ret <= 0)
+ 		goto out;
+-	}
+ 
++	tot_len = ret;
+ 	ret = rw_verify_area(type, file, pos, tot_len);
+ 	if (ret < 0)
+ 		goto out;
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -434,12 +434,6 @@ compat_process_vm_rw(compat_pid_t pid,
+ 	if (flags != 0)
+ 		return -EINVAL;
+ 
+-	if (!access_ok(VERIFY_READ, lvec, liovcnt * sizeof(*lvec)))
+-		goto out;
+-
+-	if (!access_ok(VERIFY_READ, rvec, riovcnt * sizeof(*rvec)))
+-		goto out;
+-
+ 	if (vm_write)
+ 		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
+ 						  UIO_FASTIOV, iovstack_l,
+@@ -464,8 +458,6 @@ free_iovecs:
+ 		kfree(iov_r);
+ 	if (iov_l != iovstack_l)
+ 		kfree(iov_l);
+-
+-out:
+ 	return rc;
+ }
+ 
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -40,12 +40,12 @@ long compat_keyctl_instantiate_key_iov(
+ 					   ARRAY_SIZE(iovstack),
+ 					   iovstack, &iov, 1);
+ 	if (ret < 0)
+-		return ret;
++		goto err;
+ 	if (ret == 0)
+ 		goto no_payload_free;
+ 
+ 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
+-
++err:
+ 	if (iov != iovstack)
+ 		kfree(iov);
+ 	return ret;
 
 
