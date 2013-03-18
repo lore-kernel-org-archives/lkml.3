@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3CRUze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:55:34 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44371 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab3CRUzd (ORCPT
+	id S1755112Ab3CRUzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:55:38 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56809 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab3CRUzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:55:33 -0400
+	Mon, 18 Mar 2013 16:55:35 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,131 +16,46 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/2] rcu: Documentation update
-Date: Mon, 18 Mar 2013 13:55:08 -0700
-Message-Id: <1363640108-15508-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/2] rcu: Make bugginess of code sample more evident
+Date: Mon, 18 Mar 2013 13:55:07 -0700
+Message-Id: <1363640108-15508-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363640108-15508-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1363640108-15508-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031820-5406-0000-0000-0000067EBB78
+x-cbid: 13031820-5518-0000-0000-00000CA80A88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit applies a few updates based on a quick review of the RCU
-documentations.
+One of the code samples in whatisRCU.txt shows a bug, but someone scanning
+the document quickly might mistake it for a valid use of RCU.  Add some
+screaming comments to help keep speed-readers on track.
 
+Reported-by: Nathan Zimmer <nzimmer@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- Documentation/RCU/checklist.txt  | 26 ++++++++++++++++----------
- Documentation/RCU/lockdep.txt    |  5 +++++
- Documentation/RCU/rcubarrier.txt | 15 ++++++++++++++-
- 3 files changed, 35 insertions(+), 11 deletions(-)
+ Documentation/RCU/whatisRCU.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
-index 31ef8fe..79e789b8 100644
---- a/Documentation/RCU/checklist.txt
-+++ b/Documentation/RCU/checklist.txt
-@@ -217,9 +217,14 @@ over a rather long period of time, but improvements are always welcome!
- 	whether the increased speed is worth it.
+diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
+index 0cc7820..10df0b8 100644
+--- a/Documentation/RCU/whatisRCU.txt
++++ b/Documentation/RCU/whatisRCU.txt
+@@ -265,9 +265,9 @@ rcu_dereference()
+ 		rcu_read_lock();
+ 		p = rcu_dereference(head.next);
+ 		rcu_read_unlock();
+-		x = p->address;
++		x = p->address;	/* BUG!!! */
+ 		rcu_read_lock();
+-		y = p->data;
++		y = p->data;	/* BUG!!! */
+ 		rcu_read_unlock();
  
- 8.	Although synchronize_rcu() is slower than is call_rcu(), it
--	usually results in simpler code.  So, unless update performance
--	is critically important or the updaters cannot block,
--	synchronize_rcu() should be used in preference to call_rcu().
-+	usually results in simpler code.  So, unless update performance is
-+	critically important, the updaters cannot block, or the latency of
-+	synchronize_rcu() is visible from userspace, synchronize_rcu()
-+	should be used in preference to call_rcu().  Furthermore,
-+	kfree_rcu() usually results in even simpler code than does
-+	synchronize_rcu() without synchronize_rcu()'s multi-millisecond
-+	latency.  So please take advantage of kfree_rcu()'s "fire and
-+	forget" memory-freeing capabilities where it applies.
- 
- 	An especially important property of the synchronize_rcu()
- 	primitive is that it automatically self-limits: if grace periods
-@@ -268,7 +273,8 @@ over a rather long period of time, but improvements are always welcome!
- 	e.	Periodically invoke synchronize_rcu(), permitting a limited
- 		number of updates per grace period.
- 
--	The same cautions apply to call_rcu_bh() and call_rcu_sched().
-+	The same cautions apply to call_rcu_bh(), call_rcu_sched(),
-+	call_srcu(), and kfree_rcu().
- 
- 9.	All RCU list-traversal primitives, which include
- 	rcu_dereference(), list_for_each_entry_rcu(), and
-@@ -296,9 +302,9 @@ over a rather long period of time, but improvements are always welcome!
- 	all currently executing rcu_read_lock()-protected RCU read-side
- 	critical sections complete.  It does -not- necessarily guarantee
- 	that all currently running interrupts, NMIs, preempt_disable()
--	code, or idle loops will complete.  Therefore, if you do not have
--	rcu_read_lock()-protected read-side critical sections, do -not-
--	use synchronize_rcu().
-+	code, or idle loops will complete.  Therefore, if your
-+	read-side critical sections are protected by something other
-+	than rcu_read_lock(), do -not- use synchronize_rcu().
- 
- 	Similarly, disabling preemption is not an acceptable substitute
- 	for rcu_read_lock().  Code that attempts to use preemption
-@@ -401,9 +407,9 @@ over a rather long period of time, but improvements are always welcome!
- 	read-side critical sections.  It is the responsibility of the
- 	RCU update-side primitives to deal with this.
- 
--17.	Use CONFIG_PROVE_RCU, CONFIG_DEBUG_OBJECTS_RCU_HEAD, and
--	the __rcu sparse checks to validate your RCU code.  These
--	can help find problems as follows:
-+17.	Use CONFIG_PROVE_RCU, CONFIG_DEBUG_OBJECTS_RCU_HEAD, and the
-+	__rcu sparse checks (enabled by CONFIG_SPARSE_RCU_POINTER) to
-+	validate your RCU code.  These can help find problems as follows:
- 
- 	CONFIG_PROVE_RCU: check that accesses to RCU-protected data
- 		structures are carried out under the proper RCU
-diff --git a/Documentation/RCU/lockdep.txt b/Documentation/RCU/lockdep.txt
-index a102d4b..cd83d23 100644
---- a/Documentation/RCU/lockdep.txt
-+++ b/Documentation/RCU/lockdep.txt
-@@ -64,6 +64,11 @@ checking of rcu_dereference() primitives:
- 		but retain the compiler constraints that prevent duplicating
- 		or coalescsing.  This is useful when when testing the
- 		value of the pointer itself, for example, against NULL.
-+	rcu_access_index(idx):
-+		Return the value of the index and omit all barriers, but
-+		retain the compiler constraints that prevent duplicating
-+		or coalescsing.  This is useful when when testing the
-+		value of the index itself, for example, against -1.
- 
- The rcu_dereference_check() check expression can be any boolean
- expression, but would normally include a lockdep expression.  However,
-diff --git a/Documentation/RCU/rcubarrier.txt b/Documentation/RCU/rcubarrier.txt
-index 38428c1..2e319d1 100644
---- a/Documentation/RCU/rcubarrier.txt
-+++ b/Documentation/RCU/rcubarrier.txt
-@@ -79,7 +79,20 @@ complete. Pseudo-code using rcu_barrier() is as follows:
-    2. Execute rcu_barrier().
-    3. Allow the module to be unloaded.
- 
--The rcutorture module makes use of rcu_barrier in its exit function
-+There are also rcu_barrier_bh(), rcu_barrier_sched(), and srcu_barrier()
-+functions for the other flavors of RCU, and you of course must match
-+the flavor of rcu_barrier() with that of call_rcu().  If your module
-+uses multiple flavors of call_rcu(), then it must also use multiple
-+flavors of rcu_barrier() when unloading that module.  For example, if
-+it uses call_rcu_bh(), call_srcu() on srcu_struct_1, and call_srcu() on
-+srcu_struct_2(), then the following three lines of code will be required
-+when unloading:
-+
-+ 1 rcu_barrier_bh();
-+ 2 srcu_barrier(&srcu_struct_1);
-+ 3 srcu_barrier(&srcu_struct_2);
-+
-+The rcutorture module makes use of rcu_barrier() in its exit function
- as follows:
- 
-  1 static void
+ 	Holding a reference from one RCU read-side critical section
 -- 
 1.8.1.5
 
