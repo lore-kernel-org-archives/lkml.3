@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091Ab3CRV4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:56:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45600 "EHLO
+	id S1755525Ab3CRVGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:06:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab3CRVGy (ORCPT
+	with ESMTP id S1755490Ab3CRVGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:54 -0400
+	Mon, 18 Mar 2013 17:06:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 45/75] s390: critical section cleanup vs. machine checks
-Date: Mon, 18 Mar 2013 14:07:08 -0700
-Message-Id: <20130318210513.493721358@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [ 29/75] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
+Date: Mon, 18 Mar 2013 14:06:52 -0700
+Message-Id: <20130318210512.334023372@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,54 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit 6551fbdfd8b85d1ab5822ac98abb4fb449bcfae0 upstream.
+commit 1d9d8639c063caf6efc2447f5f26aa637f844ff6 upstream.
 
-The current machine check code uses the registers stored by the machine
-in the lowcore at __LC_GPREGS_SAVE_AREA as the registers of the interrupted
-context. The registers 0-7 of a user process can get clobbered if a machine
-checks interrupts the execution of a critical section in entry[64].S.
+This patch fixes a kernel crash when using precise sampling (PEBS)
+after a suspend/resume. Turns out the CPU notifier code is not invoked
+on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
+by the kernel and keeps it power-on/resume value of 0 causing any PEBS
+measurement to crash when running on CPU0.
 
-The reason is that the critical section cleanup code may need to modify
-the PSW and the registers for the previous context to get to the end of a
-critical section. If registers 0-7 have to be replaced the relevant copy
-will be in the registers, which invalidates the copy in the lowcore. The
-machine check handler needs to explicitly store registers 0-7 to the stack.
+The workaround is to add a hook in the actual resume code to restore
+the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
+the DS_AREA will be restored twice but this is harmless.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/entry.S   |    3 ++-
- arch/s390/kernel/entry64.S |    5 +++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 ++++++++
+ arch/x86/power/cpu.c                      |    2 ++
+ include/linux/perf_event.h                |    2 ++
+ 3 files changed, 12 insertions(+)
 
---- a/arch/s390/kernel/entry.S
-+++ b/arch/s390/kernel/entry.S
-@@ -636,7 +636,8 @@ ENTRY(mcck_int_handler)
- 	UPDATE_VTIME %r14,%r15,__LC_MCCK_ENTER_TIMER
- mcck_skip:
- 	SWITCH_ASYNC __LC_GPREGS_SAVE_AREA+32,__LC_PANIC_STACK,PAGE_SHIFT
--	mvc	__PT_R0(64,%r11),__LC_GPREGS_SAVE_AREA
-+	stm	%r0,%r7,__PT_R0(%r11)
-+	mvc	__PT_R8(32,%r11),__LC_GPREGS_SAVE_AREA+32
- 	stm	%r8,%r9,__PT_PSW(%r11)
- 	xc	__SF_BACKCHAIN(4,%r15),__SF_BACKCHAIN(%r15)
- 	l	%r1,BASED(.Ldo_machine_check)
---- a/arch/s390/kernel/entry64.S
-+++ b/arch/s390/kernel/entry64.S
-@@ -678,8 +678,9 @@ ENTRY(mcck_int_handler)
- 	UPDATE_VTIME %r14,__LC_MCCK_ENTER_TIMER
- 	LAST_BREAK %r14
- mcck_skip:
--	lghi	%r14,__LC_GPREGS_SAVE_AREA
--	mvc	__PT_R0(128,%r11),0(%r14)
-+	lghi	%r14,__LC_GPREGS_SAVE_AREA+64
-+	stmg	%r0,%r7,__PT_R0(%r11)
-+	mvc	__PT_R8(64,%r11),0(%r14)
- 	stmg	%r8,%r9,__PT_PSW(%r11)
- 	xc	__SF_BACKCHAIN(8,%r15),__SF_BACKCHAIN(%r15)
- 	lgr	%r2,%r11		# pass pointer to pt_regs
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -729,3 +729,11 @@ void intel_ds_init(void)
+ 		}
+ 	}
+ }
++
++void perf_restore_debug_store(void)
++{
++	if (!x86_pmu.bts && !x86_pmu.pebs)
++		return;
++
++	init_debug_store_on_cpu(smp_processor_id());
++}
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -11,6 +11,7 @@
+ #include <linux/suspend.h>
+ #include <linux/export.h>
+ #include <linux/smp.h>
++#include <linux/perf_event.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/proto.h>
+@@ -228,6 +229,7 @@ static void __restore_processor_state(st
+ 	do_fpu_end();
+ 	x86_platform.restore_sched_clock_state();
+ 	mtrr_bp_restore();
++	perf_restore_debug_store();
+ }
+ 
+ /* Needed by apm.c */
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -753,6 +753,7 @@ extern void perf_event_enable(struct per
+ extern void perf_event_disable(struct perf_event *event);
+ extern int __perf_event_disable(void *info);
+ extern void perf_event_task_tick(void);
++extern void perf_restore_debug_store(void);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *prev,
+@@ -792,6 +793,7 @@ static inline void perf_event_enable(str
+ static inline void perf_event_disable(struct perf_event *event)		{ }
+ static inline int __perf_event_disable(void *info)			{ return -1; }
+ static inline void perf_event_task_tick(void)				{ }
++static inline void perf_restore_debug_store(void)			{ }
+ #endif
+ 
+ #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
 
 
