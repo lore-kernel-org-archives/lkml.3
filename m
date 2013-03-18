@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab3CRPBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:01:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38455 "EHLO gate.crashing.org"
+	id S1753783Ab3CRPB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:01:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51868 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753594Ab3CRPBm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:01:42 -0400
-Subject: Re: [PATCH 5/5 v9] iommu/fsl: Freescale PAMU driver and iommu implementation.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D40ABB4@039-SN2MPN1-013.039d.mgd.msft.net>
-Date: Mon, 18 Mar 2013 09:59:53 -0500
-Cc: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CCCE947A-1C24-40C2-9341-BBF3F5C00D98@kernel.crashing.org>
-References: <1363200580-11623-1-git-send-email-Varun.Sethi@freescale.com> <0080B56D-8417-41B9-8341-665457D04DE6@kernel.crashing.org> <C5ECD7A89D1DC44195F34B25E172658D40ABB4@039-SN2MPN1-013.039d.mgd.msft.net>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+	id S1753636Ab3CRPBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:01:54 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 5/8] staging: ti-soc-thermal: make unexported functions local
+Date: Mon, 18 Mar 2013 10:59:13 -0400
+Message-ID: <1363618756-15851-6-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+In-Reply-To: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
+References: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move _ti_bandgap_write_threshold and _ti_bandgap_read_threshold to static
+area, as they are local functions.
 
-On Mar 17, 2013, at 10:48 AM, Sethi Varun-B16395 wrote:
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
->>> 
->>> +	guts_node = of_find_compatible_node(NULL, NULL,
->>> +			"fsl,qoriq-device-config-1.0");
->> 
->> This doesn't work for T4 or B4 device trees.
->> 
-> [Sethi Varun-B16395]hmm.... I need to use the dcfg space for this.
+diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+index 6a0b1ac..c850e13 100644
+--- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+@@ -477,8 +477,8 @@ exit:
+  * Validates the mCelsius range and update the requested threshold.
+  * Call this function only if bandgap features HAS(TALERT).
+  */
+-int _ti_bandgap_write_threshold(struct ti_bandgap *bgp, int id, int val,
+-				bool hot)
++static int _ti_bandgap_write_threshold(struct ti_bandgap *bgp, int id, int val,
++				       bool hot)
+ {
+ 	struct temp_sensor_data *ts_data;
+ 	struct temp_sensor_registers *tsr;
+@@ -531,8 +531,8 @@ exit:
+  * This function can be used to read t_hot or t_cold, depending on @hot value.
+  * Call this function only if bandgap features HAS(TALERT).
+  */
+-int _ti_bandgap_read_threshold(struct ti_bandgap *bgp, int id, int *val,
+-			       bool hot)
++static int _ti_bandgap_read_threshold(struct ti_bandgap *bgp, int id, int *val,
++				      bool hot)
+ {
+ 	struct temp_sensor_registers *tsr;
+ 	u32 temp, mask;
+-- 
+1.7.7.1.488.ge8e1c
 
-Let's see with the SoC arch's if something like "fsl,qoriq-device-config-2.0" makes sense for T4 & B4.
-
-- k
