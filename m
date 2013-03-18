@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab3CRVaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:30:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45879 "EHLO
+	id S932538Ab3CRVau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:30:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150Ab3CRVH6 (ORCPT
+	with ESMTP id S932137Ab3CRVHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:58 -0400
+	Mon, 18 Mar 2013 17:07:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 25/48] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
-Date: Mon, 18 Mar 2013 14:08:33 -0700
-Message-Id: <20130318210812.036351180@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 20/48] hwmon: (lineage-pem) Add missing terminating entry for pem_[input|fan]_attributes
+Date: Mon, 18 Mar 2013 14:08:28 -0700
+Message-Id: <20130318210811.694150035@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,46 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
+commit df069079c153d22adf6c28dcc0b1cf62bba75167 upstream.
 
-Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
-suspend/resume") fixed a crash when doing PEBS performance profiling
-after resuming, but in using init_debug_store_on_cpu() to restore the
-DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
-
-init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
-cross-calls to do the MSR update.  Which is not really valid at the
-early resume stage, and the warning is quite reasonable.  Now, it all
-happens to _work_, for the simple reason that smp_call_function_single()
-ends up just doing the call directly on the CPU when the CPU number
-matches, but we really should just do the wrmsr() directly instead.
-
-This duplicates the wrmsr() logic, but hopefully we can just remove the
-wrmsr_on_cpu() version eventually.
-
-Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/hwmon/lineage-pem.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -726,8 +726,10 @@ void intel_ds_init(void)
+--- a/drivers/hwmon/lineage-pem.c
++++ b/drivers/hwmon/lineage-pem.c
+@@ -421,6 +421,7 @@ static struct attribute *pem_input_attri
+ 	&sensor_dev_attr_in2_input.dev_attr.attr,
+ 	&sensor_dev_attr_curr1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
++	NULL
+ };
  
- void perf_restore_debug_store(void)
- {
-+	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
-+
- 	if (!x86_pmu.bts && !x86_pmu.pebs)
- 		return;
+ static const struct attribute_group pem_input_group = {
+@@ -431,6 +432,7 @@ static struct attribute *pem_fan_attribu
+ 	&sensor_dev_attr_fan1_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan2_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan3_input.dev_attr.attr,
++	NULL
+ };
  
--	init_debug_store_on_cpu(smp_processor_id());
-+	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
- }
+ static const struct attribute_group pem_fan_group = {
 
 
