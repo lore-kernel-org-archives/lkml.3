@@ -1,198 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3CRIJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:09:09 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60180 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab3CRIJG (ORCPT
+	id S1752020Ab3CRIKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:10:36 -0400
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1499 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3CRIKd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:09:06 -0400
-Message-ID: <5146CB92.7060203@linux.vnet.ibm.com>
-Date: Mon, 18 Mar 2013 16:08:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 18 Mar 2013 04:10:33 -0400
+X-Greylist: delayed 695 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 04:10:32 EDT
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Subject: Re: [RFC V1 2/8] smi2021: Add smi2021_main.c
+Date: Mon, 18 Mar 2013 08:58:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elezegarcia@gmail.com
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
+In-Reply-To: <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
-References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com>
-In-Reply-To: <20130317150239.GM11223@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031808-7014-0000-0000-000002BA7B20
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201303180858.47329.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2013 11:02 PM, Gleb Natapov wrote:
-> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
->> This patch tries to introduce a very simple and scale way to invalid all
->> mmio sptes - it need not walk any shadow pages and hold mmu-lock
->>
->> KVM maintains a global mmio invalid generation-number which is stored in
->> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
->> generation-number into his available bits when it is created
->>
->> When KVM need zap all mmio sptes, it just simply increase the global
->> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
->> then it walks the shadow page table and get the mmio spte. If the
->> generation-number on the spte does not equal the global generation-number,
->> it will go to the normal #PF handler to update the mmio spte
->>
->> Since 19 bits are used to store generation-number on mmio spte, the
->> generation-number can be round after 33554432 times. It is large enough
->> for nearly all most cases, but making the code be more strong, we zap all
->> shadow pages when the number is round
->>
-> Very nice idea, but why drop Takuya patches instead of using
-> kvm_mmu_zap_mmio_sptes() when generation number overflows.
+Hi Jon Arne,
 
-I am not sure whether it is still needed. Requesting to zap all mmio sptes for
-more than 500000 times is really really rare, it nearly does not happen.
-(By the way, 33554432 is wrong in the changelog, i just copy that for my origin
-implantation.) And, after my patch optimizing zapping all shadow pages,
-zap-all-sps should not be a problem anymore since it does not take too much lock
-time.
+Here is my review of this driver.
 
-Your idea?
+Regards,
 
+	Hans
+
+On Thu March 14 2013 15:06:58 Jon Arne Jørgensen wrote:
+> This is the core of the smi2021 module.
+> It will register the module with the kernel, and register the
+> usb probe function.
 > 
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/usb/smi2021/smi2021_main.c | 339 +++++++++++++++++++++++++++++++
+>  1 file changed, 339 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_main.c
 > 
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/include/asm/kvm_host.h |    2 +
->>  arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
->>  arch/x86/kvm/mmutrace.h         |   17 +++++++++++
->>  arch/x86/kvm/paging_tmpl.h      |    7 +++-
->>  arch/x86/kvm/vmx.c              |    4 ++
->>  arch/x86/kvm/x86.c              |    6 +--
->>  6 files changed, 82 insertions(+), 15 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->> index ef7f4a5..572398e 100644
->> --- a/arch/x86/include/asm/kvm_host.h
->> +++ b/arch/x86/include/asm/kvm_host.h
->> @@ -529,6 +529,7 @@ struct kvm_arch {
->>  	unsigned int n_requested_mmu_pages;
->>  	unsigned int n_max_mmu_pages;
->>  	unsigned int indirect_shadow_pages;
->> +	unsigned int mmio_invalid_gen;
-> Why invalid? Should be mmio_valid_gen or mmio_current_get.
+> diff --git a/drivers/media/usb/smi2021/smi2021_main.c b/drivers/media/usb/smi2021/smi2021_main.c
+> new file mode 100644
+> index 0000000..cc600e7
+> --- /dev/null
+> +++ b/drivers/media/usb/smi2021/smi2021_main.c
+> @@ -0,0 +1,339 @@
+> +/*******************************************************************************
+> + * smi2021_main.c                                                              *
+> + *                                                                             *
+> + * USB Driver for SMI2021 - EasyCAP                                            *
+> + * USB ID 1c88:003c                                                            *
+> + *                                                                             *
+> + * *****************************************************************************
+> + *
+> + * Copyright 2011-2013 Jon Arne Jørgensen
+> + * <jonjon.arnearne--a.t--gmail.com>
+> + *
+> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
+> + *
+> + * This file is part of SMI2021
+> + * http://code.google.com/p/easycap-somagic-linux/
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> + *
+> + * This driver is heavily influensed by the STK1160 driver.
+> + * Copyright (C) 2012 Ezequiel Garcia
+> + * <elezegarcia--a.t--gmail.com>
+> + *
+> + */
+> +
+> +#include "smi2021.h"
+> +
+> +#define VENDOR_ID 0x1c88
+> +
+> +static unsigned int imput;
+> +module_param(imput, int, 0644);
+> +MODULE_PARM_DESC(input, "Set default input");
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Jon Arne Jørgensen <jonjon.arnearne--a.t--gmail.com>");
+> +MODULE_DESCRIPTION("SMI2021 - EasyCap");
+> +MODULE_VERSION(SMI2021_DRIVER_VERSION);
+> +
+> +
+> +struct usb_device_id smi2021_usb_device_id_table[] = {
 
-mmio_invalid_gen is only updated in kvm_mmu_invalidate_mmio_sptes,
-so i named it as _invalid_. But mmio_valid_gen is good for me.
+Should be static const
 
+> +	{ USB_DEVICE(VENDOR_ID, 0x003c) },
+> +	{ USB_DEVICE(VENDOR_ID, 0x003d) },
+> +	{ USB_DEVICE(VENDOR_ID, 0x003e) },
+> +	{ USB_DEVICE(VENDOR_ID, 0x003f) },
+> +	{ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(usb, smi2021_usb_device_id_table);
+> +
+> +static unsigned short saa7113_addrs[] = {
+> +	0x4a,
+> +	I2C_CLIENT_END
+> +};
+
+Don't use this. See below for more info.
+
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          Write to saa7113                                                  */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +
+> +inline int transfer_usb_ctrl(struct smi2021_dev *dev, u8 *data, int len)
+> +{
+> +	return usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
+> +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0x0b, 0x00,
+> +			data, len, 1000);
+> +}
+> +
+> +int smi2021_write_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 val)
+> +{
+> +	int rc;
+> +	u8 snd_data[8];
+> +
+> +	memset(snd_data, 0x00, 8);
+> +
+> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
+> +	snd_data[SMI2021_CTRL_ADDR] = addr;
+> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
+> +
+> +	if (addr) {
+> +		/* This is I2C data for the saa7113 chip */
+> +		snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xc0;
+> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x01;
+> +
+> +		snd_data[SMI2021_CTRL_I2C_REG] = reg;
+> +		snd_data[SMI2021_CTRL_I2C_VAL] = val;
+> +	} else {
+> +		/* This is register settings for the smi2021 chip */
+> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x82;
+> +
+> +		snd_data[SMI2021_CTRL_REG_HI] = __cpu_to_be16(reg) >> 8;
+> +		snd_data[SMI2021_CTRL_REG_LO] = __cpu_to_be16(reg);
+
+This looks really weird. On a little endian system REG_HI is now initialized
+with the LSB, not MSB and the other way around on a big endian system.
+The _cpu_to_be16 certainly doesn't belong here.
+
+> +
+> +	}
+> +
+> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
+> +	if (rc < 0) {
+> +		smi2021_warn("write failed on register 0x%x, errno: %d\n",
+> +			reg, rc);
+> +		return rc;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +int smi2021_read_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 *val)
+> +{
+> +	int rc;
+> +	u8 rcv_data[13];
+> +	u8 snd_data[8];
+> +	memset(rcv_data, 0x00, 13);
+> +	memset(snd_data, 0x00, 8);
+> +
+> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
+> +	snd_data[SMI2021_CTRL_ADDR] = addr;
+> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0x84;
+> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
+> +	snd_data[SMI2021_CTRL_I2C_REG] = reg;
+> +
+> +	*val = 0;
+> +
+> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
+> +	if (rc < 0) {
+> +		smi2021_warn(
+> +			"1st pass failing to read reg 0x%x, usb-errno: %d\n",
+> +			reg, rc);
+> +		return rc;
+> +	}
+> +
+> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xa0;
+> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
+> +	if (rc < 0) {
+> +		smi2021_warn(
+> +			"2nd pass failing to read reg 0x%x, usb-errno: %d\n",
+> +			reg, rc);
+> +		return rc;
+> +	}
+> +
+> +	rc = usb_control_msg(dev->udev,
+> +		usb_rcvctrlpipe(dev->udev, 0x80), 0x01,
+> +		USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +		0x0b, 0x00, rcv_data, 13, 1000);
+> +	if (rc < 0) {
+> +		smi2021_warn("Failed to read reg 0x%x, usb-errno: %d\n",
+> +			reg, rc);
+> +		return rc;
+> +	}
+> +
+> +	*val = rcv_data[SMI2021_CTRL_I2C_RCV_VAL];
+> +	return 0;
+> +}
+> +
+> +static void smi2021_reset_device(struct smi2021_dev *dev)
+> +{
+> +	smi2021_write_reg(dev, 0, 0x3a, 0x80);
+> +	smi2021_write_reg(dev, 0, 0x3b, 0x80);
+> +	smi2021_write_reg(dev, 0, 0x3b, 0x00);
+> +}
+> +
+> +static void release_v4l2_dev(struct v4l2_device *v4l2_dev)
+> +{
+> +	struct smi2021_dev *dev = container_of(v4l2_dev, struct smi2021_dev,
+> +								v4l2_dev);
+> +	smi2021_dbg("Releasing all resources\n");
+> +
+> +	smi2021_i2c_unregister(dev);
+> +
+> +	v4l2_ctrl_handler_free(&dev->ctrl_handler);
+> +	v4l2_device_unregister(&dev->v4l2_dev);
+> +	kfree(dev);
+> +}
+> +
+> +#define hb_mult(w_max_packet_size) (1 + (((w_max_packet_size) >> 11) & 0x03))
+> +
+> +static int smi2021_scan_usb(struct usb_interface *intf, struct usb_device *udev)
+> +{
+> +	int i, e, ifnum, sizedescr, size;
+> +	const struct usb_endpoint_descriptor *desc;
+> +	ifnum = intf->altsetting[0].desc.bInterfaceNumber;
+> +
+> +	for (i = 0; i < intf->num_altsetting; i++) {
+> +		for (e = 0; e < intf->altsetting[i].desc.bNumEndpoints; e++) {
+> +			desc = &intf->altsetting[i].endpoint[e].desc;
+> +			sizedescr = le16_to_cpu(desc->wMaxPacketSize);
+> +			size = sizedescr & 0x7ff;
+> +
+> +			if (udev->speed == USB_SPEED_HIGH)
+> +				size = size * hb_mult(sizedescr);
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*          DEVICE  -  PROBE   &   DISCONNECT                                 */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +static int smi2021_usb_probe(struct usb_interface *intf,
+> +					const struct usb_device_id *devid)
+> +{
+> +	int rc = 0;
+> +	struct usb_device *udev = interface_to_usbdev(intf);
+> +	struct smi2021_dev *dev;
+> +
+> +	if (udev == (struct usb_device *)NULL) {
+> +		smi2021_err("device is NULL\n");
+> +		return -EFAULT;
+> +	}
+> +
+> +	smi2021_scan_usb(intf, udev);
+> +
+> +	dev = kzalloc(sizeof(struct smi2021_dev), GFP_KERNEL);
+> +	if (dev == NULL)
+> +		return -ENOMEM;
+> +
+> +	dev->udev = udev;
+> +	dev->dev = &intf->dev;
+> +	usb_set_intfdata(intf, dev);
+> +
+> +	/* Initialize videobuf2 stuff */
+> +	rc = smi2021_vb2_setup(dev);
+> +	if (rc < 0)
+> +		goto free_err;
+> +
+> +	spin_lock_init(&dev->buf_lock);
+> +	mutex_init(&dev->v4l2_lock);
+> +	mutex_init(&dev->vb_queue_lock);
+> +
+> +	rc = v4l2_ctrl_handler_init(&dev->ctrl_handler, 0);
+> +	if (rc) {
+> +		smi2021_err("v4l2_ctrl_handler_init failed with: %d\n", rc);
+> +		goto free_err;
+> +	}
+> +
+> +	dev->v4l2_dev.release = release_v4l2_dev;
+> +	dev->v4l2_dev.ctrl_handler = &dev->ctrl_handler;
+> +	rc = v4l2_device_register(dev->dev, &dev->v4l2_dev);
+> +	if (rc) {
+> +		smi2021_err("v4l2_device_register failed with %d\n", rc);
+> +		goto free_ctrl;
+> +	}
+> +
+> +	smi2021_reset_device(dev);
+> +
+> +	rc = smi2021_i2c_register(dev);
+> +	if (rc < 0)
+> +		goto unreg_v4l2;
+> +
+> +	dev->sd_saa7113 = v4l2_i2c_new_subdev(&dev->v4l2_dev, &dev->i2c_adap,
+> +		"saa7113", 0, saa7113_addrs);
+
+Fill in the addr argument directly and use NULL for probe_addrs. Probing is
+not something new drivers should do.
+
+See also my comments in the i2c.c review.
+
+> +
+> +	smi2021_dbg("Driver version %s successfully loaded\n",
+> +			SMI2021_DRIVER_VERSION);
+> +
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, core, reset, 0);
+> +	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
+> +
+> +	rc = smi2021_snd_register(dev);
+> +	if (rc < 0)
+> +		goto unreg_i2c;
+> +
+> +	rc = smi2021_video_register(dev);
+> +	if (rc < 0)
+> +		goto unreg_snd;
+> +
+> +	return 0;
+> +
+> +unreg_snd:
+> +	smi2021_snd_unregister(dev);
+> +unreg_i2c:
+> +	smi2021_i2c_unregister(dev);
+> +unreg_v4l2:
+> +	v4l2_device_unregister(&dev->v4l2_dev);
+> +free_ctrl:
+> +	v4l2_ctrl_handler_free(&dev->ctrl_handler);
+> +free_err:
+> +	kfree(dev);
+> +
+> +	return rc;
+> +}
+> +
+> +static void smi2021_usb_disconnect(struct usb_interface *intf)
+> +{
+> +	struct smi2021_dev *dev = usb_get_intfdata(intf);
+> +
+> +	smi2021_dbg("Going for release!\n");
+> +
+> +	usb_set_intfdata(intf, NULL);
+> +
+> +	mutex_lock(&dev->vb_queue_lock);
+> +	mutex_lock(&dev->v4l2_lock);
+> +
+> +	smi2021_uninit_isoc(dev);
+> +	smi2021_clear_queue(dev);
+> +
+> +	video_unregister_device(&dev->vdev);
+> +	v4l2_device_disconnect(&dev->v4l2_dev);
+> +
+> +	/* This way current users can detect device is gone */
+> +	dev->udev = NULL;
+> +
+> +	mutex_unlock(&dev->v4l2_lock);
+> +	mutex_unlock(&dev->vb_queue_lock);
+> +
+> +	smi2021_snd_unregister(dev);
+> +
+> +	/*
+> +	 * This calls release_v4l2_dev if it's the last reference.
+> +	 * Otherwise, the release is postponed until there are no users left.
+> +	 */
+> +	v4l2_device_put(&dev->v4l2_dev);
+> +}
+> +
+> +/******************************************************************************/
+> +/*                                                                            */
+> +/*            MODULE  -  INIT  &  EXIT                                        */
+> +/*                                                                            */
+> +/******************************************************************************/
+> +
+> +struct usb_driver smi2021_usb_driver = {
+> +	.name = "smi2021",
+> +	.id_table = smi2021_usb_device_id_table,
+> +	.probe = smi2021_usb_probe,
+> +	.disconnect = smi2021_usb_disconnect
+> +};
+> +
+> +module_usb_driver(smi2021_usb_driver);
+> +
 > 
->>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
->>  	/*
->>  	 * Hash table of struct kvm_mmu_page.
->> @@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
->>  void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
->>  				     struct kvm_memory_slot *slot,
->>  				     gfn_t gfn_offset, unsigned long mask);
->> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
-> Agree with Takuya that kvm_mmu_invalidate_mmio_sptes() is a better name.
 
-Me too.
+Regards,
 
-> 
->>  void kvm_mmu_zap_all(struct kvm *kvm);
->>  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
->>  void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 13626f4..7093a92 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
->>  static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
->>  			   unsigned access)
->>  {
->> -	u64 mask = generation_mmio_spte_mask(0);
->> +	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
->> +	u64 mask = generation_mmio_spte_mask(gen);
->>
->>  	access &= ACC_WRITE_MASK | ACC_USER_MASK;
->>  	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
->>
->> -	trace_mark_mmio_spte(sptep, gfn, access, 0);
->> +	trace_mark_mmio_spte(sptep, gfn, access, gen);
->>  	mmu_spte_set(sptep, mask);
->>  }
->>
->> @@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
->>  	return false;
->>  }
->>
->> +static bool check_mmio_spte(struct kvm *kvm, u64 spte)
->> +{
->> +	return get_mmio_spte_generation(spte) ==
->> +		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
->> +}
->> +
->> +/*
->> + * The caller should protect concurrent access on
->> + * kvm->arch.mmio_invalid_gen. Currently, it is used by
->> + * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
->> + */
->> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
->> +{
->> +	/* Ensure update memslot has been completed. */
->> +	smp_mb();
-> What barrier this one is paired with?
-
-It is paired with nothing. :)
-
-I used mb here just for avoid increasing the generation-number before updating
-the memslot. But on other sides (storing gen and checking gen), we do not need
-to care it - the worse case is that we emulate a memory-accessed instruction.
-
-> 
->> +
->> +	 trace_kvm_mmu_invalid_mmio_spte(kvm);
-> Something wrong with indentation.
-
-My mistake. No idea why checkpatch did not warn me.
-
-> 
->> +
->> +	/*
->> +	 * The very rare case: if the generation-number is round,
->> +	 * zap all shadow pages.
->> +	 */
->> +	if (unlikely(kvm->arch.mmio_invalid_gen++ == MAX_GEN)) {
->> +		kvm->arch.mmio_invalid_gen = 0;
->> +		return kvm_mmu_zap_all(kvm);
->> +	}
->> +}
->> +
->>  static inline u64 rsvd_bits(int s, int e)
->>  {
->>  	return ((1ULL << (e - s + 1)) - 1) << s;
->> @@ -3183,9 +3212,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
->>  }
->>
->>  /*
->> - * If it is a real mmio page fault, return 1 and emulat the instruction
->> - * directly, return 0 to let CPU fault again on the address, -1 is
->> - * returned if bug is detected.
->> + * Return value:
->> + * 2: invalid spte is detected then let the real page fault path
->> + *    update the mmio spte.
->> + * 1: it is a real mmio page fault, emulate the instruction directly.
->> + * 0: let CPU fault again on the address.
->> + * -1: bug is detected.
->>   */
-> What about dropping spte and let guest re-fault instead of propagating
-> new return value up the call chain. If this is slow lets at least define
-> a enum with descriptive names.
-
-Checking mmio spte is out of mmu-lock, we can not clear it here.
-And should be updated in the real page fault path, so it is no worth to
-atomic-ly clear it out of mmu-lock and refault again. (As you said, it is slow).
-
-I will define the return value as your suggestion in the next version.
-
-Thanks for your review and valuable suggestions, Gleb!
-
+	Hans
