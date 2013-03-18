@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab3CRVNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:13:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab3CRVNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:13:44 -0400
-Date: Mon, 18 Mar 2013 23:14:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: David Miller <davem@davemloft.net>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, asias@redhat.com,
-        target-devel@vger.kernel.org
-Subject: Re: [PULL] vhost: tcm_vhost fixes for 3.9
-Message-ID: <20130318211418.GA20406@redhat.com>
-References: <20130318112003.GA7809@redhat.com>
- <20130318.130136.1629094222097780420.davem@davemloft.net>
- <20130318195443.GB19761@redhat.com>
- <1363641003.3156.43.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363641003.3156.43.camel@haakon2.linux-iscsi.org>
+	id S932736Ab3CRVOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:14:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46128 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932417Ab3CRVKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:10:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 29/40] block: use i_size_write() in bd_set_size()
+Date: Mon, 18 Mar 2013 14:11:07 -0700
+Message-Id: <20130318211018.348920101@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
+References: <20130318211016.254453918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 02:10:03PM -0700, Nicholas A. Bellinger wrote:
-> On Mon, 2013-03-18 at 21:54 +0200, Michael S. Tsirkin wrote:
-> > On Mon, Mar 18, 2013 at 01:01:36PM -0400, David Miller wrote:
-> > > From: "Michael S. Tsirkin" <mst@redhat.com>
-> > > Date: Mon, 18 Mar 2013 13:20:03 +0200
-> > > 
-> > > > The following changes since commit 8c6216d7f118a128678270824b6a1286a63863ca:
-> > > > 
-> > > >   Revert "ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally" (2013-03-16 23:00:41 -0400)
-> > > > 
-> > > > are available in the git repository at:
-> > > > 
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
-> > > > 
-> > > > for you to fetch changes up to deb7cb067dabd3be625eaf5495da8bdc97377fc1:
-> > > > 
-> > > >   tcm_vhost: Flush vhost_work in vhost_scsi_flush() (2013-03-17 13:04:14 +0200)
-> > > 
-> > > This is a scsi driver, I therefore don't think this pull request is for me.
-> > > 
-> > > Please avoid such confusion in the future, and don't use branch names
-> > > like "vhost-net" for SCSI driver fixes.
-> > > 
-> > > Thanks.
-> > 
-> > We are sharing quite a bit of code, so it's a common tree.
-> > There was a vhost-net patch there too but you picked it up
-> > directly so I dropped that and what's left is vhost-scsi.
-> > Typically vhost-net dominates so I'm just used to merging all vhost
-> > things through you but if you think it's wrong I can send it directly to
-> > Linus.
-> > 
-> 
-> I'll be sending out a target-pending 3.9-rc-fixes pull request later in
-> the week, and am happy to include this series if you'd like.
-> 
-> --nab
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Sure, go ahead. You can add
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-to the patches.
+------------------
 
--- 
-MST
+From: Guo Chao <yan@linux.vnet.ibm.com>
+
+commit d646a02a9d44d1421f273ae3923d97b47b918176 upstream.
+
+blkdev_ioctl(GETBLKSIZE) uses i_size_read() to read size of block device.
+If we update block size directly, reader may see intermediate result in
+some machines and configurations.  Use i_size_write() instead.
+
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/block_dev.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1052,7 +1052,9 @@ void bd_set_size(struct block_device *bd
+ {
+ 	unsigned bsize = bdev_logical_block_size(bdev);
+ 
+-	bdev->bd_inode->i_size = size;
++	mutex_lock(&bdev->bd_inode->i_mutex);
++	i_size_write(bdev->bd_inode, size);
++	mutex_unlock(&bdev->bd_inode->i_mutex);
+ 	while (bsize < PAGE_CACHE_SIZE) {
+ 		if (size & bsize)
+ 			break;
+
+
