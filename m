@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3CRQdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:33:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36444 "EHLO
+	id S1753656Ab3CRQdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:33:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36447 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab3CRQZ6 (ORCPT
+	with ESMTP id S1752797Ab3CRQZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 12:25:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 41/54] perf tools: Remove unused macro definitions
-Date: Mon, 18 Mar 2013 13:25:26 -0300
-Message-Id: <1363623939-10748-42-git-send-email-acme@infradead.org>
+Subject: [PATCH 26/54] perf evsel: Introduce perf_evsel__is_group_event() helper
+Date: Mon, 18 Mar 2013 13:25:11 -0300
+Message-Id: <1363623939-10748-27-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
@@ -31,40 +30,203 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-They're never used and looks like leftovers from the porting of
-trace-cmd code.
+The perf_evsel__is_group_event function is for checking whether given
+evsel needs event group view support or not.  Please note that it's
+different to the existing perf_evsel__is_group_leader() which checks
+only the given evsel is a leader or a standalone (i.e. non-group) event
+regardless of event group feature.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363173585-9754-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1362462812-30885-7-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-info.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ tools/perf/builtin-report.c    |    2 +-
+ tools/perf/ui/browsers/hists.c |    4 ++--
+ tools/perf/ui/gtk/hists.c      |    7 ++-----
+ tools/perf/ui/hist.c           |    7 ++-----
+ tools/perf/util/annotate.c     |    9 +++------
+ tools/perf/util/evsel.h        |   24 ++++++++++++++++++++++++
+ 6 files changed, 34 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 783ab51..3c452b5 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -43,13 +43,6 @@
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 96b5a7f..3f4a79b 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -314,7 +314,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	char buf[512];
+ 	size_t size = sizeof(buf);
  
- #define VERSION "0.5"
+-	if (symbol_conf.event_group && evsel->nr_members > 1) {
++	if (perf_evsel__is_group_event(evsel)) {
+ 		struct perf_evsel *pos;
  
--#define TRACE_CTRL	"tracing_on"
--#define TRACE		"trace"
--#define AVAILABLE	"available_tracers"
--#define CURRENT		"current_tracer"
--#define ITER_CTRL	"trace_options"
--#define MAX_LATENCY	"tracing_max_latency"
+ 		perf_evsel__group_desc(evsel, buf, size);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 0e125e1..a5843fd 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1193,7 +1193,7 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 	char buf[512];
+ 	size_t buflen = sizeof(buf);
+ 
+-	if (symbol_conf.event_group && evsel->nr_members > 1) {
++	if (perf_evsel__is_group_event(evsel)) {
+ 		struct perf_evsel *pos;
+ 
+ 		perf_evsel__group_desc(evsel, buf, buflen);
+@@ -1709,7 +1709,7 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+ 						       HE_COLORSET_NORMAL);
+ 
+-	if (symbol_conf.event_group && evsel->nr_members > 1) {
++	if (perf_evsel__is_group_event(evsel)) {
+ 		struct perf_evsel *pos;
+ 
+ 		ev_name = perf_evsel__group_name(evsel);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 1e764a8..6f259b3 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -32,21 +32,18 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 	int ret;
+ 	double percent = 0.0;
+ 	struct hists *hists = he->hists;
++	struct perf_evsel *evsel = hists_to_evsel(hists);
+ 
+ 	if (hists->stats.total_period)
+ 		percent = 100.0 * get_field(he) / hists->stats.total_period;
+ 
+ 	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
+ 
+-	if (symbol_conf.event_group) {
++	if (perf_evsel__is_group_event(evsel)) {
+ 		int prev_idx, idx_delta;
+-		struct perf_evsel *evsel = hists_to_evsel(hists);
+ 		struct hist_entry *pair;
+ 		int nr_members = evsel->nr_members;
+ 
+-		if (nr_members <= 1)
+-			return ret;
 -
- unsigned int page_size;
+ 		prev_idx = perf_evsel__group_idx(evsel);
  
- static const char *output_file = "trace.info";
+ 		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index d671e63..4bf91b0 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -16,6 +16,7 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ {
+ 	int ret;
+ 	struct hists *hists = he->hists;
++	struct perf_evsel *evsel = hists_to_evsel(hists);
+ 
+ 	if (fmt_percent) {
+ 		double percent = 0.0;
+@@ -28,15 +29,11 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 	} else
+ 		ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+ 
+-	if (symbol_conf.event_group) {
++	if (perf_evsel__is_group_event(evsel)) {
+ 		int prev_idx, idx_delta;
+-		struct perf_evsel *evsel = hists_to_evsel(hists);
+ 		struct hist_entry *pair;
+ 		int nr_members = evsel->nr_members;
+ 
+-		if (nr_members <= 1)
+-			return ret;
+-
+ 		prev_idx = perf_evsel__group_idx(evsel);
+ 
+ 		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 0955cff..f080cc4 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -649,9 +649,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 
+ 		next = disasm__get_next_ip_line(&notes->src->source, dl);
+ 
+-		if (symbol_conf.event_group &&
+-		    perf_evsel__is_group_leader(evsel) &&
+-		    evsel->nr_members > 1) {
++		if (perf_evsel__is_group_event(evsel)) {
+ 			nr_percent = evsel->nr_members;
+ 			ppercents = calloc(nr_percent, sizeof(double));
+ 			if (ppercents == NULL)
+@@ -721,8 +719,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 		if (queue)
+ 			return -1;
+ 
+-		if (symbol_conf.event_group &&
+-		    perf_evsel__is_group_leader(evsel))
++		if (perf_evsel__is_group_event(evsel))
+ 			width *= evsel->nr_members;
+ 
+ 		if (!*dl->line)
+@@ -1126,7 +1123,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
+ 	len = symbol__size(sym);
+ 	namelen = strlen(d_filename);
+ 
+-	if (symbol_conf.event_group && perf_evsel__is_group_leader(evsel))
++	if (perf_evsel__is_group_event(evsel))
+ 		width *= evsel->nr_members;
+ 
+ 	printf(" %-*.*s|	Source code & Disassembly of %s\n",
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 52021c3..bf758e5 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -9,6 +9,7 @@
+ #include "xyarray.h"
+ #include "cgroup.h"
+ #include "hist.h"
++#include "symbol.h"
+  
+ struct perf_counts_values {
+ 	union {
+@@ -246,11 +247,34 @@ static inline struct perf_evsel *perf_evsel__next(struct perf_evsel *evsel)
+ 	return list_entry(evsel->node.next, struct perf_evsel, node);
+ }
+ 
++/**
++ * perf_evsel__is_group_leader - Return whether given evsel is a leader event
++ *
++ * @evsel - evsel selector to be tested
++ *
++ * Return %true if @evsel is a group leader or a stand-alone event
++ */
+ static inline bool perf_evsel__is_group_leader(const struct perf_evsel *evsel)
+ {
+ 	return evsel->leader == evsel;
+ }
+ 
++/**
++ * perf_evsel__is_group_event - Return whether given evsel is a group event
++ *
++ * @evsel - evsel selector to be tested
++ *
++ * Return %true iff event group view is enabled and @evsel is a actual group
++ * leader which has other members in the group
++ */
++static inline bool perf_evsel__is_group_event(struct perf_evsel *evsel)
++{
++	if (!symbol_conf.event_group)
++		return false;
++
++	return perf_evsel__is_group_leader(evsel) && evsel->nr_members > 1;
++}
++
+ struct perf_attr_details {
+ 	bool freq;
+ 	bool verbose;
 -- 
 1.7.1
 
