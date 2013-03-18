@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab3CRSev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:34:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37000 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753630Ab3CRSet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:34:49 -0400
-Date: Mon, 18 Mar 2013 18:34:36 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCHv2 3/3] ARM: Work around faulty ISAR0 register in some
- Krait CPUs
-Message-ID: <20130318183435.GD31193@mudshark.cambridge.arm.com>
-References: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
- <1363631337-13816-4-git-send-email-sboyd@codeaurora.org>
+	id S1754422Ab3CRSfk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:35:40 -0400
+Received: from elijah-5.iglou.com ([64.253.103.13]:49650 "EHLO eli.elilabs.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab3CRSfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 14:35:39 -0400
+X-Greylist: delayed 2006 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 14:35:38 EDT
+Message-ID: <51475699.3030406@elilabs.com>
+Date: Mon, 18 Mar 2013 14:02:01 -0400
+From: Robert Brown <rj@elilabs.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121129 Thunderbird/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363631337-13816-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
+        Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
+        linux-hotplug@vger.kernel.org, linux-pci@vger.kernel.org,
+        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+References: <20130316213512.2974.17303.stgit@amt.stowe>  <20130316213519.2974.38954.stgit@amt.stowe>  <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>  <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>  <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>  <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>  <1363623880.24132.351.camel@bling.home> <20130318164126.GA20565@kroah.com>  <1363625463.24132.367.camel@bling.home> <87obeg39qp.fsf@nemi.mork.no> <1363629287.24132.380.camel@bling.home>
+In-Reply-To: <1363629287.24132.380.camel@bling.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 06:28:57PM +0000, Stephen Boyd wrote:
-> From: Stepan Moskovchenko <stepanm@codeaurora.org>
-> 
-> Some early versions of the Krait CPU design incorrectly indicate
-> that they only support the UDIV and SDIV instructions in Thumb
-> mode when they actually support them in ARM and Thumb mode. It
-> seems that these CPUs follow the DDI0406B ARM ARM which has two
-> possible values for the divide instructions field, instead of the
-> DDI0406C document which has three possible values.
-> 
-> Work around this problem by checking the MIDR against Krait CPUs
-> with this faulty ISAR0 register and force the hwcaps to indicate
-> support in both modes.
-> 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> [sboyd: Rewrote commit text to reflect real reasoning now that
-> 	we autodetect udiv/sdiv]
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/mm/proc-v7.S | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
+On 03/18/13 13:54, Alex Williamson wrote:
+> On Mon, 2013-03-18 at 18:20 +0100, Bjørn Mork wrote:
+>> Alex Williamson <alex.williamson@redhat.com> writes:
+>>
+>>> At least for KVM the kernel fix is the addition of the vfio driver which
+>>> gives us a non-sysfs way to do this.  If this problem was found a few
+>>> years later and we were ready to make the switch I'd support just
+>>> removing these resource files.  In the meantime we have userspace that
+>>> depends on this interface, so I'm open to suggestions how to fix it.
+>> I am puzzled by a couple of things in this discussion:
+>>
+>> 1) do you seriously mean that a userspace application (any, not just
+>>    udevadm or qemu or whatever) should be able to read and write these
+>>    registers while the device is owned by a driver?  How is that ever
+>>    going to work?
+> The expectation is that the user doesn't mess with the device through
+> pci-sysfs while it's running.  This is really no different than config
+> space or MMIO space in that respect.  You can use setpci to break your
+> PCI card while it's used by the driver today.  The difference is that
+> MMIO spaces side-step the issue by only allowing mmap and config space
+> is known not to have read side-effects.
+>
+>> 2) is it really so that a device can be so fundamentally screwed up by
+>>    reading some registers, that a later driver probe cannot properly
+>>    reinitialize it?
+> Never underestimate how broken hardware can be, though in this case
+> reading a device register seems to be causing a system hang/reset.
+The real problem is that PCI devices can be bus masters, which means
+they can screw up *ANYTHING* (almost)!
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
