@@ -1,145 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3CRV0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:26:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27532 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600Ab3CRV0Z (ORCPT
+	id S1756693Ab3CRV1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:27:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45946 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372Ab3CRVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:26:25 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] x86, kdump: Set crashkernel_low automatically
-Date: Mon, 18 Mar 2013 14:25:57 -0700
-Message-Id: <1363641957-5247-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <514783B4.2030401@zytor.com>
-References: <514783B4.2030401@zytor.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 18 Mar 2013 17:08:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 47/48] dcbnl: fix various netlink info leaks
+Date: Mon, 18 Mar 2013 14:08:55 -0700
+Message-Id: <20130318210813.566011616@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
+References: <20130318210810.247845918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does not set low range for crashkernel if the user
-does not specify that.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-That cause regressions on system that does not support intel_iommu
-properly.
+------------------
 
-Chao said that his system does work well on 3.8 without extra parameter.
-even iommu does not work with kdump.
 
-Set crashkernel_low automatically if the user does not specify that.
+From: Mathias Krause <minipli@googlemail.com>
 
-For system that does support IOMMU with kdump properly, user could
-specify crashkernel_low=0 to save that 72M low ram.
+[ Upstream commit 29cd8ae0e1a39e239a3a7b67da1986add1199fc0 ]
 
--v3: add swiotlb_size() according to Konrad.
+The dcb netlink interface leaks stack memory in various places:
+* perm_addr[] buffer is only filled at max with 12 of the 32 bytes but
+  copied completely,
+* no in-kernel driver fills all fields of an IEEE 802.1Qaz subcommand,
+  so we're leaking up to 58 bytes for ieee_ets structs, up to 136 bytes
+  for ieee_pfc structs, etc.,
+* the same is true for CEE -- no in-kernel driver fills the whole
+  struct,
 
-Reported-by: WANG Chao <chaowang@redhat.com>
-Tested-by: WANG Chao <chaowang@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Prevent all of the above stack info leaks by properly initializing the
+buffers/structures involved.
 
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/kernel/setup.c |   15 ++++++++++++---
- include/linux/swiotlb.h |    1 +
- lib/swiotlb.c           |   19 +++++++++++++++----
- 3 files changed, 28 insertions(+), 7 deletions(-)
+ net/dcb/dcbnl.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -522,19 +522,28 @@ static void __init reserve_crashkernel_l
- 	unsigned long long low_base = 0, low_size = 0;
- 	unsigned long total_low_mem;
- 	unsigned long long base;
-+	bool auto_set = false;
- 	int ret;
+--- a/net/dcb/dcbnl.c
++++ b/net/dcb/dcbnl.c
+@@ -336,6 +336,7 @@ static int dcbnl_getperm_hwaddr(struct n
+ 	dcb->dcb_family = AF_UNSPEC;
+ 	dcb->cmd = DCB_CMD_GPERM_HWADDR;
  
- 	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
- 	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
- 						&low_size, &base);
--	if (ret != 0 || low_size <= 0)
--		return;
-+	if (ret != 0) {
-+		/* swiotlb size and etc 8M */
-+		low_size = swiotlb_size_or_default() + (8UL<<20);
-+		auto_set = true;
-+	} else {
-+		/* passed with crashkernel_low=0 ? */
-+		if (!low_size)
-+			return;
-+	}
++	memset(perm_addr, 0, sizeof(perm_addr));
+ 	netdev->dcbnl_ops->getpermhwaddr(netdev, perm_addr);
  
- 	low_base = memblock_find_in_range(low_size, (1ULL<<32),
- 					low_size, alignment);
+ 	ret = nla_put(dcbnl_skb, DCB_ATTR_PERM_HWADDR, sizeof(perm_addr),
+@@ -1238,6 +1239,7 @@ static int dcbnl_ieee_fill(struct sk_buf
  
- 	if (!low_base) {
--		pr_info("crashkernel low reservation failed - No suitable area found.\n");
-+		if (!auto_set)
-+			pr_info("crashkernel low reservation failed - No suitable area found.\n");
+ 	if (ops->ieee_getets) {
+ 		struct ieee_ets ets;
++		memset(&ets, 0, sizeof(ets));
+ 		err = ops->ieee_getets(netdev, &ets);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_IEEE_ETS, sizeof(ets), &ets);
+@@ -1245,6 +1247,7 @@ static int dcbnl_ieee_fill(struct sk_buf
  
- 		return;
- 	}
-Index: linux-2.6/include/linux/swiotlb.h
-===================================================================
---- linux-2.6.orig/include/linux/swiotlb.h
-+++ linux-2.6/include/linux/swiotlb.h
-@@ -25,6 +25,7 @@ extern int swiotlb_force;
- extern void swiotlb_init(int verbose);
- int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
- extern unsigned long swiotlb_nr_tbl(void);
-+unsigned long swiotlb_size_or_default(void);
- extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+ 	if (ops->ieee_getpfc) {
+ 		struct ieee_pfc pfc;
++		memset(&pfc, 0, sizeof(pfc));
+ 		err = ops->ieee_getpfc(netdev, &pfc);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_IEEE_PFC, sizeof(pfc), &pfc);
+@@ -1277,6 +1280,7 @@ static int dcbnl_ieee_fill(struct sk_buf
+ 	/* get peer info if available */
+ 	if (ops->ieee_peer_getets) {
+ 		struct ieee_ets ets;
++		memset(&ets, 0, sizeof(ets));
+ 		err = ops->ieee_peer_getets(netdev, &ets);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_IEEE_PEER_ETS, sizeof(ets), &ets);
+@@ -1284,6 +1288,7 @@ static int dcbnl_ieee_fill(struct sk_buf
  
- /*
-Index: linux-2.6/lib/swiotlb.c
-===================================================================
---- linux-2.6.orig/lib/swiotlb.c
-+++ linux-2.6/lib/swiotlb.c
-@@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
- 	if (!strcmp(str, "force"))
- 		swiotlb_force = 1;
+ 	if (ops->ieee_peer_getpfc) {
+ 		struct ieee_pfc pfc;
++		memset(&pfc, 0, sizeof(pfc));
+ 		err = ops->ieee_peer_getpfc(netdev, &pfc);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_IEEE_PEER_PFC, sizeof(pfc), &pfc);
+@@ -1463,6 +1468,7 @@ static int dcbnl_cee_fill(struct sk_buff
+ 	/* peer info if available */
+ 	if (ops->cee_peer_getpg) {
+ 		struct cee_pg pg;
++		memset(&pg, 0, sizeof(pg));
+ 		err = ops->cee_peer_getpg(netdev, &pg);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_CEE_PEER_PG, sizeof(pg), &pg);
+@@ -1470,6 +1476,7 @@ static int dcbnl_cee_fill(struct sk_buff
  
--	return 1;
-+	return 0;
- }
--__setup("swiotlb=", setup_io_tlb_npages);
-+early_param("swiotlb", setup_io_tlb_npages);
- /* make io_tlb_overflow tunable too? */
- 
- unsigned long swiotlb_nr_tbl(void)
-@@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
- 	return io_tlb_nslabs;
- }
- EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
-+
-+/* default to 64MB */
-+#define IO_TLB_DEFAULT_SIZE (64UL<<20)
-+unsigned long swiotlb_size_or_default(void)
-+{
-+	unsigned long size;
-+
-+	size = io_tlb_nslabs << IO_TLB_SHIFT;
-+
-+	return size ? size : (IO_TLB_DEFAULT_SIZE);
-+}
-+
- /* Note that this doesn't work with highmem page */
- static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 				      volatile void *address)
-@@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
- void  __init
- swiotlb_init(int verbose)
- {
--	/* default to 64MB */
--	size_t default_size = 64UL<<20;
-+	size_t default_size = IO_TLB_DEFAULT_SIZE;
- 	unsigned char *vstart;
- 	unsigned long bytes;
- 
+ 	if (ops->cee_peer_getpfc) {
+ 		struct cee_pfc pfc;
++		memset(&pfc, 0, sizeof(pfc));
+ 		err = ops->cee_peer_getpfc(netdev, &pfc);
+ 		if (!err)
+ 			NLA_PUT(skb, DCB_ATTR_CEE_PEER_PFC, sizeof(pfc), &pfc);
+
+
