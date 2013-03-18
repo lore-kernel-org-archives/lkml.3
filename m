@@ -1,205 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3CRQw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:52:29 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:57578 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3CRQvR (ORCPT
+	id S1754564Ab3CRQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:52:56 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:52227
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753701Ab3CRQwx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:51:17 -0400
-X-IronPort-AV: E=Sophos;i="4.84,865,1355097600"; 
-   d="scan'208";a="2617150"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/5] xen-blkfront: switch from llist to list
-Date: Mon, 18 Mar 2013 17:49:34 +0100
-Message-ID: <1363625376-35612-4-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1363625376-35612-1-git-send-email-roger.pau@citrix.com>
-References: <1363625376-35612-1-git-send-email-roger.pau@citrix.com>
+	Mon, 18 Mar 2013 12:52:53 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz97hz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: Notify the host of permanent hot-add
+ failures
+Thread-Topic: [PATCH 1/1] Drivers: hv: Notify the host of permanent hot-add
+ failures
+Thread-Index: AQHOI4IeNnp8wu86w0mn80jGVi2Hu5irkl0g
+Date: Mon, 18 Mar 2013 16:49:50 +0000
+Message-ID: <b3f4ab80e0a94364a307902d7cc12969@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363576067-30758-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1363576067-30758-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(199002)(189002)(13464002)(51704002)(377454001)(74662001)(47776003)(31966008)(50986001)(56816002)(66066001)(1511001)(69226001)(16676001)(23726001)(4396001)(6806001)(54356001)(65816001)(47736001)(46102001)(33646001)(76482001)(63696002)(79102001)(80022001)(77982001)(47976001)(53806001)(54316002)(20776003)(56776001)(51856001)(5343635001)(46406002)(59766001)(50466001)(49866001)(74502001)(47446002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB011;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 07891BF289
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the use of llist with list.
 
-llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
-to remove it and use a doubly linked list, which is used extensively
-in the kernel already.
 
-Specifically this bug can be triggered by hot-unplugging a disk,
-either by doing xm block-detach or by save/restore cycle.
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Sunday, March 17, 2013 11:08 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Cc: KY Srinivasan
+> Subject: [PATCH 1/1] Drivers: hv: Notify the host of permanent hot-add failures
+> 
+> If memory hot-add fails with the error -EEXIST, then this is a permanent
+> failure. Notify the host this information, so the host will not attempt
+> hot-add again. If the failure were a transient failure, host will attempt
+> a hot-add after some delay.
 
-BUG: unable to handle kernel paging request at fffffffffffffff0
-IP: [<ffffffffa0047223>] blkif_free+0x63/0x130 [xen_blkfront]
-The crash call trace is:
-	...
-bad_area_nosemaphore+0x13/0x20
-do_page_fault+0x25e/0x4b0
-page_fault+0x25/0x30
-? blkif_free+0x63/0x130 [xen_blkfront]
-blkfront_resume+0x46/0xa0 [xen_blkfront]
-xenbus_dev_resume+0x6c/0x140
-pm_op+0x192/0x1b0
-device_resume+0x82/0x1e0
-dpm_resume+0xc9/0x1a0
-dpm_resume_end+0x15/0x30
-do_suspend+0x117/0x1e0
+Greg,
 
-When drilling down to the assembler code, on newer GCC it does
-.L29:
-        cmpq    $-16, %r12      #, persistent_gnt check
-        je      .L30    	#, out of the loop
-.L25:
-	... code in the loop
-        testq   %r13, %r13      # n
-        je      .L29    	#, back to the top of the loop
-        cmpq    $-16, %r12      #, persistent_gnt check
-        movq    16(%r12), %r13  # <variable>.node.next, n
-        jne     .L25    	#,	back to the top of the loop
-.L30:
+Please drop this patch; I am going to resend this as part of the earlier balloon driver patches I had sent.
 
-While on GCC 4.1, it is:
-L78:
-	... code in the loop
-	testq   %r13, %r13      # n
-        je      .L78    #,	back to the top of the loop
-        movq    16(%rbx), %r13  # <variable>.node.next, n
-        jmp     .L78    #,	back to the top of the loop
+Regards,
 
-Which basically means that the exit loop condition instead of
-being:
+K. Y
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hv/hv_balloon.c |   17 +++++++++++++++--
+>  1 files changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+> index 71655b4..d2ed673 100644
+> --- a/drivers/hv/hv_balloon.c
+> +++ b/drivers/hv/hv_balloon.c
+> @@ -583,6 +583,16 @@ static void hv_mem_hot_add(unsigned long start,
+> unsigned long size,
+> 
+>  		if (ret) {
+>  			pr_info("hot_add memory failed error is %d\n", ret);
+> +			if (ret == -EEXIST) {
+> +				/*
+> +				 * This error indicates that the error
+> +				 * is not a transient failure. This is the
+> +				 * case where the guest's physical address map
+> +				 * precludes hot adding memory. Stop all further
+> +				 * memory hot-add.
+> +				 */
+> +				do_hot_add = false;
+> +			}
+>  			has->ha_end_pfn -= HA_CHUNK;
+>  			has->covered_end_pfn -=  processed_pfn;
+>  			break;
+> @@ -842,11 +852,14 @@ static void hot_add_req(struct work_struct *dummy)
+>  		rg_sz = region_size;
+>  	}
+> 
+> -	resp.page_count = process_hot_add(pg_start, pfn_cnt,
+> -					rg_start, rg_sz);
+> +	if (do_hot_add)
+> +		resp.page_count = process_hot_add(pg_start, pfn_cnt,
+> +						rg_start, rg_sz);
+>  #endif
+>  	if (resp.page_count > 0)
+>  		resp.result = 1;
+> +	else if (!do_hot_add)
+> +		resp.result = 1;
+>  	else
+>  		resp.result = 0;
+> 
+> --
+> 1.7.4.1
+> 
+> 
 
-	&(pos)->member != NULL;
-
-is:
-	;
-
-which makes the loop unbound.
-
-Since we always manipulate the list while holding the io_lock, there's
-no need for additional locking (llist used previously is safe to use
-concurrently without additional locking).
-
-Should be backported to 3.8 stable.
-
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-[Part of the description]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xen.org
----
- drivers/block/xen-blkfront.c |   41 ++++++++++++++++++-----------------------
- 1 files changed, 18 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 9620644..97324cd1 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -44,7 +44,7 @@
- #include <linux/mutex.h>
- #include <linux/scatterlist.h>
- #include <linux/bitmap.h>
--#include <linux/llist.h>
-+#include <linux/list.h>
- 
- #include <xen/xen.h>
- #include <xen/xenbus.h>
-@@ -68,7 +68,7 @@ enum blkif_state {
- struct grant {
- 	grant_ref_t gref;
- 	unsigned long pfn;
--	struct llist_node node;
-+	struct list_head node;
- };
- 
- struct blk_shadow {
-@@ -105,7 +105,7 @@ struct blkfront_info
- 	struct work_struct work;
- 	struct gnttab_free_callback callback;
- 	struct blk_shadow shadow[BLK_RING_SIZE];
--	struct llist_head persistent_gnts;
-+	struct list_head persistent_gnts;
- 	unsigned int persistent_gnts_c;
- 	unsigned long shadow_free;
- 	unsigned int feature_flush;
-@@ -371,10 +371,11 @@ static int blkif_queue_request(struct request *req)
- 			lsect = fsect + (sg->length >> 9) - 1;
- 
- 			if (info->persistent_gnts_c) {
--				BUG_ON(llist_empty(&info->persistent_gnts));
--				gnt_list_entry = llist_entry(
--					llist_del_first(&info->persistent_gnts),
--					struct grant, node);
-+				BUG_ON(list_empty(&info->persistent_gnts));
-+				gnt_list_entry = list_first_entry(
-+				                      &info->persistent_gnts,
-+				                      struct grant, node);
-+				list_del(&gnt_list_entry->node);
- 
- 				ref = gnt_list_entry->gref;
- 				buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
-@@ -790,9 +791,8 @@ static void blkif_restart_queue(struct work_struct *work)
- 
- static void blkif_free(struct blkfront_info *info, int suspend)
- {
--	struct llist_node *all_gnts;
--	struct grant *persistent_gnt, *tmp;
--	struct llist_node *n;
-+	struct grant *persistent_gnt;
-+	struct grant *n;
- 
- 	/* Prevent new requests being issued until we fix things up. */
- 	spin_lock_irq(&info->io_lock);
-@@ -804,20 +804,15 @@ static void blkif_free(struct blkfront_info *info, int suspend)
- 
- 	/* Remove all persistent grants */
- 	if (info->persistent_gnts_c) {
--		all_gnts = llist_del_all(&info->persistent_gnts);
--		persistent_gnt = llist_entry(all_gnts, typeof(*(persistent_gnt)), node);
--		while (persistent_gnt) {
-+		list_for_each_entry_safe(persistent_gnt, n,
-+		                         &info->persistent_gnts, node) {
-+			list_del(&persistent_gnt->node);
- 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
- 			__free_page(pfn_to_page(persistent_gnt->pfn));
--			tmp = persistent_gnt;
--			n = persistent_gnt->node.next;
--			if (n)
--				persistent_gnt = llist_entry(n, typeof(*(persistent_gnt)), node);
--			else
--				persistent_gnt = NULL;
--			kfree(tmp);
-+			kfree(persistent_gnt);
-+			info->persistent_gnts_c--;
- 		}
--		info->persistent_gnts_c = 0;
-+		BUG_ON(info->persistent_gnts_c != 0);
- 	}
- 
- 	/* No more gnttab callback work. */
-@@ -875,7 +870,7 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
- 	}
- 	/* Add the persistent grant into the list of free grants */
- 	for (i = 0; i < s->req.u.rw.nr_segments; i++) {
--		llist_add(&s->grants_used[i]->node, &info->persistent_gnts);
-+		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
- 		info->persistent_gnts_c++;
- 	}
- }
-@@ -1171,7 +1166,7 @@ static int blkfront_probe(struct xenbus_device *dev,
- 	spin_lock_init(&info->io_lock);
- 	info->xbdev = dev;
- 	info->vdevice = vdevice;
--	init_llist_head(&info->persistent_gnts);
-+	INIT_LIST_HEAD(&info->persistent_gnts);
- 	info->persistent_gnts_c = 0;
- 	info->connected = BLKIF_STATE_DISCONNECTED;
- 	INIT_WORK(&info->work, blkif_restart_queue);
--- 
-1.7.7.5 (Apple Git-26)
 
