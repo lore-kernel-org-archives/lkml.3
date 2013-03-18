@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab3CRCmJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 22:42:09 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47854 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab3CRCmD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 22:42:03 -0400
-X-AuditID: 9c93016f-b7bfaae000003db8-e7-51467ef88f85
-From: Namhyung Kim <namhyung@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 1/2] perf: Reset hwc->last_period on sw clock events
-Date: Mon, 18 Mar 2013 11:41:46 +0900
-Message-Id: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	id S1751477Ab3CRCp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 22:45:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:57125 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab3CRCpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 22:45:20 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Aurelien Jarno <aurelien@aurel32.net>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] hw_random: free rng_buffer at module exit
+In-Reply-To: <1363486492.3937.238.camel@deadeye.wl.decadent.org.uk>
+References: <20130312223211.492954675@linuxfoundation.org> <20130312223212.790278686@linuxfoundation.org> <874ngeykp6.wl%satoru.takeuchi@gmail.com> <87txoetre6.fsf@rustcorp.com.au> <87k3pagllu.wl%satoru.takeuchi@gmail.com> <87d2v1tfr0.fsf@rustcorp.com.au> <1363486492.3937.238.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 18 Mar 2013 13:10:29 +1030
+Message-ID: <87ppyxsa5e.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Ben Hutchings <ben@decadent.org.uk> writes:
+> On Fri, 2013-03-15 at 15:35 +1030, Rusty Russell wrote:
+>> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
+>> > At Thu, 14 Mar 2013 17:11:21 +1030,
+>> > Rusty Russell wrote:
+>> >> 
+>> >> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
+>> >> > Hi Rusty,
+>> >> >
+>> >> > At Tue, 12 Mar 2013 15:43:33 -0700,
+>> >> > Greg Kroah-Hartman wrote:
+>> >> >> @@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
+>> >> >>  
+>> >> >>  	mutex_lock(&rng_mutex);
+>> >> >>  
+>> >> >> +	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
+>> >> >> +	err = -ENOMEM;
+>> >> >> +	if (!rng_buffer) {
+>> >> >> +		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
+>> >> >
+>> >> > rng_buffer is now kmalloc-ed, but not kfree-ed. Shoudn't it be kfree-ed
+>> >> > at hwrng_unregister()? If my suspect is correct, the same problem is
+>> >> > in 3.8.3-rc1 and 3.0.69-rc1. I'm OK to make a patch, but it'll be after
+>> >> > some hours.
+>> >> >
+>> >> > Corecct me if I'm wrong.
+>> >> 
+>> >> Yes, it would be nice to free it, but it really makes sense to free it
+>> >> in module_cleanup() (which would have to be written, as the module
+>> >> currently doesn't have one).
+>> >> 
+>> >> Cheers,
+>> >> Rusty.
+>> >
+>> > From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+>> >
+>> > rng-core module allocates rng_buffer by kmalloc() since commit
+>> > f7f154f1246ccc5a0a7e9ce50932627d60a0c878. But this buffer won't be
+>> > freed and there is a memory leak possibility at module exit.
+>> >
+>> > Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+>> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> > Cc: Matt Mackall <mpm@selenic.com>
+>> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>> > Cc: Aurelien Jarno <aurelien@aurel32.net>
+>> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > Cc: stable@vger.kernel.org
+>> 
+>> Cc: stable might be overkill, but I've tested it and put it in my patch
+>> queue, and will push it to Linus once it's survived linux-next.
+>
+> If the module cannot be removed currently, it does not leak.  Making it
+> removable is a feature addition and I think you're right that it's not
+> suitable for stable.
 
-When cpu/task clock events are initialized, their sampling frequencies
-are converted to have a fixed value.  However it missed to update the
-hwc->last_period which was set to 1 for initial sampling frequency
-calibration.
+No, the module has always been removable, but the tiny leak is more a
+theoretical problem I'd say.  AFAICT udev never removes modules, so even
+if you have a randomness device which bounces in and out every second,
+it still won't leak 5MB a day.
 
-Because this hwc->last_period value is used as a period in perf_swevent_
-hrtime(), every recorded sample will have an incorrected period of 1.
-
-  $ perf record -e task-clock noploop 1
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.158 MB perf.data (~6919 samples) ]
-
-  $ perf report -n --show-total-period  --stdio
-  # Samples: 4K of event 'task-clock'
-  # Event count (approx.): 4000
-  #
-  # Overhead       Samples        Period  Command  Shared Object              Symbol
-  # ........  ............  ............  .......  .............  ..................
-  #
-      99.95%          3998          3998  noploop  noploop        [.] main
-       0.03%             1             1  noploop  libc-2.15.so   [.] init_cacheinfo
-       0.03%             1             1  noploop  ld-2.15.so     [.] open_verify
-
-Note that it doesn't affect the non-sampling event so that the perf
-stat still gets correct value with or without this patch.
-
-  $ perf stat -e task-clock noploop 1
-
-   Performance counter stats for 'noploop 1':
-
-         1000.272525 task-clock                #    1.000 CPUs utilized
-
-         1.000560605 seconds time elapsed
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/events/core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c38feef0d683..ac418e88b8a9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5659,6 +5659,7 @@ static void perf_swevent_init_hrtimer(struct perf_event *event)
- 		event->attr.sample_period = NSEC_PER_SEC / freq;
- 		hwc->sample_period = event->attr.sample_period;
- 		local64_set(&hwc->period_left, hwc->sample_period);
-+		hwc->last_period = hwc->sample_period;
- 		event->attr.freq = 0;
- 	}
- }
--- 
-1.7.11.7
+Cheers,
+Rusty.
 
