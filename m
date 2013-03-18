@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126Ab3CRWAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:00:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45545 "EHLO
+	id S1757249Ab3CRWAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:00:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3CRVGn (ORCPT
+	with ESMTP id S1755370Ab3CRVGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:43 -0400
+	Mon, 18 Mar 2013 17:06:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 20/75] serial: 8250: Keep 8250.<xxxx> module options functional after driver rename
-Date: Mon, 18 Mar 2013 14:06:43 -0700
-Message-Id: <20130318210511.698153946@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jan Kara <jack@suse.cz>
+Subject: [ 18/75] ext3: Fix format string issues
+Date: Mon, 18 Mar 2013 14:06:41 -0700
+Message-Id: <20130318210511.559070550@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,64 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit f2b8dfd9e480c3db3bad0c25c590a5d11b31f4ef upstream.
+commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
 
-With commit 835d844d1 (8250_pnp: do pnp probe before legacy probe), the
-8250 driver was renamed to 8250_core.  This means any existing usage of
-the 8259.<xxxx> module parameters or as a kernel command line switch is
-now broken, as the 8250_core driver doesn't parse options belonging to
-something called "8250".
+ext3_msg() takes the printk prefix as the second parameter and the
+format string as the third parameter. Two callers of ext3_msg omit the
+prefix and pass the format string as the second parameter and the first
+parameter to the format string as the third parameter. In both cases
+this string comes from an arbitrary source. Which means the string may
+contain format string characters, which will
+lead to undefined and potentially harmful behavior.
 
-To solve this, we redefine the module options in a dummy function using
-a redefined MODULE_PARAM_PREFX when built into the kernel.  In the case
-where we're building as a module, we provide an alias to the old 8250
-name.  The dummy function prevents compiler errors due to global variable
-redefinitions that happen as part of the module_param_ macro expansions.
+The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
+in ext3") and is fixed by this patch.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/ext3/super.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -3430,3 +3430,32 @@ module_param_array(probe_rsa, ulong, &pr
- MODULE_PARM_DESC(probe_rsa, "Probe I/O ports for RSA");
- #endif
- MODULE_ALIAS_CHARDEV_MAJOR(TTY_MAJOR);
-+
-+#ifndef MODULE
-+/* This module was renamed to 8250_core in 3.7.  Keep the old "8250" name
-+ * working as well for the module options so we don't break people.  We
-+ * need to keep the names identical and the convenient macros will happily
-+ * refuse to let us do that by failing the build with redefinition errors
-+ * of global variables.  So we stick them inside a dummy function to avoid
-+ * those conflicts.  The options still get parsed, and the redefined
-+ * MODULE_PARAM_PREFIX lets us keep the "8250." syntax alive.
-+ *
-+ * This is hacky.  I'm sorry.
-+ */
-+static void __used s8250_options(void)
-+{
-+#undef MODULE_PARAM_PREFIX
-+#define MODULE_PARAM_PREFIX "8250."
-+
-+	module_param_cb(share_irqs, &param_ops_uint, &share_irqs, 0644);
-+	module_param_cb(nr_uarts, &param_ops_uint, &nr_uarts, 0644);
-+	module_param_cb(skip_txen_test, &param_ops_uint, &skip_txen_test, 0644);
-+#ifdef CONFIG_SERIAL_8250_RSA
-+	__module_param_call(MODULE_PARAM_PREFIX, probe_rsa,
-+		&param_array_ops, .arr = &__param_arr_probe_rsa,
-+		0444, -1);
-+#endif
-+}
-+#else
-+MODULE_ALIAS("8250");
-+#endif
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -353,7 +353,7 @@ static struct block_device *ext3_blkdev_
+ 	return bdev;
+ 
+ fail:
+-	ext3_msg(sb, "error: failed to open journal device %s: %ld",
++	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
+ 		__bdevname(dev, b), PTR_ERR(bdev));
+ 
+ 	return NULL;
+@@ -887,7 +887,7 @@ static ext3_fsblk_t get_sb_block(void **
+ 	/*todo: use simple_strtoll with >32bit ext3 */
+ 	sb_block = simple_strtoul(options, &options, 0);
+ 	if (*options && *options != ',') {
+-		ext3_msg(sb, "error: invalid sb specification: %s",
++		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
+ 		       (char *) *data);
+ 		return 1;
+ 	}
 
 
