@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3CRV5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:57:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45590 "EHLO
+	id S1757216Ab3CRV52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:57:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45585 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab3CRVGw (ORCPT
+	with ESMTP id S1755507Ab3CRVGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 17:06:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 32/75] hwmon: (pmbus/ltc2978) Fix temperature reporting
-Date: Mon, 18 Mar 2013 14:06:55 -0700
-Message-Id: <20130318210512.543017242@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [ 31/75] ARM: w1-gpio: fix erroneous gpio requests
+Date: Mon, 18 Mar 2013 14:06:54 -0700
+Message-Id: <20130318210512.477739673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,69 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8c958c703ef8804093437959221951eaf0e1e664 upstream.
+commit 2d798a3f20ae992b0b69a2b68c04ada397c32ed4 upstream.
 
-On LTC2978, only READ_TEMPERATURE is supported. It reports
-the internal junction temperature. This register is unpaged.
+Fix regression introduced by commit d2323cf773 ("onewire: w1-gpio: add
+ext_pullup_enable pin in platform data") which added a gpio entry to the
+platform data, but did not add the required initialisers to the board
+files using it. Consequently, the driver would request gpio 0 at probe,
+which could break other uses of the corresponding pin.
 
-On LTC3880, READ_TEMPERATURE and READ_TEMPERATURE2 are supported.
-READ_TEMPERATURE is paged and reports external temperatures.
-READ_TEMPERATURE2 is unpaged and reports the internal junction
-temperature.
+On AT91 requesting gpio 0 changes the pin muxing for PIOA0, which, for
+instance, breaks SPI0 on at91sam9g20.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/pmbus/ltc2978.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ arch/arm/mach-at91/board-foxg20.c    |    1 +
+ arch/arm/mach-at91/board-stamp9g20.c |    1 +
+ arch/arm/mach-ixp4xx/vulcan-setup.c  |    1 +
+ arch/arm/mach-pxa/raumfeld.c         |    1 +
+ 4 files changed, 4 insertions(+)
 
---- a/drivers/hwmon/pmbus/ltc2978.c
-+++ b/drivers/hwmon/pmbus/ltc2978.c
-@@ -59,7 +59,7 @@ enum chips { ltc2978, ltc3880 };
- struct ltc2978_data {
- 	enum chips id;
- 	int vin_min, vin_max;
--	int temp_min, temp_max;
-+	int temp_min, temp_max[2];
- 	int vout_min[8], vout_max[8];
- 	int iout_max[2];
- 	int temp2_max;
-@@ -113,9 +113,10 @@ static int ltc2978_read_word_data_common
- 		ret = pmbus_read_word_data(client, page,
- 					   LTC2978_MFR_TEMPERATURE_PEAK);
- 		if (ret >= 0) {
--			if (lin11_to_val(ret) > lin11_to_val(data->temp_max))
--				data->temp_max = ret;
--			ret = data->temp_max;
-+			if (lin11_to_val(ret)
-+			    > lin11_to_val(data->temp_max[page]))
-+				data->temp_max[page] = ret;
-+			ret = data->temp_max[page];
- 		}
- 		break;
- 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
-@@ -266,7 +267,7 @@ static int ltc2978_write_word_data(struc
- 		break;
- 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
- 		data->temp_min = 0x7bff;
--		data->temp_max = 0x7c00;
-+		data->temp_max[page] = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	default:
-@@ -323,7 +324,8 @@ static int ltc2978_probe(struct i2c_clie
- 	data->vin_min = 0x7bff;
- 	data->vin_max = 0x7c00;
- 	data->temp_min = 0x7bff;
--	data->temp_max = 0x7c00;
-+	for (i = 0; i < ARRAY_SIZE(data->temp_max); i++)
-+		data->temp_max[i] = 0x7c00;
- 	data->temp2_max = 0x7c00;
+--- a/arch/arm/mach-at91/board-foxg20.c
++++ b/arch/arm/mach-at91/board-foxg20.c
+@@ -176,6 +176,7 @@ static struct w1_gpio_platform_data w1_g
+ 	/* If you choose to use a pin other than PB16 it needs to be 3.3V */
+ 	.pin		= AT91_PIN_PB16,
+ 	.is_open_drain  = 1,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
  
- 	switch (data->id) {
+ static struct platform_device w1_device = {
+--- a/arch/arm/mach-at91/board-stamp9g20.c
++++ b/arch/arm/mach-at91/board-stamp9g20.c
+@@ -188,6 +188,7 @@ static struct spi_board_info portuxg20_s
+ static struct w1_gpio_platform_data w1_gpio_pdata = {
+ 	.pin		= AT91_PIN_PA29,
+ 	.is_open_drain	= 1,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ static struct platform_device w1_device = {
+--- a/arch/arm/mach-ixp4xx/vulcan-setup.c
++++ b/arch/arm/mach-ixp4xx/vulcan-setup.c
+@@ -163,6 +163,7 @@ static struct platform_device vulcan_max
+ 
+ static struct w1_gpio_platform_data vulcan_w1_gpio_pdata = {
+ 	.pin			= 14,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ static struct platform_device vulcan_w1_gpio = {
+--- a/arch/arm/mach-pxa/raumfeld.c
++++ b/arch/arm/mach-pxa/raumfeld.c
+@@ -505,6 +505,7 @@ static struct w1_gpio_platform_data w1_g
+ 	.pin			= GPIO_ONE_WIRE,
+ 	.is_open_drain		= 0,
+ 	.enable_external_pullup	= w1_enable_external_pullup,
++	.ext_pullup_enable_pin	= -EINVAL,
+ };
+ 
+ struct platform_device raumfeld_w1_gpio_device = {
 
 
