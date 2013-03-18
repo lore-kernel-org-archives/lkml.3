@@ -1,596 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3CRIRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:17:24 -0400
-Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:2052 "EHLO
-	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3CRIRT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:17:19 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: Re: [RFC V1 5/8] smi2021: Add smi2021_video.c
-Date: Mon, 18 Mar 2013 09:17:03 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-6-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1363270024-12127-6-git-send-email-jonarne@jonarne.no>
+	id S1752175Ab3CRISa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:18:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50023 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133Ab3CRIS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 04:18:27 -0400
+Message-ID: <5146CDC5.9000702@ti.com>
+Date: Mon, 18 Mar 2013 13:48:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303180917.03572.hverkuil@xs4all.nl>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+CC: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 1/2] ARM: davinci: dm365: add support for v4l2 video
+ display
+References: <1363360303-15521-1-git-send-email-prabhakar.csengg@gmail.com> <1363360303-15521-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1363360303-15521-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu March 14 2013 15:07:01 Jon Arne Jørgensen wrote:
-> This file is responsible for all communication with the video hardware
-> and also starting and stopping the capture.
+On 3/15/2013 8:41 PM, Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> It also contains the setup and handling of the usb ISOCHRONOUS transfers.
+> Create platform devices for various video modules like venc,osd,
+> vpbe and v4l2 driver for dm365.
 > 
-> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > ---
->  drivers/media/usb/smi2021/smi2021_video.c | 543 ++++++++++++++++++++++++++++++
->  1 file changed, 543 insertions(+)
->  create mode 100644 drivers/media/usb/smi2021/smi2021_video.c
-> 
-> diff --git a/drivers/media/usb/smi2021/smi2021_video.c b/drivers/media/usb/smi2021/smi2021_video.c
-> new file mode 100644
-> index 0000000..48f3e80
-> --- /dev/null
-> +++ b/drivers/media/usb/smi2021/smi2021_video.c
-> @@ -0,0 +1,543 @@
-> +/*******************************************************************************
-> + * smi2021_video.c                                                             *
-> + *                                                                             *
-> + * USB Driver for SMI2021 - EasyCAP                                            *
-> + * USB ID 1c88:003c                                                            *
-> + *                                                                             *
-> + * *****************************************************************************
-> + *
-> + * Copyright 2011-2013 Jon Arne Jørgensen
-> + * <jonjon.arnearne--a.t--gmail.com>
-> + *
-> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
-> + *
-> + * This file is part of SMI2021x
-> + * http://code.google.com/p/easycap-somagic-linux/
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + *
-> + * This driver is heavily influensed by the STK1160 driver.
-> + * Copyright (C) 2012 Ezequiel Garcia
-> + * <elezegarcia--a.t--gmail.com>
-> + *
-> + */
-> +
-> +#include "smi2021.h"
-> +
-> +static void print_usb_err(struct smi2021_dev *dev, int packet, int status)
-> +{
-> +	char *errmsg;
-> +
-> +	switch (status) {
-> +	case -ENOENT:
-> +		errmsg = "unlinked synchronuously";
-> +		break;
-> +	case -ECONNRESET:
-> +		errmsg = "unlinked asynchronuously";
-> +		break;
-> +	case -ENOSR:
-> +		errmsg = "Buffer error (overrun)";
-> +		break;
-> +	case -EPIPE:
-> +		errmsg = "Stalled (device not responding)";
-> +		break;
-> +	case -EOVERFLOW:
-> +		errmsg = "Babble (bad cable?)";
-> +		break;
-> +	case -EPROTO:
-> +		errmsg = "Bit-stuff error (bad cable?)";
-> +		break;
-> +	case -EILSEQ:
-> +		errmsg = "CRC/Timeout (could be anything)";
-> +		break;
-> +	case -ETIME:
-> +		errmsg = "Device does not respond";
-> +		break;
-> +	default:
-> +		errmsg = "Unknown";
-> +	}
-> +
-> +	if (packet < 0) {
-> +		printk_ratelimited(KERN_WARNING "Urb status %d [%s]\n",
-> +					status, errmsg);
-> +	} else {
-> +		printk_ratelimited(KERN_INFO "URB packet %d, status %d [%s]\n",
-> +					packet, status, errmsg);
-> +	}
-> +}
-> +
-> +static struct smi2021_buffer *smi2021_next_buffer(struct smi2021_dev *dev)
-> +{
-> +	struct smi2021_buffer *buf = NULL;
-> +	unsigned long flags = 0;
-> +
-> +	BUG_ON(dev->isoc_ctl.buf);
-> +
-> +	spin_lock_irqsave(&dev->buf_lock, flags);
-> +	if (!list_empty(&dev->avail_bufs)) {
-> +		buf = list_first_entry(&dev->avail_bufs, struct smi2021_buffer,
-> +									list);
-> +		list_del(&buf->list);
-> +	}
-> +	spin_unlock_irqrestore(&dev->buf_lock, flags);
-> +
-> +	return buf;
-> +}
-> +
-> +static void smi2021_buffer_done(struct smi2021_dev *dev)
-> +{
-> +	struct smi2021_buffer *buf = dev->isoc_ctl.buf;
-> +
-> +	dev->buf_count++;
-> +
-> +	buf->vb.v4l2_buf.sequence = dev->buf_count >> 1;
-> +	buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED;
-> +	buf->vb.v4l2_buf.bytesused = buf->pos;
-> +	do_gettimeofday(&buf->vb.v4l2_buf.timestamp);
-> +
-> +	vb2_set_plane_payload(&buf->vb, 0, buf->pos);
-> +	vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
-> +
-> +	dev->isoc_ctl.buf = NULL;
-> +}
-> +
-> +static void copy_video(struct smi2021_dev *dev, u8 p)
-> +{
-> +	struct smi2021_buffer *buf = dev->isoc_ctl.buf;
-> +
-> +	int lines_per_field = dev->height / 2;
-> +	int line = 0;
-> +	int pos_in_line = 0;
-> +	unsigned int offset = 0;
-> +	u8 *dst;
-> +
-> +	if (buf == NULL)
-> +		return;
-> +
-> +	if (buf->in_blank)
-> +		return;
-> +
-> +	if (buf->pos >= buf->length) {
-> +		if (buf->second_field == 0) {
-> +			/* We are probably trying to capture from
-> +			 * a unconnected input
-> +			 */
-> +			smi2021_buffer_done(dev);
-> +		} else {
-> +			printk_ratelimited(KERN_WARNING
-> +			"Buffer overflow!, max: %d bytes, av_lines_found: %d, second_field: %d\n",
-> +						buf->length, buf->trc_av,
-> +						buf->second_field);
-> +		}
-> +		return;
-> +	}
-> +
-> +	pos_in_line = buf->pos % SMI2021_BYTES_PER_LINE;
-> +	line = buf->pos / SMI2021_BYTES_PER_LINE;
-> +	if (line >= lines_per_field)
-> +			line -= lines_per_field;
-> +
-> +	if (line != buf->trc_av - 1) {
-> +		/* Keep video synchronized.
-> +		 * The device will sometimes give us to many bytes
-> +		 * for a line, before we get a new TRC.
-> +		 * We just drop these bytes */
-> +		return;
-> +	}
-> +
-> +	if (buf->second_field)
-> +		offset += SMI2021_BYTES_PER_LINE;
-> +
-> +	offset += (SMI2021_BYTES_PER_LINE * line * 2) + pos_in_line;
-> +
-> +	/* Will this ever happen? */
-> +	if (offset >= buf->length) {
-> +		printk_ratelimited(KERN_INFO
-> +		"Offset calculation error, field: %d, line: %d, pos_in_line: %d\n",
-> +			buf->second_field, line, pos_in_line);
-> +		return;
-> +	}
-> +
-> +	dst = buf->mem + offset;
-> +	*dst = p;
-> +	buf->pos++;
-> +}
-> +
-> +#define is_sav(trc)						\
-> +	((trc & SMI2021_TRC_EAV) == 0x00)
-> +#define is_field2(trc)						\
-> +	((trc & SMI2021_TRC_FIELD_2) == SMI2021_TRC_FIELD_2)
-> +#define is_active_video(trc)					\
-> +	((trc & SMI2021_TRC_VBI) == 0x00)
-> +/*
-> + * Parse the TRC.
-> + * Grab a new buffer from the queue if don't have one
-> + * and we are recieving the start of a video frame.
-> + *
-> + * Mark video buffers as done if we have one full frame.
-> + */
-> +static void parse_trc(struct smi2021_dev *dev, u8 trc)
-> +{
-> +	struct smi2021_buffer *buf = dev->isoc_ctl.buf;
-> +	int lines_per_field = dev->height / 2;
-> +	int line = 0;
-> +
-> +	if (buf == NULL) {
-> +		if (!is_sav(trc))
-> +			return;
-> +
-> +		if (!is_active_video(trc))
-> +			return;
-> +
-> +		if (is_field2(trc))
-> +			return;
-> +
-> +		buf = smi2021_next_buffer(dev);
-> +		if (buf == NULL)
-> +			return;
-> +
-> +		dev->isoc_ctl.buf = buf;
-> +	}
-> +
-> +	if (is_sav(trc)) {
-> +		/* Start of VBI or ACTIVE VIDEO */
-> +		if (is_active_video(trc)) {
-> +			buf->in_blank = false;
-> +			buf->trc_av++;
-> +		} else {
-> +			/* VBI */
-> +			buf->in_blank = true;
-> +		}
-> +
-> +		if (!buf->second_field && is_field2(trc)) {
-> +			line = buf->pos / SMI2021_BYTES_PER_LINE;
-> +			if (line < lines_per_field)
-> +				goto buf_done;
-> +
-> +			buf->second_field = true;
-> +			buf->trc_av = 0;
-> +		}
-> +
-> +		if (buf->second_field && !is_field2(trc))
-> +			goto buf_done;
-> +	} else {
-> +		/* End of VBI or ACTIVE VIDEO */
-> +		buf->in_blank = true;
-> +	}
-> +
-> +	return;
-> +
-> +buf_done:
-> +	smi2021_buffer_done(dev);
-> +}
-> +
-> +/*
-> + * Scan the saa7113 Active video data.
-> + * This data is:
-> + *	4 bytes header (0xff 0x00 0x00 [TRC/SAV])
-> + *	1440 bytes of UYUV Video data
-> + *	4 bytes footer (0xff 0x00 0x00 [TRC/EAV])
-> + *
-> + * TRC = Time Reference Code.
-> + * SAV = Start Active Video.
-> + * EAV = End Active Video.
-> + * This is described in the saa7113 datasheet.
-> + */
-> +static void parse_video(struct smi2021_dev *dev, u8 *p, int len)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < len; i++) {
-> +		switch (dev->sync_state) {
-> +		case HSYNC:
-> +			if (p[i] == 0xff)
-> +				dev->sync_state = SYNCZ1;
-> +			else
-> +				copy_video(dev, p[i]);
-> +			break;
-> +		case SYNCZ1:
-> +			if (p[i] == 0x00) {
-> +				dev->sync_state = SYNCZ2;
-> +			} else {
-> +				dev->sync_state = HSYNC;
-> +				copy_video(dev, 0xff);
-> +				copy_video(dev, p[i]);
-> +			}
-> +			break;
-> +		case SYNCZ2:
-> +			if (p[i] == 0x00) {
-> +				dev->sync_state = TRC;
-> +			} else {
-> +				dev->sync_state = HSYNC;
-> +				copy_video(dev, 0xff);
-> +				copy_video(dev, 0x00);
-> +				copy_video(dev, p[i]);
-> +			}
-> +			break;
-> +		case TRC:
-> +			dev->sync_state = HSYNC;
-> +			parse_trc(dev, p[i]);
-> +			break;
-> +		}
-> +	}
-> +
-> +}
-> +/*
-> + *
-> + * The device delivers data in chunks of 0x400 bytes.
-> + * The four first bytes is a magic header to identify the chunks.
-> + *	0xaa 0xaa 0x00 0x00 = saa7113 Active Video Data
-> + *	0xaa 0xaa 0x00 0x01 = PCM - 24Bit 2 Channel audio data
-> + */
-> +static void process_packet(struct smi2021_dev *dev, u8 *p, int len)
-> +{
-> +	int i;
-> +	u32 *header;
-> +
-> +	if (len % 0x400 != 0) {
-> +		printk_ratelimited(KERN_INFO "smi2021::%s: len: %d\n",
-> +				__func__, len);
-> +		return;
-> +	}
-> +
-> +	for (i = 0; i < len; i += 0x400) {
-> +		header = (u32 *)(p + i);
-> +		switch (__cpu_to_be32(*header)) {
+>  arch/arm/mach-davinci/board-dm365-evm.c |    4 +-
+>  arch/arm/mach-davinci/davinci.h         |    2 +-
+>  arch/arm/mach-davinci/dm365.c           |  203 +++++++++++++++++++++++++++++--
+>  3 files changed, 195 insertions(+), 14 deletions(-)
 
-That's not right. You probably mean __be32_to_cpu, that makes more sense.
+> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+> index 6c39805..ec8b06e 100644
+> --- a/arch/arm/mach-davinci/dm365.c
+> +++ b/arch/arm/mach-davinci/dm365.c
+> @@ -40,10 +40,16 @@
+>  
+>  #define DM365_REF_FREQ		24000000	/* 24 MHz on the DM365 EVM */
+>  
+> +#define DM3XX_VDAC_CONFIG		0x01c4002c
 
-> +		case 0xaaaa0000: {
-> +			parse_video(dev, p+i+4, 0x400-4);
-> +			break;
-> +		}
-> +		case 0xaaaa0001: {
-> +			smi2021_audio(dev, p+i+4, 0x400-4);
-> +			break;
-> +		}
-> +		default: {
-> +			/* Nothing */
-> +		}
-> +		}
-> +	}
-> +}
+DM365_VDAC_CONFIG since this is a DM365 specific file and to be
+consistent with rest of the names?
+
 > +
-> +/*
-> + * Interrupt called by URB callback
-> + */
-> +static void smi2021_isoc_isr(struct urb *urb)
+> +#define DM365_RTC_BASE			0x01c69000
+> +
+>  /* Base of key scan register bank */
+>  #define DM365_KEYSCAN_BASE		0x01c69400
+>  
+> -#define DM365_RTC_BASE			0x01c69000
+> +#define DM365_OSD_BASE			0x01c71c00
+> +
+> +#define DM365_VENC_REG_BASE		0x01c71e00
+>  
+>  #define DAVINCI_DM365_VC_BASE		0x01d0c000
+>  #define DAVINCI_DMA_VC_TX		2
+> @@ -56,6 +62,11 @@
+>  #define DM365_EMAC_CNTRL_RAM_OFFSET	0x1000
+>  #define DM365_EMAC_CNTRL_RAM_SIZE	0x2000
+>  
+> +#define DM365_VPSS_CLK_CTRL_ADDR		0x44
+> +#define DM365_VPSS_VENCCLKEN_ENABLE		BIT(3)
+> +#define DM365_VPSS_DACCLKEN_ENABLE		BIT(4)
+> +#define DM365_VPSS_PLLC2SYSCLK5_ENABLE		BIT(5)
+> +
+>  static struct pll_data pll1_data = {
+>  	.num		= 1,
+>  	.phys_base	= DAVINCI_PLL1_BASE,
+> @@ -1226,6 +1237,186 @@ static struct platform_device dm365_isif_dev = {
+>  	},
+>  };
+>  
+> +static struct resource dm365_osd_resources[] = {
+> +	{
+> +		.start = DM365_OSD_BASE,
+> +		.end   = DM365_OSD_BASE + 0x100,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +};
+> +
+> +static u64 dm365_video_dma_mask = DMA_BIT_MASK(32);
+> +
+> +static struct platform_device dm365_osd_dev = {
+> +	.name		= DM365_VPBE_OSD_SUBDEV_NAME,
+> +	.id		= -1,
+> +	.num_resources	= ARRAY_SIZE(dm365_osd_resources),
+> +	.resource	= dm365_osd_resources,
+> +	.dev		= {
+> +		.dma_mask		= &dm365_video_dma_mask,
+> +		.coherent_dma_mask	= DMA_BIT_MASK(32),
+> +	},
+> +};
+> +
+> +static struct resource dm365_venc_resources[] = {
+> +	{
+> +		.start = IRQ_VENCINT,
+> +		.end   = IRQ_VENCINT,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +	/* venc registers io space */
+> +	{
+> +		.start = DM365_VENC_REG_BASE,
+> +		.end   = DM365_VENC_REG_BASE + 0x180,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	/* vdaccfg registers io space */
+> +	{
+> +		.start = DM3XX_VDAC_CONFIG,
+> +		.end   = DM3XX_VDAC_CONFIG + 4,
+
+DM3XX_VDAC_CONFIG + 3. Check for similar errors in rest of the patch.
+
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +};
+> +
+> +static struct resource dm365_v4l2_disp_resources[] = {
+> +	{
+> +		.start = IRQ_VENCINT,
+> +		.end   = IRQ_VENCINT,
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +	/* venc registers io space */
+> +	{
+> +		.start = DM365_VENC_REG_BASE,
+> +		.end   = DM365_VENC_REG_BASE + 0x180,
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +};
+> +
+
+[...]
+
+> +static int dm365_venc_setup_clock(enum vpbe_enc_timings_type type,
+> +				  unsigned int pclock)
 > +{
-> +	int i, rc, status, len;
-> +	struct smi2021_dev *dev = urb->context;
-> +	u8 *p;
+> +	void __iomem *vpss_clkctl_reg;
+> +	u32 val;
 > +
-> +	switch (urb->status) {
-> +	case 0:
+> +	vpss_clkctl_reg = DAVINCI_SYSMOD_VIRT(DM365_VPSS_CLK_CTRL_ADDR);
+> +
+> +	switch (type) {
+> +	case VPBE_ENC_STD:
+> +		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 1);
+
+So as you found out, it is not correct to call driver functions from
+platform code. I suggesting moving this function to driver altogether.
+You just need access to DM365_VPSS_CLK_CTRL_ADDR which you can pass
+using resource structures.
+
+> +		vpss_enable_clock(VPSS_VPBE_CLOCK, 1);
+> +		val = DM365_VPSS_VENCCLKEN_ENABLE | DM365_VPSS_DACCLKEN_ENABLE;
 > +		break;
-> +	case -ECONNRESET: /* kill */
-> +	case -ENOENT:
-> +	case -ESHUTDOWN:
-> +		/* uvc driver frees the queue here */
-> +		return;
+> +
+> +	case VPBE_ENC_DV_TIMINGS:
+> +		if (pclock <= 27000000) {
+> +			vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 1);
+> +			vpss_enable_clock(VPSS_VPBE_CLOCK, 1);
+> +			val = DM365_VPSS_VENCCLKEN_ENABLE |
+> +			      DM365_VPSS_DACCLKEN_ENABLE;
+> +		} else {
+> +			/* set sysclk4 to output 74.25 MHz from pll1 */
+> +			val = DM365_VPSS_PLLC2SYSCLK5_ENABLE |
+> +			      DM365_VPSS_DACCLKEN_ENABLE |
+> +			      DM365_VPSS_VENCCLKEN_ENABLE;
+> +		}
+> +		break;
+> +
 > +	default:
-> +		smi2021_err("urb error! status %d\n", urb->status);
-> +		return;
+> +		return -EINVAL;
 > +	}
+> +	writel(val, vpss_clkctl_reg);
 > +
-> +	if (urb->status < 0)
-> +		print_usb_err(dev, -1, status);
-> +
-> +	if (dev == NULL) {
-> +		smi2021_warn("called with null device\n");
-> +		return;
-> +	}
-> +
-> +	for (i = 0; i < urb->number_of_packets; i++) {
-> +
-> +		status = urb->iso_frame_desc[i].status;
-> +		if (status == -18) {
-> +			/* This seems to happen when the device
-> +			 * trying to stream from an unconnected input
-> +			 * */
-> +			continue;
-> +		}
-> +
-> +		if (status < 0) {
-> +			print_usb_err(dev, i, status);
-> +			continue;
-> +		}
-> +
-> +		p = urb->transfer_buffer + urb->iso_frame_desc[i].offset;
-> +		len = urb->iso_frame_desc[i].actual_length;
-> +		process_packet(dev, p, len);
-> +	}
-> +
-> +	for (i = 0; i < urb->number_of_packets; i++) {
-> +		urb->iso_frame_desc[i].status = 0;
-> +		urb->iso_frame_desc[i].actual_length = 0;
-> +	}
-> +
-> +	rc = usb_submit_urb(urb, GFP_ATOMIC);
-> +	if (rc)
-> +		smi2021_err("urb re-submit failed (%d)\n", rc);
-> +}
-> +
-> +/*
-> + * Cancel urbs
-> + * This function can not be called in atomic context
-> + */
-> +void smi2021_cancel_isoc(struct smi2021_dev *dev)
-> +{
-> +	int i, num_bufs = dev->isoc_ctl.num_bufs;
-> +	if (!num_bufs)
-> +		return;
-> +
-> +	smi2021_dbg("killing %d urbs...\n", num_bufs);
-> +
-> +	for (i = 0; i < num_bufs; i++)
-> +		usb_kill_urb(dev->isoc_ctl.urb[i]);
-> +
-> +	smi2021_dbg("all urbs killed\n");
-> +
-> +}
-> +
-> +/*
-> + * Releases urb and transfer buffers
-> + * Obviously, associated urb must be killed before releasing it
-> + */
-> +void smi2021_free_isoc(struct smi2021_dev *dev)
-> +{
-> +	struct urb *urb;
-> +	int i, num_bufs = dev->isoc_ctl.num_bufs;
-> +
-> +	smi2021_dbg("freeing %d urb buffers...\n", num_bufs);
-> +
-> +	for (i = 0; i < num_bufs; i++) {
-> +		urb = dev->isoc_ctl.urb[i];
-> +		if (urb) {
-> +			if (dev->isoc_ctl.transfer_buffer[i]) {
-> +#ifndef CONFIG_DMA_NONCOHERENT
-> +				usb_free_coherent(dev->udev,
-> +					urb->transfer_buffer_length,
-> +					dev->isoc_ctl.transfer_buffer[i],
-> +					urb->transfer_dma);
-> +#else
-> +				kfree(dev->isoc_ctl.transfer_buffer[i]);
-> +#endif
-> +			}
-> +			usb_free_urb(urb);
-> +			dev->isoc_ctl.urb[i] = NULL;
-> +		}
-> +		dev->isoc_ctl.transfer_buffer[i] = NULL;
-> +	}
-> +
-> +	kfree(dev->isoc_ctl.urb);
-> +	kfree(dev->isoc_ctl.transfer_buffer);
-> +
-> +	dev->isoc_ctl.urb = NULL;
-> +	dev->isoc_ctl.transfer_buffer = NULL;
-> +	dev->isoc_ctl.num_bufs = 0;
-> +
-> +	smi2021_dbg("all urb buffers freed\n");
-> +}
-> +
-> +/*
-> + * Helper for canceling and freeing urbs
-> + * This function can not be called in atomic context
-> + */
-> +void smi2021_uninit_isoc(struct smi2021_dev *dev)
-> +{
-> +	smi2021_cancel_isoc(dev);
-> +	smi2021_free_isoc(dev);
-> +}
-> +
-> +
-> +int smi2021_alloc_isoc(struct smi2021_dev *dev)
-> +{
-> +	struct urb *urb;
-> +	int i, j, k, sb_size, max_packets, num_bufs;
-> +
-> +	if (dev->isoc_ctl.num_bufs)
-> +		smi2021_uninit_isoc(dev);
-> +
-> +	num_bufs = SMI2021_ISOC_BUFS;
-> +	max_packets = SMI2021_ISOC_PACKETS;
-> +	sb_size = max_packets * SMI2021_MAX_PKT_SIZE;
-> +
-> +	dev->isoc_ctl.buf = NULL;
-> +	dev->isoc_ctl.max_pkt_size = SMI2021_MAX_PKT_SIZE;
-> +	dev->isoc_ctl.urb = kzalloc(sizeof(void *) * num_bufs, GFP_KERNEL);
-> +	if (!dev->isoc_ctl.urb) {
-> +		smi2021_err("out of memory for urb array\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	dev->isoc_ctl.transfer_buffer = kzalloc(sizeof(void *) * num_bufs,
-> +							GFP_KERNEL);
-> +	if (!dev->isoc_ctl.transfer_buffer) {
-> +		smi2021_err("out of memory for usb transfer\n");
-> +		kfree(dev->isoc_ctl.urb);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	for (i = 0; i < num_bufs; i++) {
-> +		urb = usb_alloc_urb(max_packets, GFP_KERNEL);
-> +		if (!urb) {
-> +			smi2021_err("connot allocate urb[%d]\n", i);
-> +			goto free_i_bufs;
-> +		}
-> +		dev->isoc_ctl.urb[i] = urb;
-> +#ifndef CONFIG_DMA_NONCOHERENT
-> +		dev->isoc_ctl.transfer_buffer[i] = usb_alloc_coherent(
-> +					dev->udev, sb_size, GFP_KERNEL,
-> +					&urb->transfer_dma);
-> +#else
-> +		dev->isoc_ctl.transfer_buffer[i] = kmalloc(sb_size,
-> +								GFP_KERNEL);
-> +#endif
-> +		if (!dev->isoc_ctl.transfer_buffer[i]) {
-> +			smi2021_err("cannot alloc %d bytes for tx[%d] buffer",
-> +					sb_size, i);
-> +			goto free_i_bufs;
-> +		}
-> +		/* Do not leak kernel data */
-> +		memset(dev->isoc_ctl.transfer_buffer[i], 0, sb_size);
-> +
-> +		urb->dev = dev->udev;
-> +		urb->pipe = usb_rcvisocpipe(dev->udev, SMI2021_ISOC_EP);
-> +		urb->transfer_buffer = dev->isoc_ctl.transfer_buffer[i];
-> +		urb->transfer_buffer_length = sb_size;
-> +		urb->complete = smi2021_isoc_isr;
-> +		urb->context = dev;
-> +		urb->interval = 1;
-> +		urb->start_frame = 0;
-> +		urb->number_of_packets = max_packets;
-> +#ifndef CONFIG_DMA_NONCOHERENT
-> +		urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
-> +#else
-> +		urb->transfer_flags = URB_ISO_ASAP;
-> +#endif
-> +		k = 0;
-> +		for (j = 0; j < max_packets; j++) {
-> +			urb->iso_frame_desc[j].offset = k;
-> +			urb->iso_frame_desc[j].length =
-> +						dev->isoc_ctl.max_pkt_size;
-> +			k += dev->isoc_ctl.max_pkt_size;
-> +		}
-> +	}
-> +	smi2021_dbg("urbs allocated\n");
-> +	dev->isoc_ctl.num_bufs = num_bufs;
 > +	return 0;
-> +
-> +free_i_bufs:
-> +	dev->isoc_ctl.num_bufs = i+1;
-> +	smi2021_free_isoc(dev);
-> +	return -ENOMEM;
 > +}
-> 
 
-Regards,
+[...]
 
-	Hans
+> +int __init dm365_init_video(struct vpfe_config *vpfe_cfg,
+> +				struct vpbe_config *vpbe_cfg)
+> +{
+> +	if (vpfe_cfg || vpbe_cfg)
+> +		platform_device_register(&dm365_vpss_device);
+> +
+> +	if (vpfe_cfg) {
+> +		vpfe_capture_dev.dev.platform_data = vpfe_cfg;
+> +		/* Add isif clock alias */
+
+This comment is useless. Instead please document why the aliases are
+needed. I know you are just moving code here, but lets do a clean-up job
+while at it.
+
+> +		clk_add_alias("master", dm365_isif_dev.name,
+> +			      "vpss_master", NULL);
+> +		platform_device_register(&dm365_isif_dev);
+> +		platform_device_register(&vpfe_capture_dev);
+> +	}
+> +	if (vpbe_cfg) {
+> +		dm365_vpbe_dev.dev.platform_data = vpbe_cfg;
+> +		platform_device_register(&dm365_osd_dev);
+> +		platform_device_register(&dm365_venc_dev);
+> +		platform_device_register(&dm365_vpbe_dev);
+> +		platform_device_register(&dm365_vpbe_display);
+> +	}
+> +
+> +	return 0;
+> +}
+
+Thanks,
+Sekhar
