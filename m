@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3CRMtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:49:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8995 "EHLO mga09.intel.com"
+	id S1752108Ab3CRMv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:51:28 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44414 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab3CRMtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:49:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="281005826"
-Date: Mon, 18 Mar 2013 12:48:41 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Shawn Starr <shawn.starr@rogers.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915: Flush writes to GMBUS registers
-Message-ID: <20130318124841.GA3995@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-	intel-gfx@lists.freedesktop.org,
-	Shawn Starr <shawn.starr@rogers.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>
-References: <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
- <1363605185-4030-1-git-send-email-chris@chris-wilson.co.uk>
- <alpine.LNX.2.00.1303181251040.9529@pobox.suse.cz>
+	id S1751587Ab3CRMv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 08:51:26 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <rogerq@ti.com>
+Subject: [PATCH v3 0/4] ARM: OMAP2+: Adapt to ehci-omap changes for 3.10
+Date: Mon, 18 Mar 2013 14:51:14 +0200
+Message-ID: <1363611078-13002-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303181251040.9529@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 12:51:45PM +0100, Jiri Kosina wrote:
-> On Mon, 18 Mar 2013, Chris Wilson wrote:
-> 
-> > If we do not complete the writes to the GMBUS registers, they remain
-> > active for an indefinite period of time afterwards, even causing
-> > spurious interrupts on gm45.
-> > 
-> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz
-> > Cc: Shawn Starr <shawn.starr@rogers.com>
-> > Cc: Jiri Kosina <jkosina@suse.cz>
-> > Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> Unfortunately I can't provide my Tested-by or Acked-by for this, as I am 
-> still seeing the "nobody cared" for irq 16 with this patch applied.
+Hi Tony,
 
-The message reappeared on the third reboot. Perhaps an indicator that it
-is a timing issue. I guess the sensible approach then is to exclude gen4
-from the whitelist for gmbus irqs.
--Chris
+I've revised the patches based on your comments. For now I've just
+adapted Panda and Beagleboard.
+If this looks OK then I can adapt the other boards as well.
+
+cheers,
+-roger
+
+Roger Quadros (4):
+  usb: phy: nop: Add some parameters to platform data
+  ARM: OMAP2+: omap-usb-host: Add usbhs_init_phys()
+  ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
+  ARM: OMAP3: Beagle: Adapt to ehci-omap changes
+
+ arch/arm/mach-omap2/board-omap3beagle.c |   32 ++++--
+ arch/arm/mach-omap2/board-omap4panda.c  |   55 ++++------
+ arch/arm/mach-omap2/usb-host.c          |  177 ++++++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/usb.h               |    9 ++
+ include/linux/usb/nop-usb-xceiv.h       |    5 +
+ 5 files changed, 232 insertions(+), 46 deletions(-)
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.4.1
+
