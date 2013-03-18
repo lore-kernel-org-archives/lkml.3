@@ -1,205 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053Ab3CRVxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:53:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45648 "EHLO
+	id S932159Ab3CRVxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:53:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab3CRVHE (ORCPT
+	with ESMTP id S932069Ab3CRVxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 48/75] mtd: nand: reintroduce NAND_NO_READRDY as NAND_NEED_READRDY
-Date: Mon, 18 Mar 2013 14:07:11 -0700
-Message-Id: <20130318210513.725190489@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
-References: <20130318210510.203500214@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Mar 2013 17:53:35 -0400
+Date: Mon, 18 Mar 2013 14:53:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, david@gibson.dropbear.id.au,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Feng Hong <hongfeng@marvell.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH 1/2] teach argv_split() to handle the mutable strings
+Message-Id: <20130318145333.abecd78f3dde5e1307a7e493@linux-foundation.org>
+In-Reply-To: <20130316202353.GB18613@redhat.com>
+References: <20130312182210.GA15862@redhat.com>
+	<CA+55aFz9M1RWOwyRuatxnyQ+_ON0+A032QcW9=oBOks1JPt13w@mail.gmail.com>
+	<20130312191118.GA17439@redhat.com>
+	<CA+55aFzmATkP-W0uX1a_gP7E1fwcp2Mh4537Ou2uwHDixNKPTg@mail.gmail.com>
+	<20130312203514.GA23488@redhat.com>
+	<20130313174641.GA28083@redhat.com>
+	<20130313174705.GB28083@redhat.com>
+	<20130314152819.7fb1242b493e8bad2d34671b@linux-foundation.org>
+	<20130315163916.GA31995@redhat.com>
+	<20130316202327.GA18613@redhat.com>
+	<20130316202353.GB18613@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Sat, 16 Mar 2013 21:23:53 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
 
-------------------
+> argv_split() allocates argv[count_argc(str)] array and assumes that
+> it will find the same number of arguments later. This is obviously
+> wrong if this string can be changed, say, by sysctl.
+> 
+> With this patch argv_split() kstrndup's the whole string and does
+> not split it, we simply replace the spaces with zeroes and keep the
+> allocated memory in argv[-1] for argv_free(arg).
+> 
+> We do not use argv[0] because:
+> 
+> 	- str can be all-spaces or empty. In fact this case is fine,
+> 	  we could kfree() it before return, but:
+> 
+> 	- str can have a space at the start, and we can not rely on
+> 	  kstrndup(skip_arg(str)) because it can equally race if this
+> 	  string is mutable.
+> 
+> Also, simplify count_argc() and kill the no longer used skip_arg().
+> 
+> ...
+>
+>  char **argv_split(gfp_t gfp, const char *str, int *argcp)
+>  {
+> -	int argc = count_argc(str);
+> -	char **argv = kzalloc(sizeof(*argv) * (argc+1), gfp);
+> -	char **argvp;
+> -
+> -	if (argv == NULL)
+> -		goto out;
+> -
+> -	if (argcp)
+> -		*argcp = argc;
+> -
+> -	argvp = argv;
+> -
+> -	while (*str) {
+> -		str = skip_spaces(str);
+> -
+> -		if (*str) {
+> -			const char *p = str;
+> -			char *t;
+> -
+> -			str = skip_arg(str);
+> +	char *argv_str;
+> +	bool was_space;
+> +	char **argv, **argv_ret;
+> +	int argc;
+> +
+> +	argv_str = kstrndup(str, KMALLOC_MAX_SIZE, gfp);
 
-From: Brian Norris <computersforpeace@gmail.com>
+hm, I think that works.
 
-commit 5bc7c33ca93a285dcfe7b7fd64970f6314440ad1 upstream.
+kstrndup() does kmalloc_track_caller(len+1, gfp) so your
+KMALLOC_MAX_SIZE is off-by-one?
 
-This partially reverts commit 1696e6bc2ae83734e64e206ac99766ea19e9a14e
-("mtd: nand: kill NAND_NO_READRDY").
 
-In that patch I overlooked a few things.
+>From reading the code it is rather unobvious why things were
+implemented in this fashion.  People may come along in five years and
+"clean it up".  Hence we should explain, no?
 
-The original documentation for NAND_NO_READRDY included "True for all
-large page devices, as they do not support autoincrement." I was
-conflating "not support autoincrement" with the NAND_NO_AUTOINCR option,
-which was in fact doing nothing. So, when I dropped NAND_NO_AUTOINCR, I
-concluded that I then could harmlessly drop NAND_NO_READRDY. But of
-course the fact the NAND_NO_AUTOINCR was doing nothing didn't mean
-NAND_NO_READRDY was doing nothing...
-
-So, NAND_NO_READRDY is re-introduced as NAND_NEED_READRDY and applied
-only to those few remaining small-page NAND which needed it in the first
-place.
-
-Reported-by: Alexander Shiyan <shc_work@mail.ru>
-Tested-by: Alexander Shiyan <shc_work@mail.ru>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/mtd/nand/nand_base.c |   16 ++++++++
- drivers/mtd/nand/nand_ids.c  |   78 ++++++++++++++++++++++---------------------
- include/linux/mtd/nand.h     |    7 +++
- 3 files changed, 63 insertions(+), 38 deletions(-)
-
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -1527,6 +1527,14 @@ static int nand_do_read_ops(struct mtd_i
- 					oobreadlen -= toread;
- 				}
- 			}
-+
-+			if (chip->options & NAND_NEED_READRDY) {
-+				/* Apply delay or wait for ready/busy pin */
-+				if (!chip->dev_ready)
-+					udelay(chip->chip_delay);
-+				else
-+					nand_wait_ready(mtd);
-+			}
- 		} else {
- 			memcpy(buf, chip->buffers->databuf + col, bytes);
- 			buf += bytes;
-@@ -1791,6 +1799,14 @@ static int nand_do_read_oob(struct mtd_i
- 		len = min(len, readlen);
- 		buf = nand_transfer_oob(chip, buf, ops, len);
- 
-+		if (chip->options & NAND_NEED_READRDY) {
-+			/* Apply delay or wait for ready/busy pin */
-+			if (!chip->dev_ready)
-+				udelay(chip->chip_delay);
-+			else
-+				nand_wait_ready(mtd);
-+		}
-+
- 		readlen -= len;
- 		if (!readlen)
- 			break;
---- a/drivers/mtd/nand/nand_ids.c
-+++ b/drivers/mtd/nand/nand_ids.c
-@@ -22,49 +22,51 @@
- *	512	512 Byte page size
- */
- struct nand_flash_dev nand_flash_ids[] = {
-+#define SP_OPTIONS NAND_NEED_READRDY
-+#define SP_OPTIONS16 (SP_OPTIONS | NAND_BUSWIDTH_16)
- 
- #ifdef CONFIG_MTD_NAND_MUSEUM_IDS
--	{"NAND 1MiB 5V 8-bit",		0x6e, 256, 1, 0x1000, 0},
--	{"NAND 2MiB 5V 8-bit",		0x64, 256, 2, 0x1000, 0},
--	{"NAND 4MiB 5V 8-bit",		0x6b, 512, 4, 0x2000, 0},
--	{"NAND 1MiB 3,3V 8-bit",	0xe8, 256, 1, 0x1000, 0},
--	{"NAND 1MiB 3,3V 8-bit",	0xec, 256, 1, 0x1000, 0},
--	{"NAND 2MiB 3,3V 8-bit",	0xea, 256, 2, 0x1000, 0},
--	{"NAND 4MiB 3,3V 8-bit",	0xd5, 512, 4, 0x2000, 0},
--	{"NAND 4MiB 3,3V 8-bit",	0xe3, 512, 4, 0x2000, 0},
--	{"NAND 4MiB 3,3V 8-bit",	0xe5, 512, 4, 0x2000, 0},
--	{"NAND 8MiB 3,3V 8-bit",	0xd6, 512, 8, 0x2000, 0},
--
--	{"NAND 8MiB 1,8V 8-bit",	0x39, 512, 8, 0x2000, 0},
--	{"NAND 8MiB 3,3V 8-bit",	0xe6, 512, 8, 0x2000, 0},
--	{"NAND 8MiB 1,8V 16-bit",	0x49, 512, 8, 0x2000, NAND_BUSWIDTH_16},
--	{"NAND 8MiB 3,3V 16-bit",	0x59, 512, 8, 0x2000, NAND_BUSWIDTH_16},
-+	{"NAND 1MiB 5V 8-bit",		0x6e, 256, 1, 0x1000, SP_OPTIONS},
-+	{"NAND 2MiB 5V 8-bit",		0x64, 256, 2, 0x1000, SP_OPTIONS},
-+	{"NAND 4MiB 5V 8-bit",		0x6b, 512, 4, 0x2000, SP_OPTIONS},
-+	{"NAND 1MiB 3,3V 8-bit",	0xe8, 256, 1, 0x1000, SP_OPTIONS},
-+	{"NAND 1MiB 3,3V 8-bit",	0xec, 256, 1, 0x1000, SP_OPTIONS},
-+	{"NAND 2MiB 3,3V 8-bit",	0xea, 256, 2, 0x1000, SP_OPTIONS},
-+	{"NAND 4MiB 3,3V 8-bit",	0xd5, 512, 4, 0x2000, SP_OPTIONS},
-+	{"NAND 4MiB 3,3V 8-bit",	0xe3, 512, 4, 0x2000, SP_OPTIONS},
-+	{"NAND 4MiB 3,3V 8-bit",	0xe5, 512, 4, 0x2000, SP_OPTIONS},
-+	{"NAND 8MiB 3,3V 8-bit",	0xd6, 512, 8, 0x2000, SP_OPTIONS},
-+
-+	{"NAND 8MiB 1,8V 8-bit",	0x39, 512, 8, 0x2000, SP_OPTIONS},
-+	{"NAND 8MiB 3,3V 8-bit",	0xe6, 512, 8, 0x2000, SP_OPTIONS},
-+	{"NAND 8MiB 1,8V 16-bit",	0x49, 512, 8, 0x2000, SP_OPTIONS16},
-+	{"NAND 8MiB 3,3V 16-bit",	0x59, 512, 8, 0x2000, SP_OPTIONS16},
- #endif
- 
--	{"NAND 16MiB 1,8V 8-bit",	0x33, 512, 16, 0x4000, 0},
--	{"NAND 16MiB 3,3V 8-bit",	0x73, 512, 16, 0x4000, 0},
--	{"NAND 16MiB 1,8V 16-bit",	0x43, 512, 16, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 16MiB 3,3V 16-bit",	0x53, 512, 16, 0x4000, NAND_BUSWIDTH_16},
--
--	{"NAND 32MiB 1,8V 8-bit",	0x35, 512, 32, 0x4000, 0},
--	{"NAND 32MiB 3,3V 8-bit",	0x75, 512, 32, 0x4000, 0},
--	{"NAND 32MiB 1,8V 16-bit",	0x45, 512, 32, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 32MiB 3,3V 16-bit",	0x55, 512, 32, 0x4000, NAND_BUSWIDTH_16},
--
--	{"NAND 64MiB 1,8V 8-bit",	0x36, 512, 64, 0x4000, 0},
--	{"NAND 64MiB 3,3V 8-bit",	0x76, 512, 64, 0x4000, 0},
--	{"NAND 64MiB 1,8V 16-bit",	0x46, 512, 64, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 64MiB 3,3V 16-bit",	0x56, 512, 64, 0x4000, NAND_BUSWIDTH_16},
--
--	{"NAND 128MiB 1,8V 8-bit",	0x78, 512, 128, 0x4000, 0},
--	{"NAND 128MiB 1,8V 8-bit",	0x39, 512, 128, 0x4000, 0},
--	{"NAND 128MiB 3,3V 8-bit",	0x79, 512, 128, 0x4000, 0},
--	{"NAND 128MiB 1,8V 16-bit",	0x72, 512, 128, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 128MiB 1,8V 16-bit",	0x49, 512, 128, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 128MiB 3,3V 16-bit",	0x74, 512, 128, 0x4000, NAND_BUSWIDTH_16},
--	{"NAND 128MiB 3,3V 16-bit",	0x59, 512, 128, 0x4000, NAND_BUSWIDTH_16},
-+	{"NAND 16MiB 1,8V 8-bit",	0x33, 512, 16, 0x4000, SP_OPTIONS},
-+	{"NAND 16MiB 3,3V 8-bit",	0x73, 512, 16, 0x4000, SP_OPTIONS},
-+	{"NAND 16MiB 1,8V 16-bit",	0x43, 512, 16, 0x4000, SP_OPTIONS16},
-+	{"NAND 16MiB 3,3V 16-bit",	0x53, 512, 16, 0x4000, SP_OPTIONS16},
-+
-+	{"NAND 32MiB 1,8V 8-bit",	0x35, 512, 32, 0x4000, SP_OPTIONS},
-+	{"NAND 32MiB 3,3V 8-bit",	0x75, 512, 32, 0x4000, SP_OPTIONS},
-+	{"NAND 32MiB 1,8V 16-bit",	0x45, 512, 32, 0x4000, SP_OPTIONS16},
-+	{"NAND 32MiB 3,3V 16-bit",	0x55, 512, 32, 0x4000, SP_OPTIONS16},
-+
-+	{"NAND 64MiB 1,8V 8-bit",	0x36, 512, 64, 0x4000, SP_OPTIONS},
-+	{"NAND 64MiB 3,3V 8-bit",	0x76, 512, 64, 0x4000, SP_OPTIONS},
-+	{"NAND 64MiB 1,8V 16-bit",	0x46, 512, 64, 0x4000, SP_OPTIONS16},
-+	{"NAND 64MiB 3,3V 16-bit",	0x56, 512, 64, 0x4000, SP_OPTIONS16},
-+
-+	{"NAND 128MiB 1,8V 8-bit",	0x78, 512, 128, 0x4000, SP_OPTIONS},
-+	{"NAND 128MiB 1,8V 8-bit",	0x39, 512, 128, 0x4000, SP_OPTIONS},
-+	{"NAND 128MiB 3,3V 8-bit",	0x79, 512, 128, 0x4000, SP_OPTIONS},
-+	{"NAND 128MiB 1,8V 16-bit",	0x72, 512, 128, 0x4000, SP_OPTIONS16},
-+	{"NAND 128MiB 1,8V 16-bit",	0x49, 512, 128, 0x4000, SP_OPTIONS16},
-+	{"NAND 128MiB 3,3V 16-bit",	0x74, 512, 128, 0x4000, SP_OPTIONS16},
-+	{"NAND 128MiB 3,3V 16-bit",	0x59, 512, 128, 0x4000, SP_OPTIONS16},
- 
--	{"NAND 256MiB 3,3V 8-bit",	0x71, 512, 256, 0x4000, 0},
-+	{"NAND 256MiB 3,3V 8-bit",	0x71, 512, 256, 0x4000, SP_OPTIONS},
- 
- 	/*
- 	 * These are the new chips with large page size. The pagesize and the
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -187,6 +187,13 @@ typedef enum {
-  * This happens with the Renesas AG-AND chips, possibly others.
+--- a/lib/argv_split.c~argv_split-teach-it-to-handle-mutable-strings-fix
++++ a/lib/argv_split.c
+@@ -51,6 +51,10 @@ EXPORT_SYMBOL(argv_free);
+  * considered to be a single argument separator.  The returned array
+  * is always NULL-terminated.  Returns NULL on memory allocation
+  * failure.
++ *
++ * The source string at `str' may be undergoing concurrent alteration via
++ * userspace sysctl activity (at least).  The argv_split() implementation
++ * attempts to handle this gracefully by taking a local copy to work on.
   */
- #define BBT_AUTO_REFRESH	0x00000080
-+/*
-+ * Chip requires ready check on read (for auto-incremented sequential read).
-+ * True only for small page devices; large page devices do not support
-+ * autoincrement.
-+ */
-+#define NAND_NEED_READRDY	0x00000100
-+
- /* Chip does not allow subpage writes */
- #define NAND_NO_SUBPAGE_WRITE	0x00000200
- 
-
+ char **argv_split(gfp_t gfp, const char *str, int *argcp)
+ {
+_
 
