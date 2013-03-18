@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab3CRVau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:30:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45860 "EHLO
+	id S932400Ab3CRVas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:30:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab3CRVHz (ORCPT
+	with ESMTP id S1756244Ab3CRVH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:55 -0400
+	Mon, 18 Mar 2013 17:07:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 20/48] hwmon: (lineage-pem) Add missing terminating entry for pem_[input|fan]_attributes
-Date: Mon, 18 Mar 2013 14:08:28 -0700
-Message-Id: <20130318210811.694150035@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 24/48] selinux: use GFP_ATOMIC under spin_lock
+Date: Mon, 18 Mar 2013 14:08:32 -0700
+Message-Id: <20130318210811.975435535@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,36 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit df069079c153d22adf6c28dcc0b1cf62bba75167 upstream.
+commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34 upstream.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The call tree here is:
+
+sk_clone_lock()              <- takes bh_lock_sock(newsk);
+xfrm_sk_clone_policy()
+__xfrm_sk_clone_policy()
+clone_policy()               <- uses GFP_ATOMIC for allocations
+security_xfrm_policy_clone()
+security_ops->xfrm_policy_clone_security()
+selinux_xfrm_policy_clone()
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lineage-pem.c |    2 ++
- 1 file changed, 2 insertions(+)
+ security/selinux/xfrm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/lineage-pem.c
-+++ b/drivers/hwmon/lineage-pem.c
-@@ -421,6 +421,7 @@ static struct attribute *pem_input_attri
- 	&sensor_dev_attr_in2_input.dev_attr.attr,
- 	&sensor_dev_attr_curr1_input.dev_attr.attr,
- 	&sensor_dev_attr_power1_input.dev_attr.attr,
-+	NULL
- };
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfr
  
- static const struct attribute_group pem_input_group = {
-@@ -431,6 +432,7 @@ static struct attribute *pem_fan_attribu
- 	&sensor_dev_attr_fan1_input.dev_attr.attr,
- 	&sensor_dev_attr_fan2_input.dev_attr.attr,
- 	&sensor_dev_attr_fan3_input.dev_attr.attr,
-+	NULL
- };
+ 	if (old_ctx) {
+ 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
+-				  GFP_KERNEL);
++				  GFP_ATOMIC);
+ 		if (!new_ctx)
+ 			return -ENOMEM;
  
- static const struct attribute_group pem_fan_group = {
 
 
