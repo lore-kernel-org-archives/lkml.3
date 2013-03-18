@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3CRXU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:20:56 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:37676 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3CRXUz (ORCPT
+	id S1756083Ab3CRXVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:21:06 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:10349 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab3CRXVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:20:55 -0400
-Message-ID: <1363648854.1774.16.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH 1/3] rbtree_test: use pr_info for module prefix in messages
+	Mon, 18 Mar 2013 19:21:04 -0400
+Message-ID: <1363648862.1774.18.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH 3/3] rbtree_test: add more rbtree integrity checks
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Michel Lespinasse <walken@google.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Mar 2013 16:20:54 -0700
+Date: Mon, 18 Mar 2013 16:21:02 -0700
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -22,71 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides nicer message output. Since it seems more appropriate
-for the nature of this module, also use KERN_INFO instead of other
-levels.
+When checking the rbtree, account for more properties:
+
+   - Both children of a red node are black.
+   - The tree has at least 2**bh(v)-1 internal nodes.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- lib/rbtree_test.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ lib/rbtree_test.c | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-index af38aed..66ca26d 100644
+index 0fea14e..4c84f85 100644
 --- a/lib/rbtree_test.c
 +++ b/lib/rbtree_test.c
-@@ -1,3 +1,6 @@
-+#define KMSG_COMPONENT "rbtree_test"
-+#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-+
- #include <linux/module.h>
- #include <linux/rbtree_augmented.h>
- #include <linux/random.h>
-@@ -153,7 +156,7 @@ static int rbtree_test_init(void)
- 	int i, j;
- 	cycles_t time1, time2, time;
+@@ -106,7 +106,7 @@ static void init(void)
  
--	printk(KERN_ALERT "rbtree testing");
-+	pr_info("rbtree testing");
- 
- 	prandom_seed_state(&rnd, 3141592653589793238ULL);
- 	init();
-@@ -171,7 +174,7 @@ static int rbtree_test_init(void)
- 	time = time2 - time1;
- 
- 	time = div_u64(time, PERF_LOOPS);
--	printk(" -> %llu cycles\n", (unsigned long long)time);
-+	pr_info(" -> %llu cycles\n", (unsigned long long)time);
- 
- 	for (i = 0; i < CHECK_LOOPS; i++) {
- 		init();
-@@ -186,7 +189,7 @@ static int rbtree_test_init(void)
- 		check(0);
- 	}
- 
--	printk(KERN_ALERT "augmented rbtree testing");
-+	pr_info("augmented rbtree testing");
- 
- 	init();
- 
-@@ -203,7 +206,7 @@ static int rbtree_test_init(void)
- 	time = time2 - time1;
- 
- 	time = div_u64(time, PERF_LOOPS);
--	printk(" -> %llu cycles\n", (unsigned long long)time);
-+	pr_info(" -> %llu cycles\n", (unsigned long long)time);
- 
- 	for (i = 0; i < CHECK_LOOPS; i++) {
- 		init();
-@@ -223,7 +226,7 @@ static int rbtree_test_init(void)
- 
- static void rbtree_test_exit(void)
+ static bool is_red(struct rb_node *rb)
  {
--	printk(KERN_ALERT "test exit\n");
-+	pr_info("test exit\n");
+-	return !(rb->__rb_parent_color & 1);
++	return rb ? !(rb->__rb_parent_color & RB_BLACK) : 0;
  }
  
- module_init(rbtree_test_init)
+ static int black_path_count(struct rb_node *rb)
+@@ -120,24 +120,38 @@ static int black_path_count(struct rb_node *rb)
+ static void check(int nr_nodes)
+ {
+ 	struct rb_node *rb;
+-	int count = 0;
+-	int blacks = 0;
++	int blacks = 0, count = 0;
+ 	u32 prev_key = 0;
+ 
+ 	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
+ 		struct test_node *node = rb_entry(rb, struct test_node, rb);
++
++		/* sorted keys */
+ 		WARN_ON_ONCE(node->key < prev_key);
+-		WARN_ON_ONCE(is_red(rb) &&
+-			     (!rb_parent(rb) || is_red(rb_parent(rb))));
++
++		if (is_red(rb)) {
++			/*
++			 * root must be black and no path contains two
++			 * consecutive red nodes.
++			 */
++			WARN_ON_ONCE(!rb_parent(rb) || is_red(rb_parent(rb)));
++
++			/* both children of a red node are black */
++			WARN_ON_ONCE(is_red(rb->rb_left) || is_red(rb->rb_right));
++		}
++
+ 		if (!count)
+ 			blacks = black_path_count(rb);
+ 		else
+ 			WARN_ON_ONCE((!rb->rb_left || !rb->rb_right) &&
+ 				     blacks != black_path_count(rb));
++
+ 		prev_key = node->key;
+ 		count++;
+ 	}
++
+ 	WARN_ON_ONCE(count != nr_nodes);
++	WARN_ON_ONCE(count < (1 << black_path_count(rb_last(&root))) - 1);
+ }
+ 
+ static void check_augmented(int nr_nodes)
 -- 
 1.7.11.7
 
