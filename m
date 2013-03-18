@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab3CRVas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:30:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
+	id S932141Ab3CRVHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3CRVH5 (ORCPT
+	with ESMTP id S932087Ab3CRVHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:57 -0400
+	Mon, 18 Mar 2013 17:07:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 24/48] selinux: use GFP_ATOMIC under spin_lock
-Date: Mon, 18 Mar 2013 14:08:32 -0700
-Message-Id: <20130318210811.975435535@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>
+Subject: [ 14/48] serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller
+Date: Mon, 18 Mar 2013 14:08:22 -0700
+Message-Id: <20130318210811.257535173@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,38 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34 upstream.
+commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366 upstream.
 
-The call tree here is:
+01:08.0 Communication controller: NetMos Technology PCI 9835 Multi-I/O Controller (rev 01)
+	Subsystem: Device [1000:0012]
+	Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Interrupt: pin A routed to IRQ 20
+	Region 0: I/O ports at e050 [size=8]
+	Region 1: I/O ports at e040 [size=8]
+	Region 2: I/O ports at e030 [size=8]
+	Region 3: I/O ports at e020 [size=8]
+	Region 4: I/O ports at e010 [size=8]
+	Region 5: I/O ports at e000 [size=16]
 
-sk_clone_lock()              <- takes bh_lock_sock(newsk);
-xfrm_sk_clone_policy()
-__xfrm_sk_clone_policy()
-clone_policy()               <- uses GFP_ATOMIC for allocations
-security_xfrm_policy_clone()
-security_ops->xfrm_policy_clone_security()
-selinux_xfrm_policy_clone()
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/xfrm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250_pci.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfr
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -4086,6 +4086,10 @@ static struct pci_device_id serial_pci_t
+ 		PCI_VENDOR_ID_IBM, 0x0299,
+ 		0, 0, pbn_b0_bt_2_115200 },
  
- 	if (old_ctx) {
- 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
--				  GFP_KERNEL);
-+				  GFP_ATOMIC);
- 		if (!new_ctx)
- 			return -ENOMEM;
- 
++	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
++		0x1000, 0x0012,
++		0, 0, pbn_b0_bt_2_115200 },
++
+ 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
+ 		0xA000, 0x1000,
+ 		0, 0, pbn_b0_1_115200 },
 
 
