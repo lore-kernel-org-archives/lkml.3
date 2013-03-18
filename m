@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3CRQqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:46:16 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58663 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab3CRQqP (ORCPT
+	id S1754286Ab3CRQrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:47:22 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51216 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab3CRQrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:46:15 -0400
-Date: Mon, 18 Mar 2013 09:46:10 -0700
+	Mon, 18 Mar 2013 12:47:21 -0400
+Date: Mon, 18 Mar 2013 09:47:15 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <clark@redhat.com>,
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: workqueue code needing preemption disabled
-Message-ID: <20130318164610.GB21516@mtj.dyndns.org>
-References: <1363617383.25967.152.camel@gandalf.local.home>
- <20130318160652.GA20133@mtj.dyndns.org>
- <1363623799.25967.172.camel@gandalf.local.home>
- <20130318162718.GB20133@mtj.dyndns.org>
- <1363624883.25967.184.camel@gandalf.local.home>
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH REPOST v3.9-rc1] sched: replace PF_THREAD_BOUND with
+ PF_NO_SETAFFINITY
+Message-ID: <20130318164715.GC21516@mtj.dyndns.org>
+References: <20130308204518.GR14556@mtj.dyndns.org>
+ <20130314225508.GC9400@htj.dyndns.org>
+ <20130318094140.GB25045@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363624883.25967.184.camel@gandalf.local.home>
+In-Reply-To: <20130318094140.GB25045@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 12:41:23PM -0400, Steven Rostedt wrote:
-> But, I'm worried about the loops that are done while holding this lock.
-> Just looking at is_chained_work() that does for_each_busy_worker(), how
-> big can that list be? If it's bound by # of CPUs then that may be fine,
-> but if it can be as big as the # of workers assigned, with no real
-> limit, then its not fine, because that creates an unbound (non
-> deterministic) latency.
+Hello,
 
-In most paths, gcwq->lock shouldn't be held for too long but yes there
-are cold paths which just do things without thinking about latency
-issues.  is_chained_work() can definitely take pretty long time (note
-that it got reimplemented in the current devel branch and the loop is
-gone).
+On Mon, Mar 18, 2013 at 10:41:40AM +0100, Ingo Molnar wrote:
+> > This patch replaces PF_THREAD_BOUND with PF_NO_SETAFFINITY.
+> > sched_setaffinity() checks the flag and return -EINVAL if set.
+> > set_cpus_allowed_ptr() is no longer affected by the flag.
+> > 
+> > This will allow simplifying workqueue worker CPU affinity management.
+> 
+> Acked-by: Ingo Molnar <mingo@kernel.org>
+> 
+> I suspect you want to carry this in the workqueue tree, to enable those 
+> extra simplifications?
+
+Yeah, I was planning to pull from one of the -tip branches but if I
+can carry it through the workqueue tree it would be simpler.  Would
+that be okay?
+
+Thanks.
 
 -- 
 tejun
