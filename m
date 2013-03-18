@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933803Ab3CRVnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:43:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45820 "EHLO
+	id S1756169Ab3CRVHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab3CRVHs (ORCPT
+	with ESMTP id S1754709Ab3CRVHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:48 -0400
+	Mon, 18 Mar 2013 17:07:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Bryan Mason <bmason@redhat.com>
-Subject: [ 16/48] TTY: do not reset masters packet mode
-Date: Mon, 18 Mar 2013 14:08:24 -0700
-Message-Id: <20130318210811.398544325@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 02/48] xen/pciback: Dont disable a PCI device that is already disabled.
+Date: Mon, 18 Mar 2013 14:08:10 -0700
+Message-Id: <20130318210810.428791213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -28,63 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
+commit bdc5c1812cea6efe1aaefb3131fcba28cd0b2b68 upstream.
 
-Now that login from util-linux is forced to drop all references to a
-TTY which it wants to hangup (to reach reference count 1) we are
-seeing issues with telnet. When login closes its last reference to the
-slave PTY, it also resets packet mode on the *master* side. And we
-have a race here.
+While shuting down a HVM guest with pci devices passed through we
+get this:
 
-What telnet does is fork+exec of `login'. Then there are two
-scenarios:
-* `login' closes the slave TTY and resets thus master's packet mode,
-  but even now telnet properly sets the mode, or
-* `telnetd' sets packet mode on the master, `login' closes the slave
-  TTY and resets master's packet mode.
+pciback 0000:04:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100002)
+------------[ cut here ]------------
+WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x88/0xa0()
+Hardware name: MS-7640
+Device pciback
+disabling already-disabled device
+Modules linked in:
+Pid: 53, comm: xenwatch Not tainted 3.9.0-rc1-20130304a+ #1
+Call Trace:
+ [<ffffffff8106994a>] warn_slowpath_common+0x7a/0xc0
+ [<ffffffff81069a31>] warn_slowpath_fmt+0x41/0x50
+ [<ffffffff813cf288>] pci_disable_device+0x88/0xa0
+ [<ffffffff814554a7>] xen_pcibk_reset_device+0x37/0xd0
+ [<ffffffff81454b6f>] ? pcistub_put_pci_dev+0x6f/0x120
+ [<ffffffff81454b8d>] pcistub_put_pci_dev+0x8d/0x120
+ [<ffffffff814582a9>] __xen_pcibk_release_devices+0x59/0xa0
 
-The former case is OK. However the latter happens in much more cases,
-by the order of magnitude to be precise. So when one tries to login to
-such a messed telnet setup, they see the following:
-inux login:
-            ogin incorrect
+This fixes the bug.
 
-Note the missing first letters -- telnet thinks it is still in the
-packet mode, so when it receives "linux login" from `login', it
-considers "l" as the type of the packet and strips it.
-
-SuS does not mention how the implementation should behave. Both BSDs I
-checked (Free and Net) do not reset the flag upon the last close.
-
-By this I am resurrecting an old bug, see References. We are hitting
-it regularly now, i.e. with updated util-linux, ergo login.
-
-Here, I am changing a behavior introduced back in 2.1 times. It would
-better have a long time testing before goes upstream.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Bryan Mason <bmason@redhat.com>
-References: https://lkml.org/lkml/2009/11/11/223
-References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
-References: https://bugzilla.novell.com/show_bug.cgi?id=797042
+Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/pty.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/xen/xen-pciback/pciback_ops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -47,7 +47,6 @@ static void pty_close(struct tty_struct
- 	tty->packet = 0;
- 	if (!tty->link)
- 		return;
--	tty->link->packet = 0;
- 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
- 	wake_up_interruptible(&tty->link->read_wait);
- 	wake_up_interruptible(&tty->link->write_wait);
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -113,7 +113,8 @@ void xen_pcibk_reset_device(struct pci_d
+ 		if (dev->msi_enabled)
+ 			pci_disable_msi(dev);
+ #endif
+-		pci_disable_device(dev);
++		if (pci_is_enabled(dev))
++			pci_disable_device(dev);
+ 
+ 		pci_write_config_word(dev, PCI_COMMAND, 0);
+ 
 
 
