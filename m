@@ -1,132 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab3CRXxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:53:40 -0400
-Received: from longford.logfs.org ([213.229.74.203]:58702 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3CRXxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:53:38 -0400
-Date: Mon, 18 Mar 2013 18:28:53 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: [PATCH] target: close target_put_sess_cmd() vs.
- core_tmr_abort_task() race
-Message-ID: <20130318222853.GA9358@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756549Ab3CRXyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:54:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754074Ab3CRXyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 19:54:31 -0400
+Date: Mon, 18 Mar 2013 20:54:03 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Timo Kokkonen <timo.t.kokkonen@iki.fi>,
+        Tony Lindgren <tony@atomide.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] [media] ir: IR_RX51 only works on OMAP2
+Message-ID: <20130318205403.4203e2fe@redhat.com>
+In-Reply-To: <1363298204-8014-7-git-send-email-arnd@arndb.de>
+References: <1363298204-8014-1-git-send-email-arnd@arndb.de>
+	<1363298204-8014-7-git-send-email-arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible for one thread to to take se_sess->sess_cmd_lock in
-core_tmr_abort_task() before taking a reference count on
-se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
-se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+Em Thu, 14 Mar 2013 22:56:44 +0100
+Arnd Bergmann <arnd@arndb.de> escreveu:
 
-This introduces kref_put_and_lock() and uses it in
-target_put_sess_cmd() to close the race window.
+> This driver can be enabled on OMAP1 at the moment, which breaks
+> allyesconfig for that platform. Let's mark it OMAP2PLUS-only
+> in Kconfig, since that is the only thing it builds on.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Timo Kokkonen <timo.t.kokkonen@iki.fi>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: linux-media@vger.kernel.org
+> ---
+> Mauro, please apply for 3.9
 
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/target/target_core_transport.c |   17 +++++++++++------
- include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 6 deletions(-)
+OK, I'm applying it on my 3.9 branch right now.
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 04ec9cb..2b8277c 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
- {
- 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
- 	struct se_session *se_sess = se_cmd->se_sess;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
- 	if (list_empty(&se_cmd->se_cmd_list)) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		se_cmd->se_tfo->release_cmd(se_cmd);
- 		return;
- 	}
- 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		complete(&se_cmd->cmd_wait_comp);
- 		return;
- 	}
- 	list_del(&se_cmd->se_cmd_list);
--	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+	spin_unlock(&se_sess->sess_cmd_lock);
- 
- 	se_cmd->se_tfo->release_cmd(se_cmd);
- }
-@@ -2232,7 +2230,14 @@ static void target_release_cmd_kref(struct kref *kref)
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
--	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
-+	unsigned long flags;
-+	int ret;
-+
-+	local_irq_save(flags);
-+	ret = kref_put_and_lock(&se_cmd->cmd_kref, target_release_cmd_kref,
-+			&se_sess->sess_cmd_lock);
-+	local_irq_restore(flags);
-+	return ret;
- }
- EXPORT_SYMBOL(target_put_sess_cmd);
- 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..bc4dbc1 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -19,6 +19,7 @@
- #include <linux/atomic.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
-+#include <linux/spinlock_types.h>
- 
- struct kref {
- 	atomic_t refcount;
-@@ -95,6 +96,31 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put_and_lock - decrement refcount for object.
-+ * @kref: object.
-+ * @release: pointer to the function that will clean up the object when the
-+ *	     last reference to the object is released.
-+ *	     This pointer is required, and it is not acceptable to pass kfree
-+ *	     in as this function.
-+ * @lock: lock to take in release case
-+ *
-+ * Behaves identical to kref_put with one exception.  If the reference count
-+ * drops to zero, the lock will be taken atomically wrt dropping the reference
-+ * count.
-+ */
-+static inline int kref_put_and_lock(struct kref *kref,
-+		void (*release)(struct kref *kref),
-+		spinlock_t *lock)
-+{
-+	WARN_ON(release == NULL);
-+	if (atomic_dec_and_lock(&kref->refcount, lock)) {
-+		release(kref);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
--- 
-1.7.10.4
-
+Thanks!
+Mauro
