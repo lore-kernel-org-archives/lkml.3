@@ -1,144 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab3CRQg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:36:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab3CRQgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:36:24 -0400
-Date: Mon, 18 Mar 2013 17:34:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] tracing: syscall_*regfunc() can race with
-	copy_process()
-Message-ID: <20130318163412.GC20313@redhat.com>
-References: <20130317182814.GA22968@redhat.com> <20130317182831.GA22986@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130317182831.GA22986@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753624Ab3CRQfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:35:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36440 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3CRQZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:25:58 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 29/54] perf annotate browser: Make browser_disasm_line->percent an array
+Date: Mon, 18 Mar 2013 13:25:14 -0300
+Message-Id: <1363623939-10748-30-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
+References: <1363623939-10748-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syscall_regfunc() and syscall_unregfunc() should set/clear
-TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-with copy_process() and miss the new child which was not added to
-init_task.tasks list yet.
+From: Namhyung Kim <namhyung@kernel.org>
 
-Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-under tasklist.
+Make percent field of struct browser_disasm_line an array and move it to
+the last.  This is a preparation of event group view feature.
 
-While at it,
-
-	- remove _irqsafe from syscall_regfunc/syscall_unregfunc,
-	  read_lock(tasklist) doesn't need to disable irqs.
-
-	- change syscall_unregfunc() to check PF_KTHREAD to skip
-	  the kernel threads, ->mm != NULL is the common mistake.
-
-	  Note: probably this check should be simply removed, needs
-	  another patch.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1362462812-30885-10-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/trace/syscall.h |   15 +++++++++++++++
- kernel/fork.c           |    2 ++
- kernel/tracepoint.c     |   12 +++++-------
- 3 files changed, 22 insertions(+), 7 deletions(-)
+ tools/perf/ui/browsers/annotate.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 84bc419..15a954b 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index cfae57f..62369f0 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -14,10 +14,10 @@
  
- #include <asm/ptrace.h>
- 
-@@ -31,4 +32,18 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
+ struct browser_disasm_line {
+ 	struct rb_node	rb_node;
+-	double		percent;
+ 	u32		idx;
+ 	int		idx_asm;
+ 	int		jump_sources;
++	double		percent[1];
  };
  
-+#ifdef CONFIG_TRACEPOINTS
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 1766d32..e463f99 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1472,7 +1472,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ static struct annotate_browser_opt {
+@@ -97,9 +97,9 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
+ 	int width = browser->width, printed;
+ 	char bf[256];
  
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 0c05a45..a16754b 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -732,33 +732,31 @@ static int sys_tracepoint_refcount;
+-	if (dl->offset != -1 && bdl->percent != 0.0) {
+-		ui_browser__set_percent_color(browser, bdl->percent, current_entry);
+-		slsmg_printf("%6.2f ", bdl->percent);
++	if (dl->offset != -1 && bdl->percent[0] != 0.0) {
++		ui_browser__set_percent_color(browser, bdl->percent[0], current_entry);
++		slsmg_printf("%6.2f ", bdl->percent[0]);
+ 	} else {
+ 		ui_browser__set_percent_color(browser, 0, current_entry);
+ 		slsmg_write_nstring(" ", 7);
+@@ -283,7 +283,7 @@ static void disasm_rb_tree__insert(struct rb_root *root, struct browser_disasm_l
+ 	while (*p != NULL) {
+ 		parent = *p;
+ 		l = rb_entry(parent, struct browser_disasm_line, rb_node);
+-		if (bdl->percent < l->percent)
++		if (bdl->percent[0] < l->percent[0])
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
+@@ -345,8 +345,8 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
  
- void syscall_regfunc(void)
- {
--	unsigned long flags;
- 	struct task_struct *g, *t;
- 
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
-+		read_lock(&tasklist_lock);
- 		do_each_thread(g, t) {
- 			/* Skip kernel threads. */
--			if (t->mm)
-+			if (!(t->flags & PF_KTHREAD))
- 				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
- 		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
-+		read_unlock(&tasklist_lock);
- 	}
- 	sys_tracepoint_refcount++;
- }
- 
- void syscall_unregfunc(void)
- {
--	unsigned long flags;
- 	struct task_struct *g, *t;
- 
- 	sys_tracepoint_refcount--;
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
-+		read_lock(&tasklist_lock);
- 		do_each_thread(g, t) {
- 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
- 		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
-+		read_unlock(&tasklist_lock);
- 	}
- }
- #endif
+ 	list_for_each_entry(pos, &notes->src->source, node) {
+ 		struct browser_disasm_line *bpos = disasm_line__browser(pos);
+-		bpos->percent = disasm_line__calc_percent(pos, sym, evsel->idx);
+-		if (bpos->percent < 0.01) {
++		bpos->percent[0] = disasm_line__calc_percent(pos, sym, evsel->idx);
++		if (bpos->percent[0] < 0.01) {
+ 			RB_CLEAR_NODE(&bpos->rb_node);
+ 			continue;
+ 		}
 -- 
-1.5.5.1
-
+1.7.1
 
