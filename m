@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab3CREp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:45:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33488 "EHLO
+	id S1752680Ab3CREqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:46:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33465 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751748Ab3CREaZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751678Ab3CREaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:25 -0400
-Message-Id: <20130318042150.572567427@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:23 -0400
+Message-Id: <20130318042150.842287128@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:49 +0000
+Date: Mon, 18 Mar 2013 04:22:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Kees Cook <keescook@chromium.org>,
-        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Julien Tinnes <jln@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 65/82] signal: always clear sa_restorer on execve
+Cc: akpm@linux-foundation.org, Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 68/82] crypto: user - fix info leaks in report API
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,68 +28,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
+commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
 
-When the new signal handlers are set up, the location of sa_restorer is
-not cleared, leaking a parent process's address space location to
-children.  This allows for a potential bypass of the parent's ASLR by
-examining the sa_restorer value returned when calling sigaction().
+Three errors resulting in kernel memory disclosure:
 
-Based on what should be considered "secret" about addresses, it only
-matters across the exec not the fork (since the VMAs haven't changed
-until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
-this is where it should be fixed.
+1/ The structures used for the netlink based crypto algorithm report API
+are located on the stack. As snprintf() does not fill the remainder of
+the buffer with null bytes, those stack bytes will be disclosed to users
+of the API. Switch to strncpy() to fix this.
 
-Given the few uses of sa_restorer, a "set" function was not written
-since this would be the only use.  Instead, we use
-__ARCH_HAS_SA_RESTORER, as already done in other places.
+2/ crypto_report_one() does not initialize all field of struct
+crypto_user_alg. Fix this to fix the heap info leak.
 
-Example of the leak before applying this patch:
+3/ For the module name we should copy only as many bytes as
+module_name() returns -- not as much as the destination buffer could
+hold. But the current code does not and therefore copies random data
+from behind the end of the module name, as the module name is always
+shorter than CRYPTO_MAX_ALG_NAME.
 
-  $ cat /proc/$$/maps
-  ...
-  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  $ ./leak
-  ...
-  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  1 0 (nil) 0x7fb9f30b94a0
-  2 4000000 (nil) 0x7f278bcaa4a0
-  3 4000000 (nil) 0x7f278bcaa4a0
-  4 0 (nil) 0x7fb9f30b94a0
-  ...
+Also switch to use strncpy() to copy the algorithm's name and
+driver_name. They are strings, after all.
 
-[akpm@linux-foundation.org: use SA_RESTORER for backportability]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Cc: Emese Revfy <re.emese@gmail.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Julien Tinnes <jln@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/signal.c |    3 +++
- 1 file changed, 3 insertions(+)
+ crypto/ablkcipher.c  |   12 ++++++------
+ crypto/aead.c        |    9 ++++-----
+ crypto/ahash.c       |    2 +-
+ crypto/blkcipher.c   |    6 +++---
+ crypto/crypto_user.c |   22 +++++++++++-----------
+ crypto/pcompress.c   |    3 +--
+ crypto/rng.c         |    2 +-
+ crypto/shash.c       |    3 ++-
+ 8 files changed, 29 insertions(+), 30 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -481,6 +481,9 @@ flush_signal_handlers(struct task_struct
- 		if (force_default || ka->sa.sa_handler != SIG_IGN)
- 			ka->sa.sa_handler = SIG_DFL;
- 		ka->sa.sa_flags = 0;
-+#ifdef SA_RESTORER
-+		ka->sa.sa_restorer = NULL;
-+#endif
- 		sigemptyset(&ka->sa.sa_mask);
- 		ka++;
- 	}
+--- a/crypto/ablkcipher.c
++++ b/crypto/ablkcipher.c
+@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_ablkcipher.geniv ?: "<built-in>");
++	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
+--- a/crypto/aead.c
++++ b/crypto/aead.c
+@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 aead->geniv ?: "<built-in>");
++	strncpy(raead.type, "aead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
+ 	struct crypto_report_aead raead;
+ 	struct aead_alg *aead = &alg->cra_aead;
+ 
+-	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
+-	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
++	strncpy(raead.type, "nivaead", sizeof(raead.type));
++	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
+ 
+ 	raead.blocksize = alg->cra_blocksize;
+ 	raead.maxauthsize = aead->maxauthsize;
+--- a/crypto/ahash.c
++++ b/crypto/ahash.c
+@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
+ {
+ 	struct crypto_report_hash rhash;
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
++	strncpy(rhash.type, "ahash", sizeof(rhash.type));
+ 
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
+--- a/crypto/blkcipher.c
++++ b/crypto/blkcipher.c
+@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+ 
+-	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
+-	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
+-		 alg->cra_blkcipher.geniv ?: "<default>");
++	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
++	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
++		sizeof(rblkcipher.geniv));
+ 
+ 	rblkcipher.blocksize = alg->cra_blocksize;
+ 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -71,7 +71,7 @@ static int crypto_report_cipher(struct s
+ {
+ 	struct crypto_report_cipher rcipher;
+ 
+-	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
++	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
+ 
+ 	rcipher.blocksize = alg->cra_blocksize;
+ 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
+@@ -90,8 +90,7 @@ static int crypto_report_comp(struct sk_
+ {
+ 	struct crypto_report_comp rcomp;
+ 
+-	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
+-
++	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
+ 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		sizeof(struct crypto_report_comp), &rcomp);
+ 
+@@ -104,12 +103,14 @@ nla_put_failure:
+ static int crypto_report_one(struct crypto_alg *alg,
+ 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
+ {
+-	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
+-	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
+-	       sizeof(ualg->cru_driver_name));
+-	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
+-	       CRYPTO_MAX_ALG_NAME);
++	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
++	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
++		sizeof(ualg->cru_driver_name));
++	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
++		sizeof(ualg->cru_module_name));
+ 
++	ualg->cru_type = 0;
++	ualg->cru_mask = 0;
+ 	ualg->cru_flags = alg->cra_flags;
+ 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
+ 
+@@ -118,8 +119,7 @@ static int crypto_report_one(struct cryp
+ 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
+ 		struct crypto_report_larval rl;
+ 
+-		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
+-
++		strncpy(rl.type, "larval", sizeof(rl.type));
+ 		NLA_PUT(skb, CRYPTOCFGA_REPORT_LARVAL,
+ 			sizeof(struct crypto_report_larval), &rl);
+ 
+--- a/crypto/pcompress.c
++++ b/crypto/pcompress.c
+@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
+ {
+ 	struct crypto_report_comp rpcomp;
+ 
+-	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
+-
++	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
+ 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
+ 		sizeof(struct crypto_report_comp), &rpcomp);
+ 
+--- a/crypto/rng.c
++++ b/crypto/rng.c
+@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
+ {
+ 	struct crypto_report_rng rrng;
+ 
+-	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
++	strncpy(rrng.type, "rng", sizeof(rrng.type));
+ 
+ 	rrng.seedsize = alg->cra_rng.seedsize;
+ 
+--- a/crypto/shash.c
++++ b/crypto/shash.c
+@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
+ 	struct crypto_report_hash rhash;
+ 	struct shash_alg *salg = __crypto_shash_alg(alg);
+ 
+-	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
++	strncpy(rhash.type, "shash", sizeof(rhash.type));
++
+ 	rhash.blocksize = alg->cra_blocksize;
+ 	rhash.digestsize = salg->digestsize;
+ 
 
 
