@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3CRP4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:56:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51195 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab3CRP4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:56:11 -0400
-Date: Mon, 18 Mar 2013 16:56:02 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Daniel Vetter <daniel@ffwll.ch>, Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Greg KH <greg@kroah.com>, Harald Arnesen <skogtun.linux@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re:
- [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses))
-In-Reply-To: <20130318082156.GO9021@phenom.ffwll.local>
-Message-ID: <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1303141050310.1983-100000@iolanthe.rowland.org> <1460519.ejNFI1DrGk@vostro.rjw.lan> <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <20130315153249.GA32425@kroah.com> <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz> <20130315154739.GA1024@kroah.com> <20130318082156.GO9021@phenom.ffwll.local>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753974Ab3CRP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:56:24 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:34827 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753932Ab3CRP4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:56:22 -0400
+Date: Mon, 18 Mar 2013 10:56:19 -0500
+From: Russ Anderson <rja@sgi.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, Russ Anderson <rja@sgi.com>
+Subject: [patch] mm: speedup in __early_pfn_to_nid
+Message-ID: <20130318155619.GA18828@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, so I think that for 3.9 we want the patch below, and if eventually 
-hardware root cause / workaround is found for GM45, we can have it merged 
-later.
+When booting on a large memory system, the kernel spends
+considerable time in memmap_init_zone() setting up memory zones.
+Analysis shows significant time spent in __early_pfn_to_nid().
 
+The routine memmap_init_zone() checks each PFN to verify the
+nid is valid.  __early_pfn_to_nid() sequentially scans the list of
+pfn ranges to find the right range and returns the nid.  This does
+not scale well.  On a 4 TB (single rack) system there are 308
+memory ranges to scan.  The higher the PFN the more time spent
+sequentially spinning through memory ranges.
 
+Since memmap_init_zone() increments pfn, it will almost always be
+looking for the same range as the previous pfn, so check that
+range first.  If it is in the same range, return that nid.
+If not, scan the list as before.
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips
+A 4 TB (single rack) UV1 system takes 512 seconds to get through
+the zone code.  This performance optimization reduces the time
+by 189 seconds, a 36% improvement.
 
-Commit 28c70f162 ("drm/i915: use the gmbus irq for waits") switched to
-using GMBUS irqs instead of GPIO bit-banging for chipset generations 4
-and above.
+A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
+a 112.9 second (53%) reduction.
 
-It turns out though that on many systems this leads to spurious interrupts
-being generated, long after the register write to disable the IRQs has been
-issued.
-
-Flushing of the register writes by POSTING_READ() directly after the register
-write doesn't work either.
-
-Disable using of GMBUS IRQs on Gen4 systems before the root cause is found and
-revert back to old behavior.
-
-Also be more careful about not issuing GMBUS4 register reads in 
-gmbus_wait_hw_status() if we are not using GMBUS IRQs.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Russ Anderson <rja@sgi.com>
 ---
- drivers/gpu/drm/i915/intel_i2c.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index acf8aec..8638036 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -58,12 +58,14 @@ to_intel_gmbus(struct i2c_adapter *i2c)
- 	return container_of(i2c, struct intel_gmbus, adapter);
- }
- 
-+#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
- void
- intel_i2c_reset(struct drm_device *dev)
+Index: linux/mm/page_alloc.c
+===================================================================
+--- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
++++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
+@@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
--	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
-+	if (HAS_GMBUS_IRQ(dev))
-+		I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+ 	unsigned long start_pfn, end_pfn;
+ 	int i, nid;
++	static unsigned long last_start_pfn, last_end_pfn;
++	static int last_nid;
++
++	if (last_start_pfn <= pfn && pfn < last_end_pfn)
++		return last_nid;
+ 
+ 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
+-		if (start_pfn <= pfn && pfn < end_pfn)
++		if (start_pfn <= pfn && pfn < end_pfn) {
++			last_nid = nid;
++			last_start_pfn = start_pfn;
++			last_end_pfn = end_pfn;
+ 			return nid;
++		}
+ 	/* This is a memory hole */
+ 	return -1;
  }
- 
- static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
-@@ -203,7 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
- 	algo->data = bus;
- }
- 
--#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
- static int
- gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
- 		     u32 gmbus2_status,
-@@ -214,6 +215,13 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
- 	u32 gmbus2 = 0;
- 	DEFINE_WAIT(wait);
- 
-+	if (!HAS_GMBUS_IRQ(dev_priv->dev)) {
-+		int ret;
-+		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
-+				(GMBUS_SATOER | gmbus2_status),
-+				50);
-+		return ret;
-+	}
- 	/* Important: The hw handles only the first bit, so set only one! Since
- 	 * we also need to check for NAKs besides the hw ready/idle signal, we
- 	 * need to wake up periodically and check that ourselves. */
-
 -- 
-Jiri Kosina
-SUSE Labs
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
