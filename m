@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab3CRWD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:03:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45491 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3CRVGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755229Ab3CRVGd (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Mar 2013 17:06:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45486 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab3CRVGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:06:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Subject: [ 08/75] usb: cp210x new Vendor/Device IDs
-Date: Mon, 18 Mar 2013 14:06:31 -0700
-Message-Id: <20130318210510.856141583@linuxfoundation.org>
+        "Maxin B. John" <maxin.john@enea.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [ 06/75] tools: usb: ffs-test: Fix build failure
+Date: Mon, 18 Mar 2013 14:06:29 -0700
+Message-Id: <20130318210510.716036492@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,53 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+From: "Maxin B. John" <maxin.john@enea.com>
 
-commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
+commit a0f11aceee531d444f58b939e6a537ee5e2b9cc5 upstream.
 
-This patch adds support for the Lake Shore Cryotronics devices to
-the CP210x driver.
+Fixes this build failure:
+gcc -Wall -Wextra -g -lpthread -I../include -o testusb testusb.c
+gcc -Wall -Wextra -g -lpthread -I../include -o ffs-test ffs-test.c
+In file included from ffs-test.c:41:0:
+../../include/linux/usb/functionfs.h:4:39: fatal error:
+uapi/linux/usb/functionfs.h: No such file or directory
+compilation terminated.
+make: *** [ffs-test] Error 1
 
-These lines are ported from cp210x driver distributed by Lake Shore web site:
-   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
-and licensed under the terms of GPLv2.
-
-Moreover, I've tested this changes with Lake Shore 335 in my labs.
-
-Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+Signed-off-by: Maxin B. John <maxin.john@enea.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ tools/usb/ffs-test.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -150,6 +150,25 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
-+	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
-+	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
-+	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
-+	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
-+	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
-+	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
-+	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
-+	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
-+	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
- 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
- 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
- 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -38,7 +38,7 @@
+ #include <unistd.h>
+ #include <tools/le_byteshift.h>
+ 
+-#include "../../include/linux/usb/functionfs.h"
++#include "../../include/uapi/linux/usb/functionfs.h"
+ 
+ 
+ /******************** Little Endian Handling ********************************/
 
 
