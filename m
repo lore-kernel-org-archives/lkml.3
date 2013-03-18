@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3CRNc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:32:56 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34221 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3CRNcy (ORCPT
+	id S1752833Ab3CRNdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:33:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62802 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3CRNdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:32:54 -0400
-Message-ID: <5147177B.1090609@linux.vnet.ibm.com>
-Date: Mon, 18 Mar 2013 21:32:43 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 18 Mar 2013 09:33:32 -0400
+Date: Mon, 18 Mar 2013 14:33:28 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, jolsa@redhat.com, fweisbec@gmail.com
+Subject: [PATCH v2] perf: fix ring_buffer perf_output_space() boundary
+ calculation
+Message-ID: <20130318133327.GA3056@quad>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
-References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com> <5146CB92.7060203@linux.vnet.ibm.com> <20130318091303.GA1276@redhat.com> <514708A9.8040009@linux.vnet.ibm.com> <20130318124616.GH4020@redhat.com> <51471217.7070801@linux.vnet.ibm.com> <20130318131907.GK4020@redhat.com> <514715B6.3080507@linux.vnet.ibm.com> <20130318132752.GL4020@redhat.com>
-In-Reply-To: <20130318132752.GL4020@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031813-5140-0000-0000-000002E83E1D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2013 09:27 PM, Gleb Natapov wrote:
-> On Mon, Mar 18, 2013 at 09:25:10PM +0800, Xiao Guangrong wrote:
->> On 03/18/2013 09:19 PM, Gleb Natapov wrote:
->>> On Mon, Mar 18, 2013 at 09:09:43PM +0800, Xiao Guangrong wrote:
->>>> On 03/18/2013 08:46 PM, Gleb Natapov wrote:
->>>>> On Mon, Mar 18, 2013 at 08:29:29PM +0800, Xiao Guangrong wrote:
->>>>>> On 03/18/2013 05:13 PM, Gleb Natapov wrote:
->>>>>>> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
->>>>>>>> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
->>>>>>>>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
->>>>>>>>>> This patch tries to introduce a very simple and scale way to invalid all
->>>>>>>>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
->>>>>>>>>>
->>>>>>>>>> KVM maintains a global mmio invalid generation-number which is stored in
->>>>>>>>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
->>>>>>>>>> generation-number into his available bits when it is created
->>>>>>>>>>
->>>>>>>>>> When KVM need zap all mmio sptes, it just simply increase the global
->>>>>>>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
->>>>>>>>>> then it walks the shadow page table and get the mmio spte. If the
->>>>>>>>>> generation-number on the spte does not equal the global generation-number,
->>>>>>>>>> it will go to the normal #PF handler to update the mmio spte
->>>>>>>>>>
->>>>>>>>>> Since 19 bits are used to store generation-number on mmio spte, the
->>>>>>>>>> generation-number can be round after 33554432 times. It is large enough
->>>>>>>>>> for nearly all most cases, but making the code be more strong, we zap all
->>>>>>>>>> shadow pages when the number is round
->>>>>>>>>>
->>>>>>>>> Very nice idea, but why drop Takuya patches instead of using
->>>>>>>>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
->>>>>>>>
->>>>>>>> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
->>>>>>>> more than 500000 times is really really rare, it nearly does not happen.
->>>>>>>> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
->>>>>>>> implantation.) And, after my patch optimizing zapping all shadow pages,
->>>>>>>> zap-all-sps should not be a problem anymore since it does not take too much lock
->>>>>>>> time.
->>>>>>>>
->>>>>>>> Your idea?
->>>>>>>>
->>>>>>> I expect 500000 to become less since I already had plans to store some
->>>>>>
->>>>>> Interesting, just curious, what are the plans? ;)
->>>>>>
->>>>> Currently we uses pio to signal that work is pending to virtio devices. The
->>>>> requirement is that signaling should be fast and PIO is fast since there
->>>>> is not need to emulate instruction. PCIE though is not really designed
->>>>> with PIO in mind, so we will have to use MMIO to do signaling. To avoid
->>>>> instruction emulation I thought about making guest access these devices using
->>>>> predefined variety of MOV instruction so that emulation can be skipped.
->>>>> The idea is to mark mmio spte to know that emulation is not needed.
->>>>
->>>> How to know page-fault is caused by the predefined instruction?
->>>>
->>> Only predefined phys address rages will be accessed that way. If page
->>> fault is in a range we assume the knows instruction is used.
->>
->> That means the access can be identified by the gfn, why need cache
->> other things into mmio spte?
-> Two not search through memory ranges on each access.
 
-Aha... got it. Thank you! ;)
+This patch fixes a flaw in perf_output_space(). In case the size
+of the space needed is bigger than the actual buffer size, there
+may be situations where the function would return true (i.e., there
+is space) when it should not. head > offset due to rounding of the
+masking logic.
 
+The problem can be tested by activating BTS on Intel processors.
+A BTS record can be as big as 16 pages. The following command
+fails:
+
+$ perf record -m 4 -c 1 -e branches:u my_test_program
+
+You will get a buffer corruption with this. Perf report won't be
+able to parse the perf.data.
+
+The fix is to first check that the requested space is smaller than the
+buffer size. If so, then the masking logic will work fine. If not, then
+there is no chance the record can be saved and it will be gracefully handled
+by upper code layers.
+
+In v2, we also make the logic for the writable more explicit by
+renaming it to rb->overwrite because it tells whether or not the
+buffer can overwrite its tail (suggested by PeterZ).
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index d56a64c..eb675c4 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -16,7 +16,7 @@ struct ring_buffer {
+ 	int				page_order;	/* allocation order  */
+ #endif
+ 	int				nr_pages;	/* nr of data pages  */
+-	int				writable;	/* are we writable   */
++	int				overwrite;	/* can overwrite itself */
+ 
+ 	atomic_t			poll;		/* POLL_ for wakeups */
+ 
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 23cb34f..f52d1e7 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -18,12 +18,24 @@
+ static bool perf_output_space(struct ring_buffer *rb, unsigned long tail,
+ 			      unsigned long offset, unsigned long head)
+ {
+-	unsigned long mask;
++	unsigned long sz = perf_data_size(rb);
++	unsigned long mask = sz - 1;
+ 
+-	if (!rb->writable)
++	/*
++	 * check if user-writable
++	 * overwrite : over-write its own tail
++	 * !overwrite: buffer possibly drops events.
++	 */
++	if (rb->overwrite)
+ 		return true;
+ 
+-	mask = perf_data_size(rb) - 1;
++	/*
++	 * verify that payload is not bigger than buffer
++	 * otherwise masking logic may fail to detect
++	 * the "not enough space" condition
++	 */
++	if ((head - offset) > sz)
++		return false;
+ 
+ 	offset = (offset - tail) & mask;
+ 	head   = (head   - tail) & mask;
+@@ -212,7 +224,9 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
+ 		rb->watermark = max_size / 2;
+ 
+ 	if (flags & RING_BUFFER_WRITABLE)
+-		rb->writable = 1;
++		rb->overwrite = 0;
++	else
++		rb->overwrite = 1;
+ 
+ 	atomic_set(&rb->refcount, 1);
+ 
