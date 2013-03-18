@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3CRVKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:10:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46012 "EHLO
+	id S1756702Ab3CRVKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:10:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46053 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3CRVKE (ORCPT
+	with ESMTP id S1756311Ab3CRVKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:04 -0400
+	Mon, 18 Mar 2013 17:10:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Krempa <pkrempa@redhat.com>, yunzheng@redhat.com,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 02/40] virtio: rng: disallow multiple device registrations, fixes crashes
-Date: Mon, 18 Mar 2013 14:10:40 -0700
-Message-Id: <20130318211016.437819136@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Jan Kara <jack@suse.cz>
+Subject: [ 12/40] ext3: Fix format string issues
+Date: Mon, 18 Mar 2013 14:10:50 -0700
+Message-Id: <20130318211017.148730823@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -28,61 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit e84e7a56a3aa2963db506299e29a5f3f09377f9b upstream.
+commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
 
-The code currently only supports one virtio-rng device at a time.
-Invoking guests with multiple devices causes the guest to blow up.
+ext3_msg() takes the printk prefix as the second parameter and the
+format string as the third parameter. Two callers of ext3_msg omit the
+prefix and pass the format string as the second parameter and the first
+parameter to the format string as the third parameter. In both cases
+this string comes from an arbitrary source. Which means the string may
+contain format string characters, which will
+lead to undefined and potentially harmful behavior.
 
-Check if we've already registered and initialised the driver.  Also
-cleanup in case of registration errors or hot-unplug so that a new
-device can be used.
+The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
+in ext3") and is fixed by this patch.
 
-Reported-by: Peter Krempa <pkrempa@redhat.com>
-Reported-by: <yunzheng@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/hw_random/virtio-rng.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ fs/ext3/super.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -88,14 +88,22 @@ static int virtrng_probe(struct virtio_d
- {
- 	int err;
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -371,7 +371,7 @@ static struct block_device *ext3_blkdev_
+ 	return bdev;
  
-+	if (vq) {
-+		/* We only support one device for now */
-+		return -EBUSY;
-+	}
- 	/* We expect a single virtqueue. */
- 	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
--	if (IS_ERR(vq))
--		return PTR_ERR(vq);
-+	if (IS_ERR(vq)) {
-+		err = PTR_ERR(vq);
-+		vq = NULL;
-+		return err;
-+	}
+ fail:
+-	ext3_msg(sb, "error: failed to open journal device %s: %ld",
++	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
+ 		__bdevname(dev, b), PTR_ERR(bdev));
  
- 	err = hwrng_register(&virtio_hwrng);
- 	if (err) {
- 		vdev->config->del_vqs(vdev);
-+		vq = NULL;
- 		return err;
+ 	return NULL;
+@@ -892,7 +892,7 @@ static ext3_fsblk_t get_sb_block(void **
+ 	/*todo: use simple_strtoll with >32bit ext3 */
+ 	sb_block = simple_strtoul(options, &options, 0);
+ 	if (*options && *options != ',') {
+-		ext3_msg(sb, "error: invalid sb specification: %s",
++		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
+ 		       (char *) *data);
+ 		return 1;
  	}
- 
-@@ -107,6 +115,7 @@ static void __devexit virtrng_remove(str
- 	vdev->config->reset(vdev);
- 	hwrng_unregister(&virtio_hwrng);
- 	vdev->config->del_vqs(vdev);
-+	vq = NULL;
- }
- 
- static struct virtio_device_id id_table[] = {
 
 
