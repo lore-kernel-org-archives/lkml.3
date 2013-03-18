@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab3CREbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33407 "EHLO
+	id S1752798Ab3CREi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:38:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33657 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750852Ab3CREaF (ORCPT
+	by vger.kernel.org with ESMTP id S1752214Ab3CREbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:05 -0400
-Message-Id: <20130318042145.447908587@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:06 -0400
+Message-Id: <20130318042147.498534971@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:56 +0000
+Date: Mon, 18 Mar 2013 04:22:17 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Kees Cook <keescook@chromium.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>, Matt Helsley <matthltc@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/82] proc connector: reject unprivileged listener bumps
+Cc: akpm@linux-foundation.org, James Ralston <james.d.ralston@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 33/82] ahci: Add Device IDs for Intel Lynx Point-LP PCH
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit e70ab977991964a5a7ad1182799451d067e62669 upstream.
+commit 77b12bc9cf7b10c7c1a04ca45272fbb4287902d0 upstream.
 
-While PROC_CN_MCAST_LISTEN/IGNORE is entirely advisory, it was possible
-for an unprivileged user to turn off notifications for all listeners by
-sending PROC_CN_MCAST_IGNORE. Instead, require the same privileges as
-required for a multicast bind.
+This patch adds the AHCI-mode SATA Device IDs for the Intel Lynx Point-LP PCH
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Matt Helsley <matthltc@us.ibm.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Acked-by: Matt Helsley <matthltc@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/connector/cn_proc.c |    8 ++++++++
+ drivers/ata/ahci.c |    8 ++++++++
  1 file changed, 8 insertions(+)
 
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -303,6 +303,12 @@ static void cn_proc_mcast_ctl(struct cn_
- 	if (msg->len != sizeof(*mc_op))
- 		return;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -270,6 +270,14 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x8c07), board_ahci }, /* Lynx Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c0e), board_ahci }, /* Lynx Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c0f), board_ahci }, /* Lynx Point RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c02), board_ahci }, /* Lynx Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c03), board_ahci }, /* Lynx Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c04), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c05), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c06), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
  
-+	/* Can only change if privileged. */
-+	if (!capable(CAP_NET_ADMIN)) {
-+		err = EPERM;
-+		goto out;
-+	}
-+
- 	mc_op = (enum proc_cn_mcast_op*)msg->data;
- 	switch (*mc_op) {
- 	case PROC_CN_MCAST_LISTEN:
-@@ -315,6 +321,8 @@ static void cn_proc_mcast_ctl(struct cn_
- 		err = EINVAL;
- 		break;
- 	}
-+
-+out:
- 	cn_proc_ack(err, msg->seq, msg->ack);
- }
- 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
