@@ -1,197 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab3CRMaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:30:03 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54840 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab3CRMaA (ORCPT
+	id S1752510Ab3CRMdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:33:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6391 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab3CRMdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:30:00 -0400
-Message-ID: <514708A9.8040009@linux.vnet.ibm.com>
-Date: Mon, 18 Mar 2013 20:29:29 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 18 Mar 2013 08:33:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 18 Mar 2013 05:33:16 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
+Date: Mon, 18 Mar 2013 17:59:35 +0530
+Message-ID: <1363609781-4045-2-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com>
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
-References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com> <5146CB92.7060203@linux.vnet.ibm.com> <20130318091303.GA1276@redhat.com>
-In-Reply-To: <20130318091303.GA1276@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031812-3864-0000-0000-00000750CB94
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2013 05:13 PM, Gleb Natapov wrote:
-> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
->> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
->>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
->>>> This patch tries to introduce a very simple and scale way to invalid all
->>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
->>>>
->>>> KVM maintains a global mmio invalid generation-number which is stored in
->>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
->>>> generation-number into his available bits when it is created
->>>>
->>>> When KVM need zap all mmio sptes, it just simply increase the global
->>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
->>>> then it walks the shadow page table and get the mmio spte. If the
->>>> generation-number on the spte does not equal the global generation-number,
->>>> it will go to the normal #PF handler to update the mmio spte
->>>>
->>>> Since 19 bits are used to store generation-number on mmio spte, the
->>>> generation-number can be round after 33554432 times. It is large enough
->>>> for nearly all most cases, but making the code be more strong, we zap all
->>>> shadow pages when the number is round
->>>>
->>> Very nice idea, but why drop Takuya patches instead of using
->>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
->>
->> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
->> more than 500000 times is really really rare, it nearly does not happen.
->> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
->> implantation.) And, after my patch optimizing zapping all shadow pages,
->> zap-all-sps should not be a problem anymore since it does not take too much lock
->> time.
->>
->> Your idea?
->>
-> I expect 500000 to become less since I already had plans to store some
+The existing Tegra USB bindings have a few issues:
 
-Interesting, just curious, what are the plans? ;)
+1) Many properties are documented as being part of the EHCI controller
+node, yet they apply more to the PHY device. They should be moved.
 
-> information in mmio spte. Even if all zap-all-sptes becomes faster we
-> still needlessly zap all sptes while we can zap only mmio.
+2) Some registers in PHY1 are shared with PHY3, and hence PHY3 needs a
+reg entry to point at PHY1's register space. We can't assume the PHY1
+driver is present, so the PHY3 driver will directly access those
+registers.
 
-Okay.
+3) The list of clocks required by the PHY was missing some required
+entries.
 
-> 
->>>
->>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/x86/include/asm/kvm_host.h |    2 +
->>>>  arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
->>>>  arch/x86/kvm/mmutrace.h         |   17 +++++++++++
->>>>  arch/x86/kvm/paging_tmpl.h      |    7 +++-
->>>>  arch/x86/kvm/vmx.c              |    4 ++
->>>>  arch/x86/kvm/x86.c              |    6 +--
->>>>  6 files changed, 82 insertions(+), 15 deletions(-)
->>>>
->>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->>>> index ef7f4a5..572398e 100644
->>>> --- a/arch/x86/include/asm/kvm_host.h
->>>> +++ b/arch/x86/include/asm/kvm_host.h
->>>> @@ -529,6 +529,7 @@ struct kvm_arch {
->>>>  	unsigned int n_requested_mmu_pages;
->>>>  	unsigned int n_max_mmu_pages;
->>>>  	unsigned int indirect_shadow_pages;
->>>> +	unsigned int mmio_invalid_gen;
->>> Why invalid? Should be mmio_valid_gen or mmio_current_get.
->>
->> mmio_invalid_gen is only updated in kvm_mmu_invalidate_mmio_sptes,
->> so i named it as _invalid_. But mmio_valid_gen is good for me.
->>
-> It holds currently valid value though, so calling it "invalid" is
-> confusing.
+This patch fixes the binding definition to resolve these issues.
 
-I agree.
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ .../bindings/usb/nvidia,tegra20-ehci.txt           |   27 +++----------------
+ .../bindings/usb/nvidia,tegra20-usb-phy.txt        |   27 +++++++++++++++++--
+ 2 files changed, 29 insertions(+), 25 deletions(-)
 
-> 
->>>
->>>>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
->>>>  	/*
->>>>  	 * Hash table of struct kvm_mmu_page.
->>>> @@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
->>>>  void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
->>>>  				     struct kvm_memory_slot *slot,
->>>>  				     gfn_t gfn_offset, unsigned long mask);
->>>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
->>> Agree with Takuya that kvm_mmu_invalidate_mmio_sptes() is a better name.
->>
->> Me too.
->>
->>>
->>>>  void kvm_mmu_zap_all(struct kvm *kvm);
->>>>  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
->>>>  void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
->>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>>> index 13626f4..7093a92 100644
->>>> --- a/arch/x86/kvm/mmu.c
->>>> +++ b/arch/x86/kvm/mmu.c
->>>> @@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
->>>>  static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
->>>>  			   unsigned access)
->>>>  {
->>>> -	u64 mask = generation_mmio_spte_mask(0);
->>>> +	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
->>>> +	u64 mask = generation_mmio_spte_mask(gen);
->>>>
->>>>  	access &= ACC_WRITE_MASK | ACC_USER_MASK;
->>>>  	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
->>>>
->>>> -	trace_mark_mmio_spte(sptep, gfn, access, 0);
->>>> +	trace_mark_mmio_spte(sptep, gfn, access, gen);
->>>>  	mmu_spte_set(sptep, mask);
->>>>  }
->>>>
->>>> @@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
->>>>  	return false;
->>>>  }
->>>>
->>>> +static bool check_mmio_spte(struct kvm *kvm, u64 spte)
->>>> +{
->>>> +	return get_mmio_spte_generation(spte) ==
->>>> +		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
->>>> +}
->>>> +
->>>> +/*
->>>> + * The caller should protect concurrent access on
->>>> + * kvm->arch.mmio_invalid_gen. Currently, it is used by
->>>> + * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
->>>> + */
->>>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
->>>> +{
->>>> +	/* Ensure update memslot has been completed. */
->>>> +	smp_mb();
->>> What barrier this one is paired with?
->>
->> It is paired with nothing. :)
->>
->> I used mb here just for avoid increasing the generation-number before updating
->> the memslot. But on other sides (storing gen and checking gen), we do not need
->> to care it - the worse case is that we emulate a memory-accessed instruction.
->>
-> Are you warring that compiler can reorder instructions and put
-> instruction that increase generation number before updating memslot?
-> If yes then you need to use barrier() here. Or are you warring that
-> update may be seen in different order by another cpu? Then you need to
-> put another barring in the code that access memslot/generation number
-> and cares about the order.
-
-After more thinking, maybe i missed something. The correct order should be:
-
-The write side:
-update kvm->memslots
-smp_wmb()
-kvm->mmio_invalid_gen++
-
-The read side:
-read kvm->mmio_invalid_gen++
-smp_rmb();
-search gfn in memslots (read all memslots)
-
-Otherwise, mmio spte would cache a newest generation-number and obsolete
-memslot info.
-
-But we read memslots out of mmu-lock on page fault path, we should pass
-mmio_invalid_gen to the page fault hander. In order to simplify the code,
-let's save the generation-number into kvm_memslots, then they can protected
-by SRCU. How about this?
-
+diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
+index 34c9528..df09330 100644
+--- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
++++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
+@@ -6,27 +6,10 @@ Practice : Universal Serial Bus" with the following modifications
+ and additions :
+ 
+ Required properties :
+- - compatible : Should be "nvidia,tegra20-ehci" for USB controllers
+-   used in host mode.
+- - phy_type : Should be one of "ulpi" or "utmi".
+- - nvidia,vbus-gpio : If present, specifies a gpio that needs to be
+-   activated for the bus to be powered.
+- - nvidia,phy : phandle of the PHY instance, the controller is connected to.
+-
+-Required properties for phy_type == ulpi:
+-  - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
++ - compatible : Should be "nvidia,tegra20-ehci".
++ - nvidia,phy : phandle of the PHY that the controller is connected to.
++ - clocks : Contains a single entry which defines the USB controller's clock.
+ 
+ Optional properties:
+-  - dr_mode : dual role mode. Indicates the working mode for
+-   nvidia,tegra20-ehci compatible controllers.  Can be "host", "peripheral",
+-   or "otg".  Default to "host" if not defined for backward compatibility.
+-      host means this is a host controller
+-      peripheral means it is device controller
+-      otg means it can operate as either ("on the go")
+-  - nvidia,has-legacy-mode : boolean indicates whether this controller can
+-    operate in legacy mode (as APX 2500 / 2600). In legacy mode some
+-    registers are accessed through the APB_MISC base address instead of
+-    the USB controller. Since this is a legacy issue it probably does not
+-    warrant a compatible string of its own.
+-  - nvidia,needs-double-reset : boolean is to be set for some of the Tegra2
+-    USB ports, which need reset twice due to hardware issues.
++ - nvidia,needs-double-reset : boolean is to be set for some of the Tegra20
++   USB ports, which need reset twice due to hardware issues.
+diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
+index 6bdaba2..7ceccd3 100644
+--- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
++++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
+@@ -4,8 +4,24 @@ The device node for Tegra SOC USB PHY:
+ 
+ Required properties :
+  - compatible : Should be "nvidia,tegra20-usb-phy".
+- - reg : Address and length of the register set for the USB PHY interface.
+- - phy_type : Should be one of "ulpi" or "utmi".
++ - reg : Defines the following set of registers, in the order listed:
++   - The PHY's own register set.
++     Always present.
++   - The register set of the PHY containing the UTMI pad control registers.
++     Present if-and-only-if phy_type == utmi.
++ - phy_type : Should be one of "utmi", "ulpi" or "hsic".
++ - clocks : Defines the clocks listed in the clock-names property.
++ - clock-names : The following clock names must be present:
++   - reg: The clock needed to access the PHY's own registers. This is the
++     associated EHCI controller's clock. Always present.
++   - pll_u: PLL_U. Always present.
++   - timer: The timeout clock (clk_m). Present if phy_type == utmi.
++   - utmi-pads: The clock needed to access the UTMI pad control registers.
++     Present if phy_type == utmi.
++   - ulpi-link: The clock Tegra provides to the ULPI PHY (cdev2).
++     Present if phy_type == ulpi, and ULPI link mode is in use.
++   - nvidia,vbus-gpio : If present, specifies a GPIO that needs to be
++    activated for the bus to be powered.
+ 
+ Required properties for phy_type == ulpi:
+   - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
+@@ -14,4 +30,9 @@ Optional properties:
+   - nvidia,has-legacy-mode : boolean indicates whether this controller can
+     operate in legacy mode (as APX 2500 / 2600). In legacy mode some
+     registers are accessed through the APB_MISC base address instead of
+-    the USB controller.
+\ No newline at end of file
++    the USB controller.
++  - dr_mode : dual role mode. Indicates the working mode for the PHY. Can be
++    "host", "gadget", or "otg". Defaults to "host" if not defined.
++      host means this is a host controller
++      gadget means it is device controller
++      otg means it can operate as either ("on the go")
+-- 
+1.7.0.4
 
