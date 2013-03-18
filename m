@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab3CREkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:40:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33624 "EHLO
+	id S1752128Ab3CREa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:30:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33387 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752134Ab3CREa7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751315Ab3CREaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:59 -0400
-Message-Id: <20130318042148.105694937@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:02 -0400
+Message-Id: <20130318042144.531436620@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:24 +0000
+Date: Mon, 18 Mar 2013 04:21:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Josh Boyer <jwboyer@redhat.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 40/82] efi: be more paranoid about available space when  creating variables
+Cc: akpm@linux-foundation.org,
+        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
+        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>,
+        Paul Menzel <paulepanter@users.sourceforge.net>
+Subject: [ 03/82] md: protect against crash upon fsync on ro array
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,181 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
 
-commit 68d929862e29a8b52a7f2f2f86a0600423b093cd upstream.
+commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
 
-UEFI variables are typically stored in flash. For various reasons, avaiable
-space is typically not reclaimed immediately upon the deletion of a
-variable - instead, the system will garbage collect during initialisation
-after a reboot.
+If an fsync occurs on a read-only array, we need to send a
+completion for the IO and may not increment the active IO count.
+Otherwise, we hit a bug trace and can't stop the MD array anymore.
 
-Some systems appear to handle this garbage collection extremely poorly,
-failing if more than 50% of the system flash is in use. This can result in
-the machine refusing to boot. The safest thing to do for the moment is to
-forbid writes if they'd end up using more than half of the storage space.
-We can make this more finegrained later if we come up with a method for
-identifying the broken machines.
+By advice of Christoph Hellwig we return success upon a flush
+request but we return -EROFS for other writes.
+We detect flush requests by checking if the bio has zero sectors.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[bwh: Backported to 3.2:
- - Drop efivarfs changes and unused check_var_size()
- - Add error codes to include/linux/efi.h, added upstream by
-   commit 5d9db883761a ('efi: Add support for a UEFI variable filesystem')
- - Add efi_status_to_err(), added upstream by commit 7253eaba7b17
-   ('efivarfs: Return an error if we fail to read a variable')]
+This patch is suitable to any -stable kernel to which it applies.
+
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: NeilBrown <neilb@suse.de>
+Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/efivars.c | 106 +++++++++++++++++++++++++++++++++------------
- 1 file changed, 79 insertions(+), 27 deletions(-)
+ drivers/md/md.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -406,6 +406,30 @@ get_var_data(struct efivars *efivars, st
- 	return status;
- }
- 
-+static efi_status_t
-+check_var_size_locked(struct efivars *efivars, u32 attributes,
-+			unsigned long size)
-+{
-+	u64 storage_size, remaining_size, max_size;
-+	efi_status_t status;
-+	const struct efivar_operations *fops = efivars->ops;
-+
-+	if (!efivars->ops->query_variable_info)
-+		return EFI_UNSUPPORTED;
-+
-+	status = fops->query_variable_info(attributes, &storage_size,
-+					   &remaining_size, &max_size);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	if (!storage_size || size > remaining_size || size > max_size ||
-+	    (remaining_size - size) < (storage_size / 2))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	return status;
-+}
-+
- static ssize_t
- efivar_guid_read(struct efivar_entry *entry, char *buf)
- {
-@@ -527,11 +551,16 @@ efivar_store_raw(struct efivar_entry *en
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -345,6 +345,10 @@ static void md_make_request(struct reque
+ 		bio_io_error(bio);
+ 		return;
  	}
- 
- 	spin_lock_irq(&efivars->lock);
--	status = efivars->ops->set_variable(new_var->VariableName,
--					    &new_var->VendorGuid,
--					    new_var->Attributes,
--					    new_var->DataSize,
--					    new_var->Data);
-+
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
-+		status = efivars->ops->set_variable(new_var->VariableName,
-+						    &new_var->VendorGuid,
-+						    new_var->Attributes,
-+						    new_var->DataSize,
-+						    new_var->Data);
- 
- 	spin_unlock_irq(&efivars->lock);
- 
-@@ -638,6 +667,36 @@ efivar_unregister(struct efivar_entry *v
- 	kobject_put(&var->kobj);
- }
- 
-+static int efi_status_to_err(efi_status_t status)
-+{
-+	int err;
-+
-+	switch (status) {
-+	case EFI_INVALID_PARAMETER:
-+		err = -EINVAL;
-+		break;
-+	case EFI_OUT_OF_RESOURCES:
-+		err = -ENOSPC;
-+		break;
-+	case EFI_DEVICE_ERROR:
-+		err = -EIO;
-+		break;
-+	case EFI_WRITE_PROTECTED:
-+		err = -EROFS;
-+		break;
-+	case EFI_SECURITY_VIOLATION:
-+		err = -EACCES;
-+		break;
-+	case EFI_NOT_FOUND:
-+		err = -ENOENT;
-+		break;
-+	default:
-+		err = -EINVAL;
++	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
++		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
++		return;
 +	}
-+
-+	return err;
-+}
-+
- #ifdef CONFIG_PSTORE
- 
- static int efi_pstore_open(struct pstore_info *psi)
-@@ -707,7 +766,6 @@ static int efi_pstore_write(enum pstore_
- 	struct efivars *efivars = psi->data;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
--	u64 storage_space, remaining_space, max_variable_size;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	unsigned long flags;
- 
-@@ -721,11 +779,11 @@ static int efi_pstore_write(enum pstore_
- 	 * size: a size of logging data
- 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
- 	 */
--	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
--						   &storage_space,
--						   &remaining_space,
--						   &max_variable_size);
--	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
-+
-+	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
-+					 size + DUMP_NAME_LEN * 2);
-+
-+	if (status) {
- 		spin_unlock_irqrestore(&efivars->lock, flags);
- 		*id = part;
- 		return -ENOSPC;
-@@ -872,6 +930,14 @@ static ssize_t efivar_create(struct file
- 		return -EINVAL;
- 	}
- 
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status && status != EFI_UNSUPPORTED) {
-+		spin_unlock_irq(&efivars->lock);
-+		return efi_status_to_err(status);
-+	}
-+
- 	/* now *really* create the variable via EFI */
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -30,7 +30,12 @@
- #define EFI_UNSUPPORTED		( 3 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_BAD_BUFFER_SIZE     ( 4 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_BUFFER_TOO_SMALL	( 5 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_NOT_READY		( 6 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_DEVICE_ERROR	( 7 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_WRITE_PROTECTED	( 8 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_OUT_OF_RESOURCES	( 9 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_NOT_FOUND		(14 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_SECURITY_VIOLATION	(26 | (1UL << (BITS_PER_LONG-1)))
- 
- typedef unsigned long efi_status_t;
- typedef u8 efi_bool_t;
+ 	smp_rmb(); /* Ensure implications of  'active' are visible */
+ 	rcu_read_lock();
+ 	if (mddev->suspended) {
 
 
