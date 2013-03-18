@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3CRErQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:47:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33447 "EHLO
+	id S1752655Ab3CRErO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:47:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33458 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751651Ab3CREaU (ORCPT
+	by vger.kernel.org with ESMTP id S1751669Ab3CREaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:20 -0400
-Message-Id: <20130318042151.545639263@decadent.org.uk>
+Message-Id: <20130318042150.664870332@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:59 +0000
+Date: Mon, 18 Mar 2013 04:22:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Sven Eckelmann <sven@narfation.org>,
-        Marek Lindner <lindner_marek@yahoo.de>
-Subject: [ 75/82] batman-adv: Only write requested number of byte to user buffer
+Cc: akpm@linux-foundation.org, Axel Lin <axel.lin@ingics.com>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [ 66/82] hwmon: (lineage-pem) Add missing terminating entry for
+ pem_[input|fan]_attributes
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,35 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit b5a1eeef04cc7859f34dec9b72ea1b28e4aba07c upstream.
+commit df069079c153d22adf6c28dcc0b1cf62bba75167 upstream.
 
-Don't write more than the requested number of bytes of an batman-adv icmp
-packet to the userspace buffer. Otherwise unrelated userspace memory might get
-overridden by the kernel.
-
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/batman-adv/icmp_socket.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/hwmon/lineage-pem.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/batman-adv/icmp_socket.c
-+++ b/net/batman-adv/icmp_socket.c
-@@ -136,10 +136,9 @@ static ssize_t bat_socket_read(struct fi
+--- a/drivers/hwmon/lineage-pem.c
++++ b/drivers/hwmon/lineage-pem.c
+@@ -421,6 +421,7 @@ static struct attribute *pem_input_attri
+ 	&sensor_dev_attr_in2_input.dev_attr.attr,
+ 	&sensor_dev_attr_curr1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
++	NULL
+ };
  
- 	spin_unlock_bh(&socket_client->lock);
+ static const struct attribute_group pem_input_group = {
+@@ -431,6 +432,7 @@ static struct attribute *pem_fan_attribu
+ 	&sensor_dev_attr_fan1_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan2_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan3_input.dev_attr.attr,
++	NULL
+ };
  
--	error = copy_to_user(buf, &socket_packet->icmp_packet,
--			     socket_packet->icmp_len);
-+	packet_len = min(count, socket_packet->icmp_len);
-+	error = copy_to_user(buf, &socket_packet->icmp_packet, packet_len);
- 
--	packet_len = socket_packet->icmp_len;
- 	kfree(socket_packet);
- 
- 	if (error)
+ static const struct attribute_group pem_fan_group = {
 
 
