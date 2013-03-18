@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3CREbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33607 "EHLO
+	id S1752717Ab3CREb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:31:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33636 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752008Ab3CREar (ORCPT
+	by vger.kernel.org with ESMTP id S1751950Ab3CREbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:47 -0400
-Message-Id: <20130318042149.650481196@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:02 -0400
+Message-Id: <20130318042148.316225295@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:40 +0000
+Date: Mon, 18 Mar 2013 04:22:26 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 56/82] ext3: Fix format string issues
+Cc: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Larry Baker <baker@usgs.gov>
+Subject: [ 42/82] decnet: Fix disappearing sysctl entries
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,47 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
+When decnet is built as a module a simple:
+echo 0.0 >/proc/sys/net/decnet/node_address
 
-ext3_msg() takes the printk prefix as the second parameter and the
-format string as the third parameter. Two callers of ext3_msg omit the
-prefix and pass the format string as the second parameter and the first
-parameter to the format string as the third parameter. In both cases
-this string comes from an arbitrary source. Which means the string may
-contain format string characters, which will
-lead to undefined and potentially harmful behavior.
+results in most of the sysctl entries under /proc/sys/net/decnet and
+/proc/sys/net/decnet/conf disappearing.
 
-The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
-in ext3") and is fixed by this patch.
+For more details see http://www.spinics.net/lists/netdev/msg226123.html.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This change applies the same workaround used in
+net/core/sysctl_net_core.c and net/ipv6/sysctl_net_ipv6.c of creating
+a skeleton of decnet sysctl entries before doing anything else.
+
+The problem first appeared in kernel 2.6.27.  The later rewrite of
+sysctl in kernel 3.4 restored the previous behavior and eliminated the
+need for this workaround.
+
+This patch was heavily inspired by a similar but more complex patch by
+Larry Baker.
+
+Reported-by: Larry Baker <baker@usgs.gov>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext3/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/decnet/af_decnet.c         |    4 ++++
+ net/decnet/sysctl_net_decnet.c |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -374,7 +374,7 @@ static struct block_device *ext3_blkdev_
- 	return bdev;
+--- a/net/decnet/af_decnet.c
++++ b/net/decnet/af_decnet.c
+@@ -2354,6 +2354,8 @@ static const struct proto_ops dn_proto_o
+ 	.sendpage =	sock_no_sendpage,
+ };
  
- fail:
--	ext3_msg(sb, "error: failed to open journal device %s: %ld",
-+	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
- 		__bdevname(dev, b), PTR_ERR(bdev));
++void dn_register_sysctl_skeleton(void);
++void dn_unregister_sysctl_skeleton(void);
+ void dn_register_sysctl(void);
+ void dn_unregister_sysctl(void);
  
- 	return NULL;
-@@ -902,7 +902,7 @@ static ext3_fsblk_t get_sb_block(void **
- 	/*todo: use simple_strtoll with >32bit ext3 */
- 	sb_block = simple_strtoul(options, &options, 0);
- 	if (*options && *options != ',') {
--		ext3_msg(sb, "error: invalid sb specification: %s",
-+		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
- 		       (char *) *data);
- 		return 1;
- 	}
+@@ -2374,6 +2376,7 @@ static int __init decnet_init(void)
+ 	if (rc != 0)
+ 		goto out;
+ 
++	dn_register_sysctl_skeleton();
+ 	dn_neigh_init();
+ 	dn_dev_init();
+ 	dn_route_init();
+@@ -2413,6 +2416,7 @@ static void __exit decnet_exit(void)
+ 	dn_fib_cleanup();
+ 
+ 	proc_net_remove(&init_net, "decnet");
++	dn_unregister_sysctl_skeleton();
+ 
+ 	proto_unregister(&dn_proto);
+ 
+--- a/net/decnet/sysctl_net_decnet.c
++++ b/net/decnet/sysctl_net_decnet.c
+@@ -55,6 +55,7 @@ static int max_decnet_no_fc_max_cwnd[] =
+ static char node_name[7] = "???";
+ 
+ static struct ctl_table_header *dn_table_header = NULL;
++static struct ctl_table_header *dn_skeleton_table_header = NULL;
+ 
+ /*
+  * ctype.h :-)
+@@ -357,6 +358,27 @@ static struct ctl_path dn_path[] = {
+ 	{ }
+ };
+ 
++static struct ctl_table empty[1];
++
++static struct ctl_table dn_skeleton[] = {
++	{
++		.procname = "conf",
++		.mode = 0555,
++		.child = empty,
++	},
++	{ }
++};
++
++void dn_register_sysctl_skeleton(void)
++{
++	dn_skeleton_table_header = register_sysctl_paths(dn_path, dn_skeleton);
++}
++
++void dn_unregister_sysctl_skeleton(void)
++{
++	unregister_sysctl_table(dn_skeleton_table_header);
++}
++
+ void dn_register_sysctl(void)
+ {
+ 	dn_table_header = register_sysctl_paths(dn_path, dn_table);
+@@ -368,6 +390,12 @@ void dn_unregister_sysctl(void)
+ }
+ 
+ #else  /* CONFIG_SYSCTL */
++void dn_register_sysctl_skeleton(void)
++{
++}
++void dn_unregister_sysctl_skeleton(void)
++{
++}
+ void dn_unregister_sysctl(void)
+ {
+ }
 
 
