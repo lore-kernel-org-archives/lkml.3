@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab3CRSXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:23:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55558 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab3CRSXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:23:43 -0400
-Date: Mon, 18 Mar 2013 20:23:17 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Felipe Balbi <balbi@ti.com>, Yuan-Hsin Chen <yuanlmm@gmail.com>,
-        <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>,
-        <Julia.Lawall@lip6.fr>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, <john453@faraday-tech.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-Message-ID: <20130318182316.GA13371@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130318101854.GQ17135@arwen.pp.htv.fi>
- <Pine.LNX.4.44L0.1303181010540.1922-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1303181010540.1922-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754222Ab3CRSYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:24:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3907 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab3CRSX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 14:23:58 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nGpB3NLV4dgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xnoB05DE7xsA:10 a=O2MldzYM4ScL2vw4TpgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363631036.25967.193.camel@gandalf.local.home>
+Subject: Re: workqueue code needing preemption disabled
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <clark@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 18 Mar 2013 14:23:56 -0400
+In-Reply-To: <20130318164351.GA21516@mtj.dyndns.org>
+References: <1363617383.25967.152.camel@gandalf.local.home>
+	 <20130318160652.GA20133@mtj.dyndns.org>
+	 <1363623799.25967.172.camel@gandalf.local.home>
+	 <1363624020.25967.175.camel@gandalf.local.home>
+	 <1363624243.25967.178.camel@gandalf.local.home>
+	 <20130318164351.GA21516@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-03-18 at 09:43 -0700, Tejun Heo wrote:
+> Hello, Steven.
+> 
+> On Mon, Mar 18, 2013 at 12:30:43PM -0400, Steven Rostedt wrote:
+> > If you happen to know the critical areas that require preemption to be
+> > disabled for real, we can encapsulate them with:
+> > 
+> > 	preempt_disable_rt();
+> > 
+> > 	preempt_enable_rt();
+> > 
+> > These are currently only in the -rt patch, but it annotates locations
+> > that require preemption to be disabled even when -rt converts spin_locks
+> > into mutexes. These obviously can not contain spin_locks() as
+> > spin_locks() can block and schedule out.
+> 
+> Making gcwq locks disable preemption would be much safer / easier, but
+> if that's not desirable, anything touching gcwq->idle_list would be a
+> good place to start - worker_enter_idle() and worker_leave_idle().
+> Hmmm... ignoring CPU hotplug, I think those two might just do it.
+> Give it a try?  How reproducible is the problem?
+> 
 
-Hi,
+Hmm, the issue is that a "use to be" idle thread got migrated, and is
+now being woken up by another worker. What can cause an established
+worker to migrate without HOTPLUG being active?
 
-On Mon, Mar 18, 2013 at 10:16:56AM -0400, Alan Stern wrote:
-> > > it would cause copious modification and duplication of ehci hcd
-> > > driver. For example, there is no "configured_flag" register in
-> > > fusbh200 controller, yet, ehci hcd driver accesses "configured_flag"
-> > > in function ehci_run which would cause compile errors. Therefore,
-> > > maybe my first patch which refers to oxu210hp-hcd is a better
-> > > solution?
-> >=20
-> > why don't you just add a quirk flag to ehci struct so that it knows it
-> > shouldn't access CONFIGFLAG register when that's non-existent ?
-> >=20
-> > There are only 5 uses of configured_flag in ehci-hcd.c, so it should be
-> > easy to wrap that around a flag check.
->=20
-> Two of those uses turn configured_flag on and two of them turn it off. =
-=20
-> However, one of the uses tests its value (the first one in
-> ehci_resume).  How would that be handled if configured_flag doesn't
-> exist?
+Thomas,
 
-perhaps they don't use it because they have a root-hub TT ? In that case
-you assume EHCI *always* owns the port. Would that work ?
+I'm thinking that we should also modify the scheduler for -rt:
 
---=20
-balbi
+        if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+                if (unlikely(signal_pending_state(prev->state, prev))) {
+                        prev->state = TASK_RUNNING;
+                } else {
+                        deactivate_task(rq, prev, DEQUEUE_SLEEP);
+                        prev->on_rq = 0;
 
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+                        /*
+                         * If a worker went to sleep, notify and ask workqueue
+                         * whether it wants to wake up a task to maintain
+                         * concurrency.
+                         */
+                        if (prev->flags & PF_WQ_WORKER) {
+                                struct task_struct *to_wakeup;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+                                to_wakeup = wq_worker_sleeping(prev, cpu);
+                                if (to_wakeup)
+                                        try_to_wake_up_local(to_wakeup);
+                        }
+                }
+                switch_count = &prev->nvcsw;
+        }
 
-iQIcBAEBAgAGBQJRR1uUAAoJEIaOsuA1yqREHpQQAKoZnQaguYzJ5eI4BxFT33qF
-efzNKbbwpBf1oNquTbZ2S3z1BunEB1VO7HESTJ3hGEFXglfqYHg2lHKF6S3FKeDw
-LIe+CR7RuirY8xiHw4TLN/4IzSh0JpcedHAxdfjjpz/8t3ZOxY3E+7XFUlCkVKOW
-u9dk3fdqgXnORrglRqgGw589qvCRoFq2fbWxmRQN7rxVWlLtbLV0ccYt9NaUlSgs
-ny3zGMbWALlOULFzZr+RRAFvAEzFhc2c1YLh6N7sxu0FAPHeKlRYT6PSYCE0Oyt0
-Q46inRk+WSzZ8FeqCReIFTG3nXA41jGMQxJFeYxbPsZ88CycOEXOgD/uXtBA9X+F
-H2nqr5pk5u5wzmiuXgRo2I4Vt+dOH33PWKSfq5ENq/xlZuEiEzXbag2XIZpiJGY6
-9vg2kQ7k9hV7Ui6lc38WfY7gEHdM/CeA/D1APbet+YPj8TRXwJ3tcU35ya0VcS5x
-TWaW42ETai4FkOIdLBrZhrB0yZ7eM3qBMWs2R6JV2327SFxwlRU3wGN52/V/bSLg
-pkF2aYffD/NFTpH5IbFwRxVdAcyXHmaa2VC4XnOsttSAoGq/j3VV7u30YBLTOgAe
-3Rab/P2fHjnrviqXEQwRrkPBDi//z5hg0Lpk6FnL6p9BWCFqUYNvm2JScyXm5H12
-vdXn2xM6ShLrEfDhkHr7
-=bDzJ
------END PGP SIGNATURE-----
 
---OXfL5xGRrasGEqWY--
+The code calls another worker when the previous worker sleeps,
+presumably on IO or something. But in -rt, it could be sleeping on the
+gcwq->lock itself, and this could cause many more wakeups. Easily where
+the task being woken up will try to grab the same lock and sleep again.
+
+Perhaps we should check:
+
+	if (prev->flags & PF_WQ_WORKER && !prev->saved_state)
+
+To keep the worker thread from waking up other workers just because it
+blocked on a sleeping spin lock.
+
+-- Steve
+
+
