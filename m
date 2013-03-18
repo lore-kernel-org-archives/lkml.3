@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3CRVK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:10:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
+	id S932646Ab3CRVNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:13:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3CRVKR (ORCPT
+	with ESMTP id S932467Ab3CRVK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:17 -0400
+	Mon, 18 Mar 2013 17:10:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcin Jurkowski <marcin1j@gmail.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>, Josh Boyer <jwboyer@gmail.com>,
-        Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [ 19/40] w1: fix oops when w1_search is called from netlink connector
-Date: Mon, 18 Mar 2013 14:10:57 -0700
-Message-Id: <20130318211017.627967248@linuxfoundation.org>
+        Lorenzo Colitti <lorenzo@google.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 33/40] net: ipv6: Dont purge default router if accept_ra=2
+Date: Mon, 18 Mar 2013 14:11:11 -0700
+Message-Id: <20130318211018.627949528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -28,53 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Jurkowski <marcin1j@gmail.com>
 
-commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
+From: Lorenzo Colitti <lorenzo@google.com>
 
-On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
-> This is the bad commit I found doing git bisect:
-> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
-> commit 04f482faf50535229a5a5c8d629cf963899f857c
-> Author: Patrick McHardy <kaber@trash.net>
-> Date:   Mon Mar 28 08:39:36 2011 +0000
+[ Upstream commit 3e8b0ac3e41e3c882222a5522d5df7212438ab51 ]
 
-Good job. I was too lazy to bisect for bad commit;)
+Setting net.ipv6.conf.<interface>.accept_ra=2 causes the kernel
+to accept RAs even when forwarding is enabled. However, enabling
+forwarding purges all default routes on the system, breaking
+connectivity until the next RA is received. Fix this by not
+purging default routes on interfaces that have accept_ra=2.
 
-Reading the code I found problematic kthread_should_stop call from netlink
-connector which causes the oops. After applying a patch, I've been testing
-owfs+w1 setup for nearly two days and it seems to work very reliable (no
-hangs, no memleaks etc).
-More detailed description and possible fix is given below:
-
-Function w1_search can be called from either kthread or netlink callback.
-While the former works fine, the latter causes oops due to kthread_should_stop
-invocation.
-
-This patch adds a check if w1_search is serving netlink command, skipping
-kthread_should_stop invocation if so.
-
-Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: Lorenzo Colitti <lorenzo@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/w1/w1.c |    3 ++-
+ net/ipv6/route.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -918,7 +918,8 @@ void w1_search(struct w1_master *dev, u8
- 			tmp64 = (triplet_ret >> 2);
- 			rn |= (tmp64 << i);
- 
--			if (kthread_should_stop()) {
-+			/* ensure we're called from kthread and not by netlink callback */
-+			if (!dev->priv && kthread_should_stop()) {
- 				dev_dbg(&dev->dev, "Abort w1_search\n");
- 				return;
- 			}
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1885,7 +1885,8 @@ void rt6_purge_dflt_routers(struct net *
+ restart:
+ 	read_lock_bh(&table->tb6_lock);
+ 	for (rt = table->tb6_root.leaf; rt; rt = rt->dst.rt6_next) {
+-		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) {
++		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF) &&
++		    (!rt->rt6i_idev || rt->rt6i_idev->cnf.accept_ra != 2)) {
+ 			dst_hold(&rt->dst);
+ 			read_unlock_bh(&table->tb6_lock);
+ 			ip6_del_rt(rt);
 
 
