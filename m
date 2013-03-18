@@ -1,74 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3CRPkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:40:23 -0400
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:35479 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab3CRPkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:40:21 -0400
+	id S1753862Ab3CRPlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:41:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752598Ab3CRPk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:40:59 -0400
+Date: Mon, 18 Mar 2013 16:40:57 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
+Message-ID: <20130318154057.GS10192@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAKMK7uE9o7CT4Bn1SrPyCa+bGrHmj2-+cpDYP__gUU+BRiGH7A@mail.gmail.com>
-References: <CAKMK7uE9o7CT4Bn1SrPyCa+bGrHmj2-+cpDYP__gUU+BRiGH7A@mail.gmail.com>
-Date: Mon, 18 Mar 2013 16:40:20 +0100
-Message-ID: <CAKMK7uF3z=9zjsKm_222BV3M-MSYtSWesbDHcUnMAq3oQp5sYQ@mail.gmail.com>
-Subject: Re: Revert a bunch of patches in stable kernels
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: stable <stable@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 11:05 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> Hi Greg&all,
->
-> So a recent stable backport to fix rc6 on ilk (which is disabled by
-> default and with dubious power savings at best, unlike rc6 on snb and
-> later) totally blew up all over the place:
-> https://bugzilla.kernel.org/show_bug.cgi?id=55291
-> https://lkml.org/lkml/2013/3/14/540
+On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
+> This patch extends check_range() to handle vma with VM_HUGETLB set.
+> With this changes, we can migrate hugepage with migrate_pages(2).
+> Note that for larger hugepages (covered by pud entries, 1GB for
+> x86_64 for example), we simply skip it now.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  include/linux/hugetlb.h |  6 ++++--
+>  mm/hugetlb.c            | 10 ++++++++++
+>  mm/mempolicy.c          | 46 ++++++++++++++++++++++++++++++++++------------
+>  3 files changed, 48 insertions(+), 14 deletions(-)
+> 
+> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
+> index 8f87115..eb33df5 100644
+> --- v3.8.orig/include/linux/hugetlb.h
+> +++ v3.8/include/linux/hugetlb.h
+> @@ -69,6 +69,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+>  int dequeue_hwpoisoned_huge_page(struct page *page);
+>  void putback_active_hugepage(struct page *page);
+>  void putback_active_hugepages(struct list_head *l);
+> +void migrate_hugepage_add(struct page *page, struct list_head *list);
+>  void copy_huge_page(struct page *dst, struct page *src);
+>  
+>  extern unsigned long hugepages_treat_as_movable;
+> @@ -88,8 +89,8 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+>  				pmd_t *pmd, int write);
+>  struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+>  				pud_t *pud, int write);
+> -int pmd_huge(pmd_t pmd);
+> -int pud_huge(pud_t pmd);
+> +extern int pmd_huge(pmd_t pmd);
+> +extern int pud_huge(pud_t pmd);
 
-This likely also is the culprit behind the ghost vga issues reported
-on gm45, e.g:
+extern is not needed here.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=922304
+>  unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>  		unsigned long address, unsigned long end, pgprot_t newprot);
+>  
+> @@ -134,6 +135,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+>  
+>  #define putback_active_hugepage(p) 0
+>  #define putback_active_hugepages(l) 0
+> +#define migrate_hugepage_add(p, l) 0
+>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>  {
+>  }
+> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
+> index cb9d43b8..86ffcb7 100644
+> --- v3.8.orig/mm/hugetlb.c
+> +++ v3.8/mm/hugetlb.c
+> @@ -3202,3 +3202,13 @@ void putback_active_hugepages(struct list_head *l)
+>  	list_for_each_entry_safe(page, page2, l, lru)
+>  		putback_active_hugepage(page);
+>  }
+> +
+> +void migrate_hugepage_add(struct page *page, struct list_head *list)
+> +{
+> +	VM_BUG_ON(!PageHuge(page));
+> +	get_page(page);
+> +	spin_lock(&hugetlb_lock);
 
-Again, fixed in 3.9-rc kernels by
+Why hugetlb_lock? Comment for this lock says that it protects
+hugepage_freelists, nr_huge_pages, and free_huge_pages.
 
-commit 20afbda209d708be66944907966486d0c1331cb8
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Dec 11 14:05:07 2012 +0100
+> +	list_move_tail(&page->lru, list);
+> +	spin_unlock(&hugetlb_lock);
+> +	return;
+> +}
+> diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
+> index e2df1c1..8627135 100644
+> --- v3.8.orig/mm/mempolicy.c
+> +++ v3.8/mm/mempolicy.c
+> @@ -525,6 +525,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+>  	return addr != end;
+>  }
+>  
+> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
+> +		const nodemask_t *nodes, unsigned long flags,
+> +				    void *private)
+> +{
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	int nid;
+> +	struct page *page;
+> +
+> +	spin_lock(&vma->vm_mm->page_table_lock);
+> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
+> +	spin_unlock(&vma->vm_mm->page_table_lock);
 
-    drm/i915: Fixup hpd irq register setup ordering
+I am a bit confused why page_table_lock is used here and why it doesn't
+cover the page usage.
 
-Cheers, Daniel
+> +	nid = page_to_nid(page);
+> +	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
+> +	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
+> +		|| flags & MPOL_MF_MOVE_ALL))
+> +		migrate_hugepage_add(page, private);
+> +#else
+> +	BUG();
+> +#endif
+> +}
+> +
+>  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>  		unsigned long addr, unsigned long end,
+>  		const nodemask_t *nodes, unsigned long flags,
+> @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>  	pmd = pmd_offset(pud, addr);
+>  	do {
+>  		next = pmd_addr_end(addr, end);
+> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
 
-> There might be more, I'm still recovering from mail floods due to
-> traveling last week. I think the right course of action is to revert
-> the offending patch (plus anything depending upon it) and give up on
-> rc6 on ilk in 3.8 - too messy. All bug reports confirmed that 3.9-rc
-> kernels work as expected. Upstream commits to revert:
->
-> 15239099d7a7a9ecdc1ccb5b187ae4cda5488ff9 drm/i915: enable irqs earlier
-> when resuming
-> 52d7ecedac3f96fb562cb482c139015372728638 drm/i915: reorder setup
-> sequence to have irqs for output setup
->
-> Cheers, Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
+sufficient?
 
-
-
+> +			check_hugetlb_pmd_range(vma, pmd, nodes,
+> +						flags, private);
+> +			continue;
+> +		}
+>  		split_huge_page_pmd(vma, addr, pmd);
+>  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+>  			continue;
+[...]
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Michal Hocko
+SUSE Labs
