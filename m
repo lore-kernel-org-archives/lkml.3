@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab3CRQYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:24:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271Ab3CRQYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:24:46 -0400
-Message-ID: <1363623880.24132.351.camel@bling.home>
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Myron Stowe <mstowe@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
-        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 18 Mar 2013 10:24:40 -0600
-In-Reply-To: <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
-References: <20130316213512.2974.17303.stgit@amt.stowe>
-	 <20130316213519.2974.38954.stgit@amt.stowe>
-	 <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
-	 <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
-	 <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
-	 <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752174Ab3CRQZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:25:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36320 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab3CRQZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:25:49 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/54] perf tools: Honor parallel jobs
+Date: Mon, 18 Mar 2013 13:24:48 -0300
+Message-Id: <1363623939-10748-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
+References: <1363623939-10748-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
-> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > I'm assuming that the device only breaks because udevadm is dumping the
-> > full I/O port register space of the device and that if an actual driver
-> > was interacting with it through this interface that it would work.  Who
-> > knows how many devices will have read side-effects by udevadm blindly
-> > dumping these files.  Thanks,
-> 
-> Sysfs is a too public interface to export things there which make
-> devices/driver choke on a simple read() of an attribute.
+From: Borislav Petkov <bp@suse.de>
 
-That's why the default permissions for the file do not allow users to
-read it.  I wish we could do something as clever as the MMIO resource
-files, but I/O port spaces don't allow mmap for the predominant
-architecture.  Eventually VFIO is meant to replace this access and does
-move device register access behind ioctls, but for now legacy KVM device
-assignment relies on these files and so might some UIO drivers.
+We need to hand down parallel build options like the internal make
+--jobserver-fds one so that parallel builds can also happen when
+building perf from the toplevel directory.
 
-> This is nothing specific to udevadm, any tool can do that. Udevadm
-> will never read any of the files during normal operation. The admin
-> explicitly asked udevadm with a specific command to dump all the stuff
-> the device offers.
+Make it so #1!
 
-Isn't it possible udevadm could drop privileges or filter out non-world
-readable files? 
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1361374353-30385-3-git-send-email-bp@alien8.de
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ Makefile                       |    4 ++--
+ tools/scripts/Makefile.include |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-> The kernel driver needs to be fixed to allow that, in the worst case,
-> the attributes not exported at all. People should take more care what
-> they export in /sys, it's not a hidden and private ioctl what's
-> exported there, stuff is very visible and will be looked at.
-
-File permissions...
-
-> Telling userspace not to use specific stuff in /sys I would not expect
-> to work as a strategy; there is too much weird stuff out there that
-> will always try to do that ...
-
-I agree, the kernel needs to protect itself from malicious apps, but if
-you run a malicious app with admin access, how much can/should we do?
-If we're going to ignore file permissions, why limit ourselves to
-read(), should we make everything safe against write() as well?  Thanks,
-
-Alex
+diff --git a/Makefile b/Makefile
+index 6fccf65..bbb15df 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1331,11 +1331,11 @@ kernelversion:
+ # Clear a bunch of variables before executing the submake
+ tools/: FORCE
+ 	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
+ 
+ tools/%: FORCE
+ 	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
+ 
+ # Single targets
+ # ---------------------------------------------------------------------------
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index 2964b96..00a05f4 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -70,7 +70,7 @@ ifndef V
+ 	QUIET_BISON    = @echo '   ' BISON $@;
+ 
+ 	descend = \
+-		@echo '   ' DESCEND $(1); \
++		+@echo '   ' DESCEND $(1); \
+ 		mkdir -p $(OUTPUT)$(1) && \
+ 		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
+ endif
+-- 
+1.7.1
 
