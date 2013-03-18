@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3CREqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:46:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33465 "EHLO
+	id S1752501Ab3CREqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:46:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33478 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab3CREaX (ORCPT
+	by vger.kernel.org with ESMTP id S1751716Ab3CREaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:23 -0400
-Message-Id: <20130318042150.842287128@decadent.org.uk>
+Message-Id: <20130318042151.799777324@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:52 +0000
+Date: Mon, 18 Mar 2013 04:23:02 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 68/82] crypto: user - fix info leaks in report API
+Cc: akpm@linux-foundation.org, Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 78/82] block: use i_size_write() in bd_set_size()
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,209 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit 9a5467bf7b6e9e02ec9c3da4e23747c05faeaac6 upstream.
+commit d646a02a9d44d1421f273ae3923d97b47b918176 upstream.
 
-Three errors resulting in kernel memory disclosure:
+blkdev_ioctl(GETBLKSIZE) uses i_size_read() to read size of block device.
+If we update block size directly, reader may see intermediate result in
+some machines and configurations.  Use i_size_write() instead.
 
-1/ The structures used for the netlink based crypto algorithm report API
-are located on the stack. As snprintf() does not fill the remainder of
-the buffer with null bytes, those stack bytes will be disclosed to users
-of the API. Switch to strncpy() to fix this.
-
-2/ crypto_report_one() does not initialize all field of struct
-crypto_user_alg. Fix this to fix the heap info leak.
-
-3/ For the module name we should copy only as many bytes as
-module_name() returns -- not as much as the destination buffer could
-hold. But the current code does not and therefore copies random data
-from behind the end of the module name, as the module name is always
-shorter than CRYPTO_MAX_ALG_NAME.
-
-Also switch to use strncpy() to copy the algorithm's name and
-driver_name. They are strings, after all.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- crypto/ablkcipher.c  |   12 ++++++------
- crypto/aead.c        |    9 ++++-----
- crypto/ahash.c       |    2 +-
- crypto/blkcipher.c   |    6 +++---
- crypto/crypto_user.c |   22 +++++++++++-----------
- crypto/pcompress.c   |    3 +--
- crypto/rng.c         |    2 +-
- crypto/shash.c       |    3 ++-
- 8 files changed, 29 insertions(+), 30 deletions(-)
+ fs/block_dev.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/crypto/ablkcipher.c
-+++ b/crypto/ablkcipher.c
-@@ -388,9 +388,9 @@ static int crypto_ablkcipher_report(stru
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1064,7 +1064,9 @@ void bd_set_size(struct block_device *bd
  {
- 	struct crypto_report_blkcipher rblkcipher;
+ 	unsigned bsize = bdev_logical_block_size(bdev);
  
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "ablkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "ablkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
-@@ -469,9 +469,9 @@ static int crypto_givcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "givcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_ablkcipher.geniv ?: "<built-in>");
-+	strncpy(rblkcipher.type, "givcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_ablkcipher.geniv ?: "<built-in>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_ablkcipher.min_keysize;
---- a/crypto/aead.c
-+++ b/crypto/aead.c
-@@ -117,9 +117,8 @@ static int crypto_aead_report(struct sk_
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "aead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 aead->geniv ?: "<built-in>");
-+	strncpy(raead.type, "aead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv ?: "<built-in>", sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
-@@ -203,8 +202,8 @@ static int crypto_nivaead_report(struct
- 	struct crypto_report_aead raead;
- 	struct aead_alg *aead = &alg->cra_aead;
- 
--	snprintf(raead.type, CRYPTO_MAX_ALG_NAME, "%s", "nivaead");
--	snprintf(raead.geniv, CRYPTO_MAX_ALG_NAME, "%s", aead->geniv);
-+	strncpy(raead.type, "nivaead", sizeof(raead.type));
-+	strncpy(raead.geniv, aead->geniv, sizeof(raead.geniv));
- 
- 	raead.blocksize = alg->cra_blocksize;
- 	raead.maxauthsize = aead->maxauthsize;
---- a/crypto/ahash.c
-+++ b/crypto/ahash.c
-@@ -404,7 +404,7 @@ static int crypto_ahash_report(struct sk
- {
- 	struct crypto_report_hash rhash;
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "ahash");
-+	strncpy(rhash.type, "ahash", sizeof(rhash.type));
- 
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = __crypto_hash_alg_common(alg)->digestsize;
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -499,9 +499,9 @@ static int crypto_blkcipher_report(struc
- {
- 	struct crypto_report_blkcipher rblkcipher;
- 
--	snprintf(rblkcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "blkcipher");
--	snprintf(rblkcipher.geniv, CRYPTO_MAX_ALG_NAME, "%s",
--		 alg->cra_blkcipher.geniv ?: "<default>");
-+	strncpy(rblkcipher.type, "blkcipher", sizeof(rblkcipher.type));
-+	strncpy(rblkcipher.geniv, alg->cra_blkcipher.geniv ?: "<default>",
-+		sizeof(rblkcipher.geniv));
- 
- 	rblkcipher.blocksize = alg->cra_blocksize;
- 	rblkcipher.min_keysize = alg->cra_blkcipher.min_keysize;
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -71,7 +71,7 @@ static int crypto_report_cipher(struct s
- {
- 	struct crypto_report_cipher rcipher;
- 
--	snprintf(rcipher.type, CRYPTO_MAX_ALG_NAME, "%s", "cipher");
-+	strncpy(rcipher.type, "cipher", sizeof(rcipher.type));
- 
- 	rcipher.blocksize = alg->cra_blocksize;
- 	rcipher.min_keysize = alg->cra_cipher.cia_min_keysize;
-@@ -90,8 +90,7 @@ static int crypto_report_comp(struct sk_
- {
- 	struct crypto_report_comp rcomp;
- 
--	snprintf(rcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "compression");
--
-+	strncpy(rcomp.type, "compression", sizeof(rcomp.type));
- 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		sizeof(struct crypto_report_comp), &rcomp);
- 
-@@ -104,12 +103,14 @@ nla_put_failure:
- static int crypto_report_one(struct crypto_alg *alg,
- 			     struct crypto_user_alg *ualg, struct sk_buff *skb)
- {
--	memcpy(&ualg->cru_name, &alg->cra_name, sizeof(ualg->cru_name));
--	memcpy(&ualg->cru_driver_name, &alg->cra_driver_name,
--	       sizeof(ualg->cru_driver_name));
--	memcpy(&ualg->cru_module_name, module_name(alg->cra_module),
--	       CRYPTO_MAX_ALG_NAME);
-+	strncpy(ualg->cru_name, alg->cra_name, sizeof(ualg->cru_name));
-+	strncpy(ualg->cru_driver_name, alg->cra_driver_name,
-+		sizeof(ualg->cru_driver_name));
-+	strncpy(ualg->cru_module_name, module_name(alg->cra_module),
-+		sizeof(ualg->cru_module_name));
- 
-+	ualg->cru_type = 0;
-+	ualg->cru_mask = 0;
- 	ualg->cru_flags = alg->cra_flags;
- 	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
- 
-@@ -118,8 +119,7 @@ static int crypto_report_one(struct cryp
- 	if (alg->cra_flags & CRYPTO_ALG_LARVAL) {
- 		struct crypto_report_larval rl;
- 
--		snprintf(rl.type, CRYPTO_MAX_ALG_NAME, "%s", "larval");
--
-+		strncpy(rl.type, "larval", sizeof(rl.type));
- 		NLA_PUT(skb, CRYPTOCFGA_REPORT_LARVAL,
- 			sizeof(struct crypto_report_larval), &rl);
- 
---- a/crypto/pcompress.c
-+++ b/crypto/pcompress.c
-@@ -53,8 +53,7 @@ static int crypto_pcomp_report(struct sk
- {
- 	struct crypto_report_comp rpcomp;
- 
--	snprintf(rpcomp.type, CRYPTO_MAX_ALG_NAME, "%s", "pcomp");
--
-+	strncpy(rpcomp.type, "pcomp", sizeof(rpcomp.type));
- 	NLA_PUT(skb, CRYPTOCFGA_REPORT_COMPRESS,
- 		sizeof(struct crypto_report_comp), &rpcomp);
- 
---- a/crypto/rng.c
-+++ b/crypto/rng.c
-@@ -65,7 +65,7 @@ static int crypto_rng_report(struct sk_b
- {
- 	struct crypto_report_rng rrng;
- 
--	snprintf(rrng.type, CRYPTO_MAX_ALG_NAME, "%s", "rng");
-+	strncpy(rrng.type, "rng", sizeof(rrng.type));
- 
- 	rrng.seedsize = alg->cra_rng.seedsize;
- 
---- a/crypto/shash.c
-+++ b/crypto/shash.c
-@@ -530,7 +530,8 @@ static int crypto_shash_report(struct sk
- 	struct crypto_report_hash rhash;
- 	struct shash_alg *salg = __crypto_shash_alg(alg);
- 
--	snprintf(rhash.type, CRYPTO_MAX_ALG_NAME, "%s", "shash");
-+	strncpy(rhash.type, "shash", sizeof(rhash.type));
-+
- 	rhash.blocksize = alg->cra_blocksize;
- 	rhash.digestsize = salg->digestsize;
- 
+-	bdev->bd_inode->i_size = size;
++	mutex_lock(&bdev->bd_inode->i_mutex);
++	i_size_write(bdev->bd_inode, size);
++	mutex_unlock(&bdev->bd_inode->i_mutex);
+ 	while (bsize < PAGE_CACHE_SIZE) {
+ 		if (size & bsize)
+ 			break;
 
 
