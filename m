@@ -1,183 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab3CRWcQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:32:16 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:59219 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab3CRWcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 18:32:14 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        dmitry.kasatkin@intel.com, akpm@linux-foundation.org,
-        "Serge E. Hallyn" <serge@hallyn.com>
-References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
-	<1363379758-10071-4-git-send-email-vgoyal@redhat.com>
-	<51438EDB.3050300@schaufler-ca.com>
-	<20130318170552.GG20743@redhat.com>
-	<514753DC.4030609@schaufler-ca.com>
-	<20130318183028.GB28061@redhat.com>
-	<514768AF.4010504@schaufler-ca.com>
-Date: Mon, 18 Mar 2013 15:32:02 -0700
-In-Reply-To: <514768AF.4010504@schaufler-ca.com> (Casey Schaufler's message of
-	"Mon, 18 Mar 2013 12:19:11 -0700")
-Message-ID: <8738vs7319.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755910Ab3CRWcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:32:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39942 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab3CRWcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 18:32:46 -0400
+Date: Mon, 18 Mar 2013 23:32:44 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
+        linux-kernel@vger.kernel.org, jmoyer@redhat.com
+Subject: Re: [PATCH 3/4] writeback: replace custom worker pool
+ implementation with unbound workqueue
+Message-ID: <20130318223244.GA11188@quack.suse.cz>
+References: <1362692649-25570-1-git-send-email-tj@kernel.org>
+ <1362692649-25570-4-git-send-email-tj@kernel.org>
+ <20130312150510.GF13152@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19Thy2TLWR3Uij3iZLl7eXQGcJjjN6ylOk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Casey Schaufler <casey@schaufler-ca.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 3/4] capability: Create a new capability CAP_SIGNED
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130312150510.GF13152@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 12-03-13 16:05:10, Jan Kara wrote:
+> On Thu 07-03-13 13:44:08, Tejun Heo wrote:
+> > Writeback implements its own worker pool - each bdi can be associated
+> > with a worker thread which is created and destroyed dynamically.  The
+> > worker thread for the default bdi is always present and serves as the
+> > "forker" thread which forks off worker threads for other bdis.
+> > 
+> > there's no reason for writeback to implement its own worker pool when
+> > using unbound workqueue instead is much simpler and more efficient.
+> > This patch replaces custom worker pool implementation in writeback
+> > with an unbound workqueue.
+  I realized there may be one issue - so far we have a clear identification
+which thread works for which bdi in the thread name (flush-x:y naming).
+That was useful when debugging things. Now with your worker pool this is
+lost, am I right? Would it be possible to restore that?
 
-Adding Serge as he is the sometimes capabilities maintainer to this
-discussion.
-
-Casey Schaufler <casey@schaufler-ca.com> writes:
-
-> On 3/18/2013 11:30 AM, Vivek Goyal wrote:
->> On Mon, Mar 18, 2013 at 10:50:21AM -0700, Casey Schaufler wrote:
->>> On 3/18/2013 10:05 AM, Vivek Goyal wrote:
->>>> On Fri, Mar 15, 2013 at 02:12:59PM -0700, Casey Schaufler wrote:
->>>>> On 3/15/2013 1:35 PM, Vivek Goyal wrote:
->>>>>> Create a new capability CAP_SIGNED which can be given to signed executables.
->>>>> This would drive anyone who is trying to use
->>>>> capabilities as the privilege mechanism it is
->>>>> intended to be absolutely crazy.
->>>> Will calling it CAP_SIGNED_SERVICES help. I intend to use it as
->>>> capability (and not just as a flag for task attribute).
->>> No, the name is not the issue.
->>>
->>>> I think primary difference here is that this capability is controlled
->>>> by kernel and only validly signed processes get it.
->>> Applications are allowed to manipulate their capability sets
->>> in well defined ways. The behavior of file based capabilities
->>> is also explicitly defined. The behavior you are proposing would
->>> violate both of these mechanisms. 
->>>
->>>>> Capabilities aren't just random attribute bits. They
->>>>> indicate that a task has permission to violate a
->>>>> system policy (e.g. change the mode bits of a file
->>>>> the user doesn't own). Think about how this will
->>>>> interact with programs using file based capabilities.
->>>> It is a separate capability. I am not sure why it would
->>>> interfere with other capabilities or functionality out there.
->>> The behavior of capabilities is uniform. You can't have one
->>> capability that behaves differently from the others. If a
->>> file is unsigned but has CAP_SIGNED in the file capability
->>> set what do you expect to happen? Do you want a signed
->>> application to be able to drop and raise the fact that it
->>> is signed?
->> I have already removed this capability from bounding set. Behavior
->> I am looking for is that nobody should be able to set CAP_SIGNED
->> as file capability. I will look into that.
->
-> No! You are not listening. All capabilities work the same way.
-> If the file capabilities say ALL that means ALL. You do not get
-> to put a hole in the middle of the file based capabilities.
->
->
->> I am thinking of this more as kernel managed capability. It is
->> not in bounding set of any process and it can not be set as file
->> capability.
->
-> I heard that. No, you don't get to do that. All capabilities
-> work the same way. Your attribute does not behave the way
-> capabilities do, so you have to implement it some other way.
->
->
->> It is a new capability, so no existing user application should
->> be trying to set it.
->
-> There are (and will be) applications that raise and drop all
-> capabilities, and that do so for good reasons.
->
->> I think the only surprise would be that they can't drop it. If
->> that's a concern, may be we can allow dropping the capability.
->> But the side affect is that there is no way to gain it back for
->> the life time of process.
->
-> Right. And that is a change to the capability mechanism. No, you
-> don't get to do that.
->
-> You don't want a new capability. You want a new attribute that
-> behaves differently than capabilities do. You need to come up
-> with a different way to implement your attribute. You do not get
-> to change the way capabilities work.
->
->>> I expect that you don't want your attribute that indicates
->>> that the binary was signed to behave the same way that
->>> capabilities do. Like I said, capabilities are not just
->>> attribute bits. You need a different kind of process attribute
->>> to indicate that the binary was signed.
->> I think I need more than process attribute. One of the things
->> I am looking for is that signed processes run locked in memory
->> and nobody (i think no unsigned process) is able to do ptrace() on it.
->> Using the notion of capability might help here.
->
-> There are already capabilities associated with ptrace. It would
-> be simple to add a check for signatures in cap_ptrace_access_check.
->
->
->>> When (if ever) we have multiple LSM support you might consider
->>> doing this as a small LSM. Until then, you're going to need a
->>> different way to express the signature attribute.
->> I am not sure why you are viewing it as necessarily as attribute only.
->> I am thinking more in terms of that in certain situations, user space
->> processes can't perform certain operations (like kexec) untile and
->> unless process has the capability CAP_SIGNED_SERVICES. And this capability
->> is granted if upon exec() process signature are verified.
->
-> Sigh. You need the process attribute to make the checks against. The
-> process capability set, uids and groups are all examples of process
-> attributes that exist today.
->
->> So yes it is little different from how capabilities are managed
->> currently. But is it very hard to extend the current capability definition
->> and include the fact that kernel can give additional capabilities to
->> processes based on some other factors.
->
-> Yes. That is correct. That is why we have the LSM facility. The
-> unfortunate fact is that you only get one LSM at a time today. I
-> am working on fixing that, but there is still work to be done
-> before it will be ready for upstream.
->
-> If signed application controls are deemed sufficiently important
-> and your implementation sound you should be able to get the signature
-> attribute and the checks on that attribute into the base system.
-
-Vivek the desired semantics for today for kexec is that you have an
-application that is allowed CAP_SYS_BOOT in it's file capabilities.
-
-In a context where root is not trusted with all capabilities by default
-you want one or a couple of capabilities to only be possible when coming
-from file capabilities.  So that you can say.  "I trust you oh great and
-blessed executable do what you will."
-
-I don't think those are contentious semantics.
-
-Eric
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
