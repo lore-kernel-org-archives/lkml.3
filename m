@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab3CRLIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:08:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34152 "EHLO
+	id S1753211Ab3CRLJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:09:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34168 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3CRLIG (ORCPT
+	with ESMTP id S1752698Ab3CRLJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:08:06 -0400
-Date: Mon, 18 Mar 2013 04:06:41 -0700
+	Mon, 18 Mar 2013 07:09:08 -0400
+Date: Mon, 18 Mar 2013 04:07:54 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-778141e3cf0bf29f91cd3cb5c314ea477b9402a7@git.kernel.org>
+Message-ID: <tip-d610d98b5de6860feb21539726e9af7c9094151c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
         namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
         tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
-References: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1363332433-7637-1-git-send-email-namhyung@kernel.org>
+References: <1363332433-7637-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Reset hwc->last_period on sw clock events
-Git-Commit-ID: 778141e3cf0bf29f91cd3cb5c314ea477b9402a7
+Subject: [tip:perf/urgent] perf:
+  Generate EXIT event only once per task context
+Git-Commit-ID: d610d98b5de6860feb21539726e9af7c9094151c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,75 +30,88 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 04:06:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 04:07:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  778141e3cf0bf29f91cd3cb5c314ea477b9402a7
-Gitweb:     http://git.kernel.org/tip/778141e3cf0bf29f91cd3cb5c314ea477b9402a7
+Commit-ID:  d610d98b5de6860feb21539726e9af7c9094151c
+Gitweb:     http://git.kernel.org/tip/d610d98b5de6860feb21539726e9af7c9094151c
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 18 Mar 2013 11:41:46 +0900
+AuthorDate: Fri, 15 Mar 2013 16:27:13 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Mar 2013 09:15:18 +0100
+CommitDate: Mon, 18 Mar 2013 09:47:33 +0100
 
-perf: Reset hwc->last_period on sw clock events
+perf: Generate EXIT event only once per task context
 
-When cpu/task clock events are initialized, their sampling
-frequencies are converted to have a fixed value.  However it
-missed to update the hwc->last_period which was set to 1 for
-initial sampling frequency calibration.
+perf_event_task_event() iterates pmu list and generate events
+for each eligible pmu context.  But if task_event has task_ctx
+like in EXIT it'll generate events even though the pmu doesn't
+have an eligible one. Fix it by moving the code to proper
+places.
 
-Because this hwc->last_period value is used as a period in
-perf_swevent_ hrtime(), every recorded sample will have an
-incorrected period of 1.
+Before this patch:
 
-  $ perf record -e task-clock noploop 1
+  $ perf record -n true
   [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.158 MB perf.data (~6919 samples) ]
+  [ perf record: Captured and wrote 0.006 MB perf.data (~248 samples) ]
 
-  $ perf report -n --show-total-period  --stdio
-  # Samples: 4K of event 'task-clock'
-  # Event count (approx.): 4000
-  #
-  # Overhead       Samples        Period  Command  Shared Object              Symbol
-  # ........  ............  ............  .......  .............  ..................
-  #
-      99.95%          3998          3998  noploop  noploop        [.] main
-       0.03%             1             1  noploop  libc-2.15.so   [.] init_cacheinfo
-       0.03%             1             1  noploop  ld-2.15.so     [.] open_verify
+  $ perf report -D | tail
+  Aggregated stats:
+             TOTAL events:         73
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          4
+  cycles stats:
+             TOTAL events:         73
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          4
 
-Note that it doesn't affect the non-sampling event so that the
-perf stat still gets correct value with or without this patch.
+After this patch:
 
-  $ perf stat -e task-clock noploop 1
-
-   Performance counter stats for 'noploop 1':
-
-         1000.272525 task-clock                #    1.000 CPUs utilized
-
-         1.000560605 seconds time elapsed
+  $ perf report -D | tail
+  Aggregated stats:
+             TOTAL events:         70
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          1
+  cycles stats:
+             TOTAL events:         70
+              MMAP events:         67
+              COMM events:          2
+              EXIT events:          1
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363574507-18808-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1363332433-7637-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/events/core.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b0cd865..fa79c37 100644
+index fa79c37..59412d0 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -5647,6 +5647,7 @@ static void perf_swevent_init_hrtimer(struct perf_event *event)
- 		event->attr.sample_period = NSEC_PER_SEC / freq;
- 		hwc->sample_period = event->attr.sample_period;
- 		local64_set(&hwc->period_left, hwc->sample_period);
-+		hwc->last_period = hwc->sample_period;
- 		event->attr.freq = 0;
+@@ -4434,12 +4434,15 @@ static void perf_event_task_event(struct perf_task_event *task_event)
+ 			if (ctxn < 0)
+ 				goto next;
+ 			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
++			if (ctx)
++				perf_event_task_ctx(ctx, task_event);
+ 		}
+-		if (ctx)
+-			perf_event_task_ctx(ctx, task_event);
+ next:
+ 		put_cpu_ptr(pmu->pmu_cpu_context);
  	}
++	if (task_event->task_ctx)
++		perf_event_task_ctx(task_event->task_ctx, task_event);
++
+ 	rcu_read_unlock();
  }
+ 
