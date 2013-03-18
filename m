@@ -1,197 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab3CQX7Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 19:59:25 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59541 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587Ab3CQX7W (ORCPT
+	id S932825Ab3CRAFO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 20:05:14 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:60226 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932687Ab3CRAFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 19:59:22 -0400
+	Sun, 17 Mar 2013 20:05:12 -0400
+Date: Sun, 17 Mar 2013 21:05:08 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hverkuil@xs4all.nl, elezegarcia@gmail.com
+Subject: Re: [RFC V1 0/8] Add a driver for somagic smi2021
+Message-ID: <20130318000507.GA2456@localhost>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+ <20130315120856.GA2989@localhost>
+ <20130317200158.GB17291@dell.arpanet.local>
 MIME-Version: 1.0
-In-Reply-To: <1363527603.25967.119.camel@gandalf.local.home>
-References: <1363509620-3571-1-git-send-email-linkinjeon@gmail.com>
-	<1363527603.25967.119.camel@gandalf.local.home>
-Date: Mon, 18 Mar 2013 08:59:21 +0900
-Message-ID: <CAKYAXd82DwOZh8QKmX8vrdwPAGYiMhoFxLWk3Z490SXLpUsnHQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] f2fs: add tracepoint for tracing the page i/o operations
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130317200158.GB17291@dell.arpanet.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/17, Steven Rostedt <rostedt@goodmis.org>:
-> On Sun, 2013-03-17 at 17:40 +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Add tracepoints for page i/o operations and block allocation
->> tracing during page read operation.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
->> ---
->>  fs/f2fs/data.c              |   11 ++++++--
->>  include/trace/events/f2fs.h |   58
->> +++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 67 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
->> index 02ad450..bb9117b 100644
->> --- a/fs/f2fs/data.c
->> +++ b/fs/f2fs/data.c
->> @@ -22,6 +22,7 @@
->>  #include "f2fs.h"
->>  #include "node.h"
->>  #include "segment.h"
->> +#include <trace/events/f2fs.h>
->>
->>  /*
->>   * Lock ordering for the change of data block address:
->> @@ -335,6 +336,9 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct
->> page *page,
->>  	bool sync = (type == READ_SYNC);
->>  	struct bio *bio;
->>
->> +	if (page->mapping)
->> +		trace_f2fs_readpage(page);
->
-> Since the only thing that happens whet page->mapping is set is to trace
-> the page, you can move that check into the tracepoint itself. That is,
-> move the branch into the tracepoint, making the branch a nop when the
-> tracepoint isn't active. That's what TRACE_EVENT_CONDITION() does. Make
-> this into:
->
-> 	trace_f2fs_readpage(page);
->
-> and then see below.
->
->> +
->>  	/* This page can be already read by other threads */
->>  	if (PageUptodate(page)) {
->>  		if (!sync)
->> @@ -385,6 +389,7 @@ static int get_data_block_ro(struct inode *inode,
->> sector_t iblock,
->>  	pgoff_t pgofs;
->>  	int err;
->>
->> +	trace_f2fs_get_data_block_enter(inode, iblock, 0);
->>  	/* Get the page offset from the block offset(iblock) */
->>  	pgofs =	(pgoff_t)(iblock >> (PAGE_CACHE_SHIFT - blkbits));
->>
->> @@ -394,9 +399,10 @@ static int get_data_block_ro(struct inode *inode,
->> sector_t iblock,
->>  	/* When reading holes, we need its node page */
->>  	set_new_dnode(&dn, inode, NULL, NULL, 0);
->>  	err = get_dnode_of_data(&dn, pgofs, LOOKUP_NODE_RA);
->> -	if (err)
->> +	if (err) {
->> +		trace_f2fs_get_data_block_exit(inode, iblock, err);
->>  		return (err == -ENOENT) ? 0 : err;
->> -
->> +	}
->>  	/* It does not support data allocation */
->>  	BUG_ON(create);
->>
->> @@ -420,6 +426,7 @@ static int get_data_block_ro(struct inode *inode,
->> sector_t iblock,
->>  		bh_result->b_size = (i << blkbits);
->>  	}
->>  	f2fs_put_dnode(&dn);
->> +	trace_f2fs_get_data_block_exit(inode, iblock, 0);
->>  	return 0;
->>  }
->>
->> diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
->> index 0d39f58..d60f3ed 100644
->> --- a/include/trace/events/f2fs.h
->> +++ b/include/trace/events/f2fs.h
->> @@ -266,6 +266,64 @@ TRACE_EVENT(f2fs_truncate,
->>  		  (unsigned long) __entry->ino)
->>  );
->>
->> +TRACE_EVENT(f2fs_readpage,
->
-> TRACE_EVENT_CONDITIO(f2fs_readpage,
->
->> +	TP_PROTO(struct page *page),
->> +
->> +	TP_ARGS(page),
->
-> 	TP_CONDITION(page->mapping),
->
-> That's it!
->
-> Now the tracepoint will only be called if page->mapping is set, but
-> checking page->mapping will be done only if the tracepoint is enabled.
-> Keeping the original code untouched.
-Hi Steve.
-Okay :) I will fix it. Thanks for your review !
->
-> -- Steve
->
->> +
->> +	TP_STRUCT__entry(
->> +		__field(pgoff_t, index)
->> +		__field(ino_t,	ino)
->> +		__field(dev_t,	dev)
->> +
->> +	),
->> +
->> +	TP_fast_assign(
->> +		__entry->index	= page->index;
->> +		__entry->ino	= page->mapping->host->i_ino;
->> +		__entry->dev	= page->mapping->host->i_sb->s_dev;
->> +	),
->> +
->> +	TP_printk("dev %d,%d ino %lu page_index %lu",
->> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
->> +		  (unsigned long) __entry->ino,
->> +		  (unsigned long) __entry->index)
->> +);
->> +
->> +DECLARE_EVENT_CLASS(f2fs_data_block,
->> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
->> +
->> +	TP_ARGS(inode, block, ret),
->> +
->> +	TP_STRUCT__entry(
->> +		__field(dev_t,	dev)
->> +		__field(ino_t,	ino)
->> +		__field(sector_t,	block)
->> +		__field(int,	ret)
->> +	),
->> +
->> +	TP_fast_assign(
->> +		__entry->dev	= inode->i_sb->s_dev;
->> +		__entry->ino	= inode->i_ino;
->> +		__entry->block	= block;
->> +		__entry->ret	= ret;
->> +	),
->> +
->> +	TP_printk("dev %d,%d ino %lu block number %llu error %d",
->> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
->> +		  (unsigned long) __entry->ino, (unsigned long long) __entry->block,
->> __entry->ret)
->> +);
->> +
->> +DEFINE_EVENT(f2fs_data_block, f2fs_get_data_block_enter,
->> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
->> +	TP_ARGS(inode, block, ret)
->> +);
->> +
->> +DEFINE_EVENT(f2fs_data_block, f2fs_get_data_block_exit,
->> +	TP_PROTO(struct inode *inode, sector_t block, int ret),
->> +	TP_ARGS(inode, block, ret)
->> +);
->> +
->>  #endif /* _TRACE_F2FS_H */
->>
->>   /* This part must be outside protection */
->
->
->
+Hi Jon,
+
+On Sun, Mar 17, 2013 at 09:01:58PM +0100, Jon Arne Jørgensen wrote:
+> On Fri, Mar 15, 2013 at 09:08:58AM -0300, Ezequiel Garcia wrote:
+> > On Thu, Mar 14, 2013 at 03:06:56PM +0100, Jon Arne Jørgensen wrote:
+> > > This patch-set will add a driver for the Somagic SMI2021 chip.
+> > > 
+> > > This chip is found inside different usb video-capture devices.
+> > > Most of them are branded as EasyCap, but there also seems to be
+> > > some other brands selling devices with this chip.
+> > > 
+> > > This driver is split into two modules, where one is called smi2021-bootloader,
+> > > and the other is just called smi2021.
+> > > 
+> > > The bootloader is responsible for the upload of a firmware that is needed by some
+> > > versions of the devices.
+> > > 
+> > > All Somagic devices that need firmware seems to identify themselves
+> > > with the usb product id 0x0007. There is no way for the kernel to know
+> > > what firmware to upload to the device without user interaction.
+> > > 
+> > > If there is only one firmware present on the computer, the kernel
+> > > will upload that firmware to any device that identifies as 0x0007.
+> > > If there are multiple Somagic firmwares present, the user will have to pass
+> > > a module parameter to the smi2021-bootloader module to tell what firmware to use.
+> > > 
+> > 
+> > Nice job!
+> >
+> Thanks :)
+>  
+> > I have some minor comments on each patch, but also I don't agree
+> > with the patch splitting: what's the point in splitting and sending
+> > one patch per file?
+> > 
+> > It doesn't make it any easier to review, so why don't you just
+> > send one patch: "Introduce smi2021 driver"?
+> > 
+> > The rule is one patch per change, and I believe this whole patchset
+> > is just one change: adding a new driver.
+> > 
+> 
+> I think I read another patch to this mailinglist, where someone was told
+> to split his patch into one mail per file, but I can't find that thread
+> now :)
+> 
+> I will send the next version as a single mail, and see what happens...
+> 
+
+As you will soon realize, the patch preparation is equally important as the
+patch content itself. Often, it takes the same time to implement or
+fix something, as it takes to prepare the patchset carefully.
+
+When deciding how to prepare your patches you have to keep two main things in mind:
+
+  * The kernel build can never be broken, in any configuration and in any
+    point of the kernel history (in other words, by any patch of a patchset).
+    This is called 'keep the bisectability' because it's essential
+    to make 'git bisect' work properly.
+
+  * Do as much as possible to facilitate reviews from other people.
+    This is also important because patches tend to be accepted quicker
+    if they recieve attention (reviews, testing, etc.).
+
+In this particular case, I think that the easier way to review is to be
+able to see the complete driver in a single patch. Of course, I can be
+wrong, so feel free to correct me.
+
+Please note that the reviews I made where almost nitpicks, and the
+driver looks good in general. I cannot provide any testing for lack of hardware.
+
+Also, for your next patch, add the output of v4l2-compliance tool,
+showing it passes all the tests. This shows your driver is in good shape.
+Get v4l2-compliancefrom the git repo, as distribution often provide
+an outdated version.
+
+(And another thing, please fix your mail client: the reply-to is pointing
+to '20130315120856.GA2989@localhost.arpanet.local'.)
+
+Thanks for your work and best regards,
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
