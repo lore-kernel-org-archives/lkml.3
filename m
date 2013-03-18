@@ -1,29 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab3CREpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:45:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33507 "EHLO
+	id S1752348Ab3CREpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:45:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33450 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751777Ab3CREa1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751723Ab3CREaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:27 -0400
-Message-Id: <20130318042151.627904620@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:24 -0400
+Message-Id: <20130318042150.751715103@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:23:00 +0000
+Date: Mon, 18 Mar 2013 04:22:51 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jiang Liu <jiang.liu@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Keping Chen <chenkeping@huawei.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 76/82] mm/hotplug: correctly add new zone to all other nodes zone lists
+Cc: akpm@linux-foundation.org, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 67/82] hwmon: (pmbus/ltc2978) Fix temperature reporting
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,83 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@huawei.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 08dff7b7d629807dbb1f398c68dd9cd58dd657a1 upstream.
+commit 8c958c703ef8804093437959221951eaf0e1e664 upstream.
 
-When online_pages() is called to add new memory to an empty zone, it
-rebuilds all zone lists by calling build_all_zonelists().  But there's a
-bug which prevents the new zone to be added to other nodes' zone lists.
+On LTC2978, only READ_TEMPERATURE is supported. It reports
+the internal junction temperature. This register is unpaged.
 
-online_pages() {
-	build_all_zonelists()
-	.....
-	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
-}
+On LTC3880, READ_TEMPERATURE and READ_TEMPERATURE2 are supported.
+READ_TEMPERATURE is paged and reports external temperatures.
+READ_TEMPERATURE2 is unpaged and reports the internal junction
+temperature.
 
-Here the node of the zone is put into N_HIGH_MEMORY state after calling
-build_all_zonelists(), but build_all_zonelists() only adds zones from
-nodes in N_HIGH_MEMORY state to the fallback zone lists.
-build_all_zonelists()
-
-    ->__build_all_zonelists()
-	->build_zonelists()
-	    ->find_next_best_node()
-		->for_each_node_state(n, N_HIGH_MEMORY)
-
-So memory in the new zone will never be used by other nodes, and it may
-cause strange behavor when system is under memory pressure.  So put node
-into N_HIGH_MEMORY state before calling build_all_zonelists().
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/memory_hotplug.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/hwmon/pmbus/ltc2978.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -515,19 +515,20 @@ int __ref online_pages(unsigned long pfn
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -59,7 +59,7 @@ enum chips { ltc2978, ltc3880 };
+ struct ltc2978_data {
+ 	enum chips id;
+ 	int vin_min, vin_max;
+-	int temp_min, temp_max;
++	int temp_min, temp_max[2];
+ 	int vout_min[8], vout_max[8];
+ 	int iout_max[2];
+ 	int temp2_max;
+@@ -113,9 +113,10 @@ static int ltc2978_read_word_data_common
+ 		ret = pmbus_read_word_data(client, page,
+ 					   LTC2978_MFR_TEMPERATURE_PEAK);
+ 		if (ret >= 0) {
+-			if (lin11_to_val(ret) > lin11_to_val(data->temp_max))
+-				data->temp_max = ret;
+-			ret = data->temp_max;
++			if (lin11_to_val(ret)
++			    > lin11_to_val(data->temp_max[page]))
++				data->temp_max[page] = ret;
++			ret = data->temp_max[page];
+ 		}
+ 		break;
+ 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
+@@ -266,7 +267,7 @@ static int ltc2978_write_word_data(struc
+ 		break;
+ 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
+ 		data->temp_min = 0x7bff;
+-		data->temp_max = 0x7c00;
++		data->temp_max[page] = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	default:
+@@ -325,7 +326,8 @@ static int ltc2978_probe(struct i2c_clie
+ 	data->vin_min = 0x7bff;
+ 	data->vin_max = 0x7c00;
+ 	data->temp_min = 0x7bff;
+-	data->temp_max = 0x7c00;
++	for (i = 0; i < ARRAY_SIZE(data->temp_max); i++)
++		data->temp_max[i] = 0x7c00;
+ 	data->temp2_max = 0x7c00;
  
- 	zone->present_pages += onlined_pages;
- 	zone->zone_pgdat->node_present_pages += onlined_pages;
--	if (need_zonelists_rebuild)
--		build_all_zonelists(zone);
--	else
--		zone_pcp_update(zone);
-+	if (onlined_pages) {
-+		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-+		if (need_zonelists_rebuild)
-+			build_all_zonelists(zone);
-+		else
-+			zone_pcp_update(zone);
-+	}
- 
- 	mutex_unlock(&zonelists_mutex);
- 
- 	init_per_zone_wmark_min();
- 
--	if (onlined_pages) {
-+	if (onlined_pages)
- 		kswapd_run(zone_to_nid(zone));
--		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
--	}
- 
- 	vm_total_pages = nr_free_pagecache_pages();
- 
+ 	switch (data->id) {
 
 
