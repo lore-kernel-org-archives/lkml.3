@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3CRKpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 06:45:51 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:39622 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752354Ab3CRKpr (ORCPT
+	id S1752753Ab3CRKvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 06:51:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33879 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab3CRKvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:45:47 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        <stable@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] gpio: stmpe: pass DT node to irqdomain
-Date: Mon, 18 Mar 2013 11:45:05 +0100
-Message-ID: <1363603505-2996-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Mon, 18 Mar 2013 06:51:37 -0400
+Date: Mon, 18 Mar 2013 03:50:12 -0700
+From: tip-bot for Michael Ellerman <tipbot@zytor.com>
+Message-ID: <tip-1e825efb571a87d039cb3fe7ca833a25f11c7cb9@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, michael@ellerman.id.au, namhyung.kim@lge.com,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, michael@ellerman.id.au, namhyung.kim@lge.com,
+        namhyung@kernel.org, tglx@linutronix.de, feng.tang@intel.com
+In-Reply-To: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
+References: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf annotate: Fix build with NO_NEWT=1
+Git-Commit-ID: 1e825efb571a87d039cb3fe7ca833a25f11c7cb9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:50:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Commit-ID:  1e825efb571a87d039cb3fe7ca833a25f11c7cb9
+Gitweb:     http://git.kernel.org/tip/1e825efb571a87d039cb3fe7ca833a25f11c7cb9
+Author:     Michael Ellerman <michael@ellerman.id.au>
+AuthorDate: Tue, 26 Feb 2013 16:02:02 +1100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 13 Mar 2013 16:54:49 -0300
 
-The irq domain was implemented but the device tree
-node was not transmitted to irq_domain_add_simple().
+perf annotate: Fix build with NO_NEWT=1
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
+the build with NO_NEWT=1:
+
+   CC builtin-annotate.o
+builtin-annotate.c: In function 'hists__find_annotations':
+builtin-annotate.c:161:4: error: duplicate case value
+builtin-annotate.c:154:4: error: previously used here
+make: *** [builtin-annotate.o] Error 1
+
+This is because without NEWT support K_LEFT is #defined to -1 in
+utils/hist.h
+
+Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
+of error values.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1361854923-1814-1-git-send-email-michael@ellerman.id.au
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/gpio/gpio-stmpe.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ tools/perf/util/hist.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index 770476a..3ce5bc3 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -307,11 +307,15 @@ static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
- 	.xlate = irq_domain_xlate_twocell,
- };
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 3862468..609a115 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -208,8 +208,8 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ 	return 0;
+ }
  
--static int stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
-+static int stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio,
-+		struct device_node *np)
- {
--	int base = stmpe_gpio->irq_base;
-+	int base = 0;
+-#define K_LEFT -1
+-#define K_RIGHT -2
++#define K_LEFT  -1000
++#define K_RIGHT -2000
+ #endif
  
--	stmpe_gpio->domain = irq_domain_add_simple(NULL,
-+	if (!np)
-+		base = stmpe_gpio->irq_base;
-+
-+	stmpe_gpio->domain = irq_domain_add_simple(np,
- 				stmpe_gpio->chip.ngpio, base,
- 				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
- 	if (!stmpe_gpio->domain) {
-@@ -346,6 +350,9 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
- 	stmpe_gpio->chip = template_chip;
- 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
- 	stmpe_gpio->chip.dev = &pdev->dev;
-+#ifdef CONFIG_OF
-+	stmpe_gpio->chip.of_node = np;
-+#endif
- 	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
- 
- 	if (pdata)
-@@ -366,7 +373,7 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
- 		goto out_free;
- 
- 	if (irq >= 0) {
--		ret = stmpe_gpio_irq_init(stmpe_gpio);
-+		ret = stmpe_gpio_irq_init(stmpe_gpio, np);
- 		if (ret)
- 			goto out_disable;
- 
--- 
-1.7.11.3
-
+ #ifdef GTK2_SUPPORT
