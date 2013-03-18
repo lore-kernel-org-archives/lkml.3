@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3CRV5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:57:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45582 "EHLO
+	id S932361Ab3CRV6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:58:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45569 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3CRVGv (ORCPT
+	with ESMTP id S1755476Ab3CRVGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:51 -0400
+	Mon, 18 Mar 2013 17:06:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 30/75] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
-Date: Mon, 18 Mar 2013 14:06:53 -0700
-Message-Id: <20130318210512.406466082@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 28/75] ARM: kirkwood: fix to retain gbe MAC addresses for DT kernels
+Date: Mon, 18 Mar 2013 14:06:51 -0700
+Message-Id: <20130318210512.273792876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,74 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-commit 66efdc71d95887b652a742a5dae51fa834d71465 upstream.
+commit 7bf5b408b419fc849578e6e9fbd221bf43638eb6 upstream.
 
-snd_seq_timer_open() didn't catch the whole error path but let through
-if the timer id is a slave.  This may lead to Oops by accessing the
-uninitialized pointer.
+The ethernet controller used on kirkwood looses its MAC address
+register contents when the corresponding clock is gated. As soon as
+mv643xx_eth is built as module, the clock gets gated and when loading
+the module, the MAC address is gone.
 
- BUG: unable to handle kernel NULL pointer dereference at 00000000000002ae
- IP: [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- PGD 785cd067 PUD 76964067 PMD 0
- Oops: 0002 [#4] SMP
- CPU 0
- Pid: 4288, comm: trinity-child7 Tainted: G      D W 3.9.0-rc1+ #100 Bochs Bochs
- RIP: 0010:[<ffffffff819b3477>]  [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- RSP: 0018:ffff88006ece7d38  EFLAGS: 00010246
- RAX: 0000000000000286 RBX: ffff88007851b400 RCX: 0000000000000000
- RDX: 000000000000ffff RSI: ffff88006ece7d58 RDI: ffff88006ece7d38
- RBP: ffff88006ece7d98 R08: 000000000000000a R09: 000000000000fffe
- R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
- R13: ffff8800792c5400 R14: 0000000000e8f000 R15: 0000000000000007
- FS:  00007f7aaa650700(0000) GS:ffff88007f800000(0000) GS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 00000000000002ae CR3: 000000006efec000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process trinity-child7 (pid: 4288, threadinfo ffff88006ece6000, task ffff880076a8a290)
- Stack:
-  0000000000000286 ffffffff828f2be0 ffff88006ece7d58 ffffffff810f354d
-  65636e6575716573 2065756575712072 ffff8800792c0030 0000000000000000
-  ffff88006ece7d98 ffff8800792c5400 ffff88007851b400 ffff8800792c5520
- Call Trace:
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff819b17e9>] snd_seq_queue_timer_open+0x29/0x70
-  [<ffffffff819ae01a>] snd_seq_ioctl_set_queue_timer+0xda/0x120
-  [<ffffffff819acb9b>] snd_seq_do_ioctl+0x9b/0xd0
-  [<ffffffff819acbe0>] snd_seq_ioctl+0x10/0x20
-  [<ffffffff811b9542>] do_vfs_ioctl+0x522/0x570
-  [<ffffffff8130a4b3>] ? file_has_perm+0x83/0xa0
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff811b95ed>] sys_ioctl+0x5d/0xa0
-  [<ffffffff813663fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81faed69>] system_call_fastpath+0x16/0x1b
+Proper DT support for the mv643xx_eth driver is expected soon, so we add
+a workaround to always enable ge0/ge1 clocks on kirkwood. This workaround
+is also already used on non-DT kirkwood kernels.
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Simon Baatz <gmbnomis@gmail.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Simon Baatz <gmbnomis@gmail.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/seq/seq_timer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-kirkwood/board-dt.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
---- a/sound/core/seq/seq_timer.c
-+++ b/sound/core/seq/seq_timer.c
-@@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_qu
- 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
- 			err = snd_timer_open(&t, str, &tid, q->queue);
- 		}
--		if (err < 0) {
--			snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
--			return err;
--		}
-+	}
-+	if (err < 0) {
-+		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
-+		return err;
- 	}
- 	t->callback = snd_seq_timer_interrupt;
- 	t->callback_data = q;
+--- a/arch/arm/mach-kirkwood/board-dt.c
++++ b/arch/arm/mach-kirkwood/board-dt.c
+@@ -41,16 +41,12 @@ static void __init kirkwood_legacy_clk_i
+ 
+ 	struct device_node *np = of_find_compatible_node(
+ 		NULL, NULL, "marvell,kirkwood-gating-clock");
+-
+ 	struct of_phandle_args clkspec;
++	struct clk *clk;
+ 
+ 	clkspec.np = np;
+ 	clkspec.args_count = 1;
+ 
+-	clkspec.args[0] = CGC_BIT_GE0;
+-	orion_clkdev_add(NULL, "mv643xx_eth_port.0",
+-			 of_clk_get_from_provider(&clkspec));
+-
+ 	clkspec.args[0] = CGC_BIT_PEX0;
+ 	orion_clkdev_add("0", "pcie",
+ 			 of_clk_get_from_provider(&clkspec));
+@@ -63,14 +59,24 @@ static void __init kirkwood_legacy_clk_i
+ 	orion_clkdev_add("1", "pcie",
+ 			 of_clk_get_from_provider(&clkspec));
+ 
+-	clkspec.args[0] = CGC_BIT_GE1;
+-	orion_clkdev_add(NULL, "mv643xx_eth_port.1",
+-			 of_clk_get_from_provider(&clkspec));
+-
+ 	clkspec.args[0] = CGC_BIT_SDIO;
+ 	orion_clkdev_add(NULL, "mvsdio",
+ 			 of_clk_get_from_provider(&clkspec));
+ 
++	/*
++	 * The ethernet interfaces forget the MAC address assigned by
++	 * u-boot if the clocks are turned off. Until proper DT support
++	 * is available we always enable them for now.
++	 */
++	clkspec.args[0] = CGC_BIT_GE0;
++	clk = of_clk_get_from_provider(&clkspec);
++	orion_clkdev_add(NULL, "mv643xx_eth_port.0", clk);
++	clk_prepare_enable(clk);
++
++	clkspec.args[0] = CGC_BIT_GE1;
++	clk = of_clk_get_from_provider(&clkspec);
++	orion_clkdev_add(NULL, "mv643xx_eth_port.1", clk);
++	clk_prepare_enable(clk);
+ }
+ 
+ static void __init kirkwood_of_clk_init(void)
 
 
