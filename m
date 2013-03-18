@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3CREaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:30:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33376 "EHLO
+	id S1752016Ab3CREnv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:43:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33554 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751235Ab3CREaC (ORCPT
+	by vger.kernel.org with ESMTP id S1751235Ab3CREah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:02 -0400
-Message-Id: <20130318042144.720294013@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:37 -0400
+Message-Id: <20130318042149.269033401@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:49 +0000
+Date: Mon, 18 Mar 2013 04:22:36 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 05/82] SUNRPC: Dont start the retransmission timer when out of socket
- space
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
+Subject: [ 52/82] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,44 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a9a6b52ee1baa865283a91eb8d443ee91adfca56 upstream.
+commit 66efdc71d95887b652a742a5dae51fa834d71465 upstream.
 
-If the socket is full, we're better off just waiting until it empties,
-or until the connection is broken. The reason why we generally don't
-want to time out is that the call to xprt->ops->release_xprt() will
-trigger a connection reset, which isn't helpful...
+snd_seq_timer_open() didn't catch the whole error path but let through
+if the timer id is a slave.  This may lead to Oops by accessing the
+uninitialized pointer.
 
-Let's make an exception for soft RPC calls, since they have to provide
-timeout guarantees.
+ BUG: unable to handle kernel NULL pointer dereference at 00000000000002ae
+ IP: [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
+ PGD 785cd067 PUD 76964067 PMD 0
+ Oops: 0002 [#4] SMP
+ CPU 0
+ Pid: 4288, comm: trinity-child7 Tainted: G      D W 3.9.0-rc1+ #100 Bochs Bochs
+ RIP: 0010:[<ffffffff819b3477>]  [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
+ RSP: 0018:ffff88006ece7d38  EFLAGS: 00010246
+ RAX: 0000000000000286 RBX: ffff88007851b400 RCX: 0000000000000000
+ RDX: 000000000000ffff RSI: ffff88006ece7d58 RDI: ffff88006ece7d38
+ RBP: ffff88006ece7d98 R08: 000000000000000a R09: 000000000000fffe
+ R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+ R13: ffff8800792c5400 R14: 0000000000e8f000 R15: 0000000000000007
+ FS:  00007f7aaa650700(0000) GS:ffff88007f800000(0000) GS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 00000000000002ae CR3: 000000006efec000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process trinity-child7 (pid: 4288, threadinfo ffff88006ece6000, task ffff880076a8a290)
+ Stack:
+  0000000000000286 ffffffff828f2be0 ffff88006ece7d58 ffffffff810f354d
+  65636e6575716573 2065756575712072 ffff8800792c0030 0000000000000000
+  ffff88006ece7d98 ffff8800792c5400 ffff88007851b400 ffff8800792c5520
+ Call Trace:
+  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffff819b17e9>] snd_seq_queue_timer_open+0x29/0x70
+  [<ffffffff819ae01a>] snd_seq_ioctl_set_queue_timer+0xda/0x120
+  [<ffffffff819acb9b>] snd_seq_do_ioctl+0x9b/0xd0
+  [<ffffffff819acbe0>] snd_seq_ioctl+0x10/0x20
+  [<ffffffff811b9542>] do_vfs_ioctl+0x522/0x570
+  [<ffffffff8130a4b3>] ? file_has_perm+0x83/0xa0
+  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffff811b95ed>] sys_ioctl+0x5d/0xa0
+  [<ffffffff813663fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81faed69>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/xprt.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ sound/core/seq/seq_timer.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -481,13 +481,17 @@ EXPORT_SYMBOL_GPL(xprt_wake_pending_task
-  * xprt_wait_for_buffer_space - wait for transport output buffer to clear
-  * @task: task to be put to sleep
-  * @action: function pointer to be executed after wait
-+ *
-+ * Note that we only set the timer for the case of RPC_IS_SOFT(), since
-+ * we don't in general want to force a socket disconnection due to
-+ * an incomplete RPC call transmission.
-  */
- void xprt_wait_for_buffer_space(struct rpc_task *task, rpc_action action)
- {
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 
--	task->tk_timeout = req->rq_timeout;
-+	task->tk_timeout = RPC_IS_SOFT(task) ? req->rq_timeout : 0;
- 	rpc_sleep_on(&xprt->pending, task, action);
- }
- EXPORT_SYMBOL_GPL(xprt_wait_for_buffer_space);
+--- a/sound/core/seq/seq_timer.c
++++ b/sound/core/seq/seq_timer.c
+@@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_qu
+ 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
+ 			err = snd_timer_open(&t, str, &tid, q->queue);
+ 		}
+-		if (err < 0) {
+-			snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
+-			return err;
+-		}
++	}
++	if (err < 0) {
++		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
++		return err;
+ 	}
+ 	t->callback = snd_seq_timer_interrupt;
+ 	t->callback_data = q;
 
 
