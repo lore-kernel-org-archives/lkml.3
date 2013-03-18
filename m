@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3CRVRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:17:11 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36906 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab3CRVRI (ORCPT
+	id S932867Ab3CRVTI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:19:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46097 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab3CRVKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:17:08 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Mon, 18 Mar 2013 17:10:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/7] rcu: Avoid invoking RCU core on offline CPUs
-Date: Mon, 18 Mar 2013 14:16:51 -0700
-Message-Id: <1363641416-18642-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363641416-18642-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130318211615.GA15814@linux.vnet.ibm.com>
- <1363641416-18642-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-2876-0000-0000-00000674262D
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 23/40] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+Date: Mon, 18 Mar 2013 14:11:01 -0700
+Message-Id: <20130318211017.918571608@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
+References: <20130318211016.254453918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Offline CPUs transition through the scheduler to the idle loop one
-last time before being shut down.  This can result in RCU raising
-softirq on this CPU, which is at best useless given that the CPU's
-callbacks will be offloaded at CPU_DEAD time.  This commit therefore
-avoids raising softirq on offline CPUs.
+------------------
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+
+commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
+
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
+suspend/resume") fixed a crash when doing PEBS performance profiling
+after resuming, but in using init_debug_store_on_cpu() to restore the
+DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
+
+init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
+cross-calls to do the MSR update.  Which is not really valid at the
+early resume stage, and the warning is quite reasonable.  Now, it all
+happens to _work_, for the simple reason that smp_call_function_single()
+ends up just doing the call directly on the CPU when the CPU number
+matches, but we really should just do the wrmsr() directly instead.
+
+This duplicates the wrmsr() logic, but hopefully we can just remove the
+wrmsr_on_cpu() version eventually.
+
+Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/rcutree.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 157539a..b2fc234 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2169,7 +2169,8 @@ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -756,10 +756,12 @@ static void intel_ds_init(void)
  
- static void invoke_rcu_core(void)
+ void perf_restore_debug_store(void)
  {
--	raise_softirq(RCU_SOFTIRQ);
-+	if (cpu_online(smp_processor_id()))
-+		raise_softirq(RCU_SOFTIRQ);
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
++
+ 	if (!x86_pmu.bts && !x86_pmu.pebs)
+ 		return;
+ 
+-	init_debug_store_on_cpu(smp_processor_id());
++	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
  }
  
- /*
--- 
-1.8.1.5
+ #else /* CONFIG_CPU_SUP_INTEL */
+
 
