@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab3CREak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:30:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33378 "EHLO
+	id S1752133Ab3CREm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:42:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33569 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751228Ab3CREaE (ORCPT
+	by vger.kernel.org with ESMTP id S1751893Ab3CREaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:04 -0400
-Message-Id: <20130318042144.636886230@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:39 -0400
+Message-Id: <20130318042148.723270831@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:48 +0000
+Date: Mon, 18 Mar 2013 04:22:30 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Wysochanski <dwysocha@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [ 04/82] NFS: Dont allow NFS silly-renamed files to be deleted, no signal
+Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 46/82] xen/pciback: Dont disable a PCI device that is already disabled.
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,89 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 5a7a613a47a715711b3f2d3322a0eac21d459166 upstream.
+commit bdc5c1812cea6efe1aaefb3131fcba28cd0b2b68 upstream.
 
-Commit 73ca100 broke the code that prevents the client from deleting
-a silly renamed dentry.  This affected "delete on last close"
-semantics as after that commit, nothing prevented removal of
-silly-renamed files.  As a result, a process holding a file open
-could easily get an ESTALE on the file in a directory where some
-other process issued 'rm -rf some_dir_containing_the_file' twice.
-Before the commit, any attempt at unlinking silly renamed files would
-fail inside may_delete() with -EBUSY because of the
-DCACHE_NFSFS_RENAMED flag.  The following testcase demonstrates
-the problem:
-  tail -f /nfsmnt/dir/file &
-  rm -rf /nfsmnt/dir
-  rm -rf /nfsmnt/dir
-  # second removal does not fail, 'tail' process receives ESTALE
+While shuting down a HVM guest with pci devices passed through we
+get this:
 
-The problem with the above commit is that it unhashes the old and
-new dentries from the lookup path, even in the normal case when
-a signal is not encountered and it would have been safe to call
-d_move.  Unfortunately the old dentry has the special
-DCACHE_NFSFS_RENAMED flag set on it.  Unhashing has the
-side-effect that future lookups call d_alloc(), allocating a new
-dentry without the special flag for any silly-renamed files.  As a
-result, subsequent calls to unlink silly renamed files do not fail
-but allow the removal to go through.  This will result in ESTALE
-errors for any other process doing operations on the file.
+pciback 0000:04:00.0: restoring config space at offset 0x4 (was 0x100000, writing 0x100002)
+------------[ cut here ]------------
+WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x88/0xa0()
+Hardware name: MS-7640
+Device pciback
+disabling already-disabled device
+Modules linked in:
+Pid: 53, comm: xenwatch Not tainted 3.9.0-rc1-20130304a+ #1
+Call Trace:
+ [<ffffffff8106994a>] warn_slowpath_common+0x7a/0xc0
+ [<ffffffff81069a31>] warn_slowpath_fmt+0x41/0x50
+ [<ffffffff813cf288>] pci_disable_device+0x88/0xa0
+ [<ffffffff814554a7>] xen_pcibk_reset_device+0x37/0xd0
+ [<ffffffff81454b6f>] ? pcistub_put_pci_dev+0x6f/0x120
+ [<ffffffff81454b8d>] pcistub_put_pci_dev+0x8d/0x120
+ [<ffffffff814582a9>] __xen_pcibk_release_devices+0x59/0xa0
 
-To fix this, go back to using d_move on success.
-For the signal case, it's unclear what we may safely do beyond d_drop.
+This fixes the bug.
 
-Reported-by: Dave Wysochanski <dwysocha@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
+Reported-and-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/unlink.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ drivers/xen/xen-pciback/pciback_ops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/unlink.c
-+++ b/fs/nfs/unlink.c
-@@ -366,20 +366,14 @@ static void nfs_async_rename_done(struct
- 	struct inode *old_dir = data->old_dir;
- 	struct inode *new_dir = data->new_dir;
- 	struct dentry *old_dentry = data->old_dentry;
--	struct dentry *new_dentry = data->new_dentry;
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -114,7 +114,8 @@ void xen_pcibk_reset_device(struct pci_d
+ 		if (dev->msi_enabled)
+ 			pci_disable_msi(dev);
+ #endif
+-		pci_disable_device(dev);
++		if (pci_is_enabled(dev))
++			pci_disable_device(dev);
  
- 	if (!NFS_PROTO(old_dir)->rename_done(task, old_dir, new_dir)) {
- 		rpc_restart_call_prepare(task);
- 		return;
- 	}
+ 		pci_write_config_word(dev, PCI_COMMAND, 0);
  
--	if (task->tk_status != 0) {
-+	if (task->tk_status != 0)
- 		nfs_cancel_async_unlink(old_dentry);
--		return;
--	}
--
--	d_drop(old_dentry);
--	d_drop(new_dentry);
- }
- 
- /**
-@@ -589,6 +583,18 @@ nfs_sillyrename(struct inode *dir, struc
- 	error = rpc_wait_for_completion_task(task);
- 	if (error == 0)
- 		error = task->tk_status;
-+	switch (error) {
-+	case 0:
-+		/* The rename succeeded */
-+		nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
-+		d_move(dentry, sdentry);
-+		break;
-+	case -ERESTARTSYS:
-+		/* The result of the rename is unknown. Play it safe by
-+		 * forcing a new lookup */
-+		d_drop(dentry);
-+		d_drop(sdentry);
-+	}
- 	rpc_put_task(task);
- out_dput:
- 	dput(sdentry);
 
 
