@@ -1,126 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3CRRhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 13:37:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33715 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab3CRRhc (ORCPT
+	id S1752819Ab3CRRmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 13:42:47 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:60644 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab3CRRmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 13:37:32 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>, stable@kernel.org
-Subject: [PATCH] PCI: Remove not needed check in disable aspm link
-Date: Mon, 18 Mar 2013 10:37:06 -0700
-Message-Id: <1363628226-6679-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
-References: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 18 Mar 2013 13:42:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <87sj3tsawh.fsf@rustcorp.com.au>
+References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
+ <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com>
+ <87sj3tsawh.fsf@rustcorp.com.au>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 18 Mar 2013 13:42:23 -0400
+Message-ID: <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com>
+Subject: Re: [RFC PATCH] Allow optional module parameters
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roman reported ath5k does not work anymore on 3.8.
-Bisected to
-| commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6
-| Author: Taku Izumi <izumi.taku@jp.fujitsu.com>
-| Date:   Tue Oct 30 15:27:13 2012 +0900
-|
-|    PCI/ACPI: Request _OSC control before scanning PCI root bus
-|
-|    This patch moves up the code block to request _OSC control in order to
-|    separate ACPI work and PCI work in acpi_pci_root_add().
+On Sun, Mar 17, 2013 at 7:24 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>> On Thu, Mar 14, 2013 at 10:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>> Current parameter behavior is odd.  Boot parameters that have values
+>>>> and don't match anything become environment variables, with no
+>>>> warning.  Boot parameters without values that don't match anything
+>>>> go into argv_init.  Everything goes into /proc/cmdline.
+>>>>
+>>>> The init_module and finit_module syscalls, however, are strict:
+>>>> parameters that don't match result in -ENOENT.
+>>>>
+>>>> kmod (and hence modprobe), when loading a module called foo, look in
+>>>> /proc/cmdline for foo.x or foo.x=y, strip off the foo., and pass the
+>>>> rest to init_module.
+>>>>
+>>>> The upshot is that booting with module.nonexistent_parameter=1 is
+>>>> okay if module is built in or missing entirely but prevents module
+>>>> from loading if it's an actual module.  Similarly, option module
+>>>> nonexistent_parameter=1 in /etc/modprobe.d prevents the module from
+>>>> loading the parameter goes away.  This means that removing module
+>>>> parameters unnecessarily breaks things.
+>>>
+>>> Err, yes.  Don't remove module parameters, they're part of the API.  Do
+>>> you have a particular example?
+>>
+>> So things like i915.i915_enable_ppgtt, which is there to enable
+>> something experimental, needs to stay forever once the relevant
+>> feature becomes non-experimental and non-optional?  This seems silly.
+>
+> Well, it's either experimental, in which case you're happy to break
+> users who use it, or it's not, in which case, don't.
 
-It make pci_disable_link_state does not work anymore as acpi_disabled
-is set before pci root bus scanning.
-It will skip that in quirks and pcie_aspm_sanity_check.
+Sure.  The main issue for me annoyance.  Install kernel with
+experimental option.  Set that option in grub's config.  Boot another
+kernel.  Grr, the option got propagated there and now I have no
+graphics.
 
-We could revert to old logic, but that will make booting path and hotplug
-path with different aspm_disabled again.
+>
+>> Having the module parameter go away while still allowing the module to
+>> load seems like a good solution (possibly with a warning in the logs
+>> so the user can eventually delete the parameter).
+>
+> Why not do that for *every* missing parameter then?  Why have this weird
+> notation where the user must know that the parameter might one day go
+> away?
 
-Acctually we don't need to check aspm_disabled in disable link, as
-we already have protection about link state following.
+Fair enough.  What about the other approach, then?  Always warn if an
+option doesn't match (built-in or otherwise) but load the module
+anyways.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=55211
-http://article.gmane.org/gmane.linux.kernel.pci/20640
-
-Need it for 3.8 stable.
-
-Reported-by: Roman Yepishev <roman.yepishev@gmail.com>
-Bisected-by: Roman Yepishev <roman.yepishev@gmail.com>
-Tested-by: Roman Yepishev <roman.yepishev@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Taku Izumi <izumi.taku@jp.fujitsu.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: stable@kernel.org
-
----
- drivers/pci/pcie/aspm.c |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
-
-Index: linux-2.6/drivers/pci/pcie/aspm.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aspm.c
-+++ linux-2.6/drivers/pci/pcie/aspm.c
-@@ -493,15 +493,6 @@ static int pcie_aspm_sanity_check(struct
- 			return -EINVAL;
- 
- 		/*
--		 * If ASPM is disabled then we're not going to change
--		 * the BIOS state. It's safe to continue even if it's a
--		 * pre-1.1 device
--		 */
--
--		if (aspm_disabled)
--			continue;
--
--		/*
- 		 * Disable ASPM for pre-1.1 PCIe device, we follow MS to use
- 		 * RBER bit to determine if a function is 1.1 version device
- 		 */
-@@ -718,15 +709,11 @@ void pcie_aspm_powersave_config_link(str
-  * pci_disable_link_state - disable pci device's link state, so the link will
-  * never enter specific states
-  */
--static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
--				     bool force)
-+static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem)
- {
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link;
- 
--	if (aspm_disabled && !force)
--		return;
--
- 	if (!pci_is_pcie(pdev))
- 		return;
- 
-@@ -757,13 +744,13 @@ static void __pci_disable_link_state(str
- 
- void pci_disable_link_state_locked(struct pci_dev *pdev, int state)
- {
--	__pci_disable_link_state(pdev, state, false, false);
-+	__pci_disable_link_state(pdev, state, false);
- }
- EXPORT_SYMBOL(pci_disable_link_state_locked);
- 
- void pci_disable_link_state(struct pci_dev *pdev, int state)
- {
--	__pci_disable_link_state(pdev, state, true, false);
-+	__pci_disable_link_state(pdev, state, true);
- }
- EXPORT_SYMBOL(pci_disable_link_state);
- 
-@@ -781,7 +768,7 @@ void pcie_clear_aspm(struct pci_bus *bus
- 		__pci_disable_link_state(child, PCIE_LINK_STATE_L0S |
- 					 PCIE_LINK_STATE_L1 |
- 					 PCIE_LINK_STATE_CLKPM,
--					 false, true);
-+					 false);
- 	}
- }
- 
+--Andy
