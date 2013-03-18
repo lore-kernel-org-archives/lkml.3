@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab3CRVWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:22:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46038 "EHLO
+	id S1756921Ab3CRVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:22:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626Ab3CRVKK (ORCPT
+	with ESMTP id S1756617Ab3CRVKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:10 -0400
+	Mon, 18 Mar 2013 17:10:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 10/40] staging: vt6656: Fix oops on resume from suspend.
-Date: Mon, 18 Mar 2013 14:10:48 -0700
-Message-Id: <20130318211017.007886240@linuxfoundation.org>
+        "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [ 05/40] usb: cp210x new Vendor/Device IDs
+Date: Mon, 18 Mar 2013 14:10:43 -0700
+Message-Id: <20130318211016.638847143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -26,41 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 
-commit 6987a6dabfc40222ef767f67b57212fe3a0225fb upstream.
+commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
 
-Remove usb_put_dev from vt6656_suspend and usb_get_dev
-from vt6566_resume.
+This patch adds support for the Lake Shore Cryotronics devices to
+the CP210x driver.
 
-These are not normally in suspend/resume functions.
+These lines are ported from cp210x driver distributed by Lake Shore web site:
+   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
+and licensed under the terms of GPLv2.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Moreover, I've tested this changes with Lake Shore 335 in my labs.
+
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/main_usb.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -725,8 +725,6 @@ static int vt6656_suspend(struct usb_int
- 	if (device->flags & DEVICE_FLAGS_OPENED)
- 		device_close(device->dev);
- 
--	usb_put_dev(interface_to_usbdev(intf));
--
- 	return 0;
- }
- 
-@@ -737,8 +735,6 @@ static int vt6656_resume(struct usb_inte
- 	if (!device || !device->dev)
- 		return -ENODEV;
- 
--	usb_get_dev(interface_to_usbdev(intf));
--
- 	if (!(device->flags & DEVICE_FLAGS_OPENED))
- 		device_open(device->dev);
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -156,6 +156,25 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
++	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
++	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
++	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
++	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
++	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
+ 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
+ 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
+ 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
 
 
