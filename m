@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab3CRWGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 18:06:50 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47808 "EHLO
+	id S1757088Ab3CRWGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:06:49 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55896 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754479Ab3CRWGr (ORCPT
+	by vger.kernel.org with ESMTP id S1754463Ab3CRWGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 18:06:47 -0400
-X-Sasl-enc: yRS1kHPv6/NZrSui4xgQeQ1y/zvZeoTjgGdI70lJHZHa 1363644406
+X-Sasl-enc: oEvMgm+miQeImwHK3dvBWtgIeYtF/xp9zS4uNjNS/8Jg 1363644405
 From: Alan Ott <alan@signal11.us>
 To: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org
 Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH 1/4] mrf24j40: pinctrl support
-Date: Mon, 18 Mar 2013 18:06:40 -0400
-Message-Id: <1363644403-11003-2-git-send-email-alan@signal11.us>
+Subject: [PATCH 0/4] Misc MRF24J40 Fixes
+Date: Mon, 18 Mar 2013 18:06:39 -0400
+Message-Id: <1363644403-11003-1-git-send-email-alan@signal11.us>
 X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1363644403-11003-1-git-send-email-alan@signal11.us>
-References: <1363644403-11003-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Activate pinctrl settings when used with a DT system.
+These are fairly straight-forward.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- drivers/net/ieee802154/mrf24j40.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Alan Ott (4):
+  mrf24j40: pinctrl support
+  mrf24j40: Warn if transmit interrupts timeout
+  mrf24j40: Increase max SPI speed to 10MHz
+  mrf24j40: Fix byte-order of IEEE address
 
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 3f2c7aa..3106895 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -22,6 +22,7 @@
- #include <linux/spi/spi.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
-+#include <linux/pinctrl/consumer.h>
- #include <net/wpan-phy.h>
- #include <net/mac802154.h>
- 
-@@ -623,6 +624,7 @@ static int mrf24j40_probe(struct spi_device *spi)
- 	int ret = -ENOMEM;
- 	u8 val;
- 	struct mrf24j40 *devrec;
-+	struct pinctrl *pinctrl;
- 
- 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
- 
-@@ -633,6 +635,11 @@ static int mrf24j40_probe(struct spi_device *spi)
- 	if (!devrec->buf)
- 		goto err_buf;
- 
-+	pinctrl = devm_pinctrl_get_select_default(&spi->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&spi->dev,
-+			"pinctrl pins are not configured from the driver");
-+
- 	spi->mode = SPI_MODE_0; /* TODO: Is this appropriate for right here? */
- 	if (spi->max_speed_hz > MAX_SPI_SPEED_HZ)
- 		spi->max_speed_hz = MAX_SPI_SPEED_HZ;
+ drivers/net/ieee802154/mrf24j40.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
 -- 
 1.7.11.2
 
