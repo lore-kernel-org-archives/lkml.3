@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab3CRQnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:43:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36329 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3CRQZu (ORCPT
+	id S1754390Ab3CRQn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:43:58 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51388 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab3CRQn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:50 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/54] perf tools: Remove a write-only variable in the debugfs code
-Date: Mon, 18 Mar 2013 13:24:47 -0300
-Message-Id: <1363623939-10748-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
-References: <1363623939-10748-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 18 Mar 2013 12:43:57 -0400
+Date: Mon, 18 Mar 2013 09:43:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <clark@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: workqueue code needing preemption disabled
+Message-ID: <20130318164351.GA21516@mtj.dyndns.org>
+References: <1363617383.25967.152.camel@gandalf.local.home>
+ <20130318160652.GA20133@mtj.dyndns.org>
+ <1363623799.25967.172.camel@gandalf.local.home>
+ <1363624020.25967.175.camel@gandalf.local.home>
+ <1363624243.25967.178.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363624243.25967.178.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Hello, Steven.
 
-debugfs_premounted is written-to only so drop it. This functionality is
-covered by debugfs_found now. Make it a bool while at it.
+On Mon, Mar 18, 2013 at 12:30:43PM -0400, Steven Rostedt wrote:
+> If you happen to know the critical areas that require preemption to be
+> disabled for real, we can encapsulate them with:
+> 
+> 	preempt_disable_rt();
+> 
+> 	preempt_enable_rt();
+> 
+> These are currently only in the -rt patch, but it annotates locations
+> that require preemption to be disabled even when -rt converts spin_locks
+> into mutexes. These obviously can not contain spin_locks() as
+> spin_locks() can block and schedule out.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1361374353-30385-2-git-send-email-bp@alien8.de
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/debugfs.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+Making gcwq locks disable preemption would be much safer / easier, but
+if that's not desirable, anything touching gcwq->idle_list would be a
+good place to start - worker_enter_idle() and worker_leave_idle().
+Hmmm... ignoring CPU hotplug, I think those two might just do it.
+Give it a try?  How reproducible is the problem?
 
-diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-index dd8b193..e55495c 100644
---- a/tools/perf/util/debugfs.c
-+++ b/tools/perf/util/debugfs.c
-@@ -5,7 +5,6 @@
- #include <linux/kernel.h>
- #include <sys/mount.h>
- 
--static int debugfs_premounted;
- char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
- char tracing_events_path[PATH_MAX + 1] = "/sys/kernel/debug/tracing/events";
- 
-@@ -15,7 +14,7 @@ static const char *debugfs_known_mountpoints[] = {
- 	0,
- };
- 
--static int debugfs_found;
-+static bool debugfs_found;
- 
- /* find the path to the mounted debugfs */
- const char *debugfs_find_mountpoint(void)
-@@ -30,7 +29,7 @@ const char *debugfs_find_mountpoint(void)
- 	ptr = debugfs_known_mountpoints;
- 	while (*ptr) {
- 		if (debugfs_valid_mountpoint(*ptr) == 0) {
--			debugfs_found = 1;
-+			debugfs_found = true;
- 			strcpy(debugfs_mountpoint, *ptr);
- 			return debugfs_mountpoint;
- 		}
-@@ -52,7 +51,7 @@ const char *debugfs_find_mountpoint(void)
- 	if (strcmp(type, "debugfs") != 0)
- 		return NULL;
- 
--	debugfs_found = 1;
-+	debugfs_found = true;
- 
- 	return debugfs_mountpoint;
- }
-@@ -82,10 +81,8 @@ static void debugfs_set_tracing_events_path(const char *mountpoint)
- char *debugfs_mount(const char *mountpoint)
- {
- 	/* see if it's already mounted */
--	if (debugfs_find_mountpoint()) {
--		debugfs_premounted = 1;
-+	if (debugfs_find_mountpoint())
- 		goto out;
--	}
- 
- 	/* if not mounted and no argument */
- 	if (mountpoint == NULL) {
-@@ -100,7 +97,7 @@ char *debugfs_mount(const char *mountpoint)
- 		return NULL;
- 
- 	/* save the mountpoint */
--	debugfs_found = 1;
-+	debugfs_found = true;
- 	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
- out:
- 	debugfs_set_tracing_events_path(debugfs_mountpoint);
+Thanks.
+
 -- 
-1.7.1
-
+tejun
