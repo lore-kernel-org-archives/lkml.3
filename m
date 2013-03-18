@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab3CRIdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:33:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52149 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab3CRIdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:33:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,863,1355126400"; 
-   d="scan'208";a="304359172"
-Message-ID: <5146D193.1030104@intel.com>
-Date: Mon, 18 Mar 2013 16:34:27 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Danny Baumann <dannybaumann@web.de>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH v2 3/3] ACPI video: Fix applying indexed initial brightness
- value.
-References: <1363342248-6496-1-git-send-email-dannybaumann@web.de> <1363342248-6496-3-git-send-email-dannybaumann@web.de> <5146CD67.8070203@intel.com> <5146CFC0.7090907@web.de>
-In-Reply-To: <5146CFC0.7090907@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751542Ab3CRIeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:34:16 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:55396 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932Ab3CRIeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 04:34:13 -0400
+Message-ID: <1363595650.1335.141.camel@x61.thuisdomein>
+Subject: [PATCH] [TRIVIAL] Documentation: Remove text on tracepoint samples
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Rob Landley <rob@landley.net>, Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 18 Mar 2013 09:34:10 +0100
+In-Reply-To: <1363359483.1335.110.camel@x61.thuisdomein>
+References: <1363359483.1335.110.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Mar 2013 08:34:11.0081 (UTC) FILETIME=[5D3E5F90:01CE23B3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2013 04:26 PM, Danny Baumann wrote:
-> Hi,
-> 
->  >> +static unsigned long long
->>> +acpi_video_bqc_value_to_level(struct acpi_video_device *device,
->>> +			      unsigned long long bqc_value)
->>> +{
->>> +	unsigned long long level;
->>> +
->>> +	if (device->brightness->flags._BQC_use_index) {
->>> +		if (device->brightness->flags._BCL_reversed)
->>> +			bqc_value = device->brightness->count - 3 - bqc_value;
->>> +
->>> +		level = device->brightness->levels[bqc_value + 2];
->>
->> I don't understand this, what does the +2 have to do here?
->> _BQC returned us an index, and then we should just convert it to level,
->> why +2?
->>
->> The only explanation would be, for BIOS tables that return _BQC as
->> index, they are indexing from the 3rd entry. Is it the case? If so, I
->> think we need to put a comment here.
-> 
-> Yes, that's the case. The old code did the same thing:
+The tracepoint sample code got removed. Remove a few lines on its usage
+too.
 
-Yes, I see that, but I didn't really think about it until reviewing your
-patch :-)
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Acked-by: Rob Landley <rob@landley.net>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Rob asked (off list) to submit this for the trivial tree.
 
-> 
->>> -			if (device->brightness->flags._BQC_use_index) {
->>> -				if (device->brightness->flags._BCL_reversed)
->>> -					*level = device->brightness->count
->>> -								 - 3 - (*level);
->>> -				*level = device->brightness->levels[*level + 2];
->>> +			*level = acpi_video_bqc_value_to_level(device, *level);
-> 
-> That's also the reason for the -3 instead of -1 in the BCL_reversed 
-> case. I can add a comment, though.
+ Documentation/trace/tracepoints.txt | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
-OK, thanks.
-That would make people reading the code feel less confused, hopefully.
-
--Aaron
-
-> 
->>> +	if (use_bios_initial_backlight) {
->>> +		if (!br->flags._BQC_use_index) {
->>> +			/*
->>> +			 * Set the backlight to the initial state.
->>> +			 * On some buggy laptops, _BQC returns an uninitialized
->>> +			 * value when invoked for the first time, i.e.
->>> +			 * level_old is invalid. Set the backlight to max_level
->>> +			 * in this case.
->>> +			 */
->>>   			for (i = 2; i < br->count; i++)
->>>   				if (level_old == br->levels[i]) {
->>>   					level = level_old;
->>>   					break;
->>>   				}
->>> +		} else {
->>> +			level = acpi_video_bqc_value_to_level(device,
->>> +							      level_old);
->>
->> What about we convert the value to level first?
->>
->> 	if (use_bios_initial_backlight) {
->> 		level = acpi_video_bqc_value_to_level(device, level_old);
->> 		/*
->> 		 * Set the backlight to the initial state.
->> 		 * On some buggy laptops, _BQC returns an uninitialized
->> 		 * value when invoked for the first time, i.e.
->> 		 * level_old is invalid(no matter it is a level, or an
->> 		 * index.) Set the backlight to max_level in this case.
->> 		 */
->> 		for (i = 2; i < br->count; i++)
->> 			if (level == br->levels[i])
->> 				break;
->> 		if (i == br->count)
->> 			level = max_level;
->> 	}
-> 
-> That works as well, and looks cleaner to me as well. I'll change that.
-> 
-> Regards,
-> 
-> Danny
-> 
+diff --git a/Documentation/trace/tracepoints.txt b/Documentation/trace/tracepoints.txt
+index c0e1cee..da49437 100644
+--- a/Documentation/trace/tracepoints.txt
++++ b/Documentation/trace/tracepoints.txt
+@@ -81,7 +81,6 @@ tracepoint_synchronize_unregister() must be called before the end of
+ the module exit function to make sure there is no caller left using
+ the probe. This, and the fact that preemption is disabled around the
+ probe call, make sure that probe removal and module unload are safe.
+-See the "Probe example" section below for a sample probe module.
+ 
+ The tracepoint mechanism supports inserting multiple instances of the
+ same tracepoint, but a single definition must be made of a given
+@@ -100,17 +99,3 @@ core kernel image or in modules.
+ If the tracepoint has to be used in kernel modules, an
+ EXPORT_TRACEPOINT_SYMBOL_GPL() or EXPORT_TRACEPOINT_SYMBOL() can be
+ used to export the defined tracepoints.
+-
+-* Probe / tracepoint example
+-
+-See the example provided in samples/tracepoints
+-
+-Compile them with your kernel.  They are built during 'make' (not
+-'make modules') when CONFIG_SAMPLE_TRACEPOINTS=m.
+-
+-Run, as root :
+-modprobe tracepoint-sample (insmod order is not important)
+-modprobe tracepoint-probe-sample
+-cat /proc/tracepoint-sample (returns an expected error)
+-rmmod tracepoint-sample tracepoint-probe-sample
+-dmesg
+-- 
+1.7.11.7
 
