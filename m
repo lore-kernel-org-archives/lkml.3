@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab3CREit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:38:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33647 "EHLO
+	id S1752644Ab3CREiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:38:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33653 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751204Ab3CREbG (ORCPT
+	by vger.kernel.org with ESMTP id S1752205Ab3CREbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:31:06 -0400
-Message-Id: <20130318042147.707124294@decadent.org.uk>
+Message-Id: <20130318042147.573666082@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:20 +0000
+Date: Mon, 18 Mar 2013 04:22:18 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Shuah Khan <shuah.khan@hp.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [ 36/82] iommu/amd: Initialize device table after dma_ops
+Cc: akpm@linux-foundation.org, Seth Heasley <seth.heasley@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 34/82] ahci: AHCI-mode SATA patch for Intel Avoton DeviceIDs
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,57 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuah Khan <shuah.khan@hp.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit f528d980c17b8714aedc918ba86e058af914d66b upstream.
+commit 29e674dd5c8e781589f09c3ee139c80f6da274e4 upstream.
 
-When dma_ops are initialized the unity mappings are created. The
-init_device_table_dma() function makes sure DMA from all devices is
-blocked by default. This opens a short window in time where DMA to
-unity mapped regions is blocked by the IOMMU. Make sure this does not
-happen by initializing the device table after dma_ops.
+This patch adds the AHCI and RAID-mode SATA DeviceIDs for the Intel Avoton SOC.
 
-Tested on 3.2.38
-
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/amd_iommu_init.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/ata/ahci.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1396,6 +1396,7 @@ static struct syscore_ops amd_iommu_sysc
-  */
- static int __init amd_iommu_init(void)
- {
-+	struct amd_iommu *iommu;
- 	int i, ret = 0;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -278,6 +278,22 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f22), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f23), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f24), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f25), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f26), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f27), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2f), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f32), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f33), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f34), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f35), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f36), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
  
- 	/*
-@@ -1444,9 +1445,6 @@ static int __init amd_iommu_init(void)
- 	if (amd_iommu_pd_alloc_bitmap == NULL)
- 		goto free;
- 
--	/* init the device table */
--	init_device_table();
--
- 	/*
- 	 * let all alias entries point to itself
- 	 */
-@@ -1496,6 +1494,12 @@ static int __init amd_iommu_init(void)
- 	if (ret)
- 		goto free_disable;
- 
-+	/* init the device table */
-+	init_device_table();
-+
-+	for_each_iommu(iommu)
-+		iommu_flush_all_caches(iommu);
-+
- 	amd_iommu_init_api();
- 
- 	amd_iommu_init_notifier();
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
