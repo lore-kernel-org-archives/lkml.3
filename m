@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab3CRRH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 13:07:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59465 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab3CRRH1 (ORCPT
+	id S1754139Ab3CRRIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 13:08:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8011 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab3CRRIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 13:07:27 -0400
-Date: Mon, 18 Mar 2013 13:07:23 -0400 (EDT)
-Message-Id: <20130318.130723.5448740810527224.davem@davemloft.net>
-To: slash@ac.auone-net.jp
-Cc: netdev@vger.kernel.org, kaber@trash.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] macvlan: Remove an unnecessary goto
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130318130339.4F76662C03B@msa106.auone-net.jp>
-References: <20130318130339.4F76662C03B@msa106.auone-net.jp>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 18 Mar 2013 13:08:09 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nGpB3NLV4dgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xnoB05DE7xsA:10 a=nUuTZ29dAAAA:8 a=JMHDMQobqHCFS0Ksch4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363626487.25967.186.camel@gandalf.local.home>
+Subject: Re: workqueue code needing preemption disabled
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <clark@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 18 Mar 2013 13:08:07 -0400
+In-Reply-To: <20130318164351.GA21516@mtj.dyndns.org>
+References: <1363617383.25967.152.camel@gandalf.local.home>
+	 <20130318160652.GA20133@mtj.dyndns.org>
+	 <1363623799.25967.172.camel@gandalf.local.home>
+	 <1363624020.25967.175.camel@gandalf.local.home>
+	 <1363624243.25967.178.camel@gandalf.local.home>
+	 <20130318164351.GA21516@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 18 Mar 2013 10:07:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Date: Mon, 18 Mar 2013 22:03:39 +0900
+On Mon, 2013-03-18 at 09:43 -0700, Tejun Heo wrote:
 
-> Use else instead.
-> 
-> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+> Making gcwq locks disable preemption would be much safer / easier, but
+> if that's not desirable, anything touching gcwq->idle_list would be a
+> good place to start - worker_enter_idle() and worker_leave_idle().
+> Hmmm... ignoring CPU hotplug, I think those two might just do it.
+> Give it a try?  How reproducible is the problem?
 
-The code is not in any way more readable with your changes.
+Not very :-( I triggered it twice on a 40 CPU box. It can go
+approximately 1 month before it triggers. And the box we are testing on
+is currently a loaner, and we have it on extension right now. Which
+means we wont have it much longer.
 
-I'm not applying this.
+But perhaps that's the place to fix things.
+
+Thanks,
+
+-- Steve
+
+
