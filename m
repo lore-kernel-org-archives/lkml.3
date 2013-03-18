@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933894Ab3CRVsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:48:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
+	id S1755894Ab3CRVHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3CRVHS (ORCPT
+	with ESMTP id S1755849Ab3CRVHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:18 -0400
+	Mon, 18 Mar 2013 17:07:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Moore <pmoore@redhat.com>,
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 67/75] netlabel: correctly list all the static label mappings
-Date: Mon, 18 Mar 2013 14:07:30 -0700
-Message-Id: <20130318210515.097798561@linuxfoundation.org>
+Subject: [ 62/75] tun: add a missing nf_reset() in tun_net_xmit()
+Date: Mon, 18 Mar 2013 14:07:25 -0700
+Message-Id: <20130318210514.715375259@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -28,110 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Paul Moore <pmoore@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commits 0c1233aba1e948c37f6dc7620cb7c253fcd71ce9 and
-  a6a8fe950e1b8596bb06f2c89c3a1a4bf2011ba9 ]
+[ Upstream commit f8af75f3517a24838a36eb5797a1a3e60bf9e276 ]
 
-When we have a large number of static label mappings that spill across
-the netlink message boundary we fail to properly save our state in the
-netlink_callback struct which causes us to repeat the same listings.
-This patch fixes this problem by saving the state correctly between
-calls to the NetLabel static label netlink "dumpit" routines.
+Dave reported following crash :
 
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+general protection fault: 0000 [#1] SMP
+CPU 2
+Pid: 25407, comm: qemu-kvm Not tainted 3.7.9-205.fc18.x86_64 #1 Hewlett-Packard HP Z400 Workstation/0B4Ch
+RIP: 0010:[<ffffffffa0399bd5>]  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+RSP: 0018:ffff880276913d78  EFLAGS: 00010206
+RAX: 50626b6b7876376c RBX: ffff88026e530d68 RCX: ffff88028d158e00
+RDX: ffff88026d0d5470 RSI: 0000000000000011 RDI: 0000000000000002
+RBP: ffff880276913d88 R08: 0000000000000000 R09: ffff880295002900
+R10: 0000000000000000 R11: 0000000000000003 R12: ffffffff81ca3b40
+R13: ffffffff8151a8e0 R14: ffff880270875000 R15: 0000000000000002
+FS:  00007ff3bce38a00(0000) GS:ffff88029fc40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fd1430bd000 CR3: 000000027042b000 CR4: 00000000000027e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process qemu-kvm (pid: 25407, threadinfo ffff880276912000, task ffff88028c369720)
+Stack:
+ ffff880156f59100 ffff880156f59100 ffff880276913d98 ffffffff815534f7
+ ffff880276913db8 ffffffff8151a74b ffff880270875000 ffff880156f59100
+ ffff880276913dd8 ffffffff8151a5a6 ffff880276913dd8 ffff88026d0d5470
+Call Trace:
+ [<ffffffff815534f7>] nf_conntrack_destroy+0x17/0x20
+ [<ffffffff8151a74b>] skb_release_head_state+0x7b/0x100
+ [<ffffffff8151a5a6>] __kfree_skb+0x16/0xa0
+ [<ffffffff8151a666>] kfree_skb+0x36/0xa0
+ [<ffffffff8151a8e0>] skb_queue_purge+0x20/0x40
+ [<ffffffffa02205f7>] __tun_detach+0x117/0x140 [tun]
+ [<ffffffffa022184c>] tun_chr_close+0x3c/0xd0 [tun]
+ [<ffffffff8119669c>] __fput+0xec/0x240
+ [<ffffffff811967fe>] ____fput+0xe/0x10
+ [<ffffffff8107eb27>] task_work_run+0xa7/0xe0
+ [<ffffffff810149e1>] do_notify_resume+0x71/0xb0
+ [<ffffffff81640152>] int_signal+0x12/0x17
+Code: 00 00 04 48 89 e5 41 54 53 48 89 fb 4c 8b a7 e8 00 00 00 0f 85 de 00 00 00 0f b6 73 3e 0f b7 7b 2a e8 10 40 00 00 48 85 c0 74 0e <48> 8b 40 28 48 85 c0 74 05 48 89 df ff d0 48 c7 c7 08 6a 3a a0
+RIP  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+ RSP <ffff880276913d78>
+
+This is because tun_net_xmit() needs to call nf_reset()
+before queuing skb into receive_queue
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netlabel/netlabel_unlabeled.c |   27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+ drivers/net/tun.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netlabel/netlabel_unlabeled.c
-+++ b/net/netlabel/netlabel_unlabeled.c
-@@ -1189,8 +1189,6 @@ static int netlbl_unlabel_staticlist(str
- 	struct netlbl_unlhsh_walk_arg cb_arg;
- 	u32 skip_bkt = cb->args[0];
- 	u32 skip_chain = cb->args[1];
--	u32 skip_addr4 = cb->args[2];
--	u32 skip_addr6 = cb->args[3];
- 	u32 iter_bkt;
- 	u32 iter_chain = 0, iter_addr4 = 0, iter_addr6 = 0;
- 	struct netlbl_unlhsh_iface *iface;
-@@ -1215,7 +1213,7 @@ static int netlbl_unlabel_staticlist(str
- 				continue;
- 			netlbl_af4list_foreach_rcu(addr4,
- 						   &iface->addr4_list) {
--				if (iter_addr4++ < skip_addr4)
-+				if (iter_addr4++ < cb->args[2])
- 					continue;
- 				if (netlbl_unlabel_staticlist_gen(
- 					      NLBL_UNLABEL_C_STATICLIST,
-@@ -1231,7 +1229,7 @@ static int netlbl_unlabel_staticlist(str
- #if IS_ENABLED(CONFIG_IPV6)
- 			netlbl_af6list_foreach_rcu(addr6,
- 						   &iface->addr6_list) {
--				if (iter_addr6++ < skip_addr6)
-+				if (iter_addr6++ < cb->args[3])
- 					continue;
- 				if (netlbl_unlabel_staticlist_gen(
- 					      NLBL_UNLABEL_C_STATICLIST,
-@@ -1250,10 +1248,10 @@ static int netlbl_unlabel_staticlist(str
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -748,6 +748,8 @@ static netdev_tx_t tun_net_xmit(struct s
+ 		goto drop;
+ 	skb_orphan(skb);
  
- unlabel_staticlist_return:
- 	rcu_read_unlock();
--	cb->args[0] = skip_bkt;
--	cb->args[1] = skip_chain;
--	cb->args[2] = skip_addr4;
--	cb->args[3] = skip_addr6;
-+	cb->args[0] = iter_bkt;
-+	cb->args[1] = iter_chain;
-+	cb->args[2] = iter_addr4;
-+	cb->args[3] = iter_addr6;
- 	return skb->len;
- }
- 
-@@ -1273,12 +1271,9 @@ static int netlbl_unlabel_staticlistdef(
- {
- 	struct netlbl_unlhsh_walk_arg cb_arg;
- 	struct netlbl_unlhsh_iface *iface;
--	u32 skip_addr4 = cb->args[0];
--	u32 skip_addr6 = cb->args[1];
--	u32 iter_addr4 = 0;
-+	u32 iter_addr4 = 0, iter_addr6 = 0;
- 	struct netlbl_af4list *addr4;
- #if IS_ENABLED(CONFIG_IPV6)
--	u32 iter_addr6 = 0;
- 	struct netlbl_af6list *addr6;
- #endif
- 
-@@ -1292,7 +1287,7 @@ static int netlbl_unlabel_staticlistdef(
- 		goto unlabel_staticlistdef_return;
- 
- 	netlbl_af4list_foreach_rcu(addr4, &iface->addr4_list) {
--		if (iter_addr4++ < skip_addr4)
-+		if (iter_addr4++ < cb->args[0])
- 			continue;
- 		if (netlbl_unlabel_staticlist_gen(NLBL_UNLABEL_C_STATICLISTDEF,
- 					      iface,
-@@ -1305,7 +1300,7 @@ static int netlbl_unlabel_staticlistdef(
- 	}
- #if IS_ENABLED(CONFIG_IPV6)
- 	netlbl_af6list_foreach_rcu(addr6, &iface->addr6_list) {
--		if (iter_addr6++ < skip_addr6)
-+		if (iter_addr6++ < cb->args[1])
- 			continue;
- 		if (netlbl_unlabel_staticlist_gen(NLBL_UNLABEL_C_STATICLISTDEF,
- 					      iface,
-@@ -1320,8 +1315,8 @@ static int netlbl_unlabel_staticlistdef(
- 
- unlabel_staticlistdef_return:
- 	rcu_read_unlock();
--	cb->args[0] = skip_addr4;
--	cb->args[1] = skip_addr6;
-+	cb->args[0] = iter_addr4;
-+	cb->args[1] = iter_addr6;
- 	return skb->len;
- }
++	nf_reset(skb);
++
+ 	/* Enqueue packet */
+ 	skb_queue_tail(&tfile->socket.sk->sk_receive_queue, skb);
  
 
 
