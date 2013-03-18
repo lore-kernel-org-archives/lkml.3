@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab3CRJbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 05:31:03 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48508 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3CRJa7 (ORCPT
+	id S1753719Ab3CRJbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 05:31:12 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20700 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab3CRJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 05:30:59 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-24-5146ded123ff
+	Mon, 18 Mar 2013 05:31:08 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-c3-5146dedb108c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <01b701ce23bb$1b79b2a0$526d17e0$%han@samsung.com>
 In-reply-to: <01b701ce23bb$1b79b2a0$526d17e0$%han@samsung.com>
-Subject: [PATCH 04/10] rtc: rtc-rc5t583: switch to using SIMPLE_DEV_PM_OPS
-Date: Mon, 18 Mar 2013 18:30:56 +0900
-Message-id: <01ba01ce23bb$4b5a03d0$e20e0b70$%han@samsung.com>
+Subject: [PATCH 05/10] rtc: rtc-sa1100: switch to using SIMPLE_DEV_PM_OPS
+Date: Mon, 18 Mar 2013 18:31:06 +0900
+Message-id: <01bb01ce23bb$513f6a10$f3be3e30$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4juxtMJTZWEDnPSfOGR4wzonE6SAAACAcA
+Thread-index: Ac4juxtMJTZWEDnPSfOGR4wzonE6SAAACuzg
 Content-language: ko
-x-cr-hashedpuzzle: GYb/ KG/Y Lc5G PrJa SDeg U/kO VBb1 ZlYv dYgc g2ZY t7Wz uq4E
- xC09 zQTy 34nO
- 4ci3;5;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgB0AGMALQBsAGkAbgB1AHgAQABnAG8AbwBnAGwAZQBnAHIAbwB1AHAAcwAuAGMAbwBtAA==;Sosha1_v1;7;{3B7C88C5-14F5-4FC2-ABDF-A4C04078A689};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
- 18 Mar 2013 09:30:48
- GMT;WwBQAEEAVABDAEgAIAAwADQALwAxADAAXQAgAHIAdABjADoAIAByAHQAYwAtAHIAYwA1AHQANQA4ADMAOgAgAHMAdwBpAHQAYwBoACAAdABvACAAdQBzAGkAbgBnACAAUwBJAE0AUABMAEUAXwBEAEUAVgBfAFAATQBfAE8AUABTAA==
-x-cr-puzzleid: {3B7C88C5-14F5-4FC2-ABDF-A4C04078A689}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zA92L99wCDXqXCFpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MTxMSCnq4K1qPLGdsYOzi7GLk5JAQMJH4/+wZI4QtJnHh3nq2
-	LkYuDiGBZYwSN+dNZYQp2nvgNAtEYhGjxOt7m5kgnNlMEsf7brGCVLEJqEl8+XKYvYuRg0NE
-	QF+irUUDpIZZoJdR4kzvbnaQGiEBW4l51xaDTeUUsJPY2j8JrFdYwEtizbKpLCA2i4CqxK4P
-	38FsXqD6n93/GCFsQYkfk++BxZkFtCTW7zzOBGHLS2xe85YZZK+EgLrEo7+6IGERASOJ64ua
-	oEpEJPa9eMcIco+EwBtWiV09h5kgPjOVOD/zEhNE4hC7RPuUJ1BHCEh8m3yIBWKorMSmA8wQ
-	9ZISB1fcYJnAKDULyUmzkJw0C8lJs5DsXsDIsopRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMj
-	JBYn7GC8d8D6EGMy0PqJzFKiyfnAWM4riTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1
-	OzW1ILUovqg0J7X4ECMTB6dUA+P0ope5m5SfHTng9O1b0Nu3HHdc1xbXbE8741DGLuj5Qv2w
-	9Y9Fxu6em7Wyt31VE5jcGDa5301vnSL/v8Np1R5hSz/5H4u3373qtZSShN9dpxLuf4vmJoeb
-	V2SZ1F2qOuk478SLw7vMSz6apXzI2+1Yv/dOau2eLbz/JeeJZlwVWKi2ab1+RKUSS3FGoqEW
-	c1FxIgAoHKkV2wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jAd2L99wCDdofcllc3jWHzYHR4/Mm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zI93b99wCDS5f47C4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZNxb9YCmYwV3x5s5XxgbGmZxdjJwcEgImEu2ntrNB2GISF+6t
+	B7K5OIQEljFK/Nx6kxWm6Nnf++wQiUWMEsd/HGOGcGYzSTyasgqsik1ATeLLl8NAVRwcIgL6
+	Em0tGiA1zAK9jBJnenezg9QICdhKzLu2mBHE5hSwk9jaPwmsV1jAU+L8nKVgcRYBVYmNzyaB
+	1fMC1a95/5IFwhaU+DH5HpjNLKAlsX7ncSYIW15i85q3zCB7JQTUJR791QUJiwgYSUy8tBOq
+	RERi34t3jCD3SAgsY5dYenMfK8QuAYlvkw+xQPTKSmw6wAzxsKTEwRU3WCYwSsxCsnkWks2z
+	kGyehWTFAkaWVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxghsdW/g/HuAetDjMlA6ycyS4km
+	5wNjM68k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
+	jLM3XU5u73pi7S34I+LM4V6Jo2XN1sU3pRqsDr5YcChyVZ7DXe3zeSaLRdbdvZ53p2r+uudy
+	z8xU/j741ObR2bQppe3aWeHzM3eE+nKK2dmHb7tRoOkhekRKSMtl5x8RXgPz/ifbM7TmtMh8
+	ESve4el9ueK2g2x2pIzPuSsswQld/9mtisKFlViKMxINtZiLihMBnwKPvcMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xgO7te26BBgsesFhc3jWHzYHR4/Mm
 	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjE8TEgp6uCtajyxnbGDs
-	4uxi5OSQEDCR2HvgNAuELSZx4d56ti5GLg4hgUWMEq/vbWaCcGYzSRzvu8UKUsUmoCbx5cth
-	9i5GDg4RAX2JthYNkBpmgV5GiTO9u9lBaoQEbCXmXVvMCGJzCthJbO2fBNYrLOAlsWbZVLBt
-	LAKqErs+fAezeYHqf3b/Y4SwBSV+TL4HFmcW0JJYv/M4E4QtL7F5zVtmkL0SAuoSj/7qgoRF
-	BIwkri9qgioRkdj34h0jyD0SAm9YJXb1HGaC+MxU4vzMS0wTGEVmIVkxC8mKWUhWzEIyawEj
-	yypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Eh/JrWDcWWDxSFGAQ5GJR7eHevdAoVYE8uK
-	K3MPMUpwMCuJ8DreBgrxpiRWVqUW5ccXleakFh9iTAaGwERmKdHkfGASyiuJNzQ2MTOyNDKz
-	MDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGxpls25nna+mJ3WXwzLIrvPooLNIx
-	+8WrsM+dcyetOqVXvcutb93OrQklJfNVH8/Tv77vXv6VhAyZmB2uloenzP2rUmT/6F53wawV
-	b1X6OvQrXuu63Hm8+xzrdgOZoDcFkaunsf4ImPmv8G2Ltv3d/EMcKTWBi9Y/OPStxXVV5c0D
-	Vlvmn1RSuavEUpyRaKjFXFScCADTThEyOAMAAA==
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjBuLfrAUzOCueHPnK2MD
+	40zOLkZODgkBE4lnf++zQ9hiEhfurWfrYuTiEBJYxChx/McxZghnNpPEoymrWEGq2ATUJL58
+	OQzUwcEhIqAv0daiAVLDLNDLKHGmdzfYJCEBW4l51xYzgticAnYSW/sngfUKC3hKnJ+zFCzO
+	IqAqsfHZJLB6XqD6Ne9fskDYghI/Jt8Ds5kFtCTW7zzOBGHLS2xe85YZZK+EgLrEo7+6IGER
+	ASOJiZd2QpWISOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
+	10vOz93ECI7cZ9I7GFc1WBxiFOBgVOLh3bHeLVCINbGsuDL3EKMEB7OSCK/jbaAQb0piZVVq
+	UX58UWlOavEhxmSgRycyS4km5wOTSl5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1Kz
+	U1MLUotgtjBxcEo1MM45xsmuc8Pxbk6ByP894Tt/fLt86LzhJI3q1Wwelkoust9+//9gc0aq
+	3rFxjk3EeVb7wL2NH6///yo/37Pm6PIZBZNP8Qd659c0ffk4JWbDjZf3nFkWJyrKsEZ84D9l
+	kTBJqf2M4cQj60912dhVCKfPuJl+8G9t4NfDGtO2lOzxf6By9mFQfrESS3FGoqEWc1FxIgAN
+	MhP6IAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,50 +59,49 @@ pm_ops. It reduces code size.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-rc5t583.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+ drivers/rtc/rtc-sa1100.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/rtc/rtc-rc5t583.c b/drivers/rtc/rtc-rc5t583.c
-index eb3194d..1734e97 100644
---- a/drivers/rtc/rtc-rc5t583.c
-+++ b/drivers/rtc/rtc-rc5t583.c
-@@ -282,7 +282,6 @@ static int rc5t583_rtc_remove(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+index 5ec5036..7e0a088 100644
+--- a/drivers/rtc/rtc-sa1100.c
++++ b/drivers/rtc/rtc-sa1100.c
+@@ -327,7 +327,7 @@ static int sa1100_rtc_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
- #ifdef CONFIG_PM_SLEEP
--
- static int rc5t583_rtc_suspend(struct device *dev)
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int sa1100_rtc_suspend(struct device *dev)
  {
- 	struct rc5t583 *rc5t583 = dev_get_drvdata(dev->parent);
-@@ -304,24 +303,18 @@ static int rc5t583_rtc_resume(struct device *dev)
- 	return regmap_write(rc5t583->regmap, RC5T583_RTC_CTL1,
- 		rc5t583_rtc->irqen);
+ 	struct sa1100_rtc *info = dev_get_drvdata(dev);
+@@ -343,13 +343,11 @@ static int sa1100_rtc_resume(struct device *dev)
+ 		disable_irq_wake(info->irq_alarm);
+ 	return 0;
  }
 -
--static const struct dev_pm_ops rc5t583_rtc_pm_ops = {
--	.suspend	= rc5t583_rtc_suspend,
--	.resume		= rc5t583_rtc_resume,
+-static const struct dev_pm_ops sa1100_rtc_pm_ops = {
+-	.suspend	= sa1100_rtc_suspend,
+-	.resume		= sa1100_rtc_resume,
 -};
--
--#define DEV_PM_OPS     (&rc5t583_rtc_pm_ops)
--#else
--#define DEV_PM_OPS     NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(rc5t583_rtc_pm_ops, rc5t583_rtc_suspend,
-+			rc5t583_rtc_resume);
++static SIMPLE_DEV_PM_OPS(sa1100_rtc_pm_ops, sa1100_rtc_suspend,
++			sa1100_rtc_resume);
 +
- static struct platform_driver rc5t583_rtc_driver = {
- 	.probe		= rc5t583_rtc_probe,
- 	.remove		= rc5t583_rtc_remove,
+ #ifdef CONFIG_OF
+ static struct of_device_id sa1100_rtc_dt_ids[] = {
+ 	{ .compatible = "mrvl,sa1100-rtc", },
+@@ -364,9 +362,7 @@ static struct platform_driver sa1100_rtc_driver = {
+ 	.remove		= sa1100_rtc_remove,
  	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "rtc-rc5t583",
--		.pm	= DEV_PM_OPS,
-+		.pm	= &rc5t583_rtc_pm_ops,
+ 		.name	= "sa1100-rtc",
+-#ifdef CONFIG_PM
+ 		.pm	= &sa1100_rtc_pm_ops,
+-#endif
+ 		.of_match_table = of_match_ptr(sa1100_rtc_dt_ids),
  	},
  };
- 
 -- 
 1.7.2.5
 
