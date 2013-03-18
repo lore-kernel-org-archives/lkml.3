@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3CRPak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:30:40 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:33028 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab3CRPah (ORCPT
+	id S1753964Ab3CRPbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:31:13 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:36068 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab3CRPbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:30:37 -0400
+	Mon, 18 Mar 2013 11:31:11 -0400
+Message-ID: <5147333A.3010907@gmail.com>
+Date: Mon, 18 Mar 2013 11:31:06 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <201303181422.14942.arnd@arndb.de>
-References: <201303181422.14942.arnd@arndb.de>
-Date: Mon, 18 Mar 2013 08:30:36 -0700
-X-Google-Sender-Auth: jBU9KEBf70sl_A0jZHGDP9VoSfU
-Message-ID: <CA+55aFx9NF-+dt5r_hOpUfZxd6Ky+OBL2echeeM50ZE6UAaAdA@mail.gmail.com>
-Subject: Re: [GIT PULL] arm-soc fixes for v3.9-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Neil Horman <nhorman@tuxdriver.com>, Sasha Levin <sasha.levin@oracle.com>,
+        sri@us.ibm.com, "David S. Miller" <davem@davemloft.net>,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sctp: hang in sctp_remaddr_seq_show
+References: <51434D78.9030308@oracle.com>  <20130318110415.GA9478@hmsreliant.think-freely.org> <1363620340.29475.132.camel@edumazet-glaptop>
+In-Reply-To: <1363620340.29475.132.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 7:22 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+On 03/18/2013 11:25 AM, Eric Dumazet wrote:
+> On Mon, 2013-03-18 at 07:04 -0400, Neil Horman wrote:
 >
-> are available in the git repository at:
+>> I'm not sure why the process would never get back to the schedule, but looking
+>> at the sctp_remaddr_seq_show function, I think that we should convert this
+>> sequence:
+>> 	sctp_local_bh_disable();
+>> 	read_lock(&head->lock);
+>> 	rcu_read_lock();
+>>
+>> to this:
+>> 	read_lock(&head->lock);
+>> 	rcu_read_lock_bh();
+>>
+>> Neil
 >
->   git+ssh://gitolite@ra.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
+> I dont think so.
+>
+> BH needs to be disabled before read_lock(&head->lock);
+>
+> or else, write_lock() could deadlock (assuming it can be called from BH)
+>
+>
 
-What the heck happened to your script?
+If anything, this should probably be done like this:
 
-Please use the public address so that others could look at it if they
-want to (and so that my merge messages make sense in a public
-setting).
+rcu_read_lock();
+read_lock_bh(&head->lock)
+...
 
-I fixed it up, but please fix your script for next time.
+read_unlock_bh(&head->lock)
+rcu_read_unlock();
 
-          Linus
+-vlad
