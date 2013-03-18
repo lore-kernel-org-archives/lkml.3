@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab3CREsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:48:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33445 "EHLO
+	id S1752760Ab3CREsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:48:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33437 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751645Ab3CREaT (ORCPT
+	by vger.kernel.org with ESMTP id S1751596Ab3CREaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:19 -0400
-Message-Id: <20130318042150.936654279@decadent.org.uk>
+Message-Id: <20130318042151.333337694@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:53 +0000
+Date: Mon, 18 Mar 2013 04:22:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [ 69/82] Fix: compat_rw_copy_check_uvector() misuse in aio, readv, writev,
- and security keys
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 73/82] USB: Fix connected device switch to Inactive  state.
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,127 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 8aec0f5d4137532de14e6554fd5dd201ff3a3c49 upstream.
+commit d3b9d7a9051d7024a93c76a84b2f84b3b66ad6d5 upstream.
 
-Looking at mm/process_vm_access.c:process_vm_rw() and comparing it to
-compat_process_vm_rw() shows that the compatibility code requires an
-explicit "access_ok()" check before calling
-compat_rw_copy_check_uvector(). The same difference seems to appear when
-we compare fs/read_write.c:do_readv_writev() to
-fs/compat.c:compat_do_readv_writev().
+A USB 3.0 device can transition to the Inactive state if a U1 or U2 exit
+transition fails.  The current code in hub_events simply issues a warm
+reset, but does not call any pre-reset or post-reset driver methods (or
+unbind/rebind drivers without them).  Therefore the drivers won't know
+their device has just been reset.
 
-This subtle difference between the compat and non-compat requirements
-should probably be debated, as it seems to be error-prone. In fact,
-there are two others sites that use this function in the Linux kernel,
-and they both seem to get it wrong:
+hub_events should instead call usb_reset_device.  This means
+hub_port_reset now needs to figure out whether it should issue a warm
+reset or a hot reset.
 
-Now shifting our attention to fs/aio.c, we see that aio_setup_iocb()
-also ends up calling compat_rw_copy_check_uvector() through
-aio_setup_vectored_rw(). Unfortunately, the access_ok() check appears to
-be missing. Same situation for
-security/keys/compat.c:compat_keyctl_instantiate_key_iov().
+Remove the FIXME note about needing disconnect() for a NOTATTACHED
+device.  This patch fixes that.
 
-I propose that we add the access_ok() check directly into
-compat_rw_copy_check_uvector(), so callers don't have to worry about it,
-and it therefore makes the compat call code similar to its non-compat
-counterpart. Place the access_ok() check in the same location where
-copy_from_user() can trigger a -EFAULT error in the non-compat code, so
-the ABI behaviors are alike on both compat and non-compat.
-
-While we are here, fix compat_do_readv_writev() so it checks for
-compat_rw_copy_check_uvector() negative return values.
-
-And also, fix a memory leak in compat_keyctl_instantiate_key_iov() error
-handling.
-
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/compat.c            |   15 +++++++--------
- mm/process_vm_access.c |    8 --------
- security/keys/compat.c |    4 ++--
- 3 files changed, 9 insertions(+), 18 deletions(-)
+ drivers/usb/core/hub.c |   30 +++++++++++++++++++++++++-----
+ 1 files changed, 25 insertions(+), 5 deletions(-)
 
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -572,6 +572,10 @@ ssize_t compat_rw_copy_check_uvector(int
- 	}
- 	*ret_pointer = iov;
- 
-+	ret = -EFAULT;
-+	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
-+		goto out;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2215,7 +2215,6 @@ static void hub_port_finish_reset(struct
+ 	case -ENODEV:
+ 		clear_port_feature(hub->hdev,
+ 				port1, USB_PORT_FEAT_C_RESET);
+-		/* FIXME need disconnect() for NOTATTACHED device */
+ 		if (hub_is_superspeed(hub->hdev)) {
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_BH_PORT_RESET);
+@@ -2249,6 +2248,18 @@ static int hub_port_reset(struct usb_hub
+ 		 * Some companion controllers don't like it when they mix.
+ 		 */
+ 		down_read(&ehci_cf_port_reset_rwsem);
++	} else if (!warm) {
++		/*
++		 * If the caller hasn't explicitly requested a warm reset,
++		 * double check and see if one is needed.
++		 */
++		status = hub_port_status(hub, port1,
++					&portstatus, &portchange);
++		if (status < 0)
++			goto done;
 +
- 	/*
- 	 * Single unix specification:
- 	 * We should -EINVAL if an element length is not >= 0 and fitting an
-@@ -1103,17 +1107,12 @@ static ssize_t compat_do_readv_writev(in
- 	if (!file->f_op)
- 		goto out;
++		if (hub_port_warm_reset_required(hub, portstatus))
++			warm = true;
+ 	}
  
--	ret = -EFAULT;
--	if (!access_ok(VERIFY_READ, uvector, nr_segs*sizeof(*uvector)))
--		goto out;
--
--	tot_len = compat_rw_copy_check_uvector(type, uvector, nr_segs,
-+	ret = compat_rw_copy_check_uvector(type, uvector, nr_segs,
- 					       UIO_FASTIOV, iovstack, &iov, 1);
--	if (tot_len == 0) {
--		ret = 0;
-+	if (ret <= 0)
- 		goto out;
--	}
+ 	/* Reset the port */
+@@ -3725,12 +3736,21 @@ static void hub_events(void)
+ 			 */
+ 			if (hub_port_warm_reset_required(hub, portstatus)) {
+ 				int status;
++				struct usb_device *udev =
++					hub->hdev->children[i - 1];
  
-+	tot_len = ret;
- 	ret = rw_verify_area(type, file, pos, tot_len);
- 	if (ret < 0)
- 		goto out;
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -434,12 +434,6 @@ compat_process_vm_rw(compat_pid_t pid,
- 	if (flags != 0)
- 		return -EINVAL;
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				status = hub_port_reset(hub, i, NULL,
+-						HUB_BH_RESET_TIME, true);
+-				if (status < 0)
+-					hub_port_disable(hub, i, 1);
++				if (!udev) {
++					status = hub_port_reset(hub, i,
++							NULL, HUB_BH_RESET_TIME,
++							true);
++					if (status < 0)
++						hub_port_disable(hub, i, 1);
++				} else {
++					usb_lock_device(udev);
++					status = usb_reset_device(udev);
++					usb_unlock_device(udev);
++				}
+ 				connect_change = 0;
+ 			}
  
--	if (!access_ok(VERIFY_READ, lvec, liovcnt * sizeof(*lvec)))
--		goto out;
--
--	if (!access_ok(VERIFY_READ, rvec, riovcnt * sizeof(*rvec)))
--		goto out;
--
- 	if (vm_write)
- 		rc = compat_rw_copy_check_uvector(WRITE, lvec, liovcnt,
- 						  UIO_FASTIOV, iovstack_l,
-@@ -464,8 +458,6 @@ free_iovecs:
- 		kfree(iov_r);
- 	if (iov_l != iovstack_l)
- 		kfree(iov_l);
--
--out:
- 	return rc;
- }
- 
---- a/security/keys/compat.c
-+++ b/security/keys/compat.c
-@@ -40,12 +40,12 @@ long compat_keyctl_instantiate_key_iov(
- 					   ARRAY_SIZE(iovstack),
- 					   iovstack, &iov, 1);
- 	if (ret < 0)
--		return ret;
-+		goto err;
- 	if (ret == 0)
- 		goto no_payload_free;
- 
- 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
--
-+err:
- 	if (iov != iovstack)
- 		kfree(iov);
- 	return ret;
 
 
