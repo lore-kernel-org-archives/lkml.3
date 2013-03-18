@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873Ab3CRVri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:47:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45745 "EHLO
+	id S1757145Ab3CRVrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:47:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab3CRVHU (ORCPT
+	with ESMTP id S1753005Ab3CRVHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:20 -0400
+	Mon, 18 Mar 2013 17:07:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Mathias Krause <minipli@googlemail.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 70/75] bridge: fix mdb info leaks
-Date: Mon, 18 Mar 2013 14:07:33 -0700
-Message-Id: <20130318210515.305143741@linuxfoundation.org>
+Subject: [ 69/75] ipv6: stop multicast forwarding to process interface scoped addresses
+Date: Mon, 18 Mar 2013 14:07:32 -0700
+Message-Id: <20130318210515.238435191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -29,58 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit c085c49920b2f900ba716b4ca1c1a55ece9872cc ]
+[ Upstream commit ddf64354af4a702ee0b85d0a285ba74c7278a460 ]
 
-The bridging code discloses heap and stack bytes via the RTM_GETMDB
-netlink interface and via the notify messages send to group RTNLGRP_MDB
-afer a successful add/del.
+v2:
+a) used struct ipv6_addr_props
 
-Fix both cases by initializing all unset members/padding bytes with
-memset(0).
+v3:
+a) reverted changes for ipv6_addr_props
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+v4:
+a) do not use __ipv6_addr_needs_scope_id
+
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_mdb.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv6/ip6_input.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/bridge/br_mdb.c
-+++ b/net/bridge/br_mdb.c
-@@ -82,6 +82,7 @@ static int br_mdb_fill_info(struct sk_bu
- 				port = p->port;
- 				if (port) {
- 					struct br_mdb_entry e;
-+					memset(&e, 0, sizeof(e));
- 					e.ifindex = port->dev->ifindex;
- 					e.state = p->state;
- 					if (p->addr.proto == htons(ETH_P_IP))
-@@ -138,6 +139,7 @@ static int br_mdb_dump(struct sk_buff *s
- 				break;
- 
- 			bpm = nlmsg_data(nlh);
-+			memset(bpm, 0, sizeof(*bpm));
- 			bpm->ifindex = dev->ifindex;
- 			if (br_mdb_fill_info(skb, cb, dev) < 0)
- 				goto out;
-@@ -173,6 +175,7 @@ static int nlmsg_populate_mdb_fill(struc
- 		return -EMSGSIZE;
- 
- 	bpm = nlmsg_data(nlh);
-+	memset(bpm, 0, sizeof(*bpm));
- 	bpm->family  = AF_BRIDGE;
- 	bpm->ifindex = dev->ifindex;
- 	nest = nla_nest_start(skb, MDBA_MDB);
-@@ -230,6 +233,7 @@ void br_mdb_notify(struct net_device *de
- {
- 	struct br_mdb_entry entry;
- 
-+	memset(&entry, 0, sizeof(entry));
- 	entry.ifindex = port->dev->ifindex;
- 	entry.addr.proto = group->proto;
- 	entry.addr.u.ip4 = group->u.ip4;
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -270,7 +270,8 @@ int ip6_mc_input(struct sk_buff *skb)
+ 	 *      IPv6 multicast router mode is now supported ;)
+ 	 */
+ 	if (dev_net(skb->dev)->ipv6.devconf_all->mc_forwarding &&
+-	    !(ipv6_addr_type(&hdr->daddr) & IPV6_ADDR_LINKLOCAL) &&
++	    !(ipv6_addr_type(&hdr->daddr) &
++	      (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)) &&
+ 	    likely(!(IP6CB(skb)->flags & IP6SKB_FORWARDED))) {
+ 		/*
+ 		 * Okay, we try to forward - split and duplicate
 
 
