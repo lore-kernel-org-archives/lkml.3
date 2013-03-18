@@ -1,216 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3CRIFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:05:10 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:2074 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3CRIFH convert rfc822-to-8bit (ORCPT
+	id S1751969Ab3CRIJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:09:09 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60180 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab3CRIJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:05:07 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: Re: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
-Date: Mon, 18 Mar 2013 09:04:56 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
+	Mon, 18 Mar 2013 04:09:06 -0400
+Message-ID: <5146CB92.7060203@linux.vnet.ibm.com>
+Date: Mon, 18 Mar 2013 16:08:50 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303180904.56218.hverkuil@xs4all.nl>
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
+References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com>
+In-Reply-To: <20130317150239.GM11223@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031808-7014-0000-0000-000002BA7B20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu March 14 2013 15:06:59 Jon Arne Jørgensen wrote:
-> This file is responsible for registering the device
-> with the kernel i2c subsystem.
-> v4l2 talks to the saa7113 chip of the device via i2c.
+On 03/17/2013 11:02 PM, Gleb Natapov wrote:
+> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
+>> This patch tries to introduce a very simple and scale way to invalid all
+>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
+>>
+>> KVM maintains a global mmio invalid generation-number which is stored in
+>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+>> generation-number into his available bits when it is created
+>>
+>> When KVM need zap all mmio sptes, it just simply increase the global
+>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+>> then it walks the shadow page table and get the mmio spte. If the
+>> generation-number on the spte does not equal the global generation-number,
+>> it will go to the normal #PF handler to update the mmio spte
+>>
+>> Since 19 bits are used to store generation-number on mmio spte, the
+>> generation-number can be round after 33554432 times. It is large enough
+>> for nearly all most cases, but making the code be more strong, we zap all
+>> shadow pages when the number is round
+>>
+> Very nice idea, but why drop Takuya patches instead of using
+> kvm_mmu_zap_mmio_sptes() when generation number overflows.
+
+I am not sure whether it is still needed. Requesting to zap all mmio sptes for
+more than 500000 times is really really rare, it nearly does not happen.
+(By the way, 33554432 is wrong in the changelog, i just copy that for my origin
+implantation.) And, after my patch optimizing zapping all shadow pages,
+zap-all-sps should not be a problem anymore since it does not take too much lock
+time.
+
+Your idea?
+
 > 
-> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> ---
->  drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
->  1 file changed, 160 insertions(+)
->  create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
 > 
-> diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
-> new file mode 100644
-> index 0000000..5b6f3f5
-> --- /dev/null
-> +++ b/drivers/media/usb/smi2021/smi2021_i2c.c
-> @@ -0,0 +1,160 @@
-> +/*******************************************************************************
-> + * smi2021_i2c.c                                                               *
-> + *                                                                             *
-> + * USB Driver for SMI2021 - EasyCAP                                            *
-> + * USB ID 1c88:003c                                                            *
-> + *                                                                             *
-> + * *****************************************************************************
-> + *
-> + * Copyright 2011-2013 Jon Arne Jørgensen
-> + * <jonjon.arnearne--a.t--gmail.com>
-> + *
-> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
-> + *
-> + * This file is part of SMI2021
-> + * http://code.google.com/p/easycap-somagic-linux/
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + *
-> + * This driver is heavily influensed by the STK1160 driver.
-> + * Copyright (C) 2012 Ezequiel Garcia
-> + * <elezegarcia--a.t--gmail.com>
-> + *
-> + */
-> +
-> +#include "smi2021.h"
-> +
-> +/* The device will not return the chip_name on address 0x00.
-> + * But the saa7115 i2c driver needs the chip id to match "f7113"
-> + * if we want to use it,
-> + * so we have to fake the return of this value
-> + */
-> +
-> +static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
-> +static int id_ptr;
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |    2 +
+>>  arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
+>>  arch/x86/kvm/mmutrace.h         |   17 +++++++++++
+>>  arch/x86/kvm/paging_tmpl.h      |    7 +++-
+>>  arch/x86/kvm/vmx.c              |    4 ++
+>>  arch/x86/kvm/x86.c              |    6 +--
+>>  6 files changed, 82 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index ef7f4a5..572398e 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -529,6 +529,7 @@ struct kvm_arch {
+>>  	unsigned int n_requested_mmu_pages;
+>>  	unsigned int n_max_mmu_pages;
+>>  	unsigned int indirect_shadow_pages;
+>> +	unsigned int mmio_invalid_gen;
+> Why invalid? Should be mmio_valid_gen or mmio_current_get.
 
-Don't do this! Instead modify saa7115.c and add a new chip_id (the name of
-this saa7113 clone) and specify that in v4l2_i2c_new_subdev instead of "saa7113".
-The saa7115.c driver should skip the chip ID test if that name is specified.
+mmio_invalid_gen is only updated in kvm_mmu_invalidate_mmio_sptes,
+so i named it as _invalid_. But mmio_valid_gen is good for me.
 
-Then you don't need this hack anymore and everything will look much cleaner.
-
-> +
-> +static unsigned int i2c_debug;
-> +module_param(i2c_debug, int, 0644);
-> +MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
-> +
-> +#define dprint_i2c(fmt, args...)					\
-> +do {									\
-> +	if (i2c_debug)							\
-> +		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
-> +} while (0)
-> +
-> +
-> +static int i2c_xfer(struct i2c_adapter *i2c_adap,
-> +				struct i2c_msg msgs[], int num)
-> +{
-> +	struct smi2021_dev *dev = i2c_adap->algo_data;
-> +
-> +	switch (num) {
-> +	case 2: { /* Read reg */
-> +		if (msgs[0].len != 1 || msgs[1].len != 1) {
-> +			dprint_i2c("both messages must be 1 byte\n");
-> +			goto err_out;
-> +
-> +		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
-> +			dprint_i2c("last message should have rd flag\n");
-> +			goto err_out;
-> +		}
-> +
-> +		if (msgs[0].buf[0] == 0) {
-> +			msgs[1].buf[0] = chip_id[id_ptr];
-> +			if (chip_id[id_ptr] != 0)
-> +				id_ptr += 1;
-> +		} else {
-> +			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
-> +						msgs[1].buf);
-> +		}
-> +		break;
-> +	}
-> +	case 1: { /* Write reg */
-> +		if (msgs[0].len == 0) {
-> +			break;
-> +		} else if (msgs[0].len != 2) {
-> +			dprint_i2c("unsupported len\n");
-> +			goto err_out;
-> +		}
-> +		if (msgs[0].buf[0] == 0) {
-> +			/* We don't handle writing to addr 0x00 */
-> +			break;
-> +		}
-> +
-> +		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
-> +						msgs[0].buf[1]);
-> +		break;
-> +	}
-> +	default: {
-> +		dprint_i2c("driver can only handle 1 or 2 messages\n");
-> +		goto err_out;
-> +	}
-> +	}
-> +	return num;
-> +
-> +err_out:
-> +	return -EOPNOTSUPP;
-> +}
-> +
-> +static u32 functionality(struct i2c_adapter *adap)
-> +{
-> +	return I2C_FUNC_SMBUS_EMUL;
-> +}
-> +
-> +static struct i2c_algorithm algo = {
-> +	.master_xfer = i2c_xfer,
-> +	.functionality = functionality,
-> +};
-> +
-> +static struct i2c_adapter adap_template = {
-> +	.owner = THIS_MODULE,
-> +	.name = "smi2021_easycap_dc60",
-> +	.algo = &algo,
-> +};
-> +
-> +static struct i2c_client client_template = {
-> +	.name = "smi2021 internal",
-> +};
-> +
-> +int smi2021_i2c_register(struct smi2021_dev *dev)
-> +{
-> +	int rc;
-> +
-> +	id_ptr = 0;
-> +
-> +	dev->i2c_adap = adap_template;
-> +	dev->i2c_adap.dev.parent = dev->dev;
-> +	strcpy(dev->i2c_adap.name, "smi2021");
-> +	dev->i2c_adap.algo_data = dev;
-> +
-> +	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
-> +
-> +	rc = i2c_add_adapter(&dev->i2c_adap);
-> +	if (rc < 0) {
-> +		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
-> +		return rc;
-> +	}
-> +
-> +	dev->i2c_client = client_template;
-> +	dev->i2c_client.adapter = &dev->i2c_adap;
-> +
-> +	return 0;
-> +}
-> +
-> +int smi2021_i2c_unregister(struct smi2021_dev *dev)
-> +{
-> +	i2c_del_adapter(&dev->i2c_adap);
-> +	return 0;
-> +}
 > 
+>>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>>  	/*
+>>  	 * Hash table of struct kvm_mmu_page.
+>> @@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
+>>  void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+>>  				     struct kvm_memory_slot *slot,
+>>  				     gfn_t gfn_offset, unsigned long mask);
+>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
+> Agree with Takuya that kvm_mmu_invalidate_mmio_sptes() is a better name.
 
-Regards,
+Me too.
 
-	Hans
+> 
+>>  void kvm_mmu_zap_all(struct kvm *kvm);
+>>  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+>>  void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 13626f4..7093a92 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+>>  static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+>>  			   unsigned access)
+>>  {
+>> -	u64 mask = generation_mmio_spte_mask(0);
+>> +	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
+>> +	u64 mask = generation_mmio_spte_mask(gen);
+>>
+>>  	access &= ACC_WRITE_MASK | ACC_USER_MASK;
+>>  	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+>>
+>> -	trace_mark_mmio_spte(sptep, gfn, access, 0);
+>> +	trace_mark_mmio_spte(sptep, gfn, access, gen);
+>>  	mmu_spte_set(sptep, mask);
+>>  }
+>>
+>> @@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
+>>  	return false;
+>>  }
+>>
+>> +static bool check_mmio_spte(struct kvm *kvm, u64 spte)
+>> +{
+>> +	return get_mmio_spte_generation(spte) ==
+>> +		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
+>> +}
+>> +
+>> +/*
+>> + * The caller should protect concurrent access on
+>> + * kvm->arch.mmio_invalid_gen. Currently, it is used by
+>> + * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
+>> + */
+>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
+>> +{
+>> +	/* Ensure update memslot has been completed. */
+>> +	smp_mb();
+> What barrier this one is paired with?
+
+It is paired with nothing. :)
+
+I used mb here just for avoid increasing the generation-number before updating
+the memslot. But on other sides (storing gen and checking gen), we do not need
+to care it - the worse case is that we emulate a memory-accessed instruction.
+
+> 
+>> +
+>> +	 trace_kvm_mmu_invalid_mmio_spte(kvm);
+> Something wrong with indentation.
+
+My mistake. No idea why checkpatch did not warn me.
+
+> 
+>> +
+>> +	/*
+>> +	 * The very rare case: if the generation-number is round,
+>> +	 * zap all shadow pages.
+>> +	 */
+>> +	if (unlikely(kvm->arch.mmio_invalid_gen++ == MAX_GEN)) {
+>> +		kvm->arch.mmio_invalid_gen = 0;
+>> +		return kvm_mmu_zap_all(kvm);
+>> +	}
+>> +}
+>> +
+>>  static inline u64 rsvd_bits(int s, int e)
+>>  {
+>>  	return ((1ULL << (e - s + 1)) - 1) << s;
+>> @@ -3183,9 +3212,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
+>>  }
+>>
+>>  /*
+>> - * If it is a real mmio page fault, return 1 and emulat the instruction
+>> - * directly, return 0 to let CPU fault again on the address, -1 is
+>> - * returned if bug is detected.
+>> + * Return value:
+>> + * 2: invalid spte is detected then let the real page fault path
+>> + *    update the mmio spte.
+>> + * 1: it is a real mmio page fault, emulate the instruction directly.
+>> + * 0: let CPU fault again on the address.
+>> + * -1: bug is detected.
+>>   */
+> What about dropping spte and let guest re-fault instead of propagating
+> new return value up the call chain. If this is slow lets at least define
+> a enum with descriptive names.
+
+Checking mmio spte is out of mmu-lock, we can not clear it here.
+And should be updated in the real page fault path, so it is no worth to
+atomic-ly clear it out of mmu-lock and refault again. (As you said, it is slow).
+
+I will define the return value as your suggestion in the next version.
+
+Thanks for your review and valuable suggestions, Gleb!
+
