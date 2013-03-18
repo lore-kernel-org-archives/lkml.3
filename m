@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3CRCfH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 22:35:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36926 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab3CRCfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 22:35:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdZ_AvahCLkPhbdB7Dk-qaxpAEN-B9qCMsJWBKi8+GtuOQ@mail.gmail.com>
-References: <CAPgLHd9n7nmyhUcRgPwEyjweZKA+fgi409yEJgK6LmF2Wu6n-g@mail.gmail.com>
- <CACRpkdZ_AvahCLkPhbdB7Dk-qaxpAEN-B9qCMsJWBKi8+GtuOQ@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 18 Mar 2013 10:34:43 +0800
-Message-ID: <CAGsJ_4za5S4YoCWDFz1uaVkTM-yghbufcEhv3g+DBTr1pn+vJA@mail.gmail.com>
-Subject: Re: [PATCH -next] pinctrl: sirf: using for_each_set_bit to simplify
- the code
-To: Linus Walleij <linus.walleij@linaro.org>, Wei Yongjun <weiyj.lk@gmail.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, yongjun_wei@trendmicro.com.cn,
-        linux-arm-kernel@lists.infradead.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751355Ab3CRChm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 22:37:42 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60745
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab3CRChk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Mar 2013 22:37:40 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: Notify the host of permanent hot-add failures
+Date: Sun, 17 Mar 2013 20:07:47 -0700
+Message-Id: <1363576067-30758-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/14 Linus Walleij <linus.walleij@linaro.org>
->
-> On Mon, Mar 11, 2013 at 3:23 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
->
-> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> >
-> > Using for_each_set_bit() to simplify the code.
-> >
-> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Barry, can I have your ACK on this?
+If memory hot-add fails with the error -EEXIST, then this is a permanent
+failure. Notify the host this information, so the host will not attempt
+hot-add again. If the failure were a transient failure, host will attempt
+a hot-add after some delay.
 
-yes. acked. thanks Yongjun, Linus.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/hv_balloon.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
->
-> Yours,
-> Linus Walleij
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index 71655b4..d2ed673 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -583,6 +583,16 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
+ 
+ 		if (ret) {
+ 			pr_info("hot_add memory failed error is %d\n", ret);
++			if (ret == -EEXIST) {
++				/*
++				 * This error indicates that the error
++				 * is not a transient failure. This is the
++				 * case where the guest's physical address map
++				 * precludes hot adding memory. Stop all further
++				 * memory hot-add.
++				 */
++				do_hot_add = false;
++			}
+ 			has->ha_end_pfn -= HA_CHUNK;
+ 			has->covered_end_pfn -=  processed_pfn;
+ 			break;
+@@ -842,11 +852,14 @@ static void hot_add_req(struct work_struct *dummy)
+ 		rg_sz = region_size;
+ 	}
+ 
+-	resp.page_count = process_hot_add(pg_start, pfn_cnt,
+-					rg_start, rg_sz);
++	if (do_hot_add)
++		resp.page_count = process_hot_add(pg_start, pfn_cnt,
++						rg_start, rg_sz);
+ #endif
+ 	if (resp.page_count > 0)
+ 		resp.result = 1;
++	else if (!do_hot_add)
++		resp.result = 1;
+ 	else
+ 		resp.result = 0;
+ 
+-- 
+1.7.4.1
 
--barry
