@@ -1,155 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab3CRREw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 13:04:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55765 "EHLO mga11.intel.com"
+	id S1754262Ab3CRRFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 13:05:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735Ab3CRREt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 13:04:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="304577325"
-Date: Mon, 18 Mar 2013 17:04:24 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Greg KH <greg@kroah.com>,
-        Harald Arnesen <skogtun.linux@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
-        Shawn Starr <shawn.starr@rogers.com>,
-        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re:
- [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
- responses))
-Message-ID: <20130318170424.GB5571@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel@ffwll.ch>,
-	Greg KH <greg@kroah.com>, Harald Arnesen <skogtun.linux@gmail.com>,
-	Kernel development list <linux-kernel@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Thomas Meyer <thomas@m3y3r.de>,
-	Shawn Starr <shawn.starr@rogers.com>,
-	USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
-	Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-	Yinghai Lu <yinghai@kernel.org>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Imre Deak <imre.deak@intel.com>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	dri-devel@lists.freedesktop.org
-References: <1363280764.26318.4.camel@thor.lan>
- <5657408.cYX6iimiA4@vostro.rjw.lan>
- <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
- <5142E7F0.4020002@gmail.com>
- <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
- <20130315153249.GA32425@kroah.com>
- <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz>
- <20130315154739.GA1024@kroah.com>
- <20130318082156.GO9021@phenom.ffwll.local>
- <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
+	id S1753651Ab3CRRFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 13:05:03 -0400
+Date: Mon, 18 Mar 2013 18:03:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ptracing a task from core_pattern pipe
+Message-ID: <20130318170302.GA21248@redhat.com>
+References: <20130316011508.GA11010@fifo99.com> <20130316175845.GA6194@redhat.com> <20130317004431.GA28915@fifo99.com> <20130317143446.GB25236@redhat.com> <20130317211133.GA14189@fifo99.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130317211133.GA14189@fifo99.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 04:56:02PM +0100, Jiri Kosina wrote:
-> Okay, so I think that for 3.9 we want the patch below, and if eventually 
-> hardware root cause / workaround is found for GM45, we can have it merged 
-> later.
-> 
-> 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips
-> 
-> Commit 28c70f162 ("drm/i915: use the gmbus irq for waits") switched to
-> using GMBUS irqs instead of GPIO bit-banging for chipset generations 4
-> and above.
-> 
-> It turns out though that on many systems this leads to spurious interrupts
-> being generated, long after the register write to disable the IRQs has been
-> issued.
-> 
-> Flushing of the register writes by POSTING_READ() directly after the register
-> write doesn't work either.
-> 
-> Disable using of GMBUS IRQs on Gen4 systems before the root cause is found and
-> revert back to old behavior.
-> 
-> Also be more careful about not issuing GMBUS4 register reads in 
-> gmbus_wait_hw_status() if we are not using GMBUS IRQs.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/gpu/drm/i915/intel_i2c.c |   12 ++++++++++--
->  1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> index acf8aec..8638036 100644
-> --- a/drivers/gpu/drm/i915/intel_i2c.c
-> +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> @@ -58,12 +58,14 @@ to_intel_gmbus(struct i2c_adapter *i2c)
->  	return container_of(i2c, struct intel_gmbus, adapter);
->  }
->  
-> +#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
->  void
->  intel_i2c_reset(struct drm_device *dev)
->  {
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
-> -	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
-> +	if (HAS_GMBUS_IRQ(dev))
-> +		I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+On 03/17, Daniel Walker wrote:
+>
+> On Sun, Mar 17, 2013 at 03:34:46PM +0100, Oleg Nesterov wrote:
+> >
+> > It sleeps only after it dumps the core. It only sleeps to ensure we
+> > do not close the write side prematurely.
+>
+> The dumper thread is sleeping when the corepipe_app runs .. I ran "cat
+> /proc/<pid>/status" from the corepipe_app .. It shows the dumper as sleeping.
 
-There should not be any harm in always clearing GMBUS4, it exists on all
-platforms.
+It runs whatever you see in /proc/status ;) Who do you think dumps the
+core? The dumper thread itself. But see below.
 
->  }
->  
->  static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
-> @@ -203,7 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
->  	algo->data = bus;
->  }
->  
-> -#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
->  static int
->  gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
->  		     u32 gmbus2_status,
-> @@ -214,6 +215,13 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
->  	u32 gmbus2 = 0;
->  	DEFINE_WAIT(wait);
->  
-> +	if (!HAS_GMBUS_IRQ(dev_priv->dev)) {
-> +		int ret;
-> +		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
-> +				(GMBUS_SATOER | gmbus2_status),
-> +				50);
+> > > It can't
+> > > run when corepipe_app runs. It wouldn't make sense because the core is
+> > > getting saved at that point.
+> >
+> > At this point it doesn't run, yes. But while it dumps the core they
+> > both run in parallel.
+>
+> Not following you here.. If it's sleeping how can it be running too ?
 
-This should couple up to the normal return code that chooses the
-appropriate return value based on gmbus2.
+See above. Once again, it dumps the core _then_ sleeps waiting pipe
+handler which should close the pipe.
 
-How about just using:
-  if (!HAS_GMBUS_IRQ(dev_priv->dev)) gmbus4_irq_en = 0;
-and the existing wait loop?
+And of course, you can see it sleeping in, say, pipe_write() if
+the buffer is full and the pipe handler doesn't read the data.
 
-> +		return ret;
-> +	}
->  	/* Important: The hw handles only the first bit, so set only one! Since
->  	 * we also need to check for NAKs besides the hw ready/idle signal, we
->  	 * need to wake up periodically and check that ourselves. */
+> > > As I said there is a SIGKILL pending on the "dumper" thread,
+> >
+> > As I said, there is no SIGKILL pending on the "dumper" thread. (unless it
+> > is actually killed of course).
+>
+> I pretty sure do_coredump()->core_wait()->zap_threads()->zap_process()
+>  adds SIGKILL..
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+	static int zap_process(struct task_struct *start, int exit_code)
+	{
+		...
+
+		do {
+			task_clear_jobctl_pending(t, JOBCTL_PENDING_MASK);
+------------>			if (t != current && t->mm) {
+				sigaddset(&t->pending.signal, SIGKILL);
+				signal_wake_up(t, 1);
+				nr++;
+			}
+		} while_each_thread(start, t);
+	}
+
+> Assume that's not happening, why would ptrace give me -ESRCH, yet
+> /proc/<pid>/status would show me ptrace attached to the thread.
+
+And why do you think this should be explained by SIGKILL?
+
+> > Please explain what difference this patch makes in your testing.
+>
+> I haven't tested with or with out it, I've just read the code and it
+> seems to be the only way I'm getting ESRCH back from ptrace.. 
+
+No,
+
+> For instance, I ptrace attach from inside the corepipe_app then try
+> PTRACE_GETREGS and you get -ESRCH .
+
+Sure. PTRACE_GETREGS and (almost) any other request can only succeed
+if the tracee is TASK_TRACED! I already told you that ptrace() doesn't
+and can't work exactly because the dumper never does ptrace_stop().
+
+> > > It can give me it's registers, and allow me access to it's memory space.
+> > > That's all I want realistically ..
+> >
+> > ...
+> >
+> > > I'm trying to get the "dumpers" registers and stack out when it fails.
+> >
+> > Can't you read the generated core for that? And see below...
+>
+> I'm not sure if it would accomplish what I need. I can't save the whole core,
+> and I can't get memory to save large chunks of it.
+
+Not sure I understand this part...
+
+> ptrace after it crashes seems like a nice solution cause I can just
+> examine the process already in memory.
+
+OK.
+
+> > > > Now that the coredump is killable (-mm patches), _perhaps_ we can, say,
+> > > > add PTRACE_EVENT_CORED_DUMPED reported after binfmt->core_dump(). Not
+> > > > sure this is what you need...
+> > >
+> > > Not sure what this would accomplish .. I just want the processes
+> > > registers and stack or access to all it's memory.
+> >
+> > Confused... why do you think PTRACE_EVENT_CORE_DUMPED reported after
+> > binfmt->core_dump() won't allow to do this?
+>
+> Oh, I think I see what you mean. I would ptrace attach prior to the
+> thread crashing ,
+
+I don't understand what "prior to the thread crashing" means... the pipe
+hanlder is spawned after the task has already initiated the coredump...
+IOW, other threads are already killed and we are ready to actually dump
+the core.
+
+> and get an event for when it crashes ?
+
+And get an event after coredump_app closes the pipe. Assuming that
+you use PTRACE_SEIZE(PTRACE_O_CORE_DUMPED) rather that PTRACE_ATTACH.
+And assuming you do this before you close the pipe, otherwise it can
+exit before you do PTRACE_SEIZE.
+
+> > Of course, this can't help to ptrace/inspect other threads, they are
+> > already (well, almost) dead at this point.
+>
+> Ideally I would want to attach after it crashes, cause other wise I'd
+> have to ptrace attach to a lot of threads (to monitor the whole system).
+
+See above. You do not need to attach in advance.
+
+But once again, you can't attach the sub-threads, they are already dead
+when coredump_app is called. PTRACE_ATTACH will work but this can help,
+a sub-thread will never report any event and PF_EXITING is already set.
+
+Oleg.
+
