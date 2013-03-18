@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3CRV00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:26:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45950 "EHLO
+	id S933196Ab3CRV0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:26:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab3CRVII (ORCPT
+	with ESMTP id S1756598Ab3CRV0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 48/48] 6lowpan: Fix endianness issue in is_addr_link_local().
-Date: Mon, 18 Mar 2013 14:08:56 -0700
-Message-Id: <20130318210813.638595215@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
-References: <20130318210810.247845918@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Mar 2013 17:26:25 -0400
+Date: Mon, 18 Mar 2013 14:26:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 4/4] selftests: Add basic posix timers selftests
+Message-Id: <20130318142623.a6a9dd7be1ca9dcd1cd0caec@linux-foundation.org>
+In-Reply-To: <1363366442-11494-5-git-send-email-fweisbec@gmail.com>
+References: <1363366442-11494-1-git-send-email-fweisbec@gmail.com>
+	<1363366442-11494-5-git-send-email-fweisbec@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 15 Mar 2013 17:54:02 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-------------------
+> Add some initial basic tests on a few posix timers
+> interface such as setitimer() and timer_settime().
+> 
+> These simply check that expiration happens in a reasonable
+> timeframe after expected elapsed clock time (user time,
+> user + system time, real time, ...).
+> 
+> This is helpful for finding basic breakages while hacking
+> on this subsystem.
+> 
+> ...
+>
+>  tools/testing/selftests/timers/Makefile       |    8 +
 
-
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-
-[ Upstream commit 9026c4927254f5bea695cc3ef2e255280e6a3011 ]
-
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ieee802154/6lowpan.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/ieee802154/6lowpan.h
-+++ b/net/ieee802154/6lowpan.h
-@@ -87,7 +87,7 @@
- 	(memcmp(addr1, addr2, length >> 3) == 0)
- 
- /* local link, i.e. FE80::/10 */
--#define is_addr_link_local(a) (((a)->s6_addr16[0]) == 0x80FE)
-+#define is_addr_link_local(a) (((a)->s6_addr16[0]) == htons(0xFE80))
- 
- /*
-  * check whether we can compress the IID to 16 bits,
-
+I wonder if this should be tools/testing/posix-timers/, to leave room
+in the namespace for other varieties of timer.
 
