@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab3CRVHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45713 "EHLO
+	id S964784Ab3CRVrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:47:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab3CRVHN (ORCPT
+	with ESMTP id S1755928Ab3CRVHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:13 -0400
+	Mon, 18 Mar 2013 17:07:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 61/75] tcp: fix double-counted receiver RTT when leaving receiver fast path
-Date: Mon, 18 Mar 2013 14:07:24 -0700
-Message-Id: <20130318210514.646376627@linuxfoundation.org>
+Subject: [ 71/75] rtnl: fix info leak on RTM_GETLINK request for VF devices
+Date: Mon, 18 Mar 2013 14:07:34 -0700
+Message-Id: <20130318210515.375457447@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -29,43 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit aab2b4bf224ef8358d262f95b568b8ad0cecf0a0 ]
+[ Upstream commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 ]
 
-We should not update ts_recent and call tcp_rcv_rtt_measure_ts() both
-before and after going to step5. That wastes CPU and double-counts the
-receiver-side RTT sample.
+Initialize the mac address buffer with 0 as the driver specific function
+will probably not fill the whole buffer. In fact, all in-kernel drivers
+fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
+bytes. Therefore we currently leak 26 bytes of stack memory to userland
+via the netlink interface.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/core/rtnetlink.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5498,6 +5498,9 @@ int tcp_rcv_established(struct sock *sk,
- 				if (tcp_checksum_complete_user(sk, skb))
- 					goto csum_error;
- 
-+				if ((int)skb->truesize > sk->sk_forward_alloc)
-+					goto step5;
-+
- 				/* Predicted packet is in window by definition.
- 				 * seq == rcv_nxt and rcv_wup <= rcv_nxt.
- 				 * Hence, check seq<=rcv_wup reduces to:
-@@ -5509,9 +5512,6 @@ int tcp_rcv_established(struct sock *sk,
- 
- 				tcp_rcv_rtt_measure_ts(sk, skb);
- 
--				if ((int)skb->truesize > sk->sk_forward_alloc)
--					goto step5;
--
- 				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPHPHITS);
- 
- 				/* Bulk data transfer: receiver */
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -976,6 +976,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
+ 			 * report anything.
+ 			 */
+ 			ivi.spoofchk = -1;
++			memset(ivi.mac, 0, sizeof(ivi.mac));
+ 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
+ 				break;
+ 			vf_mac.vf =
 
 
