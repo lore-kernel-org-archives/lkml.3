@@ -1,194 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3CRPv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:51:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50888 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567Ab3CRPv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:51:27 -0400
-Date: Mon, 18 Mar 2013 16:51:25 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] remove /proc/sys/vm/hugepages_treat_as_movable
-Message-ID: <20130318155125.GT10192@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-10-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1753883Ab3CRPzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:55:03 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51014 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab3CRPzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:55:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] arm-soc fixes for v3.9-rc3
+Date: Mon, 18 Mar 2013 15:54:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <201303181422.14942.arnd@arndb.de> <CA+55aFx9NF-+dt5r_hOpUfZxd6Ky+OBL2echeeM50ZE6UAaAdA@mail.gmail.com>
+In-Reply-To: <CA+55aFx9NF-+dt5r_hOpUfZxd6Ky+OBL2echeeM50ZE6UAaAdA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361475708-25991-10-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303181554.55853.arnd@arndb.de>
+X-Provags-ID: V02:K0:cDTrYYGDrns5RNfYDXMjzUgg5q5xNhnqQDfWTlSnHyn
+ 75zJipUicVsLdkx/R2pdDTyN5AX0EHCx95h1/s4EqIBX0RxtV3
+ Xo6l/P19z6QSc39AgXQGiiRkf1ZXY+9I/x+zEkIrpWZVo98+bP
+ 9vU+pGzNHuGpLJ5L3Vui0N9FNz+8q4pWp+5LhGYCcr/kqCDF0A
+ wh53jPgLEW+IrPB+bMB9m2KYY6KjC1tZgzXAeoAZhMVplOKH8X
+ kUr2iDnDgmJwhvLgXfWSn2GPp2loHwg7qcg00/4pI7I+IDCZOY
+ bFYkPcJWOccUZUk/fbSX2XGS7pcMVxmIbcgD28XPf8fE7u6hBL
+ iSEV/niSoIHW1Lz71zNo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-02-13 14:41:48, Naoya Horiguchi wrote:
-> Now hugepages are definitely movable. So allocating hugepages from
-> ZONE_MOVABLE is natural and we have no reason to keep this parameter.
-
-The sysctl is a part of user interface so you shouldn't remove it right
-away. What we can do is to make it noop and only WARN() that the
-interface will be removed later so that userspace can prepare for that.
-
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  Documentation/sysctl/vm.txt | 16 ----------------
->  include/linux/hugetlb.h     |  2 --
->  kernel/sysctl.c             |  7 -------
->  mm/hugetlb.c                | 23 +++++------------------
->  4 files changed, 5 insertions(+), 43 deletions(-)
+On Monday 18 March 2013, Linus Torvalds wrote:
+> On Mon, Mar 18, 2013 at 7:22 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >
+> > are available in the git repository at:
+> >
+> >   git+ssh://gitolite@ra.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
 > 
-> diff --git v3.8.orig/Documentation/sysctl/vm.txt v3.8/Documentation/sysctl/vm.txt
-> index 078701f..997350a 100644
-> --- v3.8.orig/Documentation/sysctl/vm.txt
-> +++ v3.8/Documentation/sysctl/vm.txt
-> @@ -167,22 +167,6 @@ fragmentation index is <= extfrag_threshold. The default value is 500.
->  
->  ==============================================================
->  
-> -hugepages_treat_as_movable
-> -
-> -This parameter is only useful when kernelcore= is specified at boot time to
-> -create ZONE_MOVABLE for pages that may be reclaimed or migrated. Huge pages
-> -are not movable so are not normally allocated from ZONE_MOVABLE. A non-zero
-> -value written to hugepages_treat_as_movable allows huge pages to be allocated
-> -from ZONE_MOVABLE.
-> -
-> -Once enabled, the ZONE_MOVABLE is treated as an area of memory the huge
-> -pages pool can easily grow or shrink within. Assuming that applications are
-> -not running that mlock() a lot of memory, it is likely the huge pages pool
-> -can grow to the size of ZONE_MOVABLE by repeatedly entering the desired value
-> -into nr_hugepages and triggering page reclaim.
-> -
-> -==============================================================
-> -
->  hugetlb_shm_group
->  
->  hugetlb_shm_group contains group id that is allowed to create SysV
-> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
-> index e33f07f..c97e5c5 100644
-> --- v3.8.orig/include/linux/hugetlb.h
-> +++ v3.8/include/linux/hugetlb.h
-> @@ -35,7 +35,6 @@ int PageHuge(struct page *page);
->  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
->  int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
->  int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-> -int hugetlb_treat_movable_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
->  
->  #ifdef CONFIG_NUMA
->  int hugetlb_mempolicy_sysctl_handler(struct ctl_table *, int,
-> @@ -73,7 +72,6 @@ void migrate_hugepage_add(struct page *page, struct list_head *list);
->  int is_hugepage_movable(struct page *page);
->  void copy_huge_page(struct page *dst, struct page *src);
->  
-> -extern unsigned long hugepages_treat_as_movable;
->  extern const unsigned long hugetlb_zero, hugetlb_infinity;
->  extern int sysctl_hugetlb_shm_group;
->  extern struct list_head huge_boot_pages;
-> diff --git v3.8.orig/kernel/sysctl.c v3.8/kernel/sysctl.c
-> index c88878d..a98bcf2 100644
-> --- v3.8.orig/kernel/sysctl.c
-> +++ v3.8/kernel/sysctl.c
-> @@ -1189,13 +1189,6 @@ static struct ctl_table vm_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= proc_dointvec,
->  	 },
-> -	 {
-> -		.procname	= "hugepages_treat_as_movable",
-> -		.data		= &hugepages_treat_as_movable,
-> -		.maxlen		= sizeof(int),
-> -		.mode		= 0644,
-> -		.proc_handler	= hugetlb_treat_movable_handler,
-> -	},
->  	{
->  		.procname	= "nr_overcommit_hugepages",
->  		.data		= NULL,
-> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-> index c28e6c9..c60d203 100644
-> --- v3.8.orig/mm/hugetlb.c
-> +++ v3.8/mm/hugetlb.c
-> @@ -33,7 +33,6 @@
->  #include "internal.h"
->  
->  const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
-> -static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
->  unsigned long hugepages_treat_as_movable;
->  
->  int hugetlb_max_hstate __read_mostly;
-> @@ -542,7 +541,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  retry_cpuset:
->  	cpuset_mems_cookie = get_mems_allowed();
->  	zonelist = huge_zonelist(vma, address,
-> -					htlb_alloc_mask, &mpol, &nodemask);
-> +					GFP_HIGHUSER_MOVABLE, &mpol, &nodemask);
->  	/*
->  	 * A child process with MAP_PRIVATE mappings created by their parent
->  	 * have no page reserves. This check ensures that reservations are
-> @@ -558,7 +557,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  						MAX_NR_ZONES - 1, nodemask) {
-> -		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
-> +		if (cpuset_zone_allowed_softwall(zone, GFP_HIGHUSER_MOVABLE)) {
->  			page = dequeue_huge_page_node(h, zone_to_nid(zone));
->  			if (page) {
->  				if (!avoid_reserve)
-> @@ -698,7 +697,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
->  		return NULL;
->  
->  	page = alloc_pages_exact_node(nid,
-> -		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
-> +		GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
->  						__GFP_REPEAT|__GFP_NOWARN,
->  		huge_page_order(h));
->  	if (page) {
-> @@ -909,12 +908,12 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
->  	spin_unlock(&hugetlb_lock);
->  
->  	if (nid == NUMA_NO_NODE)
-> -		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
-> +		page = alloc_pages(GFP_HIGHUSER_MOVABLE|__GFP_COMP|
->  				   __GFP_REPEAT|__GFP_NOWARN,
->  				   huge_page_order(h));
->  	else
->  		page = alloc_pages_exact_node(nid,
-> -			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
-> +			GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
->  			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
->  
->  	if (page && arch_prepare_hugepage(page)) {
-> @@ -2078,18 +2077,6 @@ int hugetlb_mempolicy_sysctl_handler(struct ctl_table *table, int write,
->  }
->  #endif /* CONFIG_NUMA */
->  
-> -int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
-> -			void __user *buffer,
-> -			size_t *length, loff_t *ppos)
-> -{
-> -	proc_dointvec(table, write, buffer, length, ppos);
-> -	if (hugepages_treat_as_movable)
-> -		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
-> -	else
-> -		htlb_alloc_mask = GFP_HIGHUSER;
-> -	return 0;
-> -}
-> -
->  int hugetlb_overcommit_handler(struct ctl_table *table, int write,
->  			void __user *buffer,
->  			size_t *length, loff_t *ppos)
-> -- 
-> 1.7.11.7
+> What the heck happened to your script?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Please use the public address so that others could look at it if they
+> want to (and so that my merge messages make sense in a public
+> setting).
+> 
+> I fixed it up, but please fix your script for next time.
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks for fixing it up, it was no script this time, but a manual copy-paste
+mistake. git-request-pull got confused by the fact I had commits both before
+and after -rc2 in the branch, and was listing lots of changes that you had
+already merged in the list, so I tried to construct the output in the
+way that was supposed to look, and failed.
+
+	Arnd
