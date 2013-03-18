@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab3CRV2a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:28:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45903 "EHLO
+	id S1754845Ab3CRVIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:08:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755246Ab3CRVIC (ORCPT
+	with ESMTP id S1754709Ab3CRVH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:08:02 -0400
+	Mon, 18 Mar 2013 17:07:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 31/48] drm/i915: EBUSY status handling added to i915_gem_fault().
-Date: Mon, 18 Mar 2013 14:08:39 -0700
-Message-Id: <20130318210812.458398816@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 22/48] powerpc: Fix STAB initialization
+Date: Mon, 18 Mar 2013 14:08:30 -0700
+Message-Id: <20130318210811.838326472@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -29,39 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit e79e0fe380847493266fba557217e2773c61bd1b upstream.
+commit 13938117a57f88a22f0df9722a5db7271fda85cd upstream.
 
-Subsequent threads returning EBUSY from vm_insert_pfn() was not handled
-correctly. As a result concurrent access from new threads to
-mmapped data caused SIGBUS.
+Commit f5339277eb8d3aed37f12a27988366f68ab68930 accidentally removed
+more than just iSeries bits and took out the call to stab_initialize()
+thus breaking support for POWER3 processors.
 
-Note that this fixes i-g-t/tests/gem_threaded_tiled_access.
+Put it back. (Yes, nobody noticed until now ...)
 
-Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Dmitry Rogozhkin <dmitry.v.rogozhkin@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/mm/hash_utils_64.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1186,6 +1186,11 @@ out:
- 	case 0:
- 	case -ERESTARTSYS:
- 	case -EINTR:
-+	case -EBUSY:
-+		/*
-+		 * EBUSY is ok: this just means that another thread
-+		 * already did the job.
-+		 */
- 		return VM_FAULT_NOPAGE;
- 	case -ENOMEM:
- 		return VM_FAULT_OOM;
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -759,6 +759,8 @@ void __init early_init_mmu(void)
+ 	/* Initialize stab / SLB management */
+ 	if (mmu_has_feature(MMU_FTR_SLB))
+ 		slb_initialize();
++	else
++		stab_initialize(get_paca()->stab_real);
+ }
+ 
+ #ifdef CONFIG_SMP
 
 
