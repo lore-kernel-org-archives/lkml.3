@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3CRUA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:00:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab3CRUA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:00:56 -0400
-Date: Mon, 18 Mar 2013 16:00:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130318200048.GJ20743@redhat.com>
-References: <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
- <513E28B8.3000502@zytor.com>
- <20130311191031.GD12107@redhat.com>
- <CAE9FiQUxmipKJfUsZdN+J6wGR66VKfLQ8+z41yd3TCJxXTyDRA@mail.gmail.com>
- <20130311193824.GA14738@redhat.com>
- <CAE9FiQUFaA05-Lujn2U01YDCkUo3tady_ZJxhdEDpfR8sLrXMA@mail.gmail.com>
- <CAE9FiQVP2NYV_6XvWEoLHYz8R_Zvueq6zqhh1cKq85geRwWzyA@mail.gmail.com>
- <20130318144603.GA20743@redhat.com>
- <20130318153348.GA25806@redhat.com>
- <514766B7.4070303@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514766B7.4070303@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754828Ab3CRUF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:05:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33154 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab3CRUF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 16:05:27 -0400
+Date: Mon, 18 Mar 2013 16:05:23 -0400 (EDT)
+Message-Id: <20130318.160523.1621054103077556675.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com, nab@linux-iscsi.org,
+        target-devel@vger.kernel.org
+Subject: Re: [PULL] vhost: tcm_vhost fixes for 3.9
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130318195443.GB19761@redhat.com>
+References: <20130318112003.GA7809@redhat.com>
+	<20130318.130136.1629094222097780420.davem@davemloft.net>
+	<20130318195443.GB19761@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 18 Mar 2013 13:05:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 12:10:47PM -0700, H. Peter Anvin wrote:
-> On 03/18/2013 08:33 AM, Vivek Goyal wrote:
-> > 
-> > Thinking more about it, if ongoing DMA is an issue, then setting up
-> > software iotlb in those areas is also prone to being overwritten by
-> > those DMAs. Hence, reserving memory low where no DMA is setup by first
-> > kernel, seems somewhat safer.
-> > 
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 18 Mar 2013 21:54:43 +0200
+
+> On Mon, Mar 18, 2013 at 01:01:36PM -0400, David Miller wrote:
+>> From: "Michael S. Tsirkin" <mst@redhat.com>
+>> Date: Mon, 18 Mar 2013 13:20:03 +0200
+>> 
+>> > The following changes since commit 8c6216d7f118a128678270824b6a1286a63863ca:
+>> > 
+>> >   Revert "ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally" (2013-03-16 23:00:41 -0400)
+>> > 
+>> > are available in the git repository at:
+>> > 
+>> >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+>> > 
+>> > for you to fetch changes up to deb7cb067dabd3be625eaf5495da8bdc97377fc1:
+>> > 
+>> >   tcm_vhost: Flush vhost_work in vhost_scsi_flush() (2013-03-17 13:04:14 +0200)
+>> 
+>> This is a scsi driver, I therefore don't think this pull request is for me.
+>> 
+>> Please avoid such confusion in the future, and don't use branch names
+>> like "vhost-net" for SCSI driver fixes.
+>> 
+>> Thanks.
 > 
-> Agreed.  We really should reserve some memory low.
+> We are sharing quite a bit of code, so it's a common tree.
+> There was a vhost-net patch there too but you picked it up
+> directly so I dropped that and what's left is vhost-scsi.
+> Typically vhost-net dominates so I'm just used to merging all vhost
+> things through you but if you think it's wrong I can send it directly to
+> Linus.
 
-So which approach do you like for reserving some memory low.
+Just like any other "bus" or "layer" for drivers, you should
+really just send the networking bits my way.
 
-- User specifies crashkernel_low=X to reserve some memory. Biggest problem
-  here is how does user know how much memory is required for setting up
-  swiotlb.
-
-- Take yinghai's patch where by default low memory for swiotlb is reserved
-  and a user need to opt out of it using crashkernel_low=0 if system has
-  iommu enabled.
-
-- crashkernel=X by default first looks for specified memory in low
-  memory area.
-
-
-I kind of like yinghai's approach. It is little wasteful of memory when
-memory is reserved high but atleast user does not have know how much memory
-to reserve low it works both when memory is reserved low (system does
-not have any RAM mapped above 4G) and when memory is reserved high.
-
-Thanks
-Vivek
+Now, in situations where some generic vhost infrastructure is
+necessary for a vhost-net specific change, that might be a
+situation where we can merge the infrastructure change into
+my tree so that the networking bits can go in too.
