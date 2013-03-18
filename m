@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727Ab3CRVkS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:40:18 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55765 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933171Ab3CRVhD (ORCPT
+	id S933742Ab3CRVkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:40:32 -0400
+Received: from mail91.extendcp.co.uk ([79.170.40.91]:42193 "EHLO
+	mail91.extendcp.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab3CRVk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:37:03 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/15] rcu: Export RCU_FAST_NO_HZ parameters to sysfs
-Date: Mon, 18 Mar 2013 14:36:42 -0700
-Message-Id: <1363642610-21390-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130318213608.GA20296@linux.vnet.ibm.com>
- <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-7408-0000-0000-00000DEE81EA
+	Mon, 18 Mar 2013 17:40:29 -0400
+X-Greylist: delayed 1159 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 17:40:28 EDT
+Message-ID: <51478535.8080107@mose.org.uk>
+Date: Mon, 18 Mar 2013 21:20:53 +0000
+From: "Simon J. Rowe" <srowe@mose.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120829 Thunderbird/15.0
+MIME-Version: 1.0
+To: lm-sensors@lm-sensors.org
+CC: linux@roeck-us.net, tomas.winkler@intel.com, linux-kernel@vger.kernel.org
+Subject: RFC (v2): Intel QST sensor driver
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-As: srowe@mose.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+Hello,
 
-RCU_FAST_NO_HZ operation is controlled by four compile-time C-preprocessor
-macros, but some use cases benefit greatly from runtime adjustment,
-particularly when tuning devices.  This commit therefore creates the
-corresponding sysfs entries.
+I've made changes to my driver for the Intel Quiet System Technology
+(QST) function that I posted at the end of last year and would again
+appreciate feedback on it.
 
-Reported-by: Robin Randhawa <robin.randhawa@arm.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree_plugin.h | 31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+As before the git repo can be found here:
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index c016444..28185ad 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1617,6 +1617,15 @@ static void rcu_idle_count_callbacks_posted(void)
- #define RCU_IDLE_GP_DELAY 4		/* Roughly one grace period. */
- #define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
- 
-+static int rcu_idle_flushes = RCU_IDLE_FLUSHES;
-+module_param(rcu_idle_flushes, int, 0644);
-+static int rcu_idle_opt_flushes = RCU_IDLE_OPT_FLUSHES;
-+module_param(rcu_idle_opt_flushes, int, 0644);
-+static int rcu_idle_gp_delay = RCU_IDLE_GP_DELAY;
-+module_param(rcu_idle_gp_delay, int, 0644);
-+static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
-+module_param(rcu_idle_lazy_gp_delay, int, 0644);
-+
- extern int tick_nohz_enabled;
- 
- /*
-@@ -1696,10 +1705,10 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
- 	}
- 	/* Set up for the possibility that RCU will post a timer. */
- 	if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
--		*delta_jiffies = round_up(RCU_IDLE_GP_DELAY + jiffies,
--					  RCU_IDLE_GP_DELAY) - jiffies;
-+		*delta_jiffies = round_up(rcu_idle_gp_delay + jiffies,
-+					  rcu_idle_gp_delay) - jiffies;
- 	} else {
--		*delta_jiffies = jiffies + RCU_IDLE_LAZY_GP_DELAY;
-+		*delta_jiffies = jiffies + rcu_idle_lazy_gp_delay;
- 		*delta_jiffies = round_jiffies(*delta_jiffies) - jiffies;
- 	}
- 	return 0;
-@@ -1805,11 +1814,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("User dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else if (rcu_cpu_has_callbacks(cpu)) {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("User dyntick with lazy callbacks");
- 		} else {
- 			return;
-@@ -1861,8 +1870,8 @@ static void rcu_prepare_for_idle(int cpu)
- 	/* Check and update the ->dyntick_drain sequencing. */
- 	if (rdtp->dyntick_drain <= 0) {
- 		/* First time through, initialize the counter. */
--		rdtp->dyntick_drain = RCU_IDLE_FLUSHES;
--	} else if (rdtp->dyntick_drain <= RCU_IDLE_OPT_FLUSHES &&
-+		rdtp->dyntick_drain = rcu_idle_flushes;
-+	} else if (rdtp->dyntick_drain <= rcu_idle_opt_flushes &&
- 		   !rcu_pending(cpu) &&
- 		   !local_softirq_pending()) {
- 		/* Can we go dyntick-idle despite still having callbacks? */
-@@ -1871,11 +1880,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("Dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("Dyntick with lazy callbacks");
- 		}
- 		tp = &rdtp->idle_gp_timer;
--- 
-1.8.1.5
+     http://mose.dyndns.org/mei.git
 
+
+Changes from v1
+---------------
+
+The module has been re-written to be data-driven rather than use
+macros. Only v1 of the protocol is implemented but adding support for
+v2 only requires three arrays and nine stub functions to be defined.
+
+The code has been compiled and tested on 3.9 rc2.
+
+The code has been fixed up after running checkpatch.pl.
+
+I've added documents that explain the QST protocol and also the design
+of the driver.
+
+
+Unchanged from v1
+-----------------
+
+The driver still uses my MEI implementation. I've taken a look at the
+Intel-written driver in 3.9 and it still has no obvious way to be used
+by another driver, in the same directory or otherwise. The lack of
+documentation may mean I've overlooked something obvious.
+
+The following patch is still required to prevent libsensors from
+ignoring the hwmon directory
+
+diff -ur lm_sensors-3.3.1.org/lib/sysfs.c lm_sensors-3.3.1/lib/sysfs.c
+--- lm_sensors-3.3.1.org/lib/sysfs.c   2011-03-04 20:37:43.000000000 +0000
++++ lm_sensors-3.3.1/lib/sysfs.c        2012-11-14 21:48:52.144860375 +0000
+@@ -701,6 +701,12 @@
+                 /* As of kernel 2.6.32, the hid device names don't look 
+good */
+                 entry.chip.bus.nr = bus;
+                 entry.chip.addr = id;
++       } else
++       if (subsys && !strcmp(subsys, "intel-mei") &&
++           sscanf(dev_name, "mei%d:%d", &bus, &fn) == 2) {
++               entry.chip.bus.type = SENSORS_BUS_TYPE_PCI;
++               entry.chip.bus.nr = bus;
++               entry.chip.addr = fn;
+         } else {
+                 /* Ignore unknown device */
+                 err = 0;
+
+PWM is still unimplemented.
