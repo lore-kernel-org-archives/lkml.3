@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3CRQj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:39:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49366
+	id S1752479Ab3CRQZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:25:55 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49290
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752604Ab3CRQZ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751813Ab3CRQZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:56 -0400
+	Mon, 18 Mar 2013 12:25:53 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/54] perf evlist: Use cpu_map__nr() helper
-Date: Mon, 18 Mar 2013 13:25:00 -0300
-Message-Id: <1363623939-10748-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/54] perf tools: Correct Makefile.include
+Date: Mon, 18 Mar 2013 13:24:49 -0300
+Message-Id: <1363623939-10748-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
@@ -27,63 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Borislav Petkov <bp@suse.de>
 
-Use the cpu_map__nr() helper to protect a possible NULL cpu map
-dereference.
+It looks at O= and adjusts the $(OUTPUT) variable based on what the
+output directory will be. However, when O is defined but empty, it
+wrongly becomes the user's $HOME dir which is not what we want. So check
+it is not empty before working with it further.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1362987798-24969-2-git-send-email-namhyung@kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1361374353-30385-4-git-send-email-bp@alien8.de
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ tools/scripts/Makefile.include |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a199f18..a482547 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -228,7 +228,7 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- 	int cpu, thread;
- 	struct perf_evsel *pos;
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index 00a05f4..f03e681 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -1,3 +1,4 @@
++ifneq ($(O),)
+ ifeq ($(origin O), command line)
+ 	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
+ 	ABSOLUTE_O := $(shell cd $(O) ; pwd)
+@@ -7,9 +8,10 @@ ifeq ($(objtree),)
+ 	objtree := $(O)
+ endif
+ endif
++endif
  
--	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
- 			if (!perf_evsel__is_group_leader(pos))
- 				continue;
-@@ -443,7 +443,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 	struct perf_evsel *evsel;
- 	int cpu, thread;
- 
--	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
- 		int output = -1;
- 
- 		for (thread = 0; thread < evlist->threads->nr; thread++) {
-@@ -470,7 +470,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 	return 0;
- 
- out_unmap:
--	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
- 		if (evlist->mmap[cpu].base != NULL) {
- 			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
- 			evlist->mmap[cpu].base = NULL;
-@@ -725,7 +725,7 @@ int perf_evlist__open(struct perf_evlist *evlist)
- 
- 	return 0;
- out_err:
--	ncpus = evlist->cpus ? evlist->cpus->nr : 1;
-+	ncpus = cpu_map__nr(evlist->cpus);
- 	nthreads = evlist->threads ? evlist->threads->nr : 1;
- 
- 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
+-ifneq ($(OUTPUT),)
+ # check that the output directory actually exists
++ifneq ($(OUTPUT),)
+ OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
+ $(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
+ endif
 -- 
 1.7.1
 
