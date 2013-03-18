@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3CREgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:36:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33693 "EHLO
+	id S1752582Ab3CREgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:36:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33659 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752266Ab3CREbK (ORCPT
+	by vger.kernel.org with ESMTP id S1752215Ab3CREbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:31:10 -0400
-Message-Id: <20130318042146.875801211@decadent.org.uk>
+	Mon, 18 Mar 2013 00:31:09 -0400
+Message-Id: <20130318042147.156049633@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:10 +0000
+Date: Mon, 18 Mar 2013 04:22:13 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
-Subject: [ 26/82] ALSA: vmaster: Fix slave change notification
+Cc: akpm@linux-foundation.org, Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [ 29/82] iwlwifi: always copy first 16 bytes of commands
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,39 +27,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 2069d483b39a603a5f3428a19d3b4ac89aa97f48 upstream.
+commit 8a964f44e01ad3bbc208c3e80d931ba91b9ea786 upstream.
 
-When a value of a vmaster slave control is changed, the ctl change
-notification is sometimes ignored.  This happens when the master
-control overrides, e.g. when the corresponding master control is
-muted.  The reason is that slave_put() returns the value of the actual
-slave put callback, and it doesn't reflect the virtual slave value
-change.
+The FH hardware will always write back to the scratch field
+in commands, even host commands not just TX commands, which
+can overwrite parts of the command. This is problematic if
+the command is re-used (with IWL_HCMD_DFL_NOCOPY) and can
+cause calibration issues.
 
-This patch fixes the function just to return 1 whenever a slave value
-is changed.
+Address this problem by always putting at least the first
+16 bytes into the buffer we also use for the command header
+and therefore make the DMA engine write back into this.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+For commands that are smaller than 16 bytes also always map
+enough memory for the DMA engine to write back to.
+
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop the IWL_HCMD_DFL_DUP handling
+ - Fix descriptor addresses and lengths for tracepoint, but otherwise
+   leave it unchanged]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/core/vmaster.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/sound/core/vmaster.c
-+++ b/sound/core/vmaster.c
-@@ -209,7 +209,10 @@ static int slave_put(struct snd_kcontrol
- 	}
- 	if (!changed)
- 		return 0;
--	return slave_put_val(slave, ucontrol);
-+	err = slave_put_val(slave, ucontrol);
-+	if (err < 0)
-+		return err;
-+	return 1;
- }
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
+@@ -180,6 +180,15 @@ struct iwl_queue {
+ #define TFD_TX_CMD_SLOTS 256
+ #define TFD_CMD_SLOTS 32
  
- static int slave_tlv_cmd(struct snd_kcontrol *kcontrol,
++/*
++ * The FH will write back to the first TB only, so we need
++ * to copy some data into the buffer regardless of whether
++ * it should be mapped or not. This indicates how much to
++ * copy, even for HCMDs it must be big enough to fit the
++ * DRAM scratch from the TX cmd, at least 16 bytes.
++ */
++#define IWL_HCMD_MIN_COPY_SIZE	16
++
+ struct iwl_tx_queue {
+ 	struct iwl_queue q;
+ 	struct iwl_tfd *tfds;
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
+@@ -688,11 +688,13 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	dma_addr_t phys_addr;
+ 	unsigned long flags;
+ 	u32 idx;
+-	u16 copy_size, cmd_size;
++	u16 copy_size, cmd_size, dma_size;
+ 	bool is_ct_kill = false;
+ 	bool had_nocopy = false;
+ 	int i;
+ 	u8 *cmd_dest;
++	const u8 *cmddata[IWL_MAX_CMD_TFDS];
++	u16 cmdlen[IWL_MAX_CMD_TFDS];
+ #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
+ 	const void *trace_bufs[IWL_MAX_CMD_TFDS + 1] = {};
+ 	int trace_lens[IWL_MAX_CMD_TFDS + 1] = {};
+@@ -717,15 +719,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	BUILD_BUG_ON(IWL_MAX_CMD_TFDS > IWL_NUM_OF_TBS - 1);
+ 
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
++		cmddata[i] = cmd->data[i];
++		cmdlen[i] = cmd->len[i];
++
+ 		if (!cmd->len[i])
+ 			continue;
++
++		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
++		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
++			int copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
++
++			if (copy > cmdlen[i])
++				copy = cmdlen[i];
++			cmdlen[i] -= copy;
++			cmddata[i] += copy;
++			copy_size += copy;
++		}
++
+ 		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY) {
+ 			had_nocopy = true;
+ 		} else {
+ 			/* NOCOPY must not be followed by normal! */
+ 			if (WARN_ON(had_nocopy))
+ 				return -EINVAL;
+-			copy_size += cmd->len[i];
++			copy_size += cmdlen[i];
+ 		}
+ 		cmd_size += cmd->len[i];
+ 	}
+@@ -778,13 +795,30 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	/* and copy the data that needs to be copied */
+ 
+ 	cmd_dest = out_cmd->payload;
++	copy_size = sizeof(out_cmd->hdr);
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
+-		if (!cmd->len[i])
++		int copy = 0;
++
++		if (!cmd->len)
+ 			continue;
+-		if (cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY)
+-			break;
+-		memcpy(cmd_dest, cmd->data[i], cmd->len[i]);
+-		cmd_dest += cmd->len[i];
++
++		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
++		if (copy_size < IWL_HCMD_MIN_COPY_SIZE) {
++			copy = IWL_HCMD_MIN_COPY_SIZE - copy_size;
++
++			if (copy > cmd->len[i])
++				copy = cmd->len[i];
++		}
++
++		/* copy everything if not nocopy/dup */
++		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
++			copy = cmd->len[i];
++
++		if (copy) {
++			memcpy(cmd_dest, cmd->data[i], copy);
++			cmd_dest += copy;
++			copy_size += copy;
++		}
+ 	}
+ 
+ 	IWL_DEBUG_HC(trans, "Sending command %s (#%x), seq: 0x%04X, "
+@@ -794,7 +828,14 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 			le16_to_cpu(out_cmd->hdr.sequence), cmd_size,
+ 			q->write_ptr, idx, trans->shrd->cmd_queue);
+ 
+-	phys_addr = dma_map_single(bus(trans)->dev, &out_cmd->hdr, copy_size,
++	/*
++	 * If the entire command is smaller than IWL_HCMD_MIN_COPY_SIZE, we must
++	 * still map at least that many bytes for the hardware to write back to.
++	 * We have enough space, so that's not a problem.
++	 */
++	dma_size = max_t(u16, copy_size, IWL_HCMD_MIN_COPY_SIZE);
++
++	phys_addr = dma_map_single(bus(trans)->dev, &out_cmd->hdr, dma_size,
+ 				DMA_BIDIRECTIONAL);
+ 	if (unlikely(dma_mapping_error(bus(trans)->dev, phys_addr))) {
+ 		idx = -ENOMEM;
+@@ -802,7 +843,7 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	}
+ 
+ 	dma_unmap_addr_set(out_meta, mapping, phys_addr);
+-	dma_unmap_len_set(out_meta, len, copy_size);
++	dma_unmap_len_set(out_meta, len, dma_size);
+ 
+ 	iwlagn_txq_attach_buf_to_tfd(trans, txq,
+ 					phys_addr, copy_size, 1);
+@@ -812,14 +853,15 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 	trace_idx = 1;
+ #endif
+ 
++	/* map the remaining (adjusted) nocopy/dup fragments */
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
+-		if (!cmd->len[i])
++		if (!cmdlen[i])
+ 			continue;
+ 		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
+ 			continue;
+ 		phys_addr = dma_map_single(bus(trans)->dev,
+-					   (void *)cmd->data[i],
+-					   cmd->len[i], DMA_BIDIRECTIONAL);
++					   (void *)cmddata[i],
++					   cmdlen[i], DMA_BIDIRECTIONAL);
+ 		if (dma_mapping_error(bus(trans)->dev, phys_addr)) {
+ 			iwlagn_unmap_tfd(trans, out_meta,
+ 					 &txq->tfds[q->write_ptr],
+@@ -829,10 +871,10 @@ static int iwl_enqueue_hcmd(struct iwl_t
+ 		}
+ 
+ 		iwlagn_txq_attach_buf_to_tfd(trans, txq, phys_addr,
+-					     cmd->len[i], 0);
++					     cmdlen[i], 0);
+ #ifdef CONFIG_IWLWIFI_DEVICE_TRACING
+-		trace_bufs[trace_idx] = cmd->data[i];
+-		trace_lens[trace_idx] = cmd->len[i];
++		trace_bufs[trace_idx] = cmddata[i];
++		trace_lens[trace_idx] = cmdlen[i];
+ 		trace_idx++;
+ #endif
+ 	}
 
 
