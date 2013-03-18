@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab3CRN15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab3CRN1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:27:55 -0400
-Date: Mon, 18 Mar 2013 15:27:52 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
-Message-ID: <20130318132752.GL4020@redhat.com>
-References: <51433D98.4050605@linux.vnet.ibm.com>
- <51433E71.2070107@linux.vnet.ibm.com>
- <20130317150239.GM11223@redhat.com>
- <5146CB92.7060203@linux.vnet.ibm.com>
- <20130318091303.GA1276@redhat.com>
- <514708A9.8040009@linux.vnet.ibm.com>
- <20130318124616.GH4020@redhat.com>
- <51471217.7070801@linux.vnet.ibm.com>
- <20130318131907.GK4020@redhat.com>
- <514715B6.3080507@linux.vnet.ibm.com>
+	id S1752247Ab3CRN34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:29:56 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:1041
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751629Ab3CRN3y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 09:29:54 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>
+Subject: RE: [PATCH 1/2] mm: Export split_page()
+Thread-Topic: [PATCH 1/2] mm: Export split_page()
+Thread-Index: AQHOIor5RC8w3cwVvEKoxiyfr3njOZirS2EAgAAoa4A=
+Date: Mon, 18 Mar 2013 13:28:42 +0000
+Message-ID: <991ac805538f4d5f9698200d592bddb6@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
+ <1363470125-24606-1-git-send-email-kys@microsoft.com>
+ <20130318110334.GI10192@dhcp22.suse.cz>
+In-Reply-To: <20130318110334.GI10192@dhcp22.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514715B6.3080507@linux.vnet.ibm.com>
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454001)(51704002)(13464002)(377454001)(377424002)(199002)(189002)(51856001)(33646001)(23726001)(76482001)(54316002)(20776003)(79102001)(5343655001)(5343635001)(50466001)(46406002)(46102001)(66066001)(54356001)(77982001)(50986001)(56776001)(47736001)(80022001)(31966008)(59766001)(47446002)(15202345001)(44976002)(4396001)(16676001)(65816001)(47976001)(63696002)(6806001)(53806001)(74502001)(56816002)(47776003)(49866001)(74662001)(69226001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB005;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 07891BF289
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 09:25:10PM +0800, Xiao Guangrong wrote:
-> On 03/18/2013 09:19 PM, Gleb Natapov wrote:
-> > On Mon, Mar 18, 2013 at 09:09:43PM +0800, Xiao Guangrong wrote:
-> >> On 03/18/2013 08:46 PM, Gleb Natapov wrote:
-> >>> On Mon, Mar 18, 2013 at 08:29:29PM +0800, Xiao Guangrong wrote:
-> >>>> On 03/18/2013 05:13 PM, Gleb Natapov wrote:
-> >>>>> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
-> >>>>>> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
-> >>>>>>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
-> >>>>>>>> This patch tries to introduce a very simple and scale way to invalid all
-> >>>>>>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
-> >>>>>>>>
-> >>>>>>>> KVM maintains a global mmio invalid generation-number which is stored in
-> >>>>>>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
-> >>>>>>>> generation-number into his available bits when it is created
-> >>>>>>>>
-> >>>>>>>> When KVM need zap all mmio sptes, it just simply increase the global
-> >>>>>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-> >>>>>>>> then it walks the shadow page table and get the mmio spte. If the
-> >>>>>>>> generation-number on the spte does not equal the global generation-number,
-> >>>>>>>> it will go to the normal #PF handler to update the mmio spte
-> >>>>>>>>
-> >>>>>>>> Since 19 bits are used to store generation-number on mmio spte, the
-> >>>>>>>> generation-number can be round after 33554432 times. It is large enough
-> >>>>>>>> for nearly all most cases, but making the code be more strong, we zap all
-> >>>>>>>> shadow pages when the number is round
-> >>>>>>>>
-> >>>>>>> Very nice idea, but why drop Takuya patches instead of using
-> >>>>>>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
-> >>>>>>
-> >>>>>> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
-> >>>>>> more than 500000 times is really really rare, it nearly does not happen.
-> >>>>>> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
-> >>>>>> implantation.) And, after my patch optimizing zapping all shadow pages,
-> >>>>>> zap-all-sps should not be a problem anymore since it does not take too much lock
-> >>>>>> time.
-> >>>>>>
-> >>>>>> Your idea?
-> >>>>>>
-> >>>>> I expect 500000 to become less since I already had plans to store some
-> >>>>
-> >>>> Interesting, just curious, what are the plans? ;)
-> >>>>
-> >>> Currently we uses pio to signal that work is pending to virtio devices. The
-> >>> requirement is that signaling should be fast and PIO is fast since there
-> >>> is not need to emulate instruction. PCIE though is not really designed
-> >>> with PIO in mind, so we will have to use MMIO to do signaling. To avoid
-> >>> instruction emulation I thought about making guest access these devices using
-> >>> predefined variety of MOV instruction so that emulation can be skipped.
-> >>> The idea is to mark mmio spte to know that emulation is not needed.
-> >>
-> >> How to know page-fault is caused by the predefined instruction?
-> >>
-> > Only predefined phys address rages will be accessed that way. If page
-> > fault is in a range we assume the knows instruction is used.
-> 
-> That means the access can be identified by the gfn, why need cache
-> other things into mmio spte?
-Two not search through memory ranges on each access.
 
---
-			Gleb.
+
+> -----Original Message-----
+> From: Michal Hocko [mailto:mhocko@suse.cz]
+> Sent: Monday, March 18, 2013 7:04 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com
+> Subject: Re: [PATCH 1/2] mm: Export split_page()
+> 
+> On Sat 16-03-13 14:42:04, K. Y. Srinivasan wrote:
+> > The split_page() function will be very useful for balloon drivers. On Hyper-V,
+> > it will be very efficient to use 2M allocations in the guest as this (a) makes
+> > the ballooning protocol with the host that much more efficient and (b) moving
+> > memory in 2M chunks minimizes fragmentation in the host. Export the
+> split_page()
+> > function to let the guest allocations be in 2M chunks while the host is free to
+> > return this memory at arbitrary granularity.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> I do not have any objections to exporting the symbol (at least we
+> prevent drivers code from inventing their own split_page) but the
+> Hyper-V specific description should go into Hyper-V patch IMO.
+> 
+> So for the export with a short note that the symbol will be used by
+> Hyper-V
+
+Will do.
+
+K. Y
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> > ---
+> >  mm/page_alloc.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 6cacfee..7e0ead6 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
+> >  	for (i = 1; i < (1 << order); i++)
+> >  		set_page_refcounted(page + i);
+> >  }
+> > +EXPORT_SYMBOL_GPL(split_page);
+> >
+> >  static int __isolate_free_page(struct page *page, unsigned int order)
+> >  {
+> > --
+> > 1.7.4.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> Michal Hocko
+> SUSE Labs
+> 
+
+
