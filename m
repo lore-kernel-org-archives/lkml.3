@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab3CREaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:30:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33365 "EHLO
+	id S1752102Ab3CREay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:30:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33383 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751106Ab3CREaC (ORCPT
+	by vger.kernel.org with ESMTP id S1751312Ab3CREaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:02 -0400
-Message-Id: <20130318042145.161537310@decadent.org.uk>
+Message-Id: <20130318042144.956545927@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:53 +0000
+Date: Mon, 18 Mar 2013 04:21:51 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Paolo Pisati <p.pisati@gmail.com>
-Subject: [ 09/82] ARM: fix scheduling while atomic warning in alignment handling code
+Cc: akpm@linux-foundation.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 07/82] [SCSI] dc395x: uninitialized variable in device_alloc()
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,76 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b255188f90e2bade1bd11a986dd1ca4861869f4d upstream.
+commit 208afec4f3be8c51ad6eebe6611dd6d2ad2fa298 upstream.
 
-Paolo Pisati reports that IPv6 triggers this warning:
+This bug was introduced back in bitkeeper days in 2003.  We use
+"dcb->dev_mode" before it has been initialized.
 
-BUG: scheduling while atomic: swapper/0/0/0x40000100
-Modules linked in:
-[<c001b1c4>] (unwind_backtrace+0x0/0xf0) from [<c0503c5c>] (__schedule_bug+0x48/0x5c)
-[<c0503c5c>] (__schedule_bug+0x48/0x5c) from [<c0508608>] (__schedule+0x700/0x740)
-[<c0508608>] (__schedule+0x700/0x740) from [<c007007c>] (__cond_resched+0x24/0x34)
-[<c007007c>] (__cond_resched+0x24/0x34) from [<c05086dc>] (_cond_resched+0x3c/0x44)
-[<c05086dc>] (_cond_resched+0x3c/0x44) from [<c0021f6c>] (do_alignment+0x178/0x78c)
-[<c0021f6c>] (do_alignment+0x178/0x78c) from [<c00083e0>] (do_DataAbort+0x34/0x98)
-[<c00083e0>] (do_DataAbort+0x34/0x98) from [<c0509a60>] (__dabt_svc+0x40/0x60)
-Exception stack(0xc0763d70 to 0xc0763db8)
-3d60:                                     e97e805e e97e806e 2c000000 11000000
-3d80: ea86bb00 0000002c 00000011 e97e807e c076d2a8 e97e805e e97e806e 0000002c
-3da0: 3d000000 c0763dbc c04b98fc c02a8490 00000113 ffffffff
-[<c0509a60>] (__dabt_svc+0x40/0x60) from [<c02a8490>] (__csum_ipv6_magic+0x8/0xc8)
-
-Fix this by using probe_kernel_address() stead of __get_user().
-
-Reported-by: Paolo Pisati <p.pisati@gmail.com>
-Tested-by: Paolo Pisati <p.pisati@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/alignment.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/scsi/dc395x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -749,7 +749,6 @@ do_alignment(unsigned long addr, unsigne
- 	unsigned long instr = 0, instrptr;
- 	int (*handler)(unsigned long addr, unsigned long instr, struct pt_regs *regs);
- 	unsigned int type;
--	mm_segment_t fs;
- 	unsigned int fault;
- 	u16 tinstr = 0;
- 	int isize = 4;
-@@ -760,16 +759,15 @@ do_alignment(unsigned long addr, unsigne
- 
- 	instrptr = instruction_pointer(regs);
- 
--	fs = get_fs();
--	set_fs(KERNEL_DS);
- 	if (thumb_mode(regs)) {
--		fault = __get_user(tinstr, (u16 *)(instrptr & ~1));
-+		u16 *ptr = (u16 *)(instrptr & ~1);
-+		fault = probe_kernel_address(ptr, tinstr);
- 		if (!fault) {
- 			if (cpu_architecture() >= CPU_ARCH_ARMv7 &&
- 			    IS_T32(tinstr)) {
- 				/* Thumb-2 32-bit */
- 				u16 tinst2 = 0;
--				fault = __get_user(tinst2, (u16 *)(instrptr+2));
-+				fault = probe_kernel_address(ptr + 1, tinst2);
- 				instr = (tinstr << 16) | tinst2;
- 				thumb2_32b = 1;
- 			} else {
-@@ -778,8 +776,7 @@ do_alignment(unsigned long addr, unsigne
- 			}
- 		}
- 	} else
--		fault = __get_user(instr, (u32 *)instrptr);
--	set_fs(fs);
-+		fault = probe_kernel_address(instrptr, instr);
- 
- 	if (fault) {
- 		type = TYPE_FAULT;
+--- a/drivers/scsi/dc395x.c
++++ b/drivers/scsi/dc395x.c
+@@ -3747,13 +3747,13 @@ static struct DeviceCtlBlk *device_alloc
+ 	dcb->max_command = 1;
+ 	dcb->target_id = target;
+ 	dcb->target_lun = lun;
++	dcb->dev_mode = eeprom->target[target].cfg0;
+ #ifndef DC395x_NO_DISCONNECT
+ 	dcb->identify_msg =
+ 	    IDENTIFY(dcb->dev_mode & NTC_DO_DISCONNECT, lun);
+ #else
+ 	dcb->identify_msg = IDENTIFY(0, lun);
+ #endif
+-	dcb->dev_mode = eeprom->target[target].cfg0;
+ 	dcb->inquiry7 = 0;
+ 	dcb->sync_mode = 0;
+ 	dcb->min_nego_period = clock_period[period_index];
 
 
