@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab3CRVGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45529 "EHLO
+	id S934126Ab3CRWAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:00:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab3CRVGl (ORCPT
+	with ESMTP id S1755388Ab3CRVGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:41 -0400
+	Mon, 18 Mar 2013 17:06:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Emese Revfy <re.emese@gmail.com>,
-        PaX Team <pageexec@freemail.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Julien Tinnes <jln@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/75] signal: always clear sa_restorer on execve
-Date: Mon, 18 Mar 2013 14:06:40 -0700
-Message-Id: <20130318210511.487435257@linuxfoundation.org>
+        Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 20/75] serial: 8250: Keep 8250.<xxxx> module options functional after driver rename
+Date: Mon, 18 Mar 2013 14:06:43 -0700
+Message-Id: <20130318210511.698153946@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -33,69 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
+commit f2b8dfd9e480c3db3bad0c25c590a5d11b31f4ef upstream.
 
-When the new signal handlers are set up, the location of sa_restorer is
-not cleared, leaking a parent process's address space location to
-children.  This allows for a potential bypass of the parent's ASLR by
-examining the sa_restorer value returned when calling sigaction().
+With commit 835d844d1 (8250_pnp: do pnp probe before legacy probe), the
+8250 driver was renamed to 8250_core.  This means any existing usage of
+the 8259.<xxxx> module parameters or as a kernel command line switch is
+now broken, as the 8250_core driver doesn't parse options belonging to
+something called "8250".
 
-Based on what should be considered "secret" about addresses, it only
-matters across the exec not the fork (since the VMAs haven't changed
-until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
-this is where it should be fixed.
+To solve this, we redefine the module options in a dummy function using
+a redefined MODULE_PARAM_PREFX when built into the kernel.  In the case
+where we're building as a module, we provide an alias to the old 8250
+name.  The dummy function prevents compiler errors due to global variable
+redefinitions that happen as part of the module_param_ macro expansions.
 
-Given the few uses of sa_restorer, a "set" function was not written
-since this would be the only use.  Instead, we use
-__ARCH_HAS_SA_RESTORER, as already done in other places.
-
-Example of the leak before applying this patch:
-
-  $ cat /proc/$$/maps
-  ...
-  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  $ ./leak
-  ...
-  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  1 0 (nil) 0x7fb9f30b94a0
-  2 4000000 (nil) 0x7f278bcaa4a0
-  3 4000000 (nil) 0x7f278bcaa4a0
-  4 0 (nil) 0x7fb9f30b94a0
-  ...
-
-[akpm@linux-foundation.org: use SA_RESTORER for backportability]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Cc: Emese Revfy <re.emese@gmail.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Julien Tinnes <jln@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/signal.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/tty/serial/8250/8250.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -485,6 +485,9 @@ flush_signal_handlers(struct task_struct
- 		if (force_default || ka->sa.sa_handler != SIG_IGN)
- 			ka->sa.sa_handler = SIG_DFL;
- 		ka->sa.sa_flags = 0;
-+#ifdef SA_RESTORER
-+		ka->sa.sa_restorer = NULL;
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -3430,3 +3430,32 @@ module_param_array(probe_rsa, ulong, &pr
+ MODULE_PARM_DESC(probe_rsa, "Probe I/O ports for RSA");
+ #endif
+ MODULE_ALIAS_CHARDEV_MAJOR(TTY_MAJOR);
++
++#ifndef MODULE
++/* This module was renamed to 8250_core in 3.7.  Keep the old "8250" name
++ * working as well for the module options so we don't break people.  We
++ * need to keep the names identical and the convenient macros will happily
++ * refuse to let us do that by failing the build with redefinition errors
++ * of global variables.  So we stick them inside a dummy function to avoid
++ * those conflicts.  The options still get parsed, and the redefined
++ * MODULE_PARAM_PREFIX lets us keep the "8250." syntax alive.
++ *
++ * This is hacky.  I'm sorry.
++ */
++static void __used s8250_options(void)
++{
++#undef MODULE_PARAM_PREFIX
++#define MODULE_PARAM_PREFIX "8250."
++
++	module_param_cb(share_irqs, &param_ops_uint, &share_irqs, 0644);
++	module_param_cb(nr_uarts, &param_ops_uint, &nr_uarts, 0644);
++	module_param_cb(skip_txen_test, &param_ops_uint, &skip_txen_test, 0644);
++#ifdef CONFIG_SERIAL_8250_RSA
++	__module_param_call(MODULE_PARAM_PREFIX, probe_rsa,
++		&param_array_ops, .arr = &__param_arr_probe_rsa,
++		0444, -1);
 +#endif
- 		sigemptyset(&ka->sa.sa_mask);
- 		ka++;
- 	}
++}
++#else
++MODULE_ALIAS("8250");
++#endif
 
 
