@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3CROva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:51:30 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:54479 "EHLO smtp4-g21.free.fr"
+	id S1753484Ab3CROwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:52:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47988 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561Ab3CROv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:51:28 -0400
-From: Nicolas Schichan <nschichan@freebox.fr>
-To: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Schichan <nschichan@freebox.fr>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
-Subject: [PATCH V2 3/3] ARM: net: bpf_jit: add support for jitted seccomp filters.
-Date: Mon, 18 Mar 2013 15:50:32 +0100
-Message-Id: <1363618233-6375-4-git-send-email-nschichan@freebox.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
-References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+	id S1753312Ab3CROwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 10:52:04 -0400
+Date: Mon, 18 Mar 2013 15:51:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] migrate: add migrate_entry_wait_huge()
+Message-ID: <20130318145159.GP10192@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch selects HAVE_SECCOMP_FILTER_JIT in the ARM Kconfig file,
-implements and seccomp_jit_compile() and seccomp_jit_free(), and adds
-support for BPF_S_ANC_SECCOMP_LD_W instruction.
+On Thu 21-02-13 14:41:40, Naoya Horiguchi wrote:
+[...]
+> diff --git v3.8.orig/mm/migrate.c v3.8/mm/migrate.c
+> index 2fd8b4a..7d84f4c 100644
+> --- v3.8.orig/mm/migrate.c
+> +++ v3.8/mm/migrate.c
+> @@ -236,6 +236,30 @@ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+>  	pte_unmap_unlock(ptep, ptl);
+>  }
+>  
+> +void migration_entry_wait_huge(struct mm_struct *mm, pmd_t *pmd,
+> +				unsigned long address)
+> +{
+> +	spinlock_t *ptl = pte_lockptr(mm, pmd);
+> +	pte_t pte;
+> +	swp_entry_t entry;
+> +	struct page *page;
+> +
+> +	spin_lock(ptl);
+> +	pte = huge_ptep_get((pte_t *)pmd);
+> +	if (!is_hugetlb_entry_migration(pte))
+> +		goto out;
+> +	entry = pte_to_swp_entry(pte);
+> +	page = migration_entry_to_page(entry);
+> +	if (!get_page_unless_zero(page))
+> +		goto out;
+> +	spin_unlock(ptl);
+> +	wait_on_page_locked(page);
+> +	put_page(page);
+> +	return;
+> +out:
+> +	spin_unlock(ptl);
+> +}
 
-BPF_S_ANC_SECCOMP_LD_W instructions trigger the generation of a call
-to C function seccomp_bpf_load().
-
-Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
----
- arch/arm/Kconfig          |    1 +
- arch/arm/net/bpf_jit_32.c |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index dedf02b..b3dce17 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -24,6 +24,7 @@ config ARM
- 	select HAVE_ARCH_SECCOMP_FILTER
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_BPF_JIT
-+	select HAVE_SECCOMP_FILTER_JIT
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DEBUG_KMEMLEAK
- 	select HAVE_DMA_API_DEBUG
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index 0ea29e0..86e3b78 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -548,6 +548,15 @@ load_common:
- 			emit_err_ret(ARM_COND_NE, ctx);
- 			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
- 			break;
-+#ifdef CONFIG_SECCOMP_FILTER_JIT
-+		case BPF_S_ANC_SECCOMP_LD_W:
-+			ctx->seen |= SEEN_CALL;
-+			emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
-+			emit_mov_i(ARM_R0, k, ctx);
-+			emit_blx_r(ARM_R3, ctx);
-+			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
-+			break;
-+#endif
- 		case BPF_S_LD_W_IND:
- 			load_order = 2;
- 			goto load_ind;
-@@ -956,3 +965,30 @@ void bpf_jit_free(struct sk_filter *fp)
- 		schedule_work(work);
- 	}
- }
-+
-+#ifdef CONFIG_SECCOMP_FILTER_JIT
-+void seccomp_jit_compile(struct seccomp_filter *fp)
-+{
-+	struct jit_ctx ctx;
-+
-+	memset(&ctx, 0, sizeof(ctx));
-+	ctx.prog_len = fp->len;
-+	ctx.prog_insns = fp->insns;
-+
-+	__bpf_jit_compile(&ctx);
-+	if (ctx.target)
-+		fp->bpf_func = (void*)ctx.target;
-+}
-+
-+void seccomp_jit_free(struct seccomp_filter *fp)
-+{
-+	struct work_struct *work;
-+
-+	if (fp->bpf_func != sk_run_filter) {
-+		work = (struct work_struct *)fp->bpf_func;
-+
-+		INIT_WORK(work, bpf_jit_free_worker);
-+		schedule_work(work);
-+	}
-+}
-+#endif
+This duplicates a lot of code from migration_entry_wait. Can we just
+teach the generic one to be HugePage aware instead?
+All it takes is just opencoding pte_offset_map_lock and calling
+huge_ptep_get ofr HugePage and pte_offset_map otherwise.
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
