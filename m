@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab3CRVcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:32:13 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:49141 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab3CRVcJ (ORCPT
+	id S932082Ab3CRVHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45816 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab3CRVHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:32:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130318142623.a6a9dd7be1ca9dcd1cd0caec@linux-foundation.org>
-References: <1363366442-11494-1-git-send-email-fweisbec@gmail.com>
-	<1363366442-11494-5-git-send-email-fweisbec@gmail.com>
-	<20130318142623.a6a9dd7be1ca9dcd1cd0caec@linux-foundation.org>
-Date: Mon, 18 Mar 2013 22:32:07 +0100
-Message-ID: <CAFTL4hwbnTML3tSaAfSSJ3ybEp0O28zwcFmVDjZzE8_c2kXXjQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] selftests: Add basic posix timers selftests
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Mar 2013 17:07:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Subject: [ 06/48] usb: cp210x new Vendor/Device IDs
+Date: Mon, 18 Mar 2013 14:08:14 -0700
+Message-Id: <20130318210810.705368214@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
+References: <20130318210810.247845918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/18 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 15 Mar 2013 17:54:02 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
->> Add some initial basic tests on a few posix timers
->> interface such as setitimer() and timer_settime().
->>
->> These simply check that expiration happens in a reasonable
->> timeframe after expected elapsed clock time (user time,
->> user + system time, real time, ...).
->>
->> This is helpful for finding basic breakages while hacking
->> on this subsystem.
->>
->> ...
->>
->>  tools/testing/selftests/timers/Makefile       |    8 +
->
-> I wonder if this should be tools/testing/posix-timers/, to leave room
-> in the namespace for other varieties of timer.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-In fact I called it timers/ on purpose such that some more timers
-related selftests can be added and gathered in the future. But I don't
-mind if we keep very single purpose directories like
-tools/testing/posix-timers/
+------------------
+
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+
+commit be3101c23394af59694c8a2aae6d07f5da62fea5 upstream.
+
+This patch adds support for the Lake Shore Cryotronics devices to
+the CP210x driver.
+
+These lines are ported from cp210x driver distributed by Lake Shore web site:
+   http://www.lakeshore.com/Documents/Lake%20Shore%20cp210x-3.0.0.tar.gz
+and licensed under the terms of GPLv2.
+
+Moreover, I've tested this changes with Lake Shore 335 in my labs.
+
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/cp210x.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -156,6 +156,25 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
++	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
++	{ USB_DEVICE(0x1FB9, 0x0200) }, /* Lake Shore Model 218A Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0201) }, /* Lake Shore Model 219 Temperature Monitor */
++	{ USB_DEVICE(0x1FB9, 0x0202) }, /* Lake Shore Model 233 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0203) }, /* Lake Shore Model 235 Temperature Transmitter */
++	{ USB_DEVICE(0x1FB9, 0x0300) }, /* Lake Shore Model 335 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0301) }, /* Lake Shore Model 336 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0302) }, /* Lake Shore Model 350 Temperature Controller */
++	{ USB_DEVICE(0x1FB9, 0x0303) }, /* Lake Shore Model 371 AC Bridge */
++	{ USB_DEVICE(0x1FB9, 0x0400) }, /* Lake Shore Model 411 Handheld Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0401) }, /* Lake Shore Model 425 Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0402) }, /* Lake Shore Model 455A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0403) }, /* Lake Shore Model 475A Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0404) }, /* Lake Shore Model 465 Three Axis Gaussmeter */
++	{ USB_DEVICE(0x1FB9, 0x0600) }, /* Lake Shore Model 625A Superconducting MPS */
++	{ USB_DEVICE(0x1FB9, 0x0601) }, /* Lake Shore Model 642A Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0602) }, /* Lake Shore Model 648 Magnet Power Supply */
++	{ USB_DEVICE(0x1FB9, 0x0700) }, /* Lake Shore Model 737 VSM Controller */
++	{ USB_DEVICE(0x1FB9, 0x0701) }, /* Lake Shore Model 776 Hall Matrix */
+ 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
+ 	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
+ 	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
+
+
