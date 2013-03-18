@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab3CRVQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:16:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46106 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932371Ab3CRVKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932361Ab3CRVKV (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Mar 2013 17:10:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46077 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756706Ab3CRVKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:10:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>, NeilBrown <neilb@suse.de>,
-        Paul Menzel <paulepanter@users.sourceforge.net>
-Subject: [ 15/40] md: protect against crash upon fsync on ro array
-Date: Mon, 18 Mar 2013 14:10:53 -0700
-Message-Id: <20130318211017.350620480@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 18/40] hwmon: (lineage-pem) Add missing terminating entry for pem_[input|fan]_attributes
+Date: Mon, 18 Mar 2013 14:10:56 -0700
+Message-Id: <20130318211017.558411798@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -29,41 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
+commit df069079c153d22adf6c28dcc0b1cf62bba75167 upstream.
 
-If an fsync occurs on a read-only array, we need to send a
-completion for the IO and may not increment the active IO count.
-Otherwise, we hit a bug trace and can't stop the MD array anymore.
-
-By advice of Christoph Hellwig we return success upon a flush
-request but we return -EROFS for other writes.
-We detect flush requests by checking if the bio has zero sectors.
-
-Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: NeilBrown <neilb@suse.de>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/md.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -299,6 +299,10 @@ static int md_make_request(struct reques
- 		bio_io_error(bio);
- 		return 0;
- 	}
-+	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
-+		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
-+		return 0;
-+	}
- 	smp_rmb(); /* Ensure implications of  'active' are visible */
- 	rcu_read_lock();
- 	if (mddev->suspended) {
+---
+ drivers/hwmon/lineage-pem.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/hwmon/lineage-pem.c
++++ b/drivers/hwmon/lineage-pem.c
+@@ -421,6 +421,7 @@ static struct attribute *pem_input_attri
+ 	&sensor_dev_attr_in2_input.dev_attr.attr,
+ 	&sensor_dev_attr_curr1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
++	NULL
+ };
+ 
+ static const struct attribute_group pem_input_group = {
+@@ -431,6 +432,7 @@ static struct attribute *pem_fan_attribu
+ 	&sensor_dev_attr_fan1_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan2_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan3_input.dev_attr.attr,
++	NULL
+ };
+ 
+ static const struct attribute_group pem_fan_group = {
 
 
