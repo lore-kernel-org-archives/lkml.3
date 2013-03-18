@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3CRVGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45483 "EHLO
+	id S1756985Ab3CRWDg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 18:03:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45495 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3CRVGa (ORCPT
+	with ESMTP id S1755254Ab3CRVGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:30 -0400
+	Mon, 18 Mar 2013 17:06:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [ 05/75] USB: cdc-wdm: fix buffer overflow
-Date: Mon, 18 Mar 2013 14:06:28 -0700
-Message-Id: <20130318210510.646717843@linuxfoundation.org>
+        Christian Schmiedl <christian.schmiedl@gemalto.com>
+Subject: [ 09/75] USB: added support for Cinterions products AH6 and PLS8
+Date: Mon, 18 Mar 2013 14:06:32 -0700
+Message-Id: <20130318210510.925379969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,87 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Christian Schmiedl <christian.schmiedl@gemalto.com>
 
-commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
+commit 1941138e1c024ecb5bd797d414928d3eb94d8662 upstream.
 
-The buffer for responses must not overflow.
-If this would happen, set a flag, drop the data and return
-an error after user space has read all remaining data.
+add support for Cinterion's products AH6 and PLS8 by adding Product IDs
+and USB_DEVICE tuples.
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -56,6 +56,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
- #define WDM_RESPONDING		7
- #define WDM_SUSPENDING		8
- #define WDM_RESETTING		9
-+#define WDM_OVERFLOW		10
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -341,6 +341,8 @@ static void option_instat_callback(struc
+ #define CINTERION_PRODUCT_EU3_E			0x0051
+ #define CINTERION_PRODUCT_EU3_P			0x0052
+ #define CINTERION_PRODUCT_PH8			0x0053
++#define CINTERION_PRODUCT_AH6			0x0055
++#define CINTERION_PRODUCT_PLS8			0x0060
  
- #define WDM_MAX			16
- 
-@@ -155,6 +156,7 @@ static void wdm_in_callback(struct urb *
- {
- 	struct wdm_device *desc = urb->context;
- 	int status = urb->status;
-+	int length = urb->actual_length;
- 
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_RESPONDING, &desc->flags);
-@@ -185,9 +187,17 @@ static void wdm_in_callback(struct urb *
- 	}
- 
- 	desc->rerr = status;
--	desc->reslength = urb->actual_length;
--	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
--	desc->length += desc->reslength;
-+	if (length + desc->length > desc->wMaxCommand) {
-+		/* The buffer would overflow */
-+		set_bit(WDM_OVERFLOW, &desc->flags);
-+	} else {
-+		/* we may already be in overflow */
-+		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			memmove(desc->ubuf + desc->length, desc->inbuf, length);
-+			desc->length += length;
-+			desc->reslength = length;
-+		}
-+	}
- skip_error:
- 	wake_up(&desc->wait);
- 
-@@ -435,6 +445,11 @@ retry:
- 			rv = -ENODEV;
- 			goto err;
- 		}
-+		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			clear_bit(WDM_OVERFLOW, &desc->flags);
-+			rv = -ENOBUFS;
-+			goto err;
-+		}
- 		i++;
- 		if (file->f_flags & O_NONBLOCK) {
- 			if (!test_bit(WDM_READ, &desc->flags)) {
-@@ -478,6 +493,7 @@ retry:
- 			spin_unlock_irq(&desc->iuspin);
- 			goto retry;
- 		}
-+
- 		if (!desc->reslength) { /* zero length read */
- 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
- 			clear_bit(WDM_READ, &desc->flags);
-@@ -1004,6 +1020,7 @@ static int wdm_post_reset(struct usb_int
- 	struct wdm_device *desc = wdm_find_device(intf);
- 	int rv;
- 
-+	clear_bit(WDM_OVERFLOW, &desc->flags);
- 	clear_bit(WDM_RESETTING, &desc->flags);
- 	rv = recover_from_urb_loss(desc);
- 	mutex_unlock(&desc->wlock);
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -1261,6 +1263,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
 
 
