@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3CROwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:52:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47988 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab3CROwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:52:04 -0400
-Date: Mon, 18 Mar 2013 15:51:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] migrate: add migrate_entry_wait_huge()
-Message-ID: <20130318145159.GP10192@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1753312Ab3CRO41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:56:27 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:41700 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3CRO4Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 10:56:25 -0400
+Date: Mon, 18 Mar 2013 11:56:18 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: bluetooth: Replaced kzalloc and memcpy with kmemdup
+Message-ID: <20130318145618.GA16337@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1363442830-13754-1-git-send-email-gheorghiuandru@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1363442830-13754-1-git-send-email-gheorghiuandru@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-02-13 14:41:40, Naoya Horiguchi wrote:
-[...]
-> diff --git v3.8.orig/mm/migrate.c v3.8/mm/migrate.c
-> index 2fd8b4a..7d84f4c 100644
-> --- v3.8.orig/mm/migrate.c
-> +++ v3.8/mm/migrate.c
-> @@ -236,6 +236,30 @@ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
->  	pte_unmap_unlock(ptep, ptl);
->  }
->  
-> +void migration_entry_wait_huge(struct mm_struct *mm, pmd_t *pmd,
-> +				unsigned long address)
-> +{
-> +	spinlock_t *ptl = pte_lockptr(mm, pmd);
-> +	pte_t pte;
-> +	swp_entry_t entry;
-> +	struct page *page;
-> +
-> +	spin_lock(ptl);
-> +	pte = huge_ptep_get((pte_t *)pmd);
-> +	if (!is_hugetlb_entry_migration(pte))
-> +		goto out;
-> +	entry = pte_to_swp_entry(pte);
-> +	page = migration_entry_to_page(entry);
-> +	if (!get_page_unless_zero(page))
-> +		goto out;
-> +	spin_unlock(ptl);
-> +	wait_on_page_locked(page);
-> +	put_page(page);
-> +	return;
-> +out:
-> +	spin_unlock(ptl);
-> +}
+Hi Alexandru,
 
-This duplicates a lot of code from migration_entry_wait. Can we just
-teach the generic one to be HugePage aware instead?
-All it takes is just opencoding pte_offset_map_lock and calling
-huge_ptep_get ofr HugePage and pte_offset_map otherwise.
--- 
-Michal Hocko
-SUSE Labs
+* Alexandru Gheorghiu <gheorghiuandru@gmail.com> [2013-03-16 16:07:10 +0200]:
+
+> Replaced calls to kzalloc followed by memcpy with a single call to kmemdup.
+> Patch found using coccinelle.
+> 
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  net/bluetooth/a2mp.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/bluetooth/a2mp.c b/net/bluetooth/a2mp.c
+> index eb0f4b1..140e81c 100644
+> --- a/net/bluetooth/a2mp.c
+> +++ b/net/bluetooth/a2mp.c
+> @@ -397,13 +397,12 @@ static int a2mp_getampassoc_rsp(struct amp_mgr *mgr, struct sk_buff *skb,
+>  	if (ctrl) {
+>  		u8 *assoc;
+>  
+> -		assoc = kzalloc(assoc_len, GFP_KERNEL);
+> +		assoc = kmemdup(rsp->amp_assoc, assoc_len, GFP_KERNEL);
+>  		if (!assoc) {
+>  			amp_ctrl_put(ctrl);
+>  			return -ENOMEM;
+>  		}
+>  
+> -		memcpy(assoc, rsp->amp_assoc, assoc_len);
+>  		ctrl->assoc = assoc;
+>  		ctrl->assoc_len = assoc_len;
+>  		ctrl->assoc_rem_len = assoc_len;
+> @@ -472,13 +471,12 @@ static int a2mp_createphyslink_req(struct amp_mgr *mgr, struct sk_buff *skb,
+>  		size_t assoc_len = le16_to_cpu(hdr->len) - sizeof(*req);
+>  		u8 *assoc;
+>  
+> -		assoc = kzalloc(assoc_len, GFP_KERNEL);
+> +		assoc = kmemdup(rep->amp_assoc, assoc_len, GFP_KERNEL);
+
+Please get into the habit of build your patches before sending them upstream:
+
+  CC [M]  net/bluetooth/a2mp.o
+net/bluetooth/a2mp.c: In function ‘a2mp_createphyslink_req’:
+net/bluetooth/a2mp.c:474:19: error: ‘rep’ undeclared (first use in this function)
+net/bluetooth/a2mp.c:474:19: note: each undeclared identifier is reported only once for each function it appears in
+make[2]: *** [net/bluetooth/a2mp.o] Error 1
+make[1]: *** [net/bluetooth] Error 2
+
+
+	Gustavo
