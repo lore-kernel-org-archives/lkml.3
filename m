@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab3CRVVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:21:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46061 "EHLO
+	id S932998Ab3CRVVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:21:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671Ab3CRVKN (ORCPT
+	with ESMTP id S1756665Ab3CRVKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 17:10:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Bryan Mason <bmason@redhat.com>
-Subject: [ 14/40] TTY: do not reset masters packet mode
-Date: Mon, 18 Mar 2013 14:10:52 -0700
-Message-Id: <20130318211017.284127513@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 13/40] tty: serial: fix typo "ARCH_S5P6450"
+Date: Mon, 18 Mar 2013 14:10:51 -0700
+Message-Id: <20130318211017.215261095@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -28,63 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
+commit 827aa0d36d486f359808c8fb931cf7a71011a09d upstream.
 
-Now that login from util-linux is forced to drop all references to a
-TTY which it wants to hangup (to reach reference count 1) we are
-seeing issues with telnet. When login closes its last reference to the
-slave PTY, it also resets packet mode on the *master* side. And we
-have a race here.
+This could have been either ARCH_S5P64X0 or CPU_S5P6450. Looking at
+commit 2555e663b367b8d555e76023f4de3f6338c28d6c ("ARM: S5P64X0: Add UART
+serial support for S5P6450") - which added this typo - makes clear this
+should be CPU_S5P6450.
 
-What telnet does is fork+exec of `login'. Then there are two
-scenarios:
-* `login' closes the slave TTY and resets thus master's packet mode,
-  but even now telnet properly sets the mode, or
-* `telnetd' sets packet mode on the master, `login' closes the slave
-  TTY and resets master's packet mode.
-
-The former case is OK. However the latter happens in much more cases,
-by the order of magnitude to be precise. So when one tries to login to
-such a messed telnet setup, they see the following:
-inux login:
-            ogin incorrect
-
-Note the missing first letters -- telnet thinks it is still in the
-packet mode, so when it receives "linux login" from `login', it
-considers "l" as the type of the packet and strips it.
-
-SuS does not mention how the implementation should behave. Both BSDs I
-checked (Free and Net) do not reset the flag upon the last close.
-
-By this I am resurrecting an old bug, see References. We are hitting
-it regularly now, i.e. with updated util-linux, ergo login.
-
-Here, I am changing a behavior introduced back in 2.1 times. It would
-better have a long time testing before goes upstream.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Bryan Mason <bmason@redhat.com>
-References: https://lkml.org/lkml/2009/11/11/223
-References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
-References: https://bugzilla.novell.com/show_bug.cgi?id=797042
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/pty.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/tty/serial/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -49,7 +49,6 @@ static void pty_close(struct tty_struct
- 	tty->packet = 0;
- 	if (!tty->link)
- 		return;
--	tty->link->packet = 0;
- 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
- 	wake_up_interruptible(&tty->link->read_wait);
- 	wake_up_interruptible(&tty->link->write_wait);
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -458,7 +458,7 @@ config SERIAL_SAMSUNG_UARTS
+ 	int
+ 	depends on ARM && PLAT_SAMSUNG
+ 	default 2 if ARCH_S3C2400
+-	default 6 if ARCH_S5P6450
++	default 6 if CPU_S5P6450
+ 	default 4 if SERIAL_SAMSUNG_UARTS_4
+ 	default 3
+ 	help
 
 
