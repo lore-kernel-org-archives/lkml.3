@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab3CREa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:30:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33387 "EHLO
+	id S1752191Ab3CREkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:40:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33618 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315Ab3CREaC (ORCPT
+	by vger.kernel.org with ESMTP id S1752109Ab3CREa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:02 -0400
-Message-Id: <20130318042144.531436620@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:56 -0400
+Message-Id: <20130318042148.418945193@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:47 +0000
+Date: Mon, 18 Mar 2013 04:22:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
-        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>,
-        Paul Menzel <paulepanter@users.sourceforge.net>
-Subject: [ 03/82] md: protect against crash upon fsync on ro array
+Cc: akpm@linux-foundation.org, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        guifang tang <guifang.tang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 43/82] Fix memory leak in cpufreq stats.
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,44 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
 
-commit bbfa57c0f2243a7c31fd248d22e9861a2802cad5 upstream.
+commit e37736777254ce1abc85493a5cacbefe5983b896 upstream.
 
-If an fsync occurs on a read-only array, we need to send a
-completion for the IO and may not increment the active IO count.
-Otherwise, we hit a bug trace and can't stop the MD array anymore.
+When system enters sleep, non-boot CPUs will be disabled.
+Cpufreq stats sysfs is created when the CPU is up, but it is not
+freed when the CPU is going down. This will cause memory leak.
 
-By advice of Christoph Hellwig we return success upon a flush
-request but we return -EROFS for other writes.
-We detect flush requests by checking if the bio has zero sectors.
-
-This patch is suitable to any -stable kernel to which it applies.
-
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: NeilBrown <neilb@suse.de>
-Signed-off-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+Signed-off-by: guifang tang <guifang.tang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/cpufreq/cpufreq_stats.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -345,6 +345,10 @@ static void md_make_request(struct reque
- 		bio_io_error(bio);
- 		return;
- 	}
-+	if (mddev->ro == 1 && unlikely(rw == WRITE)) {
-+		bio_endio(bio, bio_sectors(bio) == 0 ? 0 : -EROFS);
-+		return;
-+	}
- 	smp_rmb(); /* Ensure implications of  'active' are visible */
- 	rcu_read_lock();
- 	if (mddev->suspended) {
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -330,6 +330,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
++	case CPU_DOWN_PREPARE_FROZEN:
+ 		cpufreq_stats_free_sysfs(cpu);
+ 		break;
+ 	case CPU_DEAD:
 
 
