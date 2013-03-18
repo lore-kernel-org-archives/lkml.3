@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab3CRVb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:31:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45855 "EHLO
+	id S933324Ab3CRVbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:31:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab3CRVHy (ORCPT
+	with ESMTP id S932109Ab3CRVHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:54 -0400
+	Mon, 18 Mar 2013 17:07:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 19/48] hwmon: (pmbus/ltc2978) Fix temperature reporting
-Date: Mon, 18 Mar 2013 14:08:27 -0700
-Message-Id: <20130318210811.610633553@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 18/48] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
+Date: Mon, 18 Mar 2013 14:08:26 -0700
+Message-Id: <20130318210811.542752621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -26,69 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8c958c703ef8804093437959221951eaf0e1e664 upstream.
+commit 66efdc71d95887b652a742a5dae51fa834d71465 upstream.
 
-On LTC2978, only READ_TEMPERATURE is supported. It reports
-the internal junction temperature. This register is unpaged.
+snd_seq_timer_open() didn't catch the whole error path but let through
+if the timer id is a slave.  This may lead to Oops by accessing the
+uninitialized pointer.
 
-On LTC3880, READ_TEMPERATURE and READ_TEMPERATURE2 are supported.
-READ_TEMPERATURE is paged and reports external temperatures.
-READ_TEMPERATURE2 is unpaged and reports the internal junction
-temperature.
+ BUG: unable to handle kernel NULL pointer dereference at 00000000000002ae
+ IP: [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
+ PGD 785cd067 PUD 76964067 PMD 0
+ Oops: 0002 [#4] SMP
+ CPU 0
+ Pid: 4288, comm: trinity-child7 Tainted: G      D W 3.9.0-rc1+ #100 Bochs Bochs
+ RIP: 0010:[<ffffffff819b3477>]  [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
+ RSP: 0018:ffff88006ece7d38  EFLAGS: 00010246
+ RAX: 0000000000000286 RBX: ffff88007851b400 RCX: 0000000000000000
+ RDX: 000000000000ffff RSI: ffff88006ece7d58 RDI: ffff88006ece7d38
+ RBP: ffff88006ece7d98 R08: 000000000000000a R09: 000000000000fffe
+ R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+ R13: ffff8800792c5400 R14: 0000000000e8f000 R15: 0000000000000007
+ FS:  00007f7aaa650700(0000) GS:ffff88007f800000(0000) GS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 00000000000002ae CR3: 000000006efec000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process trinity-child7 (pid: 4288, threadinfo ffff88006ece6000, task ffff880076a8a290)
+ Stack:
+  0000000000000286 ffffffff828f2be0 ffff88006ece7d58 ffffffff810f354d
+  65636e6575716573 2065756575712072 ffff8800792c0030 0000000000000000
+  ffff88006ece7d98 ffff8800792c5400 ffff88007851b400 ffff8800792c5520
+ Call Trace:
+  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffff819b17e9>] snd_seq_queue_timer_open+0x29/0x70
+  [<ffffffff819ae01a>] snd_seq_ioctl_set_queue_timer+0xda/0x120
+  [<ffffffff819acb9b>] snd_seq_do_ioctl+0x9b/0xd0
+  [<ffffffff819acbe0>] snd_seq_ioctl+0x10/0x20
+  [<ffffffff811b9542>] do_vfs_ioctl+0x522/0x570
+  [<ffffffff8130a4b3>] ? file_has_perm+0x83/0xa0
+  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
+  [<ffffffff811b95ed>] sys_ioctl+0x5d/0xa0
+  [<ffffffff813663fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81faed69>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/pmbus/ltc2978.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ sound/core/seq/seq_timer.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/hwmon/pmbus/ltc2978.c
-+++ b/drivers/hwmon/pmbus/ltc2978.c
-@@ -59,7 +59,7 @@ enum chips { ltc2978, ltc3880 };
- struct ltc2978_data {
- 	enum chips id;
- 	int vin_min, vin_max;
--	int temp_min, temp_max;
-+	int temp_min, temp_max[2];
- 	int vout_min[8], vout_max[8];
- 	int iout_max[2];
- 	int temp2_max;
-@@ -113,9 +113,10 @@ static int ltc2978_read_word_data_common
- 		ret = pmbus_read_word_data(client, page,
- 					   LTC2978_MFR_TEMPERATURE_PEAK);
- 		if (ret >= 0) {
--			if (lin11_to_val(ret) > lin11_to_val(data->temp_max))
--				data->temp_max = ret;
--			ret = data->temp_max;
-+			if (lin11_to_val(ret)
-+			    > lin11_to_val(data->temp_max[page]))
-+				data->temp_max[page] = ret;
-+			ret = data->temp_max[page];
+--- a/sound/core/seq/seq_timer.c
++++ b/sound/core/seq/seq_timer.c
+@@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_qu
+ 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
+ 			err = snd_timer_open(&t, str, &tid, q->queue);
  		}
- 		break;
- 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
-@@ -266,7 +267,7 @@ static int ltc2978_write_word_data(struc
- 		break;
- 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
- 		data->temp_min = 0x7bff;
--		data->temp_max = 0x7c00;
-+		data->temp_max[page] = 0x7c00;
- 		ret = ltc2978_clear_peaks(client, page, data->id);
- 		break;
- 	default:
-@@ -323,7 +324,8 @@ static int ltc2978_probe(struct i2c_clie
- 	data->vin_min = 0x7bff;
- 	data->vin_max = 0x7c00;
- 	data->temp_min = 0x7bff;
--	data->temp_max = 0x7c00;
-+	for (i = 0; i < ARRAY_SIZE(data->temp_max); i++)
-+		data->temp_max[i] = 0x7c00;
- 	data->temp2_max = 0x7c00;
- 
- 	switch (data->id) {
+-		if (err < 0) {
+-			snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
+-			return err;
+-		}
++	}
++	if (err < 0) {
++		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
++		return err;
+ 	}
+ 	t->callback = snd_seq_timer_interrupt;
+ 	t->callback_data = q;
 
 
