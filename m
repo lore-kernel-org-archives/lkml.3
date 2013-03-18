@@ -1,161 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3CRGiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 02:38:22 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13084 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab3CRGiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 02:38:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 17 Mar 2013 23:31:03 -0700
-Subject: Re: [PATCH] ARM: tegra114: add speedo-based process identification
-From: Danny Huang <dahuang@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Joseph Lo <josephl@nvidia.com>, Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <51435C08.2030402@wwwdotorg.org>
-References: <1363246822-14597-1-git-send-email-dahuang@nvidia.com>
-	 <51435C08.2030402@wwwdotorg.org>
-Date: Mon, 18 Mar 2013 14:38:02 +0800
-Message-ID: <1363588682.4994.223.camel@dahuang-vm>
+	id S1751608Ab3CRGty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 02:49:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45946 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890Ab3CRGtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 02:49:52 -0400
+Message-ID: <5146B972.1010002@ti.com>
+Date: Mon, 18 Mar 2013 12:21:30 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
+To: Will Deacon <will@willdeacon.co.uk>
+CC: Will Deacon <Will.Deacon@arm.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
+ supports 'has_ossr'
+References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com> <51406BA7.8010306@arm.com> <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites>
+In-Reply-To: <20130315050014.GA15706@tiny-lites>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-16 at 01:36 +0800, Stephen Warren wrote:
-> On 03/14/2013 01:40 AM, Danny Huang wrote:
-> > Add speedo-based process identifictaion for Tegra114.
-> > 
-> > Based on the work by:
-> > Alex Frid <afrid@nvidia.com>
+On Friday 15 March 2013 10:30 AM, Will Deacon wrote:
+> On Thu, Mar 14, 2013 at 01:08:00PM +0530, Santosh Shilimkar wrote:
+>> Will,
 > 
-> This code is surprisingly quite a bit simpler than the existing
-> tegra30_speedo.c. Are you sure it's complete?
-
-It's complete and working for now. But It may need update if we have
-more sku/chip revision in the future.
-
-> > diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+> Hi guys,
 > 
-> > @@ -137,6 +138,9 @@ void tegra_init_fuse(void)
-> >  		tegra_fuse_spare_bit = TEGRA30_FUSE_SPARE_BIT;
-> >  		tegra_init_speedo_data = &tegra30_init_speedo_data;
-> >  		break;
-> > +	case TEGRA114:
-> > +		tegra_init_speedo_data = &tegra114_init_speedo_data;
-> > +		break;
+> I'm out of the office at the moment and have really terrible connectivity,
+> so I can't do too much until next week. However, I don't think adding the
+> has_ossr check is the right fix for this problem.
 > 
-> Don't you need to set tegra_fuse_spare_bit there just like all the other
-> paths do?
+>> On Wednesday 13 March 2013 05:59 PM, Lokesh Vutla wrote:
+>>> Hi Dietmar,
+>>> On Wednesday 13 March 2013 05:35 PM, Dietmar Eggemann wrote:
+>>>> On 13/03/13 06:52, Lokesh Vutla wrote:
+>>>>> Commit {9a6eb31 ARM: hw_breakpoint: Debug powerdown support for
+>>>>> self-hosted
+>>>>> debug} introduces debug powerdown support for self-hosted debug.
+>>>>> While merging the patch 'has_ossr' check was removed which
+>>>>> was needed for hardwares which doesn't support self-hosted debug.
+>>>>> Pandaboard (A9) is one such hardware and Dietmar's orginial
+>>>>> patch did mention this issue.
+>>>>> Without that check on Panda with CPUIDLE enabled, a flood of
+>>>>> below messages thrown.
+>>>>>
+>>>>> [ 3.597930] hw-breakpoint: CPU 0 failed to disable vector catch
+>>>>> [ 3.597991] hw-breakpoint: CPU 1 failed to disable vector catch
 > 
-
-There is no need of spare fuse access for Tegra114 for now.
-
-> > diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
+> Ok, so this means that we've taken an undefined instruction exception while
+> trying to reset the debug registers on the PM_EXIT path. Now, the code there
+> deals with CPUs that don't have the save/restore registers just fine, so
+> that shouldn't have anything to do with this problem, particularly if the
+> bit that is tripping us up is related to clearing vector catch.
+>
+Agree.
+ 
+> Furthermore, I was under the impression that hw_breakpoint did actually
+> work on panda, which implies that a cold boot *does* manage to reset the
+> registers (can you please confirm this by looking in your dmesg during
+> boot?). In that case, it seems as though a PM cycle is powering down a
+> bunch of debug logic that was powered up during boot, and then we trip over
+> because we can't access the register bank.
 > 
-> > +#define CORE_PROCESS_CORNERS_NUM	2
-> > +#define CPU_PROCESS_CORNERS_NUM		2
-> > +
-> > +enum {
-> > +	THRESHOLD_INDEX_0,
-> > +	THRESHOLD_INDEX_1,
-> > +	THRESHOLD_INDEX_COUNT,
-> > +};
-> > +
-> > +static const u32 core_process_speedos[THRESHOLD_INDEX_COUNT]
-> > +	[CORE_PROCESS_CORNERS_NUM] = {
-> > +	{1123,     UINT_MAX},
-> > +	{0,        UINT_MAX},
-> > +};
-> > +
-> > +static const u32 cpu_process_speedos[THRESHOLD_INDEX_COUNT]
-> > +	[CPU_PROCESS_CORNERS_NUM] = {
-> > +	{1695,     UINT_MAX},
-> > +	{0,        UINT_MAX},
-> > +};
+Actually it seems to be without PM. Thanks to analysis from Lokesh, the issue
+can be seen even with just suspend or cpu hotplug. So cold boot as such is
+fine.
+
+> The proper solution to this problem requires us to establish exactly what is
+> turning off the debug registers, and then having an OMAP PM notifier to
+> enable it again. Assuming this has always been the case, I expect hardware
+> debug across PM fails silently with older kernels.
 > 
-> Those enums/tables are a lot smaller than Tegra30. I'm surprised if we
-> end up making new chips simpler rather than more complex in this area.
-> Are those tables complete?
+This has been always the case it seems with CPU power cycle.
+After the CPU is power cycled, 'DBGAUTHSTATUS' reads '0xaa' rather
+than '0xaf' which means 'DBGEN = 0' and hence code fails to enable
+monitor mode. This happens on both secure and GP devices and it can not
+be patched since the secure code is ROM'ed. We didn't notice so far
+because hw_breakpoint support was not default enabled on OMAP till the
+multi-platform build.
 
-That's currently all I have. I think we can add some more data in the
-future when needed.
-
+>> I was also wondering whether we should just warn once rather
+>> than continuous warnings in the notifier. Patch is end of the
+>> email.
 > 
-> > +static void rev_sku_to_speedo_ids(int rev, int sku, int *threshold)
-> > +{
-> > +	u32 tmp;
-> > +
-> > +	switch (sku) {
-> > +	case 0x00:
-> > +	case 0x10:
-> > +	case 0x05:
-> > +	case 0x06:
-> > +		tegra_cpu_speedo_id = 1;
-> > +		tegra_soc_speedo_id = 0;
-> > +		*threshold = THRESHOLD_INDEX_0;
-> > +		break;
-> > +
-> > +	case 0x03:
-> > +	case 0x04:
-> > +		tegra_cpu_speedo_id = 2;
-> > +		tegra_soc_speedo_id = 1;
-> > +		*threshold = THRESHOLD_INDEX_1;
-> > +		break;
-> > +
-> > +	default:
-> > +		pr_err("Tegra114 Unknown SKU %d\n", sku);
-> > +		tegra_cpu_speedo_id = 0;
-> > +		tegra_soc_speedo_id = 0;
-> > +		*threshold = THRESHOLD_INDEX_0;
-> > +		break;
-> > +	}
-> > +
-> > +	if (rev == TEGRA_REVISION_A01) {
-> > +		tmp = tegra_fuse_readl(0x270) << 1;
-> > +		tmp |= tegra_fuse_readl(0x26c);
-> > +		if (!tmp)
-> > +			tegra_cpu_speedo_id = 0;
-> > +	}
-> > +}
+> Could do, but I'd like to see a fix for the real issue before we simply hide
+> the warnings :)
 > 
-> That's also a lot simpler than Tegra30. Are all those SKUs really valid
-> for all chip revisions including A01 where the 0x270/0x26c fuses are clear?
+Agree here too. As evident above, the feature won't work on OMAP4
+devices with PM and hence some solution is needed.
 
-Yes, currently the 0x26c/0x270 value affects all sku of A01 chips.
-
-> If life really is this simple, then I should be happy:-) But I just want
-> to check that this code really is accurate.
-> 
-> > +void tegra114_init_speedo_data(void)
-> 
-> The Tegra30 code has a couple BUILD_BUG_ON() here to ensure that the
-> size of the {cpu,core}_process_speedos arrays match
-> THRESHOLD_INDEX_COUNT. It'd be good to be consistent here.
-
-I'll put the BUILD_BUG_ON back and make them consistent with Tegra30 in
-next version. Thanks.
-
-> 
-> In general, the implementation of tegra114_init_speedo_data() is quite
-> different from that of the existing tegra30_init_speedo_data(). It'd be
-> nice if they were as similar as possible in structure so they could be
-> easily compared. Can you take a look at the two and see if any changes
-> are warranted in this patch?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+What you think of below ?
 
 
+>From d74b4264f6a5967b0f7ada96aad77ab0ac30dbed Mon Sep 17 00:00:00 2001
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Mon, 18 Mar 2013 11:59:04 +0530
+Subject: [PATCH] ARM: hw_breakpoints: Check for CPU debug availability before
+ enabling it
+
+CPU debug features like hardware break, watchpoints can be used only when
+the debug mode is enabled and available for non-secure mode.
+
+Hence check 'DBGAUTHSTATUS.DBGEN' before proceeding to enable the
+features.
+
+Thanks to Will for pointers and Lokesh for the analysis of the issue on
+OMAP4 where after a CPU power cycle, debug mode gets disabled.
+
+Cc: Will Deacon <Will.Deacon@arm.com>
+
+Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/kernel/hw_breakpoint.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 96093b7..683a7cf 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -930,6 +930,14 @@ static void reset_ctrl_regs(void *unused)
+ 	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
+ 	u32 val;
+ 
++	/* Check if we have access to CPU debug features */
++	ARM_DBG_READ(c7, c14, 6, val);
++	if ((val & 0x1) == 0) {
++		pr_warn_once("CPU %d debug is unavailable\n", cpu);
++		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
++		return;
++	}
++
+ 	/*
+ 	 * v7 debug contains save and restore registers so that debug state
+ 	 * can be maintained across low-power modes without leaving the debug
+-- 
+1.7.9.5
