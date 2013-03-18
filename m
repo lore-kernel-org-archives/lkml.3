@@ -1,270 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab3CRQ0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:26:06 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49406
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752854Ab3CRQZ7 (ORCPT
+	id S1753467Ab3CRQ1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:27:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36485 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3CRQ0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:59 -0400
+	Mon, 18 Mar 2013 12:26:06 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 38/54] perf tools: Remove unused trace_read_data function
-Date: Mon, 18 Mar 2013 13:25:23 -0300
-Message-Id: <1363623939-10748-39-git-send-email-acme@infradead.org>
+Subject: [PATCH 44/54] perf tests: Test breakpoint overflow signal handler counts
+Date: Mon, 18 Mar 2013 13:25:29 -0300
+Message-Id: <1363623939-10748-45-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-And functions that called only from the trace_read_data().
+Adding automated test to check the exact number of breakpoint event
+overflows and counts.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+This test was originally done by Vince Weaver for perf_event_tests.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363173585-9754-2-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Link: http://lkml.kernel.org/r/1362940871-24486-7-git-send-email-jolsa@redhat.com
+[ committer note: s/pr_err/pr_debug/g i.e. print just OK or FAILED in non verbose mode ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-read.c |  201 ------------------------------------
- 1 files changed, 0 insertions(+), 201 deletions(-)
+ tools/perf/Makefile                   |    1 +
+ tools/perf/tests/bp_signal_overflow.c |  126 +++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c       |    4 +
+ tools/perf/tests/tests.h              |    1 +
+ 4 files changed, 132 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/tests/bp_signal_overflow.c
 
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 3741572..7cb2463 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -41,8 +41,6 @@
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 21e0b4b..990e9a1 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -512,6 +512,7 @@ LIB_OBJS += $(OUTPUT)tests/pmu.o
+ LIB_OBJS += $(OUTPUT)tests/hists_link.o
+ LIB_OBJS += $(OUTPUT)tests/python-use.o
+ LIB_OBJS += $(OUTPUT)tests/bp_signal.o
++LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
  
- static int input_fd;
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+new file mode 100644
+index 0000000..fe7ed28
+--- /dev/null
++++ b/tools/perf/tests/bp_signal_overflow.c
+@@ -0,0 +1,126 @@
++/*
++ * Originally done by Vince Weaver <vincent.weaver@maine.edu> for
++ * perf_event_tests (git://github.com/deater/perf_event_tests)
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <string.h>
++#include <sys/ioctl.h>
++#include <time.h>
++#include <fcntl.h>
++#include <signal.h>
++#include <sys/mman.h>
++#include <linux/compiler.h>
++#include <linux/hw_breakpoint.h>
++
++#include "tests.h"
++#include "debug.h"
++#include "perf.h"
++
++static int overflows;
++
++__attribute__ ((noinline))
++static int test_function(void)
++{
++	return time(NULL);
++}
++
++static void sig_handler(int signum __maybe_unused,
++			siginfo_t *oh __maybe_unused,
++			void *uc __maybe_unused)
++{
++	overflows++;
++}
++
++static long long bp_count(int fd)
++{
++	long long count;
++	int ret;
++
++	ret = read(fd, &count, sizeof(long long));
++	if (ret != sizeof(long long)) {
++		pr_debug("failed to read: %d\n", ret);
++		return TEST_FAIL;
++	}
++
++	return count;
++}
++
++#define EXECUTIONS 10000
++#define THRESHOLD  100
++
++int test__bp_signal_overflow(void)
++{
++	struct perf_event_attr pe;
++	struct sigaction sa;
++	long long count;
++	int fd, i, fails = 0;
++
++	/* setup SIGIO signal handler */
++	memset(&sa, 0, sizeof(struct sigaction));
++	sa.sa_sigaction = (void *) sig_handler;
++	sa.sa_flags = SA_SIGINFO;
++
++	if (sigaction(SIGIO, &sa, NULL) < 0) {
++		pr_debug("failed setting up signal handler\n");
++		return TEST_FAIL;
++	}
++
++	memset(&pe, 0, sizeof(struct perf_event_attr));
++	pe.type = PERF_TYPE_BREAKPOINT;
++	pe.size = sizeof(struct perf_event_attr);
++
++	pe.config = 0;
++	pe.bp_type = HW_BREAKPOINT_X;
++	pe.bp_addr = (unsigned long) test_function;
++	pe.bp_len = sizeof(long);
++
++	pe.sample_period = THRESHOLD;
++	pe.sample_type = PERF_SAMPLE_IP;
++	pe.wakeup_events = 1;
++
++	pe.disabled = 1;
++	pe.exclude_kernel = 1;
++	pe.exclude_hv = 1;
++
++	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
++	if (fd < 0) {
++		pr_debug("failed opening event %llx\n", pe.config);
++		return TEST_FAIL;
++	}
++
++	fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK|O_ASYNC);
++	fcntl(fd, F_SETSIG, SIGIO);
++	fcntl(fd, F_SETOWN, getpid());
++
++	ioctl(fd, PERF_EVENT_IOC_RESET, 0);
++	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
++
++	for (i = 0; i < EXECUTIONS; i++)
++		test_function();
++
++	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
++
++	count = bp_count(fd);
++
++	close(fd);
++
++	pr_debug("count %lld, overflow %d\n",
++		 count, overflows);
++
++	if (count != EXECUTIONS) {
++		pr_debug("\tWrong number of executions %lld != %d\n",
++		count, EXECUTIONS);
++		fails++;
++	}
++
++	if (overflows != EXECUTIONS / THRESHOLD) {
++		pr_debug("\tWrong number of overflows %d != %d\n",
++		overflows, EXECUTIONS / THRESHOLD);
++		fails++;
++	}
++
++	return fails ? TEST_FAIL : TEST_OK;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 37b108b..45d9ad4 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -82,6 +82,10 @@ static struct test {
+ 		.func = test__bp_signal,
+ 	},
+ 	{
++		.desc = "Test breakpoint overflow sampling",
++		.func = test__bp_signal_overflow,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 05d0e58..6cf1ec4 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -24,5 +24,6 @@ int test__parse_events(void);
+ int test__hists_link(void);
+ int test__python_use(void);
+ int test__bp_signal(void);
++int test__bp_signal_overflow(void);
  
--static int read_page;
--
- int file_bigendian;
- int host_bigendian;
- static int long_size;
-@@ -287,205 +285,6 @@ static void read_event_files(struct pevent *pevent)
- 	}
- }
- 
--struct cpu_data {
--	unsigned long long	offset;
--	unsigned long long	size;
--	unsigned long long	timestamp;
--	struct pevent_record	*next;
--	char			*page;
--	int			cpu;
--	int			index;
--	int			page_size;
--};
--
--static struct cpu_data *cpu_data;
--
--static void update_cpu_data_index(int cpu)
--{
--	cpu_data[cpu].offset += page_size;
--	cpu_data[cpu].size -= page_size;
--	cpu_data[cpu].index = 0;
--}
--
--static void get_next_page(int cpu)
--{
--	off_t save_seek;
--	off_t ret;
--
--	if (!cpu_data[cpu].page)
--		return;
--
--	if (read_page) {
--		if (cpu_data[cpu].size <= page_size) {
--			free(cpu_data[cpu].page);
--			cpu_data[cpu].page = NULL;
--			return;
--		}
--
--		update_cpu_data_index(cpu);
--
--		/* other parts of the code may expect the pointer to not move */
--		save_seek = lseek(input_fd, 0, SEEK_CUR);
--
--		ret = lseek(input_fd, cpu_data[cpu].offset, SEEK_SET);
--		if (ret == (off_t)-1)
--			die("failed to lseek");
--		ret = read(input_fd, cpu_data[cpu].page, page_size);
--		if (ret < 0)
--			die("failed to read page");
--
--		/* reset the file pointer back */
--		lseek(input_fd, save_seek, SEEK_SET);
--
--		return;
--	}
--
--	munmap(cpu_data[cpu].page, page_size);
--	cpu_data[cpu].page = NULL;
--
--	if (cpu_data[cpu].size <= page_size)
--		return;
--
--	update_cpu_data_index(cpu);
--
--	cpu_data[cpu].page = mmap(NULL, page_size, PROT_READ, MAP_PRIVATE,
--				  input_fd, cpu_data[cpu].offset);
--	if (cpu_data[cpu].page == MAP_FAILED)
--		die("failed to mmap cpu %d at offset 0x%llx",
--		    cpu, cpu_data[cpu].offset);
--}
--
--static unsigned int type_len4host(unsigned int type_len_ts)
--{
--	if (file_bigendian)
--		return (type_len_ts >> 27) & ((1 << 5) - 1);
--	else
--		return type_len_ts & ((1 << 5) - 1);
--}
--
--static unsigned int ts4host(unsigned int type_len_ts)
--{
--	if (file_bigendian)
--		return type_len_ts & ((1 << 27) - 1);
--	else
--		return type_len_ts >> 5;
--}
--
--static int calc_index(void *ptr, int cpu)
--{
--	return (unsigned long)ptr - (unsigned long)cpu_data[cpu].page;
--}
--
--struct pevent_record *trace_peek_data(struct pevent *pevent, int cpu)
--{
--	struct pevent_record *data;
--	void *page = cpu_data[cpu].page;
--	int idx = cpu_data[cpu].index;
--	void *ptr = page + idx;
--	unsigned long long extend;
--	unsigned int type_len_ts;
--	unsigned int type_len;
--	unsigned int delta;
--	unsigned int length = 0;
--
--	if (cpu_data[cpu].next)
--		return cpu_data[cpu].next;
--
--	if (!page)
--		return NULL;
--
--	if (!idx) {
--		/* FIXME: handle header page */
--		if (header_page_ts_size != 8)
--			die("expected a long long type for timestamp");
--		cpu_data[cpu].timestamp = data2host8(pevent, ptr);
--		ptr += 8;
--		switch (header_page_size_size) {
--		case 4:
--			cpu_data[cpu].page_size = data2host4(pevent, ptr);
--			ptr += 4;
--			break;
--		case 8:
--			cpu_data[cpu].page_size = data2host8(pevent, ptr);
--			ptr += 8;
--			break;
--		default:
--			die("bad long size");
--		}
--		ptr = cpu_data[cpu].page + header_page_data_offset;
--	}
--
--read_again:
--	idx = calc_index(ptr, cpu);
--
--	if (idx >= cpu_data[cpu].page_size) {
--		get_next_page(cpu);
--		return trace_peek_data(pevent, cpu);
--	}
--
--	type_len_ts = data2host4(pevent, ptr);
--	ptr += 4;
--
--	type_len = type_len4host(type_len_ts);
--	delta = ts4host(type_len_ts);
--
--	switch (type_len) {
--	case RINGBUF_TYPE_PADDING:
--		if (!delta)
--			die("error, hit unexpected end of page");
--		length = data2host4(pevent, ptr);
--		ptr += 4;
--		length *= 4;
--		ptr += length;
--		goto read_again;
--
--	case RINGBUF_TYPE_TIME_EXTEND:
--		extend = data2host4(pevent, ptr);
--		ptr += 4;
--		extend <<= TS_SHIFT;
--		extend += delta;
--		cpu_data[cpu].timestamp += extend;
--		goto read_again;
--
--	case RINGBUF_TYPE_TIME_STAMP:
--		ptr += 12;
--		break;
--	case 0:
--		length = data2host4(pevent, ptr);
--		ptr += 4;
--		die("here! length=%d", length);
--		break;
--	default:
--		length = type_len * 4;
--		break;
--	}
--
--	cpu_data[cpu].timestamp += delta;
--
--	data = malloc_or_die(sizeof(*data));
--	memset(data, 0, sizeof(*data));
--
--	data->ts = cpu_data[cpu].timestamp;
--	data->size = length;
--	data->data = ptr;
--	ptr += length;
--
--	cpu_data[cpu].index = calc_index(ptr, cpu);
--	cpu_data[cpu].next = data;
--
--	return data;
--}
--
--struct pevent_record *trace_read_data(struct pevent *pevent, int cpu)
--{
--	struct pevent_record *data;
--
--	data = trace_peek_data(pevent, cpu);
--	cpu_data[cpu].next = NULL;
--
--	return data;
--}
--
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- {
- 	char buf[BUFSIZ];
+ #endif /* TESTS_H */
 -- 
 1.7.1
 
