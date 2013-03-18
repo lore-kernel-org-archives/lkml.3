@@ -1,150 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab3CRCMS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 22:12:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63258 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3CRCMO (ORCPT
+	id S1751378Ab3CRCMg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 22:12:36 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57257 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab3CRCMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Mar 2013 22:12:14 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-e1-514677fcfabb
-Message-id: <1363572687.14386.66.camel@kjgkr>
-Subject: Re: [PATCH 4/5] f2fs: remove nid_free from f2fs_new_inode
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Date: Mon, 18 Mar 2013 11:11:27 +0900
-In-reply-to: <1363508828-2920-1-git-send-email-linkinjeon@gmail.com>
-References: <1363508828-2920-1-git-send-email-linkinjeon@gmail.com>
-Organization: samsung
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary="=-K6Sjow/yA8bRYHrEt2U8"
-X-Mailer: Evolution 3.2.3-0ubuntu6
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+Zoe6fcrdAg6OLhCwu7k61uH73FrPF
-	pUXuFnv2nmSxuLxrDpvFj+n1DmweO2fdZffYveAzk0ffllWMHp83yQWwRHHZpKTmZJalFunb
-	JXBlHH62haXgrVjFrmNfGRsYtwl3MXJySAiYSFw5dJkZwhaTuHBvPVsXIxeHkMAyRomvE3+z
-	wRQ9nTCTCSIxnVHiw+cLUM5rRok5246CVfEK6Eo8nvsKbJSwgJPEzeMgNgcHm4C2xOb9BiBh
-	IQFFibf777KChEUE1CQmPEsFGcMssItR4uTfuWwgcRYBVYlfOypAyjkFXCT+NRwGKxcScJb4
-	fcIJJMwvICpxsvUTI0iYWaBKYlFLKMSVShK72zvZIW4RlPgx+R4LyHQJgakcEm+nnWQCSbAI
-	CEh8m3yIBaRXQkBWYtMBqNclJQ6uuMEygVF8FsLUWUgmgdjMApoSrdt/s0PY2hLLFr5mhrBt
-	Jdatew9VYyOx6eoCRghbXmL72znMCxjZVzGKphYkFxQnpReZ6hUn5haX5qXrJefnbmKERPPE
-	HYz3D1gfYqwCunAis5Rocj4wGeSVxBsamxlZmJqYGhuZW5pRRVhJnFe9xTpQSCA9sSQ1OzW1
-	ILUovqg0J7X4ECMTB6dUA2PRbtW8X585NDRWRRafP/Ay5YJCnvsFYd5TZuH1iXO3s7FlJHLc
-	WH/L3L8z47/LDcl57plHFvlU63Jmrtp1+Xph+uyXHEk8Zx/syw3pmSvOF3nBPriwg+F+XZP+
-	UaEdX14VBbz2O5vk2P//bkTt5Dk6RgnL+n5V775lPZ3x6p/zd/WabkzYc1qJpTgj0VCLuag4
-	EQDOUzCqEwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e+xoO6fcrdAg2eTeS0u7k61uH73FrPF
-	pUXuFnv2nmSxuLxrDpvFj+n1DmweO2fdZffYveAzk0ffllWMHp83yQWwRDUw2mSkJqakFimk
-	5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVZSKEvMKQUKBSQWFyvp
-	22GaEBripmsB0xih6xsSBNdjZIAGEtYxZhx+toWl4K1Yxa5jXxkbGLcJdzFyckgImEg8nTCT
-	CcIWk7hwbz1bFyMXh5DAdEaJD58vMEE4rxkl5mw7ygZSxSugK/F47itmEFtYwEni5nEQm4OD
-	TUBbYvN+A5CwkICixNv9d1lBwiICahITnqWCjGEW2MUocfLvXDaQOIuAqsSvHRUg5ZwCLhL/
-	Gg6DlQsJOEv8PuEEEuYXEJU42fqJESTMLFAlsaglFOJKJYnd7Z3sELcISvyYfI9lAqPgLISq
-	WUgyIDazgKZE6/bf7BC2tsSyha+ZIWxbiXXr3kPV2EhsurqAEcKWl9j+dg7zAkb2VYyiqQXJ
-	BcVJ6bmGesWJucWleel6yfm5mxjBqeKZ1A7GlQ0WhxgFOBiVeHgNeFwDhVgTy4orcw8xqgDN
-	ebRh9QVGKZa8/LxUJRHehhC3QCHelMTKqtSi/Pii0pzU4kOMExmBQTGRWUo0OR+Y4PJK4g2N
-	TcyMLI3MLIxMzM1pKawkznug1TpQSCA9sSQ1OzW1ILUI5igmDk6pBsYMM66WPR9FMt8nFc3o
-	6qza87jiyq4T6vtU11z5NJtl1TkfgzqBe4kr3u/9cIXz571DmcbOXyYK8MQES0XunGFnxHT+
-	sMD1Ez/lbuT2LrsdIyv+5sLatTHxDttE2Ar/CdUrOu5fubPlsP+3uDtMLz9NsNtZs5lL8kFs
-	U28+76T1YjnX+wPZv/1VYinOSDTUYi4qTgQA9t/C1ZQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 17 Mar 2013 22:12:34 -0400
+Date: Mon, 18 Mar 2013 13:12:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Jones <pjones@redhat.com>, David Howells <dhowells@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-Id: <20130318131224.43ebcf542e6dea358f546198@canb.auug.org.au>
+In-Reply-To: <CA+55aFwX5AmMgEAZ8uSdH=8g00xVD3NfnvgBbgSytMGdcifKMg@mail.gmail.com>
+References: <30665.1361461678@warthog.procyon.org.uk>
+	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+	<20130221164244.GA19625@srcf.ucam.org>
+	<CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
+	<567.1361470653@warthog.procyon.org.uk>
+	<CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com>
+	<20130221183445.GB20629@fenchurch.internal.datastacks.com>
+	<CA+55aFwX5AmMgEAZ8uSdH=8g00xVD3NfnvgBbgSytMGdcifKMg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Mar_2013_13_12_24_+1100_V=h2kYrUsE/Foxfl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-K6Sjow/yA8bRYHrEt2U8
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Mon__18_Mar_2013_13_12_24_+1100_V=h2kYrUsE/Foxfl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-2013-03-17 (=EC=9D=BC), 17:27 +0900, Namjae Jeon:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
->=20
-> we can remove nid_free from new inode allocation part.
-> Since, nid_free is used to check if we need to free alloced nid
-> in case of failure.
-> Instead we can directly call alloc_nid_failed from that point, as
-> there is no dependency in that path.
->=20
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  fs/f2fs/namei.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
->=20
-> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-> index d4a171b..261d821 100644
-> --- a/fs/f2fs/namei.c
-> +++ b/fs/f2fs/namei.c
-> @@ -24,7 +24,6 @@ static struct inode *f2fs_new_inode(struct inode *dir, =
-umode_t mode)
->  	struct f2fs_sb_info *sbi =3D F2FS_SB(sb);
->  	nid_t ino;
->  	struct inode *inode;
-> -	bool nid_free =3D false;
->  	int err;
-> =20
->  	inode =3D new_inode(sb);
-> @@ -58,7 +57,7 @@ static struct inode *f2fs_new_inode(struct inode *dir, =
-umode_t mode)
->  	err =3D insert_inode_locked(inode);
->  	if (err) {
->  		err =3D -EINVAL;
-> -		nid_free =3D true;
-> +		alloc_nid_failed(sbi, ino);
->  		goto out;
->  	}
-> =20
-> @@ -70,8 +69,6 @@ out:
->  	unlock_new_inode(inode);
->  fail:
->  	iput(inode);
-> -	if (nid_free)
-> -		alloc_nid_failed(sbi, ino);
+Hi Linus,
 
-We should call alloc_nid_failed() after iput() is completed.
-Otherwise, another f2fs_new_inode() is able to get this just-released
-nid before iput(). In such a case, insert_inode_locked() can return
--EBUSY or iput() can free this newly allocated inode due to the i_lock
-race.
-Thanks,
+On Thu, 21 Feb 2013 10:56:44 -0800 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> On Thu, Feb 21, 2013 at 10:34 AM, Peter Jones <pjones@redhat.com> wrote:
+> > On Thu, Feb 21, 2013 at 10:25:47AM -0800, Linus Torvalds wrote:
+> >>  - why do you bother with the MS keysigning of Linux kernel modules to
+> >> begin with?
+> >
+> > This is not actually what the patchset implements.  All it's done here
+> > is using PE files as envelopes for keys.  The usage this enables is to
+> > allow for whoever makes a module (binary only or merely out of tree for
+> > whatever reason) to sign it and vouch for it themselves.  That could
+> > include, for example, a systemtap module.
+>=20
+> Umm. And which part of "We already support that, using standard X.509
+> certificates" did we suddenly miss?
+>=20
+> So no. The PE file thing makes no sense what-so-ever. What you mention
+> we can already do, and we already do it *better*.
 
->  	return ERR_PTR(err);
->  }
-> =20
+So, is this enough close enough to "I will never take this" for me to
+remove it from linux-next, or could further discussion persuade you?
 
+David, if I do remove it, are there other patches in your pekey tree that
+are still going forward?
+
+I ask because the pekey tree is interacting with other trees and it does
+not make sense to have those interactions in linux-next if the pekey work
+is never going upstream.
 --=20
-Jaegeuk Kim
-Samsung
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-K6Sjow/yA8bRYHrEt2U8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--Signature=_Mon__18_Mar_2013_13_12_24_+1100_V=h2kYrUsE/Foxfl
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJRRnfPAAoJEEAUqH6CSFDSGHIP/0z2HKYAiICxpB96giIBBcPD
-8KPyKpoH/DH50J7QQ8zQdPNvlY/77iPIe60KbnFKsCVuqkfk/4cJAkZwmdvJL4sb
-DTaWWbeqUyFB1Y+bwBcIXVL7IphxqAcoZnGMkhXGvxo0dXpPb6+npHWIItc7L0tg
-t6Nv12Ur75EsAWW6I9cpfwuBxGJPBQsz9RrS+clIoE0hobkLMPjSywWqQLU33i6J
-fuoXutqlCMByewuZUsFD0w3BWj/vohYdeVAXRuRG/qMxFIky5dRzBJxhwSYcM//b
-PXeWnVGuN+4xVKEQjQVVhHER03lxeyeEULVOhNnAmFnvQgEoL798EBtzZcHKBqlR
-sS2M1WidKWCICMdnQfkpdnyotIcKRKW8gEHvUZwwrVqq0xP5QkSpKMc3y62gFX8V
-MTdTeGTjylCfLzBxgPjP0ecxLBT1e6HL4zaKL86BnkZlXOqnYd39SB43tIx3N3lZ
-qGpDtW9BfsuoRXPKwTTfqawfST1gG2n/HUQiE7V6ZATcj1bVCa5WTVCJhbYAI77o
-Zib9HDg39i0rxENU7PKqnuFUwQzrAwq2BGaGIgy6wArI98ZYyGsMaiT73Lz0xf1L
-/8ltIQ5qdDAlQPrnPqIkhYlPeFDfeBPp39W4O3RI12FOdo3XOhQqoCOjDlqLDXmw
-frWHoc1+wKp5dNuOHqbi
-=mWtY
+iQIcBAEBCAAGBQJRRngIAAoJEECxmPOUX5FEgO8P/07LUCpXQNlUY5Q/fLqraz7c
+4/HLpjncbeX70CKciTREPEBFeAENOLzwBlTh0tYkq10vR1yoxhwdpxe4oDbtnumM
+3LxgPM6k1lOSUh6k+h8LoZV6Wn/RHTiSTU8QsGjQtJhJuHLjUY06aLz6iEbprRsr
+Sh7l8IyX0ymJfuqHx9Rv6Py7EnOLXy7Iye9Z6mgWRDE80OAU/B8AjGSCmwkAmxrA
+f1AyDBZ+rel3aNFCeofSahbbtiwC/21j7+cgJ78JOBkvkYZgyL1NKH49gZCr6Q6g
+z7RJC3t3xvWP3sioUxSdlR60MKeE2/JkF3wCGP11yU0s3HP1klUHwKwa+2DBWkxw
+1yE1rBIz6z3ts9uoEWKT48A9ImXyk9Yj+SSvvfzDVFX6HEoU45lChMVtXFNtVcXD
+VG0yKuox2Kvx64BsCTGvFT09l5pZv2gGvRSG2FoW+YRhlu8iDxUnoSkXqdMMt2vQ
+vLgjzcuoWUtU2Za4xMaA+7w/Nn3cDra7pGLLDFxsOrPTkz76rdsykvIWljs5iRTL
+rE1PYL9JaCbJ1D8qzHyi/JxeyqtXGbZ0ZfySGQFX+1ptkdeLI4Tf7o9X3fIJix8M
+opR+CpHv+S82BjT8rT1gFg6sc/FP1Ylb5Z47q4cs5NYPMcUbtbuI/3OfO1ETan9h
+N4iLlN9F2PJ1NhWQTuvf
+=07E3
 -----END PGP SIGNATURE-----
 
---=-K6Sjow/yA8bRYHrEt2U8--
-
+--Signature=_Mon__18_Mar_2013_13_12_24_+1100_V=h2kYrUsE/Foxfl--
