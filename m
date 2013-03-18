@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3CRVGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45561 "EHLO
+	id S932764Ab3CRV6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:58:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45569 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab3CRVGr (ORCPT
+	with ESMTP id S1755453Ab3CRVGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:47 -0400
+	Mon, 18 Mar 2013 17:06:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ley Foon Tan <lftan@altera.com>
-Subject: [ 24/75] tty/serial: Add support for Altera serial port
-Date: Mon, 18 Mar 2013 14:06:47 -0700
-Message-Id: <20130318210511.994443282@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: [ 26/75] TTY: do not reset masters packet mode
+Date: Mon, 18 Mar 2013 14:06:49 -0700
+Message-Id: <20130318210512.142977303@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,94 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ley Foon Tan <lftan@altera.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit e06c93cacb82dd147266fd1bdb2d0a0bd45ff2c1 upstream.
+commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
 
-Add support for Altera 8250/16550 compatible serial port.
+Now that login from util-linux is forced to drop all references to a
+TTY which it wants to hangup (to reach reference count 1) we are
+seeing issues with telnet. When login closes its last reference to the
+slave PTY, it also resets packet mode on the *master* side. And we
+have a race here.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
+What telnet does is fork+exec of `login'. Then there are two
+scenarios:
+* `login' closes the slave TTY and resets thus master's packet mode,
+  but even now telnet properly sets the mode, or
+* `telnetd' sets packet mode on the master, `login' closes the slave
+  TTY and resets master's packet mode.
+
+The former case is OK. However the latter happens in much more cases,
+by the order of magnitude to be precise. So when one tries to login to
+such a messed telnet setup, they see the following:
+inux login:
+            ogin incorrect
+
+Note the missing first letters -- telnet thinks it is still in the
+packet mode, so when it receives "linux login" from `login', it
+considers "l" as the type of the packet and strips it.
+
+SuS does not mention how the implementation should behave. Both BSDs I
+checked (Free and Net) do not reset the flag upon the last close.
+
+By this I am resurrecting an old bug, see References. We are hitting
+it regularly now, i.e. with updated util-linux, ergo login.
+
+Here, I am changing a behavior introduced back in 2.1 times. It would
+better have a long time testing before goes upstream.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Bryan Mason <bmason@redhat.com>
+References: https://lkml.org/lkml/2009/11/11/223
+References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
+References: https://bugzilla.novell.com/show_bug.cgi?id=797042
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/tty/serial/of-serial.txt |    3 +
- drivers/tty/serial/8250/8250.c                             |   23 ++++++++++++-
- drivers/tty/serial/of_serial.c                             |    6 +++
- include/uapi/linux/serial_core.h                           |    5 ++
- 4 files changed, 35 insertions(+), 2 deletions(-)
+ drivers/tty/pty.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -11,6 +11,9 @@ Required properties:
- 	- "nvidia,tegra20-uart"
- 	- "nxp,lpc3220-uart"
- 	- "ibm,qpace-nwp-serial"
-+	- "altr,16550-FIFO32"
-+	- "altr,16550-FIFO64"
-+	- "altr,16550-FIFO128"
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
- - interrupts : should contain uart interrupt.
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -308,7 +308,28 @@ static const struct serial8250_config ua
- 	},
- 	[PORT_8250_CIR] = {
- 		.name		= "CIR port"
--	}
-+	},
-+	[PORT_ALTR_16550_F32] = {
-+		.name		= "Altera 16550 FIFO32",
-+		.fifo_size	= 32,
-+		.tx_loadsz	= 32,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F64] = {
-+		.name		= "Altera 16550 FIFO64",
-+		.fifo_size	= 64,
-+		.tx_loadsz	= 64,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F128] = {
-+		.name		= "Altera 16550 FIFO128",
-+		.fifo_size	= 128,
-+		.tx_loadsz	= 128,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
- };
- 
- /* Uart divisor latch read */
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -240,6 +240,12 @@ static struct of_device_id of_platform_s
- 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
- 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
- 	{ .compatible = "nxp,lpc3220-uart", .data = (void *)PORT_LPC3220, },
-+	{ .compatible = "altr,16550-FIFO32",
-+		.data = (void *)PORT_ALTR_16550_F32, },
-+	{ .compatible = "altr,16550-FIFO64",
-+		.data = (void *)PORT_ALTR_16550_F64, },
-+	{ .compatible = "altr,16550-FIFO128",
-+		.data = (void *)PORT_ALTR_16550_F128, },
- #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
- 	{ .compatible = "ibm,qpace-nwp-serial",
- 		.data = (void *)PORT_NWPSERIAL, },
---- a/include/uapi/linux/serial_core.h
-+++ b/include/uapi/linux/serial_core.h
-@@ -51,7 +51,10 @@
- #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
- #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
- #define PORT_BRCM_TRUMANAGE	25
--#define PORT_MAX_8250	25	/* max port ID */
-+#define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
-+#define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
-+#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
-+#define PORT_MAX_8250	28	/* max port ID */
- 
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -47,7 +47,6 @@ static void pty_close(struct tty_struct
+ 	/* Review - krefs on tty_link ?? */
+ 	if (!tty->link)
+ 		return;
+-	tty->link->packet = 0;
+ 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
+ 	wake_up_interruptible(&tty->link->read_wait);
+ 	wake_up_interruptible(&tty->link->write_wait);
 
 
