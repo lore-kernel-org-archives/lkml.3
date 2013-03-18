@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab3CRK5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 06:57:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33971 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab3CRK5W (ORCPT
+	id S1753548Ab3CRK52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 06:57:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59155 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab3CRK5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:57:22 -0400
-Date: Mon, 18 Mar 2013 03:56:03 -0700
-From: tip-bot for Ananth N Mavinakayanahalli <tipbot@zytor.com>
-Message-ID: <tip-79146a69c8bc3f28e51c5267633abc6babf47a31@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, ananth@in.ibm.com,
-        hpa@zytor.com, mingo@kernel.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, ananth@in.ibm.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <20130312090217.GC4668@in.ibm.com>
-References: <20130312090217.GC4668@in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf probe: Fix segfault
-Git-Commit-ID: 79146a69c8bc3f28e51c5267633abc6babf47a31
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 18 Mar 2013 06:57:23 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [PATCH 2/2] arm: mach-omap2: prevent UART console idle on suspend while using "no_console_suspend"
+Date: Mon, 18 Mar 2013 16:27:13 +0530
+Message-ID: <1363604233-11295-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:56:09 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  79146a69c8bc3f28e51c5267633abc6babf47a31
-Gitweb:     http://git.kernel.org/tip/79146a69c8bc3f28e51c5267633abc6babf47a31
-Author:     Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-AuthorDate: Tue, 12 Mar 2013 14:32:17 +0530
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Mar 2013 17:00:33 -0300
+With dt boot on omap5, uart wakeup after suspend is non functional while using
+"no_console_suspend" in the bootargs. With "no_console_suspend" used, od->flags
+should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not allowing the console
+to idle in the suspend path. For non-dt case, this was taken care by platform data.
 
-perf probe: Fix segfault
+Tested on omap5430evm, omap4430sdp.
 
-Fix segfault in perf probe due to a bug introduced by commit d8639f068
-(perf tools: Stop using 'self' in strlist).
-
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130312090217.GC4668@in.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Rajendra nayak <rnayak@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 ---
- tools/perf/util/strlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_device.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 34 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 55433aa..eabdce0 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -143,7 +143,7 @@ struct strlist *strlist__new(bool dupstr, const char *list)
- 		slist->rblist.node_delete = strlist__node_delete;
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index e065daa..ed3404c 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -88,6 +88,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/of.h>
+ #include <linux/notifier.h>
++#include <linux/platform_data/serial-omap.h>
  
- 		slist->dupstr	 = dupstr;
--		if (slist && strlist__parse_list(slist, list) != 0)
-+		if (list && strlist__parse_list(slist, list) != 0)
- 			goto out_error;
+ #include "omap_device.h"
+ #include "omap_hwmod.h"
+@@ -96,6 +97,11 @@
+ #define USE_WAKEUP_LAT			0
+ #define IGNORE_WAKEUP_LAT		1
+ 
++#define MAX_UART_HWMOD_NAME_LEN         16
++
++static u8 no_console_suspend;
++static u8 console_uart_num;
++
+ static int omap_early_device_register(struct platform_device *pdev);
+ 
+ static struct omap_device_pm_latency omap_default_latency[] = {
+@@ -307,6 +313,12 @@ static void _add_hwmod_clocks_clkdev(struct omap_device *od,
+ 		_add_clkdev(od, oh->opt_clks[i].role, oh->opt_clks[i].clk);
+ }
+ 
++static char *cmdline_find_option(char *str)
++{
++	extern char *saved_command_line;
++
++	return strstr(saved_command_line, str);
++}
+ 
+ /**
+  * omap_device_build_from_dt - build an omap_device with multiple hwmods
+@@ -331,6 +343,7 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ 	struct device_node *node = pdev->dev.of_node;
+ 	const char *oh_name;
+ 	int oh_cnt, i, ret = 0;
++	static u8 console_uart_id;
+ 
+ 	oh_cnt = of_property_count_strings(node, "ti,hwmods");
+ 	if (!oh_cnt || IS_ERR_VALUE(oh_cnt)) {
+@@ -372,7 +385,13 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ 			r->name = dev_name(&pdev->dev);
  	}
  
+-	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
++	if (no_console_suspend && !strncmp(oh->name, "uart", 4)) {
++		if (console_uart_num == console_uart_id)
++			omap_device_disable_idle_on_suspend(pdev);
++		else
++			console_uart_id++;
++	}
++	else if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+ 		omap_device_disable_idle_on_suspend(pdev);
+ 
+ 	pdev->dev.pm_domain = &omap_device_pm_domain;
+@@ -1256,7 +1275,21 @@ static struct notifier_block platform_nb = {
+ 
+ static int __init omap_device_init(void)
+ {
++	int i;
++	char uart_name[MAX_UART_HWMOD_NAME_LEN];
++
+ 	bus_register_notifier(&platform_bus_type, &platform_nb);
++
++	if (cmdline_find_option("no_console_suspend")) {
++		no_console_suspend = true;
++		for (i = 0; i < OMAP_MAX_HSUART_PORTS; i++) {
++			snprintf(uart_name, MAX_UART_HWMOD_NAME_LEN,
++				"%s%d", OMAP_SERIAL_NAME, i);
++			if (cmdline_find_option(uart_name))
++				console_uart_num = i;
++		}
++	}
++
+ 	return 0;
+ }
+ core_initcall(omap_device_init);
+-- 
+1.7.1
+
