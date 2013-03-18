@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab3CRVH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:07:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45872 "EHLO
+	id S1756999Ab3CRVaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:30:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab3CRVH5 (ORCPT
+	with ESMTP id S932150Ab3CRVH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:57 -0400
+	Mon, 18 Mar 2013 17:07:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phileas Fogg <phileas-fogg@mail.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 23/48] powerpc: Fix cputable entry for 970MP rev 1.0
-Date: Mon, 18 Mar 2013 14:08:31 -0700
-Message-Id: <20130318210811.907343758@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 25/48] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+Date: Mon, 18 Mar 2013 14:08:33 -0700
+Message-Id: <20130318210812.036351180@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -27,33 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
+commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
 
-Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
-the entry for the 970MP rev 1.0 processor when moving some CPU
-features bits to the MMU feature bit mask. This breaks booting
-on some rare G5 models using that chip revision.
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
+suspend/resume") fixed a crash when doing PEBS performance profiling
+after resuming, but in using init_debug_store_on_cpu() to restore the
+DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
 
-Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
+cross-calls to do the MSR update.  Which is not really valid at the
+early resume stage, and the warning is quite reasonable.  Now, it all
+happens to _work_, for the simple reason that smp_call_function_single()
+ends up just doing the call directly on the CPU when the CPU number
+matches, but we really should just do the wrmsr() directly instead.
+
+This duplicates the wrmsr() logic, but hopefully we can just remove the
+wrmsr_on_cpu() version eventually.
+
+Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/cputable.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -269,7 +269,7 @@ static struct cpu_spec __initdata cpu_sp
- 		.cpu_features		= CPU_FTRS_PPC970,
- 		.cpu_user_features	= COMMON_USER_POWER4 |
- 			PPC_FEATURE_HAS_ALTIVEC_COMP,
--		.mmu_features		= MMU_FTR_HPTE_TABLE,
-+		.mmu_features		= MMU_FTRS_PPC970,
- 		.icache_bsize		= 128,
- 		.dcache_bsize		= 128,
- 		.num_pmcs		= 8,
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -726,8 +726,10 @@ void intel_ds_init(void)
+ 
+ void perf_restore_debug_store(void)
+ {
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
++
+ 	if (!x86_pmu.bts && !x86_pmu.pebs)
+ 		return;
+ 
+-	init_debug_store_on_cpu(smp_processor_id());
++	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
+ }
 
 
