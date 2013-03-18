@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab3CRIvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:51:00 -0400
-Received: from nick.hrz.tu-chemnitz.de ([134.109.228.11]:40154 "EHLO
-	nick.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3CRIu6 (ORCPT
+	id S1752991Ab3CRI6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:58:10 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:48547 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752930Ab3CRI6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:50:58 -0400
-X-Greylist: delayed 1455 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Mar 2013 04:50:57 EDT
-Message-ID: <5146CFC0.7090907@web.de>
-Date: Mon, 18 Mar 2013 09:26:40 +0100
-From: Danny Baumann <dannybaumann@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Mon, 18 Mar 2013 04:58:08 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQJAFTWRlFQyKa6/2dsb2JhbABDiCW8fAQBgVcXdIIkAQEFIzMjEAsOBgQCAgUhAgIPBSUkE4gYr0WSEIEjjFeBGweCLTJhA5ZdkQODCzs
+Date: Mon, 18 Mar 2013 09:58:03 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the char-misc tree
+Message-ID: <20130318085803.GB1532@vandijck-laurijssen.be>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130318135614.ff04cf3d56fc64e2988a912c@canb.auug.org.au>
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@intel.com>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH v2 3/3] ACPI video: Fix applying indexed initial brightness
- value.
-References: <1363342248-6496-1-git-send-email-dannybaumann@web.de> <1363342248-6496-3-git-send-email-dannybaumann@web.de> <5146CD67.8070203@intel.com>
-In-Reply-To: <5146CD67.8070203@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-purgate: clean
-X-purgate-type: clean
-X-purgate-ID: 154106::1363595200-000004D6-C9C1C7D1/0-0/0-0
-X-Scan-AV: nick.hrz.tu-chemnitz.de;2013-03-18 09:26:40;eefc1eb1382de217081a1148719cd7e0
-X-Scan-SA: nick.hrz.tu-chemnitz.de;2013-03-18 09:26:41;04dc3da54547a0adc41ad2d3e1aded01
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- *  0.0 TVD_RCVD_IP TVD_RCVD_IP
- *  0.0 FREEMAIL_FROM Sender email is commonly abused enduser mail provider
- *      (dannybaumann[at]web.de)
- --- Ende Textanalyse
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130318135614.ff04cf3d56fc64e2988a912c@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Mar 18, 2013 at 01:56:14PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the char-misc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/net/can/softing/softing_cs.c:343:1: error: expected identifier or '(' before '&' token
+> drivers/net/can/softing/softing_cs.c: In function '__inittest':
+> drivers/net/can/softing/softing_cs.c:343:1: error: 'softingcs_driver_init' undeclared (first use in this function)
+> drivers/net/can/softing/softing_cs.c:343:1: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/net/can/softing/softing_cs.c: At top level:
+> drivers/net/can/softing/softing_cs.c:343:1: error: expected identifier or '(' before '&' token
+> drivers/net/can/softing/softing_cs.c: In function '__exittest':
+> drivers/net/can/softing/softing_cs.c:343:1: error: 'softingcs_driver_exit' undeclared (first use in this function)
+> drivers/net/can/softing/softing_cs.c: At top level:
+> drivers/net/can/softing/softing_cs.c:335:29: warning: 'softingcs_driver' defined but not used [-Wunused-variable]
+> drivers/net/can/softing/softing_cs.c:343:1: error: 'init_module' aliased to undefined symbol '&softingcs_driver_init'
+> drivers/net/can/softing/softing_cs.c:343:1: error: 'cleanup_module' aliased to undefined symbol '&softingcs_driver_exit'
+> 
+> Caused by commit a750fa4edd9e ("softingcs: use module_pcmcia_driver").
+> 
+> I have used the char-misc tree form next-20130315 for today.
 
- >> +static unsigned long long
->> +acpi_video_bqc_value_to_level(struct acpi_video_device *device,
->> +			      unsigned long long bqc_value)
->> +{
->> +	unsigned long long level;
->> +
->> +	if (device->brightness->flags._BQC_use_index) {
->> +		if (device->brightness->flags._BCL_reversed)
->> +			bqc_value = device->brightness->count - 3 - bqc_value;
->> +
->> +		level = device->brightness->levels[bqc_value + 2];
->
-> I don't understand this, what does the +2 have to do here?
-> _BQC returned us an index, and then we should just convert it to level,
-> why +2?
->
-> The only explanation would be, for BIOS tables that return _BQC as
-> index, they are indexing from the 3rd entry. Is it the case? If so, I
-> think we need to put a comment here.
+I have no idea what I've overlooked during tests.  My apologies.
+I have found the problem. Can this be squashed?
+Kurt
 
-Yes, that's the case. The old code did the same thing:
+-- 
+commit 081ec8f7f7ef4d68c7a6ffe4a571b1a855527627
+Author: Kurt Van Dijck <kurt.van.dijck@eia.be>
+Date:   Mon Mar 18 09:56:55 2013
 
->> -			if (device->brightness->flags._BQC_use_index) {
->> -				if (device->brightness->flags._BCL_reversed)
->> -					*level = device->brightness->count
->> -								 - 3 - (*level);
->> -				*level = device->brightness->levels[*level + 2];
->> +			*level = acpi_video_bqc_value_to_level(device, *level);
+    FIX: softingcs conversion to module_pcmcia_driver macro
+    
+    Signed-off-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
 
-That's also the reason for the -3 instead of -1 in the BCL_reversed 
-case. I can add a comment, though.
-
->> +	if (use_bios_initial_backlight) {
->> +		if (!br->flags._BQC_use_index) {
->> +			/*
->> +			 * Set the backlight to the initial state.
->> +			 * On some buggy laptops, _BQC returns an uninitialized
->> +			 * value when invoked for the first time, i.e.
->> +			 * level_old is invalid. Set the backlight to max_level
->> +			 * in this case.
->> +			 */
->>   			for (i = 2; i < br->count; i++)
->>   				if (level_old == br->levels[i]) {
->>   					level = level_old;
->>   					break;
->>   				}
->> +		} else {
->> +			level = acpi_video_bqc_value_to_level(device,
->> +							      level_old);
->
-> What about we convert the value to level first?
->
-> 	if (use_bios_initial_backlight) {
-> 		level = acpi_video_bqc_value_to_level(device, level_old);
-> 		/*
-> 		 * Set the backlight to the initial state.
-> 		 * On some buggy laptops, _BQC returns an uninitialized
-> 		 * value when invoked for the first time, i.e.
-> 		 * level_old is invalid(no matter it is a level, or an
-> 		 * index.) Set the backlight to max_level in this case.
-> 		 */
-> 		for (i = 2; i < br->count; i++)
-> 			if (level == br->levels[i])
-> 				break;
-> 		if (i == br->count)
-> 			level = max_level;
-> 	}
-
-That works as well, and looks cleaner to me as well. I'll change that.
-
-Regards,
-
-Danny
+diff --git a/drivers/net/can/softing/softing_cs.c b/drivers/net/can/softing/softing_cs.c
+index 738355c..498605f 100644
+--- a/drivers/net/can/softing/softing_cs.c
++++ b/drivers/net/can/softing/softing_cs.c
+@@ -340,7 +340,7 @@ static struct pcmcia_driver softingcs_driver = {
+ 	.remove		= softingcs_remove,
+ };
+ 
+-module_pcmcia_driver(&softingcs_driver);
++module_pcmcia_driver(softingcs_driver);
+ 
+ MODULE_DESCRIPTION("softing CANcard driver"
+ 		", links PCMCIA card to softing driver");
