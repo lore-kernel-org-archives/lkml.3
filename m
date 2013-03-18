@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3CRS3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:29:02 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26361 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab3CRS3A (ORCPT
+	id S1754542Ab3CRS3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:29:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:38770 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab3CRS3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:29:00 -0400
+	Mon, 18 Mar 2013 14:29:01 -0400
 X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="30399941"
+   d="scan'208";a="30630027"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCHv2 0/3] Detect UDIV/SDIV support from ISAR0
-Date: Mon, 18 Mar 2013 11:28:54 -0700
-Message-Id: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Will Deacon <will.deacon@arm.com>
+Subject: [PATCHv2 3/3] ARM: Work around faulty ISAR0 register in some Krait CPUs
+Date: Mon, 18 Mar 2013 11:28:57 -0700
+Message-Id: <1363631337-13816-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
+In-Reply-To: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
+References: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While attempting to upstream a patch to add the IDIV hwcap for
-Krait processors, Will suggested we move the code to read the
-ISAR0 register. This patchset does that and also works around
-the early Krait CPU designs that don't follow the latest ARM ARM
-for the ISAR0 register.
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-Stepan Moskovchenko (1):
-  ARM: Work around faulty ISAR0 register in some Krait CPUs
+Some early versions of the Krait CPU design incorrectly indicate
+that they only support the UDIV and SDIV instructions in Thumb
+mode when they actually support them in ARM and Thumb mode. It
+seems that these CPUs follow the DDI0406B ARM ARM which has two
+possible values for the divide instructions field, instead of the
+DDI0406C document which has three possible values.
 
-Stephen Boyd (2):
-  ARM: Clear IDIVT hwcap if CONFIG_ARM_THUMB=n
-  ARM: Detect support for SDIV/UDIV from ISAR0 register
+Work around this problem by checking the MIDR against Krait CPUs
+with this faulty ISAR0 register and force the hwcaps to indicate
+support in both modes.
 
- arch/arm/kernel/setup.c | 22 +++++++++++++++++++++-
- arch/arm/mm/proc-v7.S   | 19 +++++++++++++++++--
- 2 files changed, 38 insertions(+), 3 deletions(-)
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+[sboyd: Rewrote commit text to reflect real reasoning now that
+	we autodetect udiv/sdiv]
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mm/proc-v7.S | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index bcd3d48..f584d3f 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -434,6 +434,21 @@ __v7_ca15mp_proc_info:
+ 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
+ 
+ 	/*
++	 * Qualcomm Inc. Krait processors.
++	 */
++	.type	__krait_proc_info, #object
++__krait_proc_info:
++	.long	0x510f0400		@ Required ID value
++	.long	0xff0ffc00		@ Mask for ID
++	/*
++	 * Some Krait processors don't indicate support for SDIV and UDIV
++	 * instructions in the ARM instruction set, even though they actually
++	 * do support them.
++	 */
++	__v7_proc __v7_setup, hwcaps = HWCAP_IDIV
++	.size	__krait_proc_info, . - __krait_proc_info
++
++	/*
+ 	 * Match any ARMv7 processor core.
+ 	 */
+ 	.type	__v7_proc_info, #object
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
