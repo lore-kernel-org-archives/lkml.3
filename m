@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab3CRQfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:35:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36440 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab3CRQZ6 (ORCPT
+	id S1752760Ab3CRQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:25:57 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49321
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752395Ab3CRQZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:25:58 -0400
+	Mon, 18 Mar 2013 12:25:55 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 29/54] perf annotate browser: Make browser_disasm_line->percent an array
-Date: Mon, 18 Mar 2013 13:25:14 -0300
-Message-Id: <1363623939-10748-30-git-send-email-acme@infradead.org>
+Subject: [PATCH 36/54] perf machine: Move machine__remove_thread and make static
+Date: Mon, 18 Mar 2013 13:25:21 -0300
+Message-Id: <1363623939-10748-37-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: David Ahern <dsahern@gmail.com>
 
-Make percent field of struct browser_disasm_line an array and move it to
-the last.  This is a preparation of event group view feature.
+As the now only user, machine__process_exit_event, that is what tools
+use to process PERF_RECORD_EXIT events, is on the same object file.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1362462812-30885-10-git-send-email-namhyung@kernel.org
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1363151248-16674-5-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ tools/perf/util/machine.c |   22 +++++++++++-----------
+ tools/perf/util/machine.h |    1 -
+ 2 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index cfae57f..62369f0 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -14,10 +14,10 @@
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index efdb38e..c5e3b12 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1003,6 +1003,17 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
+ }
  
- struct browser_disasm_line {
- 	struct rb_node	rb_node;
--	double		percent;
- 	u32		idx;
- 	int		idx_asm;
- 	int		jump_sources;
-+	double		percent[1];
- };
++static void machine__remove_thread(struct machine *machine, struct thread *th)
++{
++	machine->last_match = NULL;
++	rb_erase(&th->rb_node, &machine->threads);
++	/*
++	 * We may have references to this thread, for instance in some hist_entry
++	 * instances, so just move them to a separate list.
++	 */
++	list_add_tail(&th->node, &machine->dead_threads);
++}
++
+ int machine__process_exit_event(struct machine *machine, union perf_event *event)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+@@ -1039,17 +1050,6 @@ int machine__process_event(struct machine *machine, union perf_event *event)
+ 	return ret;
+ }
  
- static struct annotate_browser_opt {
-@@ -97,9 +97,9 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	int width = browser->width, printed;
- 	char bf[256];
+-void machine__remove_thread(struct machine *machine, struct thread *th)
+-{
+-	machine->last_match = NULL;
+-	rb_erase(&th->rb_node, &machine->threads);
+-	/*
+-	 * We may have references to this thread, for instance in some hist_entry
+-	 * instances, so just move them to a separate list.
+-	 */
+-	list_add_tail(&th->node, &machine->dead_threads);
+-}
+-
+ static bool symbol__match_parent_regex(struct symbol *sym)
+ {
+ 	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 5ac5892..e0b2c00 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -97,7 +97,6 @@ static inline bool machine__is_host(struct machine *machine)
+ }
  
--	if (dl->offset != -1 && bdl->percent != 0.0) {
--		ui_browser__set_percent_color(browser, bdl->percent, current_entry);
--		slsmg_printf("%6.2f ", bdl->percent);
-+	if (dl->offset != -1 && bdl->percent[0] != 0.0) {
-+		ui_browser__set_percent_color(browser, bdl->percent[0], current_entry);
-+		slsmg_printf("%6.2f ", bdl->percent[0]);
- 	} else {
- 		ui_browser__set_percent_color(browser, 0, current_entry);
- 		slsmg_write_nstring(" ", 7);
-@@ -283,7 +283,7 @@ static void disasm_rb_tree__insert(struct rb_root *root, struct browser_disasm_l
- 	while (*p != NULL) {
- 		parent = *p;
- 		l = rb_entry(parent, struct browser_disasm_line, rb_node);
--		if (bdl->percent < l->percent)
-+		if (bdl->percent[0] < l->percent[0])
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -345,8 +345,8 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid);
+-void machine__remove_thread(struct machine *machine, struct thread *th);
  
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		struct browser_disasm_line *bpos = disasm_line__browser(pos);
--		bpos->percent = disasm_line__calc_percent(pos, sym, evsel->idx);
--		if (bpos->percent < 0.01) {
-+		bpos->percent[0] = disasm_line__calc_percent(pos, sym, evsel->idx);
-+		if (bpos->percent[0] < 0.01) {
- 			RB_CLEAR_NODE(&bpos->rb_node);
- 			continue;
- 		}
+ size_t machine__fprintf(struct machine *machine, FILE *fp);
+ 
 -- 
 1.7.1
 
