@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3CRXP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:15:29 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:36665 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab3CRXP2 (ORCPT
+	id S1755883Ab3CRXTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:19:11 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:41450 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab3CRXTK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:15:28 -0400
-Date: Mon, 18 Mar 2013 16:16:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Peter Hurley <peter@hurleysoftware.com>, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/16] TTY: add tty_port_tty_wakeup helper
-Message-ID: <20130318231644.GA16304@kroah.com>
-References: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
- <1362658360-26629-5-git-send-email-jslaby@suse.cz>
- <1362754976.4219.29.camel@thor.lan>
- <513A35B1.4040808@suse.cz>
-MIME-Version: 1.0
+	Mon, 18 Mar 2013 19:19:10 -0400
+From: Ben Collins <benmcollins13@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A35B1.4040808@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] sgy-cts1000: Remove __dev* attributes
+Date: Mon, 18 Mar 2013 19:19:07 -0400
+Message-Id: <1A7562E2-E3F4-499C-AB2E-788D08234B02@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 08:02:09PM +0100, Jiri Slaby wrote:
-> On 03/08/2013 04:02 PM, Peter Hurley wrote:
-> > On Thu, 2013-03-07 at 13:12 +0100, Jiri Slaby wrote:
-> >> It allows for cleaning up on a considerable amount of places. They did
-> >> port_get, wakeup, kref_put. Now the only thing needed is to call
-> >> tty_port_tty_wakeup which does exactly that.
-> >>
-> >> One exception is ifx6x60 where tty_wakeup was open-coded. We now call
-> >> tty_wakeup properly there.
-> >>
-> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> >> ---
-> >>  arch/um/drivers/line.c                  |  8 +-------
-> > 
-> > 	Cc: Jeff Dike <jdike@addtoit.com>
-> > 	Cc: Richard Weinberger <richard@nod.at>
-> > 
-> >>  drivers/isdn/capi/capi.c                |  7 +------
-> > 
-> > 	Cc: Karsten Keil <isdn@linux-pingi.de>
-> > 
-> >>  drivers/isdn/gigaset/interface.c        |  6 +-----
-> > 
-> > 	Cc: Hansjoerg Lipp <hjlipp@web.de>
-> > 	Cc: Tilman Schmidt <tilman@imap.cc>
-> > 	Cc: gigaset307x-common@lists.sourceforge.net
-> > 	Cc: netdev@vger.kernel.org
-> > 
-> >>  drivers/net/usb/hso.c                   | 13 ++-----------
-> > 
-> > 	Cc: Jan Dumon <j.dumon@option.com>
-> > 	Cc: linux-usb@vger.kernel.org
-> > 
-> >>  drivers/s390/char/sclp_tty.c            |  9 ++-------
-> >>  drivers/s390/char/sclp_vt220.c          |  8 +-------
-> > 
-> > 	Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > 	Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > 	Cc: linux390@de.ibm.com
-> > 	Cc: linux-s390@vger.kernel.org
-> > 
-> >>  drivers/staging/fwserial/fwserial.c     | 10 ++--------
-> > 
-> > 	Cc: Me :)
-> > 
-> >>  drivers/staging/serqt_usb2/serqt_usb2.c |  7 +------
-> > 
-> > 	Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> > 	Cc: Devendra Naga <devendra.aaru@gmail.com>
-> > 
-> > and so on...
-> > 
-> > Same for the other mega-patches.
-> 
-> I'm not sure whether to CC all the people for such patches. I always
-> tended not to and instead rely on people reading LKML :P.
-> 
-> If this is the preferred way, I of course can do it next time.
+Somehow the driver snuck in with these still in it.
 
-It's nice to at least cc: driver maintainers if you can, you can script
-get_maintainers.pl to do this for you.  But don't worry about it this
-time.
+Signed-off-by: Ben Collins <ben.c@servergy.com>
+---
+ arch/powerpc/platforms/85xx/sgy_cts1000.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-thanks,
+diff --git a/arch/powerpc/platforms/85xx/sgy_cts1000.c b/arch/powerpc/platforms/85xx/sgy_cts1000.c
+index 611e92f..7179726 100644
+--- a/arch/powerpc/platforms/85xx/sgy_cts1000.c
++++ b/arch/powerpc/platforms/85xx/sgy_cts1000.c
+@@ -69,7 +69,7 @@ static irqreturn_t gpio_halt_irq(int irq, void *__data)
+         return IRQ_HANDLED;
+ };
+ 
+-static int __devinit gpio_halt_probe(struct platform_device *pdev)
++static int gpio_halt_probe(struct platform_device *pdev)
+ {
+ 	enum of_gpio_flags flags;
+ 	struct device_node *node = pdev->dev.of_node;
+@@ -128,7 +128,7 @@ static int __devinit gpio_halt_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __devexit gpio_halt_remove(struct platform_device *pdev)
++static int gpio_halt_remove(struct platform_device *pdev)
+ {
+ 	if (halt_node) {
+ 		int gpio = of_get_gpio(halt_node, 0);
+@@ -165,7 +165,7 @@ static struct platform_driver gpio_halt_driver = {
+ 		.of_match_table = gpio_halt_match,
+ 	},
+ 	.probe		= gpio_halt_probe,
+-	.remove		= __devexit_p(gpio_halt_remove),
++	.remove		= gpio_halt_remove,
+ };
+ 
+ module_platform_driver(gpio_halt_driver);
+-- 
+1.8.1.2
 
-greg k-h
+
+--
+Servergy  : http://www.servergy.com/
+SwissDisk : http://www.swissdisk.com/
+Ubuntu    : http://www.ubuntu.com/
+My Blog   : http://ben-collins.blogspot.com/
+
