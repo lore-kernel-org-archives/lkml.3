@@ -1,35 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3CRLbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:31:51 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:58231 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab3CRLbt (ORCPT
+	id S1752408Ab3CRLfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:35:08 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:34677 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3CRLfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:31:49 -0400
+	Mon, 18 Mar 2013 07:35:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363585482-7630-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1363585482-7630-1-git-send-email-jaegeuk.kim@samsung.com>
-Date: Mon, 18 Mar 2013 20:31:48 +0900
-Message-ID: <CAKYAXd9cmOymDjpk+rtbDkBm9e+f0NP_GiUOWXyZY3kf3aTPXw@mail.gmail.com>
-Subject: Re: [PATCH] f2fs: fix to unlock node page when it was truncated
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
+In-Reply-To: <1363525456-10448-5-git-send-email-mgorman@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+	<1363525456-10448-5-git-send-email-mgorman@suse.de>
+Date: Mon, 18 Mar 2013 19:35:04 +0800
+Message-ID: <CAJd=RBCZ7VZUB=Wc6tMtVsszFgnbfW3MbBW3wKyMqnLMV+UrWw@mail.gmail.com>
+Subject: Re: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat
+ based on reclaim progress
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Mi@jasper.es,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> If the node page was truncated, its block address became zero.
-> This means that we don't need to write the node page, but have to unlock
-> NODE_WRITE, decrease the number of dirty node pages, and then unlock_page
-> before returning the f2fs_write_node_page with zero.
+On Sun, Mar 17, 2013 at 9:04 PM, Mel Gorman <mgorman@suse.de> wrote:
+> In the past, kswapd makes a decision on whether to compact memory after the
+> pgdat was considered balanced. This more or less worked but it is late to
+> make such a decision and does not fit well now that kswapd makes a decision
+> whether to exit the zone scanning loop depending on reclaim progress.
 >
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
-Looks good to me~
+> This patch will compact a pgdat if at least  the requested number of pages
+> were reclaimed from unbalanced zones for a given priority. If any zone is
+> currently balanced, kswapd will not call compaction as it is expected the
+> necessary pages are already available.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c | 52 +++++++++++++++++++++-------------------------------
+>  1 file changed, 21 insertions(+), 31 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 279d0c2..7513bd1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2694,8 +2694,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>
+>         do {
+>                 unsigned long lru_pages = 0;
+> +               unsigned long nr_to_reclaim = 0;
+>                 unsigned long nr_reclaimed = sc.nr_reclaimed;
+> +               unsigned long this_reclaimed;
+>                 bool raise_priority = true;
+> +               bool pgdat_needs_compaction = true;
 
-Thanks!
+To show that compaction is needed iff non order-o reclaim,
+                bool do_compaction = !!order;
+
+>
+>                 /*
+>                  * Scan in the highmem->dma direction for the highest
+> @@ -2743,7 +2746,17 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>                 for (i = 0; i <= end_zone; i++) {
+>                         struct zone *zone = pgdat->node_zones + i;
+>
+> +                       if (!populated_zone(zone))
+> +                               continue;
+> +
+>                         lru_pages += zone_reclaimable_pages(zone);
+> +
+> +                       /* Check if the memory needs to be defragmented */
+Enrich the comment with, say,
+/*If any zone is
+currently balanced, kswapd will not call compaction as it is expected the
+necessary pages are already available.*/
+please since a big one is deleted below.
+
+> +                       if (order && pgdat_needs_compaction &&
+> +                                       zone_watermark_ok(zone, order,
+> +                                               low_wmark_pages(zone),
+> +                                               *classzone_idx, 0))
+> +                               pgdat_needs_compaction = false;
+>                 }
+>
+>                 /*
+> @@ -2814,6 +2827,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>                                  */
+>                                 if (kswapd_shrink_zone(zone, &sc, lru_pages))
+>                                         raise_priority = false;
+> +
+> +                               nr_to_reclaim += sc.nr_to_reclaim;
+>                         }
+>
+>                         /*
+> @@ -2864,46 +2879,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>                 if (try_to_freeze() || kthread_should_stop())
+>                         break;
+>
+> -               /* If no reclaim progress then increase scanning priority */
+> -               if (sc.nr_reclaimed - nr_reclaimed == 0)
+> -                       raise_priority = true;
+> +               /* Compact if necessary and kswapd is reclaiming efficiently */
+> +               this_reclaimed = sc.nr_reclaimed - nr_reclaimed;
+> +               if (order && pgdat_needs_compaction &&
+> +                               this_reclaimed > nr_to_reclaim)
+> +                       compact_pgdat(pgdat, order);
+>
+>                 /*
+>                  * Raise priority if scanning rate is too low or there was no
+>                  * progress in reclaiming pages
+>                  */
+> -               if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
+> +               if (raise_priority || !this_reclaimed)
+>                         sc.priority--;
+>         } while (sc.priority >= 0 &&
+>                  !pgdat_balanced(pgdat, order, *classzone_idx));
+>
+> -       /*
+> -        * If kswapd was reclaiming at a higher order, it has the option of
+> -        * sleeping without all zones being balanced. Before it does, it must
+> -        * ensure that the watermarks for order-0 on *all* zones are met and
+> -        * that the congestion flags are cleared. The congestion flag must
+> -        * be cleared as kswapd is the only mechanism that clears the flag
+> -        * and it is potentially going to sleep here.
+> -        */
+> -       if (order) {
+> -               int zones_need_compaction = 1;
+> -
+> -               for (i = 0; i <= end_zone; i++) {
+> -                       struct zone *zone = pgdat->node_zones + i;
+> -
+> -                       if (!populated_zone(zone))
+> -                               continue;
+> -
+> -                       /* Check if the memory needs to be defragmented. */
+> -                       if (zone_watermark_ok(zone, order,
+> -                                   low_wmark_pages(zone), *classzone_idx, 0))
+> -                               zones_need_compaction = 0;
+> -               }
+> -
+> -               if (zones_need_compaction)
+> -                       compact_pgdat(pgdat, order);
+> -       }
+> -
+>  out:
+>         /*
+>          * Return the order we were reclaiming at so prepare_kswapd_sleep()
+> --
+> 1.8.1.4
