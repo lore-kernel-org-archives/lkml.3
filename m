@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3CREnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:43:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33566 "EHLO
+	id S1752044Ab3CREnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:43:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33561 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751889Ab3CREaj (ORCPT
+	by vger.kernel.org with ESMTP id S1751763Ab3CREai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:39 -0400
-Message-Id: <20130318042149.861860213@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:38 -0400
+Message-Id: <20130318042149.175740743@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:42 +0000
+Date: Mon, 18 Mar 2013 04:22:35 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ley Foon Tan <lftan@altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 58/82] tty/serial: Add support for Altera serial port
+Cc: akpm@linux-foundation.org, Amit Shah <amit.shah@redhat.com>,
+        Peter Krempa <pkrempa@redhat.com>, <yunzheng@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 51/82] virtio: rng: disallow multiple device registrations, fixes crashes
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,87 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ley Foon Tan <lftan@altera.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit e06c93cacb82dd147266fd1bdb2d0a0bd45ff2c1 upstream.
+commit e84e7a56a3aa2963db506299e29a5f3f09377f9b upstream.
 
-Add support for Altera 8250/16550 compatible serial port.
+The code currently only supports one virtio-rng device at a time.
+Invoking guests with multiple devices causes the guest to blow up.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust filenames, context]
+Check if we've already registered and initialised the driver.  Also
+cleanup in case of registration errors or hot-unplug so that a new
+device can be used.
+
+Reported-by: Peter Krempa <pkrempa@redhat.com>
+Reported-by: <yunzheng@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -10,6 +10,9 @@ Required properties:
- 	- "ns16850"
- 	- "nvidia,tegra20-uart"
- 	- "ibm,qpace-nwp-serial"
-+	- "altr,16550-FIFO32"
-+	- "altr,16550-FIFO64"
-+	- "altr,16550-FIFO128"
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
- - interrupts : should contain uart interrupt.
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -322,6 +322,27 @@ static const struct serial8250_config ua
- 		.tx_loadsz	= 1024,
- 		.flags		= UART_CAP_HFIFO,
- 	},
-+	[PORT_ALTR_16550_F32] = {
-+		.name		= "Altera 16550 FIFO32",
-+		.fifo_size	= 32,
-+		.tx_loadsz	= 32,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F64] = {
-+		.name		= "Altera 16550 FIFO64",
-+		.fifo_size	= 64,
-+		.tx_loadsz	= 64,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F128] = {
-+		.name		= "Altera 16550 FIFO128",
-+		.fifo_size	= 128,
-+		.tx_loadsz	= 128,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
- };
+ drivers/char/hw_random/virtio-rng.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -89,14 +89,22 @@ static int virtrng_probe(struct virtio_d
+ {
+ 	int err;
  
- #if defined(CONFIG_MIPS_ALCHEMY)
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -182,6 +182,12 @@ static struct of_device_id __devinitdata
- 	{ .compatible = "ns16750",  .data = (void *)PORT_16750, },
- 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
- 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
-+	{ .compatible = "altr,16550-FIFO32",
-+		.data = (void *)PORT_ALTR_16550_F32, },
-+	{ .compatible = "altr,16550-FIFO64",
-+		.data = (void *)PORT_ALTR_16550_F64, },
-+	{ .compatible = "altr,16550-FIFO128",
-+		.data = (void *)PORT_ALTR_16550_F128, },
- #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
- 	{ .compatible = "ibm,qpace-nwp-serial",
- 		.data = (void *)PORT_NWPSERIAL, },
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -48,7 +48,10 @@
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
- #define PORT_BRCM_TRUMANAGE	25
--#define PORT_MAX_8250	25	/* max port ID */
-+#define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
-+#define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
-+#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
-+#define PORT_MAX_8250	28	/* max port ID */
++	if (vq) {
++		/* We only support one device for now */
++		return -EBUSY;
++	}
+ 	/* We expect a single virtqueue. */
+ 	vq = virtio_find_single_vq(vdev, random_recv_done, "input");
+-	if (IS_ERR(vq))
+-		return PTR_ERR(vq);
++	if (IS_ERR(vq)) {
++		err = PTR_ERR(vq);
++		vq = NULL;
++		return err;
++	}
  
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+ 	err = hwrng_register(&virtio_hwrng);
+ 	if (err) {
+ 		vdev->config->del_vqs(vdev);
++		vq = NULL;
+ 		return err;
+ 	}
+ 
+@@ -108,6 +116,7 @@ static void __devexit virtrng_remove(str
+ 	vdev->config->reset(vdev);
+ 	hwrng_unregister(&virtio_hwrng);
+ 	vdev->config->del_vqs(vdev);
++	vq = NULL;
+ }
+ 
+ static struct virtio_device_id id_table[] = {
 
 
