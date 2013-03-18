@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934106Ab3CRV4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:56:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45596 "EHLO
+	id S1756863Ab3CRV5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:57:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45590 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755490Ab3CRVGy (ORCPT
+	with ESMTP id S1755517Ab3CRVGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:54 -0400
+	Mon, 18 Mar 2013 17:06:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 44/75] perf,x86: fix link failure for non-Intel configs
-Date: Mon, 18 Mar 2013 14:07:07 -0700
-Message-Id: <20130318210513.425871051@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 32/75] hwmon: (pmbus/ltc2978) Fix temperature reporting
+Date: Mon, 18 Mar 2013 14:06:55 -0700
+Message-Id: <20130318210512.543017242@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,48 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 6c4d3bc99b3341067775efd4d9d13cc8e655fd7c upstream.
+commit 8c958c703ef8804093437959221951eaf0e1e664 upstream.
 
-Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
-suspend/resume") introduces a link failure since
-perf_restore_debug_store() is only defined for CONFIG_CPU_SUP_INTEL:
+On LTC2978, only READ_TEMPERATURE is supported. It reports
+the internal junction temperature. This register is unpaged.
 
-	arch/x86/power/built-in.o: In function `restore_processor_state':
-	(.text+0x45c): undefined reference to `perf_restore_debug_store'
+On LTC3880, READ_TEMPERATURE and READ_TEMPERATURE2 are supported.
+READ_TEMPERATURE is paged and reports external temperatures.
+READ_TEMPERATURE2 is unpaged and reports the internal junction
+temperature.
 
-Fix it by defining the dummy function appropriately.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/perf_event.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/hwmon/pmbus/ltc2978.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -753,7 +753,6 @@ extern void perf_event_enable(struct per
- extern void perf_event_disable(struct perf_event *event);
- extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
--extern void perf_restore_debug_store(void);
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
-@@ -793,6 +792,11 @@ static inline void perf_event_enable(str
- static inline void perf_event_disable(struct perf_event *event)		{ }
- static inline int __perf_event_disable(void *info)			{ return -1; }
- static inline void perf_event_task_tick(void)				{ }
-+#endif
-+
-+#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_INTEL)
-+extern void perf_restore_debug_store(void);
-+#else
- static inline void perf_restore_debug_store(void)			{ }
- #endif
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -59,7 +59,7 @@ enum chips { ltc2978, ltc3880 };
+ struct ltc2978_data {
+ 	enum chips id;
+ 	int vin_min, vin_max;
+-	int temp_min, temp_max;
++	int temp_min, temp_max[2];
+ 	int vout_min[8], vout_max[8];
+ 	int iout_max[2];
+ 	int temp2_max;
+@@ -113,9 +113,10 @@ static int ltc2978_read_word_data_common
+ 		ret = pmbus_read_word_data(client, page,
+ 					   LTC2978_MFR_TEMPERATURE_PEAK);
+ 		if (ret >= 0) {
+-			if (lin11_to_val(ret) > lin11_to_val(data->temp_max))
+-				data->temp_max = ret;
+-			ret = data->temp_max;
++			if (lin11_to_val(ret)
++			    > lin11_to_val(data->temp_max[page]))
++				data->temp_max[page] = ret;
++			ret = data->temp_max[page];
+ 		}
+ 		break;
+ 	case PMBUS_VIRT_RESET_VOUT_HISTORY:
+@@ -266,7 +267,7 @@ static int ltc2978_write_word_data(struc
+ 		break;
+ 	case PMBUS_VIRT_RESET_TEMP_HISTORY:
+ 		data->temp_min = 0x7bff;
+-		data->temp_max = 0x7c00;
++		data->temp_max[page] = 0x7c00;
+ 		ret = ltc2978_clear_peaks(client, page, data->id);
+ 		break;
+ 	default:
+@@ -323,7 +324,8 @@ static int ltc2978_probe(struct i2c_clie
+ 	data->vin_min = 0x7bff;
+ 	data->vin_max = 0x7c00;
+ 	data->temp_min = 0x7bff;
+-	data->temp_max = 0x7c00;
++	for (i = 0; i < ARRAY_SIZE(data->temp_max); i++)
++		data->temp_max[i] = 0x7c00;
+ 	data->temp2_max = 0x7c00;
  
+ 	switch (data->id) {
 
 
