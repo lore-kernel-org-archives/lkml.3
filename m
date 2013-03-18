@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3CRS3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 14:29:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38770 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3CRS3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 14:29:01 -0400
-X-IronPort-AV: E=Sophos;i="4.84,865,1355126400"; 
-   d="scan'208";a="30630027"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-Subject: [PATCHv2 3/3] ARM: Work around faulty ISAR0 register in some Krait CPUs
-Date: Mon, 18 Mar 2013 11:28:57 -0700
-Message-Id: <1363631337-13816-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
-In-Reply-To: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
-References: <1363631337-13816-1-git-send-email-sboyd@codeaurora.org>
+	id S1754381Ab3CRSal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 14:30:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788Ab3CRSai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 14:30:38 -0400
+Date: Mon, 18 Mar 2013 14:30:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dmitry.kasatkin@intel.com,
+        akpm@linux-foundation.org, ebiederm@xmission.com
+Subject: Re: [PATCH 3/4] capability: Create a new capability CAP_SIGNED
+Message-ID: <20130318183028.GB28061@redhat.com>
+References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
+ <1363379758-10071-4-git-send-email-vgoyal@redhat.com>
+ <51438EDB.3050300@schaufler-ca.com>
+ <20130318170552.GG20743@redhat.com>
+ <514753DC.4030609@schaufler-ca.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514753DC.4030609@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
+On Mon, Mar 18, 2013 at 10:50:21AM -0700, Casey Schaufler wrote:
+> On 3/18/2013 10:05 AM, Vivek Goyal wrote:
+> > On Fri, Mar 15, 2013 at 02:12:59PM -0700, Casey Schaufler wrote:
+> >> On 3/15/2013 1:35 PM, Vivek Goyal wrote:
+> >>> Create a new capability CAP_SIGNED which can be given to signed executables.
+> >> This would drive anyone who is trying to use
+> >> capabilities as the privilege mechanism it is
+> >> intended to be absolutely crazy.
+> > Will calling it CAP_SIGNED_SERVICES help. I intend to use it as
+> > capability (and not just as a flag for task attribute).
+> 
+> No, the name is not the issue.
+> 
+> > I think primary difference here is that this capability is controlled
+> > by kernel and only validly signed processes get it.
+> 
+> Applications are allowed to manipulate their capability sets
+> in well defined ways. The behavior of file based capabilities
+> is also explicitly defined. The behavior you are proposing would
+> violate both of these mechanisms. 
+> 
+> >> Capabilities aren't just random attribute bits. They
+> >> indicate that a task has permission to violate a
+> >> system policy (e.g. change the mode bits of a file
+> >> the user doesn't own). Think about how this will
+> >> interact with programs using file based capabilities.
+> > It is a separate capability. I am not sure why it would
+> > interfere with other capabilities or functionality out there.
+> 
+> The behavior of capabilities is uniform. You can't have one
+> capability that behaves differently from the others. If a
+> file is unsigned but has CAP_SIGNED in the file capability
+> set what do you expect to happen? Do you want a signed
+> application to be able to drop and raise the fact that it
+> is signed?
 
-Some early versions of the Krait CPU design incorrectly indicate
-that they only support the UDIV and SDIV instructions in Thumb
-mode when they actually support them in ARM and Thumb mode. It
-seems that these CPUs follow the DDI0406B ARM ARM which has two
-possible values for the divide instructions field, instead of the
-DDI0406C document which has three possible values.
+I have already removed this capability from bounding set. Behavior
+I am looking for is that nobody should be able to set CAP_SIGNED
+as file capability. I will look into that.
 
-Work around this problem by checking the MIDR against Krait CPUs
-with this faulty ISAR0 register and force the hwcaps to indicate
-support in both modes.
+I am thinking of this more as kernel managed capability. It is
+not in bounding set of any process and it can not be set as file
+capability. 
 
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-[sboyd: Rewrote commit text to reflect real reasoning now that
-	we autodetect udiv/sdiv]
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mm/proc-v7.S | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+It is a new capability, so no existing user application should
+be trying to set it.
 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index bcd3d48..f584d3f 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -434,6 +434,21 @@ __v7_ca15mp_proc_info:
- 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
- 
- 	/*
-+	 * Qualcomm Inc. Krait processors.
-+	 */
-+	.type	__krait_proc_info, #object
-+__krait_proc_info:
-+	.long	0x510f0400		@ Required ID value
-+	.long	0xff0ffc00		@ Mask for ID
-+	/*
-+	 * Some Krait processors don't indicate support for SDIV and UDIV
-+	 * instructions in the ARM instruction set, even though they actually
-+	 * do support them.
-+	 */
-+	__v7_proc __v7_setup, hwcaps = HWCAP_IDIV
-+	.size	__krait_proc_info, . - __krait_proc_info
-+
-+	/*
- 	 * Match any ARMv7 processor core.
- 	 */
- 	.type	__v7_proc_info, #object
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+I think the only surprise would be that they can't drop it. If
+that's a concern, may be we can allow dropping the capability.
+But the side affect is that there is no way to gain it back for
+the life time of process.
 
+> 
+> I expect that you don't want your attribute that indicates
+> that the binary was signed to behave the same way that
+> capabilities do. Like I said, capabilities are not just
+> attribute bits. You need a different kind of process attribute
+> to indicate that the binary was signed.
+
+I think I need more than process attribute. One of the things
+I am looking for is that signed processes run locked in memory
+and nobody (i think no unsigned process) is able to do ptrace() on it.
+Using the notion of capability might help here.
+
+> 
+> When (if ever) we have multiple LSM support you might consider
+> doing this as a small LSM. Until then, you're going to need a
+> different way to express the signature attribute.
+
+I am not sure why you are viewing it as necessarily as attribute only.
+I am thinking more in terms of that in certain situations, user space
+processes can't perform certain operations (like kexec) untile and
+unless process has the capability CAP_SIGNED_SERVICES. And this capability
+is granted if upon exec() process signature are verified.
+
+So yes it is little different from how capabilities are managed
+currently. But is it very hard to extend the current capability definition
+and include the fact that kernel can give additional capabilities to
+processes based on some other factors.
+
+Thanks
+Vivek
