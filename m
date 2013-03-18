@@ -1,144 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3CRGty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 02:49:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45946 "EHLO comal.ext.ti.com"
+	id S1751581Ab3CRG5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 02:57:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60872 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890Ab3CRGtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 02:49:52 -0400
-Message-ID: <5146B972.1010002@ti.com>
-Date: Mon, 18 Mar 2013 12:21:30 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Will Deacon <will@willdeacon.co.uk>
-CC: Will Deacon <Will.Deacon@arm.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
- supports 'has_ossr'
-References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com> <51406BA7.8010306@arm.com> <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites>
-In-Reply-To: <20130315050014.GA15706@tiny-lites>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1750847Ab3CRG5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 02:57:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,862,1355126400"; 
+   d="scan'208";a="280893589"
+Message-ID: <1363589936.20738.6.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: remove ixp2000 driver
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Mar 2013 08:58:56 +0200
+In-Reply-To: <1363214471.1335.19.camel@x61.thuisdomein>
+References: <1363206974.1335.10.camel@x61.thuisdomein>
+	 <1363214471.1335.19.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 March 2013 10:30 AM, Will Deacon wrote:
-> On Thu, Mar 14, 2013 at 01:08:00PM +0530, Santosh Shilimkar wrote:
->> Will,
+On Wed, 2013-03-13 at 23:41 +0100, Paul Bolle wrote:
+> On Wed, 2013-03-13 at 21:36 +0100, Paul Bolle wrote:
+> > Support for the IXP2000 platform got removed in commit
+> > c65f2abf54a6d07260f1fa64773154e1d7047961 ("ARM: remove ixp23xx and
+> > ixp2000 platforms"). That commit removed the ARCH_IXP2000 Kconfig
+> > symbol. This removes the last driver depending on that symbol.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > 
-> Hi guys,
-> 
-> I'm out of the office at the moment and have really terrible connectivity,
-> so I can't do too much until next week. However, I don't think adding the
-> has_ossr check is the right fix for this problem.
-> 
->> On Wednesday 13 March 2013 05:59 PM, Lokesh Vutla wrote:
->>> Hi Dietmar,
->>> On Wednesday 13 March 2013 05:35 PM, Dietmar Eggemann wrote:
->>>> On 13/03/13 06:52, Lokesh Vutla wrote:
->>>>> Commit {9a6eb31 ARM: hw_breakpoint: Debug powerdown support for
->>>>> self-hosted
->>>>> debug} introduces debug powerdown support for self-hosted debug.
->>>>> While merging the patch 'has_ossr' check was removed which
->>>>> was needed for hardwares which doesn't support self-hosted debug.
->>>>> Pandaboard (A9) is one such hardware and Dietmar's orginial
->>>>> patch did mention this issue.
->>>>> Without that check on Panda with CPUIDLE enabled, a flood of
->>>>> below messages thrown.
->>>>>
->>>>> [ 3.597930] hw-breakpoint: CPU 0 failed to disable vector catch
->>>>> [ 3.597991] hw-breakpoint: CPU 1 failed to disable vector catch
-> 
-> Ok, so this means that we've taken an undefined instruction exception while
-> trying to reset the debug registers on the PM_EXIT path. Now, the code there
-> deals with CPUs that don't have the save/restore registers just fine, so
-> that shouldn't have anything to do with this problem, particularly if the
-> bit that is tripping us up is related to clearing vector catch.
->
-Agree.
- 
-> Furthermore, I was under the impression that hw_breakpoint did actually
-> work on panda, which implies that a cold boot *does* manage to reset the
-> registers (can you please confirm this by looking in your dmesg during
-> boot?). In that case, it seems as though a PM cycle is powering down a
-> bunch of debug logic that was powered up during boot, and then we trip over
-> because we can't access the register bank.
-> 
-Actually it seems to be without PM. Thanks to analysis from Lokesh, the issue
-can be seen even with just suspend or cpu hotplug. So cold boot as such is
-fine.
+> It turns out that Artem Bityutskiy has published a series of patches
+> removing this and similar drivers just yesterday:
+> http://lists.infradead.org/pipermail/linux-mtd/2013-March/046170.html 
 
-> The proper solution to this problem requires us to establish exactly what is
-> turning off the debug registers, and then having an OMAP PM notifier to
-> enable it again. Assuming this has always been the case, I expect hardware
-> debug across PM fails silently with older kernels.
-> 
-This has been always the case it seems with CPU power cycle.
-After the CPU is power cycled, 'DBGAUTHSTATUS' reads '0xaa' rather
-than '0xaf' which means 'DBGEN = 0' and hence code fails to enable
-monitor mode. This happens on both secure and GP devices and it can not
-be patched since the secure code is ROM'ed. We didn't notice so far
-because hw_breakpoint support was not default enabled on OMAP till the
-multi-platform build.
+Hi,
 
->> I was also wondering whether we should just warn once rather
->> than continuous warnings in the notifier. Patch is end of the
->> email.
-> 
-> Could do, but I'd like to see a fix for the real issue before we simply hide
-> the warnings :)
-> 
-Agree here too. As evident above, the feature won't work on OMAP4
-devices with PM and hence some solution is needed.
+yes, this mtd driver is removed now, thanks!
 
-What you think of below ?
-
-
->From d74b4264f6a5967b0f7ada96aad77ab0ac30dbed Mon Sep 17 00:00:00 2001
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Date: Mon, 18 Mar 2013 11:59:04 +0530
-Subject: [PATCH] ARM: hw_breakpoints: Check for CPU debug availability before
- enabling it
-
-CPU debug features like hardware break, watchpoints can be used only when
-the debug mode is enabled and available for non-secure mode.
-
-Hence check 'DBGAUTHSTATUS.DBGEN' before proceeding to enable the
-features.
-
-Thanks to Will for pointers and Lokesh for the analysis of the issue on
-OMAP4 where after a CPU power cycle, debug mode gets disabled.
-
-Cc: Will Deacon <Will.Deacon@arm.com>
-
-Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- arch/arm/kernel/hw_breakpoint.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 96093b7..683a7cf 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -930,6 +930,14 @@ static void reset_ctrl_regs(void *unused)
- 	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
- 	u32 val;
- 
-+	/* Check if we have access to CPU debug features */
-+	ARM_DBG_READ(c7, c14, 6, val);
-+	if ((val & 0x1) == 0) {
-+		pr_warn_once("CPU %d debug is unavailable\n", cpu);
-+		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
-+		return;
-+	}
-+
- 	/*
- 	 * v7 debug contains save and restore registers so that debug state
- 	 * can be maintained across low-power modes without leaving the debug
 -- 
-1.7.9.5
+Best Regards,
+Artem Bityutskiy
+
