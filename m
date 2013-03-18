@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3CROmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 10:42:54 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:41726 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3CROmw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 10:42:52 -0400
-Date: Mon, 18 Mar 2013 11:42:43 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 2/2] perf tests: Add a test case for checking sw clock
- event frequency
-Message-ID: <20130318144243.GA3351@ghostprotocols.net>
-References: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
- <1363574507-18808-2-git-send-email-namhyung@kernel.org>
+	id S1752698Ab3CROpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 10:45:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50838 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751671Ab3CROpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 10:45:21 -0400
+Message-ID: <5147286B.9090705@ti.com>
+Date: Mon, 18 Mar 2013 10:44:59 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363574507-18808-2-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, <devel@driverdev.osuosl.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 00/50] staging: omap-thermal: several code refactoring
+References: <1363352438-15935-1-git-send-email-eduardo.valentin@ti.com> <20130316090540.GQ9138@mwanda> <5144698B.9080703@ti.com> <20130316161641.GA2630@kroah.com>
+In-Reply-To: <20130316161641.GA2630@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 18, 2013 at 11:41:47AM +0900, Namhyung Kim escreveu:
-> +static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
-> +{
-> +	int i, err = -1;
-> +	volatile int tmp = 0;
-> +	u64 total_periods = 0;
-> +	int nr_samples = 0;
-> +	union perf_event *event;
-> +	struct perf_evsel *evsel;
-> +	struct perf_evlist *evlist;
-> +	struct perf_event_attr attr = {
-> +		.type = PERF_TYPE_SOFTWARE,
-> +		.config = clock_id,
-> +		.sample_type = PERF_SAMPLE_PERIOD,
-> +		.exclude_kernel = 1,
-> +		.disabled = 1,
-> +		.freq = 1,
-> +		.sample_freq = 10000,
-> +	};
+Greg, Dan,
 
-In some compilers we get:
+On 16-03-2013 12:16, Greg KH wrote:
+> On Sat, Mar 16, 2013 at 08:46:03AM -0400, Eduardo Valentin wrote:
+>> Hello Dan,
+>>
+>> On 16-03-2013 05:05, Dan Carpenter wrote:
+>>> I've reviewed this set.
+>>>
+>>> I hate to make people redo whole patchset sets, and I hate
+>>> re-reviewing code.  Obviously, I don't really like the bunny hop
+>>> patches and I'm trying to discourage that going forward.  ;P  But
+>>> I wouldn't say it's a "Redo the whole thing" kind of problem.
+>>>
+>>> Could just resend patch 33 and 47?  You should probably be able to
+>>> redo those without changing the rest.
+>>
+>> I could of course change them if the comment is better clarified. As
+>> I mentioned as reply to one of your comments, those changes are
+>> following what is suggested in CodingStyle file.
+>>
+>> I can of course send a diff on top of 33, to fix the introduce bug.
+>>
+>> For 47, I'm not sure the comment is fully applicable.
+>
+> As I've taken all of these already (sorry Dan, I was fast and I didn't
+> review them as well as you did), you will have to just send incremental
+> patches on top of the whole series in order for me to be able to apply
+> them.
 
-tests/sw-clock.c: In function ‘__test__sw_clock_freq’:
-tests/sw-clock.c:35: error: unknown field ‘sample_freq’ specified in initializer
+No issues here, I am going to send soon incremental patches, copying 
+Dan, to fix the above mentioned issues on 33 and 47.
 
-So I'm moving the initialization to outside the struct named initialization block, i.e.:
+>
+> thanks,
+>
+> greg k-h
+>
+>
 
-@@ -32,9 +32,10 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
-                .exclude_kernel = 1,
-                .disabled = 1,
-                .freq = 1,
--               .sample_freq = 10000,
-        };
- 
-+       attr.sample_freq = 10000;
-+
-
-- Arnaldo
