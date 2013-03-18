@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab3CRCp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Mar 2013 22:45:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:57125 "EHLO ozlabs.org"
+	id S1751250Ab3CRCpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Mar 2013 22:45:23 -0400
+Received: from ozlabs.org ([203.10.76.45]:35689 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936Ab3CRCpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750913Ab3CRCpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Mar 2013 22:45:20 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Aurelien Jarno <aurelien@aurel32.net>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] hw_random: free rng_buffer at module exit
-In-Reply-To: <1363486492.3937.238.camel@deadeye.wl.decadent.org.uk>
-References: <20130312223211.492954675@linuxfoundation.org> <20130312223212.790278686@linuxfoundation.org> <874ngeykp6.wl%satoru.takeuchi@gmail.com> <87txoetre6.fsf@rustcorp.com.au> <87k3pagllu.wl%satoru.takeuchi@gmail.com> <87d2v1tfr0.fsf@rustcorp.com.au> <1363486492.3937.238.camel@deadeye.wl.decadent.org.uk>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the signal tree with the modules tree
+In-Reply-To: <CA+icZUUiGeUcbjphz6sY=1oA194a1MQN_FOpkm4=BVNXKmQmfA@mail.gmail.com>
+References: <20130314172737.2856af8a9b368bc395d977be@canb.auug.org.au> <87li9ptgtq.fsf@rustcorp.com.au> <CA+icZUUiGeUcbjphz6sY=1oA194a1MQN_FOpkm4=BVNXKmQmfA@mail.gmail.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 18 Mar 2013 13:10:29 +1030
-Message-ID: <87ppyxsa5e.fsf@rustcorp.com.au>
+Date: Mon, 18 Mar 2013 11:26:54 +1030
+Message-ID: <87vc8psey1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <ben@decadent.org.uk> writes:
-> On Fri, 2013-03-15 at 15:35 +1030, Rusty Russell wrote:
->> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
->> > At Thu, 14 Mar 2013 17:11:21 +1030,
->> > Rusty Russell wrote:
->> >> 
->> >> Satoru Takeuchi <satoru.takeuchi@gmail.com> writes:
->> >> > Hi Rusty,
->> >> >
->> >> > At Tue, 12 Mar 2013 15:43:33 -0700,
->> >> > Greg Kroah-Hartman wrote:
->> >> >> @@ -307,6 +312,14 @@ int hwrng_register(struct hwrng *rng)
->> >> >>  
->> >> >>  	mutex_lock(&rng_mutex);
->> >> >>  
->> >> >> +	/* kmalloc makes this safe for virt_to_page() in virtio_rng.c */
->> >> >> +	err = -ENOMEM;
->> >> >> +	if (!rng_buffer) {
->> >> >> +		rng_buffer = kmalloc(rng_buffer_size(), GFP_KERNEL);
->> >> >
->> >> > rng_buffer is now kmalloc-ed, but not kfree-ed. Shoudn't it be kfree-ed
->> >> > at hwrng_unregister()? If my suspect is correct, the same problem is
->> >> > in 3.8.3-rc1 and 3.0.69-rc1. I'm OK to make a patch, but it'll be after
->> >> > some hours.
->> >> >
->> >> > Corecct me if I'm wrong.
->> >> 
->> >> Yes, it would be nice to free it, but it really makes sense to free it
->> >> in module_cleanup() (which would have to be written, as the module
->> >> currently doesn't have one).
->> >> 
->> >> Cheers,
->> >> Rusty.
->> >
->> > From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
->> >
->> > rng-core module allocates rng_buffer by kmalloc() since commit
->> > f7f154f1246ccc5a0a7e9ce50932627d60a0c878. But this buffer won't be
->> > freed and there is a memory leak possibility at module exit.
->> >
->> > Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
->> > Cc: Rusty Russell <rusty@rustcorp.com.au>
->> > Cc: Matt Mackall <mpm@selenic.com>
->> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
->> > Cc: Aurelien Jarno <aurelien@aurel32.net>
->> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> > Cc: stable@vger.kernel.org
->> 
->> Cc: stable might be overkill, but I've tested it and put it in my patch
->> queue, and will push it to Linus once it's survived linux-next.
+Sedat Dilek <sedat.dilek@gmail.com> writes:
+> On Fri, Mar 15, 2013 at 5:41 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Stephen Rothwell <sfr@canb.auug.org.au> writes:
+>>> Hi Al,
+>>>
+>>> Today's linux-next merge of the signal tree got a conflict in
+>>> include/asm-generic/unistd.h between commit 837718bfd28b
+>>> ("CONFIG_SYMBOL_PREFIX: cleanup") from the modules tree and commit
+>>> e1b5bb6d1236 ("consolidate cond_syscall and SYSCALL_ALIAS declarations")
+>>> from the signal tree.
+>>>
+>>> The latter moved the cond_syscall stuff to linkage.h, so I applied the
+>>> following patch as a merge fixup and can carry the fix as necessary (no
+>>> action is required).  I am not sure if this is completely correct or all
+>>> that is needed.
+>>
+>> Your fix looks correct, thanks.
+>>
+>> I've been forced to update that patch after another round of
+>> improvements, so you may need to re-do the merge.
+>>
 >
-> If the module cannot be removed currently, it does not leak.  Making it
-> removable is a feature addition and I think you're right that it's not
-> suitable for stable.
+> Hi,
+>
+> I just looked into modules-next...
+> The improved version is in [1]...
+> ...and contains a file called "kernel/modsign_certificate.S" which is
+> NOT in the latest Linux-Next tree [2].
+> So, I thought about reverting the one in -next and apply the new one
+> from modules-next.
+> This is not possible!
 
-No, the module has always been removable, but the tiny leak is more a
-theoretical problem I'd say.  AFAICT udev never removes modules, so even
-if you have a randomness device which bounces in and out every second,
-it still won't leak 5MB a day.
+I'd wait until Stephen has done the new merge, which should happen
+within 12 hours from now.
 
-Cheers,
+Thanks,
 Rusty.
-
