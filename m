@@ -1,79 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab3CRIDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:03:00 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:27343 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3CRICx (ORCPT
+	id S1751874Ab3CRIFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:05:10 -0400
+Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:2074 "EHLO
+	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3CRIFH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:02:53 -0400
-Date: Mon, 18 Mar 2013 09:02:41 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC PATCH 0/2] fs: sysfs: Add devres support
-Message-ID: <20130318090241.3856df75@endymion.delvare>
-In-Reply-To: <20130317131933.GA15179@roeck-us.net>
-References: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
-	<20130316162140.GB2630@kroah.com>
-	<20130316181253.GA23608@roeck-us.net>
-	<20130316195002.GB3112@kroah.com>
-	<20130316212540.GA18933@roeck-us.net>
-	<20130317133920.465e8a8c@endymion.delvare>
-	<20130317131933.GA15179@roeck-us.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Mar 2013 04:05:07 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+Subject: Re: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
+Date: Mon, 18 Mar 2013 09:04:56 +0100
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elezegarcia@gmail.com
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
+In-Reply-To: <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201303180904.56218.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Mar 2013 06:19:33 -0700, Guenter Roeck wrote:
-> On Sun, Mar 17, 2013 at 01:39:20PM +0100, Jean Delvare wrote:
-> > I'd like to add something at this point.
-> > 
-> > We have historically created the hwmon attributes in the hardware (i2c,
-> > platform...) device, and then created an empty hwmon class device on
-> > top of it so that libsensors etc. can locate all hardware monitoring
-> > chips on the system. This is probably wrong and this may explain the
-> > difference of views between Greg and Guenter.
-> > 
-> > I suspect that ideally all hwmon-related attributes should belong to the
-> > hwmon-class device and not the physical device. Would doing so solve
-> > the problem of is_visible() needing chip-specific information that can
-> > only be gathered during probe()? Sure this is an interface change, but
-> > a few hwmon drivers already do it that way (the ones without an actual
-> > hardware device, e.g. ACPI thermal zones) and libsensors supports this
-> > since version 3.0.3, which was released in September 2008 - 4.5 years
-> > ago.
-> > 
-> > This would require creating the attributes after calling
-> > hwmon_device_register() rather than before, but from the ongoing
-> > discussion I seem to understand that the driver core supports creating
-> > the attributes for us, possibly at the same time as the class device
-> > will be created. Would this solve the userspace timing issue?
-> > 
-> This is what I had in mind as ultimate possibility when I created
-> the second API mentioned in my other e-mail.
+On Thu March 14 2013 15:06:59 Jon Arne Jørgensen wrote:
+> This file is responsible for registering the device
+> with the kernel i2c subsystem.
+> v4l2 talks to the saa7113 chip of the device via i2c.
 > 
-> struct device *devm_hwmon_device_register(struct device *dev,
-> 					  const struct attribute_group **groups)
+> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> ---
+>  drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
+>  1 file changed, 160 insertions(+)
+>  create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
 > 
-> The attributes are still attached to dev (ie to the hardware device)
-> in my current code, but it should be possible to attach them to the
-> hwmon class device instead.
-> 
-> Problem with that approach is that it makes drivers larger, not smaller,
-> at least if is_visible is needed. So it kind of defeats the purpose.
-> 
-> We can go along that route anyway if people think it is the right or a better
-> approach, but I am not sure if it is worth it. I can send out the patches if
-> there is interest.
+> diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
+> new file mode 100644
+> index 0000000..5b6f3f5
+> --- /dev/null
+> +++ b/drivers/media/usb/smi2021/smi2021_i2c.c
+> @@ -0,0 +1,160 @@
+> +/*******************************************************************************
+> + * smi2021_i2c.c                                                               *
+> + *                                                                             *
+> + * USB Driver for SMI2021 - EasyCAP                                            *
+> + * USB ID 1c88:003c                                                            *
+> + *                                                                             *
+> + * *****************************************************************************
+> + *
+> + * Copyright 2011-2013 Jon Arne Jørgensen
+> + * <jonjon.arnearne--a.t--gmail.com>
+> + *
+> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
+> + *
+> + * This file is part of SMI2021
+> + * http://code.google.com/p/easycap-somagic-linux/
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> + *
+> + * This driver is heavily influensed by the STK1160 driver.
+> + * Copyright (C) 2012 Ezequiel Garcia
+> + * <elezegarcia--a.t--gmail.com>
+> + *
+> + */
+> +
+> +#include "smi2021.h"
+> +
+> +/* The device will not return the chip_name on address 0x00.
+> + * But the saa7115 i2c driver needs the chip id to match "f7113"
+> + * if we want to use it,
+> + * so we have to fake the return of this value
+> + */
+> +
+> +static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
+> +static int id_ptr;
 
-Really, I don't know. All I know is that I do not have any time to
-devote to this ATM.
+Don't do this! Instead modify saa7115.c and add a new chip_id (the name of
+this saa7113 clone) and specify that in v4l2_i2c_new_subdev instead of "saa7113".
+The saa7115.c driver should skip the chip ID test if that name is specified.
 
--- 
-Jean Delvare
+Then you don't need this hack anymore and everything will look much cleaner.
+
+> +
+> +static unsigned int i2c_debug;
+> +module_param(i2c_debug, int, 0644);
+> +MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
+> +
+> +#define dprint_i2c(fmt, args...)					\
+> +do {									\
+> +	if (i2c_debug)							\
+> +		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
+> +} while (0)
+> +
+> +
+> +static int i2c_xfer(struct i2c_adapter *i2c_adap,
+> +				struct i2c_msg msgs[], int num)
+> +{
+> +	struct smi2021_dev *dev = i2c_adap->algo_data;
+> +
+> +	switch (num) {
+> +	case 2: { /* Read reg */
+> +		if (msgs[0].len != 1 || msgs[1].len != 1) {
+> +			dprint_i2c("both messages must be 1 byte\n");
+> +			goto err_out;
+> +
+> +		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
+> +			dprint_i2c("last message should have rd flag\n");
+> +			goto err_out;
+> +		}
+> +
+> +		if (msgs[0].buf[0] == 0) {
+> +			msgs[1].buf[0] = chip_id[id_ptr];
+> +			if (chip_id[id_ptr] != 0)
+> +				id_ptr += 1;
+> +		} else {
+> +			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
+> +						msgs[1].buf);
+> +		}
+> +		break;
+> +	}
+> +	case 1: { /* Write reg */
+> +		if (msgs[0].len == 0) {
+> +			break;
+> +		} else if (msgs[0].len != 2) {
+> +			dprint_i2c("unsupported len\n");
+> +			goto err_out;
+> +		}
+> +		if (msgs[0].buf[0] == 0) {
+> +			/* We don't handle writing to addr 0x00 */
+> +			break;
+> +		}
+> +
+> +		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
+> +						msgs[0].buf[1]);
+> +		break;
+> +	}
+> +	default: {
+> +		dprint_i2c("driver can only handle 1 or 2 messages\n");
+> +		goto err_out;
+> +	}
+> +	}
+> +	return num;
+> +
+> +err_out:
+> +	return -EOPNOTSUPP;
+> +}
+> +
+> +static u32 functionality(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_SMBUS_EMUL;
+> +}
+> +
+> +static struct i2c_algorithm algo = {
+> +	.master_xfer = i2c_xfer,
+> +	.functionality = functionality,
+> +};
+> +
+> +static struct i2c_adapter adap_template = {
+> +	.owner = THIS_MODULE,
+> +	.name = "smi2021_easycap_dc60",
+> +	.algo = &algo,
+> +};
+> +
+> +static struct i2c_client client_template = {
+> +	.name = "smi2021 internal",
+> +};
+> +
+> +int smi2021_i2c_register(struct smi2021_dev *dev)
+> +{
+> +	int rc;
+> +
+> +	id_ptr = 0;
+> +
+> +	dev->i2c_adap = adap_template;
+> +	dev->i2c_adap.dev.parent = dev->dev;
+> +	strcpy(dev->i2c_adap.name, "smi2021");
+> +	dev->i2c_adap.algo_data = dev;
+> +
+> +	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
+> +
+> +	rc = i2c_add_adapter(&dev->i2c_adap);
+> +	if (rc < 0) {
+> +		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	dev->i2c_client = client_template;
+> +	dev->i2c_client.adapter = &dev->i2c_adap;
+> +
+> +	return 0;
+> +}
+> +
+> +int smi2021_i2c_unregister(struct smi2021_dev *dev)
+> +{
+> +	i2c_del_adapter(&dev->i2c_adap);
+> +	return 0;
+> +}
+> 
+
+Regards,
+
+	Hans
