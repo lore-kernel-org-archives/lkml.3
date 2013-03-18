@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3CRQdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:33:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36445 "EHLO
+	id S1753836Ab3CRQdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:33:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36444 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab3CRQZ6 (ORCPT
+	with ESMTP id S1752503Ab3CRQZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 12:25:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 40/54] perf tools: Remove unnecessary calc_data_size variable
-Date: Mon, 18 Mar 2013 13:25:25 -0300
-Message-Id: <1363623939-10748-41-git-send-email-acme@infradead.org>
+Subject: [PATCH 41/54] perf tools: Remove unused macro definitions
+Date: Mon, 18 Mar 2013 13:25:26 -0300
+Message-Id: <1363623939-10748-42-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's not set from anywhere so no need to keep it.  Looks like an
-unneeded copy of the same variable in trace-event-read.c
+They're never used and looks like leftovers from the porting of
+trace-cmd code.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
@@ -41,34 +41,30 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363173585-9754-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1363173585-9754-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
  tools/perf/util/trace-event-info.c |    7 -------
  1 files changed, 0 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index b0bbd76..783ab51 100644
+index 783ab51..3c452b5 100644
 --- a/tools/perf/util/trace-event-info.c
 +++ b/tools/perf/util/trace-event-info.c
-@@ -119,17 +119,10 @@ static void put_tracing_file(char *file)
- 	free(file);
- }
+@@ -43,13 +43,6 @@
  
--static ssize_t calc_data_size;
--
- static ssize_t write_or_die(const void *buf, size_t len)
- {
- 	int ret;
+ #define VERSION "0.5"
  
--	if (calc_data_size) {
--		calc_data_size += len;
--		return len;
--	}
+-#define TRACE_CTRL	"tracing_on"
+-#define TRACE		"trace"
+-#define AVAILABLE	"available_tracers"
+-#define CURRENT		"current_tracer"
+-#define ITER_CTRL	"trace_options"
+-#define MAX_LATENCY	"tracing_max_latency"
 -
- 	ret = write(output_fd, buf, len);
- 	if (ret < 0)
- 		die("writing to '%s'", output_file);
+ unsigned int page_size;
+ 
+ static const char *output_file = "trace.info";
 -- 
 1.7.1
 
