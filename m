@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab3CRVZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45960 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab3CRVIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932209Ab3CRVIJ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Mar 2013 17:08:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45913 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab3CRVIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:08:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lorenzo Colitti <lorenzo@google.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/48] net: ipv6: Dont purge default router if accept_ra=2
-Date: Mon, 18 Mar 2013 14:08:47 -0700
-Message-Id: <20130318210813.017867249@linuxfoundation.org>
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 33/48] block: use i_size_write() in bd_set_size()
+Date: Mon, 18 Mar 2013 14:08:41 -0700
+Message-Id: <20130318210812.592267355@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -29,37 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-From: Lorenzo Colitti <lorenzo@google.com>
+commit d646a02a9d44d1421f273ae3923d97b47b918176 upstream.
 
-[ Upstream commit 3e8b0ac3e41e3c882222a5522d5df7212438ab51 ]
+blkdev_ioctl(GETBLKSIZE) uses i_size_read() to read size of block device.
+If we update block size directly, reader may see intermediate result in
+some machines and configurations.  Use i_size_write() instead.
 
-Setting net.ipv6.conf.<interface>.accept_ra=2 causes the kernel
-to accept RAs even when forwarding is enabled. However, enabling
-forwarding purges all default routes on the system, breaking
-connectivity until the next RA is received. Fix this by not
-purging default routes on interfaces that have accept_ra=2.
-
-Signed-off-by: Lorenzo Colitti <lorenzo@google.com>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1973,7 +1973,8 @@ void rt6_purge_dflt_routers(struct net *
- restart:
- 	read_lock_bh(&table->tb6_lock);
- 	for (rt = table->tb6_root.leaf; rt; rt = rt->dst.rt6_next) {
--		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) {
-+		if (rt->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF) &&
-+		    (!rt->rt6i_idev || rt->rt6i_idev->cnf.accept_ra != 2)) {
- 			dst_hold(&rt->dst);
- 			read_unlock_bh(&table->tb6_lock);
- 			ip6_del_rt(rt);
+---
+ fs/block_dev.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1086,7 +1086,9 @@ void bd_set_size(struct block_device *bd
+ {
+ 	unsigned bsize = bdev_logical_block_size(bdev);
+ 
+-	bdev->bd_inode->i_size = size;
++	mutex_lock(&bdev->bd_inode->i_mutex);
++	i_size_write(bdev->bd_inode, size);
++	mutex_unlock(&bdev->bd_inode->i_mutex);
+ 	while (bsize < PAGE_CACHE_SIZE) {
+ 		if (size & bsize)
+ 			break;
 
 
