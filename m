@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab3CREbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:31:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33592 "EHLO
+	id S1752341Ab3CREbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:31:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33572 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751780Ab3CREao (ORCPT
+	by vger.kernel.org with ESMTP id S1751914Ab3CREak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 00:30:44 -0400
-Message-Id: <20130318042149.557589167@decadent.org.uk>
+	Mon, 18 Mar 2013 00:30:40 -0400
+Message-Id: <20130318042148.612442979@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:22:39 +0000
+Date: Mon, 18 Mar 2013 04:22:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dan Williams <dcbw@redhat.com>,
+Cc: akpm@linux-foundation.org, Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 55/82] qcaux: add Franklin U600
+Subject: [ 45/82] USB: EHCI: dont check DMA values in QH overlays
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,29 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2d90e63603ac235aecd7d20e234616e0682c8b1f upstream.
+commit feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
 
-4 ports; AT/PPP is standard CDC-ACM.  The other three (added by this
-patch) are QCDM/DIAG, possibly GPS, and unknown.
+This patch (as1661) fixes a rather obscure bug in ehci-hcd.  In a
+couple of places, the driver compares the DMA address stored in a QH's
+overlay region with the address of a particular qTD, in order to see
+whether that qTD is the one currently being processed by the hardware.
+(If it is then the status in the QH's overlay region is more
+up-to-date than the status in the qTD, and if it isn't then the
+overlay's value needs to be adjusted when the QH is added back to the
+active schedule.)
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+However, DMA address in the overlay region isn't always valid.  It
+sometimes will contain a stale value, which may happen by coincidence
+to be equal to a qTD's DMA address.  Instead of checking the DMA
+address, we should check whether the overlay region is active and
+valid.  The patch tests the ACTIVE bit in the overlay, and clears this
+bit when the overlay becomes invalid (which happens when the
+currently-executing URB is unlinked).
+
+This is the second part of a fix for the regression reported at:
+
+	https://bugs.launchpad.net/bugs/1088733
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Reported-and-tested-by: Stephen Thirlwall <sdt@dr.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/qcaux.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/ehci-q.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/qcaux.c
-+++ b/drivers/usb/serial/qcaux.c
-@@ -69,6 +69,7 @@ static struct usb_device_id id_table[] =
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfd, 0xff) },  /* NMEA */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfe, 0xff) },  /* WMC */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xff, 0xff) },  /* DIAG */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1fac, 0x0151, 0xff, 0xff, 0xff) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -135,7 +135,7 @@ qh_refresh (struct ehci_hcd *ehci, struc
+ 		 * qtd is updated in qh_completions(). Update the QH
+ 		 * overlay here.
+ 		 */
+-		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
++		if (qh->hw->hw_token & ACTIVE_BIT(ehci)) {
+ 			qh->hw->hw_qtd_next = qtd->hw_next;
+ 			qtd = NULL;
+ 		}
+@@ -444,11 +444,19 @@ qh_completions (struct ehci_hcd *ehci, s
+ 			else if (last_status == -EINPROGRESS && !urb->unlinked)
+ 				continue;
+ 
+-			/* qh unlinked; token in overlay may be most current */
+-			if (state == QH_STATE_IDLE
+-					&& cpu_to_hc32(ehci, qtd->qtd_dma)
+-						== hw->hw_current) {
++			/*
++			 * If this was the active qtd when the qh was unlinked
++			 * and the overlay's token is active, then the overlay
++			 * hasn't been written back to the qtd yet so use its
++			 * token instead of the qtd's.  After the qtd is
++			 * processed and removed, the overlay won't be valid
++			 * any more.
++			 */
++			if (state == QH_STATE_IDLE &&
++					qh->qtd_list.next == &qtd->qtd_list &&
++					(hw->hw_token & ACTIVE_BIT(ehci))) {
+ 				token = hc32_to_cpu(ehci, hw->hw_token);
++				hw->hw_token &= ~ACTIVE_BIT(ehci);
+ 
+ 				/* An unlink may leave an incomplete
+ 				 * async transaction in the TT buffer.
 
 
