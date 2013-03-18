@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3CRVID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:08:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45865 "EHLO
+	id S933261Ab3CRV2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:28:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab3CRVHz (ORCPT
+	with ESMTP id S1756274Ab3CRVID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:55 -0400
+	Mon, 18 Mar 2013 17:08:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcin Jurkowski <marcin1j@gmail.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>, Josh Boyer <jwboyer@gmail.com>,
-        Sven Geggus <lists@fuchsschwanzdomain.de>
-Subject: [ 21/48] w1: fix oops when w1_search is called from netlink connector
-Date: Mon, 18 Mar 2013 14:08:29 -0700
-Message-Id: <20130318210811.765281255@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 32/48] hwmon: (sht15) Fix memory leak if regulator_enable() fails
+Date: Mon, 18 Mar 2013 14:08:40 -0700
+Message-Id: <20130318210812.526574563@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
 References: <20130318210810.247845918@linuxfoundation.org>
@@ -28,53 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Jurkowski <marcin1j@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
+Commit 3e78080f8148 ('hwmon: (sht15) Check return value of
+regulator_enable()') depends on the use of devm_kmalloc() for automatic
+resource cleanup in the failure cases, which was introduced in 3.7.  In
+older stable branches, explicit cleanup is needed.
 
-On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
-> This is the bad commit I found doing git bisect:
-> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
-> commit 04f482faf50535229a5a5c8d629cf963899f857c
-> Author: Patrick McHardy <kaber@trash.net>
-> Date:   Mon Mar 28 08:39:36 2011 +0000
-
-Good job. I was too lazy to bisect for bad commit;)
-
-Reading the code I found problematic kthread_should_stop call from netlink
-connector which causes the oops. After applying a patch, I've been testing
-owfs+w1 setup for nearly two days and it seems to work very reliable (no
-hangs, no memleaks etc).
-More detailed description and possible fix is given below:
-
-Function w1_search can be called from either kthread or netlink callback.
-While the former works fine, the latter causes oops due to kthread_should_stop
-invocation.
-
-This patch adds a check if w1_search is serving netlink command, skipping
-kthread_should_stop invocation if so.
-
-Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/w1/w1.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Applies to stable branches between 3.0 and 3.6 where commit 3e78080f8148
+has been applied.
 
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -928,7 +928,8 @@ void w1_search(struct w1_master *dev, u8
- 			tmp64 = (triplet_ret >> 2);
- 			rn |= (tmp64 << i);
+ drivers/hwmon/sht15.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/hwmon/sht15.c
++++ b/drivers/hwmon/sht15.c
+@@ -930,7 +930,7 @@ static int __devinit sht15_probe(struct
+ 		if (ret != 0) {
+ 			dev_err(&pdev->dev,
+ 				"failed to enable regulator: %d\n", ret);
+-			return ret;
++			goto err_free_data;
+ 		}
  
--			if (kthread_should_stop()) {
-+			/* ensure we're called from kthread and not by netlink callback */
-+			if (!dev->priv && kthread_should_stop()) {
- 				dev_dbg(&dev->dev, "Abort w1_search\n");
- 				return;
- 			}
+ 		/*
 
 
