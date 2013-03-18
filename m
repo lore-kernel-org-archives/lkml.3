@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab3CRNai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:30:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab3CRNaf (ORCPT
+	id S1752706Ab3CRNc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:32:56 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34221 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab3CRNcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:30:35 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Subject: Re: request line field in the generic slave config structure
-Date: Mon, 18 Mar 2013 13:30:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-References: <1363612546.18714.85.camel@smile>
-In-Reply-To: <1363612546.18714.85.camel@smile>
+	Mon, 18 Mar 2013 09:32:54 -0400
+Message-ID: <5147177B.1090609@linux.vnet.ibm.com>
+Date: Mon, 18 Mar 2013 21:32:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
+References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com> <5146CB92.7060203@linux.vnet.ibm.com> <20130318091303.GA1276@redhat.com> <514708A9.8040009@linux.vnet.ibm.com> <20130318124616.GH4020@redhat.com> <51471217.7070801@linux.vnet.ibm.com> <20130318131907.GK4020@redhat.com> <514715B6.3080507@linux.vnet.ibm.com> <20130318132752.GL4020@redhat.com>
+In-Reply-To: <20130318132752.GL4020@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303181330.29328.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:JPeyAcUtirYZl8pxcHodlDa26FZmAyGLmDeHvgW8Cn5
- cMMZzCGmtw50U1j535HcuXlp/dCbEALTGoFdO1WCTdkSL78FTJ
- WEn8Qhmho5U+lyHglW3asCj1xfkk7oWtQTsl7/6DxGPutu5a6L
- JJozyddgd8Q7vRIwH3unr6pm95GWZZBgE32j8GqO1sdSxCk4sM
- bqvQ+e9e7IScIKuckwHeD3+dVMK9xfawC0zdDsVFle7UWrtEIG
- nRTpSFSF97xP9dvncNvlWZD+H0rNIM5xENRuyhVjFTXajjhw7m
- 5YGS0pnFnysW53Wn12ocOT74xfFkpoI2UxQDcSWNrwptRKJ5mh
- mAFBeoFVXBVFg6/6r4SeTEinflEdu33kzGTzJJpVa
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031813-5140-0000-0000-000002E83E1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 March 2013, Shevchenko, Andriy wrote:
-> Hello!
-> 
-> It seems the one (as I think good) question was left unanswered:
-> http://www.spinics.net/lists/arm-kernel/msg186120.html
-> 
-> What is your opinions, comments?
+On 03/18/2013 09:27 PM, Gleb Natapov wrote:
+> On Mon, Mar 18, 2013 at 09:25:10PM +0800, Xiao Guangrong wrote:
+>> On 03/18/2013 09:19 PM, Gleb Natapov wrote:
+>>> On Mon, Mar 18, 2013 at 09:09:43PM +0800, Xiao Guangrong wrote:
+>>>> On 03/18/2013 08:46 PM, Gleb Natapov wrote:
+>>>>> On Mon, Mar 18, 2013 at 08:29:29PM +0800, Xiao Guangrong wrote:
+>>>>>> On 03/18/2013 05:13 PM, Gleb Natapov wrote:
+>>>>>>> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
+>>>>>>>> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
+>>>>>>>>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
+>>>>>>>>>> This patch tries to introduce a very simple and scale way to invalid all
+>>>>>>>>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
+>>>>>>>>>>
+>>>>>>>>>> KVM maintains a global mmio invalid generation-number which is stored in
+>>>>>>>>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+>>>>>>>>>> generation-number into his available bits when it is created
+>>>>>>>>>>
+>>>>>>>>>> When KVM need zap all mmio sptes, it just simply increase the global
+>>>>>>>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+>>>>>>>>>> then it walks the shadow page table and get the mmio spte. If the
+>>>>>>>>>> generation-number on the spte does not equal the global generation-number,
+>>>>>>>>>> it will go to the normal #PF handler to update the mmio spte
+>>>>>>>>>>
+>>>>>>>>>> Since 19 bits are used to store generation-number on mmio spte, the
+>>>>>>>>>> generation-number can be round after 33554432 times. It is large enough
+>>>>>>>>>> for nearly all most cases, but making the code be more strong, we zap all
+>>>>>>>>>> shadow pages when the number is round
+>>>>>>>>>>
+>>>>>>>>> Very nice idea, but why drop Takuya patches instead of using
+>>>>>>>>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
+>>>>>>>>
+>>>>>>>> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
+>>>>>>>> more than 500000 times is really really rare, it nearly does not happen.
+>>>>>>>> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
+>>>>>>>> implantation.) And, after my patch optimizing zapping all shadow pages,
+>>>>>>>> zap-all-sps should not be a problem anymore since it does not take too much lock
+>>>>>>>> time.
+>>>>>>>>
+>>>>>>>> Your idea?
+>>>>>>>>
+>>>>>>> I expect 500000 to become less since I already had plans to store some
+>>>>>>
+>>>>>> Interesting, just curious, what are the plans? ;)
+>>>>>>
+>>>>> Currently we uses pio to signal that work is pending to virtio devices. The
+>>>>> requirement is that signaling should be fast and PIO is fast since there
+>>>>> is not need to emulate instruction. PCIE though is not really designed
+>>>>> with PIO in mind, so we will have to use MMIO to do signaling. To avoid
+>>>>> instruction emulation I thought about making guest access these devices using
+>>>>> predefined variety of MOV instruction so that emulation can be skipped.
+>>>>> The idea is to mark mmio spte to know that emulation is not needed.
+>>>>
+>>>> How to know page-fault is caused by the predefined instruction?
+>>>>
+>>> Only predefined phys address rages will be accessed that way. If page
+>>> fault is in a range we assume the knows instruction is used.
+>>
+>> That means the access can be identified by the gfn, why need cache
+>> other things into mmio spte?
+> Two not search through memory ranges on each access.
 
-I'm not sure I understand what the question was. Is this about
-whether we should remove the "slave_id" field in the slave
-configuration?
+Aha... got it. Thank you! ;)
 
-Those sort of duplicate the request line information that comes
-from the platform in a data structure that should be filled by
-the device driver without platform specific knowledge.
-
-I believe that is currently used by shmobile, and we won't be able
-to kill that before that platform has been converted to use
-dma_request_slave_channel.
-
-	Arnd
