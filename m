@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab3CRFwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 01:52:32 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:34368 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab3CRFw3 (ORCPT
+	id S1751698Ab3CRFxC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 01:53:02 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:63240 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3CRFw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 01:52:29 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-2e-5146ab9c14e2
+	Mon, 18 Mar 2013 01:52:57 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-bd-5146abb81da5
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 12/19] f2fs: scan next nat page to reuse free nids in there
-Date: Mon, 18 Mar 2013 14:51:43 +0900
-Message-id: <1363585903-8362-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 13/19] f2fs: fix return value of releasepage for node and data
+Date: Mon, 18 Mar 2013 14:52:11 +0900
+Message-id: <1363585931-8441-1-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zY905q90CDY4c4ba4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Px6V+Wgp0cFedW
-	H2BvYHzL1sXIySEhYCJx/vtUKFtM4sK99UA2F4eQwDJGid/nd7HAFPV+mMMIkZjOKLHp4ysW
-	CKeNSaJ5zzvmLkYODjYBbYnN+w1AGkQEmCUWTD0P1sAsMIFR4v+i92CThAW8JV73vmcFsVkE
-	VCX6ju5iBLF5BdwkXl1+wgyxTVdi9f/n7CDNEgL32STO3HzFBtEgIPFt8iEWkGUSArISmw5A
-	1UtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCFBOHEH4/0D1ocYk4HG
-	TWSWEk3OBwZxXkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmpxYcY
-	mTg4pRoYc0ol31afSVQO0n3WJLDc7aVjs63i/6YlLgmhzY/Yyh1KP/2t+GgndH1KghLn8ZYN
-	+ep3vM5LxOdsm/ZEKmytTeBk04e+apzv6qNipEXrq7oS/M87rP3pVH76h7xdHKsu37KiwBud
-	p+bq+rr/9S+5vvhkyQs+l8tm1Qe9t1rVH/qs11vVdlyJpTgj0VCLuag4EQDeb2zkWAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQd05q90CDX6cZbe4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjGj8elfloKdHBXnVh9gb2B8y9bFyMkhIWAi0fthDiOELSZx4d56oDgXh5DA
-	dEaJTR9fsUA4bUwSzXveMXcxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwFJCAt4
-	S7zufc8KYrMIqEr0Hd0FtoFXwE3i1eUnzBDbdCVW/3/OPoGRewEjwypG0dSC5ILipPRcQ73i
-	xNzi0rx0veT83E2M4BB/JrWDcWWDxSFGAQ5GJR5eAx7XQCHWxLLiytxDjBIczEoivA0hboFC
-	vCmJlVWpRfnxRaU5qcWHGJOBtk9klhJNzgfGX15JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOF
-	BNITS1KzU1MLUotgtjBxcEo1MCr0niqol1vFI37mYpvR6k2LVxkIsTIvbvwz9UHynFRLu4Ne
-	wo4rPb67ZMZxm/4KyykTOrREfWKBANPjbkHtrp1+oYUOl0+cnH7v3sYLyi7LvuXWr9WfFRy8
-	w/vb1nlSVq1lpg4XcxdduddibFZ6vHh9vMkFEevN7LvXmob98pihGVRnKyHor8RSnJFoqMVc
-	VJwIADMG9ue1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t8zI90dq90CDbYfk7TYs/cki8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr42NLDVnCav2LzsS72BsYjPF2MHBwSAiYSexdUdjFy
+	ApliEhfurWfrYuTiEBJYxijx+eJxVoiEicTPpRuhEosYJb69vssI4bQxSSx6sYEFZBKbgLbE
+	5v0GIA0iAswSC6aeB6thFpjAKPF/0XsWkISwgJ/EwV1H2UBsFgFViVMftjKC9PIKuEncP14F
+	sUxXYvX/5+wgvRICB9gkFnfuYISoF5D4NvkQC8TVshKbDjBD1EtKHFxxg2UCo+ACRoZVjKKp
+	BckFxUnpRaZ6xYm5xaV56XrJ+bmbGCGhNXEH4/0D1ocYk4HGTWSWEk3OB4ZmXkm8obGZkYWp
+	iamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYNx4oa8pTXqy7xjWj
+	XL94q/GSh4Wp75UePjq1TIhBZ4f4E2Fha8sGoS82wpyKRzQebfydk/w3w3Th4Ye363x7bC9U
+	vt5QknC/Ps1D8GnX7OJ832Ntc81m9zQEKW2aMlErsvzNvekKbOvmWLgr21x93Ha664oaz7KW
+	2xflzxy8JSVzidWiz0lIiaU4I9FQi7moOBEAtdINsUMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xgO6O1W6BBnv3iVjs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmfGzpYSs4zV+x
+	+VgXewPjEZ4uRk4OCQETiZ9LN7JB2GISF+6tB7K5OIQEFjFKfHt9lxHCaWOSWPRiA0sXIwcH
+	m4C2xOb9BiANIgLMEgumngerYRaYwCjxf9F7FpCEsICfxMFdR8GmsgioSpz6sJURpJdXwE3i
+	/vEqiGW6Eqv/P2efwMi9gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw6D6T3sG4qsHi
+	EKMAB6MSD68Bj2ugEGtiWXFl7iFGCQ5mJRHehhC3QCHelMTKqtSi/Pii0pzU4kOMyUDLJzJL
+	iSbnA+MqryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYVyr4
+	+Wuf1b8jmn3xQWNbqHjRXM8Fe9763pz/wVR3Zn/oKYUWg51T2u+ePb275U6VgJ0OU9fzCR8l
+	CzielG3tOiVpO/ujrMXH2w/NFbNmn7T13uXCY3nv8aqL/5s/7t00Z2rH9CWHeO83rw+8rSBT
+	4nZvndzT3BviK/Pco5/HnXWSFVfcafy/UYmlOCPRUIu5qDgRAPLHerOhAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -45,34 +44,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we build new free nids, let's scan the just next NAT page instead of
-skipping a couple of previously scanned pages in order to reuse free nids in
-there.
-Otherwise, we can use too much wide range of nids even though several nids were
-deallocated, and also their node pages can be cached in the node_inode's address
-space.
-This means that we can retain lots of clean pages in the main memory, which
-induces mm's reclaiming overhead.
+If the return value of releasepage is equal to zero, the page cannot be reclaimed.
+Instead, we should return 1 in order to reclaim clean pages.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/node.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/f2fs/data.c |  4 +++-
+ fs/f2fs/node.c | 13 +++----------
+ 2 files changed, 6 insertions(+), 11 deletions(-)
 
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 6616137..cd6b2cc 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -680,8 +680,10 @@ static void f2fs_invalidate_data_page(struct page *page, unsigned long offset)
+ 
+ static int f2fs_release_data_page(struct page *page, gfp_t wait)
+ {
++	if (PageWriteback(page))
++		return 0;
+ 	ClearPagePrivate(page);
+-	return 0;
++	return 1;
+ }
+ 
+ static int f2fs_set_data_page_dirty(struct page *page)
 diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 90221cc..94951d9 100644
+index 94951d9..c60919f 100644
 --- a/fs/f2fs/node.c
 +++ b/fs/f2fs/node.c
-@@ -1317,7 +1317,8 @@ static void build_free_nids(struct f2fs_sb_info *sbi)
- 			break;
+@@ -933,7 +933,6 @@ struct page *get_node_page_ra(struct page *parent, int start)
+ 	if (!nid)
+ 		return ERR_PTR(-ENOENT);
+ 
+-repeat:
+ 	page = grab_cache_page(mapping, nid);
+ 	if (!page)
+ 		return ERR_PTR(-ENOMEM);
+@@ -961,12 +960,6 @@ page_hit:
+ 		f2fs_put_page(page, 1);
+ 		return ERR_PTR(-EIO);
  	}
+-
+-	/* Has the page been truncated? */
+-	if (page->mapping != mapping) {
+-		f2fs_put_page(page, 1);
+-		goto repeat;
+-	}
+ 	mark_page_accessed(page);
+ 	return page;
+ }
+@@ -1188,8 +1181,10 @@ static void f2fs_invalidate_node_page(struct page *page, unsigned long offset)
  
--	nm_i->next_scan_nid = nid;
-+	/* go to the next nat page in order to reuse free nids first */
-+	nm_i->next_scan_nid = nm_i->init_scan_nid + NAT_ENTRY_PER_BLOCK;
+ static int f2fs_release_node_page(struct page *page, gfp_t wait)
+ {
++	if (PageWriteback(page))
++		return 0;
+ 	ClearPagePrivate(page);
+-	return 0;
++	return 1;
+ }
  
- 	/* find free nids from current sum_pages */
- 	mutex_lock(&curseg->curseg_mutex);
+ /*
+@@ -1630,8 +1625,6 @@ flush_now:
+ 			write_lock(&nm_i->nat_tree_lock);
+ 			__del_from_nat_cache(nm_i, ne);
+ 			write_unlock(&nm_i->nat_tree_lock);
+-
+-			/* We can reuse this freed nid at this point */
+ 			add_free_nid(NM_I(sbi), nid);
+ 		} else {
+ 			write_lock(&nm_i->nat_tree_lock);
 -- 
 1.8.1.3.566.gaa39828
 
