@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab3CRVvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:51:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45687 "EHLO
+	id S1757172Ab3CRVvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:51:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3CRVHJ (ORCPT
+	with ESMTP id S1755731Ab3CRVHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:09 -0400
+	Mon, 18 Mar 2013 17:07:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 46/75] s390/mm: fix flush_tlb_kernel_range()
-Date: Mon, 18 Mar 2013 14:07:09 -0700
-Message-Id: <20130318210513.564595317@linuxfoundation.org>
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 54/75] loopdev: fix a deadlock
+Date: Mon, 18 Mar 2013 14:07:17 -0700
+Message-Id: <20130318210514.146795796@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,44 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit f6a70a07079518280022286a1dceb797d12e1edf upstream.
+commit 5370019dc2d2c2ff90e95d181468071362934f3a upstream.
 
-Our flush_tlb_kernel_range() implementation calls __tlb_flush_mm() with
-&init_mm as argument. __tlb_flush_mm() however will only flush tlbs
-for the passed in mm if its mm_cpumask is not empty.
+bd_mutex and lo_ctl_mutex can be held in different order.
 
-For the init_mm however its mm_cpumask has never any bits set. Which in
-turn means that our flush_tlb_kernel_range() implementation doesn't
-work at all.
+Path #1:
 
-This can be easily verified with a vmalloc/vfree loop which allocates
-a page, writes to it and then frees the page again. A crash will follow
-almost instantly.
+blkdev_open
+ blkdev_get
+  __blkdev_get (hold bd_mutex)
+   lo_open (hold lo_ctl_mutex)
 
-To fix this remove the cpumask_empty() check in __tlb_flush_mm() since
-there shouldn't be too many mms with a zero mm_cpumask, besides the
-init_mm of course.
+Path #2:
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+blkdev_ioctl
+ lo_ioctl (hold lo_ctl_mutex)
+  lo_set_capacity (hold bd_mutex)
+
+Lockdep does not report it, because path #2 actually holds a subclass of
+lo_ctl_mutex.  This subclass seems creep into the code by mistake.  The
+patch author actually just mentioned it in the changelog, see commit
+f028f3b2 ("loop: fix circular locking in loop_clr_fd()"), also see:
+
+	http://marc.info/?l=linux-kernel&m=123806169129727&w=2
+
+Path #2 hold bd_mutex to call bd_set_size(), I've protected it
+with i_mutex in a previous patch, so drop bd_mutex at this site.
+
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/tlbflush.h |    2 --
+ drivers/block/loop.c |    2 --
  1 file changed, 2 deletions(-)
 
---- a/arch/s390/include/asm/tlbflush.h
-+++ b/arch/s390/include/asm/tlbflush.h
-@@ -74,8 +74,6 @@ static inline void __tlb_flush_idte(unsi
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1285,11 +1285,9 @@ static int loop_set_capacity(struct loop
+ 	/* the width of sector_t may be narrow for bit-shift */
+ 	sz = sec;
+ 	sz <<= 9;
+-	mutex_lock(&bdev->bd_mutex);
+ 	bd_set_size(bdev, sz);
+ 	/* let user-space know about the new size */
+ 	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+-	mutex_unlock(&bdev->bd_mutex);
  
- static inline void __tlb_flush_mm(struct mm_struct * mm)
- {
--	if (unlikely(cpumask_empty(mm_cpumask(mm))))
--		return;
- 	/*
- 	 * If the machine has IDTE we prefer to do a per mm flush
- 	 * on all cpus instead of doing a local flush if the mm
+  out:
+ 	return err;
 
 
