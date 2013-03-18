@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab3CRVGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:06:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45538 "EHLO
+	id S1755744Ab3CRVHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:07:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab3CRVGo (ORCPT
+	with ESMTP id S1753713Ab3CRVHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:44 -0400
+	Mon, 18 Mar 2013 17:07:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>
-Subject: [ 21/75] serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller
-Date: Mon, 18 Mar 2013 14:06:44 -0700
-Message-Id: <20130318210511.768497915@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 43/75] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+Date: Mon, 18 Mar 2013 14:07:06 -0700
+Message-Id: <20130318210513.351864601@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -26,41 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366 upstream.
+commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
 
-01:08.0 Communication controller: NetMos Technology PCI 9835 Multi-I/O Controller (rev 01)
-	Subsystem: Device [1000:0012]
-	Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Interrupt: pin A routed to IRQ 20
-	Region 0: I/O ports at e050 [size=8]
-	Region 1: I/O ports at e040 [size=8]
-	Region 2: I/O ports at e030 [size=8]
-	Region 3: I/O ports at e020 [size=8]
-	Region 4: I/O ports at e010 [size=8]
-	Region 5: I/O ports at e000 [size=16]
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
+suspend/resume") fixed a crash when doing PEBS performance profiling
+after resuming, but in using init_debug_store_on_cpu() to restore the
+DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
+init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
+cross-calls to do the MSR update.  Which is not really valid at the
+early resume stage, and the warning is quite reasonable.  Now, it all
+happens to _work_, for the simple reason that smp_call_function_single()
+ends up just doing the call directly on the CPU when the CPU number
+matches, but we really should just do the wrmsr() directly instead.
+
+This duplicates the wrmsr() logic, but hopefully we can just remove the
+wrmsr_on_cpu() version eventually.
+
+Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -4449,6 +4449,10 @@ static struct pci_device_id serial_pci_t
- 		PCI_VENDOR_ID_IBM, 0x0299,
- 		0, 0, pbn_b0_bt_2_115200 },
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -732,8 +732,10 @@ void intel_ds_init(void)
  
-+	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
-+		0x1000, 0x0012,
-+		0, 0, pbn_b0_bt_2_115200 },
+ void perf_restore_debug_store(void)
+ {
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
 +
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
- 		0xA000, 0x1000,
- 		0, 0, pbn_b0_1_115200 },
+ 	if (!x86_pmu.bts && !x86_pmu.pebs)
+ 		return;
+ 
+-	init_debug_store_on_cpu(smp_processor_id());
++	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
+ }
 
 
