@@ -1,135 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3CRXC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:02:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23416 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab3CRXC5 (ORCPT
+	id S1755370Ab3CRXDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:03:44 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:55910 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab3CRXDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:02:57 -0400
-Date: Mon, 18 Mar 2013 16:01:36 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Shuge <shugelinux@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org, Kevin <kevin@allwinnertech.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mm: Make snapshotting pages for stable writes a per-bio
- operation
-Message-ID: <20130318230136.GO5313@blackbox.djwong.org>
-References: <5139DB90.5090302@gmail.com>
- <20130312153221.0d26fe5599d4885e51bb0c7c@linux-foundation.org>
- <20130313011020.GA5313@blackbox.djwong.org>
- <20130313085021.GA29730@quack.suse.cz>
- <20130313194429.GE5313@blackbox.djwong.org>
- <20130313210216.GA7754@quack.suse.cz>
- <20130314224243.GI5313@blackbox.djwong.org>
- <20130315100105.GA4889@quack.suse.cz>
- <20130315232816.GN5313@blackbox.djwong.org>
- <20130318174134.GB7852@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318174134.GB7852@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 18 Mar 2013 19:03:43 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, jaegeuk.kim@samsung.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] f2fs: Fix typo in comments
+Date: Tue, 19 Mar 2013 08:03:35 +0900
+Message-Id: <1363647815-5249-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 06:41:34PM +0100, Jan Kara wrote:
-> On Fri 15-03-13 16:28:16, Darrick J. Wong wrote:
-> > Walking a bio's page mappings has proved problematic, so create a new bio flag
-> > to indicate that a bio's data needs to be snapshotted in order to guarantee
-> > stable pages during writeback.  Next, for the one user (ext3/jbd) of
-> > snapshotting, hook all the places where writes can be initiated without
-> > PG_writeback set, and set BIO_SNAP_STABLE there.  We must also flag journal
-> > "metadata" bios for stable writeout if data=journal, since file data is written
-> > through the journal.  Finally, the MS_SNAP_STABLE mount flag (only used by
-> > ext3) is now superfluous, so get rid of it.
-> > 
-> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > 
-> > [darrick.wong@oracle.com: Fold in a couple of small cleanups from akpm]
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> >  fs/buffer.c                 |    9 ++++++++-
-> >  fs/ext3/super.c             |    3 ++-
-> >  fs/jbd/commit.c             |   28 +++++++++++++++++++++++++---
-> >  include/linux/blk_types.h   |    3 ++-
-> >  include/linux/buffer_head.h |    1 +
-> >  include/linux/jbd.h         |    1 +
-> >  include/uapi/linux/fs.h     |    1 -
-> >  mm/bounce.c                 |   21 +--------------------
-> >  mm/page-writeback.c         |    4 ----
-> >  9 files changed, 40 insertions(+), 31 deletions(-)
-> > 
-> > diff --git a/fs/buffer.c b/fs/buffer.c
-> > index b4dcb34..71578d6 100644
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -2949,7 +2949,7 @@ static void guard_bh_eod(int rw, struct bio *bio, struct buffer_head *bh)
-> >  	}
-> >  }
-> >  
-> > -int submit_bh(int rw, struct buffer_head * bh)
-> > +int _submit_bh(int rw, struct buffer_head *bh, unsigned long bio_flags)
-> >  {
-> >  	struct bio *bio;
-> >  	int ret = 0;
-> > @@ -2984,6 +2984,7 @@ int submit_bh(int rw, struct buffer_head * bh)
-> >  
-> >  	bio->bi_end_io = end_bio_bh_io_sync;
-> >  	bio->bi_private = bh;
-> > +	bio->bi_flags |= bio_flags;
-> >  
-> >  	/* Take care of bh's that straddle the end of the device */
-> >  	guard_bh_eod(rw, bio, bh);
-> > @@ -2997,6 +2998,12 @@ int submit_bh(int rw, struct buffer_head * bh)
-> >  	bio_put(bio);
-> >  	return ret;
-> >  }
-> > +EXPORT_SYMBOL_GPL(_submit_bh);
-> > +
-> > +int submit_bh(int rw, struct buffer_head *bh)
-> > +{
-> > +	return _submit_bh(rw, bh, 0);
-> > +}
-> >  EXPORT_SYMBOL(submit_bh);
-> >  
-> >  /**
-> > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > index 1d6e2ed..e845b6de 100644
-> > --- a/fs/ext3/super.c
-> > +++ b/fs/ext3/super.c
-> > @@ -2063,11 +2063,12 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
-> >  		ext3_mark_recovery_complete(sb, es);
-> >  		ext3_msg(sb, KERN_INFO, "recovery complete");
-> >  	}
-> > +	if (test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_JOURNAL_DATA)
-> > +		EXT3_SB(sb)->s_journal->j_flags |= JFS_JOURNALS_DATA;
->   Sadly this isn't enough. You can have inodes which journal data (there's
-> an inode flag for this) in data=ordered mode. So what you have to do is to
+Correct spelling typo in comments
 
-Arrrgh, I forgot that you can do that per-inode. :(
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ fs/f2fs/f2fs.h  | 2 +-
+ fs/f2fs/gc.c    | 2 +-
+ fs/f2fs/super.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-> flag journal_heads (or buffer_heads) as containing journalled data. Or you
-> can actually use PageChecked flag for this (it is going to be set on all
-> write-enabled pages with journalled data). But it definitely requires also
-> some playing with ->page_mkwrite() (calling ext3_journal_get_write_access()
-> from there) and generally I'd rather postpone that to a separate commit. So
-> just keep it simple and always set the bio flag as you did in the previous
-> version. I'll write an optimization (mostly because ext4 needs it as well)
-> and send it to you for testing.
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index cc2213a..201c8d3 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -137,7 +137,7 @@ struct extent_info {
+ 	rwlock_t ext_lock;	/* rwlock for consistency */
+ 	unsigned int fofs;	/* start offset in a file */
+ 	u32 blk_addr;		/* start block address of the extent */
+-	unsigned int len;	/* lenth of the extent */
++	unsigned int len;	/* length of the extent */
+ };
+ 
+ /*
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 94b8a0c..2e3eb2d 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -222,7 +222,7 @@ static unsigned int get_gc_cost(struct f2fs_sb_info *sbi, unsigned int segno,
+ }
+ 
+ /*
+- * This function is called from two pathes.
++ * This function is called from two paths.
+  * One is garbage collection and the other is SSR segment selection.
+  * When it is called during GC, it just gets a victim segment
+  * and it does not remove it from dirty seglist.
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index fea6e58..62e0177 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -82,7 +82,7 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
+ 
+ 	init_once((void *) fi);
+ 
+-	/* Initilize f2fs-specific inode info */
++	/* Initialize f2fs-specific inode info */
+ 	fi->vfs_inode.i_version = 1;
+ 	atomic_set(&fi->dirty_dents, 0);
+ 	fi->i_current_depth = 1;
+-- 
+1.8.2
 
-Yeah, this is getting a bit complicated for a single patch.
-
---D
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
