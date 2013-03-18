@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab3CRVi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:38:58 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:56068 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933251Ab3CRViz (ORCPT
+	id S933700Ab3CRVjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:39:37 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43538 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933560Ab3CRVhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:38:55 -0400
+	Mon, 18 Mar 2013 17:37:13 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,130 +17,140 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 15/15] rcu: Make rcu_accelerate_cbs() note need for future grace periods
-Date: Mon, 18 Mar 2013 14:36:50 -0700
-Message-Id: <1363642610-21390-15-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 12/15] rcu: Push lock release to rcu_start_gp()'s callers
+Date: Mon, 18 Mar 2013 14:36:47 -0700
+Message-Id: <1363642610-21390-12-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130318213608.GA20296@linux.vnet.ibm.com>
  <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-7282-0000-0000-000015443876
+x-cbid: 13031821-5406-0000-0000-0000067F0C87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Now that rcu_start_future_gp() has been abstracted from
-rcu_nocb_wait_gp(), rcu_accelerate_cbs() can invoke rcu_start_future_gp()
-so as to register the need for any future grace periods needed by a
-CPU about to enter dyntick-idle mode.  This commit makes this change.
-Note that some refactoring of rcu_start_gp() is carried out to avoid
-recursion and subsequent self-deadlocks.
+If CPUs are to give prior notice of needed grace periods, it will be
+necessary to invoke rcu_start_gp() without dropping the root rcu_node
+structure's ->lock.  This commit takes a second step in this direction
+by moving the release of this lock to rcu_start_gp()'s callers.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c | 50 ++++++++++++++++++++++++++++++++------------------
- 1 file changed, 32 insertions(+), 18 deletions(-)
+ kernel/rcutree.c        | 24 ++++++++++--------------
+ kernel/rcutree_plugin.h |  5 ++---
+ 2 files changed, 12 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f4b23f1..9cb91e4 100644
+index 2c6a931..0d53295 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -224,7 +224,8 @@ static ulong jiffies_till_next_fqs = RCU_JIFFIES_TILL_FORCE_QS;
- module_param(jiffies_till_first_fqs, ulong, 0644);
- module_param(jiffies_till_next_fqs, ulong, 0644);
- 
--static void rcu_start_gp(struct rcu_state *rsp);
-+static void rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
-+				  struct rcu_data *rdp);
- static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
- static void force_quiescent_state(struct rcu_state *rsp);
- static int rcu_pending(int cpu);
-@@ -1162,7 +1163,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
- 		trace_rcu_future_gp(rnp, rdp, c, "Startedleafroot");
- 	} else {
- 		trace_rcu_future_gp(rnp, rdp, c, "Startedroot");
--		rcu_start_gp(rdp->rsp);
-+		rcu_start_gp_advanced(rdp->rsp, rnp_root, rdp);
- 	}
- unlock_out:
- 	if (rnp != rnp_root)
-@@ -1248,6 +1249,8 @@ static void rcu_accelerate_cbs(struct rcu_state *rsp, struct rcu_node *rnp,
- 		rdp->nxttail[i] = rdp->nxttail[RCU_NEXT_TAIL];
- 		rdp->nxtcompleted[i] = c;
- 	}
-+	/* Record any needed additional grace periods. */
-+	rcu_start_future_gp(rnp, rdp);
- 
- 	/* Trace depending on how much we were able to accelerate. */
- 	if (!*rdp->nxttail[RCU_WAIT_TAIL])
-@@ -1609,20 +1612,9 @@ static int __noreturn rcu_gp_kthread(void *arg)
+@@ -1487,16 +1487,14 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ /*
+  * Start a new RCU grace period if warranted, re-initializing the hierarchy
+  * in preparation for detecting the next grace period.  The caller must hold
+- * the root node's ->lock, which is released before return.  Hard irqs must
+- * be disabled.
++ * the root node's ->lock and hard irqs must be disabled.
+  *
+  * Note that it is legal for a dying CPU (which is marked as offline) to
+  * invoke this function.  This can happen when the dying CPU reports its
   * quiescent state.
   */
  static void
--rcu_start_gp(struct rcu_state *rsp)
-+rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
-+		      struct rcu_data *rdp)
+-rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+-	__releases(rcu_get_root(rsp)->lock)
++rcu_start_gp(struct rcu_state *rsp)
  {
--	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
--	struct rcu_node *rnp = rcu_get_root(rsp);
--
--	/*
--	 * If there is no grace period in progress right now, any
--	 * callbacks we have up to this point will be satisfied by the
--	 * next grace period.  Also, advancing the callbacks reduces the
--	 * probability of false positives from cpu_needs_another_gp()
--	 * resulting in pointless grace periods.  So, advance callbacks!
--	 */
--	rcu_advance_cbs(rsp, rnp, rdp);
--
- 	if (!rsp->gp_kthread || !cpu_needs_another_gp(rsp, rdp)) {
+ 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+@@ -1510,15 +1508,13 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 	 */
+ 	rcu_advance_cbs(rsp, rnp, rdp);
+ 
+-	if (!rsp->gp_kthread ||
+-	    !cpu_needs_another_gp(rsp, rdp)) {
++	if (!rsp->gp_kthread || !cpu_needs_another_gp(rsp, rdp)) {
  		/*
  		 * Either we have not yet spawned the grace-period
-@@ -1634,14 +1626,36 @@ rcu_start_gp(struct rcu_state *rsp)
+ 		 * task, this CPU does not need another grace period,
+ 		 * or a grace period is already in progress.
+ 		 * Either way, don't start a new grace period.
+ 		 */
+-		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
  	}
  	rsp->gp_flags = RCU_GP_FLAG_INIT;
+@@ -1528,15 +1524,14 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
  
--	/* Ensure that CPU is aware of completion of last grace period. */
--	__rcu_process_gp_end(rsp, rdp->mynode, rdp);
--
  	/* Wake up rcu_gp_kthread() to start the grace period. */
  	wake_up(&rsp->gp_wq);
+-	raw_spin_unlock_irqrestore(&rnp->lock, flags);
  }
  
  /*
-+ * Similar to rcu_start_gp_advanced(), but also advance the calling CPU's
-+ * callbacks.  Note that rcu_start_gp_advanced() cannot do this because it
-+ * is invoked indirectly from rcu_advance_cbs(), which would result in
-+ * endless recursion -- or would do so if it wasn't for the self-deadlock
-+ * that is encountered beforehand.
-+ */
-+static void
-+rcu_start_gp(struct rcu_state *rsp)
-+{
-+	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-+	struct rcu_node *rnp = rcu_get_root(rsp);
-+
-+	/*
-+	 * If there is no grace period in progress right now, any
-+	 * callbacks we have up to this point will be satisfied by the
-+	 * next grace period.  Also, advancing the callbacks reduces the
-+	 * probability of false positives from cpu_needs_another_gp()
-+	 * resulting in pointless grace periods.  So, advance callbacks
-+	 * then start the grace period!
-+	 */
-+	rcu_advance_cbs(rsp, rnp, rdp);
-+	rcu_start_gp_advanced(rsp, rnp, rdp);
-+}
-+
-+/*
   * Report a full set of quiescent states to the specified rcu_state
   * data structure.  This involves cleaning up after the prior grace
   * period and letting rcu_start_gp() start up the next grace period
+- * if one is needed.  Note that the caller must hold rnp->lock, as
+- * required by rcu_start_gp(), which will release it.
++ * if one is needed.  Note that the caller must hold rnp->lock, which
++ * is released before return.
+  */
+ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+@@ -2134,7 +2129,8 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+ 	local_irq_save(flags);
+ 	if (cpu_needs_another_gp(rsp, rdp)) {
+ 		raw_spin_lock(&rcu_get_root(rsp)->lock); /* irqs disabled. */
+-		rcu_start_gp(rsp, flags);  /* releases above lock */
++		rcu_start_gp(rsp);
++		raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
+ 	} else {
+ 		local_irq_restore(flags);
+ 	}
+@@ -2214,11 +2210,11 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+ 
+ 		/* Start a new grace period if one not already started. */
+ 		if (!rcu_gp_in_progress(rsp)) {
+-			unsigned long nestflag;
+ 			struct rcu_node *rnp_root = rcu_get_root(rsp);
+ 
+-			raw_spin_lock_irqsave(&rnp_root->lock, nestflag);
+-			rcu_start_gp(rsp, nestflag);  /* rlses rnp_root->lock */
++			raw_spin_lock(&rnp_root->lock);
++			rcu_start_gp(rsp);
++			raw_spin_unlock(&rnp_root->lock);
+ 		} else {
+ 			/* Give the grace period a kick. */
+ 			rdp->blimit = LONG_MAX;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index df50502..073ded2 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2174,7 +2174,6 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	unsigned long c;
+ 	bool d;
+ 	unsigned long flags;
+-	unsigned long flags1;
+ 	struct rcu_node *rnp = rdp->mynode;
+ 	struct rcu_node *rnp_root = rcu_get_root(rdp->rsp);
+ 
+@@ -2236,8 +2235,8 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 						      c, rnp->level,
+ 						      rnp->grplo, rnp->grphi,
+ 						      "Startedroot");
+-			local_save_flags(flags1);
+-			rcu_start_gp(rdp->rsp, flags1); /* Rlses ->lock. */
++			rcu_start_gp(rdp->rsp);
++			raw_spin_unlock(&rnp->lock);
+ 		}
+ 
+ 		/* Clean up locking and irq state. */
 -- 
 1.8.1.5
 
