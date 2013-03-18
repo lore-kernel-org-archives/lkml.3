@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063Ab3CRVzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:55:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45612 "EHLO
+	id S934081Ab3CRV4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:56:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab3CRVG5 (ORCPT
+	with ESMTP id S1755554Ab3CRVG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:06:57 -0400
+	Mon, 18 Mar 2013 17:06:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phileas Fogg <phileas-fogg@mail.ru>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 37/75] powerpc: Fix cputable entry for 970MP rev 1.0
-Date: Mon, 18 Mar 2013 14:07:00 -0700
-Message-Id: <20130318210512.887750516@linuxfoundation.org>
+Subject: [ 36/75] powerpc: Fix STAB initialization
+Date: Mon, 18 Mar 2013 14:06:59 -0700
+Message-Id: <20130318210512.817944509@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -29,31 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
+commit 13938117a57f88a22f0df9722a5db7271fda85cd upstream.
 
-Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
-the entry for the 970MP rev 1.0 processor when moving some CPU
-features bits to the MMU feature bit mask. This breaks booting
-on some rare G5 models using that chip revision.
+Commit f5339277eb8d3aed37f12a27988366f68ab68930 accidentally removed
+more than just iSeries bits and took out the call to stab_initialize()
+thus breaking support for POWER3 processors.
 
-Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
+Put it back. (Yes, nobody noticed until now ...)
+
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/cputable.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/mm/hash_utils_64.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -275,7 +275,7 @@ static struct cpu_spec __initdata cpu_sp
- 		.cpu_features		= CPU_FTRS_PPC970,
- 		.cpu_user_features	= COMMON_USER_POWER4 |
- 			PPC_FEATURE_HAS_ALTIVEC_COMP,
--		.mmu_features		= MMU_FTR_HPTE_TABLE,
-+		.mmu_features		= MMU_FTRS_PPC970,
- 		.icache_bsize		= 128,
- 		.dcache_bsize		= 128,
- 		.num_pmcs		= 8,
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -758,6 +758,8 @@ void __init early_init_mmu(void)
+ 	/* Initialize stab / SLB management */
+ 	if (mmu_has_feature(MMU_FTR_SLB))
+ 		slb_initialize();
++	else
++		stab_initialize(get_paca()->stab_real);
+ }
+ 
+ #ifdef CONFIG_SMP
 
 
