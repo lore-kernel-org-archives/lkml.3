@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3CRN0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 09:26:16 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55506 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751156Ab3CRN0P (ORCPT
+	id S1752242Ab3CRN0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 09:26:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27272 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab3CRN02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 09:26:15 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19uyfmVeQ6mNmubTpZ5IJDiatdmrwd9y/Q=
-Date: Mon, 18 Mar 2013 09:26:12 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: cpuidle: Use devm_ioremap_resource function
-Message-ID: <20130318132612.GI13280@titan.lakedaemon.net>
-References: <1363444761-3641-1-git-send-email-gheorghiuandru@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363444761-3641-1-git-send-email-gheorghiuandru@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 18 Mar 2013 09:26:28 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ymFTQ-8wQ_EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=4oK4ZT3GD4UA:10 a=CWo4AS-AAAAA:8 a=Wdj64zOUYXBRZrw2r8gA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363613187.25967.140.camel@gandalf.local.home>
+Subject: Re: linux-next: manual merge of the ftrace tree with Linus' tree
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 18 Mar 2013 09:26:27 -0400
+In-Reply-To: <20130318130014.bad6e49cd6d4a112050173de@canb.auug.org.au>
+References: <20130318130014.bad6e49cd6d4a112050173de@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 04:39:21PM +0200, Alexandru Gheorghiu wrote:
-> Use devm_ioremap_resource function, which provides better error handling,
-> instead of devm_request_and_ioremap.
-> Patch found using coccinelle.
+On Mon, 2013-03-18 at 13:00 +1100, Stephen Rothwell wrote:
+> Hi Steven,
 > 
-> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-> ---
->  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> Today's linux-next merge of the ftrace tree got a conflict in
+> kernel/trace/ftrace.c between commit b67bfe0d42ca ("hlist: drop the node
+> parameter from iterators") from Linus' tree and commit e1df4cb682ab
+> ("ftrace: Fix function probe to only enable needed functions") from the
+> ftrace tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Looks fine, thanks.
 
-thx,
+-- Steve
 
-Jason.
+
