@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab3CREtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 00:49:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33357 "EHLO
+	id S1751497Ab3CREtj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 00:49:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33353 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750775Ab3CREaA (ORCPT
+	by vger.kernel.org with ESMTP id S1750738Ab3CREaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 00:30:00 -0400
-Message-Id: <20130318042145.251324384@decadent.org.uk>
+Message-Id: <20130318042144.371676557@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Mar 2013 04:21:54 +0000
+Date: Mon, 18 Mar 2013 04:21:45 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, NeilBrown <neilb@suse.de>
-Subject: [ 10/82] md: fix two bugs when attempting to resize RAID0 array.
+Cc: akpm@linux-foundation.org, Michael Neuling <mikey@neuling.org>
+Subject: [ 01/82] Revert "powerpc/eeh: Fix crash when adding a device in a slot with  DDW"
 In-Reply-To: <20130318042144.234468645@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,65 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit a64685399181780998281fe07309a94b25dd24c3 upstream.
+This reverts commit 066f289835f09a3f744d6bac96f25e25d20b3ded which was
+6a040ce72598159a74969a2d01ab0ba5ee6536b3 upstream.
 
-You cannot resize a RAID0 array (in terms of making the devices
-bigger), but the code doesn't entirely stop you.
-So:
+This was not needed and is not suitable for 3.2.y.
 
- disable setting of the available size on each device for
- RAID0 and Linear devices.  This must not change as doing so
- can change the effective layout of data.
-
- Make sure that the size that raid0_size() reports is accurate,
- but rounding devices sizes to chunk sizes.  As the device sizes
- cannot change now, this isn't so important, but it is best to be
- safe.
-
-Without this change:
-  mdadm --grow /dev/md0 -z max
-  mdadm --grow /dev/md0 -Z max
-  then read to the end of the array
-
-can cause a BUG in a RAID0 array.
-
-These bugs have been present ever since it became possible
-to resize any device, which is a long time.  So the fix is
-suitable for any -stable kerenl.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c    |    3 +++
- drivers/md/raid0.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/eeh.h       |    3 ---
+ arch/powerpc/kernel/of_platform.c    |    3 ---
+ arch/powerpc/kernel/pci-common.c     |    7 ++-----
+ arch/powerpc/platforms/pseries/eeh.c |   24 +-----------------------
+ 4 files changed, 3 insertions(+), 34 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -2842,6 +2842,9 @@ rdev_size_store(struct md_rdev *rdev, co
- 		} else if (!sectors)
- 			sectors = (i_size_read(rdev->bdev->bd_inode) >> 9) -
- 				rdev->data_offset;
-+		if (!my_mddev->pers->resize)
-+			/* Cannot change size for RAID0 or Linear etc */
-+			return -EINVAL;
- 	}
- 	if (sectors < my_mddev->dev_sectors)
- 		return -EINVAL; /* component must fit device */
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -330,7 +330,8 @@ static sector_t raid0_size(struct mddev
- 		  "%s does not support generic reshape\n", __func__);
+diff --git a/arch/powerpc/include/asm/eeh.h b/arch/powerpc/include/asm/eeh.h
+index 21165a4..66ea9b8 100644
+--- a/arch/powerpc/include/asm/eeh.h
++++ b/arch/powerpc/include/asm/eeh.h
+@@ -61,7 +61,6 @@ void __init pci_addr_cache_build(void);
+  */
+ void eeh_add_device_tree_early(struct device_node *);
+ void eeh_add_device_tree_late(struct pci_bus *);
+-void eeh_add_sysfs_files(struct pci_bus *);
  
- 	list_for_each_entry(rdev, &mddev->disks, same_set)
--		array_sectors += rdev->sectors;
-+		array_sectors += (rdev->sectors &
-+				  ~(sector_t)(mddev->chunk_sectors-1));
+ /**
+  * eeh_remove_device_recursive - undo EEH for device & children.
+@@ -106,8 +105,6 @@ static inline void eeh_add_device_tree_early(struct device_node *dn) { }
  
- 	return array_sectors;
+ static inline void eeh_add_device_tree_late(struct pci_bus *bus) { }
+ 
+-static inline void eeh_add_sysfs_files(struct pci_bus *bus) { }
+-
+ static inline void eeh_remove_bus_device(struct pci_dev *dev) { }
+ #define EEH_POSSIBLE_ERROR(val, type) (0)
+ #define EEH_IO_ERROR_VALUE(size) (-1UL)
+diff --git a/arch/powerpc/kernel/of_platform.c b/arch/powerpc/kernel/of_platform.c
+index b10beef..e1612df 100644
+--- a/arch/powerpc/kernel/of_platform.c
++++ b/arch/powerpc/kernel/of_platform.c
+@@ -91,9 +91,6 @@ static int __devinit of_pci_phb_probe(struct platform_device *dev)
+ 	/* Add probed PCI devices to the device model */
+ 	pci_bus_add_devices(phb->bus);
+ 
+-	/* sysfs files should only be added after devices are added */
+-	eeh_add_sysfs_files(phb->bus);
+-
+ 	return 0;
  }
+ 
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index a3cd949..458ed3b 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1536,14 +1536,11 @@ void pcibios_finish_adding_to_bus(struct pci_bus *bus)
+ 	pcibios_allocate_bus_resources(bus);
+ 	pcibios_claim_one_bus(bus);
+ 
+-	/* Fixup EEH */
+-	eeh_add_device_tree_late(bus);
+-
+ 	/* Add new devices to global lists.  Register in proc, sysfs. */
+ 	pci_bus_add_devices(bus);
+ 
+-	/* sysfs files should only be added after devices are added */
+-	eeh_add_sysfs_files(bus);
++	/* Fixup EEH */
++	eeh_add_device_tree_late(bus);
+ }
+ EXPORT_SYMBOL_GPL(pcibios_finish_adding_to_bus);
+ 
+diff --git a/arch/powerpc/platforms/pseries/eeh.c b/arch/powerpc/platforms/pseries/eeh.c
+index 389e06b..5658690 100644
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -1238,6 +1238,7 @@ static void eeh_add_device_late(struct pci_dev *dev)
+ 	pdn->pcidev = dev;
+ 
+ 	pci_addr_cache_insert_device(dev);
++	eeh_sysfs_add_device(dev);
+ }
+ 
+ void eeh_add_device_tree_late(struct pci_bus *bus)
+@@ -1256,29 +1257,6 @@ void eeh_add_device_tree_late(struct pci_bus *bus)
+ EXPORT_SYMBOL_GPL(eeh_add_device_tree_late);
+ 
+ /**
+- * eeh_add_sysfs_files - Add EEH sysfs files for the indicated PCI bus
+- * @bus: PCI bus
+- *
+- * This routine must be used to add EEH sysfs files for PCI
+- * devices which are attached to the indicated PCI bus. The PCI bus
+- * is added after system boot through hotplug or dlpar.
+- */
+-void eeh_add_sysfs_files(struct pci_bus *bus)
+-{
+-	struct pci_dev *dev;
+-
+-	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		eeh_sysfs_add_device(dev);
+-		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
+-			struct pci_bus *subbus = dev->subordinate;
+-			if (subbus)
+-				eeh_add_sysfs_files(subbus);
+-		}
+-	}
+-}
+-EXPORT_SYMBOL_GPL(eeh_add_sysfs_files);
+-
+-/**
+  * eeh_remove_device - undo EEH setup for the indicated pci device
+  * @dev: pci device to be removed
+  *
+
 
 
