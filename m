@@ -1,215 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab3CRIav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 04:30:51 -0400
-Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:1999 "EHLO
-	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab3CRIas convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 04:30:48 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Jon Arne =?utf-8?q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-Subject: Re: [RFC V1 2/8] smi2021: Add smi2021_main.c
-Date: Mon, 18 Mar 2013 09:30:38 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no> <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1363270024-12127-3-git-send-email-jonarne@jonarne.no>
+	id S1751383Ab3CRIdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 04:33:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52149 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913Ab3CRIdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 04:33:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,863,1355126400"; 
+   d="scan'208";a="304359172"
+Message-ID: <5146D193.1030104@intel.com>
+Date: Mon, 18 Mar 2013 16:34:27 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303180930.38323.hverkuil@xs4all.nl>
+To: Danny Baumann <dannybaumann@web.de>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH v2 3/3] ACPI video: Fix applying indexed initial brightness
+ value.
+References: <1363342248-6496-1-git-send-email-dannybaumann@web.de> <1363342248-6496-3-git-send-email-dannybaumann@web.de> <5146CD67.8070203@intel.com> <5146CFC0.7090907@web.de>
+In-Reply-To: <5146CFC0.7090907@web.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu March 14 2013 15:06:58 Jon Arne Jørgensen wrote:
-> This is the core of the smi2021 module.
-> It will register the module with the kernel, and register the
-> usb probe function.
+On 03/18/2013 04:26 PM, Danny Baumann wrote:
+> Hi,
 > 
-> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> ---
->  drivers/media/usb/smi2021/smi2021_main.c | 339 +++++++++++++++++++++++++++++++
->  1 file changed, 339 insertions(+)
->  create mode 100644 drivers/media/usb/smi2021/smi2021_main.c
+>  >> +static unsigned long long
+>>> +acpi_video_bqc_value_to_level(struct acpi_video_device *device,
+>>> +			      unsigned long long bqc_value)
+>>> +{
+>>> +	unsigned long long level;
+>>> +
+>>> +	if (device->brightness->flags._BQC_use_index) {
+>>> +		if (device->brightness->flags._BCL_reversed)
+>>> +			bqc_value = device->brightness->count - 3 - bqc_value;
+>>> +
+>>> +		level = device->brightness->levels[bqc_value + 2];
+>>
+>> I don't understand this, what does the +2 have to do here?
+>> _BQC returned us an index, and then we should just convert it to level,
+>> why +2?
+>>
+>> The only explanation would be, for BIOS tables that return _BQC as
+>> index, they are indexing from the 3rd entry. Is it the case? If so, I
+>> think we need to put a comment here.
 > 
-> diff --git a/drivers/media/usb/smi2021/smi2021_main.c b/drivers/media/usb/smi2021/smi2021_main.c
-> new file mode 100644
-> index 0000000..cc600e7
-> --- /dev/null
-> +++ b/drivers/media/usb/smi2021/smi2021_main.c
-> @@ -0,0 +1,339 @@
-> +/*******************************************************************************
-> + * smi2021_main.c                                                              *
-> + *                                                                             *
-> + * USB Driver for SMI2021 - EasyCAP                                            *
-> + * USB ID 1c88:003c                                                            *
-> + *                                                                             *
-> + * *****************************************************************************
-> + *
-> + * Copyright 2011-2013 Jon Arne Jørgensen
-> + * <jonjon.arnearne--a.t--gmail.com>
-> + *
-> + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
-> + *
-> + * This file is part of SMI2021
-> + * http://code.google.com/p/easycap-somagic-linux/
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> + *
-> + * This driver is heavily influensed by the STK1160 driver.
-> + * Copyright (C) 2012 Ezequiel Garcia
-> + * <elezegarcia--a.t--gmail.com>
-> + *
-> + */
-> +
-> +#include "smi2021.h"
-> +
-> +#define VENDOR_ID 0x1c88
-> +
-> +static unsigned int imput;
-> +module_param(imput, int, 0644);
-> +MODULE_PARM_DESC(input, "Set default input");
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Jon Arne Jørgensen <jonjon.arnearne--a.t--gmail.com>");
-> +MODULE_DESCRIPTION("SMI2021 - EasyCap");
-> +MODULE_VERSION(SMI2021_DRIVER_VERSION);
-> +
-> +
-> +struct usb_device_id smi2021_usb_device_id_table[] = {
-> +	{ USB_DEVICE(VENDOR_ID, 0x003c) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003d) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003e) },
-> +	{ USB_DEVICE(VENDOR_ID, 0x003f) },
-> +	{ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(usb, smi2021_usb_device_id_table);
-> +
-> +static unsigned short saa7113_addrs[] = {
-> +	0x4a,
-> +	I2C_CLIENT_END
-> +};
-> +
-> +/******************************************************************************/
-> +/*                                                                            */
-> +/*          Write to saa7113                                                  */
-> +/*                                                                            */
-> +/******************************************************************************/
-> +
-> +inline int transfer_usb_ctrl(struct smi2021_dev *dev, u8 *data, int len)
-> +{
-> +	return usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0x00),
-> +			0x01, USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-> +			0x0b, 0x00,
-> +			data, len, 1000);
-> +}
-> +
-> +int smi2021_write_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 val)
-> +{
-> +	int rc;
-> +	u8 snd_data[8];
-> +
-> +	memset(snd_data, 0x00, 8);
-> +
-> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
-> +	snd_data[SMI2021_CTRL_ADDR] = addr;
-> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
-> +
-> +	if (addr) {
-> +		/* This is I2C data for the saa7113 chip */
-> +		snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xc0;
-> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x01;
-> +
-> +		snd_data[SMI2021_CTRL_I2C_REG] = reg;
-> +		snd_data[SMI2021_CTRL_I2C_VAL] = val;
-> +	} else {
-> +		/* This is register settings for the smi2021 chip */
-> +		snd_data[SMI2021_CTRL_BM_DATA_OFFSET] = 0x82;
-> +
-> +		snd_data[SMI2021_CTRL_REG_HI] = __cpu_to_be16(reg) >> 8;
-> +		snd_data[SMI2021_CTRL_REG_LO] = __cpu_to_be16(reg);
-> +
-> +	}
-> +
+> Yes, that's the case. The old code did the same thing:
 
-Don't transfer memory from the stack. It always has to be k[mz]alloced memory.
+Yes, I see that, but I didn't really think about it until reviewing your
+patch :-)
 
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
-> +	if (rc < 0) {
-> +		smi2021_warn("write failed on register 0x%x, errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +int smi2021_read_reg(struct smi2021_dev *dev, u8 addr, u16 reg, u8 *val)
-> +{
-> +	int rc;
-> +	u8 rcv_data[13];
-> +	u8 snd_data[8];
-> +	memset(rcv_data, 0x00, 13);
-> +	memset(snd_data, 0x00, 8);
-> +
-> +	snd_data[SMI2021_CTRL_HEAD] = 0x0b;
-> +	snd_data[SMI2021_CTRL_ADDR] = addr;
-> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0x84;
-> +	snd_data[SMI2021_CTRL_DATA_SIZE] = 0x01;
-> +	snd_data[SMI2021_CTRL_I2C_REG] = reg;
-> +
-> +	*val = 0;
-> +
+> 
+>>> -			if (device->brightness->flags._BQC_use_index) {
+>>> -				if (device->brightness->flags._BCL_reversed)
+>>> -					*level = device->brightness->count
+>>> -								 - 3 - (*level);
+>>> -				*level = device->brightness->levels[*level + 2];
+>>> +			*level = acpi_video_bqc_value_to_level(device, *level);
+> 
+> That's also the reason for the -3 instead of -1 in the BCL_reversed 
+> case. I can add a comment, though.
 
-Ditto.
+OK, thanks.
+That would make people reading the code feel less confused, hopefully.
 
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
-> +	if (rc < 0) {
-> +		smi2021_warn(
-> +			"1st pass failing to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	snd_data[SMI2021_CTRL_BM_DATA_TYPE] = 0xa0;
-> +	rc = transfer_usb_ctrl(dev, snd_data, 8);
-> +	if (rc < 0) {
-> +		smi2021_warn(
-> +			"2nd pass failing to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	rc = usb_control_msg(dev->udev,
-> +		usb_rcvctrlpipe(dev->udev, 0x80), 0x01,
-> +		USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-> +		0x0b, 0x00, rcv_data, 13, 1000);
-> +	if (rc < 0) {
-> +		smi2021_warn("Failed to read reg 0x%x, usb-errno: %d\n",
-> +			reg, rc);
-> +		return rc;
-> +	}
-> +
-> +	*val = rcv_data[SMI2021_CTRL_I2C_RCV_VAL];
-> +	return 0;
-> +}
+-Aaron
 
-Regards,
+> 
+>>> +	if (use_bios_initial_backlight) {
+>>> +		if (!br->flags._BQC_use_index) {
+>>> +			/*
+>>> +			 * Set the backlight to the initial state.
+>>> +			 * On some buggy laptops, _BQC returns an uninitialized
+>>> +			 * value when invoked for the first time, i.e.
+>>> +			 * level_old is invalid. Set the backlight to max_level
+>>> +			 * in this case.
+>>> +			 */
+>>>   			for (i = 2; i < br->count; i++)
+>>>   				if (level_old == br->levels[i]) {
+>>>   					level = level_old;
+>>>   					break;
+>>>   				}
+>>> +		} else {
+>>> +			level = acpi_video_bqc_value_to_level(device,
+>>> +							      level_old);
+>>
+>> What about we convert the value to level first?
+>>
+>> 	if (use_bios_initial_backlight) {
+>> 		level = acpi_video_bqc_value_to_level(device, level_old);
+>> 		/*
+>> 		 * Set the backlight to the initial state.
+>> 		 * On some buggy laptops, _BQC returns an uninitialized
+>> 		 * value when invoked for the first time, i.e.
+>> 		 * level_old is invalid(no matter it is a level, or an
+>> 		 * index.) Set the backlight to max_level in this case.
+>> 		 */
+>> 		for (i = 2; i < br->count; i++)
+>> 			if (level == br->levels[i])
+>> 				break;
+>> 		if (i == br->count)
+>> 			level = max_level;
+>> 	}
+> 
+> That works as well, and looks cleaner to me as well. I'll change that.
+> 
+> Regards,
+> 
+> Danny
+> 
 
-	Hans
