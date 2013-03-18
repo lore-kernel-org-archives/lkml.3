@@ -1,112 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3CRL5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:57:41 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:47742 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3CRL5j convert rfc822-to-8bit (ORCPT
+	id S1753365Ab3CRL7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:59:49 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:10869 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3CRL7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:57:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363601689.2412.12.camel@dabdike.int.hansenpartnership.com>
-References: <1363508951-3011-1-git-send-email-linkinjeon@gmail.com>
-	<1363601689.2412.12.camel@dabdike.int.hansenpartnership.com>
-Date: Mon, 18 Mar 2013 20:57:38 +0900
-Message-ID: <CAKYAXd-thiuWagZPf8825=eKLQPyx3w+h5vzKXn_O_g7n9CpDg@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI]: print the msgbytes and statusbyte from scsi result
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Mar 2013 07:59:45 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-9e-514701b0d217
+Message-id: <1363607942.14386.73.camel@kjgkr>
+Subject: Re: [PATCH 13/19] f2fs: fix return value of releasepage for node and
+ data
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Mon, 18 Mar 2013 20:59:02 +0900
+In-reply-to: <CAKYAXd9qmaJksB9cOYGBpGb6h4mdQj7J-OwWttRprps8=i0RKA@mail.gmail.com>
+References: <1363585931-8441-1-git-send-email-jaegeuk.kim@samsung.com>
+ <CAKYAXd9qmaJksB9cOYGBpGb6h4mdQj7J-OwWttRprps8=i0RKA@mail.gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-jSvUK/7q8zTcVRoHsTOt"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zfd0NjO6BBps+yVrs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGVs/LqNuWCeWMXyyzOYGxj/C3UxcnJICJhI3H5/iRnC
+	FpO4cG89G4gtJLCMUeLtFB6YmrXr7wHVcAHFFzFKbJ91lwWi6DWjxJ992iA2r4CuxMrN39i7
+	GDk4hAVCJFomBIGYbALaEpv3G0BUK0q83X+XFSQsIqAmMeFZKkiYWSBTYs7ryawgNouAqkTT
+	5ClgF3AKBEvMfXeJEWJrL6PEiY+TwbbyC4hKnGz9xAjRXCUxt7mJEeJMJYnd7Z3sENcISvyY
+	fI8FpFlC4B67xNcPR5ggNghIfJt8iAXkCAkBWYlNB6Bel5Q4uOIGywRG8VlIxs5CMgoirinR
+	uv03O4StLbFs4WtmCNtWYt2691A1NhKbri5ghLDlJba/ncO8gJF9FaNoakFyQXFSepGxXnFi
+	bnFpXrpecn7uJkZIPPbvYLx7wPoQYxXQiROZpUST84HxnFcSb2hsZmRhamJqbGRuaUYVYSVx
+	XrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjCoyB+cUXDeadyR974q6Wbv1XosvF3tk
+	fUi9PyTW57jDdeO/DzYsceFV+P/4Q0bujq9X+js++rd9fHKI9eATUZs0pjalC9///naZP6X3
+	x6n27Z2hL8919c0uiXTbtVnwm1fmgUrtNVJ3lh1Nz9mt9DS6UjZucvAUyyu7I00W9Ox5zfFk
+	Y5zqpgIlluKMREMt5qLiRABQnDJY9AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMKsWRmVeSWpSXmKPExsVy+t9jAd0NjO6BBkt6JCz27D3JYnF51xw2
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzNn7dxlwwT6xi
+	+eUZzA2M/4W6GDk5JARMJNauv8cMYYtJXLi3nq2LkYtDSGARo8T2WXdZQBJCAq8ZJf7s0wax
+	eQV0JVZu/sbexcjBISwQItEyIQjEZBPQlti83wCiWlHi7f67rCBhEQE1iQnPUkHCzAKZEnNe
+	T2YFsVkEVCWaJk9hA7E5BYIl5r67xAixtZdR4sTHyWBb+QVEJU62fmKEaK6SmNvcxAhxppLE
+	7vZOdohrBCV+TL7HMoFRcBaSsllIUhBxTYnW7b/ZIWxtiWULXzND2LYS69a9h6qxkdh0dQEj
+	hC0vsf3tHOYFjOyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYLj/ZnUDsaVDRaHGAU4GJV4
+	eHesdwsUYk0sK67MPcSoAjTn0YbVFxilWPLy81KVRHgdbwOleVMSK6tSi/Lji0pzUosPMU5k
+	BIbHRGYp0eR8YJLKK4k3NDYxM7I0MrMwMjE3p6WwkjjvgVbrQCGB9MSS1OzU1ILUIpijmDg4
+	pRoY9ZLC3Dg+7lGa41J6+uIN1rqabUf4vBQMCx7+j68On/ilcNNiVn+1OQ/ON8nt6b7aUTEx
+	6adpx3qzSU0+nnzJs85YWb//nGEkmNvvum8Jd6jfk9MJVeoq8o98p76f5nMw4HTDTNXn0lxW
+	F1Zuu5Uw4+ahFqua30HPvNgrzD6p60kaLNi1vyVWiaU4I9FQi7moOBEAzkPQ4nYDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/18, James Bottomley <James.Bottomley@hansenpartnership.com>:
-> On Sun, 2013-03-17 at 17:29 +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Introduce msgbyte and statusbyte in the prints as part of the
->> result which is returned by the lower layer driver in response to
->> SCSI command issued, in case of any error conditions.
->>
->> Purpose of adding these prints is to convey, during any I/O
->> error case, which condition exactly has happened in lower device and
->> from the prints we can directly deduce, what is the status of command
->> issued. This will help to quickly debug the scenario and also making
->> a test case to create new scenarios.
->>
->> Also change the printk to more appropriate pr_* macro.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  drivers/scsi/constants.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
->> index 76e4c03..77bb1dc 100644
->> --- a/drivers/scsi/constants.c
->> +++ b/drivers/scsi/constants.c
->> @@ -1445,8 +1445,10 @@ void scsi_show_result(int result)
->>
->>  void scsi_show_result(int result)
->>  {
->> -	printk("Result: hostbyte=0x%02x driverbyte=0x%02x\n",
->> -	       host_byte(result), driver_byte(result));
->> +	pr_info("Result: hostbyte=0x%02x driverbyte=0x%02x"
->> +			"msgbyte=0x%02x statusbyte=0x%02x\n",
->> +	       host_byte(result), driver_byte(result), msg_byte(result),
->> +							status_byte(result));
-Hi James.
->
-> You didn't test this, did you? If you did, you'd have noticed the change
-> from printk to pr_info gives you an unwanted "6" in the message.
-Yes, we tested with "printk" version of the patch, but before sending
-the patch, when we checked for issues using "checkpatch.pl" it showed
-warning.
-So, we thought that to be a cosmetic change and replaced the printk
-with  pr_info. Sorry, if below your douting is clear, I will change
-log level as current one.
 
->
-> Also, what are you hoping to achieve? scsi_show_result() is only used by
-> sd in a very few special command situations.  I can't believe the msg
-> byte would be anything other than zero and the status byte check
-> condition.
-Regarding the introduction of additional information in prints.
-We encountered an error with error logs like:
-[ 131.673096] sd 0:0:0:0: [sda] Result: hostbyte=0x00 driverbyte=0x08
-[ 131.679038] sd 0:0:0:0: [sda] Sense Key : 0xb [current]
-[ 131.684801] sd 0:0:0:0: [sda] ASC=0x8 ASCQ=0x3
-[ 131.689241] sd 0:0:0:0: [sda] CDB: cdb[0]=0x2a: 2a 00 00 cb 0c 00 00 00 f0 00
+--=-jSvUK/7q8zTcVRoHsTOt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Looking at the logs it was clear it was due "ABORTED command" but we
-wanted to check in the code if there was any retry in such case:
-In ‘scsi_decide_disposition’ there are "3" main conditions
+2013-03-18 (=EC=9B=94), 20:39 +0900, Namjae Jeon:
+> 2013/3/18, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> > If the return value of releasepage is equal to zero, the page cannot be
+> > reclaimed.
+> > Instead, we should return 1 in order to reclaim clean pages.
+> >
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  fs/f2fs/data.c |  4 +++-
+> >  fs/f2fs/node.c | 13 +++----------
+> >  2 files changed, 6 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> > index 6616137..cd6b2cc 100644
+> > --- a/fs/f2fs/data.c
+> > +++ b/fs/f2fs/data.c
+> > @@ -680,8 +680,10 @@ static void f2fs_invalidate_data_page(struct page
+> > *page, unsigned long offset)
+> >
+> >  static int f2fs_release_data_page(struct page *page, gfp_t wait)
+> >  {
+> > +	if (PageWriteback(page))
+> > +		return 0;
+> >  	ClearPagePrivate(page);
+> > -	return 0;
+> > +	return 1;
+> >  }
+> I have a question.
+> Although PageWriteback is already checked in try_to_release_page,
+> we need to check it again in f2fs_release_data_page ?
 
-switch (host_byte(scmd->result)) -> this returned "DID_OK"
-        if (msg_byte(scmd->result) != COMMAND_COMPLETE)
-                return FAILED;
+Oh, I made a mistake.
+No need to check that.
+Thanks,
 
-And the last was:
-switch (status_byte(scmd->result)) {
-…
-    case TASK_ABORTED:
-                goto maybe_retry;
-    case CHECK_CONDITION:
-…
+>=20
+> Thanks.
+>=20
+>=20
+> > 1.8.1.3.566.gaa39828
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel=
+" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" =
+in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-So, if the status/host bytes were known - we could have directly
-deduced from the code. Instead we needed to introduce prints and then
-check the path.
+--=20
+Jaegeuk Kim
+Samsung
 
-Thanks.
->
-> James
->
->
->
+--=-jSvUK/7q8zTcVRoHsTOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRRwGGAAoJEEAUqH6CSFDSI9IP/2x0SdghO6GU9KYesKH6KKXs
+YSCNeMht74zNZ4kET9Oxb8nUEV+OneTfHVj23R7iJGgxa5mhL4bego/wKintMIPT
+gMzaOfGkuuAmtzgeUqz80UXoExjJigyh8F/T4f+p81QTgwB/VciEMdt9ZW/gDkvO
+Ed/Xbkp9Dc/Gt3Gwf0/DCmUADL0bxUSNJ0P/WMRTfK2S7+WutOpnDlD6u31OzfCn
+oZM6nXv1DEc77hDvJLNFSUgb6jXUaSQwzBd1E/AWwrqq5BC8VJh68CvdCqf7TbwH
+Qwpf7wgD03dODY+adWQ2CLfugai+ijhWMZQWNpQxQniedQLHexIGJ6tKpInlhbW0
+blvF+czhfx+IaXid5EnOmvXl06yCXOASoCpMiyO7QmonEnSRZ/noXvy+SgZPsRvZ
+6THaLtZG6HLhqBeDKPIICUnwxyk1EtehmFpI5hdZXa1T4UtrOfs17YE+gH5f3+Lt
+hDbInlc4BGn2mizg3qOLYloM0h3AsTN9VUgwbAvxVULG9go8aK+A/sqWYLteHXut
+7c0x7yDEfQzfLLDMuA0/EwEIbgUWAE0/zSUYBdtvrKp+G4iCbQ7z5dOICmZ0aK2X
+/l+68DkZFgeHmecin3Pbh48WeLTDoRxmBrP3VDIhvC7fA1Tq6BRRu7asXsDFugSH
+BbaSkShH+rPMXYcLlZAC
+=/Owf
+-----END PGP SIGNATURE-----
+
+--=-jSvUK/7q8zTcVRoHsTOt--
+
