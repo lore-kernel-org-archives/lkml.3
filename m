@@ -1,214 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3CRQ3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:29:51 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49424
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752974Ab3CRQ0B (ORCPT
+	id S1753687Ab3CRQ3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:29:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36469 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab3CRQ0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 12:26:01 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 54/54] perf tests: Add a test case for checking sw clock event frequency
-Date: Mon, 18 Mar 2013 13:25:39 -0300
-Message-Id: <1363623939-10748-55-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/54] perf tests: Add attr record -C cpu test
+Date: Mon, 18 Mar 2013 13:24:53 -0300
+Message-Id: <1363623939-10748-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1363623939-10748-1-git-send-email-acme@infradead.org>
 References: <1363623939-10748-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-This test case checks frequency conversion of hrtimer-based software
-clock events (cpu-clock, task-clock) have valid (non-1) periods.
+Adding test to validate perf_event_attr data for command:
+  'record -C 0'
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363574507-18808-2-git-send-email-namhyung@kernel.org
-[ committer note: Moved .sample_freq to outside named init block to cope with some gcc versions ]
+Link: http://lkml.kernel.org/r/1361785972-7431-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |    1 +
- tools/perf/tests/builtin-test.c |    4 +
- tools/perf/tests/sw-clock.c     |  119 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |    1 +
- 4 files changed, 125 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/tests/sw-clock.c
+ tools/perf/tests/attr/test-record-C0 |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/tests/attr/test-record-C0
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8e1bba3..0230b75 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -514,6 +514,7 @@ LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
- LIB_OBJS += $(OUTPUT)tests/task-exit.o
-+LIB_OBJS += $(OUTPUT)tests/sw-clock.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 9b5c70a..0918ada 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -90,6 +90,10 @@ static struct test {
- 		.func = test__task_exit,
- 	},
- 	{
-+		.desc = "Test software clock events have valid period values",
-+		.func = test__sw_clock_freq,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
+diff --git a/tools/perf/tests/attr/test-record-C0 b/tools/perf/tests/attr/test-record-C0
 new file mode 100644
-index 0000000..2e41e2d
+index 0000000..d6a7e43
 --- /dev/null
-+++ b/tools/perf/tests/sw-clock.c
-@@ -0,0 +1,119 @@
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <sys/mman.h>
++++ b/tools/perf/tests/attr/test-record-C0
+@@ -0,0 +1,13 @@
++[config]
++command = record
++args    = -C 0 kill >/dev/null 2>&1
 +
-+#include "tests.h"
-+#include "util/evsel.h"
-+#include "util/evlist.h"
-+#include "util/cpumap.h"
-+#include "util/thread_map.h"
++[event:base-record]
++cpu=0
 +
-+#define NR_LOOPS  1000000
++# no enable on exec for CPU attached
++enable_on_exec=0
 +
-+/*
-+ * This test will open software clock events (cpu-clock, task-clock)
-+ * then check their frequency -> period conversion has no artifact of
-+ * setting period to 1 forcefully.
-+ */
-+static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
-+{
-+	int i, err = -1;
-+	volatile int tmp = 0;
-+	u64 total_periods = 0;
-+	int nr_samples = 0;
-+	union perf_event *event;
-+	struct perf_evsel *evsel;
-+	struct perf_evlist *evlist;
-+	struct perf_event_attr attr = {
-+		.type = PERF_TYPE_SOFTWARE,
-+		.config = clock_id,
-+		.sample_type = PERF_SAMPLE_PERIOD,
-+		.exclude_kernel = 1,
-+		.disabled = 1,
-+		.freq = 1,
-+	};
-+
-+	attr.sample_freq = 10000;
-+
-+	evlist = perf_evlist__new();
-+	if (evlist == NULL) {
-+		pr_debug("perf_evlist__new\n");
-+		return -1;
-+	}
-+
-+	evsel = perf_evsel__new(&attr, 0);
-+	if (evsel == NULL) {
-+		pr_debug("perf_evsel__new\n");
-+		goto out_free_evlist;
-+	}
-+	perf_evlist__add(evlist, evsel);
-+
-+	evlist->cpus = cpu_map__dummy_new();
-+	evlist->threads = thread_map__new_by_tid(getpid());
-+	if (!evlist->cpus || !evlist->threads) {
-+		err = -ENOMEM;
-+		pr_debug("Not enough memory to create thread/cpu maps\n");
-+		goto out_delete_maps;
-+	}
-+
-+	perf_evlist__open(evlist);
-+
-+	err = perf_evlist__mmap(evlist, 128, true);
-+	if (err < 0) {
-+		pr_debug("failed to mmap event: %d (%s)\n", errno,
-+			 strerror(errno));
-+		goto out_close_evlist;
-+	}
-+
-+	perf_evlist__enable(evlist);
-+
-+	/* collect samples */
-+	for (i = 0; i < NR_LOOPS; i++)
-+		tmp++;
-+
-+	perf_evlist__disable(evlist);
-+
-+	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
-+		struct perf_sample sample;
-+
-+		if (event->header.type != PERF_RECORD_SAMPLE)
-+			continue;
-+
-+		err = perf_evlist__parse_sample(evlist, event, &sample);
-+		if (err < 0) {
-+			pr_debug("Error during parse sample\n");
-+			goto out_unmap_evlist;
-+		}
-+
-+		total_periods += sample.period;
-+		nr_samples++;
-+	}
-+
-+	if ((u64) nr_samples == total_periods) {
-+		pr_debug("All (%d) samples have period value of 1!\n",
-+			 nr_samples);
-+		err = -1;
-+	}
-+
-+out_unmap_evlist:
-+	perf_evlist__munmap(evlist);
-+out_close_evlist:
-+	perf_evlist__close(evlist);
-+out_delete_maps:
-+	perf_evlist__delete_maps(evlist);
-+out_free_evlist:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-+
-+int test__sw_clock_freq(void)
-+{
-+	int ret;
-+
-+	ret = __test__sw_clock_freq(PERF_COUNT_SW_CPU_CLOCK);
-+	if (!ret)
-+		ret = __test__sw_clock_freq(PERF_COUNT_SW_TASK_CLOCK);
-+
-+	return ret;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index b33b328..dd7feae 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -26,5 +26,6 @@ int test__python_use(void);
- int test__bp_signal(void);
- int test__bp_signal_overflow(void);
- int test__task_exit(void);
-+int test__sw_clock_freq(void);
- 
- #endif /* TESTS_H */
++# PERF_SAMPLE_IP | PERF_SAMPLE_TID PERF_SAMPLE_TIME | # PERF_SAMPLE_PERIOD
++# + PERF_SAMPLE_CPU added by -C 0
++sample_type=391
 -- 
 1.7.1
 
