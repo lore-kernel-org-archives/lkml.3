@@ -1,54 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab3CSA35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:29:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41052 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab3CSA3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:29:54 -0400
-Message-ID: <5147B0EC.2020907@zytor.com>
-Date: Mon, 18 Mar 2013 17:27:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932874Ab3CSAgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:36:40 -0400
+Received: from longford.logfs.org ([213.229.74.203]:58723 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab3CSAgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 20:36:39 -0400
+Date: Mon, 18 Mar 2013 19:11:54 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: [PATCH v2] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130318231154.GC9685@logfs.org>
+References: <20130318222853.GA9358@logfs.org>
+ <20130319000411.GA6406@kroah.com>
+ <20130318225657.GA9685@logfs.org>
+ <20130319002742.GA11050@kroah.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] x86, kdump: Set crashkernel_low automatically
-References: <514783B4.2030401@zytor.com> <1363641957-5247-1-git-send-email-yinghai@kernel.org> <51479AAD.7040209@zytor.com> <CAE9FiQXFabEpW0SpJZ+88zMZmQvExTzXU7+MOqBRx-JD61aJPg@mail.gmail.com>
-In-Reply-To: <CAE9FiQXFabEpW0SpJZ+88zMZmQvExTzXU7+MOqBRx-JD61aJPg@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130319002742.GA11050@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2013 04:26 PM, Yinghai Lu wrote:
+On Mon, 18 March 2013 17:27:42 -0700, Greg Kroah-Hartman wrote:
+> On Mon, Mar 18, 2013 at 06:56:57PM -0400, Jörn Engel wrote:
+> > 
+> > Back when I originally wrote this patch, kref_put_mutex() didn't exist
+> > yet.  So there is my evil predetermined plan to introduce random
+> > inconsistencies by being consistent with atomic_dec_and_lock()
+> > instead.
 > 
-> now only have:
-> swiotlb overflow buffer
-> 
->         v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
->                                                 PAGE_ALIGN(io_tlb_overflow));
-> 
-> and
->      /*
->       * When the IOMMU overflows we return a fallback buffer. This
-> sets the size.
->      */
->      static unsigned long io_tlb_overflow = 32*1024;
-> 
-> so it is 32K, and I round it to 8M.
-> 
+> Don't be evil, leave that up to the professionals :)
 
-So put that into prose, understandable by someone who hasn't followed
-this discussion (say, five years from now), and make that part of the
-commit.
+I wouldn't dare question your authority in such matters. :-P
 
+> > If you think this matters I can rename the function and resend.
+> 
+> Please do, it is good to name things correctly, when we have the chance.
+
+Fair enough.
+
+Jörn
+
+--
+ticks = jiffies;
+while (ticks == jiffies);
+ticks = jiffies;
+-- /usr/src/linux/init/main.c
+
+
+It is possible for one thread to to take se_sess->sess_cmd_lock in
+core_tmr_abort_task() before taking a reference count on
+se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+
+This introduces kref_put_and_lock() and uses it in
+target_put_sess_cmd() to close the race window.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ drivers/target/target_core_transport.c |   17 +++++++++++------
+ include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 04ec9cb..b98c158 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
+ {
+ 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+ 	struct se_session *se_sess = se_cmd->se_sess;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+ 	if (list_empty(&se_cmd->se_cmd_list)) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		se_cmd->se_tfo->release_cmd(se_cmd);
+ 		return;
+ 	}
+ 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		complete(&se_cmd->cmd_wait_comp);
+ 		return;
+ 	}
+ 	list_del(&se_cmd->se_cmd_list);
+-	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++	spin_unlock(&se_sess->sess_cmd_lock);
+ 
+ 	se_cmd->se_tfo->release_cmd(se_cmd);
+ }
+@@ -2232,7 +2230,14 @@ static void target_release_cmd_kref(struct kref *kref)
+  */
+ int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+ {
+-	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
++	unsigned long flags;
++	int ret;
++
++	local_irq_save(flags);
++	ret = kref_put_spinlock(&se_cmd->cmd_kref, target_release_cmd_kref,
++			&se_sess->sess_cmd_lock);
++	local_irq_restore(flags);
++	return ret;
+ }
+ EXPORT_SYMBOL(target_put_sess_cmd);
+ 
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 4972e6e..c40eaf6 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -19,6 +19,7 @@
+ #include <linux/atomic.h>
+ #include <linux/kernel.h>
+ #include <linux/mutex.h>
++#include <linux/spinlock_types.h>
+ 
+ struct kref {
+ 	atomic_t refcount;
+@@ -95,6 +96,31 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+ 	return kref_sub(kref, 1, release);
+ }
+ 
++/**
++ * kref_put_and_lock - decrement refcount for object.
++ * @kref: object.
++ * @release: pointer to the function that will clean up the object when the
++ *	     last reference to the object is released.
++ *	     This pointer is required, and it is not acceptable to pass kfree
++ *	     in as this function.
++ * @lock: lock to take in release case
++ *
++ * Behaves identical to kref_put with one exception.  If the reference count
++ * drops to zero, the lock will be taken atomically wrt dropping the reference
++ * count.
++ */
++static inline int kref_put_spinlock(struct kref *kref,
++		void (*release)(struct kref *kref),
++		spinlock_t *lock)
++{
++	WARN_ON(release == NULL);
++	if (atomic_dec_and_lock(&kref->refcount, lock)) {
++		release(kref);
++		return 1;
++	}
++	return 0;
++}
++
+ static inline int kref_put_mutex(struct kref *kref,
+ 				 void (*release)(struct kref *kref),
+ 				 struct mutex *lock)
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.10.4
 
