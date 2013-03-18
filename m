@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab3CRXwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 19:52:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35321 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab3CRXwr (ORCPT
+	id S1756422Ab3CRXxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 19:53:40 -0400
+Received: from longford.logfs.org ([213.229.74.203]:58702 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab3CRXxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 19:52:47 -0400
-Date: Mon, 18 Mar 2013 16:54:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH v5 00/44] ldisc patchset
-Message-ID: <20130318235402.GA1937@kroah.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
- <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+	Mon, 18 Mar 2013 19:53:38 -0400
+Date: Mon, 18 Mar 2013 18:28:53 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: [PATCH] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130318222853.GA9358@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 04:44:20PM -0400, Peter Hurley wrote:
-> Greg,
-> This patchset includes
->   'tty: Drop lock contention stat from ldsem trylocks'
-> so no need to apply that on this series. Also, I noticed you
-> kept the 'tty is NULL' removal on a different branch so I left
-> my patch in this series that removes it.
-> 
-> This series applies cleanly to tty-next.
+It is possible for one thread to to take se_sess->sess_cmd_lock in
+core_tmr_abort_task() before taking a reference count on
+se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
 
-I've applied the first 25 patches, right up to the "create a new lock"
-patch.  I'll comment on that one next.
+This introduces kref_put_and_lock() and uses it in
+target_put_sess_cmd() to close the race window.
 
-thanks,
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ drivers/target/target_core_transport.c |   17 +++++++++++------
+ include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 6 deletions(-)
 
-greg k-h
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 04ec9cb..2b8277c 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
+ {
+ 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+ 	struct se_session *se_sess = se_cmd->se_sess;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+ 	if (list_empty(&se_cmd->se_cmd_list)) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		se_cmd->se_tfo->release_cmd(se_cmd);
+ 		return;
+ 	}
+ 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		complete(&se_cmd->cmd_wait_comp);
+ 		return;
+ 	}
+ 	list_del(&se_cmd->se_cmd_list);
+-	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++	spin_unlock(&se_sess->sess_cmd_lock);
+ 
+ 	se_cmd->se_tfo->release_cmd(se_cmd);
+ }
+@@ -2232,7 +2230,14 @@ static void target_release_cmd_kref(struct kref *kref)
+  */
+ int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+ {
+-	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
++	unsigned long flags;
++	int ret;
++
++	local_irq_save(flags);
++	ret = kref_put_and_lock(&se_cmd->cmd_kref, target_release_cmd_kref,
++			&se_sess->sess_cmd_lock);
++	local_irq_restore(flags);
++	return ret;
+ }
+ EXPORT_SYMBOL(target_put_sess_cmd);
+ 
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 4972e6e..bc4dbc1 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -19,6 +19,7 @@
+ #include <linux/atomic.h>
+ #include <linux/kernel.h>
+ #include <linux/mutex.h>
++#include <linux/spinlock_types.h>
+ 
+ struct kref {
+ 	atomic_t refcount;
+@@ -95,6 +96,31 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+ 	return kref_sub(kref, 1, release);
+ }
+ 
++/**
++ * kref_put_and_lock - decrement refcount for object.
++ * @kref: object.
++ * @release: pointer to the function that will clean up the object when the
++ *	     last reference to the object is released.
++ *	     This pointer is required, and it is not acceptable to pass kfree
++ *	     in as this function.
++ * @lock: lock to take in release case
++ *
++ * Behaves identical to kref_put with one exception.  If the reference count
++ * drops to zero, the lock will be taken atomically wrt dropping the reference
++ * count.
++ */
++static inline int kref_put_and_lock(struct kref *kref,
++		void (*release)(struct kref *kref),
++		spinlock_t *lock)
++{
++	WARN_ON(release == NULL);
++	if (atomic_dec_and_lock(&kref->refcount, lock)) {
++		release(kref);
++		return 1;
++	}
++	return 0;
++}
++
+ static inline int kref_put_mutex(struct kref *kref,
+ 				 void (*release)(struct kref *kref),
+ 				 struct mutex *lock)
+-- 
+1.7.10.4
+
