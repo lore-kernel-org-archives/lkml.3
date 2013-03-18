@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3CRU5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 16:57:50 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:36941 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab3CRU5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 16:57:49 -0400
-From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into .text.kprobe section
-References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
-	<CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
-	<514023AA.4070004@hitachi.com> <847glb8m4i.fsf@sauna.l.org>
-	<51408349.8080800@hitachi.com>
-Date: Mon, 18 Mar 2013 22:57:35 +0200
-In-Reply-To: <51408349.8080800@hitachi.com> (Masami Hiramatsu's message of
-	"Wed, 13 Mar 2013 22:46:49 +0900")
-Message-ID: <84li9ke88w.fsf@sauna.l.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754674Ab3CRU7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 16:59:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45458 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3CRU7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 16:59:51 -0400
+Date: Mon, 18 Mar 2013 13:59:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] seq_file: Use seq_puts when seq_printf has only a
+ format with no args
+Message-Id: <20130318135949.853ef457d0334008d83ae80f@linux-foundation.org>
+In-Reply-To: <20130316175446.GA21522@ZenIV.linux.org.uk>
+References: <1363441844.2023.17.camel@joe-AO722>
+	<20130316175446.GA21522@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> Thank you for reporting!!
+On Sat, 16 Mar 2013 17:54:47 +0000 Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-Thanks for fixing these! I spent some time trying to automate the
-process of finding sensitive functions and eventually resorted into
-booting a kvm instance with a minimal initrd to test every single
-function in a clean and reproducible environment.
+> On Sat, Mar 16, 2013 at 06:50:44AM -0700, Joe Perches wrote:
+> > Instead of converting the 800 or so uses of seq_printf with
+> > a constant format (without a % substitution) to seq_puts,
+> > maybe there's another way to slightly speed up these outputs.
+> > 
+> > Taking a similar approach to commit abd84d60eb
+> > ("tracing: Optimize trace_printk() with one arg to use trace_puts()")
+> > use the preprocessor to convert seq_printf(seq, "string constant")
+> > to seq_puts(seq, "string constant")
+> > 
+> > By stringifying __VA_ARGS__, we can, at compile time, determine
+> > the number of args that are being passed to seq_printf() and
+> > call seq_puts or seq_printf appropriately.
+> > 
+> > The actual function definition for seq_printf must now
+> > be enclosed in parenthesis to avoid further macro expansion.
+> 
+> Joe, would you mind showing me a single real-world case where that
+> "optimization" would really matter?
 
-I found 7 more cases where calling register_kprobe() leads to an instant
-kernel panic:
+There's also a small reduction in code footprint.  We merge less
+significant things all day ;)
 
-__flush_tlb_single
-native_flush_tlb
-native_safe_halt
-native_set_pgd
-native_set_pmd
-native_set_pud
-native_write_cr0
+> NAKed-because: GAFL
 
-You can see full kernel console output for each function at
-http://lindi.iki.fi/lindi/linux/kprobes/panics_2013-03-18/
+Yeah, that macro thing should be nuked from orbit.  Please let's add the
+checkpatch rule (resend when convenient with clean changelog, please)
+and if people want to send "convert seq_printk to seq_puts" patches to
+Jan and he takes them into the trivial tree then all is good.
