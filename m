@@ -1,153 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3CRPlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:41:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50413 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752598Ab3CRPk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:40:59 -0400
-Date: Mon, 18 Mar 2013 16:40:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
-Message-ID: <20130318154057.GS10192@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753777Ab3CRPmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:42:21 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64189 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752808Ab3CRPmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:42:20 -0400
+Message-ID: <1363621331.1335.176.camel@x61.thuisdomein>
+Subject: Re: [PATCH] checkpatch: stop checking for CONFIG_EXPERIMENTAL
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 18 Mar 2013 16:42:11 +0100
+In-Reply-To: <CAGXu5jLfq-AqkTyoZRdcJ-S07h0pFKBXDL=KBi7-nT7NQtftKg@mail.gmail.com>
+References: <1363469435.1335.137.camel@x61.thuisdomein>
+	 <CAGXu5jLfq-AqkTyoZRdcJ-S07h0pFKBXDL=KBi7-nT7NQtftKg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Mar 2013 15:42:11.0671 (UTC) FILETIME=[28116E70:01CE23EF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
-> This patch extends check_range() to handle vma with VM_HUGETLB set.
-> With this changes, we can migrate hugepage with migrate_pages(2).
-> Note that for larger hugepages (covered by pud entries, 1GB for
-> x86_64 for example), we simply skip it now.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  include/linux/hugetlb.h |  6 ++++--
->  mm/hugetlb.c            | 10 ++++++++++
->  mm/mempolicy.c          | 46 ++++++++++++++++++++++++++++++++++------------
->  3 files changed, 48 insertions(+), 14 deletions(-)
-> 
-> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
-> index 8f87115..eb33df5 100644
-> --- v3.8.orig/include/linux/hugetlb.h
-> +++ v3.8/include/linux/hugetlb.h
-> @@ -69,6 +69,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
->  int dequeue_hwpoisoned_huge_page(struct page *page);
->  void putback_active_hugepage(struct page *page);
->  void putback_active_hugepages(struct list_head *l);
-> +void migrate_hugepage_add(struct page *page, struct list_head *list);
->  void copy_huge_page(struct page *dst, struct page *src);
->  
->  extern unsigned long hugepages_treat_as_movable;
-> @@ -88,8 +89,8 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->  				pmd_t *pmd, int write);
->  struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
->  				pud_t *pud, int write);
-> -int pmd_huge(pmd_t pmd);
-> -int pud_huge(pud_t pmd);
-> +extern int pmd_huge(pmd_t pmd);
-> +extern int pud_huge(pud_t pmd);
+On Sat, 2013-03-16 at 15:38 -0700, Kees Cook wrote:
+> Hrm, I actually think it would be better to change this to ERROR
+> instead of WARN.
 
-extern is not needed here.
+I figured the main reason to add this warning was to prevent people to
+add dependencies on EXPERIMENTAL while you were cleaning the tree, which
+could mean you had to redo patches each time that happened.
 
->  unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
->  		unsigned long address, unsigned long end, pgprot_t newprot);
->  
-> @@ -134,6 +135,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
->  
->  #define putback_active_hugepage(p) 0
->  #define putback_active_hugepages(l) 0
-> +#define migrate_hugepage_add(p, l) 0
->  static inline void copy_huge_page(struct page *dst, struct page *src)
->  {
->  }
-> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-> index cb9d43b8..86ffcb7 100644
-> --- v3.8.orig/mm/hugetlb.c
-> +++ v3.8/mm/hugetlb.c
-> @@ -3202,3 +3202,13 @@ void putback_active_hugepages(struct list_head *l)
->  	list_for_each_entry_safe(page, page2, l, lru)
->  		putback_active_hugepage(page);
->  }
-> +
-> +void migrate_hugepage_add(struct page *page, struct list_head *list)
-> +{
-> +	VM_BUG_ON(!PageHuge(page));
-> +	get_page(page);
-> +	spin_lock(&hugetlb_lock);
+Anyhow, with EXPERIMENTAL gone, this is just one of the mistakes people
+can make in using the kconfig system. I'm not sure that we should use
+checkpatch to catch these. For this particular case it must also be
+noted that if code gets in while still depending on EXPERIMENTAL someone
+also missed that this code doesn't get build at all.
 
-Why hugetlb_lock? Comment for this lock says that it protects
-hugepage_freelists, nr_huge_pages, and free_huge_pages.
 
-> +	list_move_tail(&page->lru, list);
-> +	spin_unlock(&hugetlb_lock);
-> +	return;
-> +}
-> diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
-> index e2df1c1..8627135 100644
-> --- v3.8.orig/mm/mempolicy.c
-> +++ v3.8/mm/mempolicy.c
-> @@ -525,6 +525,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
->  	return addr != end;
->  }
->  
-> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-> +		const nodemask_t *nodes, unsigned long flags,
-> +				    void *private)
-> +{
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +	int nid;
-> +	struct page *page;
-> +
-> +	spin_lock(&vma->vm_mm->page_table_lock);
-> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
-> +	spin_unlock(&vma->vm_mm->page_table_lock);
+Paul Bolle
 
-I am a bit confused why page_table_lock is used here and why it doesn't
-cover the page usage.
-
-> +	nid = page_to_nid(page);
-> +	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
-> +	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
-> +		|| flags & MPOL_MF_MOVE_ALL))
-> +		migrate_hugepage_add(page, private);
-> +#else
-> +	BUG();
-> +#endif
-> +}
-> +
->  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->  		unsigned long addr, unsigned long end,
->  		const nodemask_t *nodes, unsigned long flags,
-> @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->  	pmd = pmd_offset(pud, addr);
->  	do {
->  		next = pmd_addr_end(addr, end);
-> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-
-Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
-sufficient?
-
-> +			check_hugetlb_pmd_range(vma, pmd, nodes,
-> +						flags, private);
-> +			continue;
-> +		}
->  		split_huge_page_pmd(vma, addr, pmd);
->  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
->  			continue;
-[...]
--- 
-Michal Hocko
-SUSE Labs
