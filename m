@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3CRQXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 12:23:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6182 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3CRQXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 12:23:22 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nGpB3NLV4dgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xnoB05DE7xsA:10 a=gbo3zBiAbjV2D3M08tEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363623799.25967.172.camel@gandalf.local.home>
-Subject: Re: workqueue code needing preemption disabled
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <clark@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 18 Mar 2013 12:23:19 -0400
-In-Reply-To: <20130318160652.GA20133@mtj.dyndns.org>
-References: <1363617383.25967.152.camel@gandalf.local.home>
-	 <20130318160652.GA20133@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-2 
+	id S1751953Ab3CRQYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 12:24:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab3CRQYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 12:24:46 -0400
+Message-ID: <1363623880.24132.351.camel@bling.home>
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Myron Stowe <mstowe@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, linux-hotplug@vger.kernel.org,
+        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Mar 2013 10:24:40 -0600
+In-Reply-To: <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+	 <20130316213519.2974.38954.stgit@amt.stowe>
+	 <20130316221159.GA3702@kroah.com> <1363477853.2423.25.camel@zim.stowe>
+	 <20130317010317.GB9641@kroah.com> <1363493482.16793.69.camel@ul30vt.home>
+	 <20130317053611.GC948@kroah.com> <1363527503.16793.75.camel@ul30vt.home>
+	 <CAPXgP12vmx9j_jJW3HXb2deRapFKAofTVzEbdyS=Z1VUBswE_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-18 at 09:06 -0700, Tejun Heo wrote:
-> Hello, Steven.
+On Sun, 2013-03-17 at 15:00 +0100, Kay Sievers wrote:
+> On Sun, Mar 17, 2013 at 2:38 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > I'm assuming that the device only breaks because udevadm is dumping the
+> > full I/O port register space of the device and that if an actual driver
+> > was interacting with it through this interface that it would work.  Who
+> > knows how many devices will have read side-effects by udevadm blindly
+> > dumping these files.  Thanks,
 > 
-> On Mon, Mar 18, 2013 at 10:36:23AM -0400, Steven Rostedt wrote:
-> > kernel BUG at kernel/sched/core.c:1731!
-> > invalid opcode: 0000 [#1] PREEMPT SMP 
-> > CPU 5 
-> > Pid: 16637, comm: kworker/5:0 Not tainted 3.6.11-rt30.25.el6rt.x86_64 #1 HP ProLiant DL580 G7
-> ...
-> > static void try_to_wake_up_local(struct task_struct *p)
-> > {
-> >         struct rq *rq = task_rq(p);
-> > 
-> >         BUG_ON(rq != this_rq());  <---- bug here
-> 
-> It's the local chain wake-up code used to main concurrency.  ie. when
-> a worker bound to a CPU schedules out it kicks another worker to take
-> its place (in concurrency level).
+> Sysfs is a too public interface to export things there which make
+> devices/driver choke on a simple read() of an attribute.
 
-Yep, I got that much.
+That's why the default permissions for the file do not allow users to
+read it.  I wish we could do something as clever as the MMIO resource
+files, but I/O port spaces don't allow mmap for the predominant
+architecture.  Eventually VFIO is meant to replace this access and does
+move device register access behind ioctls, but for now legacy KVM device
+assignment relies on these files and so might some UIO drivers.
 
-> 
-> The function is called from inside __schedule() while holding rq->lock
-> and requires that the target task is on the same rq as the one trying
-> to wake it up.  When it isn't, the above BUG_ON() triggers.
+> This is nothing specific to udevadm, any tool can do that. Udevadm
+> will never read any of the files during normal operation. The admin
+> explicitly asked udevadm with a specific command to dump all the stuff
+> the device offers.
 
-Yeah, that was rather obvious too ;-)
+Isn't it possible udevadm could drop privileges or filter out non-world
+readable files? 
 
-> 
-> On non-RT kernel, this usually happens, when I screw up CPU hotplug
-> code - e.g. enabling concurrency management when all workers are not
-> rebound to the CPU yet.
-> 
-> > Now in your code you have the comment:
-> > 
-> >  * X: During normal operation, modification requires gcwq->lock and
-> >  *    should be done only from local cpu.  Either disabling preemption
-> >  *    on local cpu or grabbing gcwq->lock is enough for read access.
-> >  *    If GCWQ_DISASSOCIATED is set, it's identical to L.
-> > 
-> > struct worker has flags marked with X.
-> > struct worker_pool has flags and idle_list marked with X.
-> 
-> So, the weird 'X' rule is there to guarantee that wq_worker_sleeping()
-> and try_to_wake_up() can peek the data fields necessary to perform
-> local wakeup (determining whether and who to wakeup and actuallying
-> doing it) while holding rq->lock.
-> 
-> > spin_locks in -rt do not disable preemption, nor do they disable irqs,
-> > but they do disable migration. If there's code that depends on the
-> > spin_lock disabling preemption, we need to either change the code to not
-> > require that, or explicitly disable preemption in the critical paths.
-> > Note, if we explicitly disable preemption, we can not call spin_locks
-> > within those locations as in -rt a spin_lock can block and schedule.
-> 
-> Maybe I'm confused but I can't really see how the above would be a
-> problem to workqueue in itself.  Both rq->lock and gcwq->lock are
-> irq-safe, so spin_lock() not disabling preemption shouldn't be a
-> problem.  Are CPU hotplug operations involved?
+> The kernel driver needs to be fixed to allow that, in the worst case,
+> the attributes not exported at all. People should take more care what
+> they export in /sys, it's not a hidden and private ioctl what's
+> exported there, stuff is very visible and will be looked at.
 
-No CPU hotplug is involved here. But I will note that gcwq->lock in -rt
-is not irq -safe. That is, in rt the spin_lock_irq(&gcwq->lock) really
-becomes a special "mutex_lock(&gcwq->lock)". Because, in -rt, interrupts
-(except for the timer interrupt) are run as threads, and anything that
-isn't marked as raw_spin_lock() turns into a mutex. I don't believe it's
-safe to turn the gcwq->lock into a raw_spin_lock either, or at least not
-short enough to hold it. Anything that holds a spin_lock() for more than
-a microsecond is too much for a raw lock.
+File permissions...
 
--- Steve
+> Telling userspace not to use specific stuff in /sys I would not expect
+> to work as a strategy; there is too much weird stuff out there that
+> will always try to do that ...
 
+I agree, the kernel needs to protect itself from malicious apps, but if
+you run a malicious app with admin access, how much can/should we do?
+If we're going to ignore file permissions, why limit ourselves to
+read(), should we make everything safe against write() as well?  Thanks,
+
+Alex
 
