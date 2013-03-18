@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3CRKzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 06:55:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33943 "EHLO
+	id S1753398Ab3CRK4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 06:56:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33958 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab3CRKzQ (ORCPT
+	with ESMTP id S1752879Ab3CRK4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:55:16 -0400
-Date: Mon, 18 Mar 2013 03:53:43 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-e4dd45fe7add0de09e0e5b2b511732d9c86b6ee7@git.kernel.org>
+	Mon, 18 Mar 2013 06:56:18 -0400
+Date: Mon, 18 Mar 2013 03:54:54 -0700
+From: tip-bot for Jack Mitchell <tipbot@zytor.com>
+Message-ID: <tip-b9e8c37220c80e78289a1e87b50c09418eb59a7e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, oleg@redhat.com,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, tglx@linutronix.de,
+        jack.mitchell@dbbroadcast.co.uk
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, oleg@redhat.com,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1361785972-7431-2-git-send-email-jolsa@redhat.com>
-References: <1361785972-7431-2-git-send-email-jolsa@redhat.com>
+        tglx@linutronix.de, namhyung@kernel.org,
+        jack.mitchell@dbbroadcast.co.uk
+In-Reply-To: <1362741712-21308-1-git-send-email-ml@communistcode.co.uk>
+References: <1362741712-21308-1-git-send-email-ml@communistcode.co.uk>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record: Fix -C option
-Git-Commit-ID: e4dd45fe7add0de09e0e5b2b511732d9c86b6ee7
+Subject: [tip:perf/urgent] libtraceevent: Remove hard coded include to /
+ usr/local/include in Makefile
+Git-Commit-ID: b9e8c37220c80e78289a1e87b50c09418eb59a7e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,61 +32,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:53:49 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:54:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e4dd45fe7add0de09e0e5b2b511732d9c86b6ee7
-Gitweb:     http://git.kernel.org/tip/e4dd45fe7add0de09e0e5b2b511732d9c86b6ee7
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 25 Feb 2013 10:52:48 +0100
+Commit-ID:  b9e8c37220c80e78289a1e87b50c09418eb59a7e
+Gitweb:     http://git.kernel.org/tip/b9e8c37220c80e78289a1e87b50c09418eb59a7e
+Author:     Jack Mitchell <jack.mitchell@dbbroadcast.co.uk>
+AuthorDate: Fri, 8 Mar 2013 11:21:52 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Mar 2013 16:58:28 -0300
+CommitDate: Wed, 13 Mar 2013 17:00:00 -0300
 
-perf record: Fix -C option
+libtraceevent: Remove hard coded include to /usr/local/include in Makefile
 
-Currently the -C option does not work for record command, because of the
-targets mismatch when synthesizing threads.
+having /usr/local/include hardcoded into the makefile is not necessary
+as this is automatically included by GCC. It also infects cross-compile
+builds with the host systems includes.
 
-Fixing this by using proper target interface for the synthesize
-decision.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Jack Mitchell <jack.mitchell@dbbroadcast.co.uk>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1361785972-7431-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1362741712-21308-1-git-send-email-ml@communistcode.co.uk
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/lib/traceevent/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 774c907..f1a939e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -573,13 +573,15 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 					 perf_event__synthesize_guest_os, tool);
- 	}
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index a20e320..0b0a907 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -122,7 +122,7 @@ export Q VERBOSE
  
--	if (!opts->target.system_wide)
-+	if (perf_target__has_task(&opts->target))
- 		err = perf_event__synthesize_thread_map(tool, evsel_list->threads,
- 						  process_synthesized_event,
- 						  machine);
--	else
-+	else if (perf_target__has_cpu(&opts->target))
- 		err = perf_event__synthesize_threads(tool, process_synthesized_event,
- 					       machine);
-+	else /* command specified */
-+		err = 0;
+ EVENT_PARSE_VERSION = $(EP_VERSION).$(EP_PATCHLEVEL).$(EP_EXTRAVERSION)
  
- 	if (err != 0)
- 		goto out_delete_session;
+-INCLUDES = -I. -I/usr/local/include $(CONFIG_INCLUDES)
++INCLUDES = -I. $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -Wall
