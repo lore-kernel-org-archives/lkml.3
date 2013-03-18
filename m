@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab3CRVsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:48:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45745 "EHLO
+	id S933894Ab3CRVsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:48:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab3CRVHR (ORCPT
+	with ESMTP id S1755849Ab3CRVHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:17 -0400
+	Mon, 18 Mar 2013 17:07:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Paul Moore <pmoore@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 66/75] macvlan: Set IFF_UNICAST_FLT flag to prevent unnecessary promisc mode.
-Date: Mon, 18 Mar 2013 14:07:29 -0700
-Message-Id: <20130318210515.028759364@linuxfoundation.org>
+Subject: [ 67/75] netlabel: correctly list all the static label mappings
+Date: Mon, 18 Mar 2013 14:07:30 -0700
+Message-Id: <20130318210515.097798561@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318210510.203500214@linuxfoundation.org>
 References: <20130318210510.203500214@linuxfoundation.org>
@@ -27,30 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 87ab7f6f2874f1115817e394a7ed2dea1c72549e ]
+[ Upstream commits 0c1233aba1e948c37f6dc7620cb7c253fcd71ce9 and
+  a6a8fe950e1b8596bb06f2c89c3a1a4bf2011ba9 ]
 
-Macvlan already supports hw address filters.  Set the IFF_UNICAST_FLT
-so that it doesn't needlesly enter PROMISC mode when macvlans are
-stacked.
+When we have a large number of static label mappings that spill across
+the netlink message boundary we fail to properly save our state in the
+netlink_callback struct which causes us to repeat the same listings.
+This patch fixes this problem by saving the state correctly between
+calls to the NetLabel static label netlink "dumpit" routines.
 
-Signed-of-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netlabel/netlabel_unlabeled.c |   27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -628,6 +628,7 @@ void macvlan_common_setup(struct net_dev
- 	ether_setup(dev);
+--- a/net/netlabel/netlabel_unlabeled.c
++++ b/net/netlabel/netlabel_unlabeled.c
+@@ -1189,8 +1189,6 @@ static int netlbl_unlabel_staticlist(str
+ 	struct netlbl_unlhsh_walk_arg cb_arg;
+ 	u32 skip_bkt = cb->args[0];
+ 	u32 skip_chain = cb->args[1];
+-	u32 skip_addr4 = cb->args[2];
+-	u32 skip_addr6 = cb->args[3];
+ 	u32 iter_bkt;
+ 	u32 iter_chain = 0, iter_addr4 = 0, iter_addr6 = 0;
+ 	struct netlbl_unlhsh_iface *iface;
+@@ -1215,7 +1213,7 @@ static int netlbl_unlabel_staticlist(str
+ 				continue;
+ 			netlbl_af4list_foreach_rcu(addr4,
+ 						   &iface->addr4_list) {
+-				if (iter_addr4++ < skip_addr4)
++				if (iter_addr4++ < cb->args[2])
+ 					continue;
+ 				if (netlbl_unlabel_staticlist_gen(
+ 					      NLBL_UNLABEL_C_STATICLIST,
+@@ -1231,7 +1229,7 @@ static int netlbl_unlabel_staticlist(str
+ #if IS_ENABLED(CONFIG_IPV6)
+ 			netlbl_af6list_foreach_rcu(addr6,
+ 						   &iface->addr6_list) {
+-				if (iter_addr6++ < skip_addr6)
++				if (iter_addr6++ < cb->args[3])
+ 					continue;
+ 				if (netlbl_unlabel_staticlist_gen(
+ 					      NLBL_UNLABEL_C_STATICLIST,
+@@ -1250,10 +1248,10 @@ static int netlbl_unlabel_staticlist(str
  
- 	dev->priv_flags	       &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
-+	dev->priv_flags	       |= IFF_UNICAST_FLT;
- 	dev->netdev_ops		= &macvlan_netdev_ops;
- 	dev->destructor		= free_netdev;
- 	dev->header_ops		= &macvlan_hard_header_ops,
+ unlabel_staticlist_return:
+ 	rcu_read_unlock();
+-	cb->args[0] = skip_bkt;
+-	cb->args[1] = skip_chain;
+-	cb->args[2] = skip_addr4;
+-	cb->args[3] = skip_addr6;
++	cb->args[0] = iter_bkt;
++	cb->args[1] = iter_chain;
++	cb->args[2] = iter_addr4;
++	cb->args[3] = iter_addr6;
+ 	return skb->len;
+ }
+ 
+@@ -1273,12 +1271,9 @@ static int netlbl_unlabel_staticlistdef(
+ {
+ 	struct netlbl_unlhsh_walk_arg cb_arg;
+ 	struct netlbl_unlhsh_iface *iface;
+-	u32 skip_addr4 = cb->args[0];
+-	u32 skip_addr6 = cb->args[1];
+-	u32 iter_addr4 = 0;
++	u32 iter_addr4 = 0, iter_addr6 = 0;
+ 	struct netlbl_af4list *addr4;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	u32 iter_addr6 = 0;
+ 	struct netlbl_af6list *addr6;
+ #endif
+ 
+@@ -1292,7 +1287,7 @@ static int netlbl_unlabel_staticlistdef(
+ 		goto unlabel_staticlistdef_return;
+ 
+ 	netlbl_af4list_foreach_rcu(addr4, &iface->addr4_list) {
+-		if (iter_addr4++ < skip_addr4)
++		if (iter_addr4++ < cb->args[0])
+ 			continue;
+ 		if (netlbl_unlabel_staticlist_gen(NLBL_UNLABEL_C_STATICLISTDEF,
+ 					      iface,
+@@ -1305,7 +1300,7 @@ static int netlbl_unlabel_staticlistdef(
+ 	}
+ #if IS_ENABLED(CONFIG_IPV6)
+ 	netlbl_af6list_foreach_rcu(addr6, &iface->addr6_list) {
+-		if (iter_addr6++ < skip_addr6)
++		if (iter_addr6++ < cb->args[1])
+ 			continue;
+ 		if (netlbl_unlabel_staticlist_gen(NLBL_UNLABEL_C_STATICLISTDEF,
+ 					      iface,
+@@ -1320,8 +1315,8 @@ static int netlbl_unlabel_staticlistdef(
+ 
+ unlabel_staticlistdef_return:
+ 	rcu_read_unlock();
+-	cb->args[0] = skip_addr4;
+-	cb->args[1] = skip_addr6;
++	cb->args[0] = iter_addr4;
++	cb->args[1] = iter_addr6;
+ 	return skb->len;
+ }
+ 
 
 
