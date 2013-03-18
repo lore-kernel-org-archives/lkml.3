@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3CRLAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:00:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60618 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3CRK76 (ORCPT
+	id S1753824Ab3CRLAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:00:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34030 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab3CRLAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 06:59:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Fabio Porcedda <fabio.porcedda@gmail.com>
-Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
-Date: Mon, 18 Mar 2013 10:58:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <201303152018.09094.arnd@arndb.de> <CAHkwnC9YFTw8gVzyZB3_gZCgM5zMA6tLch15EDqcA2F4CAOpAQ@mail.gmail.com>
-In-Reply-To: <CAHkwnC9YFTw8gVzyZB3_gZCgM5zMA6tLch15EDqcA2F4CAOpAQ@mail.gmail.com>
+	Mon, 18 Mar 2013 07:00:45 -0400
+Date: Mon, 18 Mar 2013 03:59:34 -0700
+From: tip-bot for Andrei Epure <tipbot@zytor.com>
+Message-ID: <tip-1bf08230f745e48fea9c18ee34a73581631fe7c9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        epure.andrei@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        epure.andrei@gmail.com, tglx@linutronix.de
+In-Reply-To: <1363115544-1964-1-git-send-email-epure.andrei@gmail.com>
+References: <1363115544-1964-1-git-send-email-epure.andrei@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix variable name misnomer, add comments
+Git-Commit-ID: 1bf08230f745e48fea9c18ee34a73581631fe7c9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303181058.51641.arnd@arndb.de>
-X-Provags-ID: V02:K0:0cL2cpQkGf/y11WD24WigC1LF5VkprWZqmGpzut/3OJ
- fSjD8nZnOiRXFQYEda9RXzUSqmsWQMFVYdOCeTsgKy6dJ8fWi4
- tqPKgNCBdy7FS7BCvXbwhWdHcPZ4C1xa/JhKxfRbqlryKPeGK3
- 3WHKlyHTs0foV6Zj4++alEpu2eLVDkHJmZ+hfHFZCdiudo8hEk
- Jxv11/CmdF/J/zKrrMM+Xvy9f8Iz83EJwRQTBqzxWSRjtnbByr
- hKPhed019FuGWgEPKjBcLFgiDilC/eXazrNzlsIfnga+lzUi3u
- wkJa6c4eDsn63WHy8YFoa//7P484ZllJuAQlUYdRZzwASamk3j
- 7AT8aixX2MCzJDhR2apc=
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 03:59:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 March 2013, Fabio Porcedda wrote:
-> Since by using platform_driver_probe() the  function
-> ep93xx_pwm_probe() is freed after initialization,
-> is better to use module_platform_drive_probe().
-> IMHO i don't see any good reason to use module_platform_driver() for
-> this driver.
+Commit-ID:  1bf08230f745e48fea9c18ee34a73581631fe7c9
+Gitweb:     http://git.kernel.org/tip/1bf08230f745e48fea9c18ee34a73581631fe7c9
+Author:     Andrei Epure <epure.andrei@gmail.com>
+AuthorDate: Tue, 12 Mar 2013 21:12:24 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 14 Mar 2013 08:22:29 +0100
 
-As I commented earlier, the platform_driver_probe() and
-module_platform_drive_probe() interfaces are rather dangerous in combination
-with deferred probing, I would much prefer Harley's patch.
+sched: Fix variable name misnomer, add comments
 
-	Arnd
+The min_vruntime variable actually stores the maximum value.
+The added comment was taken from place_entity function.
+
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1363115544-1964-1-git-send-email-epure.andrei@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 22bd9e6..539760e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -431,13 +431,13 @@ void account_cfs_rq_runtime(struct cfs_rq *cfs_rq, unsigned long delta_exec);
+  * Scheduling class tree data structure manipulation methods:
+  */
+ 
+-static inline u64 max_vruntime(u64 min_vruntime, u64 vruntime)
++static inline u64 max_vruntime(u64 max_vruntime, u64 vruntime)
+ {
+-	s64 delta = (s64)(vruntime - min_vruntime);
++	s64 delta = (s64)(vruntime - max_vruntime);
+ 	if (delta > 0)
+-		min_vruntime = vruntime;
++		max_vruntime = vruntime;
+ 
+-	return min_vruntime;
++	return max_vruntime;
+ }
+ 
+ static inline u64 min_vruntime(u64 min_vruntime, u64 vruntime)
+@@ -473,6 +473,7 @@ static void update_min_vruntime(struct cfs_rq *cfs_rq)
+ 			vruntime = min_vruntime(vruntime, se->vruntime);
+ 	}
+ 
++	/* ensure we never gain time by being placed backwards. */
+ 	cfs_rq->min_vruntime = max_vruntime(cfs_rq->min_vruntime, vruntime);
+ #ifndef CONFIG_64BIT
+ 	smp_wmb();
