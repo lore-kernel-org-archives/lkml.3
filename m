@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab3CRVcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:32:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076Ab3CRVHv (ORCPT
+	id S933407Ab3CRVdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:33:04 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35926 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933343Ab3CRVcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:07:51 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 18 Mar 2013 17:32:54 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Jan Kara <jack@suse.cz>
-Subject: [ 13/48] ext3: Fix format string issues
-Date: Mon, 18 Mar 2013 14:08:21 -0700
-Message-Id: <20130318210811.187323354@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
-References: <20130318210810.247845918@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        kexec@lists.infradead.org, linux-pci@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Date: Mon, 18 Mar 2013 17:32:22 -0400
+Message-Id: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.1.2
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:e0f4:3a1:9c35:d688
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Caring about protecting the kernel from UID 0 was previously relatively
+uninteresting, since an attacker could simply modify the kernel, a module
+or an earlier part of the boot chain in order to insert new code. However,
+there are now a range of widely-deployed mechanisms for ensuring the
+authenticity of the early boot process and kernel. The addition of module
+signing makes most of these attacks infeasible.
 
-------------------
+This means we can return our focus to the kernel. There's currently a number
+of kernel interfaces that permit privileged userspace to modify the running
+kernel. These are currently protected by CAP_SYS_RAWIO, but unfortunately
+the semantics of this capability are poorly defined and it now covers a large
+superset of the desired behaviour.
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+This patch introduces CAP_COMPROMISE_KERNEL. Holding this capability
+indicates that a process is empowered to perform tasks that may result in
+modification of the running kernel. While aimed at handling the specific
+use-case of Secure Boot, it is generalisable to any other environment where
+permitting userspace to modify the kernel is undesirable.
 
-commit 8d0c2d10dd72c5292eda7a06231056a4c972e4cc upstream.
-
-ext3_msg() takes the printk prefix as the second parameter and the
-format string as the third parameter. Two callers of ext3_msg omit the
-prefix and pass the format string as the second parameter and the first
-parameter to the format string as the third parameter. In both cases
-this string comes from an arbitrary source. Which means the string may
-contain format string characters, which will
-lead to undefined and potentially harmful behavior.
-
-The issue was introduced in commit 4cf46b67eb("ext3: Unify log messages
-in ext3") and is fixed by this patch.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- fs/ext3/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/uapi/linux/capability.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -364,7 +364,7 @@ static struct block_device *ext3_blkdev_
- 	return bdev;
+diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
+index ba478fa..7109e650 100644
+--- a/include/uapi/linux/capability.h
++++ b/include/uapi/linux/capability.h
+@@ -343,7 +343,11 @@ struct vfs_cap_data {
  
- fail:
--	ext3_msg(sb, "error: failed to open journal device %s: %ld",
-+	ext3_msg(sb, KERN_ERR, "error: failed to open journal device %s: %ld",
- 		__bdevname(dev, b), PTR_ERR(bdev));
+ #define CAP_BLOCK_SUSPEND    36
  
- 	return NULL;
-@@ -891,7 +891,7 @@ static ext3_fsblk_t get_sb_block(void **
- 	/*todo: use simple_strtoll with >32bit ext3 */
- 	sb_block = simple_strtoul(options, &options, 0);
- 	if (*options && *options != ',') {
--		ext3_msg(sb, "error: invalid sb specification: %s",
-+		ext3_msg(sb, KERN_ERR, "error: invalid sb specification: %s",
- 		       (char *) *data);
- 		return 1;
- 	}
-
+-#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
++/* Allow things that trivially permit root to modify the running kernel */
++
++#define CAP_COMPROMISE_KERNEL  37
++
++#define CAP_LAST_CAP         CAP_COMPROMISE_KERNEL
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
+-- 
+1.8.1.2
 
