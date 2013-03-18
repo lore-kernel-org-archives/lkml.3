@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3CRPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 11:13:59 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:47789
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751613Ab3CRPN5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 11:13:57 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 18 Mar 2013 23:13:50 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <arm@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Michal Marek <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 1/7] kbuild: create an "include chroot" for DT bindings
-Message-ID: <20130318151348.GB4713@S2101-09.ap.freescale.net>
-References: <1362594183-21523-1-git-send-email-swarren@wwwdotorg.org>
+	id S1753628Ab3CRPQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 11:16:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55696 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099Ab3CRPQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 11:16:58 -0400
+Date: Mon, 18 Mar 2013 16:16:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>,
+        Robert Richter <rric@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 0/3] Perf persistent events
+Message-ID: <20130318151646.GB8879@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Borislav Petkov <bp@suse.de>, Robert Richter <rric@kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>
+References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+ <20130318084008.GA17959@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1362594183-21523-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <20130318084008.GA17959@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 11:22:57AM -0700, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The recent dtc+cpp support allows header files and C pre-processor
-> defines/macros to be used when compiling device tree files. These
-> headers will typically define various constants that are part of the
-> device tree bindings.
-> 
-> The original patch which set up the dtc+cpp include path only considered
-> using those headers from device tree files. However, most are also
-> useful for kernel code which needs to interpret the device tree.
-> 
-> In both the DT files and the kernel, I'd like to include the DT-related
-> headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
-> That will simplify any text which discusses the DT header locations.
-> 
-> Creating a <dt-bindings/> for kernel source to use is as simple as
-> placing files into include/dt-bindings/.
-> 
-> However, when compiling DT files, the include path should be restricted
-> so that only the dt-bindings path is available; arbitrary kernel headers
-> shouldn't be exposed. For this reason, create a specific include
-> directory for use by dtc+cpp, and symlink dt-bindings from there to the
-> actual location of include/dt-bindings/. For want of a better location,
-> place this "include chroot" into the existing dts/ directory.
-> 
-> arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
-> 
-> Some headers used by device tree files may not be useful to the kernel;
-> they may be used simply to aid in constructing the DT file (e.g. macros
-> to create a node), but not define any information that the kernel needs
-> to share. These may be placed directly into arch/*/boot/dts/ along with
-> the DT files themselves.
-> 
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Hiroshi Doyu <hdoyu@nvidia.com>
-> Acked-by: Michal Marek <mmarek@suse.cz>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> This first patch was previously posted separately as V2. I'm including
-> it here to keep it with the whole series. I hope this series can be
-> applied as a topic branch in arm-soc.
+On Mon, Mar 18, 2013 at 09:40:08AM +0100, Ingo Molnar wrote:
+> That definitely looks interesting and desirable. It would be nice to
+> have more generic/flexible semantics by using the VFS for tracing
+> context discovery.
+>
+> That would allow 'stateful tracing', and not just in a kernel
+> initiated fashion: we could basically do ftrace-alike tracing, into
+> persistent, VFS-named buffers.
+>
+> The question is, how are the individual buffers identified when and
+> after they have been created? An option would be to use cgroups for
+> that - cgroups already has its own VFS and syscall interfaces. But
+> maybe some other, explicit interface is needed (eventfs).
 
-So no comments on the series means that we can start maintain it on
-a topic branch, so that people can base their works on it?
+My latest knowledge is that Steve needs an events filesystem too because
+he wants to do mkdir in debugfs. So maybe we should really do an eventfs
+finally - it has been asked for for so many times now. :)
 
-Shawn
+> All the usecases we talked about in the past would work fine that way:
+>
+>  - the MCE events would show up as an already created set of buffers,
+>  discoverable via the VFS interface.
 
+Right, in the MCE case though, we want to enable them as early as
+possible, i.e. long before we can even manipulate something through the
+VFS. So my current thinking is that we need both - a way to enable a
+persistent event from within the kernel and then the eventfs thing.
+
+>  - user-space could generate more 'tracing/profiling contexts' runtime.
+
+Sure.
+
+>  - a boot tracer would activate via a boot option, and it would create
+>  a tracing context - visible via the VFS interface.
+
+Right, and this one you still want to enable as early as possible, long
+before userspace can access something through VFS. Btw, how are we going
+to boottrace stuff which happens before perf initialization? Cache it
+into buffers somewhere?
+
+>  - modern RAS daemon replacing mcelog
+>
+> If you make that work, via a new perf tool side as well that allows
+> the creation of a tracing context (and a separate extraction as well),
+> via modified 'perf trace' or a new subcommand, that would be an major,
+> upstream-worthy perf feature IMO which would go way beyond the RAS
+> usecase.
+
+Right, ok, so we could start working towards that too but I'd like to
+not delay the persistent events stuff so that we can finally do the RAS
+daemon, and do it properly.
+
+Besides, having the eventfs and persistency would be a different aspect
+to manipulating perf events and can be developed independently and in
+parallel.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
