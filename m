@@ -1,129 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab3CRMY5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 08:24:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab3CRMY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 08:24:56 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
-Date: Mon, 18 Mar 2013 08:24:48 -0400
-Message-Id: <1363609488-25250-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <51444171.1080905@ladisch.de>
-References: <51444171.1080905@ladisch.de>
+	id S1751681Ab3CRMaD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 08:30:03 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54840 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab3CRMaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 08:30:00 -0400
+Message-ID: <514708A9.8040009@linux.vnet.ibm.com>
+Date: Mon, 18 Mar 2013 20:29:29 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
+References: <51433D98.4050605@linux.vnet.ibm.com> <51433E71.2070107@linux.vnet.ibm.com> <20130317150239.GM11223@redhat.com> <5146CB92.7060203@linux.vnet.ibm.com> <20130318091303.GA1276@redhat.com>
+In-Reply-To: <20130318091303.GA1276@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031812-3864-0000-0000-00000750CB94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
-registers to userspace.  The Kconfig help points out that in some cases this
-can be a security risk as some systems may erroneously configure the map such
-that additional data is exposed to userspace.
+On 03/18/2013 05:13 PM, Gleb Natapov wrote:
+> On Mon, Mar 18, 2013 at 04:08:50PM +0800, Xiao Guangrong wrote:
+>> On 03/17/2013 11:02 PM, Gleb Natapov wrote:
+>>> On Fri, Mar 15, 2013 at 11:29:53PM +0800, Xiao Guangrong wrote:
+>>>> This patch tries to introduce a very simple and scale way to invalid all
+>>>> mmio sptes - it need not walk any shadow pages and hold mmu-lock
+>>>>
+>>>> KVM maintains a global mmio invalid generation-number which is stored in
+>>>> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+>>>> generation-number into his available bits when it is created
+>>>>
+>>>> When KVM need zap all mmio sptes, it just simply increase the global
+>>>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+>>>> then it walks the shadow page table and get the mmio spte. If the
+>>>> generation-number on the spte does not equal the global generation-number,
+>>>> it will go to the normal #PF handler to update the mmio spte
+>>>>
+>>>> Since 19 bits are used to store generation-number on mmio spte, the
+>>>> generation-number can be round after 33554432 times. It is large enough
+>>>> for nearly all most cases, but making the code be more strong, we zap all
+>>>> shadow pages when the number is round
+>>>>
+>>> Very nice idea, but why drop Takuya patches instead of using
+>>> kvm_mmu_zap_mmio_sptes() when generation number overflows.
+>>
+>> I am not sure whether it is still needed. Requesting to zap all mmio sptes for
+>> more than 500000 times is really really rare, it nearly does not happen.
+>> (By the way, 33554432 is wrong in the changelog, i just copy that for my origin
+>> implantation.) And, after my patch optimizing zapping all shadow pages,
+>> zap-all-sps should not be a problem anymore since it does not take too much lock
+>> time.
+>>
+>> Your idea?
+>>
+> I expect 500000 to become less since I already had plans to store some
 
-This is a problem for distributions -- some users want the MMAP functionality
-but it comes with a significant security risk.  In an effort to mitigate this
-risk, and due to the low number of users of the MMAP functionality, I've
-introduced a kernel parameter, hpet_mmap_enable, that is required in order
-to actually have the HPET MMAP exposed.
+Interesting, just curious, what are the plans? ;)
 
-[v2]: Clemens suggested modifying the Kconfig help text and making the
-default setting configurable.
+> information in mmio spte. Even if all zap-all-sptes becomes faster we
+> still needlessly zap all sptes while we can zap only mmio.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
----
- Documentation/kernel-parameters.txt |    3 +++
- drivers/char/Kconfig                |   10 ++++++++--
- drivers/char/hpet.c                 |   21 +++++++++++++++++++--
- 3 files changed, 30 insertions(+), 4 deletions(-)
+Okay.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index e567af3..dbf0d81 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -962,6 +962,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				VIA, nVidia)
- 			verbose: show contents of HPET registers during setup
- 
-+	hpet_mmap_enable [X86, HPET_MMAP] option to expose HPET MMAP to
-+			 userspace.  By default this is disabled.
-+
- 	hugepages=	[HW,X86-32,IA-64] HugeTLB pages to allocate at boot.
- 	hugepagesz=	[HW,IA-64,PPC,X86-64] The size of the HugeTLB pages.
- 			On x86-64 and powerpc, this option can be specified
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 3bb6fa3..7b830aa 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -534,10 +534,16 @@ config HPET_MMAP
- 	  If you say Y here, user applications will be able to mmap
- 	  the HPET registers.
- 
-+config HPET_MMAP_DEFAULT
-+	int "Enable HPET MMAP access by default"
-+	depends on HPET_MMAP
-+	range 0 1
-+	default 0
-+	help
- 	  In some hardware implementations, the page containing HPET
- 	  registers may also contain other things that shouldn't be
--	  exposed to the user.  If this applies to your hardware,
--	  say N here.
-+	  exposed to the user. This option selects the default user access
-+	  to the HPET registers for applications that require it.  (0=off, 1=on)
- 
- config HANGCHECK_TIMER
- 	tristate "Hangcheck timer"
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index e3f9a99..0f32e30 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -367,12 +367,26 @@ static unsigned int hpet_poll(struct file *file, poll_table * wait)
- 	return 0;
- }
- 
-+#ifdef CONFIG_HPET_MMAP
-+static int hpet_mmap_enabled = CONFIG_HPET_MMAP_DEFAULT;
-+
-+static __init int hpet_mmap_enable(char *str)
-+{
-+	get_option(&str, &hpet_mmap_enabled);
-+	pr_info(KERN_INFO "HPET MMAP %s\n",
-+		hpet_mmap_enabled ? "disabled" : "enabled");
-+	return 1;
-+}
-+__setup("hpet_mmap", hpet_mmap_enable);
-+
- static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
- {
--#ifdef	CONFIG_HPET_MMAP
- 	struct hpet_dev *devp;
- 	unsigned long addr;
- 
-+	if (!hpet_mmap_enabled)
-+		return -EACCES;
-+
- 	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
- 		return -EINVAL;
- 
-@@ -393,10 +407,13 @@ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
- 	}
- 
- 	return 0;
-+}
- #else
-+static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
-+{
- 	return -ENOSYS;
--#endif
- }
-+#endif
- 
- static int hpet_fasync(int fd, struct file *file, int on)
- {
--- 
-1.7.9.3
+> 
+>>>
+>>>
+>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>> ---
+>>>>  arch/x86/include/asm/kvm_host.h |    2 +
+>>>>  arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
+>>>>  arch/x86/kvm/mmutrace.h         |   17 +++++++++++
+>>>>  arch/x86/kvm/paging_tmpl.h      |    7 +++-
+>>>>  arch/x86/kvm/vmx.c              |    4 ++
+>>>>  arch/x86/kvm/x86.c              |    6 +--
+>>>>  6 files changed, 82 insertions(+), 15 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>>>> index ef7f4a5..572398e 100644
+>>>> --- a/arch/x86/include/asm/kvm_host.h
+>>>> +++ b/arch/x86/include/asm/kvm_host.h
+>>>> @@ -529,6 +529,7 @@ struct kvm_arch {
+>>>>  	unsigned int n_requested_mmu_pages;
+>>>>  	unsigned int n_max_mmu_pages;
+>>>>  	unsigned int indirect_shadow_pages;
+>>>> +	unsigned int mmio_invalid_gen;
+>>> Why invalid? Should be mmio_valid_gen or mmio_current_get.
+>>
+>> mmio_invalid_gen is only updated in kvm_mmu_invalidate_mmio_sptes,
+>> so i named it as _invalid_. But mmio_valid_gen is good for me.
+>>
+> It holds currently valid value though, so calling it "invalid" is
+> confusing.
+
+I agree.
+
+> 
+>>>
+>>>>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>>>>  	/*
+>>>>  	 * Hash table of struct kvm_mmu_page.
+>>>> @@ -765,6 +766,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
+>>>>  void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+>>>>  				     struct kvm_memory_slot *slot,
+>>>>  				     gfn_t gfn_offset, unsigned long mask);
+>>>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm);
+>>> Agree with Takuya that kvm_mmu_invalidate_mmio_sptes() is a better name.
+>>
+>> Me too.
+>>
+>>>
+>>>>  void kvm_mmu_zap_all(struct kvm *kvm);
+>>>>  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+>>>>  void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
+>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>>> index 13626f4..7093a92 100644
+>>>> --- a/arch/x86/kvm/mmu.c
+>>>> +++ b/arch/x86/kvm/mmu.c
+>>>> @@ -234,12 +234,13 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+>>>>  static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+>>>>  			   unsigned access)
+>>>>  {
+>>>> -	u64 mask = generation_mmio_spte_mask(0);
+>>>> +	unsigned int gen = ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
+>>>> +	u64 mask = generation_mmio_spte_mask(gen);
+>>>>
+>>>>  	access &= ACC_WRITE_MASK | ACC_USER_MASK;
+>>>>  	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+>>>>
+>>>> -	trace_mark_mmio_spte(sptep, gfn, access, 0);
+>>>> +	trace_mark_mmio_spte(sptep, gfn, access, gen);
+>>>>  	mmu_spte_set(sptep, mask);
+>>>>  }
+>>>>
+>>>> @@ -269,6 +270,34 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
+>>>>  	return false;
+>>>>  }
+>>>>
+>>>> +static bool check_mmio_spte(struct kvm *kvm, u64 spte)
+>>>> +{
+>>>> +	return get_mmio_spte_generation(spte) ==
+>>>> +		ACCESS_ONCE(kvm->arch.mmio_invalid_gen);
+>>>> +}
+>>>> +
+>>>> +/*
+>>>> + * The caller should protect concurrent access on
+>>>> + * kvm->arch.mmio_invalid_gen. Currently, it is used by
+>>>> + * kvm_arch_commit_memory_region and protected by kvm->slots_lock.
+>>>> + */
+>>>> +void kvm_mmu_invalid_mmio_spte(struct kvm *kvm)
+>>>> +{
+>>>> +	/* Ensure update memslot has been completed. */
+>>>> +	smp_mb();
+>>> What barrier this one is paired with?
+>>
+>> It is paired with nothing. :)
+>>
+>> I used mb here just for avoid increasing the generation-number before updating
+>> the memslot. But on other sides (storing gen and checking gen), we do not need
+>> to care it - the worse case is that we emulate a memory-accessed instruction.
+>>
+> Are you warring that compiler can reorder instructions and put
+> instruction that increase generation number before updating memslot?
+> If yes then you need to use barrier() here. Or are you warring that
+> update may be seen in different order by another cpu? Then you need to
+> put another barring in the code that access memslot/generation number
+> and cares about the order.
+
+After more thinking, maybe i missed something. The correct order should be:
+
+The write side:
+update kvm->memslots
+smp_wmb()
+kvm->mmio_invalid_gen++
+
+The read side:
+read kvm->mmio_invalid_gen++
+smp_rmb();
+search gfn in memslots (read all memslots)
+
+Otherwise, mmio spte would cache a newest generation-number and obsolete
+memslot info.
+
+But we read memslots out of mmu-lock on page fault path, we should pass
+mmio_invalid_gen to the page fault hander. In order to simplify the code,
+let's save the generation-number into kvm_memslots, then they can protected
+by SRCU. How about this?
+
 
