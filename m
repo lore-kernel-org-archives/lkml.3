@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab3CRVMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46164 "EHLO
+	id S932620Ab3CRVMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:12:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46159 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494Ab3CRVKa (ORCPT
+	with ESMTP id S932319Ab3CRVK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:10:30 -0400
+	Mon, 18 Mar 2013 17:10:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 26/40] btrfs: use rcu_barrier() to wait for bdev puts at unmount
-Date: Mon, 18 Mar 2013 14:11:04 -0700
-Message-Id: <20130318211018.126074423@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 35/40] tun: add a missing nf_reset() in tun_net_xmit()
+Date: Mon, 18 Mar 2013 14:11:13 -0700
+Message-Id: <20130318211018.788369250@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -27,58 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
 
-commit bc178622d40d87e75abc131007342429c9b03351 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Doing this would reliably fail with -EBUSY for me:
+[ Upstream commit f8af75f3517a24838a36eb5797a1a3e60bf9e276 ]
 
-# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
-...
-unable to open /dev/sdb2: Device or resource busy
+Dave reported following crash :
 
-because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
+general protection fault: 0000 [#1] SMP
+CPU 2
+Pid: 25407, comm: qemu-kvm Not tainted 3.7.9-205.fc18.x86_64 #1 Hewlett-Packard HP Z400 Workstation/0B4Ch
+RIP: 0010:[<ffffffffa0399bd5>]  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+RSP: 0018:ffff880276913d78  EFLAGS: 00010206
+RAX: 50626b6b7876376c RBX: ffff88026e530d68 RCX: ffff88028d158e00
+RDX: ffff88026d0d5470 RSI: 0000000000000011 RDI: 0000000000000002
+RBP: ffff880276913d88 R08: 0000000000000000 R09: ffff880295002900
+R10: 0000000000000000 R11: 0000000000000003 R12: ffffffff81ca3b40
+R13: ffffffff8151a8e0 R14: ffff880270875000 R15: 0000000000000002
+FS:  00007ff3bce38a00(0000) GS:ffff88029fc40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fd1430bd000 CR3: 000000027042b000 CR4: 00000000000027e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process qemu-kvm (pid: 25407, threadinfo ffff880276912000, task ffff88028c369720)
+Stack:
+ ffff880156f59100 ffff880156f59100 ffff880276913d98 ffffffff815534f7
+ ffff880276913db8 ffffffff8151a74b ffff880270875000 ffff880156f59100
+ ffff880276913dd8 ffffffff8151a5a6 ffff880276913dd8 ffff88026d0d5470
+Call Trace:
+ [<ffffffff815534f7>] nf_conntrack_destroy+0x17/0x20
+ [<ffffffff8151a74b>] skb_release_head_state+0x7b/0x100
+ [<ffffffff8151a5a6>] __kfree_skb+0x16/0xa0
+ [<ffffffff8151a666>] kfree_skb+0x36/0xa0
+ [<ffffffff8151a8e0>] skb_queue_purge+0x20/0x40
+ [<ffffffffa02205f7>] __tun_detach+0x117/0x140 [tun]
+ [<ffffffffa022184c>] tun_chr_close+0x3c/0xd0 [tun]
+ [<ffffffff8119669c>] __fput+0xec/0x240
+ [<ffffffff811967fe>] ____fput+0xe/0x10
+ [<ffffffff8107eb27>] task_work_run+0xa7/0xe0
+ [<ffffffff810149e1>] do_notify_resume+0x71/0xb0
+ [<ffffffff81640152>] int_signal+0x12/0x17
+Code: 00 00 04 48 89 e5 41 54 53 48 89 fb 4c 8b a7 e8 00 00 00 0f 85 de 00 00 00 0f b6 73 3e 0f b7 7b 2a e8 10 40 00 00 48 85 c0 74 0e <48> 8b 40 28 48 85 c0 74 05 48 89 df ff d0 48 c7 c7 08 6a 3a a0
+RIP  [<ffffffffa0399bd5>] destroy_conntrack+0x35/0x120 [nf_conntrack]
+ RSP <ffff880276913d78>
 
-Using systemtap to track bdev gets & puts shows a kworker thread doing a
-blkdev put after mkfs attempts a get; this is left over from the unmount
-path:
+This is because tun_net_xmit() needs to call nf_reset()
+before queuing skb into receive_queue
 
-btrfs_close_devices
-	__btrfs_close_devices
-		call_rcu(&device->rcu, free_device);
-			free_device
-				INIT_WORK(&device->rcu_work, __free_device);
-				schedule_work(&device->rcu_work);
-
-so unmount might complete before __free_device fires & does its blkdev_put.
-
-Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
-until all blkdev_put()s are done, and the device is truly free once
-unmount completes.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/btrfs/volumes.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/tun.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -546,6 +546,12 @@ int btrfs_close_devices(struct btrfs_fs_
- 		__btrfs_close_devices(fs_devices);
- 		free_fs_devices(fs_devices);
- 	}
-+	/*
-+	 * Wait for rcu kworkers under __btrfs_close_devices
-+	 * to finish all blkdev_puts so device is really
-+	 * free when umount is done.
-+	 */
-+	rcu_barrier();
- 	return ret;
- }
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -417,6 +417,8 @@ static netdev_tx_t tun_net_xmit(struct s
+ 	 * for indefinite time. */
+ 	skb_orphan(skb);
+ 
++	nf_reset(skb);
++
+ 	/* Enqueue packet */
+ 	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
  
 
 
