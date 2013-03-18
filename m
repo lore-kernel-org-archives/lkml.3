@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776Ab3CRVlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:41:55 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58297 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933113Ab3CRVhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 17:37:01 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S933789Ab3CRVmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:42:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45834 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3CRVHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 17:07:50 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/15] rcu: Add event tracing for no-CBs CPUs' callback registration
-Date: Mon, 18 Mar 2013 14:36:39 -0700
-Message-Id: <1363642610-21390-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130318213608.GA20296@linux.vnet.ibm.com>
- <1363642610-21390-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031821-9360-0000-0000-000011601FFB
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Emese Revfy <re.emese@gmail.com>,
+        PaX Team <pageexec@freemail.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 12/48] signal: always clear sa_restorer on execve
+Date: Mon, 18 Mar 2013 14:08:20 -0700
+Message-Id: <20130318210811.117790857@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
+References: <20130318210810.247845918@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+------------------
+
+From: Kees Cook <keescook@chromium.org>
+
+commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
+
+When the new signal handlers are set up, the location of sa_restorer is
+not cleared, leaking a parent process's address space location to
+children.  This allows for a potential bypass of the parent's ASLR by
+examining the sa_restorer value returned when calling sigaction().
+
+Based on what should be considered "secret" about addresses, it only
+matters across the exec not the fork (since the VMAs haven't changed
+until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
+this is where it should be fixed.
+
+Given the few uses of sa_restorer, a "set" function was not written
+since this would be the only use.  Instead, we use
+__ARCH_HAS_SA_RESTORER, as already done in other places.
+
+Example of the leak before applying this patch:
+
+  $ cat /proc/$$/maps
+  ...
+  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  $ ./leak
+  ...
+  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  1 0 (nil) 0x7fb9f30b94a0
+  2 4000000 (nil) 0x7f278bcaa4a0
+  3 4000000 (nil) 0x7f278bcaa4a0
+  4 0 (nil) 0x7fb9f30b94a0
+  ...
+
+[akpm@linux-foundation.org: use SA_RESTORER for backportability]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/rcutree_plugin.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/signal.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 90a1914..7225a5a 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2285,6 +2285,13 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
- 	if (!is_nocb_cpu(rdp->cpu))
- 		return 0;
- 	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy);
-+	if (__is_kfree_rcu_offset((unsigned long)rhp->func))
-+		trace_rcu_kfree_callback(rdp->rsp->name, rhp,
-+					 (unsigned long)rhp->func,
-+					 rdp->qlen_lazy, rdp->qlen);
-+	else
-+		trace_rcu_callback(rdp->rsp->name, rhp,
-+				   rdp->qlen_lazy, rdp->qlen);
- 	return 1;
- }
- 
--- 
-1.8.1.5
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -482,6 +482,9 @@ flush_signal_handlers(struct task_struct
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
++#ifdef SA_RESTORER
++		ka->sa.sa_restorer = NULL;
++#endif
+ 		sigemptyset(&ka->sa.sa_mask);
+ 		ka++;
+ 	}
+
 
