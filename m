@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab3CRVMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 17:12:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46169 "EHLO
+	id S932592Ab3CRVMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 17:12:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511Ab3CRVKa (ORCPT
+	with ESMTP id S932494Ab3CRVKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Mar 2013 17:10:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 38/40] ipv6: stop multicast forwarding to process interface scoped addresses
-Date: Mon, 18 Mar 2013 14:11:16 -0700
-Message-Id: <20130318211018.995100066@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [ 26/40] btrfs: use rcu_barrier() to wait for bdev puts at unmount
+Date: Mon, 18 Mar 2013 14:11:04 -0700
+Message-Id: <20130318211018.126074423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130318211016.254453918@linuxfoundation.org>
 References: <20130318211016.254453918@linuxfoundation.org>
@@ -28,40 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Eric Sandeen <sandeen@redhat.com>
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+commit bc178622d40d87e75abc131007342429c9b03351 upstream.
 
-[ Upstream commit ddf64354af4a702ee0b85d0a285ba74c7278a460 ]
+Doing this would reliably fail with -EBUSY for me:
 
-v2:
-a) used struct ipv6_addr_props
+# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
+...
+unable to open /dev/sdb2: Device or resource busy
 
-v3:
-a) reverted changes for ipv6_addr_props
+because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
 
-v4:
-a) do not use __ipv6_addr_needs_scope_id
+Using systemtap to track bdev gets & puts shows a kworker thread doing a
+blkdev put after mkfs attempts a get; this is left over from the unmount
+path:
 
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+btrfs_close_devices
+	__btrfs_close_devices
+		call_rcu(&device->rcu, free_device);
+			free_device
+				INIT_WORK(&device->rcu_work, __free_device);
+				schedule_work(&device->rcu_work);
+
+so unmount might complete before __free_device fires & does its blkdev_put.
+
+Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
+until all blkdev_put()s are done, and the device is truly free once
+unmount completes.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_input.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -257,7 +257,8 @@ int ip6_mc_input(struct sk_buff *skb)
- 	 *      IPv6 multicast router mode is now supported ;)
- 	 */
- 	if (dev_net(skb->dev)->ipv6.devconf_all->mc_forwarding &&
--	    !(ipv6_addr_type(&hdr->daddr) & IPV6_ADDR_LINKLOCAL) &&
-+	    !(ipv6_addr_type(&hdr->daddr) &
-+	      (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)) &&
- 	    likely(!(IP6CB(skb)->flags & IP6SKB_FORWARDED))) {
- 		/*
- 		 * Okay, we try to forward - split and duplicate
+---
+ fs/btrfs/volumes.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -546,6 +546,12 @@ int btrfs_close_devices(struct btrfs_fs_
+ 		__btrfs_close_devices(fs_devices);
+ 		free_fs_devices(fs_devices);
+ 	}
++	/*
++	 * Wait for rcu kworkers under __btrfs_close_devices
++	 * to finish all blkdev_puts so device is really
++	 * free when umount is done.
++	 */
++	rcu_barrier();
+ 	return ret;
+ }
+ 
 
 
