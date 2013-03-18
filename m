@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3CRLDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 07:03:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34064 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab3CRLDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 07:03:12 -0400
-Date: Mon, 18 Mar 2013 04:01:56 -0700
-From: tip-bot for Vinson Lee <tipbot@zytor.com>
-Message-ID: <tip-d1398ccfec56e54010476efd6a316427d29045a6@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, penberg@kernel.org, irina.tirdea@intel.com,
-        tglx@linutronix.de, vlee@twitter.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, irina.tirdea@intel.com, tglx@linutronix.de,
-        vlee@twitter.com
-In-Reply-To: <1363214064-4671-2-git-send-email-vlee@twitter.com>
-References: <1363214064-4671-2-git-send-email-vlee@twitter.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Fix LIBNUMA build with glibc 2.12 and older.
-Git-Commit-ID: d1398ccfec56e54010476efd6a316427d29045a6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753315Ab3CRLDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 07:03:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab3CRLDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 07:03:35 -0400
+Date: Mon, 18 Mar 2013 12:03:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com
+Subject: Re: [PATCH 1/2] mm: Export split_page()
+Message-ID: <20130318110334.GI10192@dhcp22.suse.cz>
+References: <1363470088-24565-1-git-send-email-kys@microsoft.com>
+ <1363470125-24606-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Mar 2013 04:02:02 -0700 (PDT)
+In-Reply-To: <1363470125-24606-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d1398ccfec56e54010476efd6a316427d29045a6
-Gitweb:     http://git.kernel.org/tip/d1398ccfec56e54010476efd6a316427d29045a6
-Author:     Vinson Lee <vlee@twitter.com>
-AuthorDate: Wed, 13 Mar 2013 15:34:24 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 14 Mar 2013 08:06:21 -0300
+On Sat 16-03-13 14:42:04, K. Y. Srinivasan wrote:
+> The split_page() function will be very useful for balloon drivers. On Hyper-V,
+> it will be very efficient to use 2M allocations in the guest as this (a) makes
+> the ballooning protocol with the host that much more efficient and (b) moving
+> memory in 2M chunks minimizes fragmentation in the host. Export the split_page()
+> function to let the guest allocations be in 2M chunks while the host is free to
+> return this memory at arbitrary granularity.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-perf tools: Fix LIBNUMA build with glibc 2.12 and older.
+I do not have any objections to exporting the symbol (at least we
+prevent drivers code from inventing their own split_page) but the
+Hyper-V specific description should go into Hyper-V patch IMO.
 
-The tokens MADV_HUGEPAGE and MADV_NOHUGEPAGE are not available with
-glibc 2.12 and older. Define these tokens if they are not already
-defined.
+So for the export with a short note that the symbol will be used by
+Hyper-V
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-This patch fixes these build errors with older versions of glibc.
+> ---
+>  mm/page_alloc.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 6cacfee..7e0ead6 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
+>  	for (i = 1; i < (1 << order); i++)
+>  		set_page_refcounted(page + i);
+>  }
+> +EXPORT_SYMBOL_GPL(split_page);
+>  
+>  static int __isolate_free_page(struct page *page, unsigned int order)
+>  {
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-    CC bench/numa.o
-bench/numa.c: In function ‘alloc_data’:
-bench/numa.c:334: error: ‘MADV_HUGEPAGE’ undeclared (first use in this function)
-bench/numa.c:334: error: (Each undeclared identifier is reported only once
-bench/numa.c:334: error: for each function it appears in.)
-bench/numa.c:341: error: ‘MADV_NOHUGEPAGE’ undeclared (first use in this function)
-make: *** [bench/numa.o] Error 1
-
-Signed-off-by: Vinson Lee <vlee@twitter.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363214064-4671-2-git-send-email-vlee@twitter.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/bench/bench.h | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
-
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index a5223e6..0fdc852 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -1,6 +1,30 @@
- #ifndef BENCH_H
- #define BENCH_H
- 
-+/*
-+ * The madvise transparent hugepage constants were added in glibc
-+ * 2.13. For compatibility with older versions of glibc, define these
-+ * tokens if they are not already defined.
-+ *
-+ * PA-RISC uses different madvise values from other architectures and
-+ * needs to be special-cased.
-+ */
-+#ifdef __hppa__
-+# ifndef MADV_HUGEPAGE
-+#  define MADV_HUGEPAGE		67
-+# endif
-+# ifndef MADV_NOHUGEPAGE
-+#  define MADV_NOHUGEPAGE	68
-+# endif
-+#else
-+# ifndef MADV_HUGEPAGE
-+#  define MADV_HUGEPAGE		14
-+# endif
-+# ifndef MADV_NOHUGEPAGE
-+#  define MADV_NOHUGEPAGE	15
-+# endif
-+#endif
-+
- extern int bench_numa(int argc, const char **argv, const char *prefix);
- extern int bench_sched_messaging(int argc, const char **argv, const char *prefix);
- extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
+-- 
+Michal Hocko
+SUSE Labs
