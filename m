@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab3CSP1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:27:16 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57993 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756604Ab3CSP1P (ORCPT
+	id S932382Ab3CSPam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:30:42 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:47142 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab3CSPak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:27:15 -0400
-Date: Tue, 19 Mar 2013 11:27:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Ben Hutchings <ben@decadent.org.uk>
-cc: stable@vger.kernel.org, <akpm@linux-foundation.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ 45/82] USB: EHCI: dont check DMA values in QH overlays
-In-Reply-To: <1363662540.3937.366.camel@deadeye.wl.decadent.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1303191125100.15684-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 19 Mar 2013 11:30:40 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Subject: [PATCH] x86: correctly initialize the CS base on reset
+Date: Tue, 19 Mar 2013 16:30:26 +0100
+Message-Id: <1363707026-19351-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Mar 2013, Ben Hutchings wrote:
+The CS base was initialized to 0 on VMX (wrong, but usually overridden
+by userspace before starting) or 0xf0000 on SVM.  The correct value is
+0xffff0000, and VMX is able to emulate it now, so use it.
 
-> On Mon, 2013-03-18 at 04:22 +0000, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Alan Stern <stern@rowland.harvard.edu>
-> > 
-> > commit feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
-> > 
-> > This patch (as1661) fixes a rather obscure bug in ehci-hcd.  In a
-> > couple of places, the driver compares the DMA address stored in a QH's
-> > overlay region with the address of a particular qTD, in order to see
-> > whether that qTD is the one currently being processed by the hardware.
-> > (If it is then the status in the QH's overlay region is more
-> > up-to-date than the status in the qTD, and if it isn't then the
-> > overlay's value needs to be adjusted when the QH is added back to the
-> > active schedule.)
-> > 
-> > However, DMA address in the overlay region isn't always valid.  It
-> > sometimes will contain a stale value, which may happen by coincidence
-> > to be equal to a qTD's DMA address.  Instead of checking the DMA
-> > address, we should check whether the overlay region is active and
-> > valid.  The patch tests the ACTIVE bit in the overlay, and clears this
-> > bit when the overlay becomes invalid (which happens when the
-> > currently-executing URB is unlinked).
-> > 
-> > This is the second part of a fix for the regression reported at:
-> > 
-> > 	https://bugs.launchpad.net/bugs/1088733
-> 
-> Alan, the first part (commit 6402c796d3b4 aka as1660) didn't apply and I
-> couldn't see how to adapt it for 3.2.  Does this second part have any
-> value without the first?  Or, if you could provide a backport of the
-> first part, that would be very much appreciated.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/svm.c | 8 +-------
+ arch/x86/kvm/vmx.c | 1 +
+ 2 files changed, 2 insertions(+), 7 deletions(-)
 
-Without the first part, the second part can actually be dangerous.  
-Under the circumstances, I think it is best to apply neither.
-
-Alan Stern
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 7219a40..7a46c1f 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1131,17 +1131,11 @@ static void init_vmcb(struct vcpu_svm *svm)
+ 	init_seg(&save->gs);
+ 
+ 	save->cs.selector = 0xf000;
++	save->cs.base = 0xffff0000;
+ 	/* Executable/Readable Code Segment */
+ 	save->cs.attrib = SVM_SELECTOR_READ_MASK | SVM_SELECTOR_P_MASK |
+ 		SVM_SELECTOR_S_MASK | SVM_SELECTOR_CODE_MASK;
+ 	save->cs.limit = 0xffff;
+-	/*
+-	 * cs.base should really be 0xffff0000, but vmx can't handle that, so
+-	 * be consistent with it.
+-	 *
+-	 * Replace when we have real mode working for vmx.
+-	 */
+-	save->cs.base = 0xf0000;
+ 
+ 	save->gdtr.limit = 0xffff;
+ 	save->idtr.limit = 0xffff;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4a0bafe..c75c25d 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4133,6 +4133,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 
+ 	seg_setup(VCPU_SREG_CS);
+ 	vmcs_write16(GUEST_CS_SELECTOR, 0xf000);
++	vmcs_write32(GUEST_CS_BASE, 0xffff0000);
+ 
+ 	seg_setup(VCPU_SREG_DS);
+ 	seg_setup(VCPU_SREG_ES);
+-- 
+1.8.1.4
 
