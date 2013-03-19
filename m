@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab3CSUCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:02:12 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57403 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab3CSUCL (ORCPT
+	id S1757475Ab3CSUCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:02:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60383 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3CSUCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:02:11 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 19 Mar 2013 13:02:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Cc: linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/7] watchdog: w83627hf: Enable watchdog only once
-Message-ID: <20130319200209.GA16827@roeck-us.net>
-References: <1362957300-18223-1-git-send-email-linux@roeck-us.net>
- <1362957300-18223-3-git-send-email-linux@roeck-us.net>
- <51489FC2.40806@draigBrady.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51489FC2.40806@draigBrady.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Mar 2013 16:02:31 -0400
+Date: Tue, 19 Mar 2013 13:02:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify
+ mmap()'s page-size boundary requirement
+Message-Id: <20130319130229.fe83c985678146980ecc6102@linux-foundation.org>
+In-Reply-To: <20130316040228.15064.28019.stgit@localhost6.localdomain6>
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040228.15064.28019.stgit@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 05:26:26PM +0000, Pádraig Brady wrote:
-> On 03/10/2013 11:14 PM, Guenter Roeck wrote:
-> > It is unnecessary to enable the logical device and WDT0 each time
-> > the watchdog is accessed. Do it only once during initialization.
+On Sat, 16 Mar 2013 13:02:29 +0900 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+
+> If there's some vmcore object that doesn't satisfy page-size boundary
+> requirement, remap_pfn_range() fails to remap it to user-space.
 > 
-> Is this also the case on systems where the superio
-> chip is used for other things? I've the impression
-> that this may break some systems (though I no longer
-> have the hardware to test). Arbitration of multiple
-> users of the superio device may be managed be a central
-> user space app, or by a kernel level arbitrator.
+> Objects that posisbly don't satisfy the requirement are ELF note
+> segments only. The memory chunks corresponding to PT_LOAD entries are
+> guaranteed to satisfy page-size boundary requirement by the copy from
+> old memory to buffer in 2nd kernel done in later patch.
 > 
-Not sure if I understand you correctly.
+> This patch doesn't copy each note segment into the 2nd kernel since
+> they amount to so large in total if there are multiple CPUs. For
+> example, current maximum number of CPUs in x86_64 is 5120, where note
+> segments exceed 1MB with NT_PRSTATUS only.
 
-You mean some entity might actually disable the watchdog between accesses
-to it by the watchdog driver ? That would make it pretty useless.
-Might as well turn it off entirely if that is the case.
+I don't really understand this.  Why does the number of or size of
+note segments affect their alignment?
 
-Or do you refer to _selecting_ the hwmon logical device ? If so, this patch
-is about enabling it only once, not about selecting it only once.
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -38,6 +38,8 @@ static u64 vmcore_size;
+>  
+>  static struct proc_dir_entry *proc_vmcore = NULL;
+>  
+> +static bool support_mmap_vmcore;
 
-Guenter
+This is quite regrettable.  It means that on some kernels/machines,
+mmap(vmcore) simply won't work.  This means that people might write
+code which works for them, but which will fail for others when deployed
+on a small number of machines.
+
+Can we avoid this?  Why can't we just copy the notes even if there are
+a large number of them?
+
