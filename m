@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab3CSO6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:58:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37720 "EHLO arroyo.ext.ti.com"
+	id S932661Ab3CSO6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:58:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37743 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932589Ab3CSO6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:58:00 -0400
+	id S932183Ab3CSO6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:58:14 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv2 07/12] staging: ti-soc-thermal: split writable data from readonly data
-Date: Tue, 19 Mar 2013 10:54:23 -0400
-Message-ID: <1363704868-11843-8-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>, Nishanth Menon <nm@ti.com>
+Subject: [PATCHv2 09/12] staging: ti-soc-thermal: fix several kernel-doc warnings and error
+Date: Tue, 19 Mar 2013 10:54:25 -0400
+Message-ID: <1363704868-11843-10-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com>
 References: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com>
@@ -23,236 +23,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the data structures of this driver so
-that readonly data can reside only in the conf pointer.
-Now each register has a struct to hold its configuration info,
-to be used base on chip version for instance, and a
-struct of values to be written, like register shadow and priv data.
+This patch updates the documentation to remove
+all warnings and errors reported by scripts/kernel-doc.
+Most are missing arguments due to wrong format.
+
+Cc: Nishanth Menon <nm@ti.com>
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/ti-soc-thermal/ti-bandgap.c        |   20 ++++--
- drivers/staging/ti-soc-thermal/ti-bandgap.h        |   65 +++++++++++---------
- drivers/staging/ti-soc-thermal/ti-thermal-common.c |    2 +-
- 3 files changed, 51 insertions(+), 36 deletions(-)
+ drivers/staging/ti-soc-thermal/ti-bandgap.c |   56 +++++++++++++-------------
+ drivers/staging/ti-soc-thermal/ti-bandgap.h |    8 ++--
+ 2 files changed, 32 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-index b819af0..2fe90e1 100644
+index 7d67f72..a9d6d2a 100644
 --- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
 +++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-@@ -248,7 +248,7 @@ static irqreturn_t ti_bandgap_tshut_irq_handler(int irq, void *data)
- static
- int ti_bandgap_adc_to_mcelsius(struct ti_bandgap *bgp, int adc_val, int *t)
- {
--	struct ti_bandgap_data *conf = bgp->conf;
-+	const struct ti_bandgap_data *conf = bgp->conf;
- 	int ret = 0;
+@@ -340,6 +340,7 @@ exit:
+ /**
+  * ti_bandgap_unmask_interrupts() - unmasks the events of thot & tcold
+  * @bgp: struct ti_bandgap pointer
++ * @id: bandgap sensor id
+  * @t_hot: hot temperature value to trigger alert signal
+  * @t_cold: cold temperature value to trigger alert signal
+  *
+@@ -570,9 +571,9 @@ exit:
  
- 	/* look up for temperature in the table and return the temperature */
-@@ -276,7 +276,7 @@ exit:
- static
- int ti_bandgap_mcelsius_to_adc(struct ti_bandgap *bgp, long temp, int *adc)
- {
--	struct ti_bandgap_data *conf = bgp->conf;
-+	const struct ti_bandgap_data *conf = bgp->conf;
- 	const int *conv_table = bgp->conf->conv_table;
- 	int high, low, mid, ret = 0;
+ /**
+  * ti_bandgap_read_thot() - reads sensor current thot
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @thot - resulting current thot value
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @thot: resulting current thot value
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -583,9 +584,9 @@ int ti_bandgap_read_thot(struct ti_bandgap *bgp, int id, int *thot)
  
-@@ -724,7 +724,7 @@ int ti_bandgap_set_sensor_data(struct ti_bandgap *bgp, int id, void *data)
- 	if (ret)
- 		return ret;
+ /**
+  * ti_bandgap_write_thot() - sets sensor current thot
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @val - desired thot value
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @val: desired thot value
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -596,9 +597,9 @@ int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val)
  
--	bgp->conf->sensors[id].data = data;
-+	bgp->regval[id].data = data;
+ /**
+  * ti_bandgap_read_tcold() - reads sensor current tcold
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @tcold - resulting current tcold value
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @tcold: resulting current tcold value
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -609,9 +610,9 @@ int ti_bandgap_read_tcold(struct ti_bandgap *bgp, int id, int *tcold)
  
+ /**
+  * ti_bandgap_write_tcold() - sets the sensor tcold
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @val - desired tcold value
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @val: desired tcold value
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -622,9 +623,9 @@ int ti_bandgap_write_tcold(struct ti_bandgap *bgp, int id, int val)
+ 
+ /**
+  * ti_bandgap_read_update_interval() - read the sensor update interval
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @interval - resulting update interval in miliseconds
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @interval: resulting update interval in miliseconds
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -654,9 +655,9 @@ int ti_bandgap_read_update_interval(struct ti_bandgap *bgp, int id,
+ 
+ /**
+  * ti_bandgap_write_update_interval() - set the update interval
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @interval - desired update interval in miliseconds
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @interval: desired update interval in miliseconds
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -680,9 +681,9 @@ int ti_bandgap_write_update_interval(struct ti_bandgap *bgp,
+ 
+ /**
+  * ti_bandgap_read_temperature() - report current temperature
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @temperature - resulting temperature
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @temperature: resulting temperature
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -712,9 +713,9 @@ int ti_bandgap_read_temperature(struct ti_bandgap *bgp, int id,
+ /**
+  * ti_bandgap_set_sensor_data() - helper function to store thermal
+  * framework related data.
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
+- * @data - thermal framework related data to be stored
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
++ * @data: thermal framework related data to be stored
+  *
+  * returns 0 on success or the proper error code
+  */
+@@ -732,8 +733,8 @@ int ti_bandgap_set_sensor_data(struct ti_bandgap *bgp, int id, void *data)
+ /**
+  * ti_bandgap_get_sensor_data() - helper function to get thermal
+  * framework related data.
+- * @bgp - pointer to bandgap instance
+- * @id - sensor id
++ * @bgp: pointer to bandgap instance
++ * @id: sensor id
+  *
+  * returns data stored by set function with sensor id on success or NULL
+  */
+@@ -875,16 +876,15 @@ static int ti_bandgap_talert_init(struct ti_bandgap *bgp,
  	return 0;
  }
-@@ -743,7 +743,7 @@ void *ti_bandgap_get_sensor_data(struct ti_bandgap *bgp, int id)
- 	if (ret)
- 		return ERR_PTR(ret);
  
--	return bgp->conf->sensors[id].data;
-+	return bgp->regval[id].data;
- }
- 
- /***   Helper functions used during device initialization   ***/
-@@ -911,6 +911,14 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- 	if (of_id)
- 		bgp->conf = of_id->data;
- 
-+	/* register shadow for context save and restore */
-+	bgp->regval = devm_kzalloc(&pdev->dev, sizeof(*bgp->regval) *
-+				   bgp->conf->sensor_count, GFP_KERNEL);
-+	if (!bgp) {
-+		dev_err(&pdev->dev, "Unable to allocate mem for driver ref\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
- 	i = 0;
- 	do {
- 		void __iomem *chunk;
-@@ -1147,7 +1155,7 @@ static int ti_bandgap_save_ctxt(struct ti_bandgap *bgp)
- 		struct temp_sensor_registers *tsr;
- 		struct temp_sensor_regval *rval;
- 
--		rval = &bgp->conf->sensors[i].regval;
-+		rval = &bgp->regval[i];
- 		tsr = bgp->conf->sensors[i].registers;
- 
- 		if (TI_BANDGAP_HAS(bgp, MODE_CONFIG))
-@@ -1180,7 +1188,7 @@ static int ti_bandgap_restore_ctxt(struct ti_bandgap *bgp)
- 		struct temp_sensor_regval *rval;
- 		u32 val = 0;
- 
--		rval = &bgp->conf->sensors[i].regval;
-+		rval = &bgp->regval[i];
- 		tsr = bgp->conf->sensors[i].registers;
- 
- 		if (TI_BANDGAP_HAS(bgp, COUNTER))
++static const struct of_device_id of_ti_bandgap_match[];
+ /**
+  * ti_bandgap_build() - parse DT and setup a struct ti_bandgap
+- * @bgp: pointer to struct ti_bandgap
+  * @pdev: pointer to device struct platform_device
+  *
+  * Used to read the device tree properties accordingly to the bandgap
+  * matching version. Based on bandgap version and its capabilities it
+  * will build a struct ti_bandgap out of the required DT entries.
+  */
+-static const struct of_device_id of_ti_bandgap_match[];
+ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ {
+ 	struct device_node *node = pdev->dev.of_node;
 diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.h b/drivers/staging/ti-soc-thermal/ti-bandgap.h
-index 72c760f..394e8dd 100644
+index 394e8dd..04c6ec2 100644
 --- a/drivers/staging/ti-soc-thermal/ti-bandgap.h
 +++ b/drivers/staging/ti-soc-thermal/ti-bandgap.h
-@@ -30,6 +30,13 @@
- /**
-  * DOC: bandgap driver data structure
-  * ==================================
-+ *
-+ *   +----------+----------------+
-+ *   | struct temp_sensor_regval |
-+ *   +---------------------------+
-+ *              * (Array of)
-+ *              |
-+ *              |
-  *   +-------------------+   +-----------------+
-  *   | struct ti_bandgap |-->| struct device * |
-  *   +----------+--------+   +-----------------+
-@@ -47,11 +54,11 @@
-  * | | struct ti_temp_sensor |-->| struct temp_sensor_data |           |
-  * | +-----------------------+   +------------+------------+           |
-  * |            |                                                      |
-- * |            +--------------------------+                           |
-- * |            V                          V                           |
-- * | +----------+- --------------+  +----+-------------------------+   |
-- * | | struct temp_sensor_regval |  | struct temp_sensor_registers |   |
-- * | +---------------------------+  +------------------------------+   |
-+ * |            +                                                      |
-+ * |            V                                                      |
-+ * | +----------+-------------------+                                  |
-+ * | | struct temp_sensor_registers |                                  |
-+ * | +------------------------------+                                  |
-  * |                                                                   |
-  * +-------------------------------------------------------------------+
-  *
-@@ -190,10 +197,32 @@ struct temp_sensor_data {
- struct ti_bandgap_data;
- 
- /**
-+ * struct temp_sensor_regval - temperature sensor register values and priv data
-+ * @bg_mode_ctrl: temp sensor control register value
-+ * @bg_ctrl: bandgap ctrl register value
-+ * @bg_counter: bandgap counter value
-+ * @bg_threshold: bandgap threshold register value
-+ * @tshut_threshold: bandgap tshut register value
-+ * @data: private data
-+ *
-+ * Data structure to save and restore bandgap register set context. Only
-+ * required registers are shadowed, when needed.
-+ */
-+struct temp_sensor_regval {
-+	u32			bg_mode_ctrl;
-+	u32			bg_ctrl;
-+	u32			bg_counter;
-+	u32			bg_threshold;
-+	u32			tshut_threshold;
-+	void			*data;
-+};
-+
-+/**
-  * struct ti_bandgap - bandgap device structure
-  * @dev: struct device pointer
-  * @base: io memory base address
-  * @conf: struct with bandgap configuration set (# sensors, conv_table, etc)
-+ * @regval: temperature sensor register values
+@@ -225,7 +225,7 @@ struct temp_sensor_regval {
+  * @regval: temperature sensor register values
   * @fclock: pointer to functional clock of temperature sensor
   * @div_clk: pointer to divider clock of temperature sensor fclk
-  * @bg_mutex: mutex for ti_bandgap structure
-@@ -208,7 +237,8 @@ struct ti_bandgap_data;
- struct ti_bandgap {
- 	struct device			*dev;
- 	void __iomem			*base;
--	struct ti_bandgap_data		*conf;
-+	const struct ti_bandgap_data	*conf;
-+	struct temp_sensor_regval	*regval;
- 	struct clk			*fclock;
- 	struct clk			*div_clk;
- 	spinlock_t			lock; /* shields this struct */
-@@ -218,29 +248,9 @@ struct ti_bandgap {
+- * @bg_mutex: mutex for ti_bandgap structure
++ * @lock: spinlock for ti_bandgap structure
+  * @irq: MPU IRQ number for thermal alert
+  * @tshut_gpio: GPIO where Tshut signal is routed
+  * @clk_rate: Holds current clock rate
+@@ -253,7 +253,7 @@ struct ti_bandgap {
+  * @registers: pointer to the list of register offsets and bitfields
+  * @domain: the name of the domain where the sensor is located
+  * @slope: sensor gradient slope info for hotspot extrapolation equation
+- * @const: sensor gradient const info for hotspot extrapolation equation
++ * @constant: sensor gradient const info for hotspot extrapolation equation
+  * @slope_pcb: sensor gradient slope info for hotspot extrapolation equation
+  *             with no external influence
+  * @constant_pcb: sensor gradient const info for hotspot extrapolation equation
+@@ -281,7 +281,7 @@ struct ti_temp_sensor {
  };
  
  /**
-- * struct temp_sensor_regval - temperature sensor register values
-- * @bg_mode_ctrl: temp sensor control register value
-- * @bg_ctrl: bandgap ctrl register value
-- * @bg_counter: bandgap counter value
-- * @bg_threshold: bandgap threshold register value
-- * @tshut_threshold: bandgap tshut register value
-- *
-- * Data structure to save and restore bandgap register set context. Only
-- * required registers are shadowed, when needed.
-- */
--struct temp_sensor_regval {
--	u32			bg_mode_ctrl;
--	u32			bg_ctrl;
--	u32			bg_counter;
--	u32			bg_threshold;
--	u32			tshut_threshold;
--};
--
--/**
-  * struct ti_temp_sensor - bandgap temperature sensor configuration data
-  * @ts_data: pointer to struct with thresholds, limits of temperature sensor
-  * @registers: pointer to the list of register offsets and bitfields
-- * @regval: temperature sensor register values
-  * @domain: the name of the domain where the sensor is located
-  * @slope: sensor gradient slope info for hotspot extrapolation equation
-  * @const: sensor gradient const info for hotspot extrapolation equation
-@@ -248,7 +258,6 @@ struct temp_sensor_regval {
-  *             with no external influence
-  * @constant_pcb: sensor gradient const info for hotspot extrapolation equation
-  *             with no external influence
-- * @data: private data
-  * @register_cooling: function to describe how this sensor is going to be cooled
-  * @unregister_cooling: function to release cooling data
+- * DOC: omap bandgap feature types
++ * DOC: ti bandgap feature types
   *
-@@ -261,14 +270,12 @@ struct temp_sensor_regval {
- struct ti_temp_sensor {
- 	struct temp_sensor_data		*ts_data;
- 	struct temp_sensor_registers	*registers;
--	struct temp_sensor_regval	regval;
- 	char				*domain;
- 	/* for hotspot extrapolation */
- 	const int			slope;
- 	const int			constant;
- 	const int			slope_pcb;
- 	const int			constant_pcb;
--	void				*data;
- 	int (*register_cooling)(struct ti_bandgap *bgp, int id);
- 	int (*unregister_cooling)(struct ti_bandgap *bgp, int id);
- };
-diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-index fb50e7e..231c549 100644
---- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-@@ -79,7 +79,7 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- {
- 	struct ti_thermal_data *data = thermal->devdata;
- 	struct ti_bandgap *bgp;
--	struct ti_temp_sensor *s;
-+	const struct ti_temp_sensor *s;
- 	int ret, tmp, pcb_temp, slope, constant;
+  * TI_BANDGAP_FEATURE_TSHUT - used when the thermal shutdown signal output
+  *      of a bandgap device instance is routed to the processor. This means
+@@ -325,7 +325,7 @@ struct ti_temp_sensor {
+ 			((b)->conf->features & TI_BANDGAP_FEATURE_ ## f)
  
- 	if (!data)
+ /**
+- * struct ti_bandgap_data - omap bandgap data configuration structure
++ * struct ti_bandgap_data - ti bandgap data configuration structure
+  * @features: a bitwise flag set to describe the device features
+  * @conv_table: Pointer to ADC to temperature conversion table
+  * @adc_start_val: ADC conversion table starting value
 -- 
 1.7.7.1.488.ge8e1c
 
