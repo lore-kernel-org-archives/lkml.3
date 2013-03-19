@@ -1,163 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3CSObZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:31:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:27922 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab3CSObX convert rfc822-to-8bit (ORCPT
+	id S1756530Ab3CSOc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:32:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34122 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3CSOcZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:31:23 -0400
-Date: Tue, 19 Mar 2013 10:31:05 -0400
+	Tue, 19 Mar 2013 10:32:25 -0400
+Date: Tue, 19 Mar 2013 10:32:17 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Roger Pau Monne <roger.pau@citrix.com>
 Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] xen-blkfront: switch from llist to list
-Message-ID: <20130319143105.GB32432@phenom.dumpdata.com>
+Subject: Re: [PATCH 1/5] xen-blkback: don't store dev_bus_addr
+Message-ID: <20130319143217.GC32432@phenom.dumpdata.com>
 References: <1363625376-35612-1-git-send-email-roger.pau@citrix.com>
- <1363625376-35612-4-git-send-email-roger.pau@citrix.com>
+ <1363625376-35612-2-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1363625376-35612-4-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1363625376-35612-2-git-send-email-roger.pau@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 05:49:34PM +0100, Roger Pau Monne wrote:
-> Replace the use of llist with list.
->
+On Mon, Mar 18, 2013 at 05:49:32PM +0100, Roger Pau Monne wrote:
+> dev_bus_addr returned in the grant ref map operation is the mfn of the
+> passed page, there's no need to store it in the persistent grant
+> entry, since we can always get it provided that we have the page.
+> 
+> This reduces the memory overhead of persistent grants in blkback.
 
-I applied this patch, but I changed the git commit to be:
+I took this patch, but I redid it a bit:
 
- 
-commit 155b7edb51430a280f86c1e21b7be308b0d219d4
+commit 1d4cb410befdb8b373c6fad604b39e0200e0bee0
 Author: Roger Pau Monne <roger.pau@citrix.com>
-Date:   Mon Mar 18 17:49:34 2013 +0100
+Date:   Mon Mar 18 17:49:32 2013 +0100
 
-    xen-blkfront: switch from llist to list
+    xen-blkback: don't store dev_bus_addr
     
-    The git commit f84adf4921ae3115502f44ff467b04bf2f88cf04
-    (xen-blkfront: drop the use of llist_for_each_entry_safe)
+    dev_bus_addr returned in the grant ref map operation is the mfn of the
+    passed page, there's no need to store it in the persistent grant
+    entry, since we can always get it provided that we have the page.
     
-    was a stop-gate to fix a GCC4.1 bug. The appropiate way
-    is to actually use an list instead of using an llist.
+    This reduces the memory overhead of persistent grants in blkback.
     
-    As such this patch replaces the usage of llist with an
-    list.
+    While at it, rename the 'seg[i].buf' to be 'seg[i].offset' as
+    it makes much more sense - as we use that value in bio_add_page
+    which as the fourth argument expects the offset.
     
-    Since we always manipulate the list while holding the io_lock, there's
-    no need for additional locking (llist used previously is safe to use
-    concurrently without additional locking).
+    We hadn't used the physical address as part of this at all.
     
     Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-    CC: stable@vger.kernel.org
-    [v1: Redid the git commit description]
+    Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    Cc: xen-devel@lists.xen.org
+    [v1: s/buf/offset/]
     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 9620644..97324cd1 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -44,7 +44,7 @@
- #include <linux/mutex.h>
- #include <linux/scatterlist.h>
- #include <linux/bitmap.h>
--#include <linux/llist.h>
-+#include <linux/list.h>
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 2cf8381..061c202 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -442,7 +442,7 @@ int xen_blkif_schedule(void *arg)
+ }
  
- #include <xen/xen.h>
- #include <xen/xenbus.h>
-@@ -68,7 +68,7 @@ enum blkif_state {
- struct grant {
- 	grant_ref_t gref;
- 	unsigned long pfn;
--	struct llist_node node;
-+	struct list_head node;
+ struct seg_buf {
+-	unsigned long buf;
++	unsigned long offset;
+ 	unsigned int nsec;
+ };
+ /*
+@@ -621,30 +621,21 @@ static int xen_blkbk_map(struct blkif_request *req,
+ 				 * If this is a new persistent grant
+ 				 * save the handler
+ 				 */
+-				persistent_gnts[i]->handle = map[j].handle;
+-				persistent_gnts[i]->dev_bus_addr =
+-					map[j++].dev_bus_addr;
++				persistent_gnts[i]->handle = map[j++].handle;
+ 			}
+ 			pending_handle(pending_req, i) =
+ 				persistent_gnts[i]->handle;
+ 
+ 			if (ret)
+ 				continue;
+-
+-			seg[i].buf = persistent_gnts[i]->dev_bus_addr |
+-				(req->u.rw.seg[i].first_sect << 9);
+ 		} else {
+-			pending_handle(pending_req, i) = map[j].handle;
++			pending_handle(pending_req, i) = map[j++].handle;
+ 			bitmap_set(pending_req->unmap_seg, i, 1);
+ 
+-			if (ret) {
+-				j++;
++			if (ret)
+ 				continue;
+-			}
+-
+-			seg[i].buf = map[j++].dev_bus_addr |
+-				(req->u.rw.seg[i].first_sect << 9);
+ 		}
++		seg[i].offset = (req->u.rw.seg[i].first_sect << 9);
+ 	}
+ 	return ret;
+ }
+@@ -971,7 +962,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 		       (bio_add_page(bio,
+ 				     pages[i],
+ 				     seg[i].nsec << 9,
+-				     seg[i].buf & ~PAGE_MASK) == 0)) {
++				     seg[i].offset & ~PAGE_MASK) == 0)) {
+ 
+ 			bio = bio_alloc(GFP_KERNEL, nseg-i);
+ 			if (unlikely(bio == NULL))
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index da78346..60103e2 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -187,7 +187,6 @@ struct persistent_gnt {
+ 	struct page *page;
+ 	grant_ref_t gnt;
+ 	grant_handle_t handle;
+-	uint64_t dev_bus_addr;
+ 	struct rb_node node;
  };
  
- struct blk_shadow {
-@@ -105,7 +105,7 @@ struct blkfront_info
- 	struct work_struct work;
- 	struct gnttab_free_callback callback;
- 	struct blk_shadow shadow[BLK_RING_SIZE];
--	struct llist_head persistent_gnts;
-+	struct list_head persistent_gnts;
- 	unsigned int persistent_gnts_c;
- 	unsigned long shadow_free;
- 	unsigned int feature_flush;
-@@ -371,10 +371,11 @@ static int blkif_queue_request(struct request *req)
- 			lsect = fsect + (sg->length >> 9) - 1;
- 
- 			if (info->persistent_gnts_c) {
--				BUG_ON(llist_empty(&info->persistent_gnts));
--				gnt_list_entry = llist_entry(
--					llist_del_first(&info->persistent_gnts),
--					struct grant, node);
-+				BUG_ON(list_empty(&info->persistent_gnts));
-+				gnt_list_entry = list_first_entry(
-+				                      &info->persistent_gnts,
-+				                      struct grant, node);
-+				list_del(&gnt_list_entry->node);
- 
- 				ref = gnt_list_entry->gref;
- 				buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
-@@ -790,9 +791,8 @@ static void blkif_restart_queue(struct work_struct *work)
- 
- static void blkif_free(struct blkfront_info *info, int suspend)
- {
--	struct llist_node *all_gnts;
--	struct grant *persistent_gnt, *tmp;
--	struct llist_node *n;
-+	struct grant *persistent_gnt;
-+	struct grant *n;
- 
- 	/* Prevent new requests being issued until we fix things up. */
- 	spin_lock_irq(&info->io_lock);
-@@ -804,20 +804,15 @@ static void blkif_free(struct blkfront_info *info, int suspend)
- 
- 	/* Remove all persistent grants */
- 	if (info->persistent_gnts_c) {
--		all_gnts = llist_del_all(&info->persistent_gnts);
--		persistent_gnt = llist_entry(all_gnts, typeof(*(persistent_gnt)), node);
--		while (persistent_gnt) {
-+		list_for_each_entry_safe(persistent_gnt, n,
-+		                         &info->persistent_gnts, node) {
-+			list_del(&persistent_gnt->node);
- 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
- 			__free_page(pfn_to_page(persistent_gnt->pfn));
--			tmp = persistent_gnt;
--			n = persistent_gnt->node.next;
--			if (n)
--				persistent_gnt = llist_entry(n, typeof(*(persistent_gnt)), node);
--			else
--				persistent_gnt = NULL;
--			kfree(tmp);
-+			kfree(persistent_gnt);
-+			info->persistent_gnts_c--;
- 		}
--		info->persistent_gnts_c = 0;
-+		BUG_ON(info->persistent_gnts_c != 0);
- 	}
- 
- 	/* No more gnttab callback work. */
-@@ -875,7 +870,7 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
- 	}
- 	/* Add the persistent grant into the list of free grants */
- 	for (i = 0; i < s->req.u.rw.nr_segments; i++) {
--		llist_add(&s->grants_used[i]->node, &info->persistent_gnts);
-+		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
- 		info->persistent_gnts_c++;
- 	}
- }
-@@ -1171,7 +1166,7 @@ static int blkfront_probe(struct xenbus_device *dev,
- 	spin_lock_init(&info->io_lock);
- 	info->xbdev = dev;
- 	info->vdevice = vdevice;
--	init_llist_head(&info->persistent_gnts);
-+	INIT_LIST_HEAD(&info->persistent_gnts);
- 	info->persistent_gnts_c = 0;
- 	info->connected = BLKIF_STATE_DISCONNECTED;
- 	INIT_WORK(&info->work, blkif_restart_queue);
