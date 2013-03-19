@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934406Ab3CSWNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:13:14 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:50997 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754682Ab3CSWNN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:13:13 -0400
-Date: Tue, 19 Mar 2013 15:13:08 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the workqueues tree with Linus' tree
-Message-ID: <20130319221308.GS3042@htj.dyndns.org>
-References: <20130319131938.73dd0f1233c8aba41742aded@canb.auug.org.au>
- <20130319211233.GN3042@htj.dyndns.org>
- <20130320090540.81c687d28ffe3a6abe905816@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130320090540.81c687d28ffe3a6abe905816@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934412Ab3CSWNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:13:36 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:51765 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933880Ab3CSWNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 18:13:35 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS fixes for 3.9-rc4
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130319221330.6C8BB500B4B@whiskey.americas.sgi.com>
+Date: Tue, 19 Mar 2013 17:13:30 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 09:05:40AM +1100, Stephen Rothwell wrote:
-> > Anyways, I pulled master into wq/for-next and resolved it there, so it
-> > shouldn't cause you any more trouble.
-> 
-> Ah, OK, thanks.   One small point, when you do a back merge like that,
-> you should always put an explanation in the commit message for the merge.
+Hi Linus,
 
-Oh, I do that for any permanent branches.  for-next branches are
-ephemeral (at least in my trees) so I usually don't bother.  I do
-compare against for-next when and after sending pull requests with
-proper conflict descriptions, so things are not likely to slip through
-there.  Hmmm.... if it's gonna be helpful to you, I'd be happy to
-describe merge conflicts and resolutions in for-next merges.  Would
-that be helpful?
+Please pull these fixes for XFS.  There is a fix for a potential
+infinite loop which was introduced in 4d559a3bcb73, a fix for the return
+type of xfs_iomap_eof_prealloc_initial_size from a1e16c26660b, and a fix
+for a failed buffer readahead causing subsequent callers to fail
+incorrectly.
 
-Thanks.
+Thanks,
+Ben
 
--- 
-tejun
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.9-rc4
+
+for you to fetch changes up to e001873853d87674dd5b3cfa2851885023616695:
+
+  xfs: ensure we capture IO errors correctly (2013-03-18 13:39:10 -0500)
+
+----------------------------------------------------------------
+- Fix for a potential infinite loop which was introduced in 4d559a3bcb73
+- Fix for the return type of xfs_iomap_eof_prealloc_initial_size
+  from a1e16c26660b
+- Fix for a failed buffer readahead causing subsequent callers to
+  fail incorrectly
+
+----------------------------------------------------------------
+Brian Foster (1):
+      xfs: fix potential infinite loop in xfs_iomap_prealloc_size()
+
+Dave Chinner (1):
+      xfs: ensure we capture IO errors correctly
+
+Mark Tinguely (1):
+      xfs: fix xfs_iomap_eof_prealloc_initial_size type
+
+ fs/xfs/xfs_buf.c   |    6 ++++++
+ fs/xfs/xfs_iomap.c |    4 ++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
