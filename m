@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956Ab3CSUqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:46:35 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:40539 "EHLO
+	id S964817Ab3CSUpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:45:14 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:40483 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964828Ab3CSUpQ (ORCPT
+	with ESMTP id S1757393Ab3CSUpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:45:16 -0400
+	Tue, 19 Mar 2013 16:45:08 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
 Cc: Min Zhang <mzhang@mvista.com>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 17/18] n_tty: Don't wait for buffer work in read() loop
-Date: Tue, 19 Mar 2013 16:21:52 -0400
-Message-Id: <1363724513-15604-18-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 12/18] n_tty: Access termios values safely
+Date: Tue, 19 Mar 2013 16:21:47 -0400
+Message-Id: <1363724513-15604-13-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
 References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
@@ -23,26 +23,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User-space read() can run concurrently with receiving from device;
-waiting for receive_buf() to complete is not required.
+Use termios_rwsem to guarantee safe access to the termios values.
+This is particularly important for N_TTY as changing certain termios
+settings alters the mode of operation.
+
+termios_rwsem must be dropped across throttle/unthrottle since
+those functions claim the termios_rwsem exclusively (to guarantee
+safe access to the termios and for mutual exclusion).
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/tty/n_tty.c | 35 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 30 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 68445c7..adccff8 100644
+index fa463a9..985e0a3 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -1724,7 +1724,6 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
+@@ -1457,6 +1457,8 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	char	buf[64];
+ 	unsigned long cpuflags;
  
--	tty_flush_to_ldisc(tty);
- 	if (ldata->icanon && !L_EXTPROC(tty)) {
- 		if (ldata->canon_head != ldata->read_tail)
- 			return 1;
++	down_read(&tty->termios_rwsem);
++
+ 	if (ldata->real_raw) {
+ 		raw_spin_lock_irqsave(&ldata->read_lock, cpuflags);
+ 		i = min(N_TTY_BUF_SIZE - read_cnt(ldata),
+@@ -1514,13 +1516,19 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	 * canonical mode and don't have a newline yet!
+ 	 */
+ 	while (1) {
++		int throttled;
+ 		tty_set_flow_change(tty, TTY_THROTTLE_SAFE);
+ 		if (receive_room(tty) >= TTY_THRESHOLD_THROTTLE)
+ 			break;
+-		if (!tty_throttle_safe(tty))
++		up_read(&tty->termios_rwsem);
++		throttled = tty_throttle_safe(tty);
++		down_read(&tty->termios_rwsem);
++		if (!throttled)
+ 			break;
+ 	}
+ 	__tty_set_flow_change(tty, 0);
++
++	up_read(&tty->termios_rwsem);
+ }
+ 
+ int is_ignored(int sig)
+@@ -1932,6 +1940,8 @@ do_it_again:
+ 	if (c < 0)
+ 		return c;
+ 
++	down_read(&tty->termios_rwsem);
++
+ 	minimum = time = 0;
+ 	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (!ldata->icanon) {
+@@ -1953,11 +1963,15 @@ do_it_again:
+ 	 *	Internal serialization of reads.
+ 	 */
+ 	if (file->f_flags & O_NONBLOCK) {
+-		if (!mutex_trylock(&ldata->atomic_read_lock))
++		if (!mutex_trylock(&ldata->atomic_read_lock)) {
++			up_read(&tty->termios_rwsem);
+ 			return -EAGAIN;
++		}
+ 	} else {
+-		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
++		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
++			up_read(&tty->termios_rwsem);
+ 			return -ERESTARTSYS;
++		}
+ 	}
+ 	packet = tty->packet;
+ 
+@@ -2007,7 +2021,11 @@ do_it_again:
+ 				break;
+ 			}
+ 			n_tty_set_room(tty);
++			up_read(&tty->termios_rwsem);
++
+ 			timeout = schedule_timeout(timeout);
++
++			down_read(&tty->termios_rwsem);
+ 			continue;
+ 		}
+ 		__set_current_state(TASK_RUNNING);
+@@ -2046,13 +2064,17 @@ do_it_again:
+ 		 * we won't get any more characters.
+ 		 */
+ 		while (1) {
++			int unthrottled;
+ 			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
+ 			if (chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
+ 				break;
+ 			if (!tty->count)
+ 				break;
+ 			n_tty_set_room(tty);
+-			if (!tty_unthrottle_safe(tty))
++			up_read(&tty->termios_rwsem);
++			unthrottled = tty_unthrottle_safe(tty);
++			down_read(&tty->termios_rwsem);
++			if (!unthrottled)
+ 				break;
+ 		}
+ 		__tty_set_flow_change(tty, 0);
+@@ -2074,9 +2096,12 @@ do_it_again:
+ 		retval = size;
+ 		if (nr)
+ 			clear_bit(TTY_PUSH, &tty->flags);
+-	} else if (test_and_clear_bit(TTY_PUSH, &tty->flags))
++	} else if (test_and_clear_bit(TTY_PUSH, &tty->flags)) {
++		up_read(&tty->termios_rwsem);
+ 		goto do_it_again;
++	}
+ 
++	up_read(&tty->termios_rwsem);
+ 	n_tty_set_room(tty);
+ 	return retval;
+ }
 -- 
 1.8.1.2
 
