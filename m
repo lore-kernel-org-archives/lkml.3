@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab3CSOZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:25:21 -0400
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:54875 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab3CSOZT (ORCPT
+	id S1756631Ab3CSO1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:27:36 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:43273 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553Ab3CSO1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:25:19 -0400
-From: Baker Zhang <baker.kernel@gmail.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Baker Zhang <baker.zhang@gmail.com>
-Subject: [PATCH] use xfrm direction when lookup policy
-Date: Tue, 19 Mar 2013 22:24:30 +0800
-Message-Id: <1363703070-2910-1-git-send-email-baker.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Mar 2013 10:27:34 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 5/7] n_tty: Untangle read completion variables
+Date: Tue, 19 Mar 2013 10:26:56 -0400
+Message-Id: <1363703218-32333-2-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363703218-32333-1-git-send-email-peter@hurleysoftware.com>
+References: <20130319141017.GB24900@kroah.com>
+ <1363703218-32333-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-because xfrm policy direction has same value with corresponding
-flow direction, so this problem is covered.
 
-In xfrm_lookup and __xfrm_policy_check, flow_cache_lookup is used to
-accelerate the lookup.
-
-Flow direction is given to flow_cache_lookup by policy_to_flow_dir.
-
-When the flow cache is mismatched, callback 'resolver' is called.
-
-'resolver' requires xfrm direction,
-so convert direction back to xfrm direction.
-
-Signed-off-by: Baker Zhang <baker.zhang@gmail.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- net/xfrm/xfrm_policy.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/tty/n_tty.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 167c67d..23cea0f 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -1037,6 +1037,24 @@ __xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir
- 	return xfrm_policy_lookup_bytype(net, XFRM_POLICY_TYPE_MAIN, fl, family, dir);
- }
- 
-+static int flow_to_policy_dir(int dir)
-+{
-+	if (XFRM_POLICY_IN == FLOW_DIR_IN &&
-+	    XFRM_POLICY_OUT == FLOW_DIR_OUT &&
-+	    XFRM_POLICY_FWD == FLOW_DIR_FWD)
-+		return dir;
-+
-+	switch (dir) {
-+	default:
-+	case FLOW_DIR_IN:
-+		return XFRM_POLICY_IN;
-+	case FLOW_DIR_OUT:
-+		return XFRM_POLICY_OUT;
-+	case FLOW_DIR_FWD:
-+		return XFRM_POLICY_FWD;
-+	}
-+}
-+
- static struct flow_cache_object *
- xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family,
- 		   u8 dir, struct flow_cache_object *old_obj, void *ctx)
-@@ -1046,7 +1064,7 @@ xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family,
- 	if (old_obj)
- 		xfrm_pol_put(container_of(old_obj, struct xfrm_policy, flo));
- 
--	pol = __xfrm_policy_lookup(net, fl, family, dir);
-+	pol = __xfrm_policy_lookup(net, fl, family, flow_to_policy_dir(dir));
- 	if (IS_ERR_OR_NULL(pol))
- 		return ERR_CAST(pol);
- 
-@@ -1932,7 +1950,8 @@ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
- 	 * previous cache entry */
- 	if (xdst == NULL) {
- 		num_pols = 1;
--		pols[0] = __xfrm_policy_lookup(net, fl, family, dir);
-+		pols[0] = __xfrm_policy_lookup(net, fl, family,
-+					       flow_to_policy_dir(dir));
- 		err = xfrm_expand_policies(fl, family, pols,
- 					   &num_pols, &num_xfrms);
- 		if (err < 0)
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 3fd657b..b2f621f 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1814,20 +1814,16 @@ do_it_again:
+ 	minimum = time = 0;
+ 	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (!ldata->icanon) {
+-		time = (HZ / 10) * TIME_CHAR(tty);
+ 		minimum = MIN_CHAR(tty);
+ 		if (minimum) {
++			time = (HZ / 10) * TIME_CHAR(tty);
+ 			if (time)
+ 				ldata->minimum_to_wake = 1;
+ 			else if (!waitqueue_active(&tty->read_wait) ||
+ 				 (ldata->minimum_to_wake > minimum))
+ 				ldata->minimum_to_wake = minimum;
+ 		} else {
+-			timeout = 0;
+-			if (time) {
+-				timeout = time;
+-				time = 0;
+-			}
++			timeout = (HZ / 10) * TIME_CHAR(tty);
+ 			ldata->minimum_to_wake = minimum = 1;
+ 		}
+ 	}
 -- 
-1.7.9.5
+1.8.1.2
 
