@@ -1,74 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab3CSQZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 12:25:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48286 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab3CSQZj (ORCPT
+	id S1757045Ab3CSQ2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 12:28:09 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:56454 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab3CSQ2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 12:25:39 -0400
-Date: Tue, 19 Mar 2013 16:25:35 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Tomas Novotny <tomas@novotny.cz>, Matt Porter <mporter@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [ 41/75] ARM: davinci: edma: fix dmaengine induced null pointer
- dereference on da830
-Message-ID: <20130319162535.GG8398@hercules>
-References: <20130318210510.203500214@linuxfoundation.org>
- <20130318210513.183706082@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318210513.183706082@linuxfoundation.org>
+	Tue, 19 Mar 2013 12:28:07 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] timekeeping: Add tracepoints for xtime changes - v2
+Date: Tue, 19 Mar 2013 10:27:57 -0600
+Message-Id: <1363710477-4203-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 02:07:04PM -0700, Greg Kroah-Hartman wrote:
-> 3.8-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Matt Porter <mporter@ti.com>
-> 
-> commit 069552777a121eb39da29de4bc0383483dbe1f7e upstream.
-> 
-> This adds additional error checking to the private edma api implementation
-> to catch the case where the edma_alloc_slot() has an invalid controller
-> parameter. The edma dmaengine wrapper driver relies on this condition
-> being handled in order to avoid setting up a second edma dmaengine
-> instance on DA830.
-> 
-> Verfied using a DA850 with the second EDMA controller platform instance
-> removed to simulate a DA830 which only has a single EDMA controller.
-> 
-> Reported-by: Tomas Novotny <tomas@novotny.cz>
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> Tested-by: Tomas Novotny <tomas@novotny.cz>
-> Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  arch/arm/mach-davinci/dma.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/arch/arm/mach-davinci/dma.c
-> +++ b/arch/arm/mach-davinci/dma.c
-> @@ -743,6 +743,9 @@ EXPORT_SYMBOL(edma_free_channel);
->   */
->  int edma_alloc_slot(unsigned ctlr, int slot)
->  {
-> +	if (!edma_cc[ctlr])
-> +		return -EINVAL;
-> +
->  	if (slot >= 0)
->  		slot = EDMA_CHAN_SLOT(slot);
+One component of tracking perf_clock timestamps to time-of-day is
+updates to xtime by a user or ntpd. To that end this patch adds
+tracepoints to the timekeeping code as suggested by Thomas:
+https://lkml.org/lkml/2011/3/2/186
 
-I couldn't figure out the reason why this is tagged for v3.7.x+ only.
-Shouldn't this be applied to 3.2, 3.4 and 3.5 as well?
+v2: use timekeeping_get_ns to retrieve nsec component
 
-Cheers,
---
-Luis
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/timekeeping.h |   51 ++++++++++++++++++++++++++++++++++++
+ kernel/time/timekeeping.c          |   11 ++++++++
+ 2 files changed, 62 insertions(+)
+ create mode 100644 include/trace/events/timekeeping.h
+
+diff --git a/include/trace/events/timekeeping.h b/include/trace/events/timekeeping.h
+new file mode 100644
+index 0000000..ff7a631
+--- /dev/null
++++ b/include/trace/events/timekeeping.h
+@@ -0,0 +1,51 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM timekeeping
++
++#if !defined(_TRACE_TIMEKEEP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TIMEKEEP_H
++
++#include <linux/tracepoint.h>
++#include <linux/time.h>
++
++DECLARE_EVENT_CLASS(xtime_template,
++
++	TP_PROTO(u64 sec, u64 nsec),
++
++	TP_ARGS(sec, nsec),
++
++	TP_STRUCT__entry(
++		__field( u64,	sec)
++		__field( u64,	nsec)
++	),
++
++	TP_fast_assign(
++		__entry->sec  = sec;
++		__entry->nsec = nsec;
++	),
++
++	TP_printk("sec=%Lu nsec=%Lu", __entry->sec, __entry->nsec)
++);
++
++DEFINE_EVENT(xtime_template, do_settimeofday,
++	TP_PROTO(u64 sec, u64 nsec),
++	TP_ARGS(sec, nsec));
++
++DEFINE_EVENT(xtime_template, timekeeping_inject_offset,
++	TP_PROTO(u64 sec, u64 nsec),
++	TP_ARGS(sec, nsec));
++
++DEFINE_EVENT(xtime_template, timekeeping_inject_sleeptime,
++	TP_PROTO(u64 sec, u64 nsec),
++	TP_ARGS(sec, nsec));
++
++DEFINE_EVENT(xtime_template, timekeeping_resume,
++	TP_PROTO(u64 sec, u64 nsec),
++	TP_ARGS(sec, nsec));
++
++DEFINE_EVENT(xtime_template, change_clocksource,
++	TP_PROTO(u64 sec, u64 nsec),
++	TP_ARGS(sec, nsec));
++#endif /*  _TRACE_TIMEKEEP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 9a0bc98..0ce45ec 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -23,6 +23,8 @@
+ #include <linux/stop_machine.h>
+ #include <linux/pvclock_gtod.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/timekeeping.h>
+ 
+ static struct timekeeper timekeeper;
+ 
+@@ -462,6 +464,8 @@ int do_settimeofday(const struct timespec *tv)
+ 
+ 	timekeeping_update(tk, true);
+ 
++	trace_do_settimeofday(tk->xtime_sec, timekeeping_get_ns(tk));
++
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+ 
+ 	/* signal hrtimers about time change */
+@@ -504,6 +508,8 @@ int timekeeping_inject_offset(struct timespec *ts)
+ error: /* even if we error out, we forwarded the time, so call update */
+ 	timekeeping_update(tk, true);
+ 
++	trace_timekeeping_inject_offset(tk->xtime_sec, timekeeping_get_ns(tk));
++
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+ 
+ 	/* signal hrtimers about time change */
+@@ -536,6 +542,7 @@ static int change_clocksource(void *data)
+ 			old->disable(old);
+ 	}
+ 	timekeeping_update(tk, true);
++	trace_change_clocksource(tk->xtime_sec, timekeeping_get_ns(tk));
+ 
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+ 
+@@ -772,6 +779,9 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+ 
+ 	timekeeping_update(tk, true);
+ 
++	trace_timekeeping_inject_sleeptime(tk->xtime_sec,
++					   timekeeping_get_ns(tk));
++
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+ 
+ 	/* signal hrtimers about time change */
+@@ -807,6 +817,7 @@ static void timekeeping_resume(void)
+ 	tk->ntp_error = 0;
+ 	timekeeping_suspended = 0;
+ 	timekeeping_update(tk, false);
++	trace_timekeeping_resume(tk->xtime_sec, timekeeping_get_ns(tk));
+ 	write_sequnlock_irqrestore(&tk->lock, flags);
+ 
+ 	touch_softlockup_watchdog();
+-- 
+1.7.10.1
+
