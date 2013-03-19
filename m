@@ -1,255 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965069Ab3CSI4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:56:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59042 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab3CSIxx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 04:53:53 -0400
-X-AuditID: 9c930197-b7cc2ae000000eb7-9a-5148279dcada
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 6/9] perf util: Get rid of malloc_or_die() in trace-event-read.c
-Date: Tue, 19 Mar 2013 17:53:41 +0900
-Message-Id: <1363683224-28804-7-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S965088Ab3CSI5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:57:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55243 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754790Ab3CSI5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 04:57:07 -0400
+Date: Tue, 19 Mar 2013 09:56:57 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Greg KH <greg@kroah.com>,
+        Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re:
+ [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
+ responses))
+In-Reply-To: <20130318170424.GB5571@cantiga.alporthouse.com>
+Message-ID: <alpine.LNX.2.00.1303190953010.9529@pobox.suse.cz>
+References: <1363280764.26318.4.camel@thor.lan> <5657408.cYX6iimiA4@vostro.rjw.lan> <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz> <5142E7F0.4020002@gmail.com> <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz> <20130315153249.GA32425@kroah.com>
+ <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz> <20130315154739.GA1024@kroah.com> <20130318082156.GO9021@phenom.ffwll.local> <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz> <20130318170424.GB5571@cantiga.alporthouse.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 18 Mar 2013, Chris Wilson wrote:
 
-Check return value of malloc() and fail if error.  Now read_string()
-can return NULL also check its return value and bail out.
+> > +#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
+> >  void
+> >  intel_i2c_reset(struct drm_device *dev)
+> >  {
+> >  	struct drm_i915_private *dev_priv = dev->dev_private;
+> >  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
+> > -	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+> > +	if (HAS_GMBUS_IRQ(dev))
+> > +		I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+> 
+> There should not be any harm in always clearing GMBUS4, it exists on all
+> platforms.
+> 
+> >  }
+> >  
+> >  static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
+> > @@ -203,7 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+> >  	algo->data = bus;
+> >  }
+> >  
+> > -#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
+> >  static int
+> >  gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+> >  		     u32 gmbus2_status,
+> > @@ -214,6 +215,13 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+> >  	u32 gmbus2 = 0;
+> >  	DEFINE_WAIT(wait);
+> >  
+> > +	if (!HAS_GMBUS_IRQ(dev_priv->dev)) {
+> > +		int ret;
+> > +		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
+> > +				(GMBUS_SATOER | gmbus2_status),
+> > +				50);
+> 
+> This should couple up to the normal return code that chooses the
+> appropriate return value based on gmbus2.
+> 
+> How about just using:
+>   if (!HAS_GMBUS_IRQ(dev_priv->dev)) gmbus4_irq_en = 0;
+> and the existing wait loop?
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+I explicitly wanted to avoid touching GMBUS4 register, as the real cause 
+of the failure is not clear.
+
+But, as Yinghai Lu points out, the problem is most likely caused by 
+interrupt disabling not working properly (see his very good point 
+regarding DisINTx+ and INTx+ discrepancy), so zeroing the register out 
+should work .... and it indeed does in my case, hence the (tested) patch 
+below.
+
+I think it's a 3.9-rc material, and I am all open to debug this further 
+for 3.10 so that the race is closed and gmbus irqs can be used on Gen4 
+platform properly.
+
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips
+
+Commit 28c70f162 ("drm/i915: use the gmbus irq for waits") switched to
+using GMBUS irqs instead of GPIO bit-banging for chipset generations 4
+and above.
+
+It turns out though that on many systems this leads to spurious interrupts
+being generated, long after the register write to disable the IRQs has been
+issued.
+
+Flushing of the register writes by POSTING_READ() directly after the register
+write doesn't work either.
+
+Disable using of GMBUS IRQs on Gen4 systems before the root cause is found and
+revert back to old behavior.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- tools/perf/util/trace-event-read.c | 90 ++++++++++++++++++++++++--------------
- 1 file changed, 57 insertions(+), 33 deletions(-)
+ drivers/gpu/drm/i915/intel_i2c.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 129362b97ca5..62dd2168f4f5 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -48,16 +48,6 @@ static int long_size;
- static ssize_t calc_data_size;
- static bool repipe;
- 
--static void *malloc_or_die(int size)
--{
--	void *ret;
--
--	ret = malloc(size);
--	if (!ret)
--		die("malloc");
--	return ret;
--}
--
- static int do_read(int fd, void *buf, int size)
- {
- 	int rsize = size;
-@@ -158,48 +148,57 @@ static char *read_string(void)
- 	if (calc_data_size)
- 		calc_data_size += size;
- 
--	str = malloc_or_die(size);
--	memcpy(str, buf, size);
-+	str = malloc(size);
-+	if (str)
-+		memcpy(str, buf, size);
- 
- 	return str;
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index acf8aec..9934724 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -203,7 +203,7 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+ 	algo->data = bus;
  }
  
--static void read_proc_kallsyms(struct pevent *pevent)
-+static int read_proc_kallsyms(struct pevent *pevent)
- {
- 	unsigned int size;
- 	char *buf;
+-#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
++#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
+ static int
+ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+ 		     u32 gmbus2_status,
+@@ -214,6 +214,8 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+ 	u32 gmbus2 = 0;
+ 	DEFINE_WAIT(wait);
  
- 	size = read4(pevent);
- 	if (!size)
--		return;
-+		return 0;
-+
-+	buf = malloc(size + 1);
-+	if (buf == NULL)
-+		return -1;
- 
--	buf = malloc_or_die(size + 1);
- 	read_or_die(buf, size);
- 	buf[size] = '\0';
- 
- 	parse_proc_kallsyms(pevent, buf, size);
- 
- 	free(buf);
-+	return 0;
- }
- 
--static void read_ftrace_printk(struct pevent *pevent)
-+static int read_ftrace_printk(struct pevent *pevent)
- {
- 	unsigned int size;
- 	char *buf;
- 
- 	size = read4(pevent);
- 	if (!size)
--		return;
-+		return 0;
-+
-+	buf = malloc(size);
-+	if (buf == NULL)
-+		return -1;
- 
--	buf = malloc_or_die(size);
- 	read_or_die(buf, size);
- 
- 	parse_ftrace_printk(pevent, buf, size);
- 
- 	free(buf);
-+	return 0;
- }
- 
--static void read_header_files(struct pevent *pevent)
-+static int read_header_files(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	char *header_event;
-@@ -224,65 +223,87 @@ static void read_header_files(struct pevent *pevent)
- 		die("did not read header event");
- 
- 	size = read8(pevent);
--	header_event = malloc_or_die(size);
-+	header_event = malloc(size);
-+	if (header_event == NULL)
-+		return -1;
-+
- 	read_or_die(header_event, size);
- 	free(header_event);
-+	return 0;
- }
- 
--static void read_ftrace_file(struct pevent *pevent, unsigned long long size)
-+static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
- {
- 	char *buf;
- 
--	buf = malloc_or_die(size);
-+	buf = malloc(size);
-+	if (buf == NULL)
-+		return -1;
-+
- 	read_or_die(buf, size);
- 	parse_ftrace_file(pevent, buf, size);
- 	free(buf);
-+	return 0;
- }
- 
--static void read_event_file(struct pevent *pevent, char *sys,
-+static int read_event_file(struct pevent *pevent, char *sys,
- 			    unsigned long long size)
- {
- 	char *buf;
- 
--	buf = malloc_or_die(size);
-+	buf = malloc(size);
-+	if (buf == NULL)
-+		return -1;
-+
- 	read_or_die(buf, size);
- 	parse_event_file(pevent, buf, size, sys);
- 	free(buf);
-+	return 0;
- }
- 
--static void read_ftrace_files(struct pevent *pevent)
-+static int read_ftrace_files(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	int count;
- 	int i;
-+	int ret;
- 
- 	count = read4(pevent);
- 
- 	for (i = 0; i < count; i++) {
- 		size = read8(pevent);
--		read_ftrace_file(pevent, size);
-+		ret = read_ftrace_file(pevent, size);
-+		if (ret)
-+			return ret;
- 	}
-+	return 0;
- }
- 
--static void read_event_files(struct pevent *pevent)
-+static int read_event_files(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	char *sys;
- 	int systems;
- 	int count;
- 	int i,x;
-+	int ret;
- 
- 	systems = read4(pevent);
- 
- 	for (i = 0; i < systems; i++) {
- 		sys = read_string();
-+		if (sys == NULL)
-+			return -1;
- 
- 		count = read4(pevent);
- 		for (x=0; x < count; x++) {
- 			size = read8(pevent);
--			read_event_file(pevent, sys, size);
-+			ret = read_event_file(pevent, sys, size);
-+			if (ret)
-+				return ret;
- 		}
- 	}
-+	return 0;
- }
- 
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
-@@ -312,6 +333,8 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 		die("not a trace file (missing 'tracing' tag)");
- 
- 	version = read_string();
-+	if (version == NULL)
-+		return -1;
- 	if (show_version)
- 		printf("version = %s\n", version);
- 	free(version);
-@@ -331,11 +354,12 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 
- 	page_size = read4(pevent);
- 
--	read_header_files(pevent);
--	read_ftrace_files(pevent);
--	read_event_files(pevent);
--	read_proc_kallsyms(pevent);
--	read_ftrace_printk(pevent);
-+	if (read_header_files(pevent) ||
-+	    read_ftrace_files(pevent) ||
-+	    read_event_files(pevent) ||
-+	    read_proc_kallsyms(pevent) ||
-+	    read_ftrace_printk(pevent))
-+		goto out;
- 
- 	size = calc_data_size - 1;
- 	calc_data_size = 0;
++	if (!HAS_GMBUS_IRQ(dev_priv->dev))
++		gmbus4_irq_en = 0;
+ 	/* Important: The hw handles only the first bit, so set only one! Since
+ 	 * we also need to check for NAKs besides the hw ready/idle signal, we
+ 	 * need to wake up periodically and check that ourselves. */
 -- 
-1.7.11.7
-
+Jiri Kosina
+SUSE Labs
