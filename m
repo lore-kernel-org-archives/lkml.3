@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3CSMWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 08:22:50 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54314 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab3CSMWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 08:22:49 -0400
-Date: Tue, 19 Mar 2013 08:22:44 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4_block_to_path block > max warning.
-Message-ID: <20130319122244.GA32310@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20130319033555.GA1582@redhat.com>
+	id S1754425Ab3CSM36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 08:29:58 -0400
+Received: from mail1.sysgo.com ([176.9.26.183]:37886 "EHLO mail1.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632Ab3CSM35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 08:29:57 -0400
+Message-ID: <51485A43.4020600@sysgo.com>
+Date: Tue, 19 Mar 2013 13:29:55 +0100
+From: David Engraf <david.engraf@sysgo.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130319033555.GA1582@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] ktime_add_ns() may overflow on 32bit architectures
+Content-Type: multipart/mixed;
+ boundary="------------010205050204020801020407"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 11:35:55PM -0400, Dave Jones wrote:
-> Not sure what I did to trigger this, but it's happened a few times while fuzzing syscalls.
-> Rebooted and fscked, didn't find anything wrong.
-> 
-> 	Dave
-> 
-> [ 5084.436288] EXT4-fs warning (device sda1): ext4_block_to_path:105: block 1874853625 > max in inode 34
-> [ 5167.723925] EXT4-fs warning (device sda1): ext4_block_to_path:105: block 2507988634 > max in inode 34
+This is a multi-part message in MIME format.
+--------------010205050204020801020407
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Yes, this wouldn't be a problem that would be be reflected in an fsck
-problem.  What warning indicates is that there was an attempt to write
-to file offset which is larger than what is supported by using
-indirect blocks.  (Presumably this was probably a ext3 file system
-mounted using ext4?)
+Hello,
 
-This should have been caught by checks earlier, but because we didn't,
-instead of returning EFBIG to userspace, the userspace application
-received an EIO instead, and it triggered the above warning
-message.
+I've triggered an overflow when using ktime_add_ns() on a 32bit 
+architecture not supporting CONFIG_KTIME_SCALAR.
 
-.... and I think I see the problem.  We do have checks ext4_llseek()
-and ext4_file_write(), but we use iov_length to do the checks.  And
-documentation for iov_length states:
+When passing a very high value for u64 nsec, e.g. 7881299347898368000 
+the do_div() function converts this value to seconds (7881299347) which 
+is still to high to pass to the ktime_set() function as long. The result 
+in my case is a negative value.
 
-/*
- * Total number of bytes covered by an iovec.
- *
- * NOTE that it is not safe to use this function until all the iovec's
- * segment lengths have been validated.  Because the individual lengths can
- * overflow a size_t when added together.
- */
+The problem on my system occurs in the tick-sched.c, 
+tick_nohz_stop_sched_tick() when time_delta is set to 
+timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is 
+valid, thus ktime_add_ns() is called with a too large value resulting in 
+a negative expire value. This leads to an endless loop in the ticker code:
 
-Basically, iov_length() doesn't check for overflow, and the individual
-lengths of the iovec don't get verified until later in the call stack,
-by generic_file_aio_write().
+time_delta: 7881299347898368000
+expires = ktime_add_ns(last_update, time_delta)
+expires: negative value
 
-So we either need to create a version of iov_length() which does check
-for overflow, or we need to add an extra call to
-generic_segment_checks() in ext4_file_write().  It will be more
-slightly more CPU-efficient to have an overflow-cognizant
-iov_length(), though.
+This error doesn't occurs on 64bit or architectures supporting 
+CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
 
-The alternative would be to simply remove the ext4_warning() and
-change the error return in the case where ext4_block_to_path() returns
-0, but I think it's good add the extra upfront checks, and reserve the
-ext4_block_to_path() check as a last-ditch sanity check.  I'm a big
-believer in having belt-and-suspender safety checks.
+Best regards
+- David
 
-							- Ted
+Signed-off-by: David Engraf <david.engraf@sysgo.com>
+
+
+--------------010205050204020801020407
+Content-Type: text/x-diff;
+ name="ktime_add_ns.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ktime_add_ns.patch"
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index cc47812..320a7aa 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -275,6 +275,10 @@ ktime_t ktime_add_ns(const ktime_t kt, u64 nsec)
+ 	} else {
+ 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+ 
++		/* Make sure nsec fits into long */
++		if (unlikely(nsec > KTIME_SEC_MAX))
++			return (ktime_t){ .tv64 = KTIME_MAX };
++
+ 		tmp = ktime_set((long)nsec, rem);
+ 	}
+ 
+
+--------------010205050204020801020407--
