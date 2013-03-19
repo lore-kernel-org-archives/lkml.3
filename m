@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3CSK1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:27:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59350 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab3CSK1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:27:05 -0400
-Date: Tue, 19 Mar 2013 10:27:00 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Mi@jasper.es,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat
- based on reclaim progress
-Message-ID: <20130319102700.GF2055@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-5-git-send-email-mgorman@suse.de>
- <CAJd=RBCZ7VZUB=Wc6tMtVsszFgnbfW3MbBW3wKyMqnLMV+UrWw@mail.gmail.com>
+	id S1754990Ab3CSK2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:28:01 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:34185 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab3CSK2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 06:28:00 -0400
+Message-ID: <51483DAA.7060806@openvz.org>
+Date: Tue, 19 Mar 2013 14:27:54 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBCZ7VZUB=Wc6tMtVsszFgnbfW3MbBW3wKyMqnLMV+UrWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Borislav Petkov <bp@alien8.de>, jeffrey.t.kirsher@intel.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        e1000-devel@lists.sourceforge.net,
+        Bruce Allan <bruce.w.allan@intel.com>
+Subject: Re: e1000e + suspend, 3.9-rc2
+References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com> <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic> <51483B1A.9090704@suse.cz>
+In-Reply-To: <51483B1A.9090704@suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 07:35:04PM +0800, Hillf Danton wrote:
-> On Sun, Mar 17, 2013 at 9:04 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > In the past, kswapd makes a decision on whether to compact memory after the
-> > pgdat was considered balanced. This more or less worked but it is late to
-> > make such a decision and does not fit well now that kswapd makes a decision
-> > whether to exit the zone scanning loop depending on reclaim progress.
-> >
-> > This patch will compact a pgdat if at least  the requested number of pages
-> > were reclaimed from unbalanced zones for a given priority. If any zone is
-> > currently balanced, kswapd will not call compaction as it is expected the
-> > necessary pages are already available.
-> >
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/vmscan.c | 52 +++++++++++++++++++++-------------------------------
-> >  1 file changed, 21 insertions(+), 31 deletions(-)
-> >
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 279d0c2..7513bd1 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2694,8 +2694,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> >
-> >         do {
-> >                 unsigned long lru_pages = 0;
-> > +               unsigned long nr_to_reclaim = 0;
-> >                 unsigned long nr_reclaimed = sc.nr_reclaimed;
-> > +               unsigned long this_reclaimed;
-> >                 bool raise_priority = true;
-> > +               bool pgdat_needs_compaction = true;
-> 
-> To show that compaction is needed iff non order-o reclaim,
->                 bool do_compaction = !!order;
-> 
+Jiri Slaby wrote:
+> On 03/12/2013 06:17 PM, Borislav Petkov wrote:
+>> On Mon, Mar 11, 2013 at 09:25:37PM +0100, Borislav Petkov wrote:
+>>> Yeah, it is already upstream. And yeah, it did trigger with it.
+>>>
+>>> $ git describe
+>>> v3.9-rc2-112-g7c6baa304b84
+>>>
+>>> But it somehow doesn't trigger with that same kernel anymore so I'll
+>>> consider it a glitch and watch it over the next days.
+>>
+>> Ok, I can still see the hardware error message when suspending:
+>
+> And with 3.8 plus these:
+>      PCI/PM: Clear state_saved during suspend
+>      e1000e: fix pci-device enable-counter balance
+>      e1000e: fix runtime power management transitions
+>      e1000e: fix accessing to suspended device
+>
+> I sometimes see this:
+> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
+> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
+> PM: Device 0000:00:19.0 failed to suspend async: error -2
+>
+> Any ideas? Am I missing some patch still?
 
-An order check is already made where relevant. It could be part of how
-pgdat_needs_compaction gets initialised but I did not think it helped
-readability.
+Try this:
+"PCI: Don't try to disable Bus Master on disconnected PCI devices"
+https://patchwork.kernel.org/patch/2271641/
 
-> >
-> >                 /*
-> >                  * Scan in the highmem->dma direction for the highest
-> > @@ -2743,7 +2746,17 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> >                 for (i = 0; i <= end_zone; i++) {
-> >                         struct zone *zone = pgdat->node_zones + i;
-> >
-> > +                       if (!populated_zone(zone))
-> > +                               continue;
-> > +
-> >                         lru_pages += zone_reclaimable_pages(zone);
-> > +
-> > +                       /* Check if the memory needs to be defragmented */
-> Enrich the comment with, say,
-> /*If any zone is
-> currently balanced, kswapd will not call compaction as it is expected the
-> necessary pages are already available.*/
-> please since a big one is deleted below.
-> 
+But I'm not sure, probably it is unrelated because this code works only (?)
+during shutdown/kexec sequences.
 
-Ok, done.
 
--- 
-Mel Gorman
-SUSE Labs
