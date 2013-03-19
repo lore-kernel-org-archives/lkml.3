@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3CSBCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 21:02:33 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:43901 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3CSBCb (ORCPT
+	id S1757433Ab3CSBE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 21:04:26 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:38415 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3CSBEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 21:02:31 -0400
-Date: Mon, 18 Mar 2013 21:02:26 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: parag@Parags-iMac
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-cc: "John W. Linville" <linville@tuxdriver.com>,
-        Parag Warudkar <parag.lkml@gmail.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        senthilb@qca.qualcomm.com
-Subject: Re: [PATCH] ath9k : Fix ieee80211 work while going to suspend
-In-Reply-To: <20130318210308.GD32416@pogo>
-Message-ID: <alpine.LFD.2.03.1303182058450.6237@gmail.com>
-References: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com> <20130318191340.GA28919@tuxdriver.com> <20130318210308.GD32416@pogo>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Mon, 18 Mar 2013 21:04:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130319000656.GC6516@kroah.com>
+References: <1363215451-26111-1-git-send-email-jwerner@chromium.org>
+	<20130318230922.GA23175@kroah.com>
+	<CAODwPW9c6NpDOzmh+q312qLn0fS+eQttQDGdCe0b2EigoJ9_PA@mail.gmail.com>
+	<20130319000656.GC6516@kroah.com>
+Date: Mon, 18 Mar 2013 18:04:23 -0700
+X-Google-Sender-Auth: IQvutF86K9_-9zdRE7aLp-MbLJM
+Message-ID: <CAODwPW-5wTyqqQjRiTzgwa=QfKUwx09L6b0Mt+r-Laxk5XoLew@mail.gmail.com>
+Subject: Re: [PATCH] usb: Make USB persist default configurable
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sameer Nanda <snanda@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> What drivers/devices don't work with persist?  We need to know that now,
+> otherwise all other distros and users have problems, right?
 
+We have seen a problem with the LTE modem in the Chromebook Pixel
+using the usb/serial/option.c driver, but we are not quite sure of the
+root cause yet. It occasionally seems to loose its power session due
+to autosuspend and then hit core/hub.c:check_port_resume_type(), where
+it gets the reset_resume flag if persist is enabled. However, since
+the option driver does not implement the (optional) reset_resume
+method, this eventually ends up leaving the device in a state where it
+is neither working nor getting cleanly reenumerated.
 
-On Mon, 18 Mar 2013, Luis R. Rodriguez wrote:
-
-> 
-> Note that what this will do is call later mod_timer() for
-> rx_poll_timer, the right thing to do then, which would
-> be equivalent to your patch is to modify the ath_start_rx_poll()
-> to instead use the new API mod_timer_pending() added on v2.6.30
-> via commit 74019224. This would not re-arm the timer if it was
-> previously removed.
-
-Thanks for the details Luis. Converting to mod_timer_pending() seems to do 
-the trick as well.
-
-Parag
+We are still actively investigating that issue to figure out the
+underlying bug (not sure whether it is a general problem with drivers
+that do not implement reset_resume... also, we are still only on 3.4
+and have not tried to confirm it on 3.8 yet). However, as we generally
+hadn't intended persist to be active and this had slipped through our
+(admittedly very crude) userspace implementation, I proposed this
+patch so that going forward our devices could always have the persist
+setting we intend for them at all times.
