@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934255Ab3CSI5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:57:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59042 "EHLO
+	id S965102Ab3CSI5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:57:44 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61599 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757772Ab3CSIxw (ORCPT
+	with ESMTP id S1757771Ab3CSIxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Mar 2013 04:53:52 -0400
-X-AuditID: 9c930197-b7cc2ae000000eb7-96-5148279c2c24
+X-AuditID: 9c930197-b7cc2ae000000eb7-8e-5148279c5c39
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 5/9] perf util: Handle failure case in trace_report()
-Date: Tue, 19 Mar 2013 17:53:40 +0900
-Message-Id: <1363683224-28804-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 4/9] perf util: Get rid of die() calls from trace-event-info.c
+Date: Tue, 19 Mar 2013 17:53:39 +0900
+Message-Id: <1363683224-28804-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
 References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
@@ -28,127 +28,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-If pevent allocation in read_trace_init() fails, trace_report() will
-return -1 and *ppevent is set to NULL.  Its callers should check this
-case and handle it properly.
-
-This is also a preparation for the removal of *die() calls.
+Now remove all remaining die() calls and convert them to check return
+value and propagate it.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c           | 11 +++++++---
- tools/perf/util/trace-event-read.c | 41 ++++++++++++++++++++++----------------
- 2 files changed, 32 insertions(+), 20 deletions(-)
+ tools/perf/util/trace-event-info.c | 114 +++++++++++++++++++++++--------------
+ 1 file changed, 72 insertions(+), 42 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index a9b7349f7c5f..f2c33c4cfc38 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1672,8 +1672,8 @@ static int process_tracing_data(struct perf_file_section *section __maybe_unused
- 				struct perf_header *ph __maybe_unused,
- 				int fd, void *data)
- {
--	trace_report(fd, data, false);
--	return 0;
-+	ssize_t ret = trace_report(fd, data, false);
-+	return ret < 0 ? -1 : 0;
- }
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 05cf94ef57e4..f006529d2284 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -43,7 +43,6 @@
  
- static int process_build_id(struct perf_file_section *section,
-@@ -2752,6 +2752,11 @@ static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
- 	if (evsel->tp_format)
- 		return 0;
+ #define VERSION "0.5"
  
-+	if (pevent == NULL) {
-+		pr_debug("broken or missing trace data\n");
-+		return -1;
+-static const char *output_file = "trace.info";
+ static int output_fd;
+ 
+ 
+@@ -125,8 +124,10 @@ static int record_file(const char *file, ssize_t hdr_sz)
+ 	int err = -EIO;
+ 
+ 	fd = open(file, O_RDONLY);
+-	if (fd < 0)
+-		die("Can't read '%s'", file);
++	if (fd < 0) {
++		pr_debug("Can't read '%s'", file);
++		return -errno;
 +	}
-+
- 	event = pevent_find_event(pevent, evsel->attr.config);
- 	if (event == NULL)
- 		return -1;
-@@ -3100,7 +3105,7 @@ int perf_event__process_tracing_data(union perf_event *event,
- 		}
- 	}
  
--	if (size_read + padding != size) {
-+	if (size_read + padding != size || session->pevent == NULL) {
- 		pr_err("%s: tracing data size mismatch", __func__);
- 		return -1;
- 	}
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 7cb24635adf2..129362b97ca5 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -293,7 +293,10 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	int show_version = 0;
- 	int show_funcs = 0;
- 	int show_printk = 0;
--	ssize_t size;
-+	ssize_t size = -1;
-+	struct pevent *pevent;
-+
-+	*ppevent = NULL;
+ 	/* put in zeros for file size, then fill true size later */
+ 	if (hdr_sz) {
+@@ -148,8 +149,10 @@ static int record_file(const char *file, ssize_t hdr_sz)
+ 	if (bigendian())
+ 		sizep += sizeof(u64) - hdr_sz;
  
- 	calc_data_size = 1;
- 	repipe = __repipe;
-@@ -317,34 +320,38 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	file_bigendian = buf[0];
- 	host_bigendian = bigendian();
- 
--	*ppevent = read_trace_init(file_bigendian, host_bigendian);
--	if (*ppevent == NULL)
--		die("read_trace_init failed");
-+	pevent = read_trace_init(file_bigendian, host_bigendian);
-+	if (pevent == NULL) {
-+		pr_err("read_trace_init failed");
+-	if (hdr_sz && pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0)
+-		die("writing to %s", output_file);
++	if (hdr_sz && pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0) {
++		pr_debug("writing file size failed\n");
 +		goto out;
 +	}
  
- 	read_or_die(buf, 1);
- 	long_size = buf[0];
+ 	err = 0;
+ out:
+@@ -164,11 +167,15 @@ static int read_header_files(void)
+ 	int err = -EIO;
  
--	page_size = read4(*ppevent);
--
--	read_header_files(*ppevent);
-+	page_size = read4(pevent);
+ 	path = get_tracing_file("events/header_page");
+-	if (!path)
+-		die("can't get tracing/events/header_page");
++	if (!path) {
++		pr_err("can't get tracing/events/header_page");
++		return -ENOMEM;
++	}
  
--	read_ftrace_files(*ppevent);
--	read_event_files(*ppevent);
--	read_proc_kallsyms(*ppevent);
--	read_ftrace_printk(*ppevent);
-+	read_header_files(pevent);
-+	read_ftrace_files(pevent);
-+	read_event_files(pevent);
-+	read_proc_kallsyms(pevent);
-+	read_ftrace_printk(pevent);
+-	if (stat(path, &st) < 0)
+-		die("can't read '%s'", path);
++	if (stat(path, &st) < 0) {
++		pr_err("can't read '%s'", path);
++		goto out;
++	}
  
- 	size = calc_data_size - 1;
- 	calc_data_size = 0;
- 	repipe = false;
+ 	if (write(output_fd, "header_page", 12) != 12) {
+ 		pr_err("can't write header_page\n");
+@@ -183,11 +190,16 @@ static int read_header_files(void)
+ 	put_tracing_file(path);
  
- 	if (show_funcs) {
--		pevent_print_funcs(*ppevent);
--		return size;
--	}
--	if (show_printk) {
--		pevent_print_printk(*ppevent);
--		return size;
-+		pevent_print_funcs(pevent);
-+	} else if (show_printk) {
-+		pevent_print_printk(pevent);
+ 	path = get_tracing_file("events/header_event");
+-	if (!path)
+-		die("can't get tracing/events/header_event");
++	if (!path) {
++		pr_err("can't get tracing/events/header_event");
++		err = -ENOMEM;
++		goto out;
++	}
+ 
+-	if (stat(path, &st) < 0)
+-		die("can't read '%s'", path);
++	if (stat(path, &st) < 0) {
++		pr_err("can't read '%s'", path);
++		goto out;
++	}
+ 
+ 	if (write(output_fd, "header_event", 13) != 13) {
+ 		pr_err("can't write header_event\n");
+@@ -227,8 +239,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 	int err;
+ 
+ 	dir = opendir(sys);
+-	if (!dir)
+-		die("can't read directory '%s'", sys);
++	if (!dir) {
++		pr_err("can't read directory '%s'", sys);
++		return -errno;
++	}
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -291,8 +305,10 @@ static int read_ftrace_files(struct tracepoint_path *tps)
+ 	int ret;
+ 
+ 	path = get_tracing_file("events/ftrace");
+-	if (!path)
+-		die("can't get tracing/events/ftrace");
++	if (!path) {
++		pr_err("can't get tracing/events/ftrace");
++		return -ENOMEM;
++	}
+ 
+ 	ret = copy_event_system(path, tps);
+ 
+@@ -324,12 +340,17 @@ static int read_event_files(struct tracepoint_path *tps)
+ 	int err;
+ 
+ 	path = get_tracing_file("events");
+-	if (!path)
+-		die("can't get tracing/events");
++	if (!path) {
++		pr_err("can't get tracing/events");
++		return -ENOMEM;
++	}
+ 
+ 	dir = opendir(path);
+-	if (!dir)
+-		die("can't read directory '%s'", path);
++	if (!dir) {
++		err = -errno;
++		pr_err("can't read directory '%s'", path);
++		goto out;
++	}
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -408,8 +429,10 @@ static int read_ftrace_printk(void)
+ 	int ret, err = 0;
+ 
+ 	path = get_tracing_file("printk_formats");
+-	if (!path)
+-		die("can't get tracing/printk_formats");
++	if (!path) {
++		pr_err("can't get tracing/printk_formats");
++		return -ENOMEM;
++	}
+ 
+ 	ret = stat(path, &st);
+ 	if (ret < 0) {
+@@ -426,6 +449,19 @@ out:
+ 	return err;
+ }
+ 
++static void
++put_tracepoints_path(struct tracepoint_path *tps)
++{
++	while (tps) {
++		struct tracepoint_path *t = tps;
++
++		tps = tps->next;
++		free(t->name);
++		free(t->system);
++		free(t);
++	}
++}
++
+ static struct tracepoint_path *
+ get_tracepoints_path(struct list_head *pattrs)
+ {
+@@ -438,27 +474,17 @@ get_tracepoints_path(struct list_head *pattrs)
+ 			continue;
+ 		++nr_tracepoints;
+ 		ppath->next = tracepoint_id_to_path(pos->attr.config);
+-		if (!ppath->next)
+-			die("%s\n", "No memory to alloc tracepoints list");
++		if (!ppath->next) {
++			pr_err("No memory to alloc tracepoints list\n");
++			put_tracepoints_path(&path);
++			return NULL;
++		}
+ 		ppath = ppath->next;
  	}
  
-+	*ppevent = pevent;
-+	pevent = NULL;
-+
-+out:
-+	if (pevent)
-+		pevent_free(pevent);
- 	return size;
+ 	return nr_tracepoints > 0 ? path.next : NULL;
  }
+ 
+-static void
+-put_tracepoints_path(struct tracepoint_path *tps)
+-{
+-	while (tps) {
+-		struct tracepoint_path *t = tps;
+-
+-		tps = tps->next;
+-		free(t->name);
+-		free(t->system);
+-		free(t);
+-	}
+-}
+-
+ bool have_tracepoints(struct list_head *pattrs)
+ {
+ 	struct perf_evsel *pos;
+@@ -536,12 +562,16 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 
+ 		snprintf(tdata->temp_file, sizeof(tdata->temp_file),
+ 			 "/tmp/perf-XXXXXX");
+-		if (!mkstemp(tdata->temp_file))
+-			die("Can't make temp file");
++		if (!mkstemp(tdata->temp_file)) {
++			pr_err("Can't make temp file");
++			return NULL;
++		}
+ 
+ 		temp_fd = open(tdata->temp_file, O_RDWR);
+-		if (temp_fd < 0)
+-			die("Can't read '%s'", tdata->temp_file);
++		if (temp_fd < 0) {
++			pr_err("Can't read '%s'", tdata->temp_file);
++			return NULL;
++		}
+ 
+ 		/*
+ 		 * Set the temp file the default output, so all the
 -- 
 1.7.11.7
 
