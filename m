@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab3CSPGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:06:33 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:37197 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392Ab3CSPGa (ORCPT
+	id S1756353Ab3CSPKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:10:44 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:38472 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705Ab3CSPKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:06:30 -0400
+	Tue, 19 Mar 2013 11:10:43 -0400
+Date: Tue, 19 Mar 2013 16:10:38 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, sqazi@google.com, ak@linux.intel.com,
+        jolsa@redhat.com
+Subject: [PATCH v2] perf,x86: fix uninitialized pt_regs in
+ intel_pmu_drain_bts_buffer()
+Message-ID: <20130319151038.GA25439@quad>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303191044150.15684-100000@netrider.rowland.org>
-References: <20130319000656.GC6516@kroah.com> <Pine.LNX.4.44L0.1303191044150.15684-100000@netrider.rowland.org>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Tue, 19 Mar 2013 08:06:10 -0700
-X-Google-Sender-Auth: sT7JRTaKsZCm-dbBhev_PAByDDw
-Message-ID: <CAP_ceTzvFkoqi3yC+qtvmW9XmdJ7Qv7Z5Jvf_n_gg0FVfChMeQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: Make USB persist default configurable
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julius Werner <jwerner@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>, Sameer Nanda <snanda@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 7:56 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> On Mon, 18 Mar 2013, Greg Kroah-Hartman wrote:
->
-> > On Mon, Mar 18, 2013 at 05:02:19PM -0700, Julius Werner wrote:
-> > > > Why can't you just revert this in userspace?  Isn't that easier than
-> > > > doing a kernel patch and providing an option that we need to now
-> > > > maintain for pretty much forever?
-> > >
-> > > I could solve it in userspace, but that really feels like a hacky
-> > > workaround and not a long term solution. It would mean that every new
-> > > device starts with persist enabled and stays that way for a few
-> > > milliseconds (maybe up to seconds if it's connected on boot), until
-> > > userspace gets around to disable it again... opening the possibility
-> > > for very weird race conditions and bugs with drivers/devices that
-> > > don't work with persist.
-> >
-> > What drivers/devices don't work with persist?  We need to know that now,
-> > otherwise all other distros and users have problems, right?
-> >
-> > > This default is a policy that really resides in the kernel, it has
-> > > changed in the past, and since there is no definitive better choice
-> > > for all cases I thought making it configurable is the right thing to
-> > > do.
-> >
-> > Too many options can be a bad thing.
-> >
-> > I think Alan made this a "always on" option, so I'd like to get his
-> > opinion on it.  Alan?
->
-> Originally the "persist" attribute defaulted to "off".  Linus disliked
-> this (at least, he disliked it for mass-storage devices) and so at his
-> request the default was changed to "on".  There didn't seem to be any
-> reason to treat other devices differently from mass-storage devices;
-> consequently the default is now "on" for everything.
->
-> Julius's commit message mentions the disadvantage of "persist": Resume
-> times can be increased.  But it doesn't mention the chief advantage:
-> Filesystems stored on USB devices are much less likely to be lost
-> across suspends.
->
-> The races mentioned above don't seem to be very dangerous.  How likely
-> is it that the system will be suspended within a few milliseconds of
-> probing a new USB device?
 
-For laptops, if the suspend/resume is triggered by the lid open/close
-detection, this is somewhat likely and bit us in the past :
- the classical use case I have encountered is a back-to-back suspend
-triggered by the user opening the lid then closing it again in the
-next 2 or 3 seconds because he has changed is mind (damn user...),
-might be also triggered by lid hall sensor missing proper debouncing
-(but in that case, the mechanical time constant is often shorter than
-the latency of resuming USB devices).
+This patch fixes an uninitialized pt_regs struct in drain BTS
+function. The pt_regs struct is propagated all the way to the
+code_get_segment() function from perf_instruction_pointer()
+and may get garbage.
 
+We cannot simply inherit the actual pt_regs from the interrupt
+because BTS must be flushed on context-switch or when the associated
+event is disabled. And there we do not have a pt_regs handy.
 
->
-> As for buggy devices and drivers that can't handle persist, we have
-> better ways of dealing with them.  Buggy devices can get a quirk flag
-> (USB_QUIRK_RESET).  Buggy drivers should be fixed.
->
-> Alan Stern
->
+Setting pt_regs to all zeroes may not be the best option but it is
+not clear what else to do given where the drain_bts_buffer() is called
+from.
 
--- 
-Vincent
+In V2, we move the memset() later in the code to avoid doing it when
+we end up returning early without doing the actual BTS processing.
+Also dropped the reg.val initialization because it is redundant with
+the memset() as suggested by PeterZ.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index b05a575..26830f3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -314,10 +314,11 @@ int intel_pmu_drain_bts_buffer(void)
+ 	if (top <= at)
+ 		return 0;
+ 
++	memset(&regs, 0, sizeof(regs));
++
+ 	ds->bts_index = ds->bts_buffer_base;
+ 
+ 	perf_sample_data_init(&data, 0, event->hw.last_period);
+-	regs.ip     = 0;
+ 
+ 	/*
+ 	 * Prepare a generic sample, i.e. fill in the invariant fields.
