@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3CSKJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:09:47 -0400
-Received: from storage.astrosoft.ru ([195.218.158.6]:46683 "HELO
-	storage.astrosoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751371Ab3CSKJp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:09:45 -0400
-From: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Mar 2013 14:09:38 +0400
-Subject: RE: [PATCH 1/1] Add a new platform tree for ib8315. Also add the
- DTS and the defconfig for that board.
-Thread-Topic: [PATCH 1/1] Add a new platform tree for ib8315. Also add the
- DTS and the defconfig for that board.
-Thread-Index: Ac4kFcAdpAQqDRxgRjW4Umu6oD1+VgAc0jXQ
-Message-ID: <94EB659E3D5E594D80696B67540292A2F6D13719A1@nov-exch01.astro.local>
-References: <1363614452-1109-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
- <307780DE-9735-4329-B5D7-DF2E9451A217@kernel.crashing.org>
-In-Reply-To: <307780DE-9735-4329-B5D7-DF2E9451A217@kernel.crashing.org>
-Accept-Language: ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ru-RU
-Content-Type: text/plain; charset="koi8-r"
-Content-Transfer-Encoding: 8BIT
+	id S1754091Ab3CSKMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:12:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58432 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3CSKMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 06:12:23 -0400
+Date: Tue, 19 Mar 2013 10:12:19 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
+Message-ID: <20130319101219.GC2055@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-4-git-send-email-mgorman@suse.de>
+ <5147AA3B.9080807@gmail.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Mar 2013 10:09:43.0092 (UTC) FILETIME=[E0339740:01CE2489]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5147AA3B.9080807@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes. Ib8315 based on tqm8315. Ib8315 is baseboard that has the tqm8215m plugged in as "the central part". 
+On Tue, Mar 19, 2013 at 07:58:51AM +0800, Simon Jeons wrote:
+> >@@ -2672,26 +2677,25 @@ static void kswapd_shrink_zone(struct zone *zone,
+> >  static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+> >  							int *classzone_idx)
+> >  {
+> >-	bool pgdat_is_balanced = false;
+> >  	int i;
+> >  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> >  	unsigned long nr_soft_reclaimed;
+> >  	unsigned long nr_soft_scanned;
+> >  	struct scan_control sc = {
+> >  		.gfp_mask = GFP_KERNEL,
+> >+		.priority = DEF_PRIORITY,
+> >  		.may_unmap = 1,
+> >  		.may_swap = 1,
+> >+		.may_writepage = !laptop_mode,
+> 
+> What's the influence of this change? If there are large numbers of
+> anonymous pages and very little file pages, anonymous pages will not
+> be swapped out when priorty >= DEF_PRIORITY-2. Just no sense scan.
 
------Original Message-----
-From: Kumar Gala [mailto:galak@kernel.crashing.org] 
-Sent: 19 марта 2013 г. 00:18
-To: Sergey Gerasimov
-Cc: Benjamin Herrenschmidt; Paul Mackerras; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Add a new platform tree for ib8315. Also add the DTS and the defconfig for that board.
+None. The initialisation just moves from where it was after the
+loop_again label to here. See the next hunk.
 
+> >  		.order = order,
+> >  		.target_mem_cgroup = NULL,
+> >  	};
+> >-loop_again:
+> >-	sc.priority = DEF_PRIORITY;
+> >-	sc.nr_reclaimed = 0;
+> >-	sc.may_writepage = !laptop_mode;
+> >  	count_vm_event(PAGEOUTRUN);
+> >  	do {
+> >  		unsigned long lru_pages = 0;
+> >+		unsigned long nr_reclaimed = sc.nr_reclaimed;
+> >+		bool raise_priority = true;
+> >  		/*
+> >  		 * Scan in the highmem->dma direction for the highest
 
-On Mar 18, 2013, at 8:47 AM, Sergey Gerasimov wrote:
-
-> Signed-off-by: Sergey Gerasimov 
-> <Sergey.Gerasimov@astrosoft-development.com>
-> ---
-> arch/powerpc/boot/dts/ib8315.dts           |  490 +++++++
-> arch/powerpc/configs/83xx/ib8315_defconfig | 2121 ++++++++++++++++++++++++++++
-> arch/powerpc/platforms/83xx/Kconfig        |    7 +
-> arch/powerpc/platforms/83xx/Makefile       |    1 +
-> arch/powerpc/platforms/83xx/tqm8315.c      |  137 ++
-> 5 files changed, 2756 insertions(+)
-> create mode 100644 arch/powerpc/boot/dts/ib8315.dts create mode 100644 
-> arch/powerpc/configs/83xx/ib8315_defconfig
-> create mode 100644 arch/powerpc/platforms/83xx/tqm8315.c
-
-Is there some relationship of this board with the TQM8315?
-
-- k
+-- 
+Mel Gorman
+SUSE Labs
