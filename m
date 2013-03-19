@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3CSOqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:46:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42026 "EHLO mx2.suse.de"
+	id S932090Ab3CSOrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:47:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34285 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab3CSOqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:46:10 -0400
-Date: Tue, 19 Mar 2013 15:46:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com
-Subject: Re: [PATCH V2 2/3] Drivers: hv: balloon: Support 2M page allocations
- for ballooning
-Message-ID: <20130319144608.GJ7869@dhcp22.suse.cz>
-References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
- <1363639898-1615-1-git-send-email-kys@microsoft.com>
- <1363639898-1615-2-git-send-email-kys@microsoft.com>
+	id S1752320Ab3CSOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:47:12 -0400
+Date: Tue, 19 Mar 2013 16:46:49 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <manjunath.goudar@linaro.org>
+Subject: Re: USB: simplify clock lookup for mv ehci/otg/udc
+Message-ID: <20130319144649.GA21922@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <2174936.bGhG5fu0iO@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
 Content-Disposition: inline
-In-Reply-To: <1363639898-1615-2-git-send-email-kys@microsoft.com>
+In-Reply-To: <2174936.bGhG5fu0iO@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-03-13 13:51:37, K. Y. Srinivasan wrote:
-> On Hyper-V it will be very efficient to use 2M allocations in the guest as this
-> makes the ballooning protocol with the host that much more efficient. Hyper-V
-> uses page ranges (start pfn : number of pages) to specify memory being moved
-> around and with 2M pages this encoding can be very efficient. However, when
-> memory is returned to the guest, the host does not guarantee any granularity.
-> To deal with this issue, split the page soon after a successful 2M allocation
-> so that this memory can potentially be freed as 4K pages.
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How many pages are requested usually?
+Hi,
 
-> If 2M allocations fail, we revert to 4K allocations.
-> 
-> In this version of the patch, based on the feedback from Michal Hocko
-> <mhocko@suse.cz>, I have added some additional commentary to the patch
-> description. 
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+On Tue, Mar 19, 2013 at 02:44:46PM +0100, Arnd Bergmann wrote:
+> While going over the suggested changes for the ehci-mv separation patch,
+> we noticed that the driver uses a variable number of clock names it gets
+> passed from the platform code, which is highly unusual behavior and adds
+> a lot of extra complexity.
+>=20
+> Even though there is a comment in the mv_udc driver stating that some SoCs
+> require multiple clocks, none of the code in the upstream kernel provides
+> more than one, and even if an out of tree SoC port needs multiple clocks,
+> it is still wrong to pass them them through platform data, since they are
+> a property of the device, not a property of the platform.
+>=20
+> This patch attempts to clean up the situation by turning the one clock
+> that is passed into the ehci/udc/otg devices into an anomymous one and
+> removing the clkname array from the platform data. Another simplification
+> is to always call clk_prepare_enable/clk_disable_unprepare directly,
+> since that is a valid operation on a NULL clk pointer if the platform
+> has not attacked a clk to the device.
+>=20
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-I am not going to ack the patch because I am still not entirely
-convinced that big allocations are worth it. But that is up to you and
-hyper-V users.
+needs to be rebased on my -next branch. Also, it would be really good if
+dependencies between drivers and arch code would be cut to a minimum.
 
-> ---
->  drivers/hv/hv_balloon.c |   18 ++++++++++++++++--
->  1 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-> index 2cf7d4e..71655b4 100644
-> --- a/drivers/hv/hv_balloon.c
-> +++ b/drivers/hv/hv_balloon.c
-> @@ -997,6 +997,14 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
->  
->  		dm->num_pages_ballooned += alloc_unit;
->  
-> +		/*
-> +		 * If we allocatted 2M pages; split them so we
-> +		 * can free them in any order we get.
-> +		 */
-> +
-> +		if (alloc_unit != 1)
-> +			split_page(pg, get_order(alloc_unit << PAGE_SHIFT));
-> +
->  		bl_resp->range_count++;
->  		bl_resp->range_array[i].finfo.start_page =
->  			page_to_pfn(pg);
+--=20
+balbi
 
-I would suggest also using __GFP_NO_KSWAPD (or basically use
-GFP_TRANSHUGE for alloc_unit>0) for the allocation to be as least
-disruptive as possible.
+--NzB8fVQJ5HfG6fxh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> @@ -1023,9 +1031,10 @@ static void balloon_up(struct work_struct *dummy)
->  
->  
->  	/*
-> -	 * Currently, we only support 4k allocations.
-> +	 * We will attempt 2M allocations. However, if we fail to
-> +	 * allocate 2M chunks, we will go back to 4k allocations.
->  	 */
-> -	alloc_unit = 1;
-> +	alloc_unit = 512;
->  
->  	while (!done) {
->  		bl_resp = (struct dm_balloon_response *)send_buffer;
-> @@ -1041,6 +1050,11 @@ static void balloon_up(struct work_struct *dummy)
->  						bl_resp, alloc_unit,
->  						 &alloc_error);
->  
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-You should handle alloc_balloon_pages returns 0 && !alloc_error which
-happens when num_pages < alloc_unit.
+iQIcBAEBAgAGBQJRSHpYAAoJEIaOsuA1yqREVjIQAIxk8piafrXnuS2zb2EWeKUi
+61vNePsKMP0RvhGp8hvNgIc4cjA0keJwC9EfHT7asxYcUGVJsrmtEVF1+bW5AUu5
+ytmPqFTGRKDJelhFcC7iwWqQBEg9PESeuU1esnItxZvTbtqsgkg4cALvo94sC8ti
+FaIL39FP1pbSh3bG8Wp028SXmHl1Wjcwsxl2lk2aHXMUv4VdW7G989idH15JqRCe
+d9iq3FmtUVe2Jmdv5tSyJvbhgcRGsMCdFQ11vhg5wSYH7sbiInONUY9K9aPQgm38
+C87C3ibhuF44lBEDKzo4lDrKsuHhlHjpNckjBr7Jef40Zz0bAJQJwEJqiiu8JESv
+Nx9YruNO3tHZYVQp2SMY6bdvcklFAZcJnbck1lgkAVQGnSSscD294eR0WmndeWw5
+Xe94cTAquQoL6Cx66BbYHA4KKYeUN4mAZ50+OoHAGMovM0+ZBghMvu4088AzPyN5
+Xml9rn5IjzwBlAQGYgXhnR6+z/K36BWPv/s++e6YmOG9CfwUBgiSnEIAg8InWPry
+8ELRHE5X5Wt/2/mZNEOldeLbIAl3HqOpZb3Xie0RuwhhYP917MpBEbGz6dEBZE6m
+Vidxw4Wwwz1ZXnW6uTPArxE66IMe2JJdbmEFjBjEnymfbAZZ94LrTokiBcy3s4xi
+PQa4BLKrZCJn0DKHnq/D
+=VGoB
+-----END PGP SIGNATURE-----
 
-> +		if ((alloc_error) && (alloc_unit != 1)) {
-> +			alloc_unit = 1;
-> +			continue;
-> +		}
-> +
->  		if ((alloc_error) || (num_ballooned == num_pages)) {
->  			bl_resp->more_pages = 0;
->  			done = true;
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
+--NzB8fVQJ5HfG6fxh--
