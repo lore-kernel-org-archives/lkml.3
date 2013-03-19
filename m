@@ -1,118 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab3CSRDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:03:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49067 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755440Ab3CSRDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:03:09 -0400
-Date: Tue, 19 Mar 2013 18:03:06 +0100
-From: Jiri Bohac <jbohac@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>, Dimitri Sivanich <sivanich@sgi.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RFC] specific do_timer_cpu value for nohz off mode
-Message-ID: <20130319170306.GA23272@midget.suse.cz>
-References: <20111108191149.GA7236@sgi.com>
- <alpine.LFD.2.02.1202151512420.2794@ionos>
- <20120215143710.GA10543@sgi.com>
- <alpine.LFD.2.02.1202151547520.2794@ionos>
- <20120215153438.GB11343@sgi.com>
- <alpine.LFD.2.02.1202152131280.2794@ionos>
- <20120216145900.GA3772@sgi.com>
+	id S933151Ab3CSRDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:03:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42492 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab3CSRDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 13:03:36 -0400
+Date: Tue, 19 Mar 2013 17:03:24 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130319170324.GI21522@ZenIV.linux.org.uk>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+ <20130318230103.GF21522@ZenIV.linux.org.uk>
+ <20130319013805.GG21522@ZenIV.linux.org.uk>
+ <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120216145900.GA3772@sgi.com>
+In-Reply-To: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Mar 19, 2013 at 11:29:41AM +0100, Miklos Szeredi wrote:
 
-following up on a very old thread:
-http://thread.gmane.org/gmane.linux.kernel/1212777
+> Copy up is a once-in-a-lifetime event for an object.  Optimizing it is
+> way down in the list of things to do.  I'd drop splice in a jiffy if
+> it's in the way.
 
-On Thu, Feb 16, 2012 at 08:59:00AM -0600, Dimitri Sivanich wrote:
-> On Wed, Feb 15, 2012 at 09:36:47PM +0100, Thomas Gleixner wrote:
-> > On Wed, 15 Feb 2012, Dimitri Sivanich wrote:
-> > > On Wed, Feb 15, 2012 at 03:52:06PM +0100, Thomas Gleixner wrote:
-> > > > So the first CPU which registers a clock event device takes it. That's
-> > > > the boot CPU, no matter what.
-> > > >
-> > > Both kernel tracing and the original patch that I proposed for this
-> > > showed plainly (at the time) that the tick_do_timer_cpu was not always cpu 0
-> > > prior to modifying it for nohz=off.  Maybe that is no longer the case?
-> > 
-> > This logic has not been changed in years.
+What makes you think that write is any better?  Same deadlock there - check
+generic_file_aio_write(), it calls the same sb_start_write()...  IOW,
+switching from splice to write won't help at all.
+
+> Much more interesting question:  what happens if we crash during a
+> rename?  Whiteout implemented in the filesystem won't save us.  And
+> the results are interesting: old versions of files become visible and
+> similar fun.  Far from likely to happen, but ...
 > 
-> I did some tracing of all points where tick_do_timer_cpu is set in the
-> 3.3.0-rc3+ kernel.
-> 
-> > 
-> > tick_do_timer_cpu is initialized to TICK_DO_TIMER_BOOT and the first
-> > cpu which registers either a global or a per cpu clock event device
-> > takes it over. This is at least on x86 always the boot cpu, i.e. cpu0.
-> > After that point nothing touches that variable when nohz is disabled
-> > (runtime or compile time).
-> 
-> At that point it is set to cpu 0.  However, when we go into highres mode
-> it does change.  Below are the two places it was set during boot with
-> nohz=off on one of our x86 based machines.
-> 
-> [    0.000000] tick_setup_device: tick_do_timer_cpu 0
-> [    1.924098] tick_broadcast_setup_oneshot: tick_do_timer_cpu 17
-> 
-> So in this example it's now cpu 17, and it stays that way from that point on.
-> 
-> A traceback at that point shows tick_init_highres is indeed initiating this:
-> 
-> [    1.924863]  [<ffffffff81087e01>] tick_broadcast_setup_oneshot+0x71/0x160
-> [    1.924863]  [<ffffffff81087f23>] tick_broadcast_switch_to_oneshot+0x33/0x50
-> [    1.924863]  [<ffffffff81088841>] tick_switch_to_oneshot+0x81/0xd0
-> [    1.924863]  [<ffffffff810888a0>] tick_init_highres+0x10/0x20
-> [    1.924863]  [<ffffffff81061e71>] hrtimer_run_pending+0x71/0xd0
-> 
-> > 
-> > So I really want to see proper proof why that would not be the
-> > case. If it really happens then we fix the root cause instead of
-> > adding random sysfs interfaces.
+> Add a rename-with-whiteout primitive on filesystems?  That one is not
+> going to be as simple as plain whiteout.  Or?
 
-As Dimitri wrote above, the switch from cpu 0 is done by
-tick_broadcast_setup_oneshot. The first CPU switching to highres
-takes the broadcast responsibility and also sets
-tick_do_timer_cpu to itself.
+Umm...  If/when we start caring about that kind of atomicity (and I agree
+that we ought to) overlayfs approach to whiteouts will actually have much
+harder time - it doesn't take much to teach a journalling fs how to do that
+kind of ->rename() in a single transaction; the only question is how to tell
+it that we want to leave a whiteout behind us.  Hell knows; one variant is
+to add a flag, of course.  Another might be more interesting - we want some
+kind of "directory is opaque" flag, so if we start reshuffling the methods,
+we might try to merge unlink/rmdir/whiteout.  Rules:
+	* victim is negative => create a whiteout
+	* victim is a directory, parent opaque => rmdir
+	* victim is a non-directory, parent opaque => unlink
+	* victim is positive, parent _not_ opaque => replace with whiteout
+	* old_dir in case of ->rename() is opaque => normal rename
+	* old_dir in case of ->rename() is not opaque => leave whiteout behind
+Non-unioned => opaque, of course (nothing showing through it).
 
-This behaviour has been introduced by 7300711e
-(clockevents: broadcast fixup possible waiters).
+Getting good behaviour on rename interrupted by crash is going to be _very_
+tricky with any strategy other than whiteouts-in-fs, AFAICS.
 
-I don't see a good reason assign tick_do_timer_cpu to the CPU
-doing the one-shot timer broadcasts. The timer interrupt will be
-generated on any other CPU as well, be it through the broadcast
-IPI or a per-CPU clockevent device. Any online CPU can do that
-job, so how about just dropping the assignment?
-
-The do_timer() code should not suffer from the jitter introduced
-by the interrupt being generated by the broadcast, should it?
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -572,9 +572,6 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- 
- 		bc->event_handler = tick_handle_oneshot_broadcast;
- 
--		/* Take the do_timer update */
--		tick_do_timer_cpu = cpu;
--
- 		/*
- 		 * We must be careful here. There might be other CPUs
- 		 * waiting for periodic broadcast. We need to set the
-
-
-
--- 
-Jiri Bohac <jbohac@suse.cz>
-SUSE Labs, SUSE CZ
-
+Again, I have no problem whatsoever with changing the set of directory
+methods, as long as the replacement is sane.  We'd done that kind of thing
+before and it's not a problem.
