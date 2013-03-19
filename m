@@ -1,66 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965047Ab3CSIzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:55:41 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:41251 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab3CSIzc (ORCPT
+	id S965001Ab3CSIxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:53:55 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59042 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755612Ab3CSIxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 04:55:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <201303181128.45215.arnd@arndb.de>
-References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
- <201303181058.51641.arnd@arndb.de> <CAHkwnC-aHwd24S5MyLhnVzTqqQj2L7MMuVX9dirhS-G830jZcw@mail.gmail.com>
- <201303181128.45215.arnd@arndb.de>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Tue, 19 Mar 2013 09:55:11 +0100
-Message-ID: <CAHkwnC9fg7_uhLM2KD3vvj_oFx3EBoQfw8mCN=V9pyV5=k37aA@mail.gmail.com>
-Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 04:53:50 -0400
+X-AuditID: 9c930197-b7cc2ae000000eb7-81-5148279c6ee4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 2/9] perf util: Get rid of malloc_or_die() in trace-event-info.c
+Date: Tue, 19 Mar 2013 17:53:37 +0900
+Message-Id: <1363683224-28804-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 12:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 18 March 2013, Fabio Porcedda wrote:
->>
->> On Mon, Mar 18, 2013 at 11:58 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Monday 18 March 2013, Fabio Porcedda wrote:
->> >> Since by using platform_driver_probe() the  function
->> >> ep93xx_pwm_probe() is freed after initialization,
->> >> is better to use module_platform_drive_probe().
->> >> IMHO i don't see any good reason to use module_platform_driver() for
->> >> this driver.
->> >
->> > As I commented earlier, the platform_driver_probe() and
->> > module_platform_drive_probe() interfaces are rather dangerous in combination
->> > with deferred probing, I would much prefer Harley's patch.
->>
->> Since those drivers don't use -EPROBE_DEFER i was thinking that they don't use
->> deferred probing.
->> I'm missing something?
->
-> clk_get() may return -EPROBE_DEFER after ep93xx is converted to use the
-> common clk API. We currently return the value of clk_get from the probe()
-> function, which will automatically do the right thing as long as the probe
-> function remains reachable.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Thanks for the explanation.
+Check return value of malloc and fail if NULL.
 
-Regards
-Fabio Porcedda
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/trace-event-info.c | 48 ++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 18 deletions(-)
 
->         Arnd
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index f241343b7d48..f04c8fd190dc 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -47,16 +47,6 @@ static const char *output_file = "trace.info";
+ static int output_fd;
+ 
+ 
+-static void *malloc_or_die(unsigned int size)
+-{
+-	void *data;
+-
+-	data = malloc(size);
+-	if (!data)
+-		die("malloc");
+-	return data;
+-}
+-
+ static const char *find_debugfs(void)
+ {
+ 	const char *path = perf_debugfs_mount(NULL);
+@@ -209,7 +199,7 @@ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void copy_event_system(const char *sys, struct tracepoint_path *tps)
++static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -217,6 +207,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	dir = opendir(sys);
+ 	if (!dir)
+@@ -228,7 +219,11 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 		free(format);
+@@ -246,16 +241,22 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 
+ 		if (ret >= 0)
+ 			record_file(format, 8);
+-
+ 		free(format);
+ 	}
++	err = 0;
++out:
+ 	closedir(dir);
++	return err;
+ }
+ 
+ static void read_ftrace_files(struct tracepoint_path *tps)
+@@ -282,7 +283,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void read_event_files(struct tracepoint_path *tps)
++static int read_event_files(struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -291,6 +292,7 @@ static void read_event_files(struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	path = get_tracing_file("events");
+ 	if (!path)
+@@ -320,7 +322,11 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "ftrace") == 0 ||
+ 		    !system_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
++		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
++		if (!sys) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(sys, "%s/%s", path, dent->d_name);
+ 		ret = stat(sys, &st);
+ 		if (ret >= 0) {
+@@ -329,9 +335,12 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		}
+ 		free(sys);
+ 	}
+-
++	err = 0;
++out:
+ 	closedir(dir);
+ 	put_tracing_file(path);
++
++	return err;
+ }
+ 
+ static void read_proc_kallsyms(void)
+@@ -463,7 +472,10 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	if (!tps)
+ 		return NULL;
+ 
+-	tdata = malloc_or_die(sizeof(*tdata));
++	tdata = malloc(sizeof(*tdata));
++	if (!tdata)
++		return NULL;
++
+ 	tdata->temp = temp;
+ 	tdata->size = 0;
+ 
+-- 
+1.7.11.7
+
