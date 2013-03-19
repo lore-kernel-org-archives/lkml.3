@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934192Ab3CSWH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:07:56 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:35370 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133Ab3CSWHz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:07:55 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
-        akpm@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-	<20130316040121.15064.35279.stgit@localhost6.localdomain6>
-Date: Tue, 19 Mar 2013 15:07:47 -0700
-In-Reply-To: <20130316040121.15064.35279.stgit@localhost6.localdomain6>
-	(HATAYAMA Daisuke's message of "Sat, 16 Mar 2013 13:01:21 +0900")
-Message-ID: <87hak7m4b0.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+AJ5rM5sREy7TRDevKrDGITh7sKhUIom4=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 06/21] vmcore: round up buffer size of ELF headers by PAGE_SIZE
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S934359Ab3CSWJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:09:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18565 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934172Ab3CSWJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 18:09:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,874,1355126400"; 
+   d="scan'208";a="273258343"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        penguin-kernel@I-love.SAKURA.ne.jp,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical address by __pa_nodebug()
+Date: Tue, 19 Mar 2013 08:04:44 -0700
+Message-Id: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-> To satisfy mmap() page-size boundary requirement, round up buffer size
-> of ELF headers by PAGE_SIZE. The resulting value becomes offset of ELF
-> note segments and it's assigned in unique PT_NOTE program header
-> entry.
+In 32-bit, __pa_symbol() in CONFIG_DEBUG_VIRTUAL accesses kernel data (e.g.
+max_low_pfn) that haven't been setup yet in such early boot phase. To fix the
+issue, __pa_nodebug() replaces __pa_symbol() to get a global symbol's physical
+address.
 
-Ok. That is just silly.  You can use a single buffer for the ELF header,
-the program header and the notes.  It just requires a bit of counting
-ahead of time.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/kernel/microcode_intel_early.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-The ELF header itself is small, and so are the program headers,
-especially if you only have one PT_NOTE segment.  The only thing that
-possibly gets big is the note segment, and then that only happens if you
-have a lot of cpus.
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 7890bc8..5992ee8 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -90,13 +90,13 @@ microcode_phys(struct microcode_intel **mc_saved_tmp,
+ 	struct microcode_intel ***mc_saved;
+ 
+ 	mc_saved = (struct microcode_intel ***)
+-		   __pa_symbol(&mc_saved_data->mc_saved);
++		   __pa_nodebug(&mc_saved_data->mc_saved);
+ 	for (i = 0; i < mc_saved_data->mc_saved_count; i++) {
+ 		struct microcode_intel *p;
+ 
+ 		p = *(struct microcode_intel **)
+-			__pa(mc_saved_data->mc_saved + i);
+-		mc_saved_tmp[i] = (struct microcode_intel *)__pa(p);
++			__pa_nodebug(mc_saved_data->mc_saved + i);
++		mc_saved_tmp[i] = (struct microcode_intel *)__pa_nodebug(p);
+ 	}
+ }
+ #endif
+@@ -562,7 +562,7 @@ scan_microcode(unsigned long start, unsigned long end,
+ 	struct cpio_data cd;
+ 	long offset = 0;
+ #ifdef CONFIG_X86_32
+-	char *p = (char *)__pa_symbol(ucode_name);
++	char *p = (char *)__pa_nodebug(ucode_name);
+ #else
+ 	char *p = ucode_name;
+ #endif
+@@ -630,8 +630,8 @@ static void __cpuinit print_ucode(struct ucode_cpu_info *uci)
+ 	if (mc_intel == NULL)
+ 		return;
+ 
+-	delay_ucode_info_p = (int *)__pa_symbol(&delay_ucode_info);
+-	current_mc_date_p = (int *)__pa_symbol(&current_mc_date);
++	delay_ucode_info_p = (int *)__pa_nodebug(&delay_ucode_info);
++	current_mc_date_p = (int *)__pa_nodebug(&current_mc_date);
+ 
+ 	*delay_ucode_info_p = 1;
+ 	*current_mc_date_p = mc_intel->hdr.date;
+@@ -741,15 +741,15 @@ load_ucode_intel_bsp(void)
+ #ifdef CONFIG_X86_32
+ 	struct boot_params *boot_params_p;
+ 
+-	boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
++	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+ 	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+ 	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+ 	initrd_start_early = ramdisk_image;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+ 	_load_ucode_intel_bsp(
+-		(struct mc_saved_data *)__pa_symbol(&mc_saved_data),
+-		(unsigned long *)__pa_symbol(&mc_saved_in_initrd),
++		(struct mc_saved_data *)__pa_nodebug(&mc_saved_data),
++		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+ 		initrd_start_early, initrd_end_early, &uci);
+ #else
+ 	ramdisk_image = boot_params.hdr.ramdisk_image;
+@@ -772,10 +772,10 @@ void __cpuinit load_ucode_intel_ap(void)
+ 	unsigned long *initrd_start_p;
+ 
+ 	mc_saved_in_initrd_p =
+-		(unsigned long *)__pa_symbol(mc_saved_in_initrd);
+-	mc_saved_data_p = (struct mc_saved_data *)__pa_symbol(&mc_saved_data);
+-	initrd_start_p = (unsigned long *)__pa_symbol(&initrd_start);
+-	initrd_start_addr = (unsigned long)__pa_symbol(*initrd_start_p);
++		(unsigned long *)__pa_nodebug(mc_saved_in_initrd);
++	mc_saved_data_p = (struct mc_saved_data *)__pa_nodebug(&mc_saved_data);
++	initrd_start_p = (unsigned long *)__pa_nodebug(&initrd_start);
++	initrd_start_addr = (unsigned long)__pa_nodebug(*initrd_start_p);
+ #else
+ 	mc_saved_data_p = &mc_saved_data;
+ 	mc_saved_in_initrd_p = mc_saved_in_initrd;
+-- 
+1.8.0.1
 
-Since there are entirely local constructs it seems extremely silly,
-wasteful and complicated to place each logical part in a separately
-mmapable buffer instead of placing them in the same mmapable buffer.
-
-Eric
