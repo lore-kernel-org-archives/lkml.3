@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3CSRE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:04:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42654 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755440Ab3CSRE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:04:57 -0400
-Message-ID: <51489A99.2030107@ti.com>
-Date: Tue, 19 Mar 2013 22:34:25 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
+	id S1757223Ab3CSRGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:06:55 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:63663 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756998Ab3CSRGx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 13:06:53 -0400
+Message-ID: <1363712807.1390.26.camel@x61.thuisdomein>
+Subject: Re: [PATCH] sparc: remove unused "config BITS"
+From: Paul Bolle <pebolle@tiscali.nl>
 To: David Miller <davem@davemloft.net>
-CC: <aeschlimann@gmail.com>, <khc@pm.waw.pl>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <c.aeschlimann@acn-group.ch>
-Subject: Re: [PATCH] ixp4xx_eth: set the device dma_coherent_mask
-References: <1363708765-20778-1-git-send-email-c.aeschlimann@acn-group.ch> <20130319.123359.2245221095583640859.davem@davemloft.net>
-In-Reply-To: <20130319.123359.2245221095583640859.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 18:06:47 +0100
+In-Reply-To: <20130319.123306.1709006318806942163.davem@davemloft.net>
+References: <1363708727.1390.16.camel@x61.thuisdomein>
+	 <20130319.123306.1709006318806942163.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Mar 2013 17:06:48.0208 (UTC) FILETIME=[24554100:01CE24C4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/19/2013 10:03 PM, David Miller wrote:
-> From: Christophe Aeschlimann<aeschlimann@gmail.com>
-> Date: Tue, 19 Mar 2013 16:59:25 +0100
->
->> >Without the mask it is impossible to take the network interface up
->> >since it returns the following error:
->> >
->>> >>net eth1: coherent DMA mask is unset
->>> >>ifconfig: SIOCSIFFLAGS: Cannot allocate memory
->> >
->> >Tested on an out-of-tree ixp425 based board.
->> >
->> >Signed-off-by: Christophe Aeschlimann<c.aeschlimann@acn-group.ch>
->   ...
->> >@@ -1398,6 +1398,7 @@ static int eth_init_one(struct platform_device *pdev)
->> >  		return -ENOMEM;
->> >  
->> >  	SET_NETDEV_DEV(dev, &pdev->dev);
->> >+	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> Hmmm, shouldn't this be the default value, set by the bus layer or
-> similar?
-bus layer or any platform code doesn't init this value. The same issue 
-applies
-to CPSW driver also. Previously the same was done in board or device 
-file. But
-this approach is obsolete now, need to think of how it can be resolved in DT
-approach
+On Tue, 2013-03-19 at 12:33 -0400, David Miller wrote:
+> We use this in the Makefile fragments, you cannot remove it.
 
-Regards
-Mugunthan V N
+>From arch/sparc/Makefile:
+    ifeq ($(CONFIG_SPARC32),y)
+    [...]
+
+    [...]
+    export BITS    := 32
+    [...]
+
+    else
+    [...]
+
+    [...]
+    export BITS   := 64
+    [...]
+
+So $(BITS) is set depending on whether CONFIG_SPARC32 is set or not.
+Using $(BITS) in sparc's Makefiles is not using CONFIG_BITS. That
+doesn't count as usage of "config BITS". 
+
+
+Paul Bolle
+
