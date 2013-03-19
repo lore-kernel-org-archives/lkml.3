@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3CSOgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:36:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33679 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab3CSOgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:36:48 -0400
-Message-ID: <514877F1.8020204@ti.com>
-Date: Tue, 19 Mar 2013 10:36:33 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756772Ab3CSOid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:38:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34108 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab3CSOic convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:38:32 -0400
+Date: Tue, 19 Mar 2013 10:38:25 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        martin.petersen@oracle.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH RFC 12/12] xen-block: implement indirect descriptors
+Message-ID: <20130319143825.GA30302@phenom.dumpdata.com>
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-13-git-send-email-roger.pau@citrix.com>
+ <5147499E.5080209@citrix.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/8] staging: [omap,ti-soc]-thermal: fixes and renaming
-References: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <5147499E.5080209@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Mon, Mar 18, 2013 at 06:06:38PM +0100, Roger Pau Monné wrote:
+> On 28/02/13 11:28, Roger Pau Monne wrote:
+> > Indirect descriptors introduce a new block operation
+> > (BLKIF_OP_INDIRECT) that passes grant references instead of segments
+> > in the request. This grant references are filled with arrays of
+> > blkif_request_segment_aligned, this way we can send more segments in a
+> > request.
+> > 
+> > The proposed implementation sets the maximum number of indirect grefs
+> > (frames filled with blkif_request_segment_aligned) to 256 in the
+> > backend and 64 in the frontend. The value in the frontend has been
+> > chosen experimentally, and the backend value has been set to a sane
+> > value that allows expanding the maximum number of indirect descriptors
+> > in the frontend if needed.
+> 
+> I've added some additional debugging messages in blkfront, and found out
+> that the queue in blkfront is not providing request bigger than 64
+> segments for read requests, or 128 segments for write requests, although
+> I set:
+> 
+> blk_queue_max_segments(info->rq, 256);
+> 
+> Is there any other limit I'm missing on the number of segments per
+> request a queue can provide?
 
-
-On 18-03-2013 10:59, Eduardo Valentin wrote:
-> Hi Greg,
->
-> I am sending extra patches on omap-thermal driver, under staging.
->
-> There are couple of fixes based on Dan Carpenter's review on
-> the last patch set I sent. On top of these, there are some
-> changes on the naming convention for this driver. This rename
-> is based on previous review cycles that this driver has got.
-> Besides, it must support other chip families, apart from OMAP,
-> that's mainly why there is a big rename on this patch set.
-> And as  usual, there are couple of extra fixes.
-
-I am going to resend this series, dropping  patch 02 and splitting 
-patch 04. It will also include extra fixes.
-
-
->
-> All these are based on your staging/staging-next branch.
->
-> For those interested in testing and trying the driver, these patches are
-> also available, as usual, here:
-> git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
-> https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
->
-> BR,
->
-> Eduardo Valentin (8):
->    staging: omap-thermal: fix return value
->    staging: omap-thermal: use spin_lock_irqsave inside IRQ handler
->    staging: omap-thermal: rename bg_ptr to bgp
->    staging: rename omap-thermal driver to ti-soc-thermal
->    staging: ti-soc-thermal: make unexported functions local
->    staging: ti-soc-thermal: split writable data from readonly data
->    stating: ti-soc-thermal: use sizeof(*pointer) while allocating
->    staging: ti-soc-thermal: fix several kernel-doc warnings and error
->
->   drivers/staging/Kconfig                            |    2 +-
->   drivers/staging/Makefile                           |    2 +-
->   drivers/staging/omap-thermal/Makefile              |    5 -
->   drivers/staging/omap-thermal/omap-bandgap.c        | 1300 --------------------
->   drivers/staging/omap-thermal/omap-thermal-common.c |  338 -----
->   .../{omap-thermal => ti-soc-thermal}/Kconfig       |   14 +-
->   drivers/staging/ti-soc-thermal/Makefile            |    5 +
->   .../staging/{omap-thermal => ti-soc-thermal}/TODO  |    0
->   .../omap4-thermal-data.c                           |   68 +-
->   .../omap4xxx-bandgap.h                             |    0
->   .../omap5-thermal-data.c                           |   20 +-
->   .../omap5xxx-bandgap.h                             |    0
->   .../omap_bandgap.txt                               |    0
->   drivers/staging/ti-soc-thermal/ti-bandgap.c        | 1299 +++++++++++++++++++
->   .../omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} |  181 ++--
->   drivers/staging/ti-soc-thermal/ti-thermal-common.c |  338 +++++
->   .../omap-thermal.h => ti-soc-thermal/ti-thermal.h} |   30 +-
->   17 files changed, 1803 insertions(+), 1799 deletions(-)
->   delete mode 100644 drivers/staging/omap-thermal/Makefile
->   delete mode 100644 drivers/staging/omap-thermal/omap-bandgap.c
->   delete mode 100644 drivers/staging/omap-thermal/omap-thermal-common.c
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/Kconfig (82%)
->   create mode 100644 drivers/staging/ti-soc-thermal/Makefile
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/TODO (100%)
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4-thermal-data.c (85%)
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4xxx-bandgap.h (100%)
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5-thermal-data.c (96%)
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5xxx-bandgap.h (100%)
->   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap_bandgap.txt (100%)
->   create mode 100644 drivers/staging/ti-soc-thermal/ti-bandgap.c
->   rename drivers/staging/{omap-thermal/omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} (75%)
->   create mode 100644 drivers/staging/ti-soc-thermal/ti-thermal-common.c
->   rename drivers/staging/{omap-thermal/omap-thermal.h => ti-soc-thermal/ti-thermal.h} (72%)
->
-
+Martin, any ideas?
+> 
