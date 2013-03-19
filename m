@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3CSNCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 09:02:36 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:55676 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab3CSNCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 09:02:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363697902.22553.43.camel@laptop>
-References: <20130318134645.GA3278@quad>
-	<1363696984.22553.41.camel@laptop>
-	<CABPqkBSmVzk=0nvHiuk-+XSfNX8ODXWKeJ+jUu2482=NvMoghg@mail.gmail.com>
-	<1363697902.22553.43.camel@laptop>
-Date: Tue, 19 Mar 2013 14:02:34 +0100
-Message-ID: <CABPqkBQcD6EBcJuxx0iNMQCw=iFAc0zHZ+5hmZwmCACCsOw0uw@mail.gmail.com>
-Subject: Re: [PATCH] perf,x86: fix uninitialized pt_regs in intel_pmu_drain_bts_buffer()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Salman Qazi <sqazi@google.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754846Ab3CSNHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 09:07:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37676 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078Ab3CSNHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 09:07:17 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] memcg: do not check for do_swap_account in mem_cgroup_{read,write,reset}
+Date: Tue, 19 Mar 2013 14:06:55 +0100
+Message-Id: <1363698415-12737-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 1:58 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2013-03-19 at 13:50 +0100, Stephane Eranian wrote:
->> > Should we not replace:
->> >
->> >         regs.ip     = 0;
->> >
->> > with that memset? It avoids the memset work in a few cases and
->> removes
->> > the then superfluous clearing of the IP field.
->> >
->> We could drop it because it's covered by the memset().
->
-> Yeah, but also place the memset a little lower than you did, avoids the
-> stack writes when not needed.
->
-Ok, I get it now. Yes, we can move it after the test and drop reg.val = 0.
+since 2d11085e (memcg: do not create memsw files if swap accounting
+is disabled) memsw files are created only if memcg swap accounting is
+enabled so there doesn't make any sense to check for it explicitely in
+mem_cgroup_read, mem_cgroup_write and mem_cgroup_reset.
 
->> The issue here was that you eventually end up in code_segment_base()
->> which
->> looks at other uninitialized fields in pt_regs and may cause breakage.
->
-> Right, your changelog said so ;-)
->
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 2e01167..f608546 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5091,9 +5091,6 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+ 	type = MEMFILE_TYPE(cft->private);
+ 	name = MEMFILE_ATTR(cft->private);
+ 
+-	if (!do_swap_account && type == _MEMSWAP)
+-		return -EOPNOTSUPP;
+-
+ 	switch (type) {
+ 	case _MEM:
+ 		if (name == RES_USAGE)
+@@ -5329,9 +5326,6 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 	type = MEMFILE_TYPE(cft->private);
+ 	name = MEMFILE_ATTR(cft->private);
+ 
+-	if (!do_swap_account && type == _MEMSWAP)
+-		return -EOPNOTSUPP;
+-
+ 	switch (name) {
+ 	case RES_LIMIT:
+ 		if (mem_cgroup_is_root(memcg)) { /* Can't set limit on root */
+@@ -5408,9 +5402,6 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
+ 	type = MEMFILE_TYPE(event);
+ 	name = MEMFILE_ATTR(event);
+ 
+-	if (!do_swap_account && type == _MEMSWAP)
+-		return -EOPNOTSUPP;
+-
+ 	switch (name) {
+ 	case RES_MAX_USAGE:
+ 		if (type == _MEM)
+-- 
+1.7.10.4
+
