@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab3CSSni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:43:38 -0400
-Received: from mout.gmx.net ([212.227.15.18]:49956 "EHLO mout.gmx.net"
+	id S1756912Ab3CSStS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:49:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49879 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab3CSSng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:43:36 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/+29ZW4sj+1wPa+g736d61a0yTHzWPpfHA7a/M7u
-	ElpKJjMGlfM7gZ
-From: Sven Joachim <svenjoac@gmx.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Stephen Thirlwall <sdt@dr.com>
-Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI controllers
-References: <Pine.LNX.4.44L0.1303191415580.1302-100000@iolanthe.rowland.org>
-Date: Tue, 19 Mar 2013 19:43:28 +0100
-In-Reply-To: <Pine.LNX.4.44L0.1303191415580.1302-100000@iolanthe.rowland.org>
-	(Alan Stern's message of "Tue, 19 Mar 2013 14:17:10 -0400 (EDT)")
-Message-ID: <87ehfbjkmn.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753640Ab3CSStR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:49:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,873,1355126400"; 
+   d="scan'208";a="281824249"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Linn Crosetto <linn@hp.com>, "Zheng, Lv" <lv.zheng@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] acpi: remove length check for large registers
+Thread-Topic: [PATCH] acpi: remove length check for large registers
+Thread-Index: AQHOIbdMN2cdaTqtwUOalnqmcDRsBJitYScw
+Date: Tue, 19 Mar 2013 18:48:58 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E36F48A3FB@ORSMSX101.amr.corp.intel.com>
+References: <1363377367-12813-1-git-send-email-linn@hp.com>
+In-Reply-To: <1363377367-12813-1-git-send-email-linn@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-19 19:17 +0100, Alan Stern wrote:
+Linn,
 
-> On Tue, 19 Mar 2013, Sven Joachim wrote:
->
->> On 2013-03-18 22:06 +0100, Greg Kroah-Hartman wrote:
->> 
->> > 3.8-stable review patch.  If anyone has any objections, please let me know.
->> 
->> This patch breaks resume from suspend on my system if the following
->> device is plugged in:
->> 
->> ,----
->> | $ lsusb | head -n1
->> | Bus 005 Device 002: ID 07d1:3c03 D-Link System AirPlus G DWL-G122 Wireless Adapter(rev.C1) [Ralink RT2571W]
->> `----
->> 
->> The same problem exists in 3.9-rc3, FWIW.
->> 
->> Detailed lsusb output follows, I'll be happy to provide more information
->> if needed.
->
-> In what way is resume broken?
+We will integrate this change into ACPICA for the next release, later in March 2013.
+Thanks,
+Bob
 
-The kernel comes back, but the screen is black.  Manually switching VT's
-is possible, and if I type something I can see it on the screen, but
-there is no response and the cursor does not blink.  It looks as if the
-VT is not switched backed on resume, and userspace tasks are not
-restarted.  Sysrq combinations apparently work, but produce no output.
 
-Cheers,
-       Sven
+> -----Original Message-----
+> From: Linn Crosetto [mailto:linn@hp.com]
+> Sent: Friday, March 15, 2013 12:56 PM
+> To: rjw@sisk.pl; Moore, Robert; ming.m.lin@intel.com; Zheng, Lv; linux-
+> acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Linn Crosetto
+> Subject: [PATCH] acpi: remove length check for large registers
+> 
+> The legacy bit width field in the Generic Address Structure is 1 byte,
+> limiting the reportable register width to 255 bits. Larger registers will
+> cause a length mismatch warning to be printed in acpi_tb_validate_fadt().
+> 
+> To avoid the warning, disable the length mismatch check for registers
+> larger than 255 bits.
+> 
+> Signed-off-by: Linn Crosetto <linn@hp.com>
+> ---
+>  drivers/acpi/acpica/tbfadt.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
+> index 74181bf..e87abcd 100644
+> --- a/drivers/acpi/acpica/tbfadt.c
+> +++ b/drivers/acpi/acpica/tbfadt.c
+> @@ -561,6 +561,7 @@ static void acpi_tb_validate_fadt(void)
+>  		 * legacy length field and the corresponding 64-bit X length
+> field.
+>  		 */
+>  		if (address64->address &&
+> +		    ACPI_MUL_8(length) <= ACPI_UINT8_MAX &&
+>  		    (address64->bit_width != ACPI_MUL_8(length))) {
+>  			ACPI_BIOS_WARNING((AE_INFO,
+>  					   "32/64X length mismatch in FADT/%s:
+> %u/%u",
+> --
+> 1.7.11.3
+
