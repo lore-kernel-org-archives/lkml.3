@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3CSKHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:07:19 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:43527 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab3CSKHR (ORCPT
+	id S1751080Ab3CSKID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:08:03 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:63581 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab3CSKIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:07:17 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] drivers: platform: x86: Use PTR_RET function
-Date: Tue, 19 Mar 2013 03:01:34 +0200
-Message-Id: <1363654894-20309-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Mar 2013 06:08:00 -0400
+Message-ID: <1363687677.1390.6.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: OMAP: remove "config FB_OMAP_CONSISTENT_DMA_SIZE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 11:07:57 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Mar 2013 10:07:57.0521 (UTC) FILETIME=[A146BC10:01CE2489]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used PTR_RET function instead of IS_ERR and PTR_ERR.
-Patch found using coccinelle.
+The only user of Kconfig symbol FB_OMAP_CONSISTENT_DMA_SIZE got removed
+in v3.8, with commit 6ba54ab4a49bbad736b0254aa6bdf0cb83013815 ("ARM:
+OMAP: Remove omap_init_consistent_dma_size()"). Remove this symbol too.
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/platform/x86/samsung-q10.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+Eyeball tested only.
 
-diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
-index 5f77005..1a90b62 100644
---- a/drivers/platform/x86/samsung-q10.c
-+++ b/drivers/platform/x86/samsung-q10.c
-@@ -176,10 +176,7 @@ static int __init samsungq10_init(void)
- 						   samsungq10_probe,
- 						   NULL, 0, NULL, 0);
+ drivers/video/omap/Kconfig | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/drivers/video/omap/Kconfig b/drivers/video/omap/Kconfig
+index e512581..0bc3a93 100644
+--- a/drivers/video/omap/Kconfig
++++ b/drivers/video/omap/Kconfig
+@@ -39,17 +39,6 @@ config FB_OMAP_LCD_MIPID
+ 	  the Mobile Industry Processor Interface DBI-C/DCS
+ 	  specification. (Supported LCDs: Philips LPH8923, Sharp LS041Y3)
  
--	if (IS_ERR(samsungq10_device))
--		return PTR_ERR(samsungq10_device);
+-config FB_OMAP_CONSISTENT_DMA_SIZE
+-	int "Consistent DMA memory size (MB)"
+-	depends on FB_OMAP
+-	range 1 14
+-	default 2
+-	help
+-	  Increase the DMA consistent memory size according to your video
+-	  memory needs, for example if you want to use multiple planes.
+-	  The size must be 2MB aligned.
+-	  If unsure say 1.
 -
--	return 0;
-+	return PTR_RET(samsungq10_device);
- }
- 
- static void __exit samsungq10_exit(void)
+ config FB_OMAP_DMA_TUNE
+         bool "Set DMA SDRAM access priority high"
+         depends on FB_OMAP
 -- 
-1.7.9.5
+1.7.11.7
 
