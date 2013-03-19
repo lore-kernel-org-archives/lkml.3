@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933861Ab3CSUZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:25:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56969 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932961Ab3CSUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:25:46 -0400
-Date: Tue, 19 Mar 2013 21:25:43 +0100
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Message-ID: <20130319202543.GF5222@quack.suse.cz>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
- <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
- <1944.1363525619@warthog.procyon.org.uk>
- <20130318153936.GB28508@quack.suse.cz>
- <20130318215333.GE21522@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318215333.GE21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757753Ab3CSU0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:26:16 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62962 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757266Ab3CSU0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 16:26:14 -0400
+Message-ID: <1363724768.1390.36.camel@x61.thuisdomein>
+Subject: Re: [PATCH] sparc: remove unused "config BITS"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 21:26:08 +0100
+In-Reply-To: <20130319201454.GA25072@merkur.ravnborg.org>
+References: <1363708727.1390.16.camel@x61.thuisdomein>
+	 <20130319.123306.1709006318806942163.davem@davemloft.net>
+	 <1363712807.1390.26.camel@x61.thuisdomein>
+	 <20130319201454.GA25072@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Mar 2013 20:26:08.0853 (UTC) FILETIME=[FD6ED850:01CE24DF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-03-13 21:53:34, Al Viro wrote:
-> On Mon, Mar 18, 2013 at 04:39:36PM +0100, Jan Kara wrote:
-> >   IMO the deadlock is real. In freeze_super() we wait for all writers to
-> > the filesystem to finish while blocking beginning of any further writes. So
-> > we have a deadlock scenario like:
-> > 
-> >   THREAD1		THREAD2				THREAD3
-> > mnt_want_write()	mutex_lock(&inode->i_mutex);
-> > ...							freeze_super()
-> > block on mutex_lock(&inode->i_mutex)
-> > 							  sb_wait_write(sb, SB_FREEZE_WRITE);
-> > 			block in sb_start_write()
+On Tue, 2013-03-19 at 21:14 +0100, Sam Ravnborg wrote:
+> On Tue, Mar 19, 2013 at 06:06:47PM +0100, Paul Bolle wrote:
+> > So $(BITS) is set depending on whether CONFIG_SPARC32 is set or not.
+> > Using $(BITS) in sparc's Makefiles is not using CONFIG_BITS. That
+> > doesn't count as usage of "config BITS". 
+> Just double checked - you are right.
+
+Thanks.
+
+> Maybe send a v2 with this info in changelog and add my:
 > 
-> The bug is on fsfreeze side and this is not the only problem related to it.
-> I've missed the implications when I applied "fs: Add freezing handling
-> to mnt_want_write() / mnt_drop_write()" last June ;-/
-> 
-> The thing is, until then mnt_want_write() used to be a counter; it could be
-> nested.  Now any such nesting is a deadlock you've just described.  This
-> is seriously wrong, IMO.
-  Well, but sb_start_write() has to be blocking (blocks when fs is frozen)
-and you have to get it somewhere. It seems only natural to get the counter
-from original mnt_want_write() at the same place and use one function for
-that. Whether I should have changed the name from mnt_want_write() to
-something else is questionable...
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-> BTW, having sb_start_write() buried in individual ->splice_write() is
-> asking for trouble; could you describe the rules for that?  E.g. where
-> does it nest wrt filesystem-private locks?  XFS iolock, for example...
-  Generally, the freeze protection should be the outermost lock taken (so
-that we mitigate possibility of blocking readers when waiting for fs to
-unfreeze). So it ranks above i_mutex, or XFS' ilock and iolock.
+David: should I send a second version with a line or two on the
+(non-related) use of BITS in the Makefiles and Sam's ACK?
 
-It seems that I screwed this up for ->splice_write() :-| If we are going to
-move out sb_start_write() out of filesystems' hands into do_splice_from()
-then we should likely do the same with ->aio_write(). Hmm?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Paul Bolle
+
