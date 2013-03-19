@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3CSGOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 02:14:34 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56292 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab3CSGOd (ORCPT
+	id S932867Ab3CSGZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 02:25:05 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49006 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932513Ab3CSGZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 02:14:33 -0400
+	Tue, 19 Mar 2013 02:25:03 -0400
+X-AuditID: 9c930197-b7cc2ae000000eb7-36-514804bc812e
+Date: Tue, 19 Mar 2013 15:25:22 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
+Message-ID: <20130319062522.GG8858@lge.com>
+References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1363633580-2920-1-git-send-email-silviupopescu1990@gmail.com>
-References: <1363633580-2920-1-git-send-email-silviupopescu1990@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 19 Mar 2013 11:44:11 +0530
-Message-ID: <CA+V-a8tAL7mNgwFBxy_zCJrHffZf4PY-O66dkYa8gNCJNK27iw@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers: staging: davinci_vpfe: use resource_size()
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Cc: linux-media@vger.kernel.org, mchehab@redhat.com,
-        gregkh@linuxfoundation.org, prabhakar.lad@ti.com, sakari.ailus@iki.fi,
-        laurent.pinchart@ideasonboard.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+On Mon, Mar 18, 2013 at 10:47:41PM -0700, Yinghai Lu wrote:
+> On Mon, Mar 18, 2013 at 10:15 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > max_low_pfn reflect the number of _pages_ in the system,
+> > not the maximum PFN. You can easily find that fact in init_bootmem().
+> > So fix it.
+> 
+> I'm confused. for x86, we have max_low_pfn defined in ...
 
-Thanks for the patch! I'll queue it up for v3.10
+Below is queote from Russell King in 'https://lkml.org/lkml/2013/3/13/123'
 
-On Tue, Mar 19, 2013 at 12:36 AM, Silviu-Mihai Popescu
-<silviupopescu1990@gmail.com> wrote:
-> This uses the resource_size() function instead of explicit computation.
->
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+ Now, max_low_pfn is initialized this way:
+ 
+ /**
+  * init_bootmem - register boot memory
+  * @start: pfn where the bitmap is to be placed
+  * @pages: number of available physical pages
+  *
+  * Returns the number of bytes needed to hold the bitmap.
+  */
+ unsigned long __init init_bootmem(unsigned long start, unsigned long pages)
+ {
+        max_low_pfn = pages;
+        min_low_pfn = start;
+        return init_bootmem_core(NODE_DATA(0)->bdata, start, 0, pages);
+ }
+ So, min_low_pfn is the PFN offset of the start of physical memory (so
+ 3GB >> PAGE_SHIFT) and max_low_pfn ends up being the number of pages,
+ _not_ the maximum PFN value
 
-Regards,
---Prabhakar Lad
+So, if physical address doesn't start at 0, max_low_pfn doesn't represent 
+the maximum PFN value. This is a case for ARM.
 
-> ---
->  drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |    2 +-
->  drivers/staging/media/davinci_vpfe/dm365_isif.c    |    4 ++--
->  drivers/staging/media/davinci_vpfe/dm365_resizer.c |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-> index 9285353..05673ed 100644
-> --- a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-> +++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-> @@ -1859,5 +1859,5 @@ void vpfe_ipipe_cleanup(struct vpfe_ipipe_device *ipipe,
->         iounmap(ipipe->isp5_base_addr);
->         res = platform_get_resource(pdev, IORESOURCE_MEM, 4);
->         if (res)
-> -               release_mem_region(res->start, res->end - res->start + 1);
-> +               release_mem_region(res->start, resource_size(res));
->  }
-> diff --git a/drivers/staging/media/davinci_vpfe/dm365_isif.c b/drivers/staging/media/davinci_vpfe/dm365_isif.c
-> index ebeea72..c4a5660 100644
-> --- a/drivers/staging/media/davinci_vpfe/dm365_isif.c
-> +++ b/drivers/staging/media/davinci_vpfe/dm365_isif.c
-> @@ -1953,7 +1953,7 @@ static void isif_remove(struct vpfe_isif_device *isif,
->                 res = platform_get_resource(pdev, IORESOURCE_MEM, i);
->                 if (res)
->                         release_mem_region(res->start,
-> -                                          res->end - res->start + 1);
-> +                                          resource_size(res));
->                 i++;
->         }
->  }
-> @@ -2003,7 +2003,7 @@ int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev)
->                         status = -ENOENT;
->                         goto fail_nobase_res;
->                 }
-> -               res_len = res->end - res->start + 1;
-> +               res_len = resource_size(res);
->                 res = request_mem_region(res->start, res_len, res->name);
->                 if (!res) {
->                         status = -EBUSY;
-> diff --git a/drivers/staging/media/davinci_vpfe/dm365_resizer.c b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-> index 9cb0262..126f84c 100644
-> --- a/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-> +++ b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-> @@ -1995,5 +1995,5 @@ vpfe_resizer_cleanup(struct vpfe_resizer_device *vpfe_rsz,
->         res = platform_get_resource(pdev, IORESOURCE_MEM, 5);
->         if (res)
->                 release_mem_region(res->start,
-> -                                       res->end - res->start + 1);
-> +                                       resource_size(res));
->  }
+> 
+> #ifdef CONFIG_X86_32
+>         /* max_low_pfn get updated here */
+>         find_low_pfn_range();
+> #else
+>         num_physpages = max_pfn;
+> 
+>         check_x2apic();
+> 
+>         /* How many end-of-memory variables you have, grandma! */
+>         /* need this before calling reserve_initrd */
+>         if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
+>                 max_low_pfn = e820_end_of_low_ram_pfn();
+>         else
+>                 max_low_pfn = max_pfn;
+> 
+> and under max_low_pfn is bootmem.
+> 
+> >
+> > Additionally, if 'start_pfn == end_pfn', we don't need to go futher,
+> > so change range check.
+> >
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >
+> > diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> > index 5e07d36..4711e91 100644
+> > --- a/mm/nobootmem.c
+> > +++ b/mm/nobootmem.c
+> > @@ -110,9 +110,9 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
+> >  {
+> >         unsigned long start_pfn = PFN_UP(start);
+> >         unsigned long end_pfn = min_t(unsigned long,
+> > -                                     PFN_DOWN(end), max_low_pfn);
+> > +                                     PFN_DOWN(end), min_low_pfn);
+> 
+> what is min_low_pfn ?  is it 0 for x86?
+
+My implementation is totally wrong. :)
+min_low_pfn is not proper value for this purpose.
+
+I will fix it.
+Sorry for noise.
+
+Thanks.
+
+> 
+> Thanks
+> 
+> Yinghai
+> 
 > --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
