@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab3CSJyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:54:44 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:64137 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab3CSJwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:52:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiDJIE+iCuyMZAhjw6DRwOWX5QNOw
-X-IPAS-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiDJIE+iCuyMZAhjw6DRwOWX5QNOw
-X-IronPort-AV: E=Sophos;i="4.84,870,1355094000"; 
-   d="scan'208";a="18789982"
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 0/9] staging/sb105x: minor fixes
-Date: Tue, 19 Mar 2013 10:51:21 +0100
-Message-Id: <1363686690-27090-1-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S933597Ab3CSJzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:55:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57557 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753531Ab3CSJzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 05:55:19 -0400
+Date: Tue, 19 Mar 2013 09:55:15 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
+ reclaims at each priority
+Message-ID: <20130319095514.GA2055@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-2-git-send-email-mgorman@suse.de>
+ <5147A8EC.5010908@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5147A8EC.5010908@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Tue, Mar 19, 2013 at 07:53:16AM +0800, Simon Jeons wrote:
+> Hi Mel,
+> On 03/17/2013 09:04 PM, Mel Gorman wrote:
+> >The number of pages kswapd can reclaim is bound by the number of pages it
+> >scans which is related to the size of the zone and the scanning priority. In
+> >many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+> >reclaimed pages but in the event kswapd scans a large number of pages it
+> >cannot reclaim, it will raise the priority and potentially discard a large
+> >percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+> >effect is a reclaim "spike" where a large percentage of memory is suddenly
+> >freed. It would be bad enough if this was just unused memory but because
+> 
+> Since there is nr_reclaimed >= nr_to_reclaim check if priority is
+> large than DEF_PRIORITY in shrink_lruvec, how can a large percentage
+> of memory is suddenly freed happen?
+> 
 
-I have been working in a batch of patches to make the driver sb105x
-compile-able with latest source code base.
-
-I have not tested the patches in real HW as I don't have it. Hopefully, I
-didn't break anything.
-
-The driver has a lot of coding style issues, lack of tty_port support, a lot
-of debug information, commented-out code, etc.
-
-I added a TODO file in the last commit, to gather some of the work to be done.
-
-Thanks,
-
-Sam
-
-Samuel Iglesias Gonsalvez (9):
-  staging/sb105x: coding style fixes
-  staging/sb105x: rename _INLINE_ to inline
-  staging/sb105x: delete debug printks
-  staging/sb105x: change some printk to corresponding dev_*
-  staging/sb105x: change some printk to corresponding pr_*
-  staging/sb105x: coding style issues
-  staging/sb105x: use tty_port
-  staging/sb105x: remove BROKEN tag from Kconfig
-  staging/sb105x: add TODO file
-
- drivers/staging/sb105x/Kconfig          |    2 +-
- drivers/staging/sb105x/TODO             |    6 +
- drivers/staging/sb105x/sb_mp_register.h |    7 +-
- drivers/staging/sb105x/sb_pci_mp.c      | 1277 ++++++++++++++-----------------
- drivers/staging/sb105x/sb_pci_mp.h      |  174 ++---
- drivers/staging/sb105x/sb_ser_core.h    |  226 +++---
- 6 files changed, 783 insertions(+), 909 deletions(-)
- create mode 100644 drivers/staging/sb105x/TODO
+Because of the priority checks made in get_scan_count(). Patch 5 has
+more detail on why this happens.
 
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
