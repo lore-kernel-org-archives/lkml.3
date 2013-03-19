@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934398Ab3CSXfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:35:46 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:41373 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933800Ab3CSXfo (ORCPT
+	id S934479Ab3CSXga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:36:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1246 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753448Ab3CSXg3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:35:44 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-	<20130316040132.15064.42257.stgit@localhost6.localdomain6>
-	<878v5jqf5e.fsf@xmission.com> <20130319212244.GE3872@redhat.com>
-Date: Tue, 19 Mar 2013 16:35:36 -0700
-In-Reply-To: <20130319212244.GE3872@redhat.com> (Vivek Goyal's message of
-	"Tue, 19 Mar 2013 17:22:44 -0400")
-Message-ID: <87boafhsjb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 19 Mar 2013 19:36:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,874,1355126400"; 
+   d="scan'208";a="304804464"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "penguin-kernel@i-love.sakura.ne.jp" 
+	<penguin-kernel@i-love.sakura.ne.jp>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical
+ address by __pa_nodebug()
+Thread-Topic: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical
+ address by __pa_nodebug()
+Thread-Index: AQHOJO57sAP2UmNvlkKKIjP7DJ1H6JiuGq6A//+PSyA=
+Date: Tue, 19 Mar 2013 23:36:27 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122055946F9E@ORSMSX105.amr.corp.intel.com>
+References: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+ <CAE9FiQVhziaB9vEUNw-EBvA1Bfey=uMEw+CERuqSyPgU3qCJUA@mail.gmail.com>
+In-Reply-To: <CAE9FiQVhziaB9vEUNw-EBvA1Bfey=uMEw+CERuqSyPgU3qCJUA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX194T1mKv73HbTMzaNzxybOAclYT3ReQWSk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 08/21] vmcore: copy non page-size aligned head and tail pages in 2nd kernel
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> On Tue, Mar 19, 2013 at 8:04 AM, Fenghua Yu <fenghua.yu@intel.com>
+> wrote:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > In 32-bit, __pa_symbol() in CONFIG_DEBUG_VIRTUAL accesses kernel data
+> (e.g.
+> > max_low_pfn) that haven't been setup yet in such early boot phase. To
+> fix the
+> > issue, __pa_nodebug() replaces __pa_symbol() to get a global symbol's
+> physical
+> > address.
+> 
+> That explanation is not precise.
+> 
+> __phys_addr in 32bit when DEBUG_VIRTUAL is set, it does have check
+>         /* max_low_pfn is set early, but not _that_ early */
+>         if (max_low_pfn) {
+>          ....
+>         }
+> the reason should be:
+> in head_32.S, 32bit flat mode, you need to switch to phys addr to
+> access
+> global variable max_low_pfn.
 
-> Are you saying that some parts of the vmcore file will support mmap() and
-> others will not. If yes, how would a user know which parts of file are
-> mappable and which are not.
+Max_low_pfn is not set up yet at this point, but __pa_symbol() reads it
+if CONFIG_DEBUG_VIRTUAL. There is no need to access max_low_pfn or any
+other data that is not setup yet if CONFIG_DEBUG_VIRTUAL.
 
-I think I answered this in another email in my review but I will
-reanswer here.
+So I think the explanation is ok.
 
-There is absolutely no need to copy pages.  We can round up the mapping
-to the nearest full page.  Mmap already does that today for files so it
-isn't even odd.
+Thanks.
 
-Which only leaves the headers and notes as potentially unmmapable.  That
-is more of a policy decision, and a decision on where we want to spend
-memory.  Rounding ELF notes to mutliples of PAGE_SIZE from a perspective
-of memory usage seems pretty terrible taking memory usage up an order of
-magnitude.
-
-Eric
+-Fenghua
