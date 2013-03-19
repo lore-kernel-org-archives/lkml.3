@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965039Ab3CSVhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:37:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57117 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756801Ab3CSVhR convert rfc822-to-8bit (ORCPT
+	id S964834Ab3CSVik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:38:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47886 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933797Ab3CSVij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:37:17 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 19 Mar 2013 17:38:39 -0400
+Date: Tue, 19 Mar 2013 21:38:31 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jan Kara <jack@suse.cz>
+Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130319213831.GK21522@ZenIV.linux.org.uk>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+ <20130319202543.GF5222@quack.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <513F79BA.7000608@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1363113747-6572-1-git-send-email-pdeschrijver@nvidia.com>
- <513F79BA.7000608@wwwdotorg.org>
-Message-ID: <20130319213706.8663.87186@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH] clk: add table lookup to mux
-Date: Tue, 19 Mar 2013 14:37:06 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130319202543.GF5222@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Warren (2013-03-12 11:53:46)
-> On 03/12/2013 12:42 PM, Peter De Schrijver wrote:
-> > Add a table lookup feature to the mux clock. Also allow arbitrary masks
-> > instead of the width. This will be used by some clocks on Tegra114. Also
-> > adapt the tegra periph clk because it uses struct clk_mux directly.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > 
-> > --
-> > Mike,
-> > 
-> > This is the same patch I posted before which implements a table lookup
-> > feature for the mux clock. I squashed both the changes to clk-mux.c and
-> > tegra/clk.h together in order to make the patch bisectable.
-> 
-> For the record in this thread, this is a dependency of the Tegra114
-> clock driver. Can this patch be added to a stable branch in the clk or
-> arm-soc trees, which I can merge before applying the Tegra114 clock
-> driver? Thanks.
+On Tue, Mar 19, 2013 at 09:25:43PM +0100, Jan Kara wrote:
+> > BTW, having sb_start_write() buried in individual ->splice_write() is
+> > asking for trouble; could you describe the rules for that?  E.g. where
+> > does it nest wrt filesystem-private locks?  XFS iolock, for example...
+>   Generally, the freeze protection should be the outermost lock taken (so
+> that we mitigate possibility of blocking readers when waiting for fs to
+> unfreeze). So it ranks above i_mutex, or XFS' ilock and iolock.
 
-Yes.  I don't have an immutable branch today, but I will have one by
--rc4.  It will be named clk-for-3.10.
+Welcome to deadlock, then:
+xfs_file_splice_write()
+...
+        xfs_ilock(ip, XFS_IOLOCK_EXCL);
+...
+        ret = generic_file_splice_write(pipe, outfilp, ppos, count, flags);
 
-I have a pending question about the ugly width/mask issue, otherwise
-I'll let you know when I take this patch into clk-next.
+> It seems that I screwed this up for ->splice_write() :-| If we are going to
+> move out sb_start_write() out of filesystems' hands into do_splice_from()
+> then we should likely do the same with ->aio_write(). Hmm?
 
-Regards,
-Mike
+Yes, I've a tentative patch doing just that; will push tonight.
