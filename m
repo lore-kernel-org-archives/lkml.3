@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab3CSLBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 07:01:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60750 "EHLO mx2.suse.de"
+	id S1751916Ab3CSLFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 07:05:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3CSLBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 07:01:41 -0400
-Date: Tue, 19 Mar 2013 11:01:37 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
-Message-ID: <20130319110137.GK2055@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-4-git-send-email-mgorman@suse.de>
- <5147D6A7.5060008@gmail.com>
- <20130319101428.GD2055@suse.de>
- <51483D63.4070904@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <51483D63.4070904@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750971Ab3CSLFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 07:05:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
+References: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com> <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <1944.1363525619@warthog.procyon.org.uk> <20130318153936.GB28508@quack.suse.cz> <20130318215333.GE21522@ZenIV.linux.org.uk> <20130318230103.GF21522@ZenIV.linux.org.uk> <20130319013805.GG21522@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Date: Tue, 19 Mar 2013 11:04:10 +0000
+Message-ID: <28283.1363691050@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 06:26:43PM +0800, Simon Jeons wrote:
-> >>>-		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-> >>>-			break;
-> >>>-	} while (--sc.priority >= 0);
-> >>>+		if (order && sc.nr_reclaimed >= 2UL << order)
-> >>>+			order = sc.order = 0;
-> >>If order == 0 is meet, should we do defrag for it?
-> >>
-> >Compaction is unnecessary for order-0.
-> >
-> 
-> I mean since order && sc.reclaimed >= 2UL << order, it is reclaimed
-> for high order allocation, if order == 0 is meet, should we do
-> defrag for it?
-> 
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-I don't get this question at all. We do not defrag via compaction for
-order-0 allocation requests because it makes no sense.
+> > BTW, I wonder what's the right locking for that sucker; overlayfs is
+> > probably too heavy - we are talking about copying a file from one fs to
+> > another, which can obviously take quite a while, so holding ->i_mutex on
+> > _parent_ all along is asking for very serious contention.
+> 
+> Copy up is a once-in-a-lifetime event for an object.  Optimizing it is
+> way down in the list of things to do.  I'd drop splice in a jiffy if
+> it's in the way.
 
--- 
-Mel Gorman
-SUSE Labs
+Yes, but it could block the parent directory for a long time.  I suspect it's
+fine if you can RCU walk through the parent, but if you have to grab a lock on
+it...
+
+David
