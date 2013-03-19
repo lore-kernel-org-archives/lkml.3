@@ -1,228 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab3CSDIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 23:08:32 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:43533 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab3CSDIa (ORCPT
+	id S933474Ab3CSDIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 23:08:41 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:37075 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932885Ab3CSDIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 23:08:30 -0400
-Message-ID: <5147D6A7.5060008@gmail.com>
-Date: Tue, 19 Mar 2013 11:08:23 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 18 Mar 2013 23:08:38 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1363525456-10448-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130319023525.GA21789@kroah.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+	<20130316213519.2974.38954.stgit@amt.stowe>
+	<20130316221159.GA3702@kroah.com>
+	<1363477853.2423.25.camel@zim.stowe>
+	<20130317010317.GB9641@kroah.com>
+	<5147C541.1080304@gmail.com>
+	<20130319020316.GB21319@kroah.com>
+	<CADLC3L2hKYPsW4fvg6tbptBc1r7LS=7Ndwhp4mZ3BKzJq6z-eg@mail.gmail.com>
+	<20130319023525.GA21789@kroah.com>
+Date: Mon, 18 Mar 2013 21:08:37 -0600
+Message-ID: <CADLC3L2W+VEHZbcDT50=bneXH7iEkyf6ZOOG9LLQ4LEK3uAfFg@mail.gmail.com>
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
+        kay@vrfy.org, linux-hotplug@vger.kernel.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
-On 03/17/2013 09:04 PM, Mel Gorman wrote:
-> kswapd stops raising the scanning priority when at least SWAP_CLUSTER_MAX
-> pages have been reclaimed or the pgdat is considered balanced. It then
-> rechecks if it needs to restart at DEF_PRIORITY and whether high-order
-> reclaim needs to be reset. This is not wrong per-se but it is confusing
-
-per-se is short for what?
-
-> to follow and forcing kswapd to stay at DEF_PRIORITY may require several
-> restarts before it has scanned enough pages to meet the high watermark even
-> at 100% efficiency. This patch irons out the logic a bit by controlling
-> when priority is raised and removing the "goto loop_again".
+On Mon, Mar 18, 2013 at 8:35 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Mar 18, 2013 at 08:09:22PM -0600, Robert Hancock wrote:
+>> > Great, that's one possible solution, the other is just not creating the
+>> > files at all for known problem devices, right?
+>>
+>> I don't think one can reasonably enumerate all problem devices. There
+>> are probably countless devices which can potentially break if their
+>> resources (especially IO ports) are read in unexpected ways. Aside
+>> from devices like this one, which apparently don't like certain IO
+>> ports being read with certain access widths, there's every device in
+>> existence with read-to-reset type registers. The fix to this needs to
+>> apply to all devices.
+>>
+>> >
+>> > My main point here is, you aren't going to fix this in userspace, fix it
+>> > in the kernel.
+>>
+>> The kernel can help the situation by blocking access to devices with
+>> an active driver, but it can't fix all cases. Suppose the device has
+>> no driver loaded yet, how is the kernel supposed to tell the
+>> difference between software with a legitimate need to access these
+>> files for virtualization device assignment, etc. and something like
+>> udevadm or a random grep command that's reading the files without any
+>> idea what it's doing? udevadm does need to be fixed to avoid accessing
+>> these files because it's unnecessary and dangerous.
 >
-> This patch has kswapd raise the scanning priority until it is scanningmm: vmscan: Flatten kswapd priority loop
-> enough pages that it could meet the high watermark in one shrink of the
-> LRU lists if it is able to reclaim at 100% efficiency. It will not raise
-
-Which kind of reclaim can be treated as 100% efficiency?
-
-> the scanning prioirty higher unless it is failing to reclaim any pages.
+> Are you going to also fix grep?  bash?  cat?
 >
-> To avoid infinite looping for high-order allocation requests kswapd will
-> not reclaim for high-order allocations when it has reclaimed at least
-> twice the number of pages as the allocation request.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->   mm/vmscan.c | 86 ++++++++++++++++++++++++++++++-------------------------------
->   1 file changed, 42 insertions(+), 44 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 182ff15..279d0c2 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2625,8 +2625,11 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->   /*
->    * kswapd shrinks the zone by the number of pages required to reach
->    * the high watermark.
-> + *
-> + * Returns true if kswapd scanned at least the requested number of
-> + * pages to reclaim.
->    */
-> -static void kswapd_shrink_zone(struct zone *zone,
-> +static bool kswapd_shrink_zone(struct zone *zone,
->   			       struct scan_control *sc,
->   			       unsigned long lru_pages)
->   {
-> @@ -2646,6 +2649,8 @@ static void kswapd_shrink_zone(struct zone *zone,
->   
->   	if (nr_slab == 0 && !zone_reclaimable(zone))
->   		zone->all_unreclaimable = 1;
-> +
-> +	return sc->nr_scanned >= sc->nr_to_reclaim;
->   }
->   
->   /*
-> @@ -2672,26 +2677,25 @@ static void kswapd_shrink_zone(struct zone *zone,
->   static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->   							int *classzone_idx)
->   {
-> -	bool pgdat_is_balanced = false;
->   	int i;
->   	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
->   	unsigned long nr_soft_reclaimed;
->   	unsigned long nr_soft_scanned;
->   	struct scan_control sc = {
->   		.gfp_mask = GFP_KERNEL,
-> +		.priority = DEF_PRIORITY,
->   		.may_unmap = 1,
->   		.may_swap = 1,
-> +		.may_writepage = !laptop_mode,
->   		.order = order,
->   		.target_mem_cgroup = NULL,
->   	};
-> -loop_again:
-> -	sc.priority = DEF_PRIORITY;
-> -	sc.nr_reclaimed = 0;
-> -	sc.may_writepage = !laptop_mode;
->   	count_vm_event(PAGEOUTRUN);
->   
->   	do {
->   		unsigned long lru_pages = 0;
-> +		unsigned long nr_reclaimed = sc.nr_reclaimed;
-> +		bool raise_priority = true;
->   
->   		/*
->   		 * Scan in the highmem->dma direction for the highest
-> @@ -2733,10 +2737,8 @@ loop_again:
->   			}
->   		}
->   
-> -		if (i < 0) {
-> -			pgdat_is_balanced = true;
-> +		if (i < 0)
->   			goto out;
-> -		}
->   
->   		for (i = 0; i <= end_zone; i++) {
->   			struct zone *zone = pgdat->node_zones + i;
-> @@ -2803,8 +2805,16 @@ loop_again:
->   
->   			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
->   			    !zone_balanced(zone, testorder,
-> -					   balance_gap, end_zone))
-> -				kswapd_shrink_zone(zone, &sc, lru_pages);
-> +					   balance_gap, end_zone)) {
-> +				/*
-> +				 * There should be no need to raise the
-> +				 * scanning priority if enough pages are
-> +				 * already being scanned that that high
-> +				 * watermark would be met at 100% efficiency.
-> +				 */
-> +				if (kswapd_shrink_zone(zone, &sc, lru_pages))
-> +					raise_priority = false;
-> +			}
->   
->   			/*
->   			 * If we're getting trouble reclaiming, start doing
-> @@ -2839,46 +2849,33 @@ loop_again:
->   				pfmemalloc_watermark_ok(pgdat))
->   			wake_up(&pgdat->pfmemalloc_wait);
->   
-> -		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
-> -			pgdat_is_balanced = true;
-> -			break;		/* kswapd: all done */
-> -		}
-> -
->   		/*
-> -		 * We do this so kswapd doesn't build up large priorities for
-> -		 * example when it is freeing in parallel with allocators. It
-> -		 * matches the direct reclaim path behaviour in terms of impact
-> -		 * on zone->*_priority.
-> +		 * Fragmentation may mean that the system cannot be rebalanced
-> +		 * for high-order allocations in all zones. If twice the
-> +		 * allocation size has been reclaimed and the zones are still
-> +		 * not balanced then recheck the watermarks at order-0 to
-> +		 * prevent kswapd reclaiming excessively. Assume that a
-> +		 * process requested a high-order can direct reclaim/compact.
->   		 */
-> -		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-> -			break;
-> -	} while (--sc.priority >= 0);
-> +		if (order && sc.nr_reclaimed >= 2UL << order)
-> +			order = sc.order = 0;
+> Come on, be realistic.  If these files are so dangerous then they need
+> to just be removed entirely from the kernel.  You aren't going to be
+> able to patch grep for this.
 
-If order == 0 is meet, should we do defrag for it?
-
->   
-> -out:
-> -	if (!pgdat_is_balanced) {
-> -		cond_resched();
-> +		/* Check if kswapd should be suspending */
-> +		if (try_to_freeze() || kthread_should_stop())
-> +			break;
->   
-> -		try_to_freeze();
-> +		/* If no reclaim progress then increase scanning priority */
-> +		if (sc.nr_reclaimed - nr_reclaimed == 0)
-> +			raise_priority = true;
->   
->   		/*
-> -		 * Fragmentation may mean that the system cannot be
-> -		 * rebalanced for high-order allocations in all zones.
-> -		 * At this point, if nr_reclaimed < SWAP_CLUSTER_MAX,
-> -		 * it means the zones have been fully scanned and are still
-> -		 * not balanced. For high-order allocations, there is
-> -		 * little point trying all over again as kswapd may
-> -		 * infinite loop.
-> -		 *
-> -		 * Instead, recheck all watermarks at order-0 as they
-> -		 * are the most important. If watermarks are ok, kswapd will go
-> -		 * back to sleep. High-order users can still perform direct
-> -		 * reclaim if they wish.
-> +		 * Raise priority if scanning rate is too low or there was no
-> +		 * progress in reclaiming pages
->   		 */
-> -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> -			order = sc.order = 0;
-> -
-> -		goto loop_again;
-> -	}
-> +		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
-> +			sc.priority--;
-> +	} while (sc.priority >= 0 &&
-> +		 !pgdat_balanced(pgdat, order, *classzone_idx));
->   
->   	/*
->   	 * If kswapd was reclaiming at a higher order, it has the option of
-> @@ -2907,6 +2904,7 @@ out:
->   			compact_pgdat(pgdat, order);
->   	}
->   
-> +out:
->   	/*
->   	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
->   	 * makes a decision on the order we were last reclaiming at. However,
-
+Well, clearly not. Although accessing this file with grep, etc. is
+really just another way root can shoot themselves in the foot, it
+would be nice if this functionality could be provided in a way that
+didn't leave this kind of exposed land mine.
