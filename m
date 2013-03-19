@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388Ab3CSXeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:34:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58934 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3CSXeI (ORCPT
+	id S934398Ab3CSXfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:35:46 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:41373 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933800Ab3CSXfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:34:08 -0400
-Message-ID: <5148F5EA.3020904@gmail.com>
-Date: Wed, 20 Mar 2013 07:34:02 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 19 Mar 2013 19:35:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040132.15064.42257.stgit@localhost6.localdomain6>
+	<878v5jqf5e.fsf@xmission.com> <20130319212244.GE3872@redhat.com>
+Date: Tue, 19 Mar 2013 16:35:36 -0700
+In-Reply-To: <20130319212244.GE3872@redhat.com> (Vivek Goyal's message of
+	"Tue, 19 Mar 2013 17:22:44 -0400")
+Message-ID: <87boafhsjb.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] staging: zcache: Support zero-filled pages more
- efficiently
-References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX194T1mKv73HbTMzaNzxybOAclYT3ReQWSk=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 08/21] vmcore: copy non page-size aligned head and tail pages in 2nd kernel
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 05:25 PM, Wanpeng Li wrote:
-> Hi Greg,
->
-> Since you have already merge 1/8, feel free to merge 2/8~8/8, I have already
-> rebased against staging-next.
->
-> Changelog:
->   v3 -> v4:
->    * handle duplication in page_is_zero_filled, spotted by Bob
->    * fix zcache writeback in dubugfs
->    * fix pers_pageframes|_max isn't exported in debugfs
->    * fix static variable defined in debug.h but used in multiple C files
->    * rebase on Greg's staging-next
->   v2 -> v3:
->    * increment/decrement zcache_[eph|pers]_zpages for zero-filled pages, spotted by Dan
->    * replace "zero" or "zero page" by "zero_filled_page", spotted by Dan
->   v1 -> v2:
->    * avoid changing tmem.[ch] entirely, spotted by Dan.
->    * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for
->      zero-filled pages, spotted by Dan
->    * cleanup TODO list
->    * add Dan Acked-by.
->
-> Motivation:
->
-> - Seth Jennings points out compress zero-filled pages with LZO(a lossless
->    data compression algorithm) will waste memory and result in fragmentation.
->    https://lkml.org/lkml/2012/8/14/347
-> - Dan Magenheimer add "Support zero-filled pages more efficiently" feature
->    in zcache TODO list https://lkml.org/lkml/2013/2/13/503
->
-> Design:
->
-> - For store page, capture zero-filled pages(evicted clean page cache pages and
->    swap pages), but don't compress them, set pampd which store zpage address to
->    0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
->    case and take advantage of tmem infrastructure to transform handle-tuple(pool
->    id, object id, and an index) to a pampd. Twice compress zero-filled pages will
->    contribute to one zcache_[eph|pers]_pageframes count accumulated.
-> - For load page, traverse tmem hierachical to transform handle-tuple to pampd
->    and identify zero-filled case by pampd equal to 0x2 when filesystem reads
->    file pages or a page needs to be swapped in, then refill the page to zero
->    and return.
->
-> Test:
->
-> dd if=/dev/zero of=zerofile bs=1MB count=500
-> vmtouch -t zerofile
-> vmtouch -e zerofile
->
-> formula:
-> - fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes)
->    * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
-> - memory zcache occupy = zcache_[eph|pers]_zbytes
->
-> Result:
->
-> without zero-filled awareness:
-> - fragmentation level: 98%
-> - memory zcache occupy: 238MB
-> with zero-filled awareness:
-> - fragmentation level: 0%
-> - memory zcache occupy: 0MB
->
-> Wanpeng Li (8):
->    introduce zero filled pages handler
->    zero-filled pages awareness
->    handle zcache_[eph|pers]_pages for zero-filled page
->    fix pers_pageframes|_max aren't exported in debugfs
->    fix zcache writeback in debugfs
->    fix static variables are defined in debug.h but use in multiple C files
->    introduce zero-filled page stat count
->    clean TODO list
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-You can add Reviewed-by: Ric Mason <ric.masonn@gmail.com> to this patchset.
+> Are you saying that some parts of the vmcore file will support mmap() and
+> others will not. If yes, how would a user know which parts of file are
+> mappable and which are not.
 
->
->   drivers/staging/zcache/TODO          |    3 +-
->   drivers/staging/zcache/debug.c       |    5 +-
->   drivers/staging/zcache/debug.h       |   77 +++++++++++++---------
->   drivers/staging/zcache/zcache-main.c |  147 ++++++++++++++++++++++++++++++----
->   4 files changed, 185 insertions(+), 47 deletions(-)
->
+I think I answered this in another email in my review but I will
+reanswer here.
 
+There is absolutely no need to copy pages.  We can round up the mapping
+to the nearest full page.  Mmap already does that today for files so it
+isn't even odd.
+
+Which only leaves the headers and notes as potentially unmmapable.  That
+is more of a policy decision, and a decision on where we want to spend
+memory.  Rounding ELF notes to mutliples of PAGE_SIZE from a perspective
+of memory usage seems pretty terrible taking memory usage up an order of
+magnitude.
+
+Eric
