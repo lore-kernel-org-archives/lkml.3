@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab3CSUaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:30:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48069 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab3CSUaW (ORCPT
+	id S933955Ab3CSUab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:30:31 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:19957 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757521Ab3CSUa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:30:22 -0400
-Date: Tue, 19 Mar 2013 16:30:21 -0400 (EDT)
-Message-Id: <20130319.163021.554696658570846637.davem@davemloft.net>
-To: pebolle@tiscali.nl
-Cc: sam@ravnborg.org, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparc: remove unused "config BITS"
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1363724768.1390.36.camel@x61.thuisdomein>
-References: <1363712807.1390.26.camel@x61.thuisdomein>
-	<20130319201454.GA25072@merkur.ravnborg.org>
-	<1363724768.1390.36.camel@x61.thuisdomein>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 19 Mar 2013 16:30:27 -0400
+Message-ID: <1363725022.4519.11.camel@lorien2>
+Subject: Re: [PATCH 2/2] dma-debug: Update DMA debug API to better handle
+ multiple mappings of a buffer
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com, joerg.roedel@amd.com,
+        konrad@kernel.org, christoph.paasch@uclouvain.be, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, netdev@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, shuah.khan@hp.com
+Date: Tue, 19 Mar 2013 14:30:22 -0600
+In-Reply-To: <20130318221249.7349.85892.stgit@ahduyck-cp1.jf.intel.com>
+References: <20130318220241.7349.5030.stgit@ahduyck-cp1.jf.intel.com>
+	 <20130318221249.7349.85892.stgit@ahduyck-cp1.jf.intel.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 19 Mar 2013 13:30:26 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Bolle <pebolle@tiscali.nl>
-Date: Tue, 19 Mar 2013 21:26:08 +0100
+On Mon, 2013-03-18 at 15:12 -0700, Alexander Duyck wrote:
+> There were reports of the igb driver unmapping buffers without calling
+> dma_mapping_error.  On closer inspection issues were found in the DMA debug
+> API and how it handled multiple mappings of the same buffer.
+> 
+> The issue I found is the fact that the debug_dma_mapping_error would only set
+> the map_err_type to MAP_ERR_CHECKED in the case that the was only one match
+> for device and device address.  However in the case of non-IOMMU, multiple
+> addresses existed and as a result it was not setting this field once a
+> second mapping was instantiated.  I have resolved this by changing the search
+> so that it instead will now set MAP_ERR_CHECKED on the first buffer that
+> matches the device and DMA address that is currently in the state
+> MAP_ERR_NOT_CHECKED.
+> 
+> A secondary side effect of this patch is that in the case of multiple buffers
+> using the same address only the last mapping will have a valid map_err_type.
+> The previous mappings will all end up with map_err_type set to
+> MAP_ERR_CHECKED because of the dma_mapping_error call in debug_dma_map_page.
+> However this behavior may be preferable as it means you will likely only see
+> one real error per multi-mapped buffer, versus the current behavior of
+> multiple false errors mer multi-mapped buffer.
+> 
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> ---
 
-> On Tue, 2013-03-19 at 21:14 +0100, Sam Ravnborg wrote:
->> On Tue, Mar 19, 2013 at 06:06:47PM +0100, Paul Bolle wrote:
->> > So $(BITS) is set depending on whether CONFIG_SPARC32 is set or not.
->> > Using $(BITS) in sparc's Makefiles is not using CONFIG_BITS. That
->> > doesn't count as usage of "config BITS". 
->> Just double checked - you are right.
-> 
-> Thanks.
-> 
->> Maybe send a v2 with this info in changelog and add my:
->> 
->> Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> 
-> David: should I send a second version with a line or two on the
-> (non-related) use of BITS in the Makefiles and Sam's ACK?
+Looks good. Tested it as well.
 
-Like I replied to Sam, no need, I took care of this.
+Reviewed-by: shuah.khan@hp.com
+Tested-by: shuah.khan@hp.com
+
+Thanks for finding and fixing the problem.
+
+-- Shuah
+
