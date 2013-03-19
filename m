@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934154Ab3CSVy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:54:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60895 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab3CSVyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:54:25 -0400
-Date: Tue, 19 Mar 2013 14:54:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: gen_pool_add broken with LPAE based systems
-Message-Id: <20130319145424.8711f4c1b23fb457d2611007@linux-foundation.org>
-In-Reply-To: <514257B7.5080206@codeaurora.org>
-References: <514257B7.5080206@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1757495Ab3CSV6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:58:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51222 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753868Ab3CSV6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 17:58:44 -0400
+Message-ID: <1363730323.16270.11.camel@joe-AO722>
+Subject: [PATCH] sound: max98090: Remove executable bit
+From: Joe Perches <joe@perches.com>
+To: Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 14:58:43 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Mar 2013 16:05:27 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
+Source files shouldn't have the executable bit set.
 
-> Hi,
-> 
-> We use genalloc for managing certain pools of physical memory. genalloc 
-> currently uses unsigned long for virtual addresses and phys_addr_t for 
-> physical addresses. Our ARM LPAE systems have 64-bit physical addresses 
-> but unsigned long is still 32 bits.  Using gen_pool_add breaks with 
-> addresses > 4G because gen_pool_add treats the address passed in as the 
-> virtual address. gen_pool allocates internally based on the 32 bit 
-> virtual address as well so everything is broken if we want to be able to 
-> manage the full address space after 4G. I see a couple of options:
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/sound/max98090.h    | 0
+ sound/soc/codecs/max98090.c | 0
+ sound/soc/codecs/max98090.h | 0
+ 3 files changed, 0 insertions(+), 0 deletions(-)
 
-The above only makes sense if ARM LPAE has 64-bit (actually >= 33-bit)
-virtual addresses.  If so, I don't understand how ARM LPAE can work at
-all - the core MM assumes that addresses-fit-in-ulongs in eleventy
-trillion places.
+diff --git a/include/sound/max98090.h b/include/sound/max98090.h
+old mode 100755
+new mode 100644
+diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
+old mode 100755
+new mode 100644
+diff --git a/sound/soc/codecs/max98090.h b/sound/soc/codecs/max98090.h
+old mode 100755
+new mode 100644
 
-I think we need a better description of the problem, please.
 
-> 1) Change gen_pool_add to use physical addresses and allocate based on 
-> physical addresses instead of virtual addresses
-> 2) Change the virtual address to be a 64 bit type or something 
-> selectable to a 64 bit type.
-> 3) Allow a flag per pool to select whether the allocator is virtual or 
-> physical and switch between those.
-> 4) Split the APIs into virtual <-> physical and physical only and have 
-> separate types for each.
-> 
-> Any of these suggestions seem reasonable or is there another option to 
-> consider?
-
-2) sounds least intrusive but I can't think with my head spinning so fast.
