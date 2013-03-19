@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab3CSOdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:33:10 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:59052 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752639Ab3CSOdJ (ORCPT
+	id S1756744Ab3CSOfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:35:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8376 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab3CSOfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:33:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19RUPPVS23Cu1iNt40DEzXwhM8AjwbogKc=
-Date: Tue, 19 Mar 2013 10:33:04 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arm-kernel@lists.infradead.org, thomas.petazzoni@free-electrons.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [BUG][mvebu] mvneta: cannot request irq 25 on
- openblocks-ax3
-Message-ID: <20130319143304.GT13280@titan.lakedaemon.net>
-References: <51486445.8040506@hitachi.com>
- <20130319133324.GS13280@titan.lakedaemon.net>
- <514873D9.6060704@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514873D9.6060704@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 19 Mar 2013 10:35:13 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Jlu5nvpyoosA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=dwZyKuPOOjEA:10 a=H_7SOnKhmV-JpEiTghUA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363703711.5938.20.camel@gandalf.local.home>
+Subject: Re: [PATCH 3/9] perf util: Get rid of write_or_die() from
+ trace-event-info.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Tue, 19 Mar 2013 10:35:11 -0400
+In-Reply-To: <1363683224-28804-4-git-send-email-namhyung@kernel.org>
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+	 <1363683224-28804-4-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 11:19:05PM +0900, Masami Hiramatsu wrote:
-> Hi Jason,
-> 
-> (2013/03/19 22:33), Jason Cooper wrote:
-> > On Tue, Mar 19, 2013 at 10:12:37PM +0900, Masami Hiramatsu wrote:
-> >> Hi,
-> >>
-> >> Here I've hit a bug on the recent kernel. As far as I know, this bug
-> >> exists on 3.9-rc1 too.
-> >>
-> >> When I tried the latest mvebu for-next tree
-> >> (git://git.infradead.org/users/jcooper/linux.git mvebu/for-next),
-> > 
-> > FYI: that branch isn't stable, it's used as a merge-test of
-> > arm-soc/for-next (also not stable) and any branches I am trying to push
-> > upstream that day.
-> 
-> Thanks! could you tell me which branch is stable?
-> (however, I'd like to try new fixes/features on my device too :))
+On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
 
-Generally, we advise using one of Linus' tags (eg v3.9-rc3).  Only if
-that doesn't work, seek out a branch containing the fix/feature.  When
-in doubt, I'll do:
+>  struct tracing_data *tracing_data_get(struct list_head *pattrs,
+> @@ -465,6 +516,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+>  {
+>  	struct tracepoint_path *tps;
+>  	struct tracing_data *tdata;
+> +	int err1, err2, err3, err4, err5, err6;
+>  
+>  	output_fd = fd;
+>  
+> @@ -498,12 +550,12 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+>  		output_fd = temp_fd;
+>  	}
+>  
+> -	tracing_data_header();
+> -	read_header_files();
+> -	read_ftrace_files(tps);
+> -	read_event_files(tps);
+> -	read_proc_kallsyms();
+> -	read_ftrace_printk();
+> +	err1 = tracing_data_header();
+> +	err2 = read_header_files();
+> +	err3 = read_ftrace_files(tps);
+> +	err4 = read_event_files(tps);
+> +	err5 = read_proc_kallsyms();
+> +	err6 = read_ftrace_printk();
 
-$ ./scripts/get_maintainer.pl -f drivers/net/ethernet/marvell/mvneta.c
+ugly ugly ugly
 
-and ask those listed which branch might contain a fix or feature.
+What about:
+	int err = 0;
 
-In this case, it'll probably go through David Miller and the netdev
-mailinglist, but it isn't there yet.  ;-)
+	err += tracing_data_header();
+	err += read_header_files();
+	[...]
 
-hth,
+	if (err < 0) {
+		free(tdata);
+		tdata = NULL;
+	}
 
-Jason.
+Also, is the only clean up needed be freeing tdata?
+
+-- Steve
+
+
+>  
+>  	/*
+>  	 * All tracing data are stored by now, we can restore
+> @@ -515,22 +567,31 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+>  		output_fd = fd;
+>  	}
+>  
+> +	if (err1 + err2 + err3 + err4 + err5 + err6 < 0) {
+> +		free(tdata);
+> +		tdata = NULL;
+> +	}
+> +
+>  	put_tracepoints_path(tps);
+>  	return tdata;
+>  }
+>  
+
+
