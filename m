@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab3CSJYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:24:05 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:58665 "EHLO slimlogic.co.uk"
+	id S1757858Ab3CSJZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:25:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab3CSJYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:24:03 -0400
-Message-ID: <51482EAF.20105@slimlogic.co.uk>
-Date: Tue, 19 Mar 2013 09:23:59 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
+	id S1753630Ab3CSJZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 05:25:51 -0400
+Message-ID: <51482F14.9030407@redhat.com>
+Date: Tue, 19 Mar 2013 17:25:40 +0800
+From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: sameo@linux.intel.com, swarren@nvidia.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] mfd: palmas: initialise client->of_node for dummy created
- client
-References: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        edumazet@google.com
+Subject: Re: [PATCH net-next 1/2] net_sched: don't do precise pkt_len computation
+ for untrusted packets
+References: <1363333305-54398-1-git-send-email-jasowang@redhat.com> <20130317.121026.733329595817911776.davem@davemloft.net>
+In-Reply-To: <20130317.121026.733329595817911776.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I discussed this with Grant Likely and we came to the same conclusion
-that this was the only way to "fix" the issue. But his concern was
-because dummys have a probe/remove of their own this might cause issues
-in some cases. His opinion was to do this the probe/remove of the dummys
-should also be removed to make them not real devices.
+On 03/18/2013 12:10 AM, David Miller wrote:
+> From: Jason Wang <jasowang@redhat.com>
+> Date: Fri, 15 Mar 2013 15:41:44 +0800
+>
+>> Commit 1def9238d4aa2 (net_sched: more precise pkt_len computation) tries to do
+>> precise packet len computation for GSO packets, but it does not check whether
+>> the packets were from untrusted source. This is wrong since: we haven't done
+>> header check before so both gso_segs and headers may not be correct. So this
+>> patch just bypass the precise pkt_len computation for packet from untrusted
+>> source (SKB_GSO_DODGY).
+>>
+>> Cc: Eric Dumazet <edumazet@google.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> I do not think this is appropriate or even necessary.
+>
+> All the user can do by reporting an incorrect header size or GSO segs
+> is hurt himself, by making his traffic take more packet scheduler
+> quota.
 
-I have added him to CC in case my memory is faulty!
-
-This is a generic issue which will affect all multi address i2c mfds.
-
-Graeme
-
-On 19/03/13 08:58, Laxman Dewangan wrote:
-> Palmas device have three different i2c addresses. The device creates
-> the two new dummy i2c clients for accessing the register by using
-> primary client adapter. This new dummy i2c client have their of_node
-> as NULL.
+I believe before doing header check for untrusted packets, the only
+thing we can trust is skb->len and that's we've used before
+1def9238d4aa2. But after that, we're trying to use unchecked or
+meaningless value (e.g gso_segs were reset to zero in
+tun/macvtap/packet), and guest then can utilize this to result a very
+huge (-1U) pkt_len by filling evil value in the header. Can all kinds of
+packet scheduler survive this kinds of possible DOS?
 >
-> The dummy i2c client is used for registering interrupt and on this,
-> it creates irq domain handle. This created irq domain handle has
-> their of_node as NULL.
->
-> Now when any child of this device is registered through the DT as
-> follows:
->          palmas: tps65913@58 {
->          	::::::::::::::::::
->
->          	#interrupt-cells = <2>;
->                 interrupt-controller;
->
->                 palmas_rtc {
->                        compatible = "ti,palmas-rtc";
->                        interrupt-parent = <&palmas>;
->                        interrupts = <8 0>;
->                 };
->                 ::::::::::;;;
->          };
->
-> And child driver (palam-rtc in this case) get their irq number as
-> 	irq = platform_get_irq(pdev, 0);
->
-> The returned irq number is error in this case. The reason is that
-> the created irq_domain handle for the palmas interrupt does not have
-> valid node and so matching of node fails with palmas node.
->
-> Hence initialising the newly dummy created client->of_node with the
-> primary clients of_node so that irq_domain handle have proper of_node
-> for matching.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/mfd/palmas.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> index 73bf76d..a3f2836 100644
-> --- a/drivers/mfd/palmas.c
-> +++ b/drivers/mfd/palmas.c
-> @@ -349,6 +349,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
->  				ret = -ENOMEM;
->  				goto err;
->  			}
-> +			palmas->i2c_clients[i]->dev.of_node = of_node_get(node);
->  		}
->  		palmas->regmap[i] = devm_regmap_init_i2c(palmas->i2c_clients[i],
->  				&palmas_regmap_config[i]);
+> When we do precise accounting, it increases, never decreases, the
+> amount that a packet "costs" as far as the packet scheduler is
+> concerned.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
