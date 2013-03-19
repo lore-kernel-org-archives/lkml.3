@@ -1,194 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934182Ab3CSH7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 03:59:35 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:40059 "EHLO
-	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab3CSH7e (ORCPT
+	id S934188Ab3CSIHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:07:07 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47345 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933679Ab3CSIHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 03:59:34 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Mar 2013 03:59:34 EDT
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>,
-        <richard.genoud@gmail.com>, <plagnioj@jcrosoft.com>,
-        <nicolas.ferre@atmel.com>, <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v7 12/14] ARM: dts: add spi nodes for atmel SoC
-Date: Tue, 19 Mar 2013 15:50:57 +0800
-Message-ID: <1363679457-4204-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
-References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 19 Mar 2013 04:07:02 -0400
+X-AuditID: 9c93016f-b7bfaae000003db8-88-51481ca316c1
+Date: Tue, 19 Mar 2013 17:07:21 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
+Message-ID: <20130319080721.GI8858@lge.com>
+References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
+ <20130319062522.GG8858@lge.com>
+ <20130319064247.GH8858@lge.com>
+ <CAE9FiQV=NWCgbV=AT1W6Y5a0jH+tk5Oi6dSDZ2XQoPgCoYZ8Cg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQV=NWCgbV=AT1W6Y5a0jH+tk5Oi6dSDZ2XQoPgCoYZ8Cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+On Tue, Mar 19, 2013 at 12:35:45AM -0700, Yinghai Lu wrote:
+> Can you check why sparc do not need to change interface during converting
+> to use memblock to replace bootmem?
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-[wenyou.yang@atmel.com: add spi nodes for sam9260, sam9263, sam9g45 and sam9n12]
-[wenyou.yang@atmel.com: remove spi property "cs-gpios" to the board dts files]
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/at91sam9260.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9263.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9n12.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9x5.dtsi  |   18 ++++++++++++++++++
- 5 files changed, 90 insertions(+)
-
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index cb7bcc5..6e31dc8 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -471,6 +471,24 @@
- 				status = "disabled";
- 			};
- 
-+			spi0: spi@fffc8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffc8000 0x200>;
-+				interrupts = <12 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffcc000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffcc000 0x200>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
- 			adc0: adc@fffe0000 {
- 				compatible = "atmel,at91sam9260-adc";
- 				reg = <0xfffe0000 0x100>;
-diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
-index 271d4de..6c6d9ae 100644
---- a/arch/arm/boot/dts/at91sam9263.dtsi
-+++ b/arch/arm/boot/dts/at91sam9263.dtsi
-@@ -462,6 +462,24 @@
- 				reg = <0xfffffd40 0x10>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@fffa4000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa4000 0x200>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffa8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa8000 0x200>;
-+				interrupts = <15 4 3>;
-+				status = "disabled";
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 6b1d4ca..e085b8a 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -531,6 +531,24 @@
- 				reg = <0xfffffd40 0x10>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@fffa4000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa4000 0x200>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffa8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa8000 0x200>;
-+				interrupts = <15 4 3>;
-+				status = "disabled";
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 7750f98..f3f87ef3 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -373,6 +373,24 @@
- 				#size-cells = <0>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@f0000000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0000000 0x100>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@f0004000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0004000 0x100>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index aa98e64..83a4889 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -505,6 +505,24 @@
- 					trigger-value = <0x6>;
- 				};
- 			};
-+
-+			spi0: spi@f0000000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0000000 0x100>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@f0004000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0004000 0x100>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
--- 
-1.7.9.5
+Sure.
+According to my understanding to sparc32 code(arch/sparc/mm/init_32.c),
+they already use max_low_pfn as the maximum PFN value,
+not as the number of pages.
 
