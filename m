@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3CSCg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:36:29 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:48823 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab3CSCg0 (ORCPT
+	id S933859Ab3CSChz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:37:55 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:57579 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab3CSChx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:36:26 -0400
-Date: Mon, 18 Mar 2013 19:37:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Li, Fei" <fei.li@intel.com>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: Re: [PATCH] pm: print the name of failed suspend function for
- platform device
-Message-ID: <20130319023743.GB21789@kroah.com>
-References: <1363586303.9792.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130318160514.GE3887@kroah.com>
- <BEC9F67575FA1E429CA7CF5AE9BE3634421912@SHSMSX102.ccr.corp.intel.com>
+	Mon, 18 Mar 2013 22:37:53 -0400
+Date: Mon, 18 Mar 2013 19:39:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH v3] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130319023911.GC21789@kroah.com>
+References: <20130318222853.GA9358@logfs.org>
+ <20130319000411.GA6406@kroah.com>
+ <20130318225657.GA9685@logfs.org>
+ <20130319002742.GA11050@kroah.com>
+ <20130318231154.GC9685@logfs.org>
+ <20130318233413.GD9685@logfs.org>
+ <1363659072.3156.129.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634421912@SHSMSX102.ccr.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363659072.3156.129.camel@haakon2.linux-iscsi.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 02:05:02AM +0000, Li, Fei wrote:
-> > > Print more info when platform device suspend function failed.
-> > > Without this patch, we can not get the real platform device suspend
-> > > API info.
-> > >
-> > > Example without this patch:
-> > > pm_op(): platform_pm_suspend+0x0/0x50 returns -11
-> > > PM: Device power.0 failed to suspend: error -11
-> > >
-> > > And with this patch:
-> > > platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
-> > > pm_op(): platform_pm_suspend+0x0/0x80 returns -11
-> > > PM: Device power.0 failed to suspend: error -11
+On Mon, Mar 18, 2013 at 07:11:12PM -0700, Nicholas A. Bellinger wrote:
+> On Mon, 2013-03-18 at 19:34 -0400, Jörn Engel wrote:
+> > And because I'm lame and stupid, here's v3.
 > > 
-> > How does that help someone out?  One extra line?  What is that going to
-> > allow a user to now do?
-> >
-> Thanks for your comments.
+> > It is possible for one thread to to take se_sess->sess_cmd_lock in
+> > core_tmr_abort_task() before taking a reference count on
+> > se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+> > se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+> > 
+> > This introduces kref_put_and_lock() and uses it in
+> > target_put_sess_cmd() to close the race window.
+> > 
+> > Signed-off-by: Joern Engel <joern@logfs.org>
+> > ---
+> >  drivers/target/target_core_transport.c |   17 +++++++++++------
+> >  include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
+> >  2 files changed, 37 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> > index 04ec9cb..b98c158 100644
+> > --- a/drivers/target/target_core_transport.c
+> > +++ b/drivers/target/target_core_transport.c
+> > @@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
+> >  {
+> >  	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+> >  	struct se_session *se_sess = se_cmd->se_sess;
+> > -	unsigned long flags;
+> >  
+> > -	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+> >  	if (list_empty(&se_cmd->se_cmd_list)) {
+> > -		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> > +		spin_unlock(&se_sess->sess_cmd_lock);
+> >  		se_cmd->se_tfo->release_cmd(se_cmd);
+> >  		return;
+> >  	}
+> >  	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+> > -		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> > +		spin_unlock(&se_sess->sess_cmd_lock);
+> >  		complete(&se_cmd->cmd_wait_comp);
+> >  		return;
+> >  	}
+> >  	list_del(&se_cmd->se_cmd_list);
+> > -	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> > +	spin_unlock(&se_sess->sess_cmd_lock);
+> >  
+> >  	se_cmd->se_tfo->release_cmd(se_cmd);
 > 
-> The intention is to print relatively complete call path for convenience of
-> debugging in case of error. With this, we can know the exact name of
-> the concrete failed function.
+> The fact that this changes ->release_cmd() to be called with irqs still
+> disabled is going to cause a problem for any fabrics that take a _bh
+> lock from this code-path.
+> 
+> iscsi-target is the only fabric AFAICT that this could potentially be
+> problematic for, but as I'm currently in the process of converting it to
+> use ->cmd_kref for v3.10 code some extra refactoring to avoid these
+> locks from within ->release_cmd() should not be a big deal..
+> 
+> So that said, applied to target-pending/for-next.
 
-And what was the failed function here, and what would that enable you to
-do?
-
-> Besides, currently such information is printed with level KERN_ERR,
-> and can be tuned through console_loglevel to avoid the possible impact
-> to end user.
-
-Huh?  End users see KERN_ERR.
-
-> Do you think it make sense?
-
-no.  But this is Rafael's file, so I'll defer to him.
+Really?  Don't you need my ack as you are adding a new kref api call
+here.
 
 greg k-h
-
