@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab3CSONT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:13:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40617 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab3CSONS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:13:18 -0400
-Date: Tue, 19 Mar 2013 15:13:17 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com
-Subject: Re: [PATCH V2 1/3]  mm: Export split_page()
-Message-ID: <20130319141317.GI7869@dhcp22.suse.cz>
-References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
- <1363639898-1615-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363639898-1615-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755951Ab3CSOQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:16:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45469 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3CSOQ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:16:56 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 3/3] cpufreq: use static initializer for the SRCU notifier
+Date: Tue, 19 Mar 2013 15:16:46 +0100
+Message-Id: <1363702606-31586-3-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de>
+References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-03-13 13:51:36, K. Y. Srinivasan wrote:
-> This symbol would be used in the Hyper-V balloon driver to support 2M
-> allocations.
-> 
-> In this version of the patch, based on feedback from Michal Hocko
-> <mhocko@suse.cz>, I have updated the patch description.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/cpufreq/cpufreq.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-I guess this part is not necessary ;)
-
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-
-Anyway
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/page_alloc.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 6cacfee..7e0ead6 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
->  	for (i = 1; i < (1 << order); i++)
->  		set_page_refcounted(page + i);
->  }
-> +EXPORT_SYMBOL_GPL(split_page);
->  
->  static int __isolate_free_page(struct page *page, unsigned int order)
->  {
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 1f93dbd..cd5acda 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -117,12 +117,11 @@ static void handle_update(struct work_struct *work);
+  * The mutex locks both lists.
+  */
+ static BLOCKING_NOTIFIER_HEAD(cpufreq_policy_notifier_list);
+-static struct srcu_notifier_head cpufreq_transition_notifier_list;
++SRCU_NOTIFIER_HEAD_STATIC(cpufreq_transition_notifier_list);
+ 
+ static bool init_cpufreq_transition_notifier_list_called;
+ static int __init init_cpufreq_transition_notifier_list(void)
+ {
+-	srcu_init_notifier_head(&cpufreq_transition_notifier_list);
+ 	init_cpufreq_transition_notifier_list_called = true;
+ 	return 0;
+ }
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
