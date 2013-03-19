@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3CSQh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 12:37:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13983 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757014Ab3CSQhY (ORCPT
+	id S933151Ab3CSQlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 12:41:53 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43236 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756996Ab3CSQlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 12:37:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 09:37:16 -0700
-Message-ID: <51489439.7080901@nvidia.com>
-Date: Tue, 19 Mar 2013 18:37:13 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 19 Mar 2013 12:41:51 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "airlied@linux.ie" <airlied@linux.ie>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [PATCHv7 10/10] drm: tegra: Add gr2d device
-References: <1363178186-2017-1-git-send-email-tbergstrom@nvidia.com> <1363178186-2017-11-git-send-email-tbergstrom@nvidia.com> <20130315121332.GA3374@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130315121332.GA3374@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Reply-To: konrad@darnok.org
+In-Reply-To: <5145BE06.8070309@gmail.com>
+References: <1363255697-19674-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1363255697-19674-4-git-send-email-liwanp@linux.vnet.ibm.com>
+	<20130316130638.GB5987@konrad-lan.dumpdata.com>
+	<5145BE06.8070309@gmail.com>
+Date: Tue, 19 Mar 2013 12:41:49 -0400
+X-Google-Sender-Auth: AK_xzE0rjFa2qWGz9zVputyTneM
+Message-ID: <CAPbh3rvzuScPorS8Nc0Er33gYrbYNc9cqfPbN2Ca7QkhVSN9hA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] introduce zero-filled page stat count
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.03.2013 14:13, Thierry Reding wrote:
-> Also you now create a lookup table (or bitfield actually) as we
-> discussed but you still pass around a function to check the lookup table
-> against. What I originally intended was to not pass a function around at
-> all but directly use the lookup table/bitfield. However I think we can
-> leave this as-is for now and change it later if required.
-
-Yeah, I think it's better if we leave this as is now. We should actually
-have one table for host1x and one for 2D. The host1x one should be
-shared between the drivers, but the table for client unit should be
-local to the driver.
-
-Let's take this up again when we have another driver.
-
-> 
->> +static int gr2d_probe(struct platform_device *pdev)
->> +{
->> +     struct device *dev = &pdev->dev;
->> +     struct host1x_drm *host1x = host1x_get_drm_data(dev->parent);
->> +     int err;
->> +     struct gr2d *gr2d = NULL;
->> +     struct host1x_syncpt **syncpts;
-> 
-> I don't think there's a need for this temporary variable. You could just
-> use gr2d->client.syncpts directly.
-
-I actually ended up with pretty long lines when I tried this, so I hope
-it's ok to leave as is.
-
-> 
->> +     gr2d = devm_kzalloc(dev, sizeof(*gr2d), GFP_KERNEL);
->> +     if (!gr2d)
->> +             return -ENOMEM;
->> +
->> +     syncpts = devm_kzalloc(dev, sizeof(*syncpts), GFP_KERNEL);
-
-F.ex. this line would split two two lines.
-
-Otherwise the changes should be now pretty much ok. You sent a bunch of
-changes (thanks) that I merged to my tree. I'll just need to do some
-testing and re-split the patches and send v8.
-
-Terje
+On Sun, Mar 17, 2013 at 8:58 AM, Ric Mason <ric.masonn@gmail.com> wrote:
+> Hi Konrad,
+>
+> On 03/16/2013 09:06 PM, Konrad Rzeszutek Wilk wrote:
+>>
+>> On Thu, Mar 14, 2013 at 06:08:16PM +0800, Wanpeng Li wrote:
+>>>
+>>> Introduce zero-filled page statistics to monitor the number of
+>>> zero-filled pages.
+>>
+>> Hm, you must be using an older version of the driver. Please
+>> rebase it against Greg KH's staging tree. This is where most if not
+>> all of the DebugFS counters got moved to a different file.
+>
+>
+> It seems that zcache debugfs in Greg's staging-next is buggy, Could you test
+> it?
+>
+Could you email me what the issue you are seeing?
