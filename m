@@ -1,50 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934202Ab3CSXd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:33:27 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:62937 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756759Ab3CSXd0 (ORCPT
+	id S934388Ab3CSXeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:34:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58934 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab3CSXeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:33:26 -0400
-Message-ID: <1363736001.1390.53.camel@x61.thuisdomein>
-Subject: [PATCH] blackfin: bf60x: fix typo "CONFIG_PM_BFIN_WAKE_PA15_POL"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 00:33:21 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Tue, 19 Mar 2013 19:34:08 -0400
+Message-ID: <5148F5EA.3020904@gmail.com>
+Date: Wed, 20 Mar 2013 07:34:02 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/8] staging: zcache: Support zero-filled pages more
+ efficiently
+References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2013 23:33:21.0471 (UTC) FILETIME=[249854F0:01CE24FA]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Obvious, isn't it? Introduced in v3.5, through commit
-0fbd88ca20a68a633b565e1f5ba18ca64afb0c78 ("blackfin: bf60x: add wakeup
-source select"). Untested.
+On 03/19/2013 05:25 PM, Wanpeng Li wrote:
+> Hi Greg,
+>
+> Since you have already merge 1/8, feel free to merge 2/8~8/8, I have already
+> rebased against staging-next.
+>
+> Changelog:
+>   v3 -> v4:
+>    * handle duplication in page_is_zero_filled, spotted by Bob
+>    * fix zcache writeback in dubugfs
+>    * fix pers_pageframes|_max isn't exported in debugfs
+>    * fix static variable defined in debug.h but used in multiple C files
+>    * rebase on Greg's staging-next
+>   v2 -> v3:
+>    * increment/decrement zcache_[eph|pers]_zpages for zero-filled pages, spotted by Dan
+>    * replace "zero" or "zero page" by "zero_filled_page", spotted by Dan
+>   v1 -> v2:
+>    * avoid changing tmem.[ch] entirely, spotted by Dan.
+>    * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for
+>      zero-filled pages, spotted by Dan
+>    * cleanup TODO list
+>    * add Dan Acked-by.
+>
+> Motivation:
+>
+> - Seth Jennings points out compress zero-filled pages with LZO(a lossless
+>    data compression algorithm) will waste memory and result in fragmentation.
+>    https://lkml.org/lkml/2012/8/14/347
+> - Dan Magenheimer add "Support zero-filled pages more efficiently" feature
+>    in zcache TODO list https://lkml.org/lkml/2013/2/13/503
+>
+> Design:
+>
+> - For store page, capture zero-filled pages(evicted clean page cache pages and
+>    swap pages), but don't compress them, set pampd which store zpage address to
+>    0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
+>    case and take advantage of tmem infrastructure to transform handle-tuple(pool
+>    id, object id, and an index) to a pampd. Twice compress zero-filled pages will
+>    contribute to one zcache_[eph|pers]_pageframes count accumulated.
+> - For load page, traverse tmem hierachical to transform handle-tuple to pampd
+>    and identify zero-filled case by pampd equal to 0x2 when filesystem reads
+>    file pages or a page needs to be swapped in, then refill the page to zero
+>    and return.
+>
+> Test:
+>
+> dd if=/dev/zero of=zerofile bs=1MB count=500
+> vmtouch -t zerofile
+> vmtouch -e zerofile
+>
+> formula:
+> - fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes)
+>    * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
+> - memory zcache occupy = zcache_[eph|pers]_zbytes
+>
+> Result:
+>
+> without zero-filled awareness:
+> - fragmentation level: 98%
+> - memory zcache occupy: 238MB
+> with zero-filled awareness:
+> - fragmentation level: 0%
+> - memory zcache occupy: 0MB
+>
+> Wanpeng Li (8):
+>    introduce zero filled pages handler
+>    zero-filled pages awareness
+>    handle zcache_[eph|pers]_pages for zero-filled page
+>    fix pers_pageframes|_max aren't exported in debugfs
+>    fix zcache writeback in debugfs
+>    fix static variables are defined in debug.h but use in multiple C files
+>    introduce zero-filled page stat count
+>    clean TODO list
 
- arch/blackfin/mach-bf609/pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+You can add Reviewed-by: Ric Mason <ric.masonn@gmail.com> to this patchset.
 
-diff --git a/arch/blackfin/mach-bf609/pm.c b/arch/blackfin/mach-bf609/pm.c
-index ad505d9..0cdd695 100644
---- a/arch/blackfin/mach-bf609/pm.c
-+++ b/arch/blackfin/mach-bf609/pm.c
-@@ -210,7 +210,7 @@ void bf609_cpu_pm_enter(suspend_state_t state)
- 
- #ifdef CONFIG_PM_BFIN_WAKE_PB15
- 	wakeup |= PB15WE;
--# if CONFIG_PM_BFIN_WAKE_PA15_POL
-+# if CONFIG_PM_BFIN_WAKE_PB15_POL
- 	wakeup_pol |= PB15WE;
- # endif
- #endif
--- 
-1.7.11.7
+>
+>   drivers/staging/zcache/TODO          |    3 +-
+>   drivers/staging/zcache/debug.c       |    5 +-
+>   drivers/staging/zcache/debug.h       |   77 +++++++++++++---------
+>   drivers/staging/zcache/zcache-main.c |  147 ++++++++++++++++++++++++++++++----
+>   4 files changed, 185 insertions(+), 47 deletions(-)
+>
 
