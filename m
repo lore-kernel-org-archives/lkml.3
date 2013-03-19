@@ -1,118 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217Ab3CSRd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:33:59 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51617 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab3CSRd5 (ORCPT
+	id S1757281Ab3CSRf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:35:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38822 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756998Ab3CSRfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:33:57 -0400
-Date: Tue, 19 Mar 2013 13:33:43 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-crypto@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] [char] random: fix priming of last_data
-Message-ID: <20130319173343.GA3656@hmsreliant.think-freely.org>
-References: <1363709889-22344-1-git-send-email-jarod@redhat.com>
+	Tue, 19 Mar 2013 13:35:25 -0400
+Message-ID: <5148A1DA.6040304@wwwdotorg.org>
+Date: Tue, 19 Mar 2013 11:35:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363709889-22344-1-git-send-email-jarod@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: rob@landley.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Doc: dt: i2c: tegra: add dt binding for i2c-tegra
+References: <1363599350-25187-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1363599350-25187-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 12:18:09PM -0400, Jarod Wilson wrote:
-> Commit ec8f02da9e added priming of last_data per fips requirements.
-> Unfortuantely, it did so in a way that can lead to multiple threads all
-> incrementing nbytes, but only one actually doing anything with the extra
-> data, which leads to some fun  random corruption and panics.
+On 03/18/2013 03:35 AM, Laxman Dewangan wrote:
+> Add documentation for device tree binding of NVIDIA's Tegra i2c
+> controller driver.
 > 
-> The fix is to simply do everything needed to prime last_data in a single
-> shot, so there's no window for multiple cpus to increment nbytes -- in
-> fact, we won't even increment or decrement nbytes anymore, we'll just
-> extract the needed EXTRACT_BYTES one time per pool and then carry on with
-> the normal routine.
-> 
-> All these changes have been tested across multiple hosts and architectures
-> where panics were previously encoutered. The code changes are are strictly
-> limited to areas only touched when when booted in fips mode.
-> 
-> This change should also go into 3.8-stable, to make the myriads of fips
-> users on 3.8.x happy.
-> 
-> Tested-by: Jan Stancek <jstancek@redhat.com>
-> Tested-by: Jan Stodola <jstodola@redhat.com>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> CC: "David S. Miller" <davem@davemloft.net>
-> CC: Matt Mackall <mpm@selenic.com>
-> CC: "Theodore Ts'o" <tytso@mit.edu>
-> CC: linux-crypto@vger.kernel.org
-> CC: stable@vger.kernel.org
-> Signed-off-by: Jarod Wilson <jarod@redhat.com>
-> ---
->  drivers/char/random.c |   30 +++++++++++++++---------------
->  1 files changed, 15 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index 85e81ec..15e5a2b 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -953,10 +953,23 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
->  {
->  	ssize_t ret = 0, i;
->  	__u8 tmp[EXTRACT_SIZE];
-> +	unsigned long flags;
->  
->  	/* if last_data isn't primed, we need EXTRACT_SIZE extra bytes */
-> -	if (fips_enabled && !r->last_data_init)
-> -		nbytes += EXTRACT_SIZE;
-> +	if (fips_enabled) {
-> +		spin_lock_irqsave(&r->lock, flags);
-> +		if (!r->last_data_init) {
-> +			r->last_data_init = true;
-> +			spin_unlock_irqrestore(&r->lock, flags);
-> +			trace_extract_entropy(r->name, EXTRACT_SIZE,
-> +					      r->entropy_count, _RET_IP_);
-> +			xfer_secondary_pool(r, EXTRACT_SIZE);
-> +			extract_buf(r, tmp);
-> +			spin_lock_irqsave(&r->lock, flags);
-> +			memcpy(r->last_data, tmp, EXTRACT_SIZE);
-> +		}
-> +		spin_unlock_irqrestore(&r->lock, flags);
-> +	}
->  
->  	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
->  	xfer_secondary_pool(r, nbytes);
-> @@ -966,19 +979,6 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
->  		extract_buf(r, tmp);
->  
->  		if (fips_enabled) {
-> -			unsigned long flags;
-> -
-> -
-> -			/* prime last_data value if need be, per fips 140-2 */
-> -			if (!r->last_data_init) {
-> -				spin_lock_irqsave(&r->lock, flags);
-> -				memcpy(r->last_data, tmp, EXTRACT_SIZE);
-> -				r->last_data_init = true;
-> -				nbytes -= EXTRACT_SIZE;
-> -				spin_unlock_irqrestore(&r->lock, flags);
-> -				extract_buf(r, tmp);
-> -			}
-> -
->  			spin_lock_irqsave(&r->lock, flags);
->  			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
->  				panic("Hardware RNG duplicated output!\n");
-> -- 
-> 1.7.1
-> 
-> 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> Describing all compatible values used for diffenent Tegra SoCs
+> in details in this documentation.
 
+I have applied this to Tegra's for-3.10/dt branch. I fixed a couple of
+typos and capitalization errors. I also trimmed the patch to include
+only a single example; the description in the text is enough to get the
+rest right, so there's no need to include exhaustive examples.
