@@ -1,31 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab3CSFma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:42:30 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:41465 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3CSFm3 (ORCPT
+	id S933043Ab3CSFrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:47:42 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:51739 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3CSFrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:42:29 -0400
+	Tue, 19 Mar 2013 01:47:41 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 19 Mar 2013 06:42:27 +0100
-Message-ID: <CA+icZUXufeB=Vvfbd1tv4k8w82-wwJVb1RxyV8nvKa4+mvWERg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Mar 19
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Mon, 18 Mar 2013 22:47:41 -0700
+X-Google-Sender-Auth: 8OaGVA11QmUIQy5kfUPAbZJxsW4
+Message-ID: <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
+From: Yinghai Lu <yinghai@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Mar 18, 2013 at 10:15 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> max_low_pfn reflect the number of _pages_ in the system,
+> not the maximum PFN. You can easily find that fact in init_bootmem().
+> So fix it.
 
-did forget to sent your email [1] to linux-next ML?
+I'm confused. for x86, we have max_low_pfn defined in ...
 
-Regards,
-- Sedat -
+#ifdef CONFIG_X86_32
+        /* max_low_pfn get updated here */
+        find_low_pfn_range();
+#else
+        num_physpages = max_pfn;
 
-[1] http://marc.info/?l=linux-kernel&m=136366650024426&w=2
+        check_x2apic();
+
+        /* How many end-of-memory variables you have, grandma! */
+        /* need this before calling reserve_initrd */
+        if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
+                max_low_pfn = e820_end_of_low_ram_pfn();
+        else
+                max_low_pfn = max_pfn;
+
+and under max_low_pfn is bootmem.
+
+>
+> Additionally, if 'start_pfn == end_pfn', we don't need to go futher,
+> so change range check.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index 5e07d36..4711e91 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -110,9 +110,9 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
+>  {
+>         unsigned long start_pfn = PFN_UP(start);
+>         unsigned long end_pfn = min_t(unsigned long,
+> -                                     PFN_DOWN(end), max_low_pfn);
+> +                                     PFN_DOWN(end), min_low_pfn);
+
+what is min_low_pfn ?  is it 0 for x86?
+
+Thanks
+
+Yinghai
