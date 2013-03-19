@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934094Ab3CSHTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 03:19:37 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:48326 "EHLO smtp3-g21.free.fr"
+	id S934114Ab3CSHgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 03:36:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab3CSHTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 03:19:35 -0400
-Message-ID: <1363677512.30246.8.camel@scapa>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, kexec@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Date: Tue, 19 Mar 2013 08:18:32 +0100
-In-Reply-To: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-eUMu4ZYo4BfAZvVev1OO"
-X-Mailer: Evolution 3.6.1-1 
-Mime-Version: 1.0
+	id S933042Ab3CSHgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 03:36:52 -0400
+Date: Tue, 19 Mar 2013 09:36:48 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Eric Northup <digitaleric@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/5] KVM: MMU: fast invalid all mmio sptes
+Message-ID: <20130319073648.GT11223@redhat.com>
+References: <51433D98.4050605@linux.vnet.ibm.com>
+ <51433E71.2070107@linux.vnet.ibm.com>
+ <CAG7+5M0Z+HLxUf6n6=D3uqKhn3F2NbKU6tcHYtD6gyF3t8iHsw@mail.gmail.com>
+ <5147D858.4010805@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5147D858.4010805@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 19, 2013 at 11:15:36AM +0800, Xiao Guangrong wrote:
+> On 03/19/2013 06:16 AM, Eric Northup wrote:
+> > On Fri, Mar 15, 2013 at 8:29 AM, Xiao Guangrong
+> > <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> >> This patch tries to introduce a very simple and scale way to invalid all
+> >> mmio sptes - it need not walk any shadow pages and hold mmu-lock
+> >>
+> >> KVM maintains a global mmio invalid generation-number which is stored in
+> >> kvm->arch.mmio_invalid_gen and every mmio spte stores the current global
+> >> generation-number into his available bits when it is created
+> >>
+> >> When KVM need zap all mmio sptes, it just simply increase the global
+> >> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+> >> then it walks the shadow page table and get the mmio spte. If the
+> >> generation-number on the spte does not equal the global generation-number,
+> >> it will go to the normal #PF handler to update the mmio spte
+> >>
+> >> Since 19 bits are used to store generation-number on mmio spte, the
+> >> generation-number can be round after 33554432 times. It is large enough
+> >> for nearly all most cases, but making the code be more strong, we zap all
+> >> shadow pages when the number is round
+> >>
+> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >> ---
+> >>  arch/x86/include/asm/kvm_host.h |    2 +
+> >>  arch/x86/kvm/mmu.c              |   61 +++++++++++++++++++++++++++++++++------
+> >>  arch/x86/kvm/mmutrace.h         |   17 +++++++++++
+> >>  arch/x86/kvm/paging_tmpl.h      |    7 +++-
+> >>  arch/x86/kvm/vmx.c              |    4 ++
+> >>  arch/x86/kvm/x86.c              |    6 +--
+> >>  6 files changed, 82 insertions(+), 15 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >> index ef7f4a5..572398e 100644
+> >> --- a/arch/x86/include/asm/kvm_host.h
+> >> +++ b/arch/x86/include/asm/kvm_host.h
+> >> @@ -529,6 +529,7 @@ struct kvm_arch {
+> >>         unsigned int n_requested_mmu_pages;
+> >>         unsigned int n_max_mmu_pages;
+> >>         unsigned int indirect_shadow_pages;
+> >> +       unsigned int mmio_invalid_gen;
+> > 
+> > Could this get initialized to something close to the wrap-around
+> > value, so that the wrap-around case gets more real-world coverage?
+> 
+> I am afraid we can not. We cache the current mmio_invalid_gen into mmio spte when
+> it is created no matter what the initiation value is.
+> 
+> If you have a better way, please show me. ;)
+> 
+The idea is to initialize mmio_invalid_gen to value close to MAX_GEN in
+order to exercise 
 
---=-eUMu4ZYo4BfAZvVev1OO
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
++       if (unlikely(kvm->arch.mmio_invalid_gen++ == MAX_GEN)) {
++               kvm->arch.mmio_invalid_gen = 0;
++               return kvm_mmu_zap_all(kvm);
++       }
 
-On lun., 2013-03-18 at 17:32 -0400, Matthew Garrett wrote:
-> This patch introduces CAP_COMPROMISE_KERNEL. Holding this capability
-> indicates that a process is empowered to perform tasks that may result
-> in
-> modification of the running kernel. While aimed at handling the
-> specific
-> use-case of Secure Boot, it is generalisable to any other environment
-> where
-> permitting userspace to modify the kernel is undesirable.
+path more often.
 
-About that, did someone looked at the way securelevel(7) is handled on
-OpenBSD? This is more or less the same thing, where there's a desire to
-distinguish uid 0 from ring0. They're not using a capability but more a
-global state which allows more or less stuff depending on the value
-(securelevel=3D-1 to securelevel=3D2).
-
-Regards,
---=20
-Yves-Alexis
-
---=-eUMu4ZYo4BfAZvVev1OO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABCAAGBQJRSBFIAAoJEG3bU/KmdcClL0gIAJRs+oqqdMUUXqQFHoXRqSD9
-LEcmDlaSh/QAkPr7TQjYMS40AGoY9j4aUzgNlCsQjXjGLYCledGtiZP2rUTWUEfV
-5x3vxb9Kv9rGb8GJ6LieRwqvoDEmtOg9nUbnr7/iHtzYYmuEhWUOdki2XuQ2n85q
-dO22Pd6aXtWQzFL/l91oHTOll9VB2iIwnKzUcQLpW241Be238YSB5tqD6Gc5yN4E
-uFu+NN7lDxSNPYa57WJvaPXQTwMtDBJZV2RekeLp+5DEVCPDjoXQP2h/KxUTmhBj
-EgvcQ8fxlKzb9UHMUDsFQHIRIpozCOuvVzIZdjZU0jSDEh9duNPmoMr4oOYIKm0=
-=z+Fj
------END PGP SIGNATURE-----
-
---=-eUMu4ZYo4BfAZvVev1OO--
+--
+			Gleb.
