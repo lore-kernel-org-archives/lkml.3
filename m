@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964989Ab3CSIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:48:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754192Ab3CSIsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 04:48:04 -0400
-Message-ID: <5148261F.3030806@redhat.com>
-Date: Tue, 19 Mar 2013 16:47:27 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, kexec@lists.infradead.org,
-        linux-pci@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH 10/12] acpi: Ignore acpi_rsdp kernel parameter in a secure
- boot environment
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com> <1363642353-30749-10-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1363642353-30749-10-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757718Ab3CSIxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:53:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61599 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3CSIxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 04:53:46 -0400
+X-AuditID: 9c930197-b7cc2ae000000eb7-49-51482798fbe3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCHSET 0/9] perf util: Cleanup die() and its friends
+Date: Tue, 19 Mar 2013 17:53:35 +0900
+Message-Id: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 05:32 AM, Matthew Garrett wrote:
-> From: Josh Boyer <jwboyer@redhat.com>
-> 
-> This option allows userspace to pass the RSDP address to the kernel.  This
-> could potentially be used to circumvent the secure boot trust model.
-> We ignore the setting if we don't have the CAP_COMPROMISE_KERNEL capability.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> ---
->  drivers/acpi/osl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 586e7e9..0ef63f1 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -245,7 +245,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
->  acpi_physical_address __init acpi_os_get_root_pointer(void)
->  {
->  #ifdef CONFIG_KEXEC
-> -	if (acpi_rsdp)
-> +	if (acpi_rsdp && capable(CAP_COMPROMISE_KERNEL))
->  		return acpi_rsdp;
->  #endif
->  
-> 
+Hi,
 
-This does not work because capable is not usable at this early point.
+I've done this painful cleanup of *die() removal. ;-) It now can
+return error code rather than calling die() when something bad happen.
+It only touches tracepoint related code and I tested it's working
+normally but lacks thorough testing in various environment.
 
-Josh, could you update your fix here?
+Please help testing more!
+
+Thanks,
+Namhyung
+
+
+Namhyung Kim (9):
+  perf util: Let get_tracing_file() can return NULL
+  perf util: Get rid of malloc_or_die() in trace-event-info.c
+  perf util: Get rid of write_or_die() from trace-event-info.c
+  perf util: Get rid of die() calls from trace-event-info.c
+  perf util: Handle failure case in trace_report()
+  perf util: Get rid of malloc_or_die() in trace-event-read.c
+  perf util: Get rid of read_or_die() in trace-event-read.c
+  perf util: Get rid of die() calls in trace-data-read.c
+  perf util: Cleanup calc_data_size logic
+
+ tools/perf/util/header.c           |  11 +-
+ tools/perf/util/trace-event-info.c | 336 +++++++++++++++++++++++++------------
+ tools/perf/util/trace-event-read.c | 256 ++++++++++++++++++----------
+ tools/perf/util/trace-event.h      |   2 +-
+ 4 files changed, 403 insertions(+), 202 deletions(-)
 
 -- 
-Thanks
-Dave
-
+1.7.11.7
 
