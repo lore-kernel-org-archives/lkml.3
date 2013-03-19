@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab3CSK2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:28:01 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:34185 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab3CSK2A (ORCPT
+	id S1755910Ab3CSK2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:28:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50753 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755106Ab3CSK2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:28:00 -0400
-Message-ID: <51483DAA.7060806@openvz.org>
-Date: Tue, 19 Mar 2013 14:27:54 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Tue, 19 Mar 2013 06:28:21 -0400
+Date: Tue, 19 Mar 2013 10:28:03 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if
+ system supports 'has_ossr'
+Message-ID: <20130319102803.GB22452@mudshark.cambridge.arm.com>
+References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com>
+ <51406BA7.8010306@arm.com>
+ <51407120.7030709@ti.com>
+ <51417E58.5050501@ti.com>
+ <20130315050014.GA15706@tiny-lites>
+ <5146B972.1010002@ti.com>
+ <20130318150724.GC28585@mudshark.cambridge.arm.com>
+ <514736D4.4070906@ti.com>
+ <20130318170649.GA29585@mudshark.cambridge.arm.com>
+ <5148082A.3060503@ti.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Borislav Petkov <bp@alien8.de>, jeffrey.t.kirsher@intel.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        e1000-devel@lists.sourceforge.net,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: Re: e1000e + suspend, 3.9-rc2
-References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com> <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic> <51483B1A.9090704@suse.cz>
-In-Reply-To: <51483B1A.9090704@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5148082A.3060503@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby wrote:
-> On 03/12/2013 06:17 PM, Borislav Petkov wrote:
->> On Mon, Mar 11, 2013 at 09:25:37PM +0100, Borislav Petkov wrote:
->>> Yeah, it is already upstream. And yeah, it did trigger with it.
->>>
->>> $ git describe
->>> v3.9-rc2-112-g7c6baa304b84
->>>
->>> But it somehow doesn't trigger with that same kernel anymore so I'll
->>> consider it a glitch and watch it over the next days.
->>
->> Ok, I can still see the hardware error message when suspending:
->
-> And with 3.8 plus these:
->      PCI/PM: Clear state_saved during suspend
->      e1000e: fix pci-device enable-counter balance
->      e1000e: fix runtime power management transitions
->      e1000e: fix accessing to suspended device
->
-> I sometimes see this:
-> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
-> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
-> PM: Device 0000:00:19.0 failed to suspend async: error -2
->
-> Any ideas? Am I missing some patch still?
+On Tue, Mar 19, 2013 at 06:39:38AM +0000, Santosh Shilimkar wrote:
+> On Monday 18 March 2013 10:36 PM, Will Deacon wrote:
+> > Any chance you could follow up with your firmware/hardware guys about this
+> > please? I'd really like to understand how we end up in this state in case we
+> > can do something in the architecture to stop it from happening in future.
+> > 
+> I will check on this part and update you when I hear from them.
 
-Try this:
-"PCI: Don't try to disable Bus Master on disconnected PCI devices"
-https://patchwork.kernel.org/patch/2271641/
+Ok, thanks.
 
-But I'm not sure, probably it is unrelated because this code works only (?)
-during shutdown/kexec sequences.
+Dietmar -- I seem to remember that you thought GDB did actually work with
+hardware breakpoints on Pandaboard across low-power states. Can you
+confirm/deny this please?
 
+> > Well, we could just add the warn_once prints but that doesn't stop debug
+> > from breaking after the first pm/suspend/hotplug operation.
+> > 
+> Probably we should drop the $subject patch approach and use warn_once
+> at least for current rc. Ofcourse it doesn't help to get working
+> hw_breakpoint support. Patch end of the email with warn_once.
 
+Yeah, I'll merge that, but it's a real shame that this breaks hardware debug
+on one of the few platforms where it was reported to work.
+
+Will
