@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964936Ab3CSI2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:28:47 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:48692 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964921Ab3CSI2p convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 04:28:45 -0400
-From: Patrice CHOTARD <patrice.chotard@st.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Date: Tue, 19 Mar 2013 09:28:26 +0100
-Subject: Re: [PATCH 1/5] pinctrl: abx500: Staticize some symbols
-Thread-Topic: [PATCH 1/5] pinctrl: abx500: Staticize some symbols
-Thread-Index: Ac4ke7o8egAX+SmaR7qC59tv9CtLig==
-Message-ID: <514821AA.2060201@st.com>
-References: <1363674681-4015-1-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1363674681-4015-1-git-send-email-sachin.kamat@linaro.org>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S933806Ab3CSIga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:36:30 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:34686 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab3CSIg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 04:36:27 -0400
 MIME-Version: 1.0
+In-Reply-To: <CACQ1gAi1NNwJ_QDp7ipjwdYCskENGN=N-j+TFD5aHX8DHnoBQA@mail.gmail.com>
+References: <20130228083437.GA28143@lnx-rg> <78fd1c1df13b449887de6e0b3505a988@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <CACQ1gAgyYp+Dxmk-0C3zfKK+CkEwQX51NvWjzkV7=8GC3CD=Qg@mail.gmail.com>
+ <4147bb5a7cf547c19c6a5a6b459a957d@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <CACQ1gAi1NNwJ_QDp7ipjwdYCskENGN=N-j+TFD5aHX8DHnoBQA@mail.gmail.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Tue, 19 Mar 2013 09:36:06 +0100
+Message-ID: <CACQ1gAiadLrJQkDFe7_TEM_1OVSjECyewmxHyXvOcYCc7GLn_Q@mail.gmail.com>
+Subject: Re: hv_netvsc: WARNING in softirq.c
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 07:31 AM, Sachin Kamat wrote:
+2013/3/7 Richard Genoud <richard.genoud@gmail.com>:
+> 2013/3/6 Haiyang Zhang <haiyangz@microsoft.com>:
+>> I have found a simple way to reproduce this kind of warning:
+>> 1) reboot the VM (because this warning can be displayed only once.)
+>> 2) login to the host and open the VM [Settings]
+>> 3) Temporarily change the Network adapter's option [Virtual Switch] to "Not connected".
+>> 4) run dmesg, you should see the warning.
+>>
+>> The reason for the warning is -- netif_tx_disable() is called when the NIC
+>> is disconnected. And it's called within irq context. netif_tx_disable()
+>> calls local_bh_enable() which displays warning if in irq.
+>>
+>> The fix is to remove the unnecessary netif_tx_disable() in the netvsc_linkstatus_callback().
+>> I attached a patch. Would you like to test it on your side as well?
 
-> These symbols are used only in this file. Without this patch
-> we get the following warnings:
-> drivers/pinctrl/pinctrl-abx500.c:520:5: warning:
-> symbol 'abx500_gpio_request' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:527:6: warning:
-> symbol 'abx500_gpio_free' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:614:5: warning:
-> symbol 'abx500_gpio_request_enable' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:714:5: warning:
-> symbol 'abx500_pin_config_get' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:721:5: warning:
-> symbol 'abx500_pin_config_set' was not declared. Should it be static?
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Patrice Chotard <patrice.chotard@st.com>
-> ---
-> This series is compile tested against linux-next tree (20130319).
-> ---
->  drivers/pinctrl/pinctrl-abx500.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-> index 0cf3fa4..9b8db91 100644
-> --- a/drivers/pinctrl/pinctrl-abx500.c
-> +++ b/drivers/pinctrl/pinctrl-abx500.c
-> @@ -517,14 +517,14 @@ static inline void abx500_gpio_dbg_show_one(struct seq_file *s,
->  #define abx500_gpio_dbg_show	NULL
->  #endif
->  
-> -int abx500_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +static int abx500_gpio_request(struct gpio_chip *chip, unsigned offset)
->  {
->  	int gpio = chip->base + offset;
->  
->  	return pinctrl_request_gpio(gpio);
->  }
->  
-> -void abx500_gpio_free(struct gpio_chip *chip, unsigned offset)
-> +static void abx500_gpio_free(struct gpio_chip *chip, unsigned offset)
->  {
->  	int gpio = chip->base + offset;
->  
-> @@ -611,7 +611,7 @@ static void abx500_pmx_disable(struct pinctrl_dev *pctldev,
->  	dev_dbg(pct->dev, "disable group %s, %u pins\n", g->name, g->npins);
->  }
->  
-> -int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
-> +static int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
->  			       struct pinctrl_gpio_range *range,
->  			       unsigned offset)
->  {
-> @@ -711,14 +711,14 @@ static const struct pinctrl_ops abx500_pinctrl_ops = {
->  	.pin_dbg_show = abx500_pin_dbg_show,
->  };
->  
-> -int abx500_pin_config_get(struct pinctrl_dev *pctldev,
-> +static int abx500_pin_config_get(struct pinctrl_dev *pctldev,
->  			  unsigned pin,
->  			  unsigned long *config)
->  {
->  	return -ENOSYS;
->  }
->  
-> -int abx500_pin_config_set(struct pinctrl_dev *pctldev,
-> +static int abx500_pin_config_set(struct pinctrl_dev *pctldev,
->  			  unsigned pin,
->  			  unsigned long config)
->  {
+I installed the patched kernel today.
+here are the stats of the warings until today :
+kern.log.1:Mar 12 22:32:10 devlabo kernel: [30114.506299]
+------------[ cut here ]------------
+kern.log.2:Mar  5 22:30:48 devlabo kernel: [10455.098586]
+------------[ cut here ]------------
+kern.log.2:Mar  6 22:31:25 devlabo kernel: [85552.645480]
+------------[ cut here ]------------
+kern.log.3:Feb 26 22:35:14 devlabo kernel: [37398.788119]
+------------[ cut here ]------------
+kern.log.3:Feb 27 22:34:37 devlabo kernel: [10688.187196]
+------------[ cut here ]------------
+kern.log.4:Feb 22 22:32:22 devlabo kernel: [40399.795364]
+------------[ cut here ]------------
 
+So, I'll wait for one or two weeks before sending some feedback.
 
-Acked-by: Patrice Chotard <patrice.chotard@st.com>
+Regards,
+Richard
