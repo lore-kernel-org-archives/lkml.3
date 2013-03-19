@@ -1,81 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003Ab3CSUdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:33:05 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:36823 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289Ab3CSUdD (ORCPT
+	id S934097Ab3CSUeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:34:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49525 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932315Ab3CSUea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:33:03 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Min Zhang <mzhang@mvista.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 06/18] n_tty: Split n_tty_chars_in_buffer() for reader-only interface
-Date: Tue, 19 Mar 2013 16:21:41 -0400
-Message-Id: <1363724513-15604-7-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Tue, 19 Mar 2013 16:34:30 -0400
+Date: Tue, 19 Mar 2013 15:34:22 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Benoit Lourdelet <blourdel@juniper.net>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: lxc-users <lxc-users@lists.sourceforge.net>
+Subject: Re: [Lxc-users] Containers slow to start after 1600
+Message-ID: <20130319203422.GA27263@sergelap>
+References: <20130319182829.GA15451@sergelap>
+ <CD6E73D8.71FE%blourdel@juniper.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CD6E73D8.71FE%blourdel@juniper.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_TTY .chars_in_buffer() method requires serialized access if
-the current thread is not the single-consumer, n_tty_read().
+Hi,
 
-Separate the internal interface; prepare for lockless read-side.
+Benoit was kind enough to follow up on some scalability issues with
+larger (but not huge imo) numbers of containers.  Running a script
+to simply time the creation of veth pairs on a rather large (iiuc)
+machine, he got the following numbers (time is for creation of the
+full number, not latest increment - so 1123 seconds to create 5000
+veth pairs)
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+> >Quoting Benoit Lourdelet (blourdel@juniper.net):
+> >> Hello Serge,
+> >> 
+> >> I put together a small table, running your script for various values :
+> >> 
+> >> Time are in seconds,
+> >> 
+> >> Number of veth, time to create, time to delete:
+> >> 
+> >> 500  18  26
+> >> 
+> >> 1000 57 70
+> >> 
+> >> 2000 193 250
+> >> 
+> >> 3000 435 510
+> >> 
+> >> 4000 752  824
+> >> 
+> >> 5000 1123  1185
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 2cc3be0..51b08d9 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -299,7 +299,7 @@ static void n_tty_flush_buffer(struct tty_struct *tty)
-  *	Locking: read_lock
-  */
- 
--static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
-+static ssize_t chars_in_buffer(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
-@@ -317,6 +317,11 @@ static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
- 	return n;
- }
- 
-+static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
-+{
-+	return chars_in_buffer(tty);
-+}
-+
- /**
-  *	is_utf8_continuation	-	utf8 multibyte check
-  *	@c: byte to check
-@@ -2030,7 +2035,7 @@ do_it_again:
- 		}
- 
- 		/* If there is enough space in the read buffer now, let the
--		 * low-level driver know. We use n_tty_chars_in_buffer() to
-+		 * low-level driver know. We use chars_in_buffer() to
- 		 * check the buffer, as it now knows about canonical mode.
- 		 * Otherwise, if the driver is throttled and the line is
- 		 * longer than TTY_THRESHOLD_UNTHROTTLE in canonical mode,
-@@ -2038,7 +2043,7 @@ do_it_again:
- 		 */
- 		while (1) {
- 			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
--			if (n_tty_chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
-+			if (chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
- 				break;
- 			if (!tty->count)
- 				break;
--- 
-1.8.1.2
+> 
+> Benoit
 
+Ok.  Ran some tests on a tiny cloud instance.  When I simply run 2k tasks in
+unshared new network namespaces, it flies by.
+
+#!/bin/sh
+rm -f /tmp/timings3
+date | tee -a /tmp/timings3
+for i in `seq 1 2000`; do
+    nsexec -n -- /bin/sleep 1000 &
+    if [ $((i % 100)) -eq 0 ]; then
+           echo $i | tee -a /tmp/timings3
+           date | tee -a /tmp/timings3
+    fi
+done
+
+(all scripts run under sudo, and nsexec can be found at
+https://code.launchpad.net/~serge-hallyn/+junk/nsexec))
+
+So that isn't an issue.
+
+When I run a script to just time veth pair creations like Benoit ran,
+creating 2000 veth pairs and timing the results for each 100, the time
+does degrade, from 1 second for the first 100 up to 8 seconds for the
+last 100.
+
+(that script for me is:
+
+#!/bin/sh
+rm -f /tmp/timings
+for i in `seq 1 2000`; do
+       ip link add type veth
+       if [ $((i % 100)) -eq 0 ]; then
+               echo $i | tee -a /tmp/timings
+               date | tee -a /tmp/timings
+               ls /sys/class/net > /dev/null
+       fi
+done
+)
+
+But when I actually pass veth instances to those unshared network
+namespaces:
+
+#!/bin/sh
+rm -f /tmp/timings2
+echo 0 | tee -a /tmp/timings2
+date | tee -a /tmp/timings2
+for i in `seq 1 2000`; do
+    nsexec -n -P /tmp/pid.$i -- /bin/sleep 1000 &
+    ip link add type veth
+    dev2=`ls -d /sys/class/net/veth* | tail -1`
+    dev=`basename $dev2`
+    pid=`cat /tmp/pid.$i`
+    ip link set $dev netns $pid
+    if [ $((i % 100)) -eq 0 ]; then
+           echo $i | tee -a /tmp/timings2
+           date | tee -a /tmp/timings2
+    fi
+    rm -f /tmp/pid.*
+done
+
+it goes from 4 seconds for the first hundred to 16 seconds for
+the last hundred - a worse regression than simply creating the
+veths.  Though I guess that could be accounted for simply by
+sysfs actions when a veth is moved from the old netns to the
+new?
+
+0
+Tue Mar 19 20:15:26 UTC 2013
+100
+Tue Mar 19 20:15:30 UTC 2013
+200
+Tue Mar 19 20:15:35 UTC 2013
+300
+Tue Mar 19 20:15:41 UTC 2013
+400
+Tue Mar 19 20:15:47 UTC 2013
+500
+Tue Mar 19 20:15:54 UTC 2013
+600
+Tue Mar 19 20:16:02 UTC 2013
+700
+Tue Mar 19 20:16:09 UTC 2013
+800
+Tue Mar 19 20:16:17 UTC 2013
+900
+Tue Mar 19 20:16:26 UTC 2013
+1000
+Tue Mar 19 20:16:35 UTC 2013
+1100
+Tue Mar 19 20:16:46 UTC 2013
+1200
+Tue Mar 19 20:16:57 UTC 2013
+1300
+Tue Mar 19 20:17:08 UTC 2013
+1400
+Tue Mar 19 20:17:21 UTC 2013
+1500
+Tue Mar 19 20:17:33 UTC 2013
+1600
+Tue Mar 19 20:17:46 UTC 2013
+1700
+Tue Mar 19 20:17:59 UTC 2013
+1800
+Tue Mar 19 20:18:13 UTC 2013
+1900
+Tue Mar 19 20:18:29 UTC 2013
+2000
+Tue Mar 19 20:18:48 UTC 2013
+
+-serge
