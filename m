@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934263Ab3CSJ0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:26:25 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48329 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab3CSJ0S (ORCPT
+	id S933663Ab3CSJ0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:26:22 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41618 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932860Ab3CSJ0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:26:18 -0400
+	Tue, 19 Mar 2013 05:26:19 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -15,95 +15,215 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v4 0/8] staging: zcache: Support zero-filled pages more efficiently
-Date: Tue, 19 Mar 2013 17:25:42 +0800
-Message-Id: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v4 6/8] staging: zcache: fix static variables defined in debug.h but used in mutiple C files
+Date: Tue, 19 Mar 2013 17:25:48 +0800
+Message-Id: <1363685150-18303-7-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031909-1618-0000-0000-000003880C5D
+x-cbid: 13031909-3864-0000-0000-000007551375
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+After commit 95bdaee214 ("zcache: Move debugfs code out of zcache-main.c file") 
+be merged, most of knods in zcache debugfs just export zero since these variables
+are defined in debug.h but use in multiple C files zcache-main.c and debug.c, in 
+this case variables can't be treated as shared variables.
 
-Since you have already merge 1/8, feel free to merge 2/8~8/8, I have already 
-rebased against staging-next.
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/debug.h       |   62 +++++++++++++++++-----------------
+ drivers/staging/zcache/zcache-main.c |   31 +++++++++++++++++
+ 2 files changed, 62 insertions(+), 31 deletions(-)
 
-Changelog:
- v3 -> v4:
-  * handle duplication in page_is_zero_filled, spotted by Bob
-  * fix zcache writeback in dubugfs 
-  * fix pers_pageframes|_max isn't exported in debugfs
-  * fix static variable defined in debug.h but used in multiple C files 
-  * rebase on Greg's staging-next
- v2 -> v3:
-  * increment/decrement zcache_[eph|pers]_zpages for zero-filled pages, spotted by Dan 
-  * replace "zero" or "zero page" by "zero_filled_page", spotted by Dan
- v1 -> v2:
-  * avoid changing tmem.[ch] entirely, spotted by Dan.
-  * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for 
-    zero-filled pages, spotted by Dan
-  * cleanup TODO list
-  * add Dan Acked-by.
-
-Motivation:
-
-- Seth Jennings points out compress zero-filled pages with LZO(a lossless 
-  data compression algorithm) will waste memory and result in fragmentation.
-  https://lkml.org/lkml/2012/8/14/347
-- Dan Magenheimer add "Support zero-filled pages more efficiently" feature 
-  in zcache TODO list https://lkml.org/lkml/2013/2/13/503
-
-Design:
-
-- For store page, capture zero-filled pages(evicted clean page cache pages and 
-  swap pages), but don't compress them, set pampd which store zpage address to
-  0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
-  case and take advantage of tmem infrastructure to transform handle-tuple(pool
-  id, object id, and an index) to a pampd. Twice compress zero-filled pages will
-  contribute to one zcache_[eph|pers]_pageframes count accumulated.
-- For load page, traverse tmem hierachical to transform handle-tuple to pampd 
-  and identify zero-filled case by pampd equal to 0x2 when filesystem reads
-  file pages or a page needs to be swapped in, then refill the page to zero
-  and return.
-
-Test:
-
-dd if=/dev/zero of=zerofile bs=1MB count=500
-vmtouch -t zerofile
-vmtouch -e zerofile
-
-formula:
-- fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes) 
-  * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
-- memory zcache occupy = zcache_[eph|pers]_zbytes 
-
-Result:
-
-without zero-filled awareness:
-- fragmentation level: 98%
-- memory zcache occupy: 238MB
-with zero-filled awareness:
-- fragmentation level: 0%
-- memory zcache occupy: 0MB
-
-Wanpeng Li (8):
-  introduce zero filled pages handler
-  zero-filled pages awareness
-  handle zcache_[eph|pers]_pages for zero-filled page
-  fix pers_pageframes|_max aren't exported in debugfs
-  fix zcache writeback in debugfs
-  fix static variables are defined in debug.h but use in multiple C files
-  introduce zero-filled page stat count
-  clean TODO list
-
- drivers/staging/zcache/TODO          |    3 +-
- drivers/staging/zcache/debug.c       |    5 +-
- drivers/staging/zcache/debug.h       |   77 +++++++++++++---------
- drivers/staging/zcache/zcache-main.c |  147 ++++++++++++++++++++++++++++++----
- 4 files changed, 185 insertions(+), 47 deletions(-)
-
+diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
+index 4bbe49b..8ec82d4 100644
+--- a/drivers/staging/zcache/debug.h
++++ b/drivers/staging/zcache/debug.h
+@@ -3,9 +3,9 @@
+ #ifdef CONFIG_ZCACHE_DEBUG
+ 
+ /* we try to keep these statistics SMP-consistent */
+-static ssize_t zcache_obj_count;
++extern ssize_t zcache_obj_count;
+ static atomic_t zcache_obj_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_obj_count_max;
++extern ssize_t zcache_obj_count_max;
+ static inline void inc_zcache_obj_count(void)
+ {
+ 	zcache_obj_count = atomic_inc_return(&zcache_obj_atomic);
+@@ -17,9 +17,9 @@ static inline void dec_zcache_obj_count(void)
+ 	zcache_obj_count = atomic_dec_return(&zcache_obj_atomic);
+ 	BUG_ON(zcache_obj_count < 0);
+ };
+-static ssize_t zcache_objnode_count;
++extern ssize_t zcache_objnode_count;
+ static atomic_t zcache_objnode_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_objnode_count_max;
++extern ssize_t zcache_objnode_count_max;
+ static inline void inc_zcache_objnode_count(void)
+ {
+ 	zcache_objnode_count = atomic_inc_return(&zcache_objnode_atomic);
+@@ -31,9 +31,9 @@ static inline void dec_zcache_objnode_count(void)
+ 	zcache_objnode_count = atomic_dec_return(&zcache_objnode_atomic);
+ 	BUG_ON(zcache_objnode_count < 0);
+ };
+-static u64 zcache_eph_zbytes;
++extern u64 zcache_eph_zbytes;
+ static atomic_long_t zcache_eph_zbytes_atomic = ATOMIC_INIT(0);
+-static u64 zcache_eph_zbytes_max;
++extern u64 zcache_eph_zbytes_max;
+ static inline void inc_zcache_eph_zbytes(unsigned clen)
+ {
+ 	zcache_eph_zbytes = atomic_long_add_return(clen, &zcache_eph_zbytes_atomic);
+@@ -46,7 +46,7 @@ static inline void dec_zcache_eph_zbytes(unsigned zsize)
+ };
+ extern  u64 zcache_pers_zbytes;
+ static atomic_long_t zcache_pers_zbytes_atomic = ATOMIC_INIT(0);
+-static u64 zcache_pers_zbytes_max;
++extern u64 zcache_pers_zbytes_max;
+ static inline void inc_zcache_pers_zbytes(unsigned clen)
+ {
+ 	zcache_pers_zbytes = atomic_long_add_return(clen, &zcache_pers_zbytes_atomic);
+@@ -59,7 +59,7 @@ static inline void dec_zcache_pers_zbytes(unsigned zsize)
+ }
+ extern ssize_t zcache_eph_pageframes;
+ static atomic_t zcache_eph_pageframes_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_eph_pageframes_max;
++extern ssize_t zcache_eph_pageframes_max;
+ static inline void inc_zcache_eph_pageframes(void)
+ {
+ 	zcache_eph_pageframes = atomic_inc_return(&zcache_eph_pageframes_atomic);
+@@ -72,7 +72,7 @@ static inline void dec_zcache_eph_pageframes(void)
+ };
+ extern ssize_t zcache_pers_pageframes;
+ static atomic_t zcache_pers_pageframes_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_pers_pageframes_max;
++extern ssize_t zcache_pers_pageframes_max;
+ static inline void inc_zcache_pers_pageframes(void)
+ {
+ 	zcache_pers_pageframes = atomic_inc_return(&zcache_pers_pageframes_atomic);
+@@ -83,21 +83,21 @@ static inline void dec_zcache_pers_pageframes(void)
+ {
+ 	zcache_pers_pageframes = atomic_dec_return(&zcache_pers_pageframes_atomic);
+ }
+-static ssize_t zcache_pageframes_alloced;
++extern ssize_t zcache_pageframes_alloced;
+ static atomic_t zcache_pageframes_alloced_atomic = ATOMIC_INIT(0);
+ static inline void inc_zcache_pageframes_alloced(void)
+ {
+ 	zcache_pageframes_alloced = atomic_inc_return(&zcache_pageframes_alloced_atomic);
+ };
+-static ssize_t zcache_pageframes_freed;
++extern ssize_t zcache_pageframes_freed;
+ static atomic_t zcache_pageframes_freed_atomic = ATOMIC_INIT(0);
+ static inline void inc_zcache_pageframes_freed(void)
+ {
+ 	zcache_pageframes_freed = atomic_inc_return(&zcache_pageframes_freed_atomic);
+ }
+-static ssize_t zcache_eph_zpages;
++extern ssize_t zcache_eph_zpages;
+ static atomic_t zcache_eph_zpages_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_eph_zpages_max;
++extern ssize_t zcache_eph_zpages_max;
+ static inline void inc_zcache_eph_zpages(void)
+ {
+ 	zcache_eph_zpages = atomic_inc_return(&zcache_eph_zpages_atomic);
+@@ -110,7 +110,7 @@ static inline void dec_zcache_eph_zpages(unsigned zpages)
+ }
+ extern ssize_t zcache_pers_zpages;
+ static atomic_t zcache_pers_zpages_atomic = ATOMIC_INIT(0);
+-static ssize_t zcache_pers_zpages_max;
++extern ssize_t zcache_pers_zpages_max;
+ static inline void inc_zcache_pers_zpages(void)
+ {
+ 	zcache_pers_zpages = atomic_inc_return(&zcache_pers_zpages_atomic);
+@@ -130,23 +130,23 @@ static inline unsigned long curr_pageframes_count(void)
+ 		atomic_read(&zcache_pers_pageframes_atomic);
+ };
+ /* but for the rest of these, counting races are ok */
+-static ssize_t zcache_flush_total;
+-static ssize_t zcache_flush_found;
+-static ssize_t zcache_flobj_total;
+-static ssize_t zcache_flobj_found;
+-static ssize_t zcache_failed_eph_puts;
+-static ssize_t zcache_failed_pers_puts;
+-static ssize_t zcache_failed_getfreepages;
+-static ssize_t zcache_failed_alloc;
+-static ssize_t zcache_put_to_flush;
+-static ssize_t zcache_compress_poor;
+-static ssize_t zcache_mean_compress_poor;
+-static ssize_t zcache_eph_ate_tail;
+-static ssize_t zcache_eph_ate_tail_failed;
+-static ssize_t zcache_pers_ate_eph;
+-static ssize_t zcache_pers_ate_eph_failed;
+-static ssize_t zcache_evicted_eph_zpages;
+-static ssize_t zcache_evicted_eph_pageframes;
++extern ssize_t zcache_flush_total;
++extern ssize_t zcache_flush_found;
++extern ssize_t zcache_flobj_total;
++extern ssize_t zcache_flobj_found;
++extern ssize_t zcache_failed_eph_puts;
++extern ssize_t zcache_failed_pers_puts;
++extern ssize_t zcache_failed_getfreepages;
++extern ssize_t zcache_failed_alloc;
++extern ssize_t zcache_put_to_flush;
++extern ssize_t zcache_compress_poor;
++extern ssize_t zcache_mean_compress_poor;
++extern ssize_t zcache_eph_ate_tail;
++extern ssize_t zcache_eph_ate_tail_failed;
++extern ssize_t zcache_pers_ate_eph;
++extern ssize_t zcache_pers_ate_eph_failed;
++extern ssize_t zcache_evicted_eph_zpages;
++extern ssize_t zcache_evicted_eph_pageframes;
+ 
+ extern ssize_t zcache_last_active_file_pageframes;
+ extern ssize_t zcache_last_inactive_file_pageframes;
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 892e97e..d1118f0 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -145,6 +145,37 @@ ssize_t zcache_pers_zpages;
+ u64 zcache_pers_zbytes;
+ ssize_t zcache_eph_pageframes;
+ ssize_t zcache_pers_pageframes;
++ssize_t zcache_obj_count;
++ssize_t zcache_obj_count_max;
++ssize_t zcache_objnode_count;
++ssize_t zcache_objnode_count_max;
++u64 zcache_eph_zbytes;
++u64 zcache_eph_zbytes_max;
++u64 zcache_pers_zbytes_max;
++ssize_t zcache_eph_pageframes_max;
++ssize_t zcache_pers_pageframes_max;
++ssize_t zcache_pageframes_alloced;
++ssize_t zcache_pageframes_freed;
++ssize_t zcache_eph_zpages;
++ssize_t zcache_eph_zpages_max;
++ssize_t zcache_pers_zpages_max;
++ssize_t zcache_flush_total;
++ssize_t zcache_flush_found;
++ssize_t zcache_flobj_total;
++ssize_t zcache_flobj_found;
++ssize_t zcache_failed_eph_puts;
++ssize_t zcache_failed_pers_puts;
++ssize_t zcache_failed_getfreepages;
++ssize_t zcache_failed_alloc;
++ssize_t zcache_put_to_flush;
++ssize_t zcache_compress_poor;
++ssize_t zcache_mean_compress_poor;
++ssize_t zcache_eph_ate_tail;
++ssize_t zcache_eph_ate_tail_failed;
++ssize_t zcache_pers_ate_eph;
++ssize_t zcache_pers_ate_eph_failed;
++ssize_t zcache_evicted_eph_zpages;
++ssize_t zcache_evicted_eph_pageframes;
+ 
+ /* Used by this code. */
+ ssize_t zcache_last_active_file_pageframes;
 -- 
 1.7.7.6
 
