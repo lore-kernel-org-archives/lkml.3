@@ -1,203 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab3CSNdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 09:33:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755946Ab3CSNdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 09:33:43 -0400
-Date: Tue, 19 Mar 2013 09:33:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130319133326.GB3872@redhat.com>
-References: <5147B0EC.2020907@zytor.com>
- <1363655048-6772-1-git-send-email-yinghai@kernel.org>
+	id S1755682Ab3CSNhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 09:37:34 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:64366 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab3CSNhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 09:37:32 -0400
+Date: Tue, 19 Mar 2013 06:38:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH v4] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130319133852.GD24313@kroah.com>
+References: <20130318222853.GA9358@logfs.org>
+ <20130319000411.GA6406@kroah.com>
+ <20130318225657.GA9685@logfs.org>
+ <20130319002742.GA11050@kroah.com>
+ <20130318231154.GC9685@logfs.org>
+ <20130318233413.GD9685@logfs.org>
+ <20130319015354.GA21045@kroah.com>
+ <20130319033112.GA11307@logfs.org>
+ <20130319050954.GA23390@kroah.com>
+ <20130319035803.GB11307@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1363655048-6772-1-git-send-email-yinghai@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130319035803.GB11307@logfs.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 06:04:08PM -0700, Yinghai Lu wrote:
-> Current code does not set low range for crashkernel if the user
-> does not specify that.
+On Mon, Mar 18, 2013 at 11:58:03PM -0400, Jörn Engel wrote:
+> On Mon, 18 March 2013 22:09:54 -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Mar 18, 2013 at 11:31:12PM -0400, Jörn Engel wrote:
+> > > On Mon, 18 March 2013 18:53:54 -0700, Greg Kroah-Hartman wrote:
+> > 
+> > > > And why not _irqstore() anymore?
+> > > 
+> > > Because I thought the resulting code would be horrible.  But going
+> > > through the excercise, it does seem half as bad as I feared.  In fact,
+> > > I rather like it now.
+> > 
+> > You changed the kref code too, does it work better now?
+> 
+> It compiles.  I don't have a good testcase, so the procedure is to
+> throw it into the test infrastructure and wait a week.
 
-Hi Yinghai,
+Really?  Please make a test cast to test it out properly.
 
-While we are modifying changelog, it will also be beneficial to
-mention that how did we end up in this situation. Can we mention
-changelog little more explanatory, like as follows.
+> > > It is possible for one thread to to take se_sess->sess_cmd_lock in
+> > > core_tmr_abort_task() before taking a reference count on
+> > > se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+> > > se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+> > > 
+> > > This introduces kref_put_spinlock_irqsave() and uses it in
+> > > target_put_sess_cmd() to close the race window.
+> > > 
+> > > Signed-off-by: Joern Engel <joern@logfs.org>
+> > > ---
+> > >  drivers/target/target_core_transport.c |    7 +++----
+> > >  include/linux/kref.h                   |   32 ++++++++++++++++++++++++++++++++
+> > >  2 files changed, 35 insertions(+), 4 deletions(-)
+> > > 
+> > > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> > > index 04ec9cb..7e856b9 100644
+> > > --- a/drivers/target/target_core_transport.c
+> > > +++ b/drivers/target/target_core_transport.c
+> > > @@ -2203,13 +2203,11 @@ out:
+> > >  	return ret;
+> > >  }
+> > >  
+> > > -static void target_release_cmd_kref(struct kref *kref)
+> > > +static void target_release_cmd_kref(struct kref *kref, unsigned long flags)
+> > >  {
+> > >  	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+> > >  	struct se_session *se_sess = se_cmd->se_sess;
+> > > -	unsigned long flags;
+> > >  
+> > > -	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+> > 
+> > Why pass flags to a release function?
+> > 
+> > I don't think you can do that, but it's been a while since I looked at
+> > the spinlock code.
+> 
+> The alternative would be to call local_irq_restore(flags); from
+> kref_put_spinlock_irqsave() and not pass the flags.  Getting rid of
+> the extra parameter would be nice.  But I'm not sure I want to prove
+> that
+> 	spin_unlock(lock);
+> 	local_irq_restore(flags);
+> is the same as 
+> 	spin_unlock_irqrestore(lock, flags);
+> on all architectures and with all combinations of CONFIG options.
 
-We have now modified crashkernel=X to allocate memory beyong 4G (if
-available). And this will cause regression if iommu is not enabled.
-Without iommu, swiotlb needs to be setup in first 4G and there is no
-low memory available to second kernel.
+It should be.
 
-thanks
-Vivek
-> 
-> That cause regressions on system that does not support intel_iommu
-> properly.
-> 
-> Chao said that his system does work well on 3.8 without extra parameter.
-> even iommu does not work with kdump.
-> 
-> Set crashkernel_low automatically if the user does not specify that.
-> 
-> For system that does support IOMMU with kdump properly, user could
-> specify crashkernel_low=0 to save that 72M low ram.
-> 
-> -v3: add swiotlb_size() according to Konrad.
-> -v4: add comments what 8M is for according to hpa.
->      also update more crashkernel_low= in kernel-parameters.txt
-> 
-> Reported-by: WANG Chao <chaowang@redhat.com>
-> Tested-by: WANG Chao <chaowang@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  Documentation/kernel-parameters.txt |   15 ++++++++++++---
->  arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
->  include/linux/swiotlb.h             |    1 +
->  lib/swiotlb.c                       |   19 +++++++++++++++----
->  4 files changed, 45 insertions(+), 10 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/setup.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/setup.c
-> +++ linux-2.6/arch/x86/kernel/setup.c
-> @@ -521,19 +521,33 @@ static void __init reserve_crashkernel_l
->  	unsigned long long low_base = 0, low_size = 0;
->  	unsigned long total_low_mem;
->  	unsigned long long base;
-> +	bool auto_set = false;
->  	int ret;
->  
->  	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
->  	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
->  						&low_size, &base);
-> -	if (ret != 0 || low_size <= 0)
-> -		return;
-> +	if (ret != 0) {
-> +		/*
-> +		 * two parts from lib/swiotlb.c:
-> +		 *	swiotlb size: user specified with swiotlb= or default.
-> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
-> +		 *		round to 8M to cover more others.
-> +		 */
-> +		low_size = swiotlb_size_or_default() + (8UL<<20);
-> +		auto_set = true;
-> +	} else {
-> +		/* passed with crashkernel_low=0 ? */
-> +		if (!low_size)
-> +			return;
-> +	}
->  
->  	low_base = memblock_find_in_range(low_size, (1ULL<<32),
->  					low_size, alignment);
->  
->  	if (!low_base) {
-> -		pr_info("crashkernel low reservation failed - No suitable area found.\n");
-> +		if (!auto_set)
-> +			pr_info("crashkernel low reservation failed - No suitable area found.\n");
->  
->  		return;
->  	}
-> Index: linux-2.6/include/linux/swiotlb.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/swiotlb.h
-> +++ linux-2.6/include/linux/swiotlb.h
-> @@ -25,6 +25,7 @@ extern int swiotlb_force;
->  extern void swiotlb_init(int verbose);
->  int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
->  extern unsigned long swiotlb_nr_tbl(void);
-> +unsigned long swiotlb_size_or_default(void);
->  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
->  
->  /*
-> Index: linux-2.6/lib/swiotlb.c
-> ===================================================================
-> --- linux-2.6.orig/lib/swiotlb.c
-> +++ linux-2.6/lib/swiotlb.c
-> @@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
->  	if (!strcmp(str, "force"))
->  		swiotlb_force = 1;
->  
-> -	return 1;
-> +	return 0;
->  }
-> -__setup("swiotlb=", setup_io_tlb_npages);
-> +early_param("swiotlb", setup_io_tlb_npages);
->  /* make io_tlb_overflow tunable too? */
->  
->  unsigned long swiotlb_nr_tbl(void)
-> @@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
->  	return io_tlb_nslabs;
->  }
->  EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
-> +
-> +/* default to 64MB */
-> +#define IO_TLB_DEFAULT_SIZE (64UL<<20)
-> +unsigned long swiotlb_size_or_default(void)
-> +{
-> +	unsigned long size;
-> +
-> +	size = io_tlb_nslabs << IO_TLB_SHIFT;
-> +
-> +	return size ? size : (IO_TLB_DEFAULT_SIZE);
-> +}
-> +
->  /* Note that this doesn't work with highmem page */
->  static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
->  				      volatile void *address)
-> @@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
->  void  __init
->  swiotlb_init(int verbose)
->  {
-> -	/* default to 64MB */
-> -	size_t default_size = 64UL<<20;
-> +	size_t default_size = IO_TLB_DEFAULT_SIZE;
->  	unsigned char *vstart;
->  	unsigned long bytes;
->  
-> Index: linux-2.6/Documentation/kernel-parameters.txt
-> ===================================================================
-> --- linux-2.6.orig/Documentation/kernel-parameters.txt
-> +++ linux-2.6/Documentation/kernel-parameters.txt
-> @@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
->  			is selected automatically. Check
->  			Documentation/kdump/kdump.txt for further details.
->  
-> -	crashkernel_low=size[KMG]
-> -			[KNL, x86] parts under 4G.
-> -
->  	crashkernel=range1:size1[,range2:size2,...][@offset]
->  			[KNL] Same as above, but depends on the memory
->  			in the running system. The syntax of range is
-> @@ -606,6 +603,18 @@ bytes respectively. Such letter suffixes
->  			a memory unit (amount[KMG]). See also
->  			Documentation/kdump/kdump.txt for an example.
->  
-> +	crashkernel_low=size[KMG]
-> +			[KNL, x86_64] range under 4G. When crashkernel= is
-> +			passed, kernel allocate physical memory region
-> +			above 4G, that cause second kernel crash on system
-> +			that need swiotlb later. Kernel would try to allocate
-> +			some region below 4G automatically. This one let
-> +			user to specify own low range under 4G for second
-> +			kernel instead.
-> +			0: to disable low allocation on systems that do not
-> +			need swiotlb, that will save 72M low ram in first
-> +			kernel.
-> +
->  	cs89x0_dma=	[HW,NET]
->  			Format: <dma>
->  
+> I think it should be, but I wouldn't bet half a cookie on it.
+
+That's why we have the code readable for everyone to see :)
+
+I suggest doing some research and determining if this is true or not,
+please, before I can accept this.
+
+greg k-h
