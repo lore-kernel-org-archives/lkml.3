@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab3CSCCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:02:03 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:33137 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab3CSCCA (ORCPT
+	id S933218Ab3CSCDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:03:03 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24399 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab3CSCDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:02:00 -0400
-Date: Mon, 18 Mar 2013 19:03:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
-        kay@vrfy.org, linux-hotplug@vger.kernel.org,
-        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
-        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
-Message-ID: <20130319020316.GB21319@kroah.com>
-References: <20130316213512.2974.17303.stgit@amt.stowe>
- <20130316213519.2974.38954.stgit@amt.stowe>
- <20130316221159.GA3702@kroah.com>
- <1363477853.2423.25.camel@zim.stowe>
- <20130317010317.GB9641@kroah.com>
- <5147C541.1080304@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5147C541.1080304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Mar 2013 22:03:01 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-82-5147c7532649
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>
+Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/2] extcon: max8997: use dev_err() instead of pr_err()
+Date: Tue, 19 Mar 2013 11:02:59 +0900
+Message-id: <000001ce2445$e1927be0$a4b773a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4kRd0wUErczhqhS3ap06hUTXi3rA==
+Content-language: ko
+x-cr-hashedpuzzle: B9nh Ifkr I/4x MR0G PX/1 Qtyk Wiz9 aM4E aP2m flpN f7YQ kF54
+ lLji oszg qgzm
+ t/iM;4;YwB3ADAAMAAuAGMAaABvAGkAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG0AeQB1AG4AZwBqAG8AbwAuAGgAYQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Sosha1_v1;7;{DE2DD1B3-4CA7-4CC7-A436-B175C1DEF294};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Tue,
+ 19 Mar 2013 02:02:52
+ GMT;WwBQAEEAVABDAEgAIAAxAC8AMgBdACAAZQB4AHQAYwBvAG4AOgAgAG0AYQB4ADgAOQA5ADcAOgAgAHUAcwBlACAAZABlAHYAXwBlAHIAcgAoACkAIABpAG4AcwB0AGUAYQBkACAAbwBmACAAcAByAF8AZQByAHIAKAApAA==
+x-cr-puzzleid: {DE2DD1B3-4CA7-4CC7-A436-B175C1DEF294}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t8zI93g4+6BBsevGFlc//Kc1eLywktA
+	YtccNovbjSvYHFg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK6NjHnfBJdaKS6fsGxjvsXQx
+	cnJICJhIPFreyQhhi0lcuLeerYuRi0NIYBmjxNwpC5hgihb8+ssIkZjOKPFn4nUmCOcXo8Sj
+	zkPMIFVsAmoSX74cZgexRQR0JV5evQ0WZxbIk5hyZBeYLSzgLjHrxntWEJtFQFXixZdGMJtX
+	wFZi6b677BC2oMSPyRDnMQtoSazfeZwJwpaX2LzmLdAcDqCL1CUe/dWFWKUnsWbac6hyEYl9
+	L96BHSohMIdV4vy+16wQH5hK/FzTCpXYxi7xYdlxdogjBCS+TT7EAjFUVmLTAWaIekmJgytu
+	sExglJiF5KRZSE6aheSkWUh2L2BkWcUomlqQXFCclF5kpFecmFtcmpeul5yfu4kREoF9Oxhv
+	HrA+xJgMtH4is5Rocj4wgvNK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4UEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwChZ/OP2VXPF5ZN4XD8lv8x7FPnnjumkLVFm+lkcbSanCsPNO4+2l15m
+	3LBJ0bg6dUvZrds7XikYxfq8fxp49NXXazoKD6bqhG5jMF+vw2mx7+x8MaeM3fd3X5jdWOd+
+	kznAflpO4gtD7gkLRGacPMrT87ZMZINh9KZj79I+y/Iz62uK3/tU2KPEUpyRaKjFXFScCAC0
+	lUZf1gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t9jQd3g4+6BBpvO6Flc//Kc1eLywktA
+	YtccNovbjSvYHFg8+rasYvT4vEkugCmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
+	0NLCXEkhLzE31VbJxSdA1y0zB2iTkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
+	NJCwjjGjYx53wSXWikun7BsY77F0MXJySAiYSCz49ZcRwhaTuHBvPVsXIxeHkMB0Rok/E68z
+	QTi/GCUedR5iBqliE1CT+PLlMDuILSKgK/Hy6m2wOLNAnsSUI7vAbGEBd4lZN96zgtgsAqoS
+	L740gtm8ArYSS/fdZYewBSV+TIa4gllAS2L9zuNMELa8xOY1b4HmcABdpC7x6K8uxCo9iTXT
+	nkOVi0jse/GOEeQ2CYE5rBLn971mhfjAVOLnmlbGCYxCs5CsmIVkxSwkK2YhmbWAkWUVo2hq
+	QXJBcVJ6rqFecWJucWleul5yfu4mRnB8P5PawbiyweIQowAHoxIP74lg90Ah1sSy4srcQ4wS
+	HMxKIrzB/kAh3pTEyqrUovz4otKc1OJDjMnAEJjILCWanA9MPXkl8YbGJmZGlkZmFkYm5uak
+	CSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwNjGa/IsDZhIPr2W28SmmP40zq388O4vyWxH
+	M5+bGO44+iz3a9SyxZZnuJ++aN/I1spbPV+he8391c/viilcmDOlLinsX47Pqoe279m3GGmc
+	y7FRT20+3CfQ/OJj+l7zvye7Ww9a/Ggv3Nb1c9ZeqT3L/qWpVfWL7tQW7pM/qJMttft5aPHE
+	KiWW4oxEQy3mouJEAC/aCZczAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 07:54:09PM -0600, Robert Hancock wrote:
-> On 03/16/2013 07:03 PM, Greg KH wrote:
-> >On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
-> >>On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
-> >>>On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
-> >>>>Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
-> >>>>Port space and MMIO.  This memory regions correspond to the device's
-> >>>>internal status and control registers used to drive the device.
-> >>>>
-> >>>>Accessing these registers from userspace such as "udevadm info
-> >>>>--attribute-walk --path=/sys/devices/..." does can not be allowed as
-> >>>>such accesses outside of the driver, even just reading, can yield
-> >>>>catastrophic consequences.
-> >>>>
-> >>>>Udevadm-info skips parsing a specific set of sysfs entries including
-> >>>>'resource'.  This patch extends the set to include the additional
-> >>>>'resource<N>' entries that correspond to a PCI device's BARs.
-> >>>
-> >>>Nice, are you also going to patch bash to prevent a user from reading
-> >>>these sysfs files as well?  :)
-> >>>
-> >>>And pciutils?
-> >>>
-> >>>You get my point here, right?  The root user just asked to read all of
-> >>>the data for this device, so why wouldn't you allow it?  Just like
-> >>>'lspci' does.  Or bash does.
-> 
-> lspci doesn't randomly attempt to access device registers, AFAIK..
+dev_err() is more preferred than pr_err().
 
-Have you read the man page for the '-xxx' option to lspci?  lspci can be
-quite intrusive, and I used to have a number of systems that it would
-trash very easily if you ran it on them as root.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/extcon/extcon-max8997.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> >>Yes :P , you raise a very good point, there are a lot of way a user can
-> >>poke around in those BARs.  However, there is a difference between
-> >>shooting yourself in the foot and getting what you deserve versus
-> >>unknowingly executing a common command such as udevadm and having the
-> >>system hang.
-> >>>
-> >>>If this hardware has a problem, then it needs to be fixed in the kernel,
-> >>>not have random band-aids added to various userspace programs to paper
-> >>>over the root problem here.  Please fix the kernel driver and all should
-> >>>be fine.  No need to change udevadm.
-> >>
-> >>Xiangliang initially proposed a patch within the PCI core.  Ignoring the
-> >>specific issue with the proposal which I pointed out in the
-> >>https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
-> >>the right place to effect a change either as PCI's core isn't concerned
-> >>with the contents or access limitations of those regions, those are
-> >>issues that the driver concerns itself with.
-> >>
-> >>So things seem to be gravitating towards the driver.  I'm fairly
-> >>ignorant of this area but as Robert succinctly pointed out in the
-> >>originating thread - the AHCI driver only uses the device's MMIO region.
-> >>The I/O related regions are for legacy SFF-compatible ATA ports and are
-> >>not used to driver the device.  This, coupled with the observance that
-> >>userspace accesses such as udevadm, and others like you additionally
-> >>point out, do not filter through the device's driver for seems to
-> >>suggest that changes to the driver will not help here either.
-> >
-> >A PCI quirk should handle this properly, right?  Why not do that?  Worse
-> >thing, the quirk could just not expose these sysfs files for this
-> >device, which would solve all userspace program issues, right?
-> 
-> A PCI quirk implies there is something wrong with this device in
-> particular. This isn't the case. The device responds properly when
-> it's accessed as intended. The problem is that udevadm (or other
-> processes, like a random grep through sysfs for example) is
-> effectively reading registers willy-nilly. This is absolutely not
-> safe to do on many devices - and certainly not while a driver is
-> attached to the device and has claimed the port or MMIO regions that
-> are being accessed.
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index 69641bc..20772ad 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -646,7 +646,7 @@ static void max8997_muic_detect_cable_wq(struct work_struct *work)
+ 
+ 	ret = max8997_muic_detect_dev(info);
+ 	if (ret < 0)
+-		pr_err("failed to detect cable type\n");
++		dev_err(info->dev, "failed to detect cable type\n");
+ }
+ 
+ static int max8997_muic_probe(struct platform_device *pdev)
+-- 
+1.7.2.5
 
-Then we need to fix that!
 
-In the kernel!
-
-Don't try to gloss over the problem by changing one random userspace
-program, you will never catch them all.  Fix the root problem here
-people, that's all I'm asking for.
-
-> Blocking access through these files to a device with an active driver
-> that's claimed the regions would significantly reduce the chances of
-> something like this causing problems.
-
-Great, that's one possible solution, the other is just not creating the
-files at all for known problem devices, right?
-
-My main point here is, you aren't going to fix this in userspace, fix it
-in the kernel.
-
-greg k-h
