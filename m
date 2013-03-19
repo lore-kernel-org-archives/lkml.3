@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab3CSMWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 08:22:20 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36034 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab3CSMWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 08:22:19 -0400
-Message-ID: <5148589E.8030509@suse.cz>
-Date: Tue, 19 Mar 2013 13:22:54 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1754443Ab3CSMWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 08:22:50 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:54314 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109Ab3CSMWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 08:22:49 -0400
+Date: Tue, 19 Mar 2013 08:22:44 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4_block_to_path block > max warning.
+Message-ID: <20130319122244.GA32310@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130319033555.GA1582@redhat.com>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Borislav Petkov <bp@alien8.de>, jeffrey.t.kirsher@intel.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        e1000-devel@lists.sourceforge.net,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: Re: e1000e + suspend, 3.9-rc2
-References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com> <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic> <51483B1A.9090704@suse.cz> <51483DAA.7060806@openvz.org>
-In-Reply-To: <51483DAA.7060806@openvz.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130319033555.GA1582@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 11:27 AM, Konstantin Khlebnikov wrote:
-> Jiri Slaby wrote:
->> On 03/12/2013 06:17 PM, Borislav Petkov wrote:
->>> On Mon, Mar 11, 2013 at 09:25:37PM +0100, Borislav Petkov wrote:
->>>> Yeah, it is already upstream. And yeah, it did trigger with it.
->>>>
->>>> $ git describe
->>>> v3.9-rc2-112-g7c6baa304b84
->>>>
->>>> But it somehow doesn't trigger with that same kernel anymore so I'll
->>>> consider it a glitch and watch it over the next days.
->>>
->>> Ok, I can still see the hardware error message when suspending:
->>
->> And with 3.8 plus these:
->>      PCI/PM: Clear state_saved during suspend
->>      e1000e: fix pci-device enable-counter balance
->>      e1000e: fix runtime power management transitions
->>      e1000e: fix accessing to suspended device
->>
->> I sometimes see this:
->> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
->> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
->> PM: Device 0000:00:19.0 failed to suspend async: error -2
->>
->> Any ideas? Am I missing some patch still?
+On Mon, Mar 18, 2013 at 11:35:55PM -0400, Dave Jones wrote:
+> Not sure what I did to trigger this, but it's happened a few times while fuzzing syscalls.
+> Rebooted and fscked, didn't find anything wrong.
 > 
-> Try this:
-> "PCI: Don't try to disable Bus Master on disconnected PCI devices"
-> https://patchwork.kernel.org/patch/2271641/
+> 	Dave
 > 
-> But I'm not sure, probably it is unrelated because this code works only (?)
-> during shutdown/kexec sequences.
+> [ 5084.436288] EXT4-fs warning (device sda1): ext4_block_to_path:105: block 1874853625 > max in inode 34
+> [ 5167.723925] EXT4-fs warning (device sda1): ext4_block_to_path:105: block 2507988634 > max in inode 34
 
-I don't think it will help either. -2 here is -E1000_ERR_PHY from
-e1000e_write_phy_reg_mdic if I'm looking correctly. I.e. MDIC not ready
-or unlike MDIC_ERROR.
+Yes, this wouldn't be a problem that would be be reflected in an fsck
+problem.  What warning indicates is that there was an attempt to write
+to file offset which is larger than what is supported by using
+indirect blocks.  (Presumably this was probably a ext3 file system
+mounted using ext4?)
 
-I think this happened after I put the link down and tried to suspend.
+This should have been caught by checks earlier, but because we didn't,
+instead of returning EFBIG to userspace, the userspace application
+received an EIO instead, and it triggered the above warning
+message.
 
--- 
-js
-suse labs
+.... and I think I see the problem.  We do have checks ext4_llseek()
+and ext4_file_write(), but we use iov_length to do the checks.  And
+documentation for iov_length states:
+
+/*
+ * Total number of bytes covered by an iovec.
+ *
+ * NOTE that it is not safe to use this function until all the iovec's
+ * segment lengths have been validated.  Because the individual lengths can
+ * overflow a size_t when added together.
+ */
+
+Basically, iov_length() doesn't check for overflow, and the individual
+lengths of the iovec don't get verified until later in the call stack,
+by generic_file_aio_write().
+
+So we either need to create a version of iov_length() which does check
+for overflow, or we need to add an extra call to
+generic_segment_checks() in ext4_file_write().  It will be more
+slightly more CPU-efficient to have an overflow-cognizant
+iov_length(), though.
+
+The alternative would be to simply remove the ext4_warning() and
+change the error return in the case where ext4_block_to_path() returns
+0, but I think it's good add the extra upfront checks, and reserve the
+ext4_block_to_path() check as a last-ditch sanity check.  I'm a big
+believer in having belt-and-suspender safety checks.
+
+							- Ted
