@@ -1,130 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab3CSROo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:14:44 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:38091 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab3CSROn (ORCPT
+	id S933432Ab3CSRRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:17:09 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44518 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933067Ab3CSRRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:14:43 -0400
-Message-ID: <1363713282.2781.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 1/3] rbtree_test: use pr_info for module prefix in
- messages
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Mar 2013 10:14:42 -0700
-In-Reply-To: <CAKocOOOj80R2nP+B_k=jTS-UgA27VvMa-kAFiJbORZg4pKRS1Q@mail.gmail.com>
-References: <1363648854.1774.16.camel@buesod1.americas.hpqcorp.net>
-	 <CAKocOOOj80R2nP+B_k=jTS-UgA27VvMa-kAFiJbORZg4pKRS1Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Mar 2013 13:17:02 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, drbd-dev@lists.linbit.com,
+        lars.ellenberg@linbit.com
+Subject: [PATCH 04/18] drbd: use the cached meta_dev_idx
+Date: Tue, 19 Mar 2013 18:16:45 +0100
+Message-Id: <1363713419-17803-5-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
+References: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 10:29 -0600, Shuah Khan wrote:
-> On Mon, Mar 18, 2013 at 5:20 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> > This provides nicer message output. Since it seems more appropriate
-> > for the nature of this module, also use KERN_INFO instead of other
-> > levels.
-> 
-> Why are you changing the ALERTs to INFO?
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Because of the nature of the messages. They don't justify having a
-KERN_ALERT level (requiring immediate attention), and it seems a lot
-more suitable to use INFO instead.
+Now we have the cached meta_dev_idx member,
+we can get rid of a few rcu_read_lock() sections and rcu_dereference().
 
-> 
-> >
-> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > ---
-> >  lib/rbtree_test.c | 13 ++++++++-----
-> >  1 file changed, 8 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-> > index af38aed..66ca26d 100644
-> > --- a/lib/rbtree_test.c
-> > +++ b/lib/rbtree_test.c
-> > @@ -1,3 +1,6 @@
-> > +#define KMSG_COMPONENT "rbtree_test"
-> > +#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-> > +
-> >  #include <linux/module.h>
-> >  #include <linux/rbtree_augmented.h>
-> >  #include <linux/random.h>
-> > @@ -153,7 +156,7 @@ static int rbtree_test_init(void)
-> >         int i, j;
-> >         cycles_t time1, time2, time;
-> >
-> > -       printk(KERN_ALERT "rbtree testing");
-> > +       pr_info("rbtree testing");
-> 
-> This is changing the output from KERN_ALERT to KERN_INFO. Why is this
-> necessary? Should this be pr_alert() instead?
-> 
-> 
-> >
-> >         prandom_seed_state(&rnd, 3141592653589793238ULL);
-> >         init();
-> > @@ -171,7 +174,7 @@ static int rbtree_test_init(void)
-> >         time = time2 - time1;
-> >
-> >         time = div_u64(time, PERF_LOOPS);
-> > -       printk(" -> %llu cycles\n", (unsigned long long)time);
-> > +       pr_info(" -> %llu cycles\n", (unsigned long long)time);
-> >
-> >         for (i = 0; i < CHECK_LOOPS; i++) {
-> >                 init();
-> > @@ -186,7 +189,7 @@ static int rbtree_test_init(void)
-> >                 check(0);
-> >         }
-> >
-> > -       printk(KERN_ALERT "augmented rbtree testing");
-> > +       pr_info("augmented rbtree testing");
-> 
-> This is changing the output from KERN_ALERT to KERN_INFO. Why is this
-> necessary? Should this be pr_alert() instead?
-> 
-> >
-> >         init();
-> >
-> > @@ -203,7 +206,7 @@ static int rbtree_test_init(void)
-> >         time = time2 - time1;
-> >
-> >         time = div_u64(time, PERF_LOOPS);
-> > -       printk(" -> %llu cycles\n", (unsigned long long)time);
-> > +       pr_info(" -> %llu cycles\n", (unsigned long long)time);
-> >
-> >         for (i = 0; i < CHECK_LOOPS; i++) {
-> >                 init();
-> > @@ -223,7 +226,7 @@ static int rbtree_test_init(void)
-> >
-> >  static void rbtree_test_exit(void)
-> >  {
-> > -       printk(KERN_ALERT "test exit\n");
-> > +       pr_info("test exit\n");
-> 
-> This is changing the output from KERN_ALERT to KERN_INFO. Why is this
-> necessary? Should this be pr_alert() instead?
-> 
-> >  }
-> >
-> >  module_init(rbtree_test_init)
-> > --
-> > 1.7.11.7
-> >
-> >
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h |   32 +++++---------------------------
+ drivers/block/drbd/drbd_nl.c  |    7 +------
+ 2 files changed, 6 insertions(+), 33 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index ee19ba2..6eecdec 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1777,9 +1777,9 @@ static inline void drbd_chk_io_error_(struct drbd_conf *mdev,
+  * BTW, for internal meta data, this happens to be the maximum capacity
+  * we could agree upon with our peer node.
+  */
+-static inline sector_t _drbd_md_first_sector(int meta_dev_idx, struct drbd_backing_dev *bdev)
++static inline sector_t drbd_md_first_sector(struct drbd_backing_dev *bdev)
+ {
+-	switch (meta_dev_idx) {
++	switch (bdev->md.meta_dev_idx) {
+ 	case DRBD_MD_INDEX_INTERNAL:
+ 	case DRBD_MD_INDEX_FLEX_INT:
+ 		return bdev->md.md_offset + bdev->md.bm_offset;
+@@ -1789,30 +1789,13 @@ static inline sector_t _drbd_md_first_sector(int meta_dev_idx, struct drbd_backi
+ 	}
+ }
+ 
+-static inline sector_t drbd_md_first_sector(struct drbd_backing_dev *bdev)
+-{
+-	int meta_dev_idx;
+-
+-	rcu_read_lock();
+-	meta_dev_idx = rcu_dereference(bdev->disk_conf)->meta_dev_idx;
+-	rcu_read_unlock();
+-
+-	return _drbd_md_first_sector(meta_dev_idx, bdev);
+-}
+-
+ /**
+  * drbd_md_last_sector() - Return the last sector number of the meta data area
+  * @bdev:	Meta data block device.
+  */
+ static inline sector_t drbd_md_last_sector(struct drbd_backing_dev *bdev)
+ {
+-	int meta_dev_idx;
+-
+-	rcu_read_lock();
+-	meta_dev_idx = rcu_dereference(bdev->disk_conf)->meta_dev_idx;
+-	rcu_read_unlock();
+-
+-	switch (meta_dev_idx) {
++	switch (bdev->md.meta_dev_idx) {
+ 	case DRBD_MD_INDEX_INTERNAL:
+ 	case DRBD_MD_INDEX_FLEX_INT:
+ 		return bdev->md.md_offset + MD_4kB_SECT -1;
+@@ -1840,18 +1823,13 @@ static inline sector_t drbd_get_capacity(struct block_device *bdev)
+ static inline sector_t drbd_get_max_capacity(struct drbd_backing_dev *bdev)
+ {
+ 	sector_t s;
+-	int meta_dev_idx;
+-
+-	rcu_read_lock();
+-	meta_dev_idx = rcu_dereference(bdev->disk_conf)->meta_dev_idx;
+-	rcu_read_unlock();
+ 
+-	switch (meta_dev_idx) {
++	switch (bdev->md.meta_dev_idx) {
+ 	case DRBD_MD_INDEX_INTERNAL:
+ 	case DRBD_MD_INDEX_FLEX_INT:
+ 		s = drbd_get_capacity(bdev->backing_bdev)
+ 			? min_t(sector_t, DRBD_MAX_SECTORS_FLEX,
+-				_drbd_md_first_sector(meta_dev_idx, bdev))
++				drbd_md_first_sector(bdev))
+ 			: 0;
+ 		break;
+ 	case DRBD_MD_INDEX_FLEX_EXT:
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 104b7ce..5621df8 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -722,14 +722,10 @@ static void drbd_md_set_sector_offsets(struct drbd_conf *mdev,
+ {
+ 	sector_t md_size_sect = 0;
+ 	unsigned int al_size_sect = MD_32kB_SECT;
+-	int meta_dev_idx;
+-
+-	rcu_read_lock();
+-	meta_dev_idx = rcu_dereference(bdev->disk_conf)->meta_dev_idx;
+ 
+ 	bdev->md.md_offset = drbd_md_ss(bdev);
+ 
+-	switch (meta_dev_idx) {
++	switch (bdev->md.meta_dev_idx) {
+ 	default:
+ 		/* v07 style fixed size indexed meta data */
+ 		bdev->md.md_size_sect = MD_128MB_SECT;
+@@ -761,7 +757,6 @@ static void drbd_md_set_sector_offsets(struct drbd_conf *mdev,
+ 		bdev->md.bm_offset   = -md_size_sect + MD_4kB_SECT;
+ 		break;
+ 	}
+-	rcu_read_unlock();
+ }
+ 
+ /* input size is expected to be in KB */
+-- 
+1.7.9.5
 
