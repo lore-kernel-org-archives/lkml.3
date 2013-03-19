@@ -1,62 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3CSHnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 03:43:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49777 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933075Ab3CSHn3 (ORCPT
+	id S934141Ab3CSHpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 03:45:43 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:21568 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933068Ab3CSHpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 03:43:29 -0400
-X-Sasl-enc: YWqM2Otrevxykj86btem2uRNOCBMrBxflV5rz2JGOQek 1363679008
-Message-ID: <5148171D.10807@ladisch.de>
-Date: Tue, 19 Mar 2013 08:43:25 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 19 Mar 2013 03:45:42 -0400
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>,
+        <richard.genoud@gmail.com>, <plagnioj@jcrosoft.com>,
+        <nicolas.ferre@atmel.com>, <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v7 01/14] spi/spi-atmel: detect the capabilities of SPI core by reading the VERSION register.
+Date: Tue, 19 Mar 2013 15:42:15 +0800
+Message-ID: <1363678935-3665-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
+References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
-References: <51444171.1080905@ladisch.de> <1363609488-25250-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1363609488-25250-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prarit Bhargava wrote:
-> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
-> registers to userspace.  The Kconfig help points out that in some cases this
-> can be a security risk as some systems may erroneously configure the map such
-> that additional data is exposed to userspace.
->
-> This is a problem for distributions -- some users want the MMAP functionality
-> but it comes with a significant security risk.  In an effort to mitigate this
-> risk, and due to the low number of users of the MMAP functionality, I've
-> introduced a kernel parameter, hpet_mmap_enable, that is required in order
-> to actually have the HPET MMAP exposed.
->
-> [v2]: Clemens suggested modifying the Kconfig help text and making the
-> default setting configurable.
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Clemens Ladisch <clemens@ladisch.de>
+The "has_dma_support" needed for future use with dmaengine driver.
 
-> +++ b/Documentation/kernel-parameters.txt
-> +	hpet_mmap_enable [X86, HPET_MMAP] option to expose HPET MMAP to
-> +			 userspace.  By default this is disabled.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/spi/spi-atmel.c |   66 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 50 insertions(+), 16 deletions(-)
 
-This now takes a value.
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 80f5867..0928dee 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -22,9 +22,8 @@
+ #include <linux/platform_data/atmel.h>
+ #include <linux/of.h>
+ 
+-#include <asm/io.h>
+-#include <asm/gpio.h>
+-#include <mach/cpu.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
+ 
+ /* SPI register offsets */
+ #define SPI_CR					0x0000
+@@ -39,6 +38,7 @@
+ #define SPI_CSR1				0x0034
+ #define SPI_CSR2				0x0038
+ #define SPI_CSR3				0x003c
++#define SPI_VERSION				0x00fc
+ #define SPI_RPR					0x0100
+ #define SPI_RCR					0x0104
+ #define SPI_TPR					0x0108
+@@ -71,6 +71,8 @@
+ #define SPI_FDIV_SIZE				1
+ #define SPI_MODFDIS_OFFSET			4
+ #define SPI_MODFDIS_SIZE			1
++#define SPI_WDRBT_OFFSET			5
++#define SPI_WDRBT_SIZE				1
+ #define SPI_LLB_OFFSET				7
+ #define SPI_LLB_SIZE				1
+ #define SPI_PCS_OFFSET				16
+@@ -180,6 +182,11 @@
+ #define spi_writel(port,reg,value) \
+ 	__raw_writel((value), (port)->regs + SPI_##reg)
+ 
++struct atmel_spi_caps {
++	bool	is_spi2;
++	bool	has_wdrbt;
++	bool	has_dma_support;
++};
+ 
+ /*
+  * The core SPI transfer engine just talks to a register bank to set up
+@@ -204,6 +211,8 @@ struct atmel_spi {
+ 
+ 	void			*buffer;
+ 	dma_addr_t		buffer_dma;
++
++	struct atmel_spi_caps	caps;
+ };
+ 
+ /* Controller-specific per-slave state */
+@@ -222,14 +231,10 @@ struct atmel_spi_device {
+  *  - SPI_SR.TXEMPTY, SPI_SR.NSSR (and corresponding irqs)
+  *  - SPI_CSRx.CSAAT
+  *  - SPI_CSRx.SBCR allows faster clocking
+- *
+- * We can determine the controller version by reading the VERSION
+- * register, but I haven't checked that it exists on all chips, and
+- * this is cheaper anyway.
+  */
+-static bool atmel_spi_is_v2(void)
++static bool atmel_spi_is_v2(struct atmel_spi *as)
+ {
+-	return !cpu_is_at91rm9200();
++	return as->caps.is_spi2;
+ }
+ 
+ /*
+@@ -263,15 +268,20 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
+ 	unsigned active = spi->mode & SPI_CS_HIGH;
+ 	u32 mr;
+ 
+-	if (atmel_spi_is_v2()) {
++	if (atmel_spi_is_v2(as)) {
+ 		/*
+ 		 * Always use CSR0. This ensures that the clock
+ 		 * switches to the correct idle polarity before we
+ 		 * toggle the CS.
+ 		 */
+ 		spi_writel(as, CSR0, asd->csr);
+-		spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
++		if (as->caps.has_wdrbt) {
++			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(WDRBT)
++				| SPI_BIT(MODFDIS) | SPI_BIT(MSTR));
++		} else {
++			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
+ 				| SPI_BIT(MSTR));
++		}
+ 		mr = spi_readl(as, MR);
+ 		gpio_set_value(asd->npcs_pin, active);
+ 	} else {
+@@ -318,7 +328,7 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
+ 			asd->npcs_pin, active ? " (low)" : "",
+ 			mr);
+ 
+-	if (atmel_spi_is_v2() || spi->chip_select != 0)
++	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
+ 		gpio_set_value(asd->npcs_pin, !active);
+ }
+ 
+@@ -719,7 +729,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 	}
+ 
+ 	/* see notes above re chipselect */
+-	if (!atmel_spi_is_v2()
++	if (!atmel_spi_is_v2(as)
+ 			&& spi->chip_select == 0
+ 			&& (spi->mode & SPI_CS_HIGH)) {
+ 		dev_dbg(&spi->dev, "setup: can't be active-high\n");
+@@ -728,7 +738,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 
+ 	/* v1 chips start out at half the peripheral bus speed. */
+ 	bus_hz = clk_get_rate(as->clk);
+-	if (!atmel_spi_is_v2())
++	if (!atmel_spi_is_v2(as))
+ 		bus_hz /= 2;
+ 
+ 	if (spi->max_speed_hz) {
+@@ -804,7 +814,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 		"setup: %lu Hz bpw %u mode 0x%x -> csr%d %08x\n",
+ 		bus_hz / scbr, bits, spi->mode, spi->chip_select, csr);
+ 
+-	if (!atmel_spi_is_v2())
++	if (!atmel_spi_is_v2(as))
+ 		spi_writel(as, CSR0 + 4 * spi->chip_select, csr);
+ 
+ 	return 0;
+@@ -910,6 +920,23 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+ 	kfree(asd);
+ }
+ 
++static inline unsigned int atmel_get_version(struct atmel_spi *as)
++{
++	return spi_readl(as, VERSION) & 0x00000fff;
++}
++
++static void atmel_get_caps(struct atmel_spi *as)
++{
++	unsigned int version;
++
++	version = atmel_get_version(as);
++	dev_info(&as->pdev->dev, "version: 0x%x\n", version);
++
++	as->caps.is_spi2 = (version > 0x121) ? true : false;
++	as->caps.has_wdrbt = (version >= 0x210) ? true : false;
++	as->caps.has_dma_support = (version >= 0x212) ? true : false;
++}
++
+ /*-------------------------------------------------------------------------*/
+ 
+ static int atmel_spi_probe(struct platform_device *pdev)
+@@ -970,6 +997,8 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	as->irq = irq;
+ 	as->clk = clk;
+ 
++	atmel_get_caps(as);
++
+ 	ret = request_irq(irq, atmel_spi_interrupt, 0,
+ 			dev_name(&pdev->dev), master);
+ 	if (ret)
+@@ -979,7 +1008,12 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	clk_enable(clk);
+ 	spi_writel(as, CR, SPI_BIT(SWRST));
+ 	spi_writel(as, CR, SPI_BIT(SWRST)); /* AT91SAM9263 Rev B workaround */
+-	spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
++	if (as->caps.has_wdrbt) {
++		spi_writel(as, MR, SPI_BIT(WDRBT) | SPI_BIT(MODFDIS)
++				| SPI_BIT(MSTR));
++	} else {
++		spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
++	}
+ 	spi_writel(as, PTCR, SPI_BIT(RXTDIS) | SPI_BIT(TXTDIS));
+ 	spi_writel(as, CR, SPI_BIT(SPIEN));
+ 
+-- 
+1.7.9.5
 
-> +	int "Enable HPET MMAP access by default"
-> +	range 0 1
-
-Shouldn't this be bool?
-
-> +	default 0
-
-This breaks backwards compatibility.
-
-
-Regards,
-Clemens
