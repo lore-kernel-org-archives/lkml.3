@@ -1,52 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370Ab3CSR3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:29:43 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:53863 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933214Ab3CSR3l (ORCPT
+	id S933217Ab3CSRd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:33:59 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51617 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab3CSRd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:29:41 -0400
+	Tue, 19 Mar 2013 13:33:57 -0400
+Date: Tue, 19 Mar 2013 13:33:43 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-crypto@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] [char] random: fix priming of last_data
+Message-ID: <20130319173343.GA3656@hmsreliant.think-freely.org>
+References: <1363709889-22344-1-git-send-email-jarod@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303191139080.15684-100000@netrider.rowland.org>
-References: <CAP_ceTzvFkoqi3yC+qtvmW9XmdJ7Qv7Z5Jvf_n_gg0FVfChMeQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1303191139080.15684-100000@netrider.rowland.org>
-Date: Tue, 19 Mar 2013 10:29:40 -0700
-X-Google-Sender-Auth: 8wbvvB4kLOjmByEjOCgtfytNx7c
-Message-ID: <CAODwPW8bAo-ixwmJjGPT94kDVSb+4qO264mOXyZ5RjmisTkYFQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: Make USB persist default configurable
-From: Julius Werner <jwerner@chromium.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Vincent Palatin <vpalatin@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>, Sameer Nanda <snanda@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363709889-22344-1-git-send-email-jarod@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, okay, that's true.  If a new USB device is plugged in while the
-> lid is shut, and then the lid is opened very briefly, it's possible
-> that the system could suspend again before the new device's "persist"
-> attribute is updated.  Does that case really matter?  The device isn't
-> likely to be in use at that point.
+On Tue, Mar 19, 2013 at 12:18:09PM -0400, Jarod Wilson wrote:
+> Commit ec8f02da9e added priming of last_data per fips requirements.
+> Unfortuantely, it did so in a way that can lead to multiple threads all
+> incrementing nbytes, but only one actually doing anything with the extra
+> data, which leads to some fun  random corruption and panics.
+> 
+> The fix is to simply do everything needed to prime last_data in a single
+> shot, so there's no window for multiple cpus to increment nbytes -- in
+> fact, we won't even increment or decrement nbytes anymore, we'll just
+> extract the needed EXTRACT_BYTES one time per pool and then carry on with
+> the normal routine.
+> 
+> All these changes have been tested across multiple hosts and architectures
+> where panics were previously encoutered. The code changes are are strictly
+> limited to areas only touched when when booted in fips mode.
+> 
+> This change should also go into 3.8-stable, to make the myriads of fips
+> users on 3.8.x happy.
+> 
+> Tested-by: Jan Stancek <jstancek@redhat.com>
+> Tested-by: Jan Stodola <jstodola@redhat.com>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Matt Mackall <mpm@selenic.com>
+> CC: "Theodore Ts'o" <tytso@mit.edu>
+> CC: linux-crypto@vger.kernel.org
+> CC: stable@vger.kernel.org
+> Signed-off-by: Jarod Wilson <jarod@redhat.com>
+> ---
+>  drivers/char/random.c |   30 +++++++++++++++---------------
+>  1 files changed, 15 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index 85e81ec..15e5a2b 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -953,10 +953,23 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+>  {
+>  	ssize_t ret = 0, i;
+>  	__u8 tmp[EXTRACT_SIZE];
+> +	unsigned long flags;
+>  
+>  	/* if last_data isn't primed, we need EXTRACT_SIZE extra bytes */
+> -	if (fips_enabled && !r->last_data_init)
+> -		nbytes += EXTRACT_SIZE;
+> +	if (fips_enabled) {
+> +		spin_lock_irqsave(&r->lock, flags);
+> +		if (!r->last_data_init) {
+> +			r->last_data_init = true;
+> +			spin_unlock_irqrestore(&r->lock, flags);
+> +			trace_extract_entropy(r->name, EXTRACT_SIZE,
+> +					      r->entropy_count, _RET_IP_);
+> +			xfer_secondary_pool(r, EXTRACT_SIZE);
+> +			extract_buf(r, tmp);
+> +			spin_lock_irqsave(&r->lock, flags);
+> +			memcpy(r->last_data, tmp, EXTRACT_SIZE);
+> +		}
+> +		spin_unlock_irqrestore(&r->lock, flags);
+> +	}
+>  
+>  	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
+>  	xfer_secondary_pool(r, nbytes);
+> @@ -966,19 +979,6 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+>  		extract_buf(r, tmp);
+>  
+>  		if (fips_enabled) {
+> -			unsigned long flags;
+> -
+> -
+> -			/* prime last_data value if need be, per fips 140-2 */
+> -			if (!r->last_data_init) {
+> -				spin_lock_irqsave(&r->lock, flags);
+> -				memcpy(r->last_data, tmp, EXTRACT_SIZE);
+> -				r->last_data_init = true;
+> -				nbytes -= EXTRACT_SIZE;
+> -				spin_unlock_irqrestore(&r->lock, flags);
+> -				extract_buf(r, tmp);
+> -			}
+> -
+>  			spin_lock_irqsave(&r->lock, flags);
+>  			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
+>  				panic("Hardware RNG duplicated output!\n");
+> -- 
+> 1.7.1
+> 
+> 
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-It does matter if the device will be used after the next resume,
-because that one would use the persist code. If there was a driver
-problem it would fail, and if it was a USB stick that is swapped with
-a different one of the same model, you could get file system
-corruption.
-
-I agree with you that buggy drivers should get fixed (and we are
-trying to do that as well), but at the same time we want to be able to
-have a system that can keep its policies at all times. We get a lot of
-USB problems (especially around suspend/resume), and we don't want to
-need to worry every time about which code path we hit and whether one
-of those race conditions could have something to do with it. I'm
-convinced that having this in the kernel is the cleanest solution for
-us, and I just thought it might be useful to standardize a mechanism
-for that (I don't really see the maintenance burden in that config
-option either, as the persist mechanism itself does not look like it
-was going to go away anytime soon).
