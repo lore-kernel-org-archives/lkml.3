@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3CSNaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 09:30:19 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:50217 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab3CSNaQ (ORCPT
+	id S1755675Ab3CSNbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 09:31:24 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:51895 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab3CSNbX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 09:30:16 -0400
-Date: Tue, 19 Mar 2013 06:31:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dong Hao <haodong@linux.vnet.ibm.com>
-Cc: xiaoguangrong@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com,
-        weiyang@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] lib/kobject: WARN_ON corresponds to BUG_ON
-Message-ID: <20130319133135.GC24313@kroah.com>
-References: <1363675621-31186-1-git-send-email-haodong@linux.vnet.ibm.com>
- <1363675621-31186-3-git-send-email-haodong@linux.vnet.ibm.com>
+	Tue, 19 Mar 2013 09:31:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363675621-31186-3-git-send-email-haodong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [109.186.17.83]
+In-Reply-To: <1361466940-6813-3-git-send-email-sjur.brandeland@stericsson.com>
+References: <1361466940-6813-1-git-send-email-sjur.brandeland@stericsson.com> <1361466940-6813-3-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 19 Mar 2013 15:31:01 +0200
+Message-ID: <CAK=WgbYjMu7ifO7ppc51T+06LR92XNF3WTdRHJFN968vL+ddgQ@mail.gmail.com>
+Subject: Re: [PATCHv2 02/10] remoteproc: Bugfix remove entry from list before
+ freeing it
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Ido Yariv <ido@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 02:47:01PM +0800, Dong Hao wrote:
-> From: Dong Hao <haodong@linux.vnet.ibm.com>
-> 
-> WARN_ON corresponds to BUG_ON and also gets more info.
+On Thu, Feb 21, 2013 at 7:15 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Remove the vdev entry from the list before freeing it,
+> otherwise the rproc->vdevs list get corrupted.
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Huh?  No.
+Cc'ing stable here too and slightly modifying subject+commit log.
 
-Please stop, don't resend these.
-
-greg k-h
+Thanks!
