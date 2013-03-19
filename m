@@ -1,82 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab3CSJAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:00:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12907 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab3CSJAt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:00:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 02:00:45 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <sameo@linux.intel.com>
-CC: <swarren@nvidia.com>, <broonie@opensource.wolfsonmicro.com>,
-        <gg@slimlogic.co.uk>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] mfd: palmas: initialise client->of_node for dummy created client
-Date: Tue, 19 Mar 2013 14:28:20 +0530
-Message-ID: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S932166Ab3CSJDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:03:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16019 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754912Ab3CSJDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 05:03:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,870,1355126400"; 
+   d="scan'208";a="304977473"
+Date: Tue, 19 Mar 2013 09:03:16 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Greg KH <greg@kroah.com>,
+        Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Thomas Meyer <thomas@m3y3r.de>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re:
+ [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor interrupt
+ responses))
+Message-ID: <20130319090316.GB3872@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel@ffwll.ch>,
+	Greg KH <greg@kroah.com>, Harald Arnesen <skogtun.linux@gmail.com>,
+	Kernel development list <linux-kernel@vger.kernel.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Thomas Meyer <thomas@m3y3r.de>,
+	Shawn Starr <shawn.starr@rogers.com>,
+	USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+	Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+	Yinghai Lu <yinghai@kernel.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Imre Deak <imre.deak@intel.com>,
+	Daniel Kurtz <djkurtz@chromium.org>,
+	dri-devel@lists.freedesktop.org
+References: <alpine.LNX.2.00.1303150851020.9529@pobox.suse.cz>
+ <5142E7F0.4020002@gmail.com>
+ <alpine.LNX.2.00.1303151424140.9529@pobox.suse.cz>
+ <20130315153249.GA32425@kroah.com>
+ <alpine.LNX.2.00.1303151636481.9529@pobox.suse.cz>
+ <20130315154739.GA1024@kroah.com>
+ <20130318082156.GO9021@phenom.ffwll.local>
+ <alpine.LNX.2.00.1303181522460.9529@pobox.suse.cz>
+ <20130318170424.GB5571@cantiga.alporthouse.com>
+ <alpine.LNX.2.00.1303190953010.9529@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1303190953010.9529@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Palmas device have three different i2c addresses. The device creates
-the two new dummy i2c clients for accessing the register by using
-primary client adapter. This new dummy i2c client have their of_node
-as NULL.
+On Tue, Mar 19, 2013 at 09:56:57AM +0100, Jiri Kosina wrote:
+> On Mon, 18 Mar 2013, Chris Wilson wrote:
+> 
+> > > +#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 5)
+> > >  void
+> > >  intel_i2c_reset(struct drm_device *dev)
+> > >  {
+> > >  	struct drm_i915_private *dev_priv = dev->dev_private;
+> > >  	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS0, 0);
+> > > -	I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+> > > +	if (HAS_GMBUS_IRQ(dev))
+> > > +		I915_WRITE(dev_priv->gpio_mmio_base + GMBUS4, 0);
+> > 
+> > There should not be any harm in always clearing GMBUS4, it exists on all
+> > platforms.
+> > 
+> > >  }
+> > >  
+> > >  static void intel_i2c_quirk_set(struct drm_i915_private *dev_priv, bool enable)
+> > > @@ -203,7 +205,6 @@ intel_gpio_setup(struct intel_gmbus *bus, u32 pin)
+> > >  	algo->data = bus;
+> > >  }
+> > >  
+> > > -#define HAS_GMBUS_IRQ(dev) (INTEL_INFO(dev)->gen >= 4)
+> > >  static int
+> > >  gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+> > >  		     u32 gmbus2_status,
+> > > @@ -214,6 +215,13 @@ gmbus_wait_hw_status(struct drm_i915_private *dev_priv,
+> > >  	u32 gmbus2 = 0;
+> > >  	DEFINE_WAIT(wait);
+> > >  
+> > > +	if (!HAS_GMBUS_IRQ(dev_priv->dev)) {
+> > > +		int ret;
+> > > +		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
+> > > +				(GMBUS_SATOER | gmbus2_status),
+> > > +				50);
+> > 
+> > This should couple up to the normal return code that chooses the
+> > appropriate return value based on gmbus2.
+> > 
+> > How about just using:
+> >   if (!HAS_GMBUS_IRQ(dev_priv->dev)) gmbus4_irq_en = 0;
+> > and the existing wait loop?
+> 
+> I explicitly wanted to avoid touching GMBUS4 register, as the real cause 
+> of the failure is not clear.
+> 
+> But, as Yinghai Lu points out, the problem is most likely caused by 
+> interrupt disabling not working properly (see his very good point 
+> regarding DisINTx+ and INTx+ discrepancy), so zeroing the register out 
+> should work .... and it indeed does in my case, hence the (tested) patch 
+> below.
+> 
+> I think it's a 3.9-rc material, and I am all open to debug this further 
+> for 3.10 so that the race is closed and gmbus irqs can be used on Gen4 
+> platform properly.
 
-The dummy i2c client is used for registering interrupt and on this,
-it creates irq domain handle. This created irq domain handle has
-their of_node as NULL.
+Agreed. Using the IRQ for GMBUS is just a performance feature that can
+be deferred until after we determine the root cause - and hope that the
+failure is somehow peculiar to GMBUS.
 
-Now when any child of this device is registered through the DT as
-follows:
-         palmas: tps65913@58 {
-         	::::::::::::::::::
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+-Chris
 
-         	#interrupt-cells = <2>;
-                interrupt-controller;
-
-                palmas_rtc {
-                       compatible = "ti,palmas-rtc";
-                       interrupt-parent = <&palmas>;
-                       interrupts = <8 0>;
-                };
-                ::::::::::;;;
-         };
-
-And child driver (palam-rtc in this case) get their irq number as
-	irq = platform_get_irq(pdev, 0);
-
-The returned irq number is error in this case. The reason is that
-the created irq_domain handle for the palmas interrupt does not have
-valid node and so matching of node fails with palmas node.
-
-Hence initialising the newly dummy created client->of_node with the
-primary clients of_node so that irq_domain handle have proper of_node
-for matching.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/mfd/palmas.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index 73bf76d..a3f2836 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -349,6 +349,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 				ret = -ENOMEM;
- 				goto err;
- 			}
-+			palmas->i2c_clients[i]->dev.of_node = of_node_get(node);
- 		}
- 		palmas->regmap[i] = devm_regmap_init_i2c(palmas->i2c_clients[i],
- 				&palmas_regmap_config[i]);
 -- 
-1.7.1.1
-
+Chris Wilson, Intel Open Source Technology Centre
