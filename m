@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab3CSACW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:02:22 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:33149 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab3CSACU (ORCPT
+	id S1756819Ab3CSAC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:02:57 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:62056 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756796Ab3CSACz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:02:20 -0400
+	Mon, 18 Mar 2013 20:02:55 -0400
+Date: Mon, 18 Mar 2013 17:04:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130319000411.GA6406@kroah.com>
+References: <20130318222853.GA9358@logfs.org>
 MIME-Version: 1.0
-In-Reply-To: <20130318230922.GA23175@kroah.com>
-References: <1363215451-26111-1-git-send-email-jwerner@chromium.org>
-	<20130318230922.GA23175@kroah.com>
-Date: Mon, 18 Mar 2013 17:02:19 -0700
-X-Google-Sender-Auth: xH6oaBmOUIyC7u_E2GzJxGJxlTk
-Message-ID: <CAODwPW9c6NpDOzmh+q312qLn0fS+eQttQDGdCe0b2EigoJ9_PA@mail.gmail.com>
-Subject: Re: [PATCH] usb: Make USB persist default configurable
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sameer Nanda <snanda@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130318222853.GA9358@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why can't you just revert this in userspace?  Isn't that easier than
-> doing a kernel patch and providing an option that we need to now
-> maintain for pretty much forever?
+On Mon, Mar 18, 2013 at 06:28:53PM -0400, Jörn Engel wrote:
+> It is possible for one thread to to take se_sess->sess_cmd_lock in
+> core_tmr_abort_task() before taking a reference count on
+> se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+> se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+> 
+> This introduces kref_put_and_lock() and uses it in
+> target_put_sess_cmd() to close the race window.
 
-I could solve it in userspace, but that really feels like a hacky
-workaround and not a long term solution. It would mean that every new
-device starts with persist enabled and stays that way for a few
-milliseconds (maybe up to seconds if it's connected on boot), until
-userspace gets around to disable it again... opening the possibility
-for very weird race conditions and bugs with drivers/devices that
-don't work with persist. This default is a policy that really resides
-in the kernel, it has changed in the past, and since there is no
-definitive better choice for all cases I thought making it
-configurable is the right thing to do.
+We already have kref_put_mutex(), why not just call this
+kref_put_spinlock()?
+
+thanks,
+
+greg k-h
