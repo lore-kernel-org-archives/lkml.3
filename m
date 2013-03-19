@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab3CSQ2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 12:28:09 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:56454 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab3CSQ2H (ORCPT
+	id S933012Ab3CSQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 12:28:36 -0400
+Received: from longford.logfs.org ([213.229.74.203]:58735 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab3CSQ2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 12:28:07 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] timekeeping: Add tracepoints for xtime changes - v2
-Date: Tue, 19 Mar 2013 10:27:57 -0600
-Message-Id: <1363710477-4203-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Tue, 19 Mar 2013 12:28:35 -0400
+Date: Tue, 19 Mar 2013 11:03:47 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH v4] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130319150347.GA16558@logfs.org>
+References: <20130319000411.GA6406@kroah.com>
+ <20130318225657.GA9685@logfs.org>
+ <20130319002742.GA11050@kroah.com>
+ <20130318231154.GC9685@logfs.org>
+ <20130318233413.GD9685@logfs.org>
+ <20130319015354.GA21045@kroah.com>
+ <20130319033112.GA11307@logfs.org>
+ <20130319050954.GA23390@kroah.com>
+ <20130319035803.GB11307@logfs.org>
+ <20130319133852.GD24313@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130319133852.GD24313@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One component of tracking perf_clock timestamps to time-of-day is
-updates to xtime by a user or ntpd. To that end this patch adds
-tracepoints to the timekeeping code as suggested by Thomas:
-https://lkml.org/lkml/2011/3/2/186
+On Tue, 19 March 2013 06:38:52 -0700, Greg Kroah-Hartman wrote:
+> On Mon, Mar 18, 2013 at 11:58:03PM -0400, Jörn Engel wrote:
+> > 
+> > It compiles.  I don't have a good testcase, so the procedure is to
+> > throw it into the test infrastructure and wait a week.
+> 
+> Really?  Please make a test cast to test it out properly.
 
-v2: use timekeeping_get_ns to retrieve nsec component
+So you are willing to reject a patch that clearly fixes a bug because
+there is no testcase?  And given that the bug is a race, any testcase
+will still boil down to "run this for as long as it took to reproduce
+the problem, then triple the time".  I can reproduce the problem in
+our test infrastructure maybe twice a week, so I could call that a
+testcase just to provide you some formalistic argument to accept the
+patch.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/events/timekeeping.h |   51 ++++++++++++++++++++++++++++++++++++
- kernel/time/timekeeping.c          |   11 ++++++++
- 2 files changed, 62 insertions(+)
- create mode 100644 include/trace/events/timekeeping.h
+Of course the alternatives would be to stop using kref or to leave the
+bug in.  I really wish I wouldn't have to contemplate either of those.
 
-diff --git a/include/trace/events/timekeeping.h b/include/trace/events/timekeeping.h
-new file mode 100644
-index 0000000..ff7a631
---- /dev/null
-+++ b/include/trace/events/timekeeping.h
-@@ -0,0 +1,51 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM timekeeping
-+
-+#if !defined(_TRACE_TIMEKEEP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_TIMEKEEP_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/time.h>
-+
-+DECLARE_EVENT_CLASS(xtime_template,
-+
-+	TP_PROTO(u64 sec, u64 nsec),
-+
-+	TP_ARGS(sec, nsec),
-+
-+	TP_STRUCT__entry(
-+		__field( u64,	sec)
-+		__field( u64,	nsec)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->sec  = sec;
-+		__entry->nsec = nsec;
-+	),
-+
-+	TP_printk("sec=%Lu nsec=%Lu", __entry->sec, __entry->nsec)
-+);
-+
-+DEFINE_EVENT(xtime_template, do_settimeofday,
-+	TP_PROTO(u64 sec, u64 nsec),
-+	TP_ARGS(sec, nsec));
-+
-+DEFINE_EVENT(xtime_template, timekeeping_inject_offset,
-+	TP_PROTO(u64 sec, u64 nsec),
-+	TP_ARGS(sec, nsec));
-+
-+DEFINE_EVENT(xtime_template, timekeeping_inject_sleeptime,
-+	TP_PROTO(u64 sec, u64 nsec),
-+	TP_ARGS(sec, nsec));
-+
-+DEFINE_EVENT(xtime_template, timekeeping_resume,
-+	TP_PROTO(u64 sec, u64 nsec),
-+	TP_ARGS(sec, nsec));
-+
-+DEFINE_EVENT(xtime_template, change_clocksource,
-+	TP_PROTO(u64 sec, u64 nsec),
-+	TP_ARGS(sec, nsec));
-+#endif /*  _TRACE_TIMEKEEP_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 9a0bc98..0ce45ec 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -23,6 +23,8 @@
- #include <linux/stop_machine.h>
- #include <linux/pvclock_gtod.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/timekeeping.h>
- 
- static struct timekeeper timekeeper;
- 
-@@ -462,6 +464,8 @@ int do_settimeofday(const struct timespec *tv)
- 
- 	timekeeping_update(tk, true);
- 
-+	trace_do_settimeofday(tk->xtime_sec, timekeeping_get_ns(tk));
-+
- 	write_sequnlock_irqrestore(&tk->lock, flags);
- 
- 	/* signal hrtimers about time change */
-@@ -504,6 +508,8 @@ int timekeeping_inject_offset(struct timespec *ts)
- error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(tk, true);
- 
-+	trace_timekeeping_inject_offset(tk->xtime_sec, timekeeping_get_ns(tk));
-+
- 	write_sequnlock_irqrestore(&tk->lock, flags);
- 
- 	/* signal hrtimers about time change */
-@@ -536,6 +542,7 @@ static int change_clocksource(void *data)
- 			old->disable(old);
- 	}
- 	timekeeping_update(tk, true);
-+	trace_change_clocksource(tk->xtime_sec, timekeeping_get_ns(tk));
- 
- 	write_sequnlock_irqrestore(&tk->lock, flags);
- 
-@@ -772,6 +779,9 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	timekeeping_update(tk, true);
- 
-+	trace_timekeeping_inject_sleeptime(tk->xtime_sec,
-+					   timekeeping_get_ns(tk));
-+
- 	write_sequnlock_irqrestore(&tk->lock, flags);
- 
- 	/* signal hrtimers about time change */
-@@ -807,6 +817,7 @@ static void timekeeping_resume(void)
- 	tk->ntp_error = 0;
- 	timekeeping_suspended = 0;
- 	timekeeping_update(tk, false);
-+	trace_timekeeping_resume(tk->xtime_sec, timekeeping_get_ns(tk));
- 	write_sequnlock_irqrestore(&tk->lock, flags);
- 
- 	touch_softlockup_watchdog();
--- 
-1.7.10.1
+> > The alternative would be to call local_irq_restore(flags); from
+> > kref_put_spinlock_irqsave() and not pass the flags.  Getting rid of
+> > the extra parameter would be nice.  But I'm not sure I want to prove
+> > that
+> > 	spin_unlock(lock);
+> > 	local_irq_restore(flags);
+> > is the same as 
+> > 	spin_unlock_irqrestore(lock, flags);
+> > on all architectures and with all combinations of CONFIG options.
+> 
+> It should be.
 
+We agree then.  I will change the patch and see how it behaves in our
+setup.
+
+Jörn
+
+--
+Debugging is twice as hard as writing the code in the first place.
+Therefore, if you write the code as cleverly as possible, you are,
+by definition, not smart enough to debug it.
+-- Brian W. Kernighan
