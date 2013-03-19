@@ -1,145 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab3CSTxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:53:38 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:59919 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3CSTxh (ORCPT
+	id S933323Ab3CSTyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 15:54:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41935 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933078Ab3CSTx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 15:53:37 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Dave Jones <davej@redhat.com>, Michel Lespinasse <walken@google.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 2/7] tty: Add lock/unlock ldisc pair functions
-Date: Tue, 19 Mar 2013 15:26:04 -0400
-Message-Id: <1363721169-22445-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1363721169-22445-1-git-send-email-peter@hurleysoftware.com>
-References: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
- <1363721169-22445-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Tue, 19 Mar 2013 15:53:59 -0400
+Message-ID: <5148C253.6030007@wwwdotorg.org>
+Date: Tue, 19 Mar 2013 13:53:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 2/7] ARM: tegra: update device trees for USB binding rework
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com> <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just as the tty pair must be locked in a stable sequence
-(ie, independent of which is consider the 'other' tty), so must
-the ldisc pair be locked in a stable sequence as well.
+On 03/18/2013 06:29 AM, Venu Byravarasu wrote:
+> This patch updates all Tegra board files so that they contain all the
+> properties required by the updated USB DT binding. Note that this patch
+> only adds the new properties and does not yet remove the old properties,
+> in order to maintain bisectability. The old properties will be removed
+> once the driver has been updated to assume the new bindings.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra20-colibri-512.dtsi |    4 +++
+>  arch/arm/boot/dts/tegra20-harmony.dts      |    8 +++---
+>  arch/arm/boot/dts/tegra20-iris-512.dts     |    4 +++
+>  arch/arm/boot/dts/tegra20-paz00.dts        |    8 +++---
+>  arch/arm/boot/dts/tegra20-seaboard.dts     |   13 +++++++---
+>  arch/arm/boot/dts/tegra20-trimslice.dts    |   12 +++++++---
+>  arch/arm/boot/dts/tegra20-ventana.dts      |    7 +++--
+>  arch/arm/boot/dts/tegra20.dtsi             |   32 +++++++++++++++++----------
+>  8 files changed, 57 insertions(+), 31 deletions(-)
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
-
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 1afe192..ae0287f 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -31,6 +31,13 @@
- #define tty_ldisc_debug(tty, f, args...)
- #endif
- 
-+/* lockdep nested classes for tty->ldisc_sem */
-+enum {
-+	LDISC_SEM_NORMAL,
-+	LDISC_SEM_OTHER,
-+};
-+
-+
- /*
-  *	This guards the refcounted line discipline lists. The lock
-  *	must be taken with irqs off because there are hangup path
-@@ -351,6 +358,86 @@ void tty_ldisc_deref(struct tty_ldisc *ld)
- }
- EXPORT_SYMBOL_GPL(tty_ldisc_deref);
- 
-+
-+static inline int __lockfunc
-+tty_ldisc_lock(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write(&tty->ldisc_sem, timeout);
-+}
-+
-+static inline int __lockfunc
-+tty_ldisc_lock_nested(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write_nested(&tty->ldisc_sem,
-+				       LDISC_SEM_OTHER, timeout);
-+}
-+
-+static inline void tty_ldisc_unlock(struct tty_struct *tty)
-+{
-+	return ldsem_up_write(&tty->ldisc_sem);
-+}
-+
-+static int __lockfunc
-+tty_ldisc_lock_pair_timeout(struct tty_struct *tty, struct tty_struct *tty2,
-+			    unsigned long timeout)
-+{
-+	int ret;
-+
-+	if (tty < tty2) {
-+		ret = tty_ldisc_lock(tty, timeout);
-+		if (ret) {
-+			ret = tty_ldisc_lock_nested(tty2, timeout);
-+			if (!ret)
-+				tty_ldisc_unlock(tty);
-+		}
-+	} else {
-+		/* if this is possible, it has lots of implications */
-+		WARN_ON_ONCE(tty == tty2);
-+		if (tty2 && tty != tty2) {
-+			ret = tty_ldisc_lock(tty2, timeout);
-+			if (ret) {
-+				ret = tty_ldisc_lock_nested(tty, timeout);
-+				if (!ret)
-+					tty_ldisc_unlock(tty2);
-+			}
-+		} else
-+			ret = tty_ldisc_lock(tty, timeout);
-+	}
-+
-+	if (!ret)
-+		return -EBUSY;
-+
-+	set_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		set_bit(TTY_LDISC_HALTED, &tty2->flags);
-+	return 0;
-+}
-+
-+static void __lockfunc
-+tty_ldisc_lock_pair(struct tty_struct *tty, struct tty_struct *tty2)
-+{
-+	tty_ldisc_lock_pair_timeout(tty, tty2, MAX_SCHEDULE_TIMEOUT);
-+}
-+
-+static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	tty_ldisc_unlock(tty);
-+	if (tty2)
-+		tty_ldisc_unlock(tty2);
-+}
-+
-+static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
-+
-+	tty_ldisc_unlock_pair(tty, tty2);
-+}
-+
-+
- /**
-  *	tty_ldisc_enable	-	allow ldisc use
-  *	@tty: terminal to activate ldisc on
--- 
-1.8.1.2
-
+I think you forgot to update arch/arm/boot/dts/tegra20-whistler.dts in
+this patch.
