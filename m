@@ -1,118 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab3CSGZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 02:25:05 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49006 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab3CSGZD (ORCPT
+	id S932837Ab3CSGdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 02:33:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59553 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab3CSGdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 02:25:03 -0400
-X-AuditID: 9c930197-b7cc2ae000000eb7-36-514804bc812e
-Date: Tue, 19 Mar 2013 15:25:22 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
-Message-ID: <20130319062522.GG8858@lge.com>
-References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
- <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
+	Tue, 19 Mar 2013 02:33:54 -0400
+Date: Tue, 19 Mar 2013 08:33:34 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xi Wang <xi.wang@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the usb-gadget
+ tree
+Message-ID: <20130319063334.GA16715@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130319143922.f60895f782e5c8e9824c447b@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
+In-Reply-To: <20130319143922.f60895f782e5c8e9824c447b@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 10:47:41PM -0700, Yinghai Lu wrote:
-> On Mon, Mar 18, 2013 at 10:15 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > max_low_pfn reflect the number of _pages_ in the system,
-> > not the maximum PFN. You can easily find that fact in init_bootmem().
-> > So fix it.
-> 
-> I'm confused. for x86, we have max_low_pfn defined in ...
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Below is queote from Russell King in 'https://lkml.org/lkml/2013/3/13/123'
+Hi,
 
+On Tue, Mar 19, 2013 at 02:39:22PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+>=20
+> Today's linux-next merge of the akpm tree got a conflict in
+> drivers/usb/gadget/amd5536udc.c between commit 6c39d90393a2 ("usb:
+> gadget: amd5536udc: remove unnecessary initializations") from the  tree
 
- Now, max_low_pfn is initialized this way:
- 
- /**
-  * init_bootmem - register boot memory
-  * @start: pfn where the bitmap is to be placed
-  * @pages: number of available physical pages
-  *
-  * Returns the number of bytes needed to hold the bitmap.
-  */
- unsigned long __init init_bootmem(unsigned long start, unsigned long pages)
- {
-        max_low_pfn = pages;
-        min_low_pfn = start;
-        return init_bootmem_core(NODE_DATA(0)->bdata, start, 0, pages);
- }
- So, min_low_pfn is the PFN offset of the start of physical memory (so
- 3GB >> PAGE_SHIFT) and max_low_pfn ends up being the number of pages,
- _not_ the maximum PFN value
+Looks like there's a small bug in your scripts: "from the  tree" misses
+"usb-gadget".
 
-So, if physical address doesn't start at 0, max_low_pfn doesn't represent 
-the maximum PFN value. This is a case for ARM.
+> and commit "drivers/usb/gadget/amd5536udc.c: avoid calling dma_pool_creat=
+e()
+> with NULL dev" from the akpm tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc drivers/usb/gadget/amd5536udc.c
+> index f52dcfe,142616a..0000000
+> --- a/drivers/usb/gadget/amd5536udc.c
+> +++ b/drivers/usb/gadget/amd5536udc.c
+> @@@ -3232,6 -3235,12 +3232,10 @@@ static int udc_pci_probe
+>   	pci_set_master(pdev);
+>   	pci_try_set_mwi(pdev);
+>  =20
+> + 	dev->phys_addr =3D resource;
+> + 	dev->irq =3D pdev->irq;
+> + 	dev->pdev =3D pdev;
+>  -	dev->gadget.dev.parent =3D &pdev->dev;
+>  -	dev->gadget.dev.dma_mask =3D pdev->dev.dma_mask;
+> +=20
 
-> 
-> #ifdef CONFIG_X86_32
->         /* max_low_pfn get updated here */
->         find_low_pfn_range();
-> #else
->         num_physpages = max_pfn;
-> 
->         check_x2apic();
-> 
->         /* How many end-of-memory variables you have, grandma! */
->         /* need this before calling reserve_initrd */
->         if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
->                 max_low_pfn = e820_end_of_low_ram_pfn();
->         else
->                 max_low_pfn = max_pfn;
-> 
-> and under max_low_pfn is bootmem.
-> 
-> >
-> > Additionally, if 'start_pfn == end_pfn', we don't need to go futher,
-> > so change range check.
-> >
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >
-> > diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> > index 5e07d36..4711e91 100644
-> > --- a/mm/nobootmem.c
-> > +++ b/mm/nobootmem.c
-> > @@ -110,9 +110,9 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
-> >  {
-> >         unsigned long start_pfn = PFN_UP(start);
-> >         unsigned long end_pfn = min_t(unsigned long,
-> > -                                     PFN_DOWN(end), max_low_pfn);
-> > +                                     PFN_DOWN(end), min_low_pfn);
-> 
-> what is min_low_pfn ?  is it 0 for x86?
+fix looks alright, thank you
 
-My implementation is totally wrong. :)
-min_low_pfn is not proper value for this purpose.
+--=20
+balbi
 
-I will fix it.
-Sorry for noise.
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> Thanks
-> 
-> Yinghai
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+iQIcBAEBAgAGBQJRSAa+AAoJEIaOsuA1yqREzaMP/jtr0Wv0q2eZ2wzSPa5+bYti
++SFKE8HlOIcTMESkL99hyHx6fyrFlZQwsExT8eu8Xbc6FVfMGvHdp84fFSAxoiOx
+Y0voFseQ6vZZOdKICczSpgsjJnloxeD4ToLQoAA/jBqDcdm4JYwFHkuenJZWCmn7
+nxKrAy528zo189uWKqjr/6LaiqWPvk4lNgYYpCM/ifgI0jUVpNMtgISR9xRiLOyy
+rMXG2WLALDaInZqrM7VqwnLczjJwyfqUoq/aRF+hGN3tuT7jIbh8KjI5A37X8e+O
+lbzf0HrD1/7IMh0TWTpz9uXTyx3ZLNB6lifoK72X3X8WvlDrOulVZswxfnRlCet8
+h4WRZ6ADckaZ7ViV3O265RDdEI12fWrvZOYP7t/ALQRIuwUobYymolGfx9xzJ3iR
+juBxKqcc2hxuatsAI+PBJsUxrWOJSqheCGihAzXaaw+Qdsf+qTp2oNbeX85ufxyc
+9TXC9ooOtf19FRjVmJ0Mugyz5BROKjfa+Rgi27oOiH+AEXNA4G2kFC9PWmF+vjdg
+m2vN8qZimFGPstGpgPiGmTqf+jsYVCF3FpBlYZgQe8ou/i0bxcNDn+KKhfO4n0E4
+rVyULejJEI++W0Qib8tRZKBDrQ6/y1Mjv5cC07zWiOskL0M8btoCKxrOH4Hg7/yo
+Q5DE+N/W6SfqZKMEKQVk
+=16mr
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
