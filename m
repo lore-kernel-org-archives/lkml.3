@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab3CSRIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:08:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933160Ab3CSRH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933158Ab3CSRH6 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Mar 2013 13:07:58 -0400
-Date: Tue, 19 Mar 2013 19:07:54 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] x86: correctly initialize the CS base on reset
-Message-ID: <20130319170754.GJ19292@redhat.com>
-References: <1363707026-19351-1-git-send-email-pbonzini@redhat.com>
- <20130319154319.GF19292@redhat.com>
- <51489549.10308@siemens.com>
+Received: from mx1.redhat.com ([209.132.183.28]:55933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757027Ab3CSRH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 13:07:56 -0400
+Date: Tue, 19 Mar 2013 13:07:48 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        kexec@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: [PATCH v2] acpi: Ignore acpi_rsdp kernel parameter in a secure boot
+ environment
+Message-ID: <20130319170747.GA15821@hansolo.jdub.homelinux.org>
+References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
+ <1363642353-30749-10-git-send-email-matthew.garrett@nebula.com>
+ <5148261F.3030806@redhat.com>
+ <20130319111916.GI11243@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51489549.10308@siemens.com>
+In-Reply-To: <20130319111916.GI11243@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 05:41:45PM +0100, Jan Kiszka wrote:
-> On 2013-03-19 16:43, Gleb Natapov wrote:
-> > On Tue, Mar 19, 2013 at 04:30:26PM +0100, Paolo Bonzini wrote:
-> >> The CS base was initialized to 0 on VMX (wrong, but usually overridden
-> >> by userspace before starting) or 0xf0000 on SVM.  The correct value is
-> >> 0xffff0000, and VMX is able to emulate it now, so use it.
-> >>
-> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> > Reviewed-by: Gleb Natapov <gleb@redhat.com>
-> 
-> Just for the history (as I was wondering where this came from): CS base
-> used to be set to 0xf0000 on VMX as well, but that was changed by
-> b246dd5d to only affect guests when unrestricted mode is missing. That
-> change actually left the base uninitialized.
-> 
-Looking at the code before b246dd5d it sets CS base to 0xf0000 only if it was
-0xffff0000. This is the same as with current code: fix_rmode_seg() does
-it.
+This option allows userspace to pass the RSDP address to the kernel.  This
+could potentially be used to circumvent the secure boot trust model.
+This is setup through the setup_arch function, which is called before the
+security_init function sets up the security_ops, so we cannot use a
+capable call here.  We ignore the setting if we are booted in Secure Boot
+mode.
 
---
-			Gleb.
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+---
+
+ v2: Actually send it to Matthew this time
+
+ drivers/acpi/osl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 586e7e9..8950454 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -245,7 +245,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
+ acpi_physical_address __init acpi_os_get_root_pointer(void)
+ {
+ #ifdef CONFIG_KEXEC
+-	if (acpi_rsdp)
++	if (acpi_rsdp && !efi_enabled(EFI_SECURE_BOOT))
+ 		return acpi_rsdp;
+ #endif
+ 
+-- 
+1.8.1.2
+
