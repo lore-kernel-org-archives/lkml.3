@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab3CSSQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:16:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46976 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933418Ab3CSSQD (ORCPT
+	id S933625Ab3CSSRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:17:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56264 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933557Ab3CSSRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:16:03 -0400
-Message-ID: <5148AB59.6080000@linutronix.de>
-Date: Tue, 19 Mar 2013 19:15:53 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Tue, 19 Mar 2013 14:17:12 -0400
+Date: Tue, 19 Mar 2013 14:17:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sven Joachim <svenjoac@gmx.de>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Stephen Thirlwall <sdt@dr.com>
+Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI
+ controllers
+In-Reply-To: <87mwtzjql4.fsf@turtle.gmx.de>
+Message-ID: <Pine.LNX.4.44L0.1303191415580.1302-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH 1/3] kernel/srcu: merge common code into a macro
-References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <1363710160.1932.49.camel@joe-AO722>
-In-Reply-To: <1363710160.1932.49.camel@joe-AO722>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 05:22 PM, Joe Perches wrote:
->> +#define DEFINE_SRCU(name)		_DEFINE_SRCU(name, )
->> +#define DEFINE_STATIC_SRCU(name)	_DEFINE_SRCU(name, static)
+On Tue, 19 Mar 2013, Sven Joachim wrote:
+
+> On 2013-03-18 22:06 +0100, Greg Kroah-Hartman wrote:
 > 
-> I think the use of an empty argument, even in
-> a macro, unsightly.
+> > 3.8-stable review patch.  If anyone has any objections, please let me know.
+> 
+> This patch breaks resume from suspend on my system if the following
+> device is plugged in:
+> 
+> ,----
+> | $ lsusb | head -n1
+> | Bus 005 Device 002: ID 07d1:3c03 D-Link System AirPlus G DWL-G122 Wireless Adapter(rev.C1) [Ralink RT2571W]
+> `----
+> 
+> The same problem exists in 3.9-rc3, FWIW.
+> 
+> Detailed lsusb output follows, I'll be happy to provide more information
+> if needed.
 
-__wait_event_lock_irq() => __wait_event_lock_irq() is a prominent user.
-I would prefer to avoid adding something like /* nothing */.
+In what way is resume broken?
 
-Sebastian
+Alan Stern
+
