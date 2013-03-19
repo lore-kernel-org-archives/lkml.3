@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab3CSA3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:29:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50163 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754433Ab3CSA3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:29:41 -0400
-Message-ID: <1363652979.1932.23.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] rbtree_test: use pr_info for module prefix in
- messages
-From: Joe Perches <joe@perches.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
+	id S1757226Ab3CSA3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:29:49 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:65294 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab3CSA3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 20:29:47 -0400
+Date: Mon, 18 Mar 2013 17:29:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Mar 2013 17:29:39 -0700
-In-Reply-To: <1363650471.1774.20.camel@buesod1.americas.hpqcorp.net>
-References: <1363648854.1774.16.camel@buesod1.americas.hpqcorp.net>
-	 <1363650265.1932.17.camel@joe-AO722>
-	 <1363650471.1774.20.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] sysfs: use atomic_inc_unless_negative in sysfs_get_active
+Message-ID: <20130319002942.GI3042@htj.dyndns.org>
+References: <5139FEAF.5080200@gmail.com>
+ <20130319001418.GA13502@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130319001418.GA13502@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-18 at 16:47 -0700, Davidlohr Bueso wrote:
-> On Mon, 2013-03-18 at 16:44 -0700, Joe Perches wrote:
-> > On Mon, 2013-03-18 at 16:20 -0700, Davidlohr Bueso wrote:
-> > > This provides nicer message output. Since it seems more appropriate
-> > > for the nature of this module, also use KERN_INFO instead of other
-> > > levels.
-> > []
-> > > diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-> > []
-> > > @@ -153,7 +156,7 @@ static int rbtree_test_init(void)
-> > >  	int i, j;
-> > >  	cycles_t time1, time2, time;
-> > >  
-> > > -	printk(KERN_ALERT "rbtree testing");
-> > > +	pr_info("rbtree testing");
-> > >  
-> > >  	prandom_seed_state(&rnd, 3141592653589793238ULL);
-> > >  	init();
-> > > @@ -171,7 +174,7 @@ static int rbtree_test_init(void)
-> > >  	time = time2 - time1;
-> > >  
-> > >  	time = div_u64(time, PERF_LOOPS);
-> > > -	printk(" -> %llu cycles\n", (unsigned long long)time);
-> > > +	pr_info(" -> %llu cycles\n", (unsigned long long)time);
+On Mon, Mar 18, 2013 at 05:14:18PM -0700, Greg KH wrote:
+> On Fri, Mar 08, 2013 at 04:07:27PM +0100, Maarten Lankhorst wrote:
+> > It seems that sysfs has an interesting way of doing the same thing.
+> > This removes the cpu_relax unfortunately, but if it's really needed,
+> > it would be better to add this to include/linux/atomic.h to benefit
+> > all atomic ops users.
 > > 
-> > You change the output here by more than just adding a prefix.
-> > 
-> > The first printk didn't have a newline.
-> > 
-> > The old code would print:
-> > 
-> > "rbtree testing -> <foo> cycles"
-> > 
-> > The new code prints:
-> > 
-> > "rbtree_test: rbtree testing"
-> > "rbtree_test: -> <foo> cycles"
-> > 
+> > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> >  ---
 > 
-> Ah, I see. This is actually the first time I'm using pr_* calls. I
-> actually don't mind the new format, it looked
-> ok, but if others don't agree, I can always resend it.
+> Tejun wrote this code originally, so I'll defer to him as to if the
+> patch below is a valid cleanup or not.
 
-Your choice.  I don't prefer one over the other.
+Yeah, I think that code predates atomic_inc_unless_negative().
 
-I do prefer you add an explicit newline to the first
-format though instead of relying on the implicit
-newline the printk subsystem will emit during the next
-pr_<level> call.
+> > diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+> > index 2fbdff6..7f968ed 100644
+> > --- a/fs/sysfs/dir.c
+> > +++ b/fs/sysfs/dir.c
+> > @@ -165,21 +165,8 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
+> >  	if (unlikely(!sd))
+> >  		return NULL;
+> >  
+> > -	while (1) {
+> > -		int v, t;
+> > -
+> > -		v = atomic_read(&sd->s_active);
+> > -		if (unlikely(v < 0))
+> > -			return NULL;
+> > -
+> > -		t = atomic_cmpxchg(&sd->s_active, v, v + 1);
+> > -		if (likely(t == v))
+> > -			break;
+> > -		if (t < 0)
+> > -			return NULL;
+> > -
+> > -		cpu_relax();
+> > -	}
+> > +	if (!atomic_inc_unless_negative(&sd->s_active))
+> > +		return NULL;
 
-cheers, Joe
+Looks good to me.
 
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
