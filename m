@@ -1,134 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3CSJJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:09:05 -0400
-Received: from storage.astrosoft.ru ([195.218.158.6]:45227 "HELO
-	storage.astrosoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752561Ab3CSJJB (ORCPT
+	id S932708Ab3CSJR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:17:26 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:52901 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932319Ab3CSJRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:09:01 -0400
-From: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Jia Hongtao <B38951@freescale.com>, Li Yang <leoli@freescale.com>,
-        Roy Zang <tie-fei.zang@freescale.com>,
-        Timur Tabi <timur@freescale.com>, linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org,
-        Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
-Subject: [PATCH 1/1] MPC831x: fix PCI express probing
-Date: Tue, 19 Mar 2013 10:08:47 +0100
-Message-Id: <1363684127-23926-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
-X-Mailer: git-send-email 1.7.11.7
-X-OriginalArrivalTime: 19 Mar 2013 09:08:58.0053 (UTC) FILETIME=[6396C750:01CE2481]
-X-MS-Antispam-Report: v=1.1 cv=Z7r4qawllXj7m3G+gv1K4bsY1GmSZCqDc1P5VdHw/+U= c=1 sm=1 a=WvVkE4Vu0esA:10 a=X7gM1dXb2OgA:10 a=XuZcRw/agxWFXBge871Jfw==:17 a=QyVQ8uDMAAAA:8 a=o7LM9JJRffF_vSSh4eQA:9 a=gDFPXOgAOVMA:10 a=XuZcRw/agxWFXBge871Jfw==:117
+	Tue, 19 Mar 2013 05:17:23 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-cc-51482d213e10
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Christopher Li <sparse@chrisli.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] usb: phy: samsung-usb2: Fix sparse warning
+Date: Tue, 19 Mar 2013 14:45:17 +0530
+Message-id: <1363684517-10354-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsWyRsSkVldR1yPQYP0qHYuD9+st3j9fz2zR
+	vHg9m8XlXXPYLBYta2W26FpziNWBzWPFqissHov3vGTy2D93DbvH8RvbmTw+b5ILYI3isklJ
+	zcksSy3St0vgyrjwZjNrwSGeiluzoxsYD3J1MXJwSAiYSGzo8ehi5AQyxSQu3FvPBmILCSxl
+	lHjyxQ6m5P1ixi5GLqDwdEaJxytmQjlTmCR2/F3MDtLAJqAr0fR2FyOILSIgK3H4ym9mkCJm
+	gZWMEm+23gdLCAtYS8za3wu2gUVAVeL6vB3MIDavgIfEjZ7zbBBXKEi8uf0MrFlC4DebxLoN
+	r5kgGgQkvk0+xAJxkqzEpgPMEPWSEgdX3GCZwCi4gJFhFaNoakFyQXFSepGRXnFibnFpXrpe
+	cn7uJkZgmJ7+96xvB+PNA9aHGJOBxk1klhJNzgeGeV5JvKGxmZGFqYmpsZG5pRlpwkrivGot
+	1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGC1adp16crR7mkigMB+z2a4LF5UNdkSatWop
+	eKxddjNv6dLo/jN+c3+eNrm1L2gWr5XPhS2rpr5nYnu2l5+zuOWktu2f20/inA2Wu1W33q3l
+	e/7g3+K/R1a+PZlsUVAp0hHlzSGSsvrDSomWT2oesV3MX3+EbRJkNd/+zsFmy5sQHufTc1/s
+	jlRiKc5INNRiLipOBAA00KXYaQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t9jQV1FXY9Ag+aDyhYH79dbvH++ntmi
+	efF6NovLu+awWSxa1sps0bXmEKsDm8eKVVdYPBbvecnksX/uGnaP4ze2M3l83iQXwBrVwGiT
+	kZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SBkkJZYk4p
+	UCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHjwpvNrAWHeCpuzY5uYDzI1cXIwSEh
+	YCLxfjFjFyMnkCkmceHeerYuRi4OIYHpjBKPV8xkhHCmMEns+LuYHaSKTUBXountLrAOEQFZ
+	icNXfjODFDELrGSUeLP1PlhCWMBaYtb+XjYQm0VAVeL6vB3MIDavgIfEjZ7zbBDrFCTe3H7G
+	PIGRewEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Eh4JrWDcWWDxSFGAQ5GJR7eE8Hu
+	gUKsiWXFlbmHGCU4mJVEeIP9gUK8KYmVValF+fFFpTmpxYcYk4G2T2SWEk3OB0ZpXkm8obGJ
+	uamxqaWJhYmZJWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw7p3ZuDmtK3PpNdGY98+Y
+	amTtYo6VJPM17Du8TUr0q9XE5AsKJ0I9N0gUPhT65X+1+WgiU8JG5RLuE0KtJ1fPccnpn+5e
+	mFkQyfZiWdjmTm1+vxUFAWG7vl/4VRF44mqR57Pf3A5PK6oXnKzWKXzFLRk2VeG7w0mjS87L
+	BNZPdKmwm/MhJu2HEktxRqKhFnNRcSIA0EPllcgCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For MPC831x the bus probing function also needs the fixup to assign
-addresses to the PCI devices as it was for MPC85xx and MPC86xx.
-The fixup of the bridge vendor and device ID should be done early in
-PCI probing. Else the bridge is not detected as FIXUP_HEADER is called
-too late.
+Fixing the following sparse warning:
 
-Signed-off-by: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
+sparse warnings: (new ones prefixed by >>)
+
+>> drivers/usb/phy/phy-samsung-usb2.c:50:26: sparse: incorrect type in argument 1 (different address spaces)
+   drivers/usb/phy/phy-samsung-usb2.c:50:26:    expected void const volatile [noderef] <asn:2>*addr
+   drivers/usb/phy/phy-samsung-usb2.c:50:26:    got void *
+>> drivers/usb/phy/phy-samsung-usb2.c:73:35: sparse: incorrect type in argument 1 (different address spaces)
+   drivers/usb/phy/phy-samsung-usb2.c:73:35:    expected void *regs
+   drivers/usb/phy/phy-samsung-usb2.c:73:35:    got void [noderef] <asn:2>*regs
+
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>
+CC: Christopher Li <sparse@chrisli.org>
+CC: Felipe Balbi <balbi@ti.com>
 ---
- arch/powerpc/sysdev/fsl_pci.c | 67 +++++++++++++++++++------------------------
- 1 file changed, 30 insertions(+), 37 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 682084d..b4f0873 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -64,6 +64,34 @@ static int __init fsl_pcie_check_link(struct pci_controller *hose)
+Based on 'next' branch of Felipe's usb tree.
+Tested using make C=2 drivers/usb/phy/phy-samsung-usb2.o
+
+Hi Felipe,
+
+Sorry to bug you for this small change, i think this got unnoticed in the
+last cycle too. Fixing it now.
+
+Thanks
+Vivek
+
+ drivers/usb/phy/phy-samsung-usb2.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/phy/phy-samsung-usb2.c b/drivers/usb/phy/phy-samsung-usb2.c
+index dce9681..45ffe03 100644
+--- a/drivers/usb/phy/phy-samsung-usb2.c
++++ b/drivers/usb/phy/phy-samsung-usb2.c
+@@ -43,7 +43,7 @@ static int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
  	return 0;
  }
  
-+void fsl_pcibios_fixup_bus(struct pci_bus *bus)
-+{
-+	struct pci_controller *hose = (struct pci_controller *) bus->sysdata;
-+	int i;
-+
-+
-+	if ((bus->parent == hose->bus)
-+		&& ((fsl_pcie_bus_fixup
-+			&& pci_bus_find_capability(bus, 0, PCI_CAP_ID_EXP))
-+				|| (hose->indirect_type
-+					& PPC_INDIRECT_TYPE_NO_PCIE_LINK))) {
-+		for (i = 0; i < 4; ++i) {
-+			struct resource *res = bus->resource[i];
-+			struct resource *par = bus->parent->resource[i];
-+			if (res) {
-+				res->start = 0;
-+				res->end   = 0;
-+				res->flags = 0;
-+			}
-+			if (res && par) {
-+				res->start = par->start;
-+				res->end   = par->end;
-+				res->flags = par->flags;
-+			}
-+		}
-+	}
-+}
-+
- #if defined(CONFIG_FSL_SOC_BOOKE) || defined(CONFIG_PPC_86xx)
- 
- #define MAX_PHYS_ADDR_BITS	40
-@@ -384,42 +412,6 @@ static void __init setup_pci_cmd(struct pci_controller *hose)
- 	}
- }
- 
--void fsl_pcibios_fixup_bus(struct pci_bus *bus)
--{
--	struct pci_controller *hose = pci_bus_to_host(bus);
--	int i, is_pcie = 0, no_link;
--
--	/* The root complex bridge comes up with bogus resources,
--	 * we copy the PHB ones in.
--	 *
--	 * With the current generic PCI code, the PHB bus no longer
--	 * has bus->resource[0..4] set, so things are a bit more
--	 * tricky.
--	 */
--
--	if (fsl_pcie_bus_fixup)
--		is_pcie = early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP);
--	no_link = !!(hose->indirect_type & PPC_INDIRECT_TYPE_NO_PCIE_LINK);
--
--	if (bus->parent == hose->bus && (is_pcie || no_link)) {
--		for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; ++i) {
--			struct resource *res = bus->resource[i];
--			struct resource *par;
--
--			if (!res)
--				continue;
--			if (i == 0)
--				par = &hose->io_resource;
--			else if (i < 4)
--				par = &hose->mem_resources[i-1];
--			else par = NULL;
--
--			res->start = par ? par->start : 0;
--			res->end   = par ? par->end   : 0;
--			res->flags = par ? par->flags : 0;
--		}
--	}
--}
- 
- int __init fsl_add_bridge(struct platform_device *pdev, int is_primary)
+-static bool exynos5_phyhost_is_on(void *regs)
++static bool exynos5_phyhost_is_on(void __iomem *regs)
  {
-@@ -515,7 +507,8 @@ no_bridge:
- }
- #endif /* CONFIG_FSL_SOC_BOOKE || CONFIG_PPC_86xx */
+ 	u32 reg;
  
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_FREESCALE, PCI_ANY_ID, quirk_fsl_pcie_header);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_FREESCALE, PCI_ANY_ID,
-+	quirk_fsl_pcie_header);
- 
- #if defined(CONFIG_PPC_83xx) || defined(CONFIG_PPC_MPC512x)
- struct mpc83xx_pcie_priv {
 -- 
-1.7.11.7
+1.7.6.5
 
