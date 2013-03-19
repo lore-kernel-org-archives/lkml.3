@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836Ab3CSUZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:25:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20138 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab3CSUZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:25:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/acpi-processor: Don't dereference struct acpi_processor on all CPUs.
-Date: Tue, 19 Mar 2013 16:25:26 -0400
-Message-Id: <1363724726-757-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S933861Ab3CSUZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:25:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932961Ab3CSUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 16:25:46 -0400
+Date: Tue, 19 Mar 2013 21:25:43 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130319202543.GF5222@quack.suse.cz>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130318215333.GE21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With git commit c705c78c0d0835a4aa5d0d9a3422e3218462030c
-"acpi: Export the acpi_processor_get_performance_info" we are now
-using a different mechanism to access the P-states.
+On Mon 18-03-13 21:53:34, Al Viro wrote:
+> On Mon, Mar 18, 2013 at 04:39:36PM +0100, Jan Kara wrote:
+> >   IMO the deadlock is real. In freeze_super() we wait for all writers to
+> > the filesystem to finish while blocking beginning of any further writes. So
+> > we have a deadlock scenario like:
+> > 
+> >   THREAD1		THREAD2				THREAD3
+> > mnt_want_write()	mutex_lock(&inode->i_mutex);
+> > ...							freeze_super()
+> > block on mutex_lock(&inode->i_mutex)
+> > 							  sb_wait_write(sb, SB_FREEZE_WRITE);
+> > 			block in sb_start_write()
+> 
+> The bug is on fsfreeze side and this is not the only problem related to it.
+> I've missed the implications when I applied "fs: Add freezing handling
+> to mnt_want_write() / mnt_drop_write()" last June ;-/
+> 
+> The thing is, until then mnt_want_write() used to be a counter; it could be
+> nested.  Now any such nesting is a deadlock you've just described.  This
+> is seriously wrong, IMO.
+  Well, but sb_start_write() has to be blocking (blocks when fs is frozen)
+and you have to get it somewhere. It seems only natural to get the counter
+from original mnt_want_write() at the same place and use one function for
+that. Whether I should have changed the name from mnt_want_write() to
+something else is questionable...
 
-The acpi_processor per-cpu structure is set and filtered by the
-core ACPI code which shrinks the per_cpu contents to only online CPUs.
-In the past we would call acpi_processor_register_performance()
-which would have not tried to dereference offline cpus.
+> BTW, having sb_start_write() buried in individual ->splice_write() is
+> asking for trouble; could you describe the rules for that?  E.g. where
+> does it nest wrt filesystem-private locks?  XFS iolock, for example...
+  Generally, the freeze protection should be the outermost lock taken (so
+that we mitigate possibility of blocking readers when waiting for fs to
+unfreeze). So it ranks above i_mutex, or XFS' ilock and iolock.
 
-With the new patch and the fact that the loop we take is for
-for_all_possible_cpus we end up crashing on some machines.
-We could modify the loop to be for online_cpus - but all the other
-loops in the code use possible_cpus (for a good reason) - so lets
-leave it as so and just check if per_cpu(processor) is NULL.
+It seems that I screwed this up for ->splice_write() :-| If we are going to
+move out sb_start_write() out of filesystems' hands into do_splice_from()
+then we should likely do the same with ->aio_write(). Hmm?
 
-With this patch we will bypass the !online but possible CPUs.
-This fixes:
-
-IP: [<ffffffffa00d13b5>] xen_acpi_processor_init+0x1b6/0xe01 [xen_acpi_processor]
-PGD 4126e6067 PUD 4126e3067 PMD 0
-Oops: 0002 [#1] SMP
-Pid: 432, comm: modprobe Not tainted 3.9.0-rc3+ #28 To be filled by O.E.M. To be filled by O.E.M./M5A97
-RIP: e030:[<ffffffffa00d13b5>]  [<ffffffffa00d13b5>] xen_acpi_processor_init+0x1b6/0xe01 [xen_acpi_processor]
-RSP: e02b:ffff88040c8a3ce8  EFLAGS: 00010282
-.. snip..
-Call Trace:
- [<ffffffffa00d11ff>] ? read_acpi_id+0x12b/0x12b [xen_acpi_processor]
- [<ffffffff8100215a>] do_one_initcall+0x12a/0x180
- [<ffffffff810c42c3>] load_module+0x1cd3/0x2870
- [<ffffffff81319b70>] ? ddebug_proc_open+0xc0/0xc0
- [<ffffffff810c4f37>] sys_init_module+0xd7/0x120
- [<ffffffff8166ce19>] system_call_fastpath+0x16/0x1b
-
-on some machines.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xen-acpi-processor.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
-index f3278a6..90e34ac 100644
---- a/drivers/xen/xen-acpi-processor.c
-+++ b/drivers/xen/xen-acpi-processor.c
-@@ -505,6 +505,9 @@ static int __init xen_acpi_processor_init(void)
- 
- 		pr = per_cpu(processors, i);
- 		perf = per_cpu_ptr(acpi_perf_data, i);
-+		if (!pr)
-+			continue;
-+
- 		pr->performance = perf;
- 		rc = acpi_processor_get_performance_info(pr);
- 		if (rc)
+								Honza
 -- 
-1.8.0.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
