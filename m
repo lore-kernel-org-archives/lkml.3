@@ -1,101 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3CSNW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 09:22:28 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:46972 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3CSNW0 (ORCPT
+	id S1755355Ab3CSNXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 09:23:09 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43407 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab3CSNXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 09:22:26 -0400
+	Tue, 19 Mar 2013 09:23:06 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: oskar.andero@sonymobile.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Radovan.Lekanovic@sonymobile.com,
+        Truls Bengtsson <truls.bengtsson@sonymobile.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: Re: [RFC PATCHv2 1/1] usb: f_rndis: Avoid to use ERROR macro if cdev can be null
+In-Reply-To: <1363691503-15581-2-git-send-email-oskar.andero@sonymobile.com>
+Organization: http://mina86.com/
+References: <1363691503-15581-1-git-send-email-oskar.andero@sonymobile.com> <1363691503-15581-2-git-send-email-oskar.andero@sonymobile.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.5 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Tue, 19 Mar 2013 14:22:56 +0100
+Message-ID: <xa1t7gl3a5hr.fsf@mina86.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo===J9EeZXcDa2cmUifuwinSVnQsOs1u-cg==tfbs_-0Q@mail.gmail.com>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
-	<9f0fd16f792b9f9b399a4c91c98de37c56067d47.1363617402.git.viresh.kumar@linaro.org>
-	<1363696232.22553.37.camel@laptop>
-	<CAKohpo===J9EeZXcDa2cmUifuwinSVnQsOs1u-cg==tfbs_-0Q@mail.gmail.com>
-Date: Tue, 19 Mar 2013 18:52:26 +0530
-Message-ID: <CAKohpomKKSBE-S1jTwh3Nr5ESOoN68kiK5BxRVHXqHX=-rDMSQ@mail.gmail.com>
-Subject: Re: [PATCH V3 1/7] sched: Create sched_select_cpu() to give preferred
- CPU for power saving
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, rostedt@goodmis.org, linaro-kernel@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 March 2013 18:22, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 19 March 2013 18:00, Peter Zijlstra <peterz@infradead.org> wrote:
->> Why not leave out the sd_flags argument and introduce it once you start
->> using it; at which point we can argue on the interface.
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Mar 19 2013, oskar.andero@sonymobile.com wrote:
+> The udc_irq service runs the isr_tr_complete_handler which in turn
+> "nukes" the endpoints, including a call to rndis_response_complete,
+> if appropriate. If the rndis_msg_parser fails here, an error will
+> be printed using a dev_err call (through the ERROR() macro).
 >
-> Yes, that can be done. Will fix it up.
+> However, if the usb cable was just disconnected the device (cdev)
+> might not be available and will be null. Since the dev_err macro will
+> dereference the cdev pointer we get a null pointer exception.
+>
+> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+> Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
 
-Fixup:
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-commit 77927939224520cbb0ac47270d3458bedffe42c4
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Tue Mar 19 18:50:37 2013 +0530
+I think this is the best solution.  Adding if statements around it would
+just add noise.
 
-    fixup! sched: Create sched_select_non_idle_cpu() to give preferred
-CPU for power saving
----
- include/linux/sched.h | 6 +++---
- kernel/sched/core.c   | 6 +-----
- 2 files changed, 4 insertions(+), 8 deletions(-)
+> ---
+>  drivers/usb/gadget/f_rndis.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+> index 71beeb8..cc9c49c 100644
+> --- a/drivers/usb/gadget/f_rndis.c
+> +++ b/drivers/usb/gadget/f_rndis.c
+> @@ -447,14 +447,13 @@ static void rndis_response_complete(struct usb_ep *=
+ep, struct usb_request *req)
+>  static void rndis_command_complete(struct usb_ep *ep, struct usb_request=
+ *req)
+>  {
+>  	struct f_rndis			*rndis =3D req->context;
+> -	struct usb_composite_dev	*cdev =3D rndis->port.func.config->cdev;
+>  	int				status;
+>=20=20
+>  	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
+>  //	spin_lock(&dev->lock);
+>  	status =3D rndis_msg_parser(rndis->config, (u8 *) req->buf);
+>  	if (status < 0)
+> -		ERROR(cdev, "RNDIS command error %d, %d/%d\n",
+> +		pr_err("RNDIS command error %d, %d/%d\n",
+>  			status, req->actual, req->length);
+>  //	spin_unlock(&dev->lock);
+>  }
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index db6655a..37eb1dd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -231,9 +231,9 @@ extern void init_idle_bootup_task(struct task_struct *idle);
- extern int runqueue_is_locked(int cpu);
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 
- #ifdef CONFIG_SMP
--extern int sched_select_non_idle_cpu(unsigned int sd_flags);
-+extern int sched_select_non_idle_cpu(void);
- #else
--static inline int sched_select_non_idle_cpu(unsigned int sd_flags)
-+static inline int sched_select_non_idle_cpu(void)
- {
-        return smp_processor_id();
- }
-@@ -251,7 +251,7 @@ extern void set_cpu_sd_state_idle(void);
-  * selecting an idle cpu will add more delays to the timers than intended
-  * (as that cpu's timer base may not be uptodate wrt jiffies etc).
-  */
--#define get_nohz_timer_target() sched_select_non_idle_cpu(0)
-+#define get_nohz_timer_target() sched_select_non_idle_cpu()
- #else
- static inline void nohz_balance_enter_idle(int cpu) { }
- static inline void set_cpu_sd_state_idle(void) { }
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0265a5e..f597d2b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -627,7 +627,7 @@ void sched_avg_update(struct rq *rq)
-  * returned back. If it is idle, then we must look for another CPU which have
-  * all the flags passed as argument as set.
-  */
--int sched_select_non_idle_cpu(unsigned int sd_flags)
-+int sched_select_non_idle_cpu(void)
- {
-        struct sched_domain *sd;
-        int cpu = smp_processor_id();
-@@ -639,10 +639,6 @@ int sched_select_non_idle_cpu(unsigned int sd_flags)
+--==-=-=
+Content-Type: text/plain
 
-        rcu_read_lock();
-        for_each_domain(cpu, sd) {
--                /* If sd doesnt' have sd_flags set skip sd. */
--               if ((sd->flags & sd_flags) != sd_flags)
--                       continue;
--
-                for_each_cpu(i, sched_domain_span(sd)) {
-                        if (i == cpu)
-                                continue;
+
+--==-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRSGawAAoJECBgQBJQdR/0aV4P/1XCh7KcCo01UlznrAXr2rb2
+BPsIiPlIp23VWEqhlb2NPevqo93RObZtM/83IMZVoRJ+YukPUT8g2IW2oEn7GiLW
+M4YiT6kpj+MzSZaP8swza58fAT9vqEb9qGgGXcJubybwYsOas1mEF2DgnOMEOoyE
+t1HOdJGU+zrj7r07z6wPP06XFHLf6A4S6LFGQny+FjHF6RQcDs68kZDLTLbCf8iT
+VNlvUCpItHIi+zyGg/u9BE16koGY4/NrppURqbuiiwouHZ/i/Jn5K3IDGS5QgBmX
+QM60hzD4MyZHXTTJsC2PycLSv9kunrJHOFm8fRxf1c2xAJquhe4qLskjssZTmSHo
+42wDTT8nZEeBEFwcZAfhq88Wms+2xEJZo1vfCLAaxAPnccoHSni4vbah6xPgPD1T
+ZJg/HOXW5+qFVTAw+VSBVL8jmU5PTwbsybZ/JFs14jYbzkz5qsFcfICpMZ1H0Nto
+Igb6K5bJaFSOorJXgo28q/s6OXS0N5mjV5C1vHurQiadnHI8u8gFp4Nzy+7bD2T4
+cKpNhhdRxg80MbLv6zIk93qKxqcE+BJF/PVyJMTTjJWg47oYLToGBeOvKvjeQjr/
+5XJMRh1drPnKXL4qFkZQ8t73i1ETNwOi7oR4QeZZ6wRJbE4gUjoqjKCiw0ABM2A8
+dDDc5ikNIQofUgTUqBBX
+=qP8K
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
