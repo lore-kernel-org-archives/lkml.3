@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab3CSR0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:26:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932964Ab3CSR0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:26:37 -0400
-Message-ID: <51489FC2.40806@draigBrady.com>
-Date: Tue, 19 Mar 2013 17:26:26 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757263Ab3CSR21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:28:27 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50987 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab3CSR20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 13:28:26 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/7] watchdog: w83627hf: Enable watchdog only once
-References: <1362957300-18223-1-git-send-email-linux@roeck-us.net> <1362957300-18223-3-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1362957300-18223-3-git-send-email-linux@roeck-us.net>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <20130319154600.GC5222@quack.suse.cz>
+References: <1362692649-25570-1-git-send-email-tj@kernel.org>
+	<1362692649-25570-4-git-send-email-tj@kernel.org>
+	<20130312150510.GF13152@quack.suse.cz>
+	<20130318223244.GA11188@quack.suse.cz>
+	<20130318223526.GH3042@htj.dyndns.org>
+	<20130319154600.GC5222@quack.suse.cz>
+Date: Tue, 19 Mar 2013 10:28:24 -0700
+X-Google-Sender-Auth: -epmqkaj3sV0lvXkLvGAbJ3HrK8
+Message-ID: <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] writeback: replace custom worker pool implementation
+ with unbound workqueue
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
+        linux-kernel@vger.kernel.org, jmoyer@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 11:14 PM, Guenter Roeck wrote:
-> It is unnecessary to enable the logical device and WDT0 each time
-> the watchdog is accessed. Do it only once during initialization.
+Hello, Jan.
 
-Is this also the case on systems where the superio
-chip is used for other things? I've the impression
-that this may break some systems (though I no longer
-have the hardware to test). Arbitration of multiple
-users of the superio device may be managed be a central
-user space app, or by a kernel level arbitrator.
+On Tue, Mar 19, 2013 at 8:46 AM, Jan Kara <jack@suse.cz> wrote:
+>   Well, but what you often get is just output of sysrq-w, or sysrq-t, or
+> splat from scheduler about stuck task. You often don't have the comfort of
+> tracing... Can't we somehow change 'comm' of the task when it starts
+> processing work of some bdi?
 
-thanks,
-Pádraig.
+You sure can but I'd prefer not to do that. If you wanna do it
+properly, you have to grab task lock every time a work item starts
+execution. I'm not sure how beneficial having the block device
+identifier would be. Backtrace would be there the same. Is identifying
+the block device that important?
+
+Thanks.
+
+-- 
+tejun
