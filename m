@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab3CSSuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:50:08 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50923 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab3CSSuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:50:06 -0400
-Date: Tue, 19 Mar 2013 18:50:03 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
- services
-Message-ID: <20130319185003.GA13301@srcf.ucam.org>
-References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
- <20130319014850.GA28934@srcf.ucam.org>
- <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
- <20130319163531.GA10879@srcf.ucam.org>
- <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
- <20130319172506.GA11969@srcf.ucam.org>
- <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
- <20130319182810.GA13003@srcf.ucam.org>
- <1363718456.2377.71.camel@dabdike.int.hansenpartnership.com>
+	id S932568Ab3CSSu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756057Ab3CSSu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:50:27 -0400
+Date: Tue, 19 Mar 2013 20:50:26 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] x86: let userspace inject interrupts into the local APIC
+Message-ID: <20130319185025.GM19292@redhat.com>
+References: <1363708273-19653-1-git-send-email-pbonzini@redhat.com>
+ <20130319181323.GL19292@redhat.com>
+ <5148B0DC.9000609@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363718456.2377.71.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <5148B0DC.9000609@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 06:40:56PM +0000, James Bottomley wrote:
-> On Tue, 2013-03-19 at 18:28 +0000, Matthew Garrett wrote:
-> > It requires the key to survive the system being entirely powered down, 
-> > which means it needs to be BS+NV. It shouldn't be possible for userspace 
-> > to access this key.
+On Tue, Mar 19, 2013 at 07:39:24PM +0100, Paolo Bonzini wrote:
+> Il 19/03/2013 19:13, Gleb Natapov ha scritto:
+> >> > There is no way for userspace to inject interrupts into a VCPU's
+> >> > local APIC, which is important in order to inject INITs coming from
+> >> > the chipset.  KVM_INTERRUPT is currently disabled when the in-kernel
+> >> > local APIC is used, so we can repurpose it.  The shorthand destination
+> >> > field must contain APIC_DEST_SELF, which has a double effect: first,
+> >> > the ICR2 register is not used and the 32-bit field of KVM_INTERRUPT is
+> >> > enough; second, it ensures that the valid range of the irq field is
+> >> > distinct in the userspace-APIC and kernel-APIC cases.
+> >> > 
+> > Init coming from triggering INIT# line should not be modeled as INIT coming from
+> > APIC.
 > 
-> It requires the *public* key to survive power down, certainly.  The
-> private key can be thrown away once the hibernate image is signed.  I
-> think the scheme can be constructed so the private key is never in NV
-> storage ... that also makes it more secure against tampering.
+> Then Jan's patch was wrong, and INIT should not have been an apic event
+> (perhaps SIPI should).
+> 
+If it goes through APIC it is. Also the problem with reusing KVM_INTERRUPT is
+that it is synchronous interface but INIT# is asynchronous. Shouldn't be a big
+deal though.
 
-Well, that somewhat complicates implementation - we'd be encrypting the 
-entire contents of memory except for the key that we're using to encrypt 
-memory. Keeping the public key away from userspace avoids having to care 
-about that.
+> > In fact INIT cannot be send using SELF shorthand.
+> 
+> Where does the SDM say that?
+> 
+Table 10-3.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+--
+			Gleb.
