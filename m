@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3CSIoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 04:44:34 -0400
-Received: from sauhun.de ([89.238.76.85]:53423 "EHLO pokefinder.org"
+	id S964989Ab3CSIsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 04:48:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62331 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753286Ab3CSIoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 04:44:32 -0400
-Date: Tue, 19 Mar 2013 09:44:52 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Current I2C workflow
-Message-ID: <20130319084442.GA3170@katana>
+	id S1754192Ab3CSIsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 04:48:04 -0400
+Message-ID: <5148261F.3030806@redhat.com>
+Date: Tue, 19 Mar 2013 16:47:27 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, kexec@lists.infradead.org,
+        linux-pci@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH 10/12] acpi: Ignore acpi_rsdp kernel parameter in a secure
+ boot environment
+References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com> <1363642353-30749-10-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1363642353-30749-10-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/19/2013 05:32 AM, Matthew Garrett wrote:
+> From: Josh Boyer <jwboyer@redhat.com>
+> 
+> This option allows userspace to pass the RSDP address to the kernel.  This
+> could potentially be used to circumvent the secure boot trust model.
+> We ignore the setting if we don't have the CAP_COMPROMISE_KERNEL capability.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> ---
+>  drivers/acpi/osl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 586e7e9..0ef63f1 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -245,7 +245,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
+>  acpi_physical_address __init acpi_os_get_root_pointer(void)
+>  {
+>  #ifdef CONFIG_KEXEC
+> -	if (acpi_rsdp)
+> +	if (acpi_rsdp && capable(CAP_COMPROMISE_KERNEL))
+>  		return acpi_rsdp;
+>  #endif
+>  
+> 
 
-working on the transparency thing here regarding the current I2C
-workflow. I am currently on, well, let's call it something between
-holiday and retreat. I will work on (hopefully all) pending I2C patches
-half-time until Friday and then probably disappear for about 3 weeks
-again. Disappearing means I will lurk the list for urgent patches and
-handle them, but will pass the other ones for later handling. So, please
-make sure to emphasize urgent patches.
+This does not work because capable is not usable at this early point.
 
-For a few weeks now, the I2C list is monitored by patchwork [1] (Thanks,
-Jeremy!), which should make sure that no patches are forgotten. I do use
-the status field, so this list is a good place to check if you wonder
-what happened to your patch. I will send replies explaining my
-decisions, nonetheless.
+Josh, could you update your fix here?
 
-People reviewing patches from each other are much appreciated and will
-help the process.
+-- 
+Thanks
+Dave
 
-And to make clear after some email confusion: wsa@the-dreams.de is the
-preferred email address for my kernel related stuff.
 
-Off to work,
-
-   Wolfram
-
-[1] http://patchwork.ozlabs.org/project/linux-i2c/list/
