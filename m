@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933604Ab3CSHry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 03:47:54 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:27914 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932304Ab3CSHrx (ORCPT
+	id S964808Ab3CSHsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 03:48:23 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:43731 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934154Ab3CSHsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 03:47:53 -0400
+	Tue, 19 Mar 2013 03:48:22 -0400
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>,
@@ -14,9 +14,9 @@ CC: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>,
         <nicolas.ferre@atmel.com>, <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
         <spi-devel-general@lists.sourceforge.net>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v7 04/14] spi/spi-atmel: call unmapping on transfers buffers
-Date: Tue, 19 Mar 2013 15:44:22 +0800
-Message-ID: <1363679062-3797-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v7 05/14] spi/spi-atmel: status information passed through controller data
+Date: Tue, 19 Mar 2013 15:45:01 +0800
+Message-ID: <1363679101-3834-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
 References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
@@ -28,41 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
+The status of transfer is stored in controller data structure
+so that it can be used not only by atmel_spi_msg_done() function.
+This will be useful for upcoming dmaengine enabled driver.
+
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: spi-devel-general@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
 [wenyou.yang@atmel.com: submit the patch]
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- drivers/spi/spi-atmel.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/spi/spi-atmel.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index f3e1cd8..e3af244 100644
+index e3af244..4692f1f 100644
 --- a/drivers/spi/spi-atmel.c
 +++ b/drivers/spi/spi-atmel.c
-@@ -1049,6 +1049,7 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 	struct spi_message	*msg;
-+	struct spi_transfer	*xfer;
+@@ -209,6 +209,7 @@ struct atmel_spi {
+ 	unsigned long		current_remaining_bytes;
+ 	struct spi_transfer	*next_transfer;
+ 	unsigned long		next_remaining_bytes;
++	int			done_status;
  
- 	/* reset the hardware and block queue progress */
- 	spin_lock_irq(&as->lock);
-@@ -1060,9 +1061,10 @@ static int atmel_spi_remove(struct platform_device *pdev)
+ 	void			*buffer;
+ 	dma_addr_t		buffer_dma;
+@@ -554,15 +555,15 @@ static void atmel_spi_dma_unmap_xfer(struct spi_master *master,
  
- 	/* Terminate remaining queued transfers */
- 	list_for_each_entry(msg, &as->queue, queue) {
--		/* REVISIT unmapping the dma is a NOP on ARM and AVR32
--		 * but we shouldn't depend on that...
--		 */
-+		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+			if (!msg->is_dma_mapped)
-+				atmel_spi_dma_unmap_xfer(master, xfer);
-+		}
- 		msg->status = -ESHUTDOWN;
- 		msg->complete(msg->context);
- 	}
+ static void
+ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+-		struct spi_message *msg, int status, int stay)
++		struct spi_message *msg, int stay)
+ {
+-	if (!stay || status < 0)
++	if (!stay || as->done_status < 0)
+ 		cs_deactivate(as, msg->spi);
+ 	else
+ 		as->stay = msg->spi;
+ 
+ 	list_del(&msg->queue);
+-	msg->status = status;
++	msg->status = as->done_status;
+ 
+ 	dev_dbg(master->dev.parent,
+ 		"xfer complete: %u bytes transferred\n",
+@@ -574,6 +575,7 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+ 
+ 	as->current_transfer = NULL;
+ 	as->next_transfer = NULL;
++	as->done_status = 0;
+ 
+ 	/* continue if needed */
+ 	if (list_empty(&as->queue) || as->stopping)
+@@ -651,7 +653,8 @@ atmel_spi_interrupt(int irq, void *dev_id)
+ 		/* Clear any overrun happening while cleaning up */
+ 		spi_readl(as, SR);
+ 
+-		atmel_spi_msg_done(master, as, msg, -EIO, 0);
++		as->done_status = -EIO;
++		atmel_spi_msg_done(master, as, msg, 0);
+ 	} else if (pending & (SPI_BIT(RXBUFF) | SPI_BIT(ENDRX))) {
+ 		ret = IRQ_HANDLED;
+ 
+@@ -669,7 +672,7 @@ atmel_spi_interrupt(int irq, void *dev_id)
+ 
+ 			if (atmel_spi_xfer_is_last(msg, xfer)) {
+ 				/* report completed message */
+-				atmel_spi_msg_done(master, as, msg, 0,
++				atmel_spi_msg_done(master, as, msg,
+ 						xfer->cs_change);
+ 			} else {
+ 				if (xfer->cs_change) {
 -- 
 1.7.9.5
 
