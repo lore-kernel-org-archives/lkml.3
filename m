@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824Ab3CSVg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:36:28 -0400
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:59970 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab3CSVg0 (ORCPT
+	id S965039Ab3CSVhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:37:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab3CSVhR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:36:26 -0400
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aul2AIrZSFFV5qjOPGdsb2JhbABDhzwjhQG4OAICAYFbFwMBAQEBODWCJAEBBAE6HCMFCwgDDhMlDwUlChouh3MKsg2QDBWNXlRHB4JfYQOTGYNFhg2MJYFcOw
-X-IronPort-AV: E=Sophos;i="4.84,874,1355094000"; 
-   d="scan'208";a="222222955"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 19 Mar 2013 22:40:57 +0100
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: multitouch: support of hybrid finger/pen devices
-Message-ID: <20130319214057.GA7902@polaris.bitmath.org>
-References: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
- <alpine.LNX.2.00.1303182313080.9529@pobox.suse.cz>
+	Tue, 19 Mar 2013 17:37:17 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303182313080.9529@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <513F79BA.7000608@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1363113747-6572-1-git-send-email-pdeschrijver@nvidia.com>
+ <513F79BA.7000608@wwwdotorg.org>
+Message-ID: <20130319213706.8663.87186@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH] clk: add table lookup to mux
+Date: Tue, 19 Mar 2013 14:37:06 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri, Benjamin,
-
-> > So the solution consists in relying inconditionaly to the quirk MULTI_INPUT for
-> > hid-multitouch. Before registering the input device in hid-input, we can test if
-> > it has been populated, and if not, then we simply don't register it. In order to
-> > prevent a regression for drivers that do not fill the input device, we need to
-> > add an other quirk.
+Quoting Stephen Warren (2013-03-12 11:53:46)
+> On 03/12/2013 12:42 PM, Peter De Schrijver wrote:
+> > Add a table lookup feature to the mux clock. Also allow arbitrary masks
+> > instead of the width. This will be used by some clocks on Tegra114. Also
+> > adapt the tegra periph clk because it uses struct clk_mux directly.
+> > 
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> > 
+> > --
+> > Mike,
+> > 
+> > This is the same patch I posted before which implements a table lookup
+> > feature for the mux clock. I squashed both the changes to clk-mux.c and
+> > tegra/clk.h together in order to make the patch bisectable.
 > 
-> Hi everybody,
-> 
-> I am in progress of reviewing this patchset, and so far don't have any 
-> major obejctions; I expect to have the review finished this week, so 3.10 
-> is definitely a realistic target.
+> For the record in this thread, this is a dependency of the Tegra114
+> clock driver. Can this patch be added to a stable branch in the clk or
+> arm-soc trees, which I can merge before applying the Tegra114 clock
+> driver? Thanks.
 
-I agree, I think it looks sound in general.
+Yes.  I don't have an immutable branch today, but I will have one by
+-rc4.  It will be named clk-for-3.10.
 
-> Just to set my own expectations correctly -- Henrik, are you going to 
-> review this patchset as well, or there is no need for me to wait for your 
-> feedback?
+I have a pending question about the ugly width/mask issue, otherwise
+I'll let you know when I take this patch into clk-next.
 
-No need to wait any longer ;-)
-
-Cheers,
-Henrik
+Regards,
+Mike
