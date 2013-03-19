@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab3CSU0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:26:16 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62962 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757266Ab3CSU0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:26:14 -0400
-Message-ID: <1363724768.1390.36.camel@x61.thuisdomein>
-Subject: Re: [PATCH] sparc: remove unused "config BITS"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 19 Mar 2013 21:26:08 +0100
-In-Reply-To: <20130319201454.GA25072@merkur.ravnborg.org>
-References: <1363708727.1390.16.camel@x61.thuisdomein>
-	 <20130319.123306.1709006318806942163.davem@davemloft.net>
-	 <1363712807.1390.26.camel@x61.thuisdomein>
-	 <20130319201454.GA25072@merkur.ravnborg.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2013 20:26:08.0853 (UTC) FILETIME=[FD6ED850:01CE24DF]
-X-RcptDomain: vger.kernel.org
+	id S933869Ab3CSU2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:28:37 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49452 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933296Ab3CSU2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 16:28:34 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX19TBShhxEVT7Z1YtMow9ehWWRJSPHsRQSyLxE27FT
+	uESW3bD7Lbb62D
+From: Sven Joachim <svenjoac@gmx.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Stephen Thirlwall <sdt@dr.com>
+Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI controllers
+References: <Pine.LNX.4.44L0.1303191607390.1302-100000@iolanthe.rowland.org>
+Date: Tue, 19 Mar 2013 21:28:29 +0100
+In-Reply-To: <Pine.LNX.4.44L0.1303191607390.1302-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Tue, 19 Mar 2013 16:10:09 -0400 (EDT)")
+Message-ID: <87620n9lsi.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 21:14 +0100, Sam Ravnborg wrote:
-> On Tue, Mar 19, 2013 at 06:06:47PM +0100, Paul Bolle wrote:
-> > So $(BITS) is set depending on whether CONFIG_SPARC32 is set or not.
-> > Using $(BITS) in sparc's Makefiles is not using CONFIG_BITS. That
-> > doesn't count as usage of "config BITS". 
-> Just double checked - you are right.
+On 2013-03-19 21:10 +0100, Alan Stern wrote:
 
-Thanks.
+> On Tue, 19 Mar 2013, Sven Joachim wrote:
+>
+>> > In what way is resume broken?
+>> 
+>> The kernel comes back, but the screen is black.  Manually switching VT's
+>> is possible, and if I type something I can see it on the screen, but
+>> there is no response and the cursor does not blink.  It looks as if the
+>> VT is not switched backed on resume, and userspace tasks are not
+>> restarted.  Sysrq combinations apparently work, but produce no output.
+>
+> Are there any other problems?  For example, even before you do a 
+> suspend, if you type Alt-SysRq-W do you see any processes listed?
 
-> Maybe send a v2 with this info in changelog and add my:
-> 
-> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+No.
 
-David: should I send a second version with a line or two on the
-(non-related) use of BITS in the Makefiles and Sam's ACK?
+> There was another report on the linux-usb mailing list today of this
+> same patch causing the khubd task to hang.  I'm thinking that you might
+> be facing a similar problem.
 
+Maybe, but before the suspend everything seems to be normal.
 
-Paul Bolle
-
+Cheers,
+       Sven
