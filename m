@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab3CSMh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 08:37:56 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:40644 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3CSMhz (ORCPT
+	id S1754378Ab3CSMik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 08:38:40 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:47616 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab3CSMij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 08:37:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [109.186.17.83]
-In-Reply-To: <1360496352-29482-2-git-send-email-sjur.brandeland@stericsson.com>
-References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com> <1360496352-29482-2-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 19 Mar 2013 14:37:33 +0200
-Message-ID: <CAK=WgbYpTkjPsPRHO8is60SM-JR-LLCt8GK43mDAyBvt8EZP9w@mail.gmail.com>
-Subject: Re: [PATCH 1/9] remoteproc: Bugfix: Deallocate firmware image on shutdown
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: Ido Yariv <ido@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 08:38:39 -0400
+X-Greylist: delayed 158707 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Mar 2013 08:38:39 EDT
+Message-ID: <1363696716.21184.45.camel@edumazet-glaptop>
+Subject: Re: [PATCH] ktime_add_ns() may overflow on 32bit architectures
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Engraf <david.engraf@sysgo.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 05:38:36 -0700
+In-Reply-To: <51485A43.4020600@sysgo.com>
+References: <51485A43.4020600@sysgo.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+On Tue, 2013-03-19 at 13:29 +0100, David Engraf wrote:
+> Hello,
+> 
+> I've triggered an overflow when using ktime_add_ns() on a 32bit 
+> architecture not supporting CONFIG_KTIME_SCALAR.
+> 
+> When passing a very high value for u64 nsec, e.g. 7881299347898368000 
+> the do_div() function converts this value to seconds (7881299347) which 
+> is still to high to pass to the ktime_set() function as long. The result 
+> in my case is a negative value.
+> 
+> The problem on my system occurs in the tick-sched.c, 
+> tick_nohz_stop_sched_tick() when time_delta is set to 
+> timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is 
+> valid, thus ktime_add_ns() is called with a too large value resulting in 
+> a negative expire value. This leads to an endless loop in the ticker code:
+> 
+> time_delta: 7881299347898368000
+> expires = ktime_add_ns(last_update, time_delta)
+> expires: negative value
+> 
+> This error doesn't occurs on 64bit or architectures supporting 
+> CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
+> 
+> Best regards
+> - David
+> 
+> Signed-off-by: David Engraf <david.engraf@sysgo.com>
+> 
 
-On Sun, Feb 10, 2013 at 1:39 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
->
-> Fixes coherent memory leakage, caused by non-deallocated
-> firmware image chunk.
+But check already exists for 64bit arches in ktime_set()
 
-I'll just slightly edit the subject + commit log to indicate this fix
-is STE-specific.
 
-> Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
 
-Can I add your s-o-b here?
-
-Since you sent the patch, we should add your s-o-b after Dmitry's.
-
-Thanks,
-Ohad.
