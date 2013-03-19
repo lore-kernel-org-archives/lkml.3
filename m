@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159Ab3CSUwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:52:53 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:42298 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933936Ab3CSUww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:52:52 -0400
-Date: Tue, 19 Mar 2013 21:52:49 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
-        linux-s390@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.9-rc3
-In-Reply-To: <alpine.DEB.2.00.1303192148530.18971@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1303192149210.18990@ayla.of.borg>
-References: <alpine.DEB.2.00.1303192148530.18971@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S934167Ab3CSUyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:54:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57714 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933289Ab3CSUyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 16:54:14 -0400
+Date: Tue, 19 Mar 2013 21:54:03 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130319205403.GG5222@quack.suse.cz>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+ <20130318230103.GF21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130318230103.GF21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Mar 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.9-rc3 to v3.9-rc2[3], the summaries are:
->   - build errors: +10/-12
+On Mon 18-03-13 23:01:03, Al Viro wrote:
+> On Mon, Mar 18, 2013 at 09:53:34PM +0000, Al Viro wrote:
+> > On Mon, Mar 18, 2013 at 04:39:36PM +0100, Jan Kara wrote:
+> > >   IMO the deadlock is real. In freeze_super() we wait for all writers to
+> > > the filesystem to finish while blocking beginning of any further writes. So
+> > > we have a deadlock scenario like:
+> > > 
+> > >   THREAD1		THREAD2				THREAD3
+> > > mnt_want_write()	mutex_lock(&inode->i_mutex);
+> > > ...							freeze_super()
+> > > block on mutex_lock(&inode->i_mutex)
+> > > 							  sb_wait_write(sb, SB_FREEZE_WRITE);
+> > > 			block in sb_start_write()
+> > 
+> > The bug is on fsfreeze side and this is not the only problem related to it.
+> > I've missed the implications when I applied "fs: Add freezing handling
+> > to mnt_want_write() / mnt_drop_write()" last June ;-/
+> > 
+> > The thing is, until then mnt_want_write() used to be a counter; it could be
+> > nested.  Now any such nesting is a deadlock you've just described.  This
+> > is seriously wrong, IMO.
+> > 
+> > BTW, having sb_start_write() buried in individual ->splice_write() is
+> > asking for trouble; could you describe the rules for that?  E.g. where
+> > does it nest wrt filesystem-private locks?  XFS iolock, for example...
+> 
+> I'm looking at the existing callers and I really wonder if we ought to
+> push sb_start_write() from ->splice_write()/->aio_write()/etc. into the
+> callers.
+  Yeah, that should be OK.
 
-10 regressions:
-  + arch/powerpc/kvm/book3s_hv.c: error: implicit declaration of function 'inhibit_secondary_onlining' [-Werror=implicit-function-declaration]:  => 1855:2
-  + arch/powerpc/kvm/book3s_hv.c: error: implicit declaration of function 'uninhibit_secondary_onlining' [-Werror=implicit-function-declaration]:  => 1862:2
+> Something like file_start_write()/file_end_write(), with check for file
+> being regular one might be a good starting point.  As it is, copyup is
+> really fucked both in unionmount and overlayfs...
+  Makes sense. I can do the patch. BTW, for months I'm trying to push to you
+a patch which creates a function like file_start_write() which returns
+EAGAIN if the file is open with O_NONBLOCK and fs is frozen (this allows me
+to solve a deadlock with bsd process accounting to frozen fs). After this
+change the patch will become trivial so I'll add it to the series and
+hopefully it won't get ignored.
 
-ppc64_defconfig+UP
-
-  + error: "devm_request_threaded_irq" [drivers/dma/dw_dmac.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/i2c/busses/i2c-ocores.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/i2c/i2c-smbus.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/media/platform/sh_veu.ko] undefined!:  => N/A
-  + error: "devm_request_threaded_irq" [drivers/spi/spi-altera.ko] undefined!:  => N/A
-  + error: "mfd_add_devices" [drivers/mfd/lpc_sch.ko] undefined!:  => N/A
-  + error: "mfd_remove_devices" [drivers/mfd/lpc_sch.ko] undefined!:  => N/A
-
-s390-allmodconfig
-
-  + error: "vgacon_remap_base" [drivers/video/vga16fb.ko] undefined!:  => N/A
-
-powerpc-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5993/ (118 out of 117 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5972/ (all 117 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
