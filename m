@@ -1,125 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab3CSTbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:31:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35922 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933672Ab3CST3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933677Ab3CST3A (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Mar 2013 15:29:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34778 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933323Ab3CST25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 15:28:57 -0400
 X-IronPort-AV: E=Sophos;i="4.84,874,1355068800"; 
-   d="scan'208";a="6904510"
+   d="scan'208";a="6904507"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 15/21] workqueue: remove worker_maybe_bind_and_lock()
-Date: Wed, 20 Mar 2013 03:28:15 +0800
-Message-Id: <1363721306-2030-16-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 12/21] workqueue: use wq->mutex to protect saved_max_active
+Date: Wed, 20 Mar 2013 03:28:12 +0800
+Message-Id: <1363721306-2030-13-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/20 03:27:34,
+ 2013/03/20 03:27:30,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/20 03:27:34,
-	Serialize complete at 2013/03/20 03:27:34
+ 2013/03/20 03:27:30,
+	Serialize complete at 2013/03/20 03:27:30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-worker_maybe_bind_and_lock() is only used by rescuers.
-but rescuer thread can fails when it do bind, so using
-set_cpus_allowed_ptr() is enough.
+saved_max_active is instance's field, so we use wq->mutex to protect
+saved_max_active and pwq_adjust_max_active().
+
+The patch also convert for_each_pwq()(which are around pwq_adjust_max_active())
+to be protected by wq->mutex.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   67 +--------------------------------------------------
- 1 files changed, 2 insertions(+), 65 deletions(-)
+ kernel/workqueue.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index db08b63..12e3e3a 100644
+index 41e7737..a3460e7 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1545,70 +1545,6 @@ static void worker_leave_idle(struct worker *worker)
- 	list_del_init(&worker->entry);
+@@ -245,7 +245,7 @@ struct workqueue_struct {
+ 	struct worker		*rescuer;	/* I: rescue worker */
+ 
+ 	int			nr_drainers;	/* Q: drain in progress */
+-	int			saved_max_active; /* PW: saved pwq max_active */
++	int			saved_max_active; /* Q: saved pwq max_active */
+ 
+ #ifdef CONFIG_SYSFS
+ 	struct wq_device	*wq_dev;	/* I: for sysfs interface */
+@@ -3581,13 +3581,13 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+ 	bool freezable = wq->flags & WQ_FREEZABLE;
+ 
+ 	/* for @wq->saved_max_active */
+-	lockdep_assert_held(&pwq_lock);
++	lockdep_assert_held(&wq->mutex);
+ 
+ 	/* fast exit for non-freezable wqs */
+ 	if (!freezable && pwq->max_active == wq->saved_max_active)
+ 		return;
+ 
+-	spin_lock(&pwq->pool->lock);
++	spin_lock_irq(&pwq->pool->lock);
+ 
+ 	if (freezable && (pwq->pool->flags & POOL_FREEZING)) {
+ 		pwq->max_active = 0;
+@@ -3607,7 +3607,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+ 		wake_up_worker(pwq->pool);
+ 	}
+ 
+-	spin_unlock(&pwq->pool->lock);
++	spin_unlock_irq(&pwq->pool->lock);
  }
  
--/**
-- * worker_maybe_bind_and_lock - try to bind %current to worker_pool and lock it
-- * @pool: target worker_pool
-- *
-- * Bind %current to the cpu of @pool if it is associated and lock @pool.
-- *
-- * Works which are scheduled while the cpu is online must at least be
-- * scheduled to a worker which is bound to the cpu so that if they are
-- * flushed from cpu callbacks while cpu is going down, they are
-- * guaranteed to execute on the cpu.
-- *
-- * This function is to be used by unbound workers and rescuers to bind
-- * themselves to the target cpu and may race with cpu going down or
-- * coming online.  kthread_bind() can't be used because it may put the
-- * worker to already dead cpu and set_cpus_allowed_ptr() can't be used
-- * verbatim as it's best effort and blocking and pool may be
-- * [dis]associated in the meantime.
-- *
-- * This function tries set_cpus_allowed() and locks pool and verifies the
-- * binding against %POOL_DISASSOCIATED which is set during
-- * %CPU_DOWN_PREPARE and cleared during %CPU_ONLINE, so if the worker
-- * enters idle state or fetches works without dropping lock, it can
-- * guarantee the scheduling requirement described in the first paragraph.
-- *
-- * CONTEXT:
-- * Might sleep.  Called without any lock but returns with pool->lock
-- * held.
-- *
-- * RETURNS:
-- * %true if the associated pool is online (@worker is successfully
-- * bound), %false if offline.
-- */
--static bool worker_maybe_bind_and_lock(struct worker_pool *pool)
--__acquires(&pool->lock)
--{
--	while (true) {
--		/*
--		 * The following call may fail, succeed or succeed
--		 * without actually migrating the task to the cpu if
--		 * it races with cpu hotunplug operation.  Verify
--		 * against POOL_DISASSOCIATED.
--		 */
--		if (!(pool->flags & POOL_DISASSOCIATED))
--			set_cpus_allowed_ptr(current, pool->attrs->cpumask);
--
--		spin_lock_irq(&pool->lock);
--		if (pool->flags & POOL_DISASSOCIATED)
--			return false;
--		if (task_cpu(current) == pool->cpu &&
--		    cpumask_equal(&current->cpus_allowed, pool->attrs->cpumask))
--			return true;
--		spin_unlock_irq(&pool->lock);
--
--		/*
--		 * We've raced with CPU hot[un]plug.  Give it a breather
--		 * and retry migration.  cond_resched() is required here;
--		 * otherwise, we might deadlock against cpu_stop trying to
--		 * bring down the CPU on non-preemptive kernel.
--		 */
--		cpu_relax();
--		cond_resched();
--	}
--}
--
- static struct worker *alloc_worker(void)
- {
- 	struct worker *worker;
-@@ -2326,7 +2262,8 @@ repeat:
- 		spin_unlock_irq(&wq_mayday_lock);
+ static void init_and_link_pwq(struct pool_workqueue *pwq,
+@@ -3626,7 +3626,6 @@ static void init_and_link_pwq(struct pool_workqueue *pwq,
+ 	INIT_WORK(&pwq->unbound_release_work, pwq_unbound_release_workfn);
  
- 		/* migrate to the target cpu if possible */
--		worker_maybe_bind_and_lock(pool);
-+		set_cpus_allowed_ptr(current, pool->attrs->cpumask);
-+		spin_lock_irq(&pool->lock);
- 		rescuer->pool = pool;
+ 	mutex_lock(&wq->mutex);
+-	spin_lock_irq(&pwq_lock);
  
- 		/*
+ 	/*
+ 	 * Set the matching work_color.  This is synchronized with
+@@ -3640,9 +3639,10 @@ static void init_and_link_pwq(struct pool_workqueue *pwq,
+ 	pwq_adjust_max_active(pwq);
+ 
+ 	/* link in @pwq */
++	spin_lock_irq(&pwq_lock);
+ 	list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
+-
+ 	spin_unlock_irq(&pwq_lock);
++
+ 	mutex_unlock(&wq->mutex);
+ }
+ 
+@@ -3806,10 +3806,10 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 	 */
+ 	mutex_lock(&wqs_mutex);
+ 
+-	spin_lock_irq(&pwq_lock);
++	mutex_lock(&wq->mutex);
+ 	for_each_pwq(pwq, wq)
+ 		pwq_adjust_max_active(pwq);
+-	spin_unlock_irq(&pwq_lock);
++	mutex_unlock(&wq->mutex);
+ 
+ 	list_add(&wq->list, &workqueues);
+ 
+@@ -3920,14 +3920,14 @@ void workqueue_set_max_active(struct workqueue_struct *wq, int max_active)
+ 
+ 	max_active = wq_clamp_max_active(max_active, wq->flags, wq->name);
+ 
+-	spin_lock_irq(&pwq_lock);
++	mutex_lock(&wq->mutex);
+ 
+ 	wq->saved_max_active = max_active;
+ 
+ 	for_each_pwq(pwq, wq)
+ 		pwq_adjust_max_active(pwq);
+ 
+-	spin_unlock_irq(&pwq_lock);
++	mutex_unlock(&wq->mutex);
+ }
+ EXPORT_SYMBOL_GPL(workqueue_set_max_active);
+ 
+@@ -4314,13 +4314,12 @@ void freeze_workqueues_begin(void)
+ 	}
+ 	mutex_unlock(&pools_mutex);
+ 
+-	/* suppress further executions by setting max_active to zero */
+-	spin_lock_irq(&pwq_lock);
+ 	list_for_each_entry(wq, &workqueues, list) {
++		mutex_lock(&wq->mutex);
+ 		for_each_pwq(pwq, wq)
+ 			pwq_adjust_max_active(pwq);
++		mutex_unlock(&wq->mutex);
+ 	}
+-	spin_unlock_irq(&pwq_lock);
+ 
+ 	mutex_unlock(&wqs_mutex);
+ }
+@@ -4404,12 +4403,12 @@ void thaw_workqueues(void)
+ 	mutex_unlock(&pools_mutex);
+ 
+ 	/* restore max_active and repopulate worklist */
+-	spin_lock_irq(&pwq_lock);
+ 	list_for_each_entry(wq, &workqueues, list) {
++		mutex_lock(&wq->mutex);
+ 		for_each_pwq(pwq, wq)
+ 			pwq_adjust_max_active(pwq);
++		mutex_unlock(&wq->mutex);
+ 	}
+-	spin_unlock_irq(&pwq_lock);
+ out_unlock:
+ 	mutex_unlock(&wqs_mutex);
+ }
 -- 
 1.7.7.6
 
