@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934057Ab3CSWUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:20:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47244 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757354Ab3CSWUM (ORCPT
+	id S934137Ab3CSWUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:20:42 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:39987 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3CSWUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:20:12 -0400
-Date: Wed, 20 Mar 2013 09:20:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the workqueues tree with Linus'
- tree
-Message-Id: <20130320092003.34eef26c91419b4a2f0f3d32@canb.auug.org.au>
-In-Reply-To: <20130319221308.GS3042@htj.dyndns.org>
-References: <20130319131938.73dd0f1233c8aba41742aded@canb.auug.org.au>
-	<20130319211233.GN3042@htj.dyndns.org>
-	<20130320090540.81c687d28ffe3a6abe905816@canb.auug.org.au>
-	<20130319221308.GS3042@htj.dyndns.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Mar_2013_09_20_03_+1100_0NZw8Ht_oilgrMrI"
+	Tue, 19 Mar 2013 18:20:40 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040223.15064.77472.stgit@localhost6.localdomain6>
+Date: Tue, 19 Mar 2013 15:20:34 -0700
+In-Reply-To: <20130316040223.15064.77472.stgit@localhost6.localdomain6>
+	(HATAYAMA Daisuke's message of "Sat, 16 Mar 2013 13:02:23 +0900")
+Message-ID: <87li9jkp59.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX197Sfb9a1ZEHMX6gntiu0s/duaAzX/gyQU=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 17/21] vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Mar_2013_09_20_03_+1100_0NZw8Ht_oilgrMrI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-Hi Tejun,
+> Modern kernel marks the end of ELF note buffer with NT_VMCORE_PAD type
+> note in order to make the buffer satisfy mmap()'s page-size boundary
+> requirement. This patch makes finishing reading each buffer if the
+> note type now being read is NT_VMCORE_PAD type.
 
-On Tue, 19 Mar 2013 15:13:08 -0700 Tejun Heo <tj@kernel.org> wrote:
->
-> On Wed, Mar 20, 2013 at 09:05:40AM +1100, Stephen Rothwell wrote:
-> > > Anyways, I pulled master into wq/for-next and resolved it there, so it
-> > > shouldn't cause you any more trouble.
-> >=20
-> > Ah, OK, thanks.   One small point, when you do a back merge like that,
-> > you should always put an explanation in the commit message for the merg=
-e.
->=20
-> Oh, I do that for any permanent branches.  for-next branches are
-> ephemeral (at least in my trees) so I usually don't bother.  I do
-> compare against for-next when and after sending pull requests with
-> proper conflict descriptions, so things are not likely to slip through
-> there.  Hmmm.... if it's gonna be helpful to you, I'd be happy to
-> describe merge conflicts and resolutions in for-next merges.  Would
-> that be helpful?
+There is absolutely no need for this ABI change.  If you need a wasteful
+pad note taking up space (which I see no evicence for) you can still
+terminate this with an empty note.
 
-No, that's OK.  I do wonder some times why some people have "ephemeral"
--next branches, though?  I guess, in your case, that you send your stuff
-to Linus in more than one pull request and have just combined them to
-reduce the conflicts for my benefit?  Which is fine.
+Eric
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__20_Mar_2013_09_20_03_+1100_0NZw8Ht_oilgrMrI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRSOSTAAoJEECxmPOUX5FEKpcQAI6khR0RZSQIfBitEJnZiHE9
-qaUKChYSKkpi+q0qfmP8mAe4nmz3K+ugIWas8U8SmWMFSXLhR7h20R2zoqPtyGYd
-gByc3Z9b8ki5BUgClM6hlQqygoG4mHavrD7J+sULRxY705tvYvO+PAnXWV8T+jvC
-mhZXM8rTZqDbvbInn0xZqfACIlgH8vIlJaKQQtKGAhjOydgeaMPslaG+7/CVKspx
-Iih3RdojqLJeHGB7QMgGkgsupMSTB+3kIUp7nC4fxSO92OplbRlIbTn8lvpNae0s
-dUOyAuUhTX3T4IDam0adfK41PuwGJRDKrWEq2BLExx9H2al62fWBn3aKCftjb5SO
-VpYhytpPCsNAO1aLB4RxW+OCVH0wcw7F3GBf0HtnCcHQNPnKQ5teRToD0MXEyWSd
-4cPuJvU47Jl9GDY1XgxIVDWUAGdNX7rgIiyNBISELiGgHn2vNcg0SLX3t3UDaxXE
-2t/jTf82W0CqPlEhDPwReg0omL9Ex0uC9CZ2g9nzNG0zbjYe0KlmbOQiUfkRy2Pq
-68ctHOIXcXS/Dh+ar6F4jQIPwh3vWtFYVzUpzRhDAl9z1YNOmGfw36nGc3z66eZn
-DL8/x3oAWr1t731pCRBzrkKNKMWwqHDArQazPWmaL6f7+8TqpSuuFCwtOZ0kfvhG
-8l7NKwjvnHJGdYeHoF9G
-=EQk2
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Mar_2013_09_20_03_+1100_0NZw8Ht_oilgrMrI--
