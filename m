@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab3CSWCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:02:53 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:49987 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab3CSWCw (ORCPT
+	id S933921Ab3CSWE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:04:29 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43652 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387Ab3CSWE2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:02:52 -0400
-Date: Tue, 19 Mar 2013 15:02:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, cgroups@vger.kernel.org
-Subject: [PATCH cgroup/for-3.10] cgroup: make cgroup_mutex outer to
- threadgroup_lock
-Message-ID: <20130319220246.GR3042@htj.dyndns.org>
-References: <20130306223657.GA7392@redhat.com>
- <20130307172545.GA10353@redhat.com>
- <20130307180139.GD29601@htj.dyndns.org>
- <20130307180332.GE29601@htj.dyndns.org>
- <20130307191242.GA18265@redhat.com>
- <20130307193820.GB3209@htj.dyndns.org>
- <513A9A67.60909@huawei.com>
- <20130309032936.GT14556@mtj.dyndns.org>
- <513AE918.7020704@huawei.com>
+	Tue, 19 Mar 2013 18:04:28 -0400
+From: Vladimir Davydov <VDavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<devel@openvz.org>" <devel@openvz.org>,
+        "Doug Ledford" <dledford@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] mqueue: sys_mq_open: do not call mnt_drop_write() if
+ read-only
+Thread-Topic: [PATCH] mqueue: sys_mq_open: do not call mnt_drop_write() if
+ read-only
+Thread-Index: AQHOJOYWgM451JYjsUG/OGs2vTCvnJitTooA
+Date: Tue, 19 Mar 2013 22:04:16 +0000
+Message-ID: <049D7A4CCB8B694CACDEEB03BE35F306184853A6@MSK-EXCH.sw.swsoft.com>
+References: <1363685478-9997-1-git-send-email-vdavydov@parallels.com>
+ <20130319140940.fa84e0b678235076815fce64@linux-foundation.org>
+In-Reply-To: <20130319140940.fa84e0b678235076815fce64@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.24.21.126]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <D164C0204E6DE640904626FB22539333@sw.swsoft.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513AE918.7020704@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't make sense to nest cgroup_mutex inside threadgroup_lock
-when it should be outer to most all locks used by all cgroup
-controllers.  It was nested inside threadgroup_lock only because some
-controllers were abusing cgroup_mutex inside controllers leading to
-locking order inversion.
+On Mar 20, 2013, at 1:09 AM, Andrew Morton <akpm@linux-foundation.org>
+ wrote:
 
-cgroup_mutex is no longer abused by controllers and can be put outer
-to threadgroup_lock.  Reverse the locking order in
-attach_task_by_pid().
+> On Tue, 19 Mar 2013 13:31:18 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+> 
+>> mnt_drop_write() must be called only if mnt_want_write() succeeded,
+>> otherwise the mnt_writers counter will diverge.
+>> 
+>> ...
+>> 
+>> --- a/ipc/mqueue.c
+>> +++ b/ipc/mqueue.c
+>> @@ -840,7 +840,8 @@ out_putfd:
+>> 		fd = error;
+>> 	}
+>> 	mutex_unlock(&root->d_inode->i_mutex);
+>> -	mnt_drop_write(mnt);
+>> +	if (!ro)
+>> +		mnt_drop_write(mnt);
+>> out_putname:
+>> 	putname(name);
+>> 	return fd;
+> 
+> huh, that's been there for a while.  What were the runtime-visible
+> effects of the bug?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
----
-Li, can you please ack this?
+mnt_writers counters are used to check if remounting FS as read-only is OK, so after an extra mnt_drop_write() call, it would be impossible to remount mqueue FS as read-only. Besides, on umount a warning would be printed like this one:
 
-Thanks!
+[  194.714880] =====================================
+[  194.719680] [ BUG: bad unlock balance detected! ]
+[  194.724488] 3.9.0-rc3 #5 Not tainted
+[  194.728159] -------------------------------------
+[  194.732958] a.out/12486 is trying to release lock (sb_writers) at:
+[  194.739355] [<ffffffff811b177f>] mnt_drop_write+0x1f/0x30
+[  194.744851] but there are no more locks to release!
 
- kernel/cgroup.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 04fa2ab..24106b8 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2134,17 +2134,13 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
- 	const struct cred *cred = current_cred(), *tcred;
- 	int ret;
- 
--	if (!cgroup_lock_live_group(cgrp))
--		return -ENODEV;
--
- retry_find_task:
- 	rcu_read_lock();
- 	if (pid) {
- 		tsk = find_task_by_vpid(pid);
- 		if (!tsk) {
- 			rcu_read_unlock();
--			ret= -ESRCH;
--			goto out_unlock_cgroup;
-+			return -ESRCH;
- 		}
- 		/*
- 		 * even if we're attaching all tasks in the thread group, we
-@@ -2155,8 +2151,7 @@ retry_find_task:
- 		    !uid_eq(cred->euid, tcred->uid) &&
- 		    !uid_eq(cred->euid, tcred->suid)) {
- 			rcu_read_unlock();
--			ret = -EACCES;
--			goto out_unlock_cgroup;
-+			return -EACCES;
- 		}
- 	} else
- 		tsk = current;
-@@ -2170,9 +2165,8 @@ retry_find_task:
- 	 * with no rt_runtime allocated.  Just say no.
- 	 */
- 	if (tsk == kthreadd_task || (tsk->flags & PF_THREAD_BOUND)) {
--		ret = -EINVAL;
- 		rcu_read_unlock();
--		goto out_unlock_cgroup;
-+		return -EINVAL;
- 	}
- 
- 	get_task_struct(tsk);
-@@ -2194,13 +2188,14 @@ retry_find_task:
- 		}
- 	}
- 
--	ret = cgroup_attach_task(cgrp, tsk, threadgroup);
-+	ret = -ENODEV;
-+	if (cgroup_lock_live_group(cgrp)) {
-+		ret = cgroup_attach_task(cgrp, tsk, threadgroup);
-+		cgroup_unlock();
-+	}
- 
- 	threadgroup_unlock(tsk);
--
- 	put_task_struct(tsk);
--out_unlock_cgroup:
--	cgroup_unlock();
- 	return ret;
- }
- 
