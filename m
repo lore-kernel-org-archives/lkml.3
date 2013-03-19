@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3CST63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:58:29 -0400
-Received: from smtp10.smtpout.orange.fr ([80.12.242.132]:39214 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3CST62 (ORCPT
+	id S1757410Ab3CST6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 15:58:37 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55428 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757207Ab3CST6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 15:58:28 -0400
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Mar 2013 15:58:27 EDT
-From: Philippe Langlais <philippe.langlais@st.com>
-To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Hans-Peter Oeri <hp@oeri.ch>, Philippe Langlais <philippe.langlais@st.com>
-Subject: [PATCH] tty: serial: 8250: remove U6715 16550A auto-detection
-Date: Tue, 19 Mar 2013 20:50:09 +0100
-Message-Id: <1363722609-20021-1-git-send-email-philippe.langlais@st.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Mar 2013 15:58:34 -0400
+Message-ID: <5148C367.6050606@wwwdotorg.org>
+Date: Tue, 19 Mar 2013 13:58:31 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 3/7] usb: phy: tegra: Get PHY mode using DT
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com> <1363609781-4045-4-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1363609781-4045-4-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The auto-detection based on 64 bytes fifo size causes troubles
-for the identification of the MultiTechZPX Modems (pci 11c1:0480).
-They loose the ability to do hardware flow control
-(specifically CTS is never set).
+On 03/18/2013 06:29 AM, Venu Byravarasu wrote:
+> Added a new PHY mode to support OTG.
+> Obtained Tegra USB PHY mode using DT property.
 
-Signed-off-by: Philippe Langlais <philippe.langlais@st.com>
----
- drivers/tty/serial/8250/8250.c |    9 ---------
- 1 file changed, 9 deletions(-)
+> diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
 
-diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-index cf6a538..3255014 100644
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -1026,15 +1026,6 @@ static void autoconfig_16550a(struct uart_8250_port *up)
- 
- 		return;
- 	}
--
--	/*
--	 * We distinguish between 16550A and U6 16550A by counting
--	 * how many bytes are in the FIFO.
--	 */
--	if (up->port.type == PORT_16550A && size_fifo(up) == 64) {
--		up->port.type = PORT_U6_16550A;
--		up->capabilities |= UART_CAP_AFE;
--	}
- }
- 
- /*
--- 
-1.7.9.5
+> @@ -713,6 +712,16 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+>  	else
+>  		phy->is_ulpi_phy = true;
+>  
+> +	err = of_property_match_string(np, "dr_mode", "otg");
+> +	if (err < 0) {
+> +		err = of_property_match_string(np, "dr_mode", "gadget");
+> +		if (err < 0)
 
+The binding says the 3 legal values for this property are "host",
+"peripheral", or "otg". This agrees with the usage in
+Documentation/devicetree/bindings/usb/fsl-usb.txt and
+drivers/usb/host/fsl-mph-dr-of.c. So, "gadget" is not something the code
+should be checking for.
+
+I'm sure I pointed this out before.
