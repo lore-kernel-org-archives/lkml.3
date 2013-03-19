@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab3CSFrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:47:42 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:51739 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab3CSFrl (ORCPT
+	id S933092Ab3CSFsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:48:01 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34456 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933051Ab3CSFsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:47:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Mon, 18 Mar 2013 22:47:41 -0700
-X-Google-Sender-Auth: 8OaGVA11QmUIQy5kfUPAbZJxsW4
-Message-ID: <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
-From: Yinghai Lu <yinghai@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 01:48:00 -0400
+Date: Tue, 19 Mar 2013 16:47:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: linux-next: Tree for Mar 19
+Message-Id: <20130319164748.8ee90374db5d5db4c2838105@canb.auug.org.au>
+In-Reply-To: <CA+icZUXufeB=Vvfbd1tv4k8w82-wwJVb1RxyV8nvKa4+mvWERg@mail.gmail.com>
+References: <CA+icZUXufeB=Vvfbd1tv4k8w82-wwJVb1RxyV8nvKa4+mvWERg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Mar_2013_16_47_48_+1100_rg.AruClOxXGefAW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 10:15 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> max_low_pfn reflect the number of _pages_ in the system,
-> not the maximum PFN. You can easily find that fact in init_bootmem().
-> So fix it.
+--Signature=_Tue__19_Mar_2013_16_47_48_+1100_rg.AruClOxXGefAW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm confused. for x86, we have max_low_pfn defined in ...
+Hi,
 
-#ifdef CONFIG_X86_32
-        /* max_low_pfn get updated here */
-        find_low_pfn_range();
-#else
-        num_physpages = max_pfn;
-
-        check_x2apic();
-
-        /* How many end-of-memory variables you have, grandma! */
-        /* need this before calling reserve_initrd */
-        if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
-                max_low_pfn = e820_end_of_low_ram_pfn();
-        else
-                max_low_pfn = max_pfn;
-
-and under max_low_pfn is bootmem.
-
+On Tue, 19 Mar 2013 06:42:27 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
+e:
 >
-> Additionally, if 'start_pfn == end_pfn', we don't need to go futher,
-> so change range check.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 5e07d36..4711e91 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -110,9 +110,9 @@ static unsigned long __init __free_memory_core(phys_addr_t start,
->  {
->         unsigned long start_pfn = PFN_UP(start);
->         unsigned long end_pfn = min_t(unsigned long,
-> -                                     PFN_DOWN(end), max_low_pfn);
-> +                                     PFN_DOWN(end), min_low_pfn);
+> did forget to sent your email [1] to linux-next ML?
 
-what is min_low_pfn ?  is it 0 for x86?
+No, and I even checked my mail server's logs and it was accepted by vger.
 
-Thanks
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yinghai
+--Signature=_Tue__19_Mar_2013_16_47_48_+1100_rg.AruClOxXGefAW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRR/wEAAoJEECxmPOUX5FEoMkP/jT98dihtwNQ/oNw3mfT9HSw
+xzNWoYXj76kH3aptFaggG9jk0IT6zMLKAVvqJN3D8AskI4vEYKaR75chdwrqisc5
+D8iwYjAm/uVBcMKTH+N3NXpqL1qHPrXDHNDL63J8nVAfJt+gBQSAeCZuyUNxeL2k
+X7o+wVkaL0/LVJuyTcqQGYkNIUjSltdgKdcMfWURURcyhWcAy3KOwdspCtZnzRjx
+WPf+1AUOjClSWAWSNU09WuvRaZOFa/uFBaatv3S634wgp6BsOhopB//17snUkODg
+8mxvrKAP+NJA6h1qs3lIKZ2sPDCGWfHeYF9FwgWgECRvTS/hi4tOFBu671MjBmU+
+fRF1E35GzdqtTLh90DDqSolIV71vHyknnhU+mQrjdl7DsWkudt4dKU+MJxkT8YhM
+B0BKv7KaPbtxQ8YIKPVHJbWs4IT1n6eUd52okBzA9K+MndFhuw25ABU2YGCJ5++o
+z+hEvN8LEv1GSIqtPuTj0scMdUS17qd+6qYA7e/eyHlNxmAaGy+jb42xg6oEsxSw
+Qws+A73uT/dgULIc52wH6Rulv+VYjJirIWnOPGui3TreMOi0WQsmLOVvnXJfEXmY
+9eqcDqeZey3zvGvYWXaoZVQxkyRG+gbm96gNjJ1e4PyXo3Z7OiJU22JaQSiEZqye
+FTehX87hiB+DzMNbPRhz
+=c803
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Mar_2013_16_47_48_+1100_rg.AruClOxXGefAW--
