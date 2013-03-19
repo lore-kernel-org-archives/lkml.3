@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3CSTwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:52:19 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:59754 "EHLO
+	id S933012Ab3CSTxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 15:53:38 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:59919 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3CSTwQ (ORCPT
+	with ESMTP id S1757074Ab3CSTxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 15:52:16 -0400
+	Tue, 19 Mar 2013 15:53:37 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
@@ -14,9 +14,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
         Dave Jones <davej@redhat.com>, Michel Lespinasse <walken@google.com>,
         linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 7/7] tty: Fix tty_ldisc_lock name collision
-Date: Tue, 19 Mar 2013 15:26:09 -0400
-Message-Id: <1363721169-22445-8-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 2/7] tty: Add lock/unlock ldisc pair functions
+Date: Tue, 19 Mar 2013 15:26:04 -0400
+Message-Id: <1363721169-22445-3-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363721169-22445-1-git-send-email-peter@hurleysoftware.com>
 References: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
@@ -26,111 +26,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Just as the tty pair must be locked in a stable sequence
+(ie, independent of which is consider the 'other' tty), so must
+the ldisc pair be locked in a stable sequence as well.
+
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_ldisc.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
 
 diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 9725c94..ba49c0e 100644
+index 1afe192..ae0287f 100644
 --- a/drivers/tty/tty_ldisc.c
 +++ b/drivers/tty/tty_ldisc.c
-@@ -44,7 +44,7 @@ enum {
-  *	callers who will do ldisc lookups and cannot sleep.
-  */
+@@ -31,6 +31,13 @@
+ #define tty_ldisc_debug(tty, f, args...)
+ #endif
  
--static DEFINE_RAW_SPINLOCK(tty_ldisc_lock);
-+static DEFINE_RAW_SPINLOCK(tty_ldiscs_lock);
- /* Line disc dispatch table */
- static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
- 
-@@ -58,7 +58,7 @@ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
-  *	from this point onwards.
-  *
-  *	Locking:
-- *		takes tty_ldisc_lock to guard against ldisc races
-+ *		takes tty_ldiscs_lock to guard against ldisc races
-  */
- 
- int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
-@@ -69,11 +69,11 @@ int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
- 	if (disc < N_TTY || disc >= NR_LDISCS)
- 		return -EINVAL;
- 
--	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
-+	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
- 	tty_ldiscs[disc] = new_ldisc;
- 	new_ldisc->num = disc;
- 	new_ldisc->refcount = 0;
--	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
-+	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
- 
- 	return ret;
++/* lockdep nested classes for tty->ldisc_sem */
++enum {
++	LDISC_SEM_NORMAL,
++	LDISC_SEM_OTHER,
++};
++
++
+ /*
+  *	This guards the refcounted line discipline lists. The lock
+  *	must be taken with irqs off because there are hangup path
+@@ -351,6 +358,86 @@ void tty_ldisc_deref(struct tty_ldisc *ld)
  }
-@@ -88,7 +88,7 @@ EXPORT_SYMBOL(tty_register_ldisc);
-  *	currently in use.
-  *
-  *	Locking:
-- *		takes tty_ldisc_lock to guard against ldisc races
-+ *		takes tty_ldiscs_lock to guard against ldisc races
-  */
+ EXPORT_SYMBOL_GPL(tty_ldisc_deref);
  
- int tty_unregister_ldisc(int disc)
-@@ -99,12 +99,12 @@ int tty_unregister_ldisc(int disc)
- 	if (disc < N_TTY || disc >= NR_LDISCS)
- 		return -EINVAL;
- 
--	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
-+	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
- 	if (tty_ldiscs[disc]->refcount)
- 		ret = -EBUSY;
- 	else
- 		tty_ldiscs[disc] = NULL;
--	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
-+	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
- 
- 	return ret;
- }
-@@ -115,7 +115,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
- 	unsigned long flags;
- 	struct tty_ldisc_ops *ldops, *ret;
- 
--	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
-+	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
- 	ret = ERR_PTR(-EINVAL);
- 	ldops = tty_ldiscs[disc];
- 	if (ldops) {
-@@ -125,7 +125,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
- 			ret = ldops;
- 		}
- 	}
--	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
-+	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
- 	return ret;
- }
- 
-@@ -133,10 +133,10 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
- {
- 	unsigned long flags;
- 
--	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
-+	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
- 	ldops->refcount--;
- 	module_put(ldops->owner);
--	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
-+	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
- }
- 
++
++static inline int __lockfunc
++tty_ldisc_lock(struct tty_struct *tty, unsigned long timeout)
++{
++	return ldsem_down_write(&tty->ldisc_sem, timeout);
++}
++
++static inline int __lockfunc
++tty_ldisc_lock_nested(struct tty_struct *tty, unsigned long timeout)
++{
++	return ldsem_down_write_nested(&tty->ldisc_sem,
++				       LDISC_SEM_OTHER, timeout);
++}
++
++static inline void tty_ldisc_unlock(struct tty_struct *tty)
++{
++	return ldsem_up_write(&tty->ldisc_sem);
++}
++
++static int __lockfunc
++tty_ldisc_lock_pair_timeout(struct tty_struct *tty, struct tty_struct *tty2,
++			    unsigned long timeout)
++{
++	int ret;
++
++	if (tty < tty2) {
++		ret = tty_ldisc_lock(tty, timeout);
++		if (ret) {
++			ret = tty_ldisc_lock_nested(tty2, timeout);
++			if (!ret)
++				tty_ldisc_unlock(tty);
++		}
++	} else {
++		/* if this is possible, it has lots of implications */
++		WARN_ON_ONCE(tty == tty2);
++		if (tty2 && tty != tty2) {
++			ret = tty_ldisc_lock(tty2, timeout);
++			if (ret) {
++				ret = tty_ldisc_lock_nested(tty, timeout);
++				if (!ret)
++					tty_ldisc_unlock(tty2);
++			}
++		} else
++			ret = tty_ldisc_lock(tty, timeout);
++	}
++
++	if (!ret)
++		return -EBUSY;
++
++	set_bit(TTY_LDISC_HALTED, &tty->flags);
++	if (tty2)
++		set_bit(TTY_LDISC_HALTED, &tty2->flags);
++	return 0;
++}
++
++static void __lockfunc
++tty_ldisc_lock_pair(struct tty_struct *tty, struct tty_struct *tty2)
++{
++	tty_ldisc_lock_pair_timeout(tty, tty2, MAX_SCHEDULE_TIMEOUT);
++}
++
++static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
++					     struct tty_struct *tty2)
++{
++	tty_ldisc_unlock(tty);
++	if (tty2)
++		tty_ldisc_unlock(tty2);
++}
++
++static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
++					     struct tty_struct *tty2)
++{
++	clear_bit(TTY_LDISC_HALTED, &tty->flags);
++	if (tty2)
++		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
++
++	tty_ldisc_unlock_pair(tty, tty2);
++}
++
++
  /**
-@@ -149,7 +149,7 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
-  *	available
-  *
-  *	Locking:
-- *		takes tty_ldisc_lock to guard against ldisc races
-+ *		takes tty_ldiscs_lock to guard against ldisc races
-  */
- 
- static struct tty_ldisc *tty_ldisc_get(struct tty_struct *tty, int disc)
+  *	tty_ldisc_enable	-	allow ldisc use
+  *	@tty: terminal to activate ldisc on
 -- 
 1.8.1.2
 
