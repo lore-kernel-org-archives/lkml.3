@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757807Ab3CSJAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:00:44 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:48746 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3CSJAm (ORCPT
+	id S1757819Ab3CSJAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:00:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12907 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab3CSJAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:00:42 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com, mszeredi@suse.cz
-In-Reply-To: <20130319013805.GG21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <1944.1363525619@warthog.procyon.org.uk> <20130318153936.GB28508@quack.suse.cz> <20130318215333.GE21522@ZenIV.linux.org.uk> <20130318230103.GF21522@ZenIV.linux.org.uk> <20130319013805.GG21522@ZenIV.linux.org.uk>
-Date: Tue, 19 Mar 2013 18:00:37 +0900
-Message-ID: <20556.1363683637@jrobl>
+	Tue, 19 Mar 2013 05:00:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 02:00:45 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <swarren@nvidia.com>, <broonie@opensource.wolfsonmicro.com>,
+        <gg@slimlogic.co.uk>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] mfd: palmas: initialise client->of_node for dummy created client
+Date: Tue, 19 Mar 2013 14:28:20 +0530
+Message-ID: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Palmas device have three different i2c addresses. The device creates
+the two new dummy i2c clients for accessing the register by using
+primary client adapter. This new dummy i2c client have their of_node
+as NULL.
 
-Al Viro:
-> BTW, I wonder what's the right locking for that sucker; overlayfs is probably
-> too heavy - we are talking about copying a file from one fs to another, which
-> can obviously take quite a while, so holding ->i_mutex on _parent_ all along
-> is asking for very serious contention.  OTOH, there's a pile of unpleasant
+The dummy i2c client is used for registering interrupt and on this,
+it creates irq domain handle. This created irq domain handle has
+their of_node as NULL.
 
-Yes, holding parent->i_mutex can be longer.
-Using splice function for copy-up is simple and (probably) fastest. But
-it doesn't support a "hole" in the file (sparse file). All holes are
-filled with NUL byte and consumes a disk block on the upper layer. It is
-a problem, especially for users who have smaller tmpfs as his upper
-layer.
-The copy-up with considering a hole may cost more, but it can save the
-storage consumtion.
+Now when any child of this device is registered through the DT as
+follows:
+         palmas: tps65913@58 {
+         	::::::::::::::::::
 
+         	#interrupt-cells = <2>;
+                interrupt-controller;
 
-> Another fun issue is copyup vs. copyup - we want to sit and wait for copyup
-> attempt in progress to complete, rather than start another one in parallel.
-> And whoever comes the second must check if copyup has succeeded, obviously -
-> it's possible to have user run into 5% limit and fail copyup, followed by
-> root doing it successfully.
+                palmas_rtc {
+                       compatible = "ti,palmas-rtc";
+                       interrupt-parent = <&palmas>;
+                       interrupts = <8 0>;
+                };
+                ::::::::::;;;
+         };
 
-"5% limit" means the reserved are for a superuser on a filesystem,
-right? As far as I know, overlayfs (UnionMount too?) solves this problem
-as changing the task credential and the capability. But I am not sure
-whether it solves the similar problem around the resource limit like
-RLIMIT_CPU, RLIMIT_FSIZE or something.
+And child driver (palam-rtc in this case) get their irq number as
+	irq = platform_get_irq(pdev, 0);
 
+The returned irq number is error in this case. The reason is that
+the created irq_domain handle for the palmas interrupt does not have
+valid node and so matching of node fails with palmas node.
 
-> Another one: overwriting rename() vs. copyup.  Similar to unlink() vs. copyup().
+Hence initialising the newly dummy created client->of_node with the
+primary clients of_node so that irq_domain handle have proper of_node
+for matching.
 
-Hmm, do you mean that, just after the parent dir lock on the underlying
-fs, the copyup routine should confirm whether the target is still alive?
-If so, I agree.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/mfd/palmas.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index 73bf76d..a3f2836 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -349,6 +349,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 				ret = -ENOMEM;
+ 				goto err;
+ 			}
++			palmas->i2c_clients[i]->dev.of_node = of_node_get(node);
+ 		}
+ 		palmas->regmap[i] = devm_regmap_init_i2c(palmas->i2c_clients[i],
+ 				&palmas_regmap_config[i]);
+-- 
+1.7.1.1
 
-> Another one: read-only open() vs. copyup().  Hell knows - we obviously don't
-> want to open a partially copied file; might want to wait or pretend that this
-> open() has come first and give it the underlying file.  The same goes for
-> stat() vs. copyup().
-
-Exactly.
-Moreover users don't want to refer to the lower file which is obsoleted
-by copyup.
-
-
-> FWIW, something like "lock parent, ->create(), ->unlink(), unlock parent,
-> copy data and metadata, lock parent, allocate a new dentry in covering layer
-> and do ->lookup() on it, verify that it is negative and not a whiteout, lock
-> child, use ->link() to put it into directory, unlock everything" would
-> probably DTRT for unlink/copyup and rename/copyup.  The rest... hell knows;
-
-Please let me make sure.
-You are saying,
-- create the file on the upper layer
-- get the "struct file" object
-- hide it from users
-- before copying the file, unlock the parent in order to stop the long
-  period locking
-- copy the file without the parent lock. it doesn't matter since the
-  file is invisible to users.
-- confirm that the target name is still available for copyup
-- make the completed file visible by ->link()
-
-It is ineteresting to ->link() with the unlinked file. While
-vfs_unlink() rejects such case, it may not matter for the underlying fs.
-Need to verify FS including jounals.
-
-
-J. R. Okajima
