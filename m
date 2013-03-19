@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab3CSJyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:54:12 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:16898 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758001Ab3CSJwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:52:25 -0400
+	id S1758104Ab3CSJyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:54:10 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:5992 "EHLO smtp4.mundo-r.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758003Ab3CSJw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 05:52:26 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFGgEMUhBRVwYTiBiyMZAhjw4Hg0ADll+UDTs
 X-IPAS-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFGgEMUhBRVwYTiBiyMZAhjw4Hg0ADll+UDTs
 X-IronPort-AV: E=Sophos;i="4.84,870,1355094000"; 
-   d="scan'208";a="18790038"
+   d="scan'208";a="18790041"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 6/9] staging/sb105x: coding style issues
-Date: Tue, 19 Mar 2013 10:51:27 +0100
-Message-Id: <1363686690-27090-7-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 1/9] staging/sb105x: coding style fixes
+Date: Tue, 19 Mar 2013 10:51:22 +0100
+Message-Id: <1363686690-27090-2-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363686690-27090-1-git-send-email-siglesias@igalia.com>
 References: <1363686690-27090-1-git-send-email-siglesias@igalia.com>
@@ -26,1340 +25,1421 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver logic is not being modified
+No change in the logic of the driver
 
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/sb105x/sb_mp_register.h |    7 +-
- drivers/staging/sb105x/sb_pci_mp.c      |  390 ++++++++++++++-----------------
- drivers/staging/sb105x/sb_pci_mp.h      |  165 ++++++-------
- drivers/staging/sb105x/sb_ser_core.h    |  225 ++++++++++--------
- 4 files changed, 378 insertions(+), 409 deletions(-)
+ drivers/staging/sb105x/sb_pci_mp.c |  974 +++++++++++++++++-------------------
+ 1 file changed, 449 insertions(+), 525 deletions(-)
 
-diff --git a/drivers/staging/sb105x/sb_mp_register.h b/drivers/staging/sb105x/sb_mp_register.h
-index a2087f5..864d9d4 100644
---- a/drivers/staging/sb105x/sb_mp_register.h
-+++ b/drivers/staging/sb105x/sb_mp_register.h
-@@ -1,4 +1,3 @@
--
- /*
-  * SB105X_UART.h
-  *
-@@ -15,8 +14,8 @@
- #ifndef UART_SB105X_H
- #define UART_SB105X_H
- 
--/* 
-- * option register 
-+/*
-+ * option register
-  */
- 
- /* Device Infomation Register */
-@@ -292,4 +291,4 @@
- 
- #define SB105X_PUT_PSR(port,v)	outb((v),(port)->iobase + SB105X_PSR )
- 
--#endif 
-+#endif
 diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index cb27fb6..7fa6ef7 100644
+index f75ee1d..660ec9c 100644
 --- a/drivers/staging/sb105x/sb_pci_mp.c
 +++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -182,11 +182,11 @@ static int sb1054_get_register(struct sb_uart_port * port, int page, int reg)
+@@ -141,25 +141,24 @@ static int sb1053a_get_interface(struct mp_port *mtpt, int port_num)
+ 	unsigned long option_base_addr = mtpt->option_base_addr;
+ 	unsigned int  interface = 0;
+ 
+-	switch (port_num)
+-	{
+-		case 0:
+-		case 1:
+-			/* set GPO[1:0] = 00 */
+-			outb(0x00, option_base_addr + MP_OPTR_GPODR);
+-			break;
+-		case 2:
+-		case 3:
+-			/* set GPO[1:0] = 01 */
+-			outb(0x01, option_base_addr + MP_OPTR_GPODR);
+-			break;
+-		case 4:
+-		case 5:
+-			/* set GPO[1:0] = 10 */
+-			outb(0x02, option_base_addr + MP_OPTR_GPODR);
+-			break;
+-		default:
+-			break;
++	switch (port_num) {
++	case 0:
++	case 1:
++		/* set GPO[1:0] = 00 */
++		outb(0x00, option_base_addr + MP_OPTR_GPODR);
++		break;
++	case 2:
++	case 3:
++		/* set GPO[1:0] = 01 */
++		outb(0x01, option_base_addr + MP_OPTR_GPODR);
++		break;
++	case 4:
++	case 5:
++		/* set GPO[1:0] = 10 */
++		outb(0x02, option_base_addr + MP_OPTR_GPODR);
++		break;
++	default:
++		break;
+ 	}
+ 
+ 	port_num &= 0x1;
+@@ -172,7 +171,7 @@ static int sb1053a_get_interface(struct mp_port *mtpt, int port_num)
+ 
+ 	return (interface);
+ }
+-		
++
+ static int sb1054_get_register(struct sb_uart_port * port, int page, int reg)
+ {
+ 	int ret = 0;
+@@ -180,115 +179,112 @@ static int sb1054_get_register(struct sb_uart_port * port, int page, int reg)
+ 	unsigned int mcr = 0;
  	unsigned int tmp = 0;
  
- 	if (page <= 0) {
--		dev_err(port->dev, " page 0 can not use this fuction\n");
-+		dev_err(port->dev, "page 0 can not use this fuction\n");
+-	if( page <= 0)
+-	{
++	if (page <= 0) {
+ 		printk(" page 0 can not use this fuction\n");
  		return -1;
  	}
  
--	switch(page) {
-+	switch (page) {
- 	case 1:
- 		lcr = SB105X_GET_LCR(port);
- 		tmp = lcr | SB105X_LCR_DLAB;
-@@ -194,40 +194,40 @@ static int sb1054_get_register(struct sb_uart_port * port, int page, int reg)
- 
- 		tmp = SB105X_GET_LCR(port);
- 
--		ret = SB105X_GET_REG(port,reg);
--		SB105X_PUT_LCR(port,lcr);
-+		ret = SB105X_GET_REG(port, reg);
-+		SB105X_PUT_LCR(port, lcr);
- 		break;
- 	case 2:
- 		mcr = SB105X_GET_MCR(port);
- 		tmp = mcr | SB105X_MCR_P2S;
--		SB105X_PUT_MCR(port,tmp);
-+		SB105X_PUT_MCR(port, tmp);
- 
--		ret = SB105X_GET_REG(port,reg);
-+		ret = SB105X_GET_REG(port, reg);
- 
--		SB105X_PUT_MCR(port,mcr);
-+		SB105X_PUT_MCR(port, mcr);
- 		break;
- 	case 3:
- 		lcr = SB105X_GET_LCR(port);
- 		tmp = lcr | SB105X_LCR_BF;
--		SB105X_PUT_LCR(port,tmp);
--		SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P3KEY);
+-	switch(page)
+-	{
+-		case 1:
+-			lcr = SB105X_GET_LCR(port);
+-			tmp = lcr | SB105X_LCR_DLAB;
+-			SB105X_PUT_LCR(port, tmp);
+-
+-			tmp = SB105X_GET_LCR(port);
+-
+-			ret = SB105X_GET_REG(port,reg);
+-			SB105X_PUT_LCR(port,lcr);
+-			break;
+-		case 2:
+-			mcr = SB105X_GET_MCR(port);
+-			tmp = mcr | SB105X_MCR_P2S;
+-			SB105X_PUT_MCR(port,tmp);
+-
+-			ret = SB105X_GET_REG(port,reg);
+-
+-			SB105X_PUT_MCR(port,mcr);
+-			break;
+-		case 3:
+-			lcr = SB105X_GET_LCR(port);
+-			tmp = lcr | SB105X_LCR_BF;
+-			SB105X_PUT_LCR(port,tmp);
+-			SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P3KEY);
+-
+-			ret = SB105X_GET_REG(port,reg);
+-
+-			SB105X_PUT_LCR(port,lcr);
+-			break;
+-		case 4:
+-			lcr = SB105X_GET_LCR(port);
+-			tmp = lcr | SB105X_LCR_BF;
+-			SB105X_PUT_LCR(port,tmp);
+-			SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P4KEY);
+-
+-			ret = SB105X_GET_REG(port,reg);
+-
+-			SB105X_PUT_LCR(port,lcr);
+-			break;
+-		default:
+-			printk(" error invalid page number \n");
+-			return -1;
++	switch(page) {
++	case 1:
++		lcr = SB105X_GET_LCR(port);
++		tmp = lcr | SB105X_LCR_DLAB;
 +		SB105X_PUT_LCR(port, tmp);
-+		SB105X_PUT_REG(port, SB105X_PSR,SB105X_PSR_P3KEY);
- 
--		ret = SB105X_GET_REG(port,reg);
-+		ret = SB105X_GET_REG(port, reg);
- 
--		SB105X_PUT_LCR(port,lcr);
-+		SB105X_PUT_LCR(port, lcr);
- 		break;
- 	case 4:
- 		lcr = SB105X_GET_LCR(port);
- 		tmp = lcr | SB105X_LCR_BF;
--		SB105X_PUT_LCR(port,tmp);
--		SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P4KEY);
-+		SB105X_PUT_LCR(port, tmp);
-+		SB105X_PUT_REG(port, SB105X_PSR,SB105X_PSR_P4KEY);
- 
--		ret = SB105X_GET_REG(port,reg);
-+		ret = SB105X_GET_REG(port, reg);
- 
--		SB105X_PUT_LCR(port,lcr);
-+		SB105X_PUT_LCR(port, lcr);
- 		break;
- 	default:
--		dev_err(port->dev, " error invalid page number \n");
-+		dev_err(port->dev, "error invalid page number \n");
- 		return -1;
++
++		tmp = SB105X_GET_LCR(port);
++
++		ret = SB105X_GET_REG(port,reg);
++		SB105X_PUT_LCR(port,lcr);
++		break;
++	case 2:
++		mcr = SB105X_GET_MCR(port);
++		tmp = mcr | SB105X_MCR_P2S;
++		SB105X_PUT_MCR(port,tmp);
++
++		ret = SB105X_GET_REG(port,reg);
++
++		SB105X_PUT_MCR(port,mcr);
++		break;
++	case 3:
++		lcr = SB105X_GET_LCR(port);
++		tmp = lcr | SB105X_LCR_BF;
++		SB105X_PUT_LCR(port,tmp);
++		SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P3KEY);
++
++		ret = SB105X_GET_REG(port,reg);
++
++		SB105X_PUT_LCR(port,lcr);
++		break;
++	case 4:
++		lcr = SB105X_GET_LCR(port);
++		tmp = lcr | SB105X_LCR_BF;
++		SB105X_PUT_LCR(port,tmp);
++		SB105X_PUT_REG(port,SB105X_PSR,SB105X_PSR_P4KEY);
++
++		ret = SB105X_GET_REG(port,reg);
++
++		SB105X_PUT_LCR(port,lcr);
++		break;
++	default:
++		printk(" error invalid page number \n");
++		return -1;
  	}
  
-@@ -241,16 +241,16 @@ static int sb1054_set_register(struct sb_uart_port * port, int page, int reg, in
+ 	return ret;
+ }
+ 
+ static int sb1054_set_register(struct sb_uart_port * port, int page, int reg, int value)
+-{  
++{
+ 	int lcr = 0;
+ 	int mcr = 0;
  	int ret = 0;
  
- 	if (page <= 0) {
--		dev_err(port->dev, " page 0 can not use this fuction\n");
-+		dev_err(port->dev, "page 0 can not use this fuction\n");
+-	if( page <= 0)
+-	{
++	if (page <= 0) {
+ 		printk(" page 0 can not use this fuction\n");
  		return -1;
  	}
+-	switch(page)
+-	{
+-		case 1:
+-			lcr = SB105X_GET_LCR(port);
+-			SB105X_PUT_LCR(port, lcr | SB105X_LCR_DLAB);
  
--	switch(page) {
-+	switch (page) {
- 	case 1:
- 		lcr = SB105X_GET_LCR(port);
- 		SB105X_PUT_LCR(port, lcr | SB105X_LCR_DLAB);
+-			SB105X_PUT_REG(port,reg,value);
++	switch(page) {
++	case 1:
++		lcr = SB105X_GET_LCR(port);
++		SB105X_PUT_LCR(port, lcr | SB105X_LCR_DLAB);
  
--		SB105X_PUT_REG(port,reg,value);
-+		SB105X_PUT_REG(port, reg, value);
+-			SB105X_PUT_LCR(port, lcr);
+-			ret = 1;
+-			break;
+-		case 2:
+-			mcr = SB105X_GET_MCR(port);
+-			SB105X_PUT_MCR(port, mcr | SB105X_MCR_P2S);
++		SB105X_PUT_REG(port,reg,value);
  
- 		SB105X_PUT_LCR(port, lcr);
- 		ret = 1;
-@@ -259,7 +259,7 @@ static int sb1054_set_register(struct sb_uart_port * port, int page, int reg, in
- 		mcr = SB105X_GET_MCR(port);
- 		SB105X_PUT_MCR(port, mcr | SB105X_MCR_P2S);
+-			SB105X_PUT_REG(port,reg,value);
++		SB105X_PUT_LCR(port, lcr);
++		ret = 1;
++		break;
++	case 2:
++		mcr = SB105X_GET_MCR(port);
++		SB105X_PUT_MCR(port, mcr | SB105X_MCR_P2S);
  
--		SB105X_PUT_REG(port,reg,value);
-+		SB105X_PUT_REG(port, reg, value);
+-			SB105X_PUT_MCR(port, mcr);
+-			ret = 1;
+-			break;
+-		case 3:
+-			lcr = SB105X_GET_LCR(port);
+-			SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
+-			SB105X_PUT_PSR(port, SB105X_PSR_P3KEY);
++		SB105X_PUT_REG(port,reg,value);
  
- 		SB105X_PUT_MCR(port, mcr);
- 		ret = 1;
-@@ -269,7 +269,7 @@ static int sb1054_set_register(struct sb_uart_port * port, int page, int reg, in
- 		SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
- 		SB105X_PUT_PSR(port, SB105X_PSR_P3KEY);
+-			SB105X_PUT_REG(port,reg,value);
++		SB105X_PUT_MCR(port, mcr);
++		ret = 1;
++		break;
++	case 3:
++		lcr = SB105X_GET_LCR(port);
++		SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
++		SB105X_PUT_PSR(port, SB105X_PSR_P3KEY);
  
--		SB105X_PUT_REG(port,reg,value);
-+		SB105X_PUT_REG(port, reg, value);
+-			SB105X_PUT_LCR(port, lcr);
+-			ret = 1;
+-			break;
+-		case 4:
+-			lcr = SB105X_GET_LCR(port);
+-			SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
+-			SB105X_PUT_PSR(port, SB105X_PSR_P4KEY);
++		SB105X_PUT_REG(port,reg,value);
  
- 		SB105X_PUT_LCR(port, lcr);
- 		ret = 1;
-@@ -279,13 +279,13 @@ static int sb1054_set_register(struct sb_uart_port * port, int page, int reg, in
- 		SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
- 		SB105X_PUT_PSR(port, SB105X_PSR_P4KEY);
+-			SB105X_PUT_REG(port,reg,value);
++		SB105X_PUT_LCR(port, lcr);
++		ret = 1;
++		break;
++	case 4:
++		lcr = SB105X_GET_LCR(port);
++		SB105X_PUT_LCR(port, lcr | SB105X_LCR_BF);
++		SB105X_PUT_PSR(port, SB105X_PSR_P4KEY);
  
--		SB105X_PUT_REG(port,reg,value);
-+		SB105X_PUT_REG(port, reg, value);
- 
- 		SB105X_PUT_LCR(port, lcr);
- 		ret = 1;
- 		break;
- 	default:
--		dev_err(port->dev, " error invalid page number \n");
-+		dev_err(port->dev, "error invalid page number \n");
- 		return -1;
+-			SB105X_PUT_LCR(port, lcr);
+-			ret = 1;
+-			break;
+-		default:
+-			printk(" error invalid page number \n");
+-			return -1;
++		SB105X_PUT_REG(port,reg,value);
++
++		SB105X_PUT_LCR(port, lcr);
++		ret = 1;
++		break;
++	default:
++		printk(" error invalid page number \n");
++		return -1;
  	}
  
-@@ -296,9 +296,8 @@ static int set_multidrop_mode(struct sb_uart_port *port, unsigned int mode)
+ 	return ret;
+@@ -298,13 +294,11 @@ static int set_multidrop_mode(struct sb_uart_port *port, unsigned int mode)
  {
  	int mdr = SB105XA_MDR_NPS;
  
--	if (mode & MDMODE_ENABLE) {
-+	if (mode & MDMODE_ENABLE)
+-	if (mode & MDMODE_ENABLE)
+-	{
++	if (mode & MDMODE_ENABLE) {
  		mdr |= SB105XA_MDR_MDE;
--	}
+ 	}
  
- 	if (1) { //(mode & MDMODE_AUTO)
+-	if (1) //(mode & MDMODE_AUTO)
+-	{
++	if (1) { //(mode & MDMODE_AUTO)
  		int efr = 0;
-@@ -331,7 +330,7 @@ static int set_multidrop_addr(struct sb_uart_port *port, unsigned int addr)
- static void SendATCommand(struct mp_port * mtpt)
- {
- 	//		      a    t	cr   lf
--	unsigned char ch[] = {0x61,0x74,0x0d,0x0a,0x0};
-+	unsigned char ch[] = {0x61, 0x74, 0x0d, 0x0a, 0x0};
- 	unsigned char lineControl;
- 	unsigned char i=0;
- 	unsigned char Divisor = 0xc;
-@@ -346,8 +345,8 @@ static void SendATCommand(struct mp_port * mtpt)
- 	serial_outp(mtpt,UART_LCR,0x03); // N-8-1
- 	serial_outp(mtpt,UART_FCR,7);
- 	serial_outp(mtpt,UART_MCR,0x3);
--	while(ch[i]){
--		while((serial_inp(mtpt,UART_LSR) & 0x60) !=0x60){
-+	while(ch[i]) {
-+		while((serial_inp(mtpt,UART_LSR) & 0x60) !=0x60) {
- 			;
- 		}
- 		serial_outp(mtpt,0,ch[i++]);
-@@ -366,9 +365,9 @@ static int set_deep_fifo(struct sb_uart_port * port, int status)
- 	else
- 		afr_status &= ~SB105X_AFR_AFEN;
+ 		mdr |= SB105XA_MDR_AME;
+ 		efr = sb1054_get_register(port, PAGE_3, SB105X_EFR);
+@@ -346,9 +340,9 @@ static void SendATCommand(struct mp_port * mtpt)
+ 	serial_outp(mtpt,UART_DLM,(Divisor & 0xff00)>>8); //baudrate is 4800
  
--	sb1054_set_register(port,PAGE_4,SB105X_AFR,afr_status);
--	sb1054_set_register(port,PAGE_4,SB105X_TTR,ttr[port->line]);
--	sb1054_set_register(port,PAGE_4,SB105X_RTR,rtr[port->line]);
-+	sb1054_set_register(port,PAGE_4, SB105X_AFR, afr_status);
-+	sb1054_set_register(port,PAGE_4, SB105X_TTR, ttr[port->line]);
-+	sb1054_set_register(port,PAGE_4, SB105X_RTR, rtr[port->line]);
+ 
+-	serial_outp(mtpt,UART_LCR,lineControl);	
++	serial_outp(mtpt,UART_LCR,lineControl);
+ 	serial_outp(mtpt,UART_LCR,0x03); // N-8-1
+-	serial_outp(mtpt,UART_FCR,7); 
++	serial_outp(mtpt,UART_FCR,7);
+ 	serial_outp(mtpt,UART_MCR,0x3);
+ 	while(ch[i]){
+ 		while((serial_inp(mtpt,UART_LSR) & 0x60) !=0x60){
+@@ -366,19 +360,15 @@ static int set_deep_fifo(struct sb_uart_port * port, int status)
  	afr_status = sb1054_get_register(port, PAGE_4, SB105X_AFR);
  
+ 	if(status == ENABLE)
+-	{
+ 		afr_status |= SB105X_AFR_AFEN;
+-	}
+ 	else
+-	{
+ 		afr_status &= ~SB105X_AFR_AFEN;
+-	}
+-		
++
+ 	sb1054_set_register(port,PAGE_4,SB105X_AFR,afr_status);
+-	sb1054_set_register(port,PAGE_4,SB105X_TTR,ttr[port->line]); 
+-	sb1054_set_register(port,PAGE_4,SB105X_RTR,rtr[port->line]); 
++	sb1054_set_register(port,PAGE_4,SB105X_TTR,ttr[port->line]);
++	sb1054_set_register(port,PAGE_4,SB105X_RTR,rtr[port->line]);
+ 	afr_status = sb1054_get_register(port, PAGE_4, SB105X_AFR);
+-		
++
  	return afr_status;
-@@ -377,9 +376,9 @@ static int set_deep_fifo(struct sb_uart_port * port, int status)
- static int get_device_type(int arg)
- {
- 	int ret;
--        ret = inb(mp_devs[arg].option_reg_addr+MP_OPTR_DIR0);
--        ret = (ret & 0xf0) >> 4;
--        switch (ret) {
-+	ret = inb(mp_devs[arg].option_reg_addr+MP_OPTR_DIR0);
-+	ret = (ret & 0xf0) >> 4;
-+	switch (ret) {
- 	case DIR_UART_16C550:
- 		return PORT_16C55X;
- 	case DIR_UART_16C1050:
-@@ -427,7 +426,7 @@ static int set_auto_rts(struct sb_uart_port *port, int status)
+ }
  
+@@ -387,35 +377,29 @@ static int get_device_type(int arg)
+ 	int ret;
+         ret = inb(mp_devs[arg].option_reg_addr+MP_OPTR_DIR0);
+         ret = (ret & 0xf0) >> 4;
+-        switch (ret)
+-        {
+-               case DIR_UART_16C550:
+-                    return PORT_16C55X;
+-               case DIR_UART_16C1050:
+-                    return PORT_16C105X;
+-               case DIR_UART_16C1050A:
+-               /*
+-               if (mtpt->port.line < 2)
+-               {
+-                    return PORT_16C105XA;
+-               }
+-               else
+-               {
+-                   if (mtpt->device->device_id & 0x50)
+-                   {
+-                       return PORT_16C55X;
+-                   }
+-                   else
+-                   {
+-                       return PORT_16C105X;
+-                   }
+-               }*/
+-               return PORT_16C105XA;
+-               default:
+-                    return PORT_UNKNOWN;
+-        }
++        switch (ret) {
++	case DIR_UART_16C550:
++		return PORT_16C55X;
++	case DIR_UART_16C1050:
++		return PORT_16C105X;
++	case DIR_UART_16C1050A:
++#if 0
++		if (mtpt->port.line < 2) {
++			return PORT_16C105XA;
++		} else {
++			if (mtpt->device->device_id & 0x50)
++				return PORT_16C55X;
++			else
++				return PORT_16C105X;
+ 
++		}
++#endif
++		return PORT_16C105XA;
++	default:
++		return PORT_UNKNOWN;
++	}
+ }
++
+ static int get_deep_fifo(struct sb_uart_port * port)
+ {
+ 	int afr_status = 0;
+@@ -438,23 +422,22 @@ static int set_auto_rts(struct sb_uart_port *port, int status)
+ 	sb1054_set_register(port,PAGE_3,SB105X_EFR,efr_status);
+ 	efr_status = sb1054_get_register(port, PAGE_3, SB105X_EFR);
+ #endif
+-		
++
  //ATR
  	atr_status = sb1054_get_register(port, PAGE_3, SB105X_ATR);
--	switch(status) {
-+	switch (status) {
- 	case RS422PTP:
- 		atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_A80);
- 		break;
-@@ -518,7 +517,6 @@ static int mp_startup(struct sb_uart_state *state, int init_hw)
+-	switch(status)
+-	{
+-		case RS422PTP:
+-			atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_A80);
+-			break;
+-		case RS422MD:
+-			atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
+-			break;
+-		case RS485NE:
+-			atr_status = (SB105X_ATR_RCMS) | (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
+-			break;
+-		case RS485ECHO:
+-			atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
+-			break;
++	switch(status) {
++	case RS422PTP:
++		atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_A80);
++		break;
++	case RS422MD:
++		atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
++		break;
++	case RS485NE:
++		atr_status = (SB105X_ATR_RCMS) | (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
++		break;
++	case RS485ECHO:
++		atr_status = (SB105X_ATR_TPS) | (SB105X_ATR_TCMS) | (SB105X_ATR_A80);
++		break;
+ 	}
+ 
+ 	sb1054_set_register(port,PAGE_3,SB105X_ATR,atr_status);
+@@ -534,7 +517,7 @@ static int mp_startup(struct sb_uart_state *state, int init_hw)
  			return -ENOMEM;
  
  		info->xmit.buf = (unsigned char *) page;
--
+-			
++
  		uart_circ_clear(&info->xmit);
  	}
  
-@@ -1094,33 +1092,31 @@ static int mp_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
- 		deep[state->port->line] = arg;
- 		return ret;
- 	case SETTTR:
--		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
--			ret = sb1054_set_register(state->port,PAGE_4,SB105X_TTR,arg);
-+		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA) {
-+			ret = sb1054_set_register(state->port, PAGE_4, SB105X_TTR, arg);
- 			ttr[state->port->line] = arg;
- 		}
- 		return ret;
- 	case SETRTR:
--		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
--			ret = sb1054_set_register(state->port,PAGE_4,SB105X_RTR,arg);
-+		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA) {
-+			ret = sb1054_set_register(state->port, PAGE_4, SB105X_RTR, arg);
- 			rtr[state->port->line] = arg;
- 		}
- 		return ret;
- 	case GETTTR:
--		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
--			ret = sb1054_get_register(state->port,PAGE_4,SB105X_TTR);
--		}
-+		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA)
-+			ret = sb1054_get_register(state->port, PAGE_4, SB105X_TTR);
- 		return ret;
- 	case GETRTR:
--		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
--			ret = sb1054_get_register(state->port,PAGE_4,SB105X_RTR);
--		}
-+		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA)
-+			ret = sb1054_get_register(state->port, PAGE_4, SB105X_RTR);
- 		return ret;
+@@ -645,24 +628,23 @@ static int mp_write(struct tty_struct *tty, const unsigned char * buf, int count
+ 	struct circ_buf *circ;
+ 	int c, ret = 0;
  
- 	case SETFCR:
- 		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA)
--			ret = sb1054_set_register(state->port,PAGE_1,SB105X_FCR,arg);
-+			ret = sb1054_set_register(state->port, PAGE_1, SB105X_FCR, arg);
- 		else
--			serial_out(info,2,arg);
-+			serial_out(info, 2, arg);
+-	if (!state || !state->info) {
++	if (!state || !state->info)
+ 		return -EL3HLT;
+-	}
  
- 		return ret;
- 	case TIOCSMDADDR:
-@@ -1192,11 +1188,11 @@ static int mp_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
- 		ret = get_device_type(arg);;
- 		return ret;
- 	case TIOCSMULTIECHO: /* set to multi-drop mode(RS422) or echo mode(RS485)*/
--		outb( ( inb(info->interface_config_addr) & ~0x03 ) | 0x01 ,
-+		outb( ( inb(info->interface_config_addr) & ~0x03 ) | 0x01,
- 				info->interface_config_addr);
+ 	port = state->port;
+ 	circ = &state->info->xmit;
+ 
+ 	if (!circ->buf)
  		return 0;
- 	case TIOCSPTPNOECHO: /* set to multi-drop mode(RS422) or echo mode(RS485) */
--		outb( ( inb(info->interface_config_addr) & ~0x03 )  ,
-+		outb( ( inb(info->interface_config_addr) & ~0x03 ),
- 				info->interface_config_addr);
- 		return 0;
+-		
++
+ 	while (1) {
+ 		c = CIRC_SPACE_TO_END(circ->head, circ->tail, UART_XMIT_SIZE);
+ 		if (count < c)
+ 			c = count;
+ 		if (c <= 0)
+ 			break;
+-	memcpy(circ->buf + circ->head, buf, c);
+ 
++		memcpy(circ->buf + circ->head, buf, c);
+ 		circ->head = (circ->head + c) & (UART_XMIT_SIZE - 1);
+ 		buf += c;
+ 		count -= c;
+@@ -692,9 +674,8 @@ static void mp_flush_buffer(struct tty_struct *tty)
+ 	struct sb_uart_port *port;
+ 	unsigned long flags;
+ 
+-	if (!state || !state->info) {
++	if (!state || !state->info)
+ 		return;
+-	}
+ 
+ 	port = state->port;
+ 	spin_lock_irqsave(&port->lock, flags);
+@@ -710,9 +691,9 @@ static void mp_send_xchar(struct tty_struct *tty, char ch)
+ 	struct sb_uart_port *port = state->port;
+ 	unsigned long flags;
+ 
+-	if (port->ops->send_xchar)
++	if (port->ops->send_xchar) {
+ 		port->ops->send_xchar(port, ch);
+-	else {
++	} else {
+ 		port->x_char = ch;
+ 		if (ch) {
+ 			spin_lock_irqsave(&port->lock, flags);
+@@ -1094,138 +1075,129 @@ static int mp_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
+ 
+ 
+ 	switch (cmd) {
+-		case TIOCSMULTIDROP:
+-			/* set multi-drop mode enable or disable, and default operation mode is H/W mode */
+-			if (info->port.type == PORT_16C105XA)
+-			{
+-				//arg &= ~0x6;
+-				//state->port->mdmode = 0;
+-				return set_multidrop_mode((struct sb_uart_port *)info, (unsigned int)arg);
+-			}
+-			ret = -ENOTSUPP;
+-			break;
+-		case GETDEEPFIFO:
+-			ret = get_deep_fifo(state->port);
+-			return ret;
+-		case SETDEEPFIFO:
+-			ret = set_deep_fifo(state->port,arg);
+-			deep[state->port->line] = arg;
+-			return ret;
+-		case SETTTR:
+-			if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
+-				ret = sb1054_set_register(state->port,PAGE_4,SB105X_TTR,arg);
+-				ttr[state->port->line] = arg;
+-			}
+-			return ret;
+-		case SETRTR:
+-			if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
+-				ret = sb1054_set_register(state->port,PAGE_4,SB105X_RTR,arg);
+-				rtr[state->port->line] = arg;
+-			}
+-			return ret;
+-		case GETTTR:
+-			if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
+-				ret = sb1054_get_register(state->port,PAGE_4,SB105X_TTR);
+-			}
+-			return ret;
+-		case GETRTR:
+-			if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
+-				ret = sb1054_get_register(state->port,PAGE_4,SB105X_RTR);
+-			}
+-			return ret;
+-
+-		case SETFCR:
+-			if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
+-				ret = sb1054_set_register(state->port,PAGE_1,SB105X_FCR,arg);
+-			}
+-			else{
+-				serial_out(info,2,arg);
+-			}
+-
+-			return ret;
+-		case TIOCSMDADDR:
+-			/* set multi-drop address */
+-			if (info->port.type == PORT_16C105XA)
+-			{
+-				state->port->mdmode |= MDMODE_ADDR;
+-				return set_multidrop_addr((struct sb_uart_port *)info, (unsigned int)arg);
+-			}
+-			ret = -ENOTSUPP;
+-			break;
++	case TIOCSMULTIDROP:
++		/* set multi-drop mode enable or disable, and default operation mode is H/W mode */
++		if (info->port.type == PORT_16C105XA)
++		{
++			//arg &= ~0x6;
++			//state->port->mdmode = 0;
++			return set_multidrop_mode((struct sb_uart_port *)info, (unsigned int)arg);
++		}
++		ret = -ENOTSUPP;
++		break;
++	case GETDEEPFIFO:
++		ret = get_deep_fifo(state->port);
++		return ret;
++	case SETDEEPFIFO:
++		ret = set_deep_fifo(state->port,arg);
++		deep[state->port->line] = arg;
++		return ret;
++	case SETTTR:
++		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
++			ret = sb1054_set_register(state->port,PAGE_4,SB105X_TTR,arg);
++			ttr[state->port->line] = arg;
++		}
++		return ret;
++	case SETRTR:
++		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
++			ret = sb1054_set_register(state->port,PAGE_4,SB105X_RTR,arg);
++			rtr[state->port->line] = arg;
++		}
++		return ret;
++	case GETTTR:
++		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
++			ret = sb1054_get_register(state->port,PAGE_4,SB105X_TTR);
++		}
++		return ret;
++	case GETRTR:
++		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA){
++			ret = sb1054_get_register(state->port,PAGE_4,SB105X_RTR);
++		}
++		return ret;
+ 
+-		case TIOCGMDADDR:
+-			/* set multi-drop address */
+-			if ((info->port.type == PORT_16C105XA) && (state->port->mdmode & MDMODE_ADDR))
+-			{
+-				return get_multidrop_addr((struct sb_uart_port *)info);
+-			}
+-			ret = -ENOTSUPP;
+-			break;
++	case SETFCR:
++		if (info->port.type == PORT_16C105X || info->port.type == PORT_16C105XA)
++			ret = sb1054_set_register(state->port,PAGE_1,SB105X_FCR,arg);
++		else
++			serial_out(info,2,arg);
+ 
+-		case TIOCSENDADDR:
+-			/* send address in multi-drop mode */
+-			if ((info->port.type == PORT_16C105XA) 
+-					&& (state->port->mdmode & (MDMODE_ENABLE)))
+-			{
+-				if (mp_chars_in_buffer(tty) > 0)
+-				{
+-					tty_wait_until_sent(tty, 0);
+-				}
+-				//while ((serial_in(info, UART_LSR) & 0x60) != 0x60);
+-				//while (sb1054_get_register(state->port, PAGE_2, SB105X_TFCR) != 0);
+-				while ((serial_in(info, UART_LSR) & 0x60) != 0x60);
+-				serial_out(info, UART_SCR, (int)arg);
+-			}
+-			break;
++		return ret;
++	case TIOCSMDADDR:
++		/* set multi-drop address */
++		if (info->port.type == PORT_16C105XA)
++		{
++			state->port->mdmode |= MDMODE_ADDR;
++			return set_multidrop_addr((struct sb_uart_port *)info, (unsigned int)arg);
++		}
++		ret = -ENOTSUPP;
++		break;
++
++	case TIOCGMDADDR:
++		/* set multi-drop address */
++		if ((info->port.type == PORT_16C105XA) && (state->port->mdmode & MDMODE_ADDR))
++			return get_multidrop_addr((struct sb_uart_port *)info);
++		ret = -ENOTSUPP;
++		break;
++
++	case TIOCSENDADDR:
++		/* send address in multi-drop mode */
++		if ((info->port.type == PORT_16C105XA)
++				&& (state->port->mdmode & (MDMODE_ENABLE)))
++		{
++			if (mp_chars_in_buffer(tty) > 0)
++				tty_wait_until_sent(tty, 0);
++			//while ((serial_in(info, UART_LSR) & 0x60) != 0x60);
++			//while (sb1054_get_register(state->port, PAGE_2, SB105X_TFCR) != 0);
++			while ((serial_in(info, UART_LSR) & 0x60) != 0x60);
++			serial_out(info, UART_SCR, (int)arg);
++		}
++		break;
+ 
+-		case TIOCGSERIAL:
+-			ret = mp_get_info(state, (struct serial_struct *)arg);
+-			break;
++	case TIOCGSERIAL:
++		ret = mp_get_info(state, (struct serial_struct *)arg);
++		break;
+ 
+-		case TIOCSSERIAL:
+-			ret = mp_set_info(state, (struct serial_struct *)arg);
+-			break;
++	case TIOCSSERIAL:
++		ret = mp_set_info(state, (struct serial_struct *)arg);
++		break;
+ 
+-		case TIOCSERCONFIG:
+-			ret = mp_do_autoconfig(state);
+-			break;
++	case TIOCSERCONFIG:
++		ret = mp_do_autoconfig(state);
++		break;
+ 
+-		case TIOCSERGWILD: /* obsolete */
+-		case TIOCSERSWILD: /* obsolete */
+-			ret = 0;
+-			break;
+-			/* for Multiport */
+-		case TIOCGNUMOFPORT: /* Get number of ports */
+-			return NR_PORTS;
+-		case TIOCGGETDEVID:
+-			return mp_devs[arg].device_id;
+-		case TIOCGGETREV:
+-			return mp_devs[arg].revision;
+-		case TIOCGGETNRPORTS:
+-			return mp_devs[arg].nr_ports;
+-		case TIOCGGETBDNO:
+-			return NR_BOARD;
+-		case TIOCGGETINTERFACE:
+-			if (mp_devs[arg].revision == 0xc0)
+-			{
+-				/* for SB16C1053APCI */
+-				return (sb1053a_get_interface(info, info->port.line));
+-			}
+-			else
+-			{
+-				return (inb(mp_devs[arg].option_reg_addr+MP_OPTR_IIR0+(state->port->line/8)));
+-			}
+-		case TIOCGGETPORTTYPE:
+-			ret = get_device_type(arg);;
+-			return ret;
+-		case TIOCSMULTIECHO: /* set to multi-drop mode(RS422) or echo mode(RS485)*/
+-			outb( ( inb(info->interface_config_addr) & ~0x03 ) | 0x01 ,  
+-					info->interface_config_addr);
+-			return 0;
+-		case TIOCSPTPNOECHO: /* set to multi-drop mode(RS422) or echo mode(RS485) */
+-			outb( ( inb(info->interface_config_addr) & ~0x03 )  ,             
+-					info->interface_config_addr);
+-			return 0;
++	case TIOCSERGWILD: /* obsolete */
++	case TIOCSERSWILD: /* obsolete */
++		ret = 0;
++		break;
++		/* for Multiport */
++	case TIOCGNUMOFPORT: /* Get number of ports */
++		return NR_PORTS;
++	case TIOCGGETDEVID:
++		return mp_devs[arg].device_id;
++	case TIOCGGETREV:
++		return mp_devs[arg].revision;
++	case TIOCGGETNRPORTS:
++		return mp_devs[arg].nr_ports;
++	case TIOCGGETBDNO:
++		return NR_BOARD;
++	case TIOCGGETINTERFACE:
++		if (mp_devs[arg].revision == 0xc0) {
++			/* for SB16C1053APCI */
++			return (sb1053a_get_interface(info, info->port.line));
++		} else {
++			return (inb(mp_devs[arg].option_reg_addr+MP_OPTR_IIR0+(state->port->line/8)));
++		}
++	case TIOCGGETPORTTYPE:
++		ret = get_device_type(arg);;
++		return ret;
++	case TIOCSMULTIECHO: /* set to multi-drop mode(RS422) or echo mode(RS485)*/
++		outb( ( inb(info->interface_config_addr) & ~0x03 ) | 0x01 ,
++				info->interface_config_addr);
++		return 0;
++	case TIOCSPTPNOECHO: /* set to multi-drop mode(RS422) or echo mode(RS485) */
++		outb( ( inb(info->interface_config_addr) & ~0x03 )  ,
++				info->interface_config_addr);
++		return 0;
  	}
-@@ -1329,16 +1325,13 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+ 
+ 	if (ret != -ENOIOCTLCMD)
+@@ -1237,13 +1209,13 @@ static int mp_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
+ 	}
+ 
+ 	switch (cmd) {
+-		case TIOCMIWAIT:
+-			ret = mp_wait_modem_status(state, arg);
+-			break;
++	case TIOCMIWAIT:
++		ret = mp_wait_modem_status(state, arg);
++		break;
+ 
+-		case TIOCGICOUNT:
+-			ret = mp_get_count(state, (struct serial_icounter_struct *)arg);
+-			break;
++	case TIOCGICOUNT:
++		ret = mp_get_count(state, (struct serial_icounter_struct *)arg);
++		break;
+ 	}
+ 
+ 	if (ret != -ENOIOCTLCMD)
+@@ -1251,16 +1223,17 @@ static int mp_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
+ 
+ 	MP_STATE_LOCK(state);
+ 	switch (cmd) {
+-		case TIOCSERGETLSR: /* Get line status register */
+-			ret = mp_get_lsr_info(state, (unsigned int *)arg);
+-			break;
++	case TIOCSERGETLSR: /* Get line status register */
++		ret = mp_get_lsr_info(state, (unsigned int *)arg);
++		break;
+ 
+-		default: {
+-					struct sb_uart_port *port = state->port;
+-					if (port->ops->ioctl)
+-						ret = port->ops->ioctl(port, cmd, arg);
+-					break;
+-				}
++	default:
++		{
++			struct sb_uart_port *port = state->port;
++			if (port->ops->ioctl)
++				ret = port->ops->ioctl(port, cmd, arg);
++			break;
++		}
+ 	}
+ 
+ 	MP_STATE_UNLOCK(state);
+@@ -1365,7 +1338,7 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
  	tty_ldisc_flush(tty);
  	tty->closing = 0;
  	state->info->tty = NULL;
--	if (state->info->blocked_open)
--	{
--		if (state->close_delay)
--		{
-+
-+	if (state->info->blocked_open) {
-+		if (state->close_delay) {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			schedule_timeout(state->close_delay);
+-	if (state->info->blocked_open) 
++	if (state->info->blocked_open)
+ 	{
+ 		if (state->close_delay)
+ 		{
+@@ -1761,7 +1734,7 @@ static int mp_register_driver(struct uart_driver *drv)
+ 	normal->major		= drv->major;
+ 	normal->minor_start	= drv->minor;
+ 
+-	normal->num		= MAX_MP_PORT ; 
++	normal->num		= MAX_MP_PORT ;
+ 
+ 	normal->type		= TTY_DRIVER_TYPE_SERIAL;
+ 	normal->subtype		= SERIAL_TYPE_NORMAL;
+@@ -1775,8 +1748,8 @@ static int mp_register_driver(struct uart_driver *drv)
+ for (i = 0; i < drv->nr; i++) {
+ 	struct sb_uart_state *state = drv->state + i;
+ 
+-	state->close_delay     = 500;   
+-	state->closing_wait    = 30000; 
++	state->close_delay     = 500;
++	state->closing_wait    = 30000;
+ 
+ 	mutex_init(&state->mutex);
+ 	}
+@@ -1929,7 +1902,7 @@ static void autoconfig(struct mp_port *mtpt, unsigned int probeflags)
+ 	DEBUG_AUTOCONF("iir=%d ", scratch);
+ 	if(mtpt->device->nr_ports >= 8)
+ 		b_ret = read_option_register(mtpt,(MP_OPTR_DIR0 + ((mtpt->port.line)/8)));
+-	else	
++	else
+ 		b_ret = read_option_register(mtpt,MP_OPTR_DIR0);
+ 	u_type = (b_ret & 0xf0) >> 4;
+ 	if(mtpt->port.type == PORT_UNKNOWN )
+@@ -1959,7 +1932,7 @@ static void autoconfig(struct mp_port *mtpt, unsigned int probeflags)
+ 					}
+ 				}
+ 				break;
+-			default:	
++			default:
+ 				mtpt->port.type = PORT_UNKNOWN;
+ 				break;
  		}
+@@ -2086,12 +2059,12 @@ static _INLINE_ void receive_chars(struct mp_port *mtpt, int *status )
+ 		{
+ 			ch = serial_inp(mtpt, UART_RX);
+ 		}
+-		else if (lsr & UART_LSR_SPECIAL) 
++		else if (lsr & UART_LSR_SPECIAL)
+ 		{
+ 			flag = 0;
+ 			ch = serial_inp(mtpt, UART_RX);
+ 
+-			if (lsr & UART_LSR_BI) 
++			if (lsr & UART_LSR_BI)
+ 			{
+ 
+ 				mtpt->port.icount.brk++;
+@@ -2099,7 +2072,7 @@ static _INLINE_ void receive_chars(struct mp_port *mtpt, int *status )
+ 
+ 				if (sb_uart_handle_break(&mtpt->port))
+ 					goto ignore_char;
+-			} 
++			}
+ 			if (lsr & UART_LSR_PE)
+ 			{
+ 				mtpt->port.icount.parity++;
+@@ -2216,7 +2189,7 @@ static inline void multi_handle_port(struct mp_port *mtpt)
+ 		{
+ 			if (mtpt->interface >= RS485NE)
+ 				uart_set_mctrl(&mtpt->port, TIOCM_RTS);
+-			
++
+ 			transmit_chars(mtpt);
+ 
+ 
+@@ -2246,10 +2219,10 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
+ 		unsigned int iir;
+ 
+ 		mtpt = list_entry(lhead, struct mp_port, list);
+-		
++
+ 		iir = serial_in(mtpt, UART_IIR);
+ 		printk("intrrupt! port %d, iir 0x%x\n", mtpt->port.line, iir); //wlee
+-		if (!(iir & UART_IIR_NO_INT)) 
++		if (!(iir & UART_IIR_NO_INT))
+ 		{
+ 			printk("interrupt handle\n");
+ 			spin_lock(&mtpt->port.lock);
+@@ -2261,7 +2234,7 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
+ 			end = lhead;
+ 
+ 		lhead = lhead->next;
+-		if (lhead == iinfo->head && pass_counter++ > PASS_LIMIT) 
++		if (lhead == iinfo->head && pass_counter++ > PASS_LIMIT)
+ 		{
+ 			printk(KERN_ERR "multi: too much work for "
+ 					"irq%d\n", irq);
+@@ -2325,9 +2298,8 @@ static void serial_unlink_irq_chain(struct mp_port *mtpt)
+ 	struct irq_info *i = irq_lists + mtpt->port.irq;
+ 
+ 	if (list_empty(i->head))
+-	{
+ 		free_irq(mtpt->port.irq, i);
+-	}
++
+ 	serial_do_unlink(i, mtpt);
+ }
+ 
+@@ -2453,9 +2425,7 @@ static int multi_startup(struct sb_uart_port *port)
+ 
+ 		mtpt->timer.data = (unsigned long)mtpt;
+ 		mod_timer(&mtpt->timer, jiffies + timeout);
+-	} 
+-	else 
+-	{
++	} else {
+ 		retval = serial_link_irq_chain(mtpt);
+ 		if (retval)
+ 			return retval;
+@@ -2470,7 +2440,7 @@ static int multi_startup(struct sb_uart_port *port)
+ 	multi_set_mctrl(&mtpt->port, mtpt->port.mctrl);
+ 	spin_unlock_irqrestore(&mtpt->port.lock, flags);
+ 
+-	
++
+ 	mtpt->ier = UART_IER_RLSI | UART_IER_RDI;
+ 	serial_outp(mtpt, UART_IER, mtpt->ier);
+ 
+@@ -2509,13 +2479,9 @@ static void multi_shutdown(struct sb_uart_port *port)
+ 	(void) serial_in(mtpt, UART_RX);
+ 
+ 	if ((!is_real_interrupt(mtpt->port.irq))||(mtpt->poll_type==TYPE_POLL))
+-	{
+ 		del_timer_sync(&mtpt->timer);
+-	}
+ 	else
+-	{
+ 		serial_unlink_irq_chain(mtpt);
+-	}
+ }
+ 
+ 
+@@ -2547,19 +2513,19 @@ static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *term
+ 	unsigned int baud, quot;
+ 
+ 	switch (termios->c_cflag & CSIZE) {
+-		case CS5:
+-			cval = 0x00;
+-			break;
+-		case CS6:
+-			cval = 0x01;
+-			break;
+-		case CS7:
+-			cval = 0x02;
+-			break;
+-		default:
+-		case CS8:
+-			cval = 0x03;
+-			break;
++	case CS5:
++		cval = 0x00;
++		break;
++	case CS6:
++		cval = 0x01;
++		break;
++	case CS7:
++		cval = 0x02;
++		break;
++	default:
++	case CS8:
++		cval = 0x03;
++		break;
+ 	}
+ 
+ 	if (termios->c_cflag & CSTOPB)
+@@ -2646,20 +2612,16 @@ static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *term
+ 		if (mtpt->interface != RS232)
+ 			set_auto_rts(port,mtpt->interface);
+ 
 -	}
 -	else
 -	{
 +	} else {
- 		mp_change_pm(state, 3);
- 	}
- 
-@@ -1434,9 +1427,8 @@ static int mp_block_til_ready(struct file *filp, struct sb_uart_state *state)
- 
- 		if ((filp->f_flags & O_NONBLOCK) ||
- 				(info->tty->termios.c_cflag & CLOCAL) ||
--				(info->tty->flags & (1 << TTY_IO_ERROR))) {
-+				(info->tty->flags & (1 << TTY_IO_ERROR)))
- 			break;
--		}
- 
- 		if (info->tty->termios.c_cflag & CBAUD)
- 			uart_set_mctrl(port, TIOCM_DTR);
-@@ -1602,7 +1594,7 @@ static inline void mp_report_port(struct uart_driver *drv, struct sb_uart_port *
- 			snprintf(address, sizeof(address),"MMIO 0x%lx", port->mapbase);
- 			break;
- 		default:
--			snprintf(address, sizeof(address),"*unknown*" );
-+			snprintf(address, sizeof(address),"*unknown*");
- 			strlcpy(address, "*unknown*", sizeof(address));
- 			break;
- 	}
-@@ -1722,7 +1714,6 @@ static int mp_register_driver(struct uart_driver *drv)
- 	normal->minor_start	= drv->minor;
- 
- 	normal->num		= MAX_MP_PORT ;
--
- 	normal->type		= TTY_DRIVER_TYPE_SERIAL;
- 	normal->subtype		= SERIAL_TYPE_NORMAL;
- 	normal->init_termios	= tty_std_termios;
-@@ -1732,13 +1723,12 @@ static int mp_register_driver(struct uart_driver *drv)
- 
- 	tty_set_operations(normal, &mp_ops);
- 
--for (i = 0; i < drv->nr; i++) {
--	struct sb_uart_state *state = drv->state + i;
-+	for (i = 0; i < drv->nr; i++) {
-+		struct sb_uart_state *state = drv->state + i;
- 
--	state->close_delay     = 500;
--	state->closing_wait    = 30000;
--
--	mutex_init(&state->mutex);
-+		state->close_delay     = 500;
-+		state->closing_wait    = 30000;
-+		mutex_init(&state->mutex);
- 	}
- 
- 	retval = tty_register_driver(normal);
-@@ -1754,25 +1744,19 @@ out:
- 
- void mp_unregister_driver(struct uart_driver *drv)
- {
--    struct tty_driver *normal = NULL;
--
--    normal = drv->tty_driver;
--
--    if (!normal)
--    {
--        return;
--    }
-+	struct tty_driver *normal = NULL;
- 
--    tty_unregister_driver(normal);
--    put_tty_driver(normal);
--    drv->tty_driver = NULL;
-+	normal = drv->tty_driver;
- 
-+	if (!normal)
-+		return;
- 
--    if (drv->state)
--    {
--        kfree(drv->state);
--    }
-+	tty_unregister_driver(normal);
-+	put_tty_driver(normal);
-+	drv->tty_driver = NULL;
- 
-+	if (drv->state)
-+		kfree(drv->state);
- }
- 
- static int mp_add_one_port(struct uart_driver *drv, struct sb_uart_port *port)
-@@ -1903,20 +1887,13 @@ static void autoconfig(struct mp_port *mtpt, unsigned int probeflags)
- 				mtpt->port.type = PORT_16C105X;
- 				break;
- 			case DIR_UART_16C1050A:
--				if (mtpt->port.line < 2)
--				{
-+				if (mtpt->port.line < 2) {
- 					mtpt->port.type = PORT_16C105XA;
--				}
--				else
--				{
-+				} else {
- 					if (mtpt->device->device_id & 0x50)
--					{
- 						mtpt->port.type = PORT_16C55X;
--					}
- 					else
--					{
- 						mtpt->port.type = PORT_16C105X;
--					}
- 				}
- 				break;
- 			default:
-@@ -2041,45 +2018,37 @@ static inline void receive_chars(struct mp_port *mtpt, int *status )
- 	//lsr &= mtpt->port.read_status_mask;
- 
- 	do {
--		if ((lsr & UART_LSR_PE) && (mtpt->port.mdmode & MDMODE_ENABLE))
+ 		if (mtpt->interface >= RS485NE)
 -		{
--			ch = serial_inp(mtpt, UART_RX);
--		}
--		else if (lsr & UART_LSR_SPECIAL)
--		{
--			flag = 0;
-+		if ((lsr & UART_LSR_PE) && (mtpt->port.mdmode & MDMODE_ENABLE)) {
- 			ch = serial_inp(mtpt, UART_RX);
-+		} else {
-+			if (lsr & UART_LSR_SPECIAL) {
-+				flag = 0;
-+				ch = serial_inp(mtpt, UART_RX);
- 
--			if (lsr & UART_LSR_BI)
--			{
--
--				mtpt->port.icount.brk++;
--				flag = TTY_BREAK;
-+				if (lsr & UART_LSR_BI) {
-+					mtpt->port.icount.brk++;
-+					flag = TTY_BREAK;
- 
--				if (sb_uart_handle_break(&mtpt->port))
--					goto ignore_char;
--			}
--			if (lsr & UART_LSR_PE)
--			{
--				mtpt->port.icount.parity++;
--				flag = TTY_PARITY;
--			}
--			if (lsr & UART_LSR_FE)
--			{
--				mtpt->port.icount.frame++;
--				flag = TTY_FRAME;
--			}
--			if (lsr & UART_LSR_OE)
--			{
--				mtpt->port.icount.overrun++;
--				flag = TTY_OVERRUN;
-+					if (sb_uart_handle_break(&mtpt->port))
-+						goto ignore_char;
-+				}
-+				if (lsr & UART_LSR_PE) {
-+					mtpt->port.icount.parity++;
-+					flag = TTY_PARITY;
-+				}
-+				if (lsr & UART_LSR_FE) {
-+					mtpt->port.icount.frame++;
-+					flag = TTY_FRAME;
-+				}
-+				if (lsr & UART_LSR_OE) {
-+					mtpt->port.icount.overrun++;
-+					flag = TTY_OVERRUN;
-+				}
-+				tty_insert_flip_char(tty, ch, flag);
-+			} else {
-+				ch = serial_inp(mtpt, UART_RX);
-+				tty_insert_flip_char(tty, ch, 0);
- 			}
--			tty_insert_flip_char(tty, ch, flag);
--		}
--		else
--		{
--			ch = serial_inp(mtpt, UART_RX);
--			tty_insert_flip_char(tty, ch, 0);
- 		}
- ignore_char:
- 		lsr = serial_inp(mtpt, UART_LSR);
-@@ -2110,21 +2079,17 @@ static inline void transmit_chars(struct mp_port *mtpt)
- 	count = uart_circ_chars_pending(xmit);
- 
- 	if(count > mtpt->port.fifosize)
--	{
- 		count = mtpt->port.fifosize;
--	}
- 
- 	pr_info("[%d] mdmode: %x\n", mtpt->port.line, mtpt->port.mdmode);
- 	do {
- #if 0
- 		/* check multi-drop mode */
--		if ((mtpt->port.mdmode & (MDMODE_ENABLE | MDMODE_ADDR)) == (MDMODE_ENABLE | MDMODE_ADDR))
--		{
-+		if ((mtpt->port.mdmode & (MDMODE_ENABLE | MDMODE_ADDR)) == (MDMODE_ENABLE | MDMODE_ADDR)) {
- 			printk("send address\n");
- 			/* send multi-drop address */
- 			serial_out(mtpt, UART_SCR, xmit->buf[xmit->tail]);
--		}
--		else
-+		} else
- #endif
- 		{
- 			serial_out(mtpt, UART_TX, xmit->buf[xmit->tail]);
-@@ -2134,8 +2099,6 @@ static inline void transmit_chars(struct mp_port *mtpt)
- 	} while (--count > 0);
- }
- 
--
--
- static inline void check_modem_status(struct mp_port *mtpt)
- {
- 	int status;
-@@ -2207,15 +2170,16 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
- 		mtpt = list_entry(lhead, struct mp_port, list);
- 
- 		iir = serial_in(mtpt, UART_IIR);
--		if (!(iir & UART_IIR_NO_INT))
--		{
-+		if (!(iir & UART_IIR_NO_INT)) {
- 			spin_lock(&mtpt->port.lock);
- 			multi_handle_port(mtpt);
- 			spin_unlock(&mtpt->port.lock);
- 
- 			end = NULL;
--		} else if (end == NULL)
--			end = lhead;
-+		} else {
-+			if (end == NULL)
-+				end = lhead;
-+		}
- 
- 		lhead = lhead->next;
- 		if (lhead == iinfo->head && pass_counter++ > PASS_LIMIT)
-@@ -2227,9 +2191,7 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
- 	} while (lhead != end);
- 
- 	spin_unlock(&iinfo->lock);
--
--
--        return IRQ_HANDLED;
-+	return IRQ_HANDLED;
- }
- 
- static void serial_do_unlink(struct irq_info *i, struct mp_port *mtpt)
-@@ -2422,7 +2384,6 @@ static int multi_startup(struct sb_uart_port *port)
- 	multi_set_mctrl(&mtpt->port, mtpt->port.mctrl);
- 	spin_unlock_irqrestore(&mtpt->port.lock, flags);
- 
--
- 	mtpt->ier = UART_IER_RLSI | UART_IER_RDI;
- 	serial_outp(mtpt, UART_IER, mtpt->ier);
- 
-@@ -2466,8 +2427,6 @@ static void multi_shutdown(struct sb_uart_port *port)
- 		serial_unlink_irq_chain(mtpt);
- }
- 
--
--
- static unsigned int multi_get_divisor(struct sb_uart_port *port, unsigned int baud)
- {
- 	unsigned int quot;
-@@ -2484,9 +2443,6 @@ static unsigned int multi_get_divisor(struct sb_uart_port *port, unsigned int ba
- 	return quot;
- }
- 
--
--
--
- static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *termios, struct MP_TERMIOS *old)
- {
- 	struct mp_port *mtpt = (struct mp_port *)port;
-@@ -2586,8 +2542,7 @@ static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *term
- 
- 
- 	if ((mtpt->port.type == PORT_16C105X)
--		|| (mtpt->port.type == PORT_16C105XA))
--	{
-+		|| (mtpt->port.type == PORT_16C105XA)) {
- 		if(deep[mtpt->port.line]!=0)
- 			set_deep_fifo(port, ENABLE);
- 
-@@ -2599,9 +2554,8 @@ static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *term
  			uart_clear_mctrl(&mtpt->port, TIOCM_RTS);
+-		}
  	}
  
--	if(mtpt->device->device_id == PCI_DEVICE_ID_MP4M) {
-+	if(mtpt->device->device_id == PCI_DEVICE_ID_MP4M)
+-	if(mtpt->device->device_id == PCI_DEVICE_ID_MP4M)
+-	{
++	if(mtpt->device->device_id == PCI_DEVICE_ID_MP4M) {
  		SendATCommand(mtpt);
--	}
- 
+ 		printk("SendATCommand\n");
+-	}	
++	}
++
  	multi_set_mctrl(&mtpt->port, mtpt->port.mctrl);
  	spin_unlock_irqrestore(&mtpt->port.lock, flags);
-@@ -2644,22 +2598,22 @@ static void multi_release_std_resource(struct mp_port *mtpt)
- 	unsigned int size = 8 << mtpt->port.regshift;
- 
- 	switch (mtpt->port.iotype) {
--		case UPIO_MEM:
--			if (!mtpt->port.mapbase)
--				break;
-+	case UPIO_MEM:
-+		if (!mtpt->port.mapbase)
-+			break;
- 
--			if (mtpt->port.flags & UPF_IOREMAP) {
--				iounmap(mtpt->port.membase);
--				mtpt->port.membase = NULL;
--			}
-+		if (mtpt->port.flags & UPF_IOREMAP) {
-+			iounmap(mtpt->port.membase);
-+			mtpt->port.membase = NULL;
-+		}
- 
--			release_mem_region(mtpt->port.mapbase, size);
--			break;
-+		release_mem_region(mtpt->port.mapbase, size);
-+		break;
- 
--		case UPIO_HUB6:
--		case UPIO_PORT:
--			release_region(mtpt->port.iobase,size);
--			break;
-+	case UPIO_HUB6:
-+	case UPIO_PORT:
-+		release_region(mtpt->port.iobase,size);
-+		break;
- 	}
  }
+@@ -2680,9 +2642,7 @@ static void multi_pm(struct sb_uart_port *port, unsigned int state, unsigned int
  
-@@ -2692,6 +2646,7 @@ static int multi_verify_port(struct sb_uart_port *port, struct serial_struct *se
- 			ser->baud_base < 9600 || ser->type < PORT_UNKNOWN ||
- 			ser->type == PORT_STARTECH)
- 		return -EINVAL;
-+
- 	return 0;
- }
- 
-@@ -2749,12 +2704,10 @@ static void __init multi_init_ports(void)
- 
- 	mtpt = multi_ports;
- 
--	for (k=0;k<NR_BOARD;k++)
+ 		if (mtpt->pm)
+ 			mtpt->pm(port, state, oldstate);
+-	} 
+-	else 
 -	{
-+	for (k = 0; k < NR_BOARD; k++) {
++	} else {
+ 		if (mtpt->capabilities & UART_STARTECH) {
+ 			serial_outp(mtpt, UART_LCR, 0xBF);
+ 			serial_outp(mtpt, UART_EFR, UART_EFR_ECB);
+@@ -2789,7 +2749,7 @@ static struct uart_driver multi_reg = {
+ 	.dev_name       = "ttyMP",
+ 	.major          = SB_TTY_MP_MAJOR,
+ 	.minor          = 0,
+-	.nr             = MAX_MP_PORT, 
++	.nr             = MAX_MP_PORT,
+ 	.cons           = NULL,
+ };
+ 
+@@ -2800,19 +2760,19 @@ static void __init multi_init_ports(void)
+ 	int i,j,k;
+ 	unsigned char osc;
+ 	unsigned char b_ret = 0;
+-	static struct mp_device_t * sbdev; 
++	static struct mp_device_t * sbdev;
+ 
+ 	if (!first)
+ 		return;
+ 	first = 0;
+ 
+-	mtpt = multi_ports; 
++	mtpt = multi_ports;
+ 
+ 	for (k=0;k<NR_BOARD;k++)
+ 	{
  		sbdev = &mp_devs[k];
  
--		for (i = 0; i < sbdev->nr_ports; i++, mtpt++)
--		{
-+		for (i = 0; i < sbdev->nr_ports; i++, mtpt++) {
+-		for (i = 0; i < sbdev->nr_ports; i++, mtpt++) 
++		for (i = 0; i < sbdev->nr_ports; i++, mtpt++)
+ 		{
  			mtpt->device 		= sbdev;
  			mtpt->port.iobase   = sbdev->uart_access_addr + 8*i;
- 			mtpt->port.irq      = sbdev->irq;
-@@ -2785,8 +2738,8 @@ static void __init multi_init_ports(void)
+@@ -2834,19 +2794,16 @@ static void __init multi_init_ports(void)
+ 			osc = inb(sbdev->option_reg_addr + MP_OPTR_DIR0 + i/8) & 0x0F;
+ 			if (osc==0x0f)
+ 				osc = 0;
+-			for(j=0;j<osc;j++)
++			for (j = 0; j < osc; j++)
+ 				mtpt->port.uartclk *= 2;
+ 			mtpt->port.flags    |= STD_COM_FLAGS | UPF_SHARE_IRQ ;
+ 			mtpt->port.iotype   = UPIO_PORT;
+ 			mtpt->port.ops      = &multi_pops;
+ 
+-			if (sbdev->revision == 0xc0)
+-			{
++			if (sbdev->revision == 0xc0) {
  				/* for SB16C1053APCI */
  				b_ret = sb1053a_get_interface(mtpt, i);
- 			} else {
--				b_ret = read_option_register(mtpt,(MP_OPTR_IIR0 + i/8));
--				pr_info("IIR_RET = %x\n",b_ret);
-+				b_ret = read_option_register(mtpt, (MP_OPTR_IIR0 + i/8));
-+				pr_info("IIR_RET = %x\n", b_ret);
+-			}
+-			else
+-			{
++			} else {
+ 				b_ret = read_option_register(mtpt,(MP_OPTR_IIR0 + i/8));
+ 				printk("IIR_RET = %x\n",b_ret);
  			}
+@@ -2885,13 +2842,13 @@ static void __init multi_register_ports(struct uart_driver *drv)
+  *  pcidev  - pci_dev structure address
+  *  offset  - BAR offset PCI_BASE_ADDRESS_0 ~ PCI_BASE_ADDRESS_4
+  *  address - address to be changed BAR value
+- *  size	- size of address space 
++ *  size	- size of address space
+  *
+  * RETURNS
+  *  If this function performs successful, it returns 0. Otherwise, It returns -1.
+  */
+-static int pci_remap_base(struct pci_dev *pcidev, unsigned int offset, 
+-		unsigned int address, unsigned int size) 
++static int pci_remap_base(struct pci_dev *pcidev, unsigned int offset,
++		unsigned int address, unsigned int size)
+ {
+ #if 0
+ 	struct resource *root;
+@@ -2929,18 +2886,14 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
+ 	sbdev->uart_access_addr = pcidev->resource[0].start & PCI_BASE_ADDRESS_IO_MASK;
  
- 			/* default to RS232 */
-@@ -2844,14 +2797,13 @@ static int pci_remap_base(struct pci_dev *pcidev, unsigned int offset,
- 	pcidev->resource[index].start = address;
- 	pcidev->resource[index].end	  = address + size - 1;
- 
--	if (request_resource(root, &pcidev->resource[index]) != NULL)
+ 	/* check revision. The SB16C1053APCI's option i/o address is BAR4 */
+-	if (sbdev->revision == 0xc0)
 -	{
-+	if (request_resource(root, &pcidev->resource[index]) != NULL) {
- 		printk(KERN_ERR "pci remap conflict!! 0x%x\n", address);
--		return (-1);
-+		return -1;
++	if (sbdev->revision == 0xc0) {
+ 		/* SB16C1053APCI */
+ 		sbdev->option_reg_addr = pcidev->resource[4].start & PCI_BASE_ADDRESS_IO_MASK;
+-	}
+-	else
+-	{
++	} else {
+ 		sbdev->option_reg_addr = pcidev->resource[1].start & PCI_BASE_ADDRESS_IO_MASK;
  	}
- #endif
+-#if 1	
+-	if (sbdev->revision == 0xc0)
+-	{
++#if 1
++	if (sbdev->revision == 0xc0) {
+ 		outb(0x00, sbdev->option_reg_addr + MP_OPTR_GPOCR);
+ 		inb(sbdev->option_reg_addr + MP_OPTR_GPOCR);
+ 		outb(0x83, sbdev->option_reg_addr + MP_OPTR_GPOCR);
+@@ -2949,151 +2902,137 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
  
--	return (0);
-+	return 0;
- }
+ 	sbdev->irq = pcidev->irq;
  
- static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
-@@ -2890,18 +2842,18 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
+-	if ((brd.device_id & 0x0800) || !(brd.device_id &0xff00))
+-	{
++	if ((brd.device_id & 0x0800) || !(brd.device_id &0xff00)) {
+ 		sbdev->poll_type = TYPE_INTERRUPT;
+-	}
+-	else
+-	{
++	} else {
+ 		sbdev->poll_type = TYPE_POLL;
  	}
  
  	/* codes which is specific to each board*/
--	switch(brd.device_id){
--	case PCI_DEVICE_ID_MP1 :
--	case PCIE_DEVICE_ID_MP1 :
--	case PCIE_DEVICE_ID_MP1E :
--	case PCIE_DEVICE_ID_GT_MP1 :
-+	switch (brd.device_id) {
-+	case PCI_DEVICE_ID_MP1:
-+	case PCIE_DEVICE_ID_MP1:
-+	case PCIE_DEVICE_ID_MP1E:
-+	case PCIE_DEVICE_ID_GT_MP1:
- 		sbdev->nr_ports = 1;
- 		break;
--	case PCI_DEVICE_ID_MP2 :
--	case PCIE_DEVICE_ID_MP2 :
--	case PCIE_DEVICE_ID_GT_MP2 :
--	case PCIE_DEVICE_ID_MP2B :
--	case PCIE_DEVICE_ID_MP2E :
-+	case PCI_DEVICE_ID_MP2:
-+	case PCIE_DEVICE_ID_MP2:
-+	case PCIE_DEVICE_ID_GT_MP2:
-+	case PCIE_DEVICE_ID_MP2B:
-+	case PCIE_DEVICE_ID_MP2E:
- 		sbdev->nr_ports = 2;
+ 	switch(brd.device_id){
+-		case PCI_DEVICE_ID_MP1 :
+-		case PCIE_DEVICE_ID_MP1 :
+-		case PCIE_DEVICE_ID_MP1E :
+-		case PCIE_DEVICE_ID_GT_MP1 :
+-			sbdev->nr_ports = 1;
+-			break;
+-		case PCI_DEVICE_ID_MP2 :
+-		case PCIE_DEVICE_ID_MP2 :
+-		case PCIE_DEVICE_ID_GT_MP2 :
+-		case PCIE_DEVICE_ID_MP2B :
+-		case PCIE_DEVICE_ID_MP2E :
+-			sbdev->nr_ports = 2;
+-
+-			/* serial base address remap */
+-			if (sbdev->revision == 0xc0)
+-			{
+-				int prev_port_addr = 0;
++	case PCI_DEVICE_ID_MP1 :
++	case PCIE_DEVICE_ID_MP1 :
++	case PCIE_DEVICE_ID_MP1E :
++	case PCIE_DEVICE_ID_GT_MP1 :
++		sbdev->nr_ports = 1;
++		break;
++	case PCI_DEVICE_ID_MP2 :
++	case PCIE_DEVICE_ID_MP2 :
++	case PCIE_DEVICE_ID_GT_MP2 :
++	case PCIE_DEVICE_ID_MP2B :
++	case PCIE_DEVICE_ID_MP2E :
++		sbdev->nr_ports = 2;
++
++		/* serial base address remap */
++		if (sbdev->revision == 0xc0) {
++			int prev_port_addr = 0;
++
++			pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
++		}
++		break;
++	case PCI_DEVICE_ID_MP4 :
++	case PCI_DEVICE_ID_MP4A :
++	case PCIE_DEVICE_ID_MP4 :
++	case PCI_DEVICE_ID_GT_MP4 :
++	case PCI_DEVICE_ID_GT_MP4A :
++	case PCIE_DEVICE_ID_GT_MP4 :
++	case PCI_DEVICE_ID_MP4M :
++	case PCIE_DEVICE_ID_MP4B :
++		sbdev->nr_ports = 4;
++
++		if(sbdev->revision == 0x91){
++			sbdev->reserved_addr[0] = pcidev->resource[0].start & PCI_BASE_ADDRESS_IO_MASK;
++			outb(0x03 , sbdev->reserved_addr[0] + 0x01);
++			outb(0x03 , sbdev->reserved_addr[0] + 0x02);
++			outb(0x01 , sbdev->reserved_addr[0] + 0x20);
++			outb(0x00 , sbdev->reserved_addr[0] + 0x21);
++			request_region(sbdev->reserved_addr[0], 32, sbdev->name);
++			sbdev->uart_access_addr = pcidev->resource[1].start & PCI_BASE_ADDRESS_IO_MASK;
++			sbdev->option_reg_addr = pcidev->resource[2].start & PCI_BASE_ADDRESS_IO_MASK;
++		}
  
- 		/* serial base address remap */
-@@ -2912,17 +2864,17 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 			pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
- 		}
- 		break;
--	case PCI_DEVICE_ID_MP4 :
--	case PCI_DEVICE_ID_MP4A :
--	case PCIE_DEVICE_ID_MP4 :
--	case PCI_DEVICE_ID_GT_MP4 :
--	case PCI_DEVICE_ID_GT_MP4A :
--	case PCIE_DEVICE_ID_GT_MP4 :
--	case PCI_DEVICE_ID_MP4M :
--	case PCIE_DEVICE_ID_MP4B :
-+	case PCI_DEVICE_ID_MP4:
-+	case PCI_DEVICE_ID_MP4A:
-+	case PCIE_DEVICE_ID_MP4:
-+	case PCI_DEVICE_ID_GT_MP4:
-+	case PCI_DEVICE_ID_GT_MP4A:
-+	case PCIE_DEVICE_ID_GT_MP4:
-+	case PCI_DEVICE_ID_MP4M:
-+	case PCIE_DEVICE_ID_MP4B:
- 		sbdev->nr_ports = 4;
+-				pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
+-			}
+-			break;
+-		case PCI_DEVICE_ID_MP4 :
+-		case PCI_DEVICE_ID_MP4A :
+-		case PCIE_DEVICE_ID_MP4 :
+-		case PCI_DEVICE_ID_GT_MP4 :
+-		case PCI_DEVICE_ID_GT_MP4A :
+-		case PCIE_DEVICE_ID_GT_MP4 :
+-		case PCI_DEVICE_ID_MP4M :
+-		case PCIE_DEVICE_ID_MP4B :
+-			sbdev->nr_ports = 4;
+-
+-			if(sbdev->revision == 0x91){
+-				sbdev->reserved_addr[0] = pcidev->resource[0].start & PCI_BASE_ADDRESS_IO_MASK;
+-				outb(0x03 , sbdev->reserved_addr[0] + 0x01);
+-				outb(0x03 , sbdev->reserved_addr[0] + 0x02);
+-				outb(0x01 , sbdev->reserved_addr[0] + 0x20);
+-				outb(0x00 , sbdev->reserved_addr[0] + 0x21);
+-				request_region(sbdev->reserved_addr[0], 32, sbdev->name);
+-				sbdev->uart_access_addr = pcidev->resource[1].start & PCI_BASE_ADDRESS_IO_MASK;
+-				sbdev->option_reg_addr = pcidev->resource[2].start & PCI_BASE_ADDRESS_IO_MASK;
+-			}
++		/* SB16C1053APCI */
++		if (sbdev->revision == 0xc0)
++		{
++			int prev_port_addr = 0;
  
--		if(sbdev->revision == 0x91){
-+		if(sbdev->revision == 0x91) {
- 			sbdev->reserved_addr[0] = pcidev->resource[0].start & PCI_BASE_ADDRESS_IO_MASK;
- 			outb(0x03 , sbdev->reserved_addr[0] + 0x01);
- 			outb(0x03 , sbdev->reserved_addr[0] + 0x02);
-@@ -2944,10 +2896,10 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 			pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 24, 8);
- 		}
- 		break;
--	case PCI_DEVICE_ID_MP6 :
--	case PCI_DEVICE_ID_MP6A :
--	case PCI_DEVICE_ID_GT_MP6 :
--	case PCI_DEVICE_ID_GT_MP6A :
-+	case PCI_DEVICE_ID_MP6:
-+	case PCI_DEVICE_ID_MP6A:
-+	case PCI_DEVICE_ID_GT_MP6:
-+	case PCI_DEVICE_ID_GT_MP6A:
- 		sbdev->nr_ports = 6;
+-			/* SB16C1053APCI */
+-			if (sbdev->revision == 0xc0)
+-			{
+-				int prev_port_addr = 0;
++			pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_2, prev_port_addr + 16, 8);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 24, 8);
++		}
++		break;
++	case PCI_DEVICE_ID_MP6 :
++	case PCI_DEVICE_ID_MP6A :
++	case PCI_DEVICE_ID_GT_MP6 :
++	case PCI_DEVICE_ID_GT_MP6A :
++		sbdev->nr_ports = 6;
  
- 		/* SB16C1053APCI */
-@@ -2960,17 +2912,17 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 			pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 32, 16);
- 		}
- 		break;
--	case PCI_DEVICE_ID_MP8 :
--	case PCIE_DEVICE_ID_MP8 :
--	case PCI_DEVICE_ID_GT_MP8 :
--	case PCIE_DEVICE_ID_GT_MP8 :
--	case PCIE_DEVICE_ID_MP8B :
-+	case PCI_DEVICE_ID_MP8:
-+	case PCIE_DEVICE_ID_MP8:
-+	case PCI_DEVICE_ID_GT_MP8:
-+	case PCIE_DEVICE_ID_GT_MP8:
-+	case PCIE_DEVICE_ID_MP8B:
- 		sbdev->nr_ports = 8;
- 		break;
--	case PCI_DEVICE_ID_MP32 :
--	case PCIE_DEVICE_ID_MP32 :
--	case PCI_DEVICE_ID_GT_MP32 :
--	case PCIE_DEVICE_ID_GT_MP32 :
-+	case PCI_DEVICE_ID_MP32:
-+	case PCIE_DEVICE_ID_MP32:
-+	case PCI_DEVICE_ID_GT_MP32:
-+	case PCIE_DEVICE_ID_GT_MP32:
- 		{
- 			int portnum_hex=0;
- 			portnum_hex = inb(sbdev->option_reg_addr);
-@@ -2978,7 +2930,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 		}
- 		break;
+-				pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_2, prev_port_addr + 16, 8);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 24, 8);
+-			}
+-			break;
+-		case PCI_DEVICE_ID_MP6 :
+-		case PCI_DEVICE_ID_MP6A :
+-		case PCI_DEVICE_ID_GT_MP6 :
+-		case PCI_DEVICE_ID_GT_MP6A :
+-			sbdev->nr_ports = 6;
+-
+-			/* SB16C1053APCI */
+-			if (sbdev->revision == 0xc0)
+-			{
+-				int prev_port_addr = 0;
++		/* SB16C1053APCI */
++		if (sbdev->revision == 0xc0) {
++			int prev_port_addr = 0;
+ 
+-				pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_2, prev_port_addr + 16, 16);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 32, 16);
+-			}
+-			break;
+-		case PCI_DEVICE_ID_MP8 :
+-		case PCIE_DEVICE_ID_MP8 :
+-		case PCI_DEVICE_ID_GT_MP8 :
+-		case PCIE_DEVICE_ID_GT_MP8 :
+-		case PCIE_DEVICE_ID_MP8B :
+-			sbdev->nr_ports = 8;
+-			break;
+-		case PCI_DEVICE_ID_MP32 :
+-		case PCIE_DEVICE_ID_MP32 :
+-		case PCI_DEVICE_ID_GT_MP32 :
+-		case PCIE_DEVICE_ID_GT_MP32 :
+-			{
+-				int portnum_hex=0;
+-				portnum_hex = inb(sbdev->option_reg_addr);
+-				sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
+-			}
+-			break;
++			pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_2, prev_port_addr + 16, 16);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_3, prev_port_addr + 32, 16);
++		}
++		break;
++	case PCI_DEVICE_ID_MP8 :
++	case PCIE_DEVICE_ID_MP8 :
++	case PCI_DEVICE_ID_GT_MP8 :
++	case PCIE_DEVICE_ID_GT_MP8 :
++	case PCIE_DEVICE_ID_MP8B :
++		sbdev->nr_ports = 8;
++		break;
++	case PCI_DEVICE_ID_MP32 :
++	case PCIE_DEVICE_ID_MP32 :
++	case PCI_DEVICE_ID_GT_MP32 :
++	case PCIE_DEVICE_ID_GT_MP32 :
++		{
++			int portnum_hex=0;
++			portnum_hex = inb(sbdev->option_reg_addr);
++			sbdev->nr_ports = ((portnum_hex/16)*10) + (portnum_hex % 16);
++		}
++		break;
  #ifdef CONFIG_PARPORT_PC
--	case PCI_DEVICE_ID_MP2S1P :
-+	case PCI_DEVICE_ID_MP2S1P:
- 		sbdev->nr_ports = 2;
+-		case PCI_DEVICE_ID_MP2S1P :
+-			sbdev->nr_ports = 2;
++	case PCI_DEVICE_ID_MP2S1P :
++		sbdev->nr_ports = 2;
  
- 		/* SB16C1053APCI */
-@@ -2992,7 +2944,7 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 		/* add PC compatible parallel port */
- 		parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
- 		break;
--	case PCI_DEVICE_ID_MP1P :
-+	case PCI_DEVICE_ID_MP1P:
- 		/* add PC compatible parallel port */
- 		parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
- 		break;
-@@ -3028,22 +2980,19 @@ static int __init multi_init(void)
- 	if(fcr_count==0) {
- 		for (i = 0; i < 256; i++)
+-			/* SB16C1053APCI */
+-			if (sbdev->revision == 0xc0)
+-			{
+-				int prev_port_addr = 0;
++		/* SB16C1053APCI */
++		if (sbdev->revision == 0xc0) {
++			int prev_port_addr = 0;
+ 
+-				pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
+-				pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
+-			}
++			pci_read_config_dword(pcidev, PCI_BASE_ADDRESS_0, &prev_port_addr);
++			pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
++		}
+ 
+-			/* add PC compatible parallel port */
+-			parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
+-			break;
+-		case PCI_DEVICE_ID_MP1P :
+-			/* add PC compatible parallel port */
+-			parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
+-			break;
++		/* add PC compatible parallel port */
++		parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
++		break;
++	case PCI_DEVICE_ID_MP1P :
++		/* add PC compatible parallel port */
++		parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
++		break;
+ #endif
+ 	}
+ 
+ 	ret = request_region(sbdev->uart_access_addr, (8*sbdev->nr_ports), sbdev->name);
+ 
+ 	if (sbdev->revision == 0xc0)
+-	{
+ 		ret = request_region(sbdev->option_reg_addr, 0x40, sbdev->name);
+-	}
+ 	else
+-	{
+ 		ret = request_region(sbdev->option_reg_addr, 0x20, sbdev->name);
+-	}
+-
+ 
+ 	NR_BOARD++;
+ 	NR_PORTS += sbdev->nr_ports;
+ 
+ 	/* Enable PCI interrupt */
+ 	addr = sbdev->option_reg_addr + MP_OPTR_IMR0;
+-	for(j=0; j < (sbdev->nr_ports/8)+1; j++)
+-	{
++	for ( j = 0; j < (sbdev->nr_ports/8)+1; j++) {
+ 		if (sbdev->poll_type == TYPE_INTERRUPT)
+-		{
+ 			outb(0xff,addr +j);
+-		}
+ 	}
+ 	sbdev++;
+ 
+@@ -3105,62 +3044,47 @@ static int __init multi_init(void)
+ 	int ret, i;
+ 	struct pci_dev  *dev = NULL;
+ 
+-	if(fcr_count==0)
+-	{
+-		for(i=0;i<256;i++)
+-		{
++	if(fcr_count==0) {
++		for (i = 0; i < 256; i++)
  			fcr_arr[i] = 0x01;
--
+-			
+-		}
++
  	}
- 	if(deep_count==0) {
- 		for (i = 0; i < 256; i++)
+-	if(deep_count==0)
+-	{
+-		for(i=0;i<256;i++)
+-		{
++	if(deep_count==0) {
++		for (i = 0; i < 256; i++)
  			deep[i] = 1;
--
+-			
+-		}
++
  	}
- 	if(rtr_count==0) {
--                for (i = 0; i < 256; i++)
--                        rtr[i] = 0x10;
--        }
-+		for (i = 0; i < 256; i++)
-+			rtr[i] = 0x10;
-+	}
- 	if(ttr_count==0) {
--                for (i = 0; i < 256; i++)
--                        ttr[i] = 0x38;
--        }
--
-+		for (i = 0; i < 256; i++)
-+			ttr[i] = 0x38;
-+	}
+-	if(rtr_count==0)
+-        {
+-                for(i=0;i<256;i++)
+-                {
++	if(rtr_count==0) {
++                for (i = 0; i < 256; i++)
+                         rtr[i] = 0x10;
+-                }
+         }
+-	if(ttr_count==0)
+-        {
+-                for(i=0;i<256;i++)
+-                {
++	if(ttr_count==0) {
++                for (i = 0; i < 256; i++)
+                         ttr[i] = 0x38;
+-                }
+         }
  
- 	for( i = 0; i < mp_nrpcibrds; i++)
+ 
+-printk("MULTI INIT\n");
+-	for( i=0; i< mp_nrpcibrds; i++)
++	printk("MULTI INIT\n");
++	for( i = 0; i < mp_nrpcibrds; i++)
  	{
-@@ -3053,14 +3002,15 @@ static int __init multi_init(void)
+ 
+-		while( (dev = pci_get_device(mp_pciboards[i].vendor_id, mp_pciboards[i].device_id, dev) ) )
+-
+-		{
+-printk("FOUND~~~\n");
++		while( (dev = pci_get_device(mp_pciboards[i].vendor_id, mp_pciboards[i].device_id, dev) ) ) {
++		printk("FOUND~~~\n");
+ //	Cent OS bug fix
  //			if (mp_pciboards[i].device_id & 0x0800)
  			{
  				int status;
--	        		pci_disable_device(dev);
--	        		status = pci_enable_device(dev);
+ 	        		pci_disable_device(dev);
+ 	        		status = pci_enable_device(dev);
+-            
+-	   		     	if (status != 0)
+-        			{ 
+-               				printk("Multiport Board Enable Fail !\n\n");
 +
-+				pci_disable_device(dev);
-+				status = pci_enable_device(dev);
- 
- 				if (status != 0) {
- 					pr_err("Multiport Board Enable Fail !\n\n");
- 					status = -ENXIO;
- 					return status;
--           			}
-+				}
++				if (status != 0) {
++					printk("Multiport Board Enable Fail !\n\n");
+                				status = -ENXIO;
+                 			return status;
+            			}
  			}
  
- 			init_mp_dev(dev, mp_pciboards[i]);
-diff --git a/drivers/staging/sb105x/sb_pci_mp.h b/drivers/staging/sb105x/sb_pci_mp.h
-index 579dd83..6df1036 100644
---- a/drivers/staging/sb105x/sb_pci_mp.h
-+++ b/drivers/staging/sb105x/sb_pci_mp.h
-@@ -126,7 +126,7 @@
- 
- 
- /* serial interface */
--#define RS232		1 
-+#define RS232		1
- #define RS422PTP	2
- #define RS422MD		3
- #define RS485NE		4
-@@ -134,21 +134,19 @@
- 
- #define serial_inp(up, offset)      serial_in(up, offset)
- #define serial_outp(up, offset, value)  serial_out(up, offset, value)
--	
-+
- #define PASS_LIMIT  256
- #define is_real_interrupt(irq)  ((irq) != 0)
- 
- #define PROBE_ANY   (~0)
- 
- static DEFINE_MUTEX(mp_mutex);
--#define MP_MUTEX_LOCK(x) mutex_lock(&(x)) 
--#define MP_MUTEX_UNLOCK(x) mutex_unlock(&(x)) 
--#define MP_STATE_LOCK(x) mutex_lock(&((x)->mutex)) 
--#define MP_STATE_UNLOCK(x) mutex_unlock(&((x)->mutex)) 
--        
-+#define MP_MUTEX_LOCK(x) mutex_lock(&(x))
-+#define MP_MUTEX_UNLOCK(x) mutex_unlock(&(x))
-+#define MP_STATE_LOCK(x) mutex_lock(&((x)->mutex))
-+#define MP_STATE_UNLOCK(x) mutex_unlock(&((x)->mutex))
- 
- #define UART_LSR_SPECIAL    0x1E
--        
- #define HIGH_BITS_OFFSET        ((sizeof(long)-sizeof(int))*8)
- #define uart_users(state)       ((state)->count + ((state)->info ? (state)->info->blocked_open : 0))
- 
-@@ -179,92 +177,86 @@ static DEFINE_MUTEX(mp_mutex);
- 
- 
- struct mp_device_t {
--        unsigned short  device_id;
--        unsigned char   revision;
--        char            *name;
--        unsigned long   uart_access_addr;
--        unsigned long   option_reg_addr;
--        unsigned long   reserved_addr[4];
--        int             irq;
--        int             nr_ports;
--        int             poll_type;
-+	unsigned short  device_id;
-+	unsigned char   revision;
-+	char            *name;
-+	unsigned long   uart_access_addr;
-+	unsigned long   option_reg_addr;
-+	unsigned long   reserved_addr[4];
-+	int             irq;
-+	int             nr_ports;
-+	int             poll_type;
- };
- 
- typedef struct mppcibrd {
--        char            *name;
--        unsigned short  vendor_id;
--        unsigned short  device_id;
-+	char            *name;
-+	unsigned short  vendor_id;
-+	unsigned short  device_id;
- } mppcibrd_t;
- 
- static mppcibrd_t mp_pciboards[] = {
- 
--        { "Multi-1 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP1} ,
--        { "Multi-2 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP2} ,
--        { "Multi-4 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4} ,
--        { "Multi-4 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4A} ,
--        { "Multi-6 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP6} ,
--        { "Multi-6 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP6A} ,
--        { "Multi-8 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP8} ,
--        { "Multi-32 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP32} ,
--
--        { "Multi-1P PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP1P} ,
--        { "Multi-2S1P PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP2S1P} ,
--
--        { "Multi-4(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP4} ,
--        { "Multi-4(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP4A} ,
--        { "Multi-6(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP6} ,
--        { "Multi-6(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP6A} ,
--        { "Multi-8(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP8} ,
--        { "Multi-32(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP32} ,
--
--        { "Multi-1 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP1} ,
--        { "Multi-2 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2} ,
--        { "Multi-4 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP4} ,
--        { "Multi-8 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP8} ,
--        { "Multi-32 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP32} ,
--
--        { "Multi-1 PCIe E", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP1E} ,
--        { "Multi-2 PCIe E", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2E} ,
--        { "Multi-2 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2B} ,
--        { "Multi-4 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP4B} ,
--        { "Multi-8 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP8B} ,
--
--        { "Multi-1(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP1} ,
--        { "Multi-2(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP2} ,
--        { "Multi-4(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP4} ,
--        { "Multi-8(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP8} ,
--        { "Multi-32(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP32} ,
--
--        { "Multi-4M PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4M} ,
-+	{ "Multi-1 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP1} ,
-+	{ "Multi-2 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP2} ,
-+	{ "Multi-4 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4} ,
-+	{ "Multi-4 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4A} ,
-+	{ "Multi-6 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP6} ,
-+	{ "Multi-6 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP6A} ,
-+	{ "Multi-8 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP8} ,
-+	{ "Multi-32 PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP32} ,
-+	{ "Multi-1P PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP1P} ,
-+	{ "Multi-2S1P PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP2S1P} ,
-+	{ "Multi-4(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP4} ,
-+	{ "Multi-4(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP4A} ,
-+	{ "Multi-6(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP6} ,
-+	{ "Multi-6(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP6A} ,
-+	{ "Multi-8(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP8} ,
-+	{ "Multi-32(GT) PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_GT_MP32} ,
-+	{ "Multi-1 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP1} ,
-+	{ "Multi-2 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2} ,
-+	{ "Multi-4 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP4} ,
-+	{ "Multi-8 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP8} ,
-+	{ "Multi-32 PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP32} ,
-+	{ "Multi-1 PCIe E", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP1E} ,
-+	{ "Multi-2 PCIe E", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2E} ,
-+	{ "Multi-2 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP2B} ,
-+	{ "Multi-4 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP4B} ,
-+	{ "Multi-8 PCIe B", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_MP8B} ,
-+	{ "Multi-1(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP1} ,
-+	{ "Multi-2(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP2} ,
-+	{ "Multi-4(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP4} ,
-+	{ "Multi-8(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP8} ,
-+	{ "Multi-32(GT) PCIe", PCI_VENDOR_ID_MULTIPORT , PCIE_DEVICE_ID_GT_MP32} ,
-+	{ "Multi-4M PCI", PCI_VENDOR_ID_MULTIPORT , PCI_DEVICE_ID_MP4M} ,
- };
- 
- struct mp_port {
--        struct sb_uart_port port;
--
--        struct timer_list   timer;      /* "no irq" timer */
--        struct list_head    list;       /* ports on this IRQ */
--        unsigned int        capabilities;   /* port capabilities */
--        unsigned short      rev;
--        unsigned char       acr;
--        unsigned char       ier;
--        unsigned char       lcr;
--        unsigned char       mcr;
--        unsigned char       mcr_mask;   /* mask of user bits */
--        unsigned char       mcr_force;  /* mask of forced bits */
--        unsigned char       lsr_break_flag;
--
--        void            (*pm)(struct sb_uart_port *port,
--                        unsigned int state, unsigned int old);
--        struct mp_device_t *device;
--        unsigned long   interface_config_addr;
--        unsigned long   option_base_addr;
--        unsigned char   interface;
--        unsigned char   poll_type;
-+	struct sb_uart_port port;
-+
-+	struct timer_list   timer;      /* "no irq" timer */
-+	struct list_head    list;       /* ports on this IRQ */
-+	unsigned int        capabilities;   /* port capabilities */
-+	unsigned short      rev;
-+	unsigned char       acr;
-+	unsigned char       ier;
-+	unsigned char       lcr;
-+	unsigned char       mcr;
-+	unsigned char       mcr_mask;   /* mask of user bits */
-+	unsigned char       mcr_force;  /* mask of forced bits */
-+	unsigned char       lsr_break_flag;
-+
-+	void            (*pm)(struct sb_uart_port *port,
-+			unsigned int state, unsigned int old);
-+	struct mp_device_t *device;
-+	unsigned long   interface_config_addr;
-+	unsigned long   option_base_addr;
-+	unsigned char   interface;
-+	unsigned char   poll_type;
- };
- 
- struct irq_info {
--        spinlock_t      lock;
--        struct list_head    *head;
-+	spinlock_t      lock;
-+	struct list_head    *head;
- };
- 
- struct sb105x_uart_config {
-@@ -274,11 +266,8 @@ struct sb105x_uart_config {
- };
- 
- static const struct sb105x_uart_config uart_config[] = {
--        { "unknown",    1,  0 },
--        { "16550A", 16, UART_CLEAR_FIFO | UART_USE_FIFO },
--        { "SB16C1050",    128,    UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
--        { "SB16C1050A",    128,    UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
-+	{ "unknown",    1,  0 },
-+	{ "16550A", 16, UART_CLEAR_FIFO | UART_USE_FIFO },
-+	{ "SB16C1050",    128,    UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
-+	{ "SB16C1050A",    128,    UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
- };
--
--
--
-diff --git a/drivers/staging/sb105x/sb_ser_core.h b/drivers/staging/sb105x/sb_ser_core.h
-index c8fb991..41111b0 100644
---- a/drivers/staging/sb105x/sb_ser_core.h
-+++ b/drivers/staging/sb105x/sb_ser_core.h
-@@ -205,119 +205,153 @@ void sb_uart_write_wakeup(struct sb_uart_port *port)
- void sb_uart_update_timeout(struct sb_uart_port *port, unsigned int cflag,
- 			 unsigned int baud)
- {
--    unsigned int bits;
-+	unsigned int bits;
- 
--    switch (cflag & CSIZE)
--    {
--        case CS5:
--            bits = 7;
--            break;
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		bits = 7;
-+		break;
- 
--        case CS6:
--            bits = 8;
--            break;
-+	case CS6:
-+		bits = 8;
-+		break;
- 
--        case CS7:
--            bits = 9;
--            break;
-+	case CS7:
-+		bits = 9;
-+		break;
- 
--        default:
--            bits = 10;
--            break;
--    }
--
--    if (cflag & CSTOPB)
--    {
--        bits++;
--    }
-+	default:
-+		bits = 10;
-+		break;
-+	}
- 
--    if (cflag & PARENB)
--    {
--        bits++;
--    }
-+	if (cflag & CSTOPB)
-+		bits++;
- 
--    bits = bits * port->fifosize;
-+	if (cflag & PARENB)
-+		bits++;
- 
--    port->timeout = (HZ * bits) / baud + HZ/50;
-+	bits = bits * port->fifosize;
-+	port->timeout = (HZ * bits) / baud + HZ/50;
- }
-+
- unsigned int sb_uart_get_baud_rate(struct sb_uart_port *port, struct MP_TERMIOS *termios,
- 				struct MP_TERMIOS *old, unsigned int min,
- 				unsigned int max)
- {
--        unsigned int try, baud, altbaud = 38400;
--        upf_t flags = port->flags & UPF_SPD_MASK;
--
--        if (flags == UPF_SPD_HI)
--                altbaud = 57600;
--        if (flags == UPF_SPD_VHI)
--                altbaud = 115200;
--        if (flags == UPF_SPD_SHI)
--                altbaud = 230400;
--        if (flags == UPF_SPD_WARP)
--                altbaud = 460800;
--
--        for (try = 0; try < 2; try++) {
--
--                switch (termios->c_cflag & (CBAUD | CBAUDEX))
--                {
--                	case B921600    : baud = 921600;    break;
--                	case B460800    : baud = 460800;    break;
--                	case B230400    : baud = 230400;    break;
--                	case B115200    : baud = 115200;    break;
--                	case B57600     : baud = 57600;     break;
--                	case B38400     : baud = 38400;     break;
--                	case B19200     : baud = 19200;     break;
--                	case B9600      : baud = 9600;      break;
--                	case B4800      : baud = 4800;      break;
--                	case B2400      : baud = 2400;      break;
--                	case B1800      : baud = 1800;      break;
--                	case B1200      : baud = 1200;      break;
--                	case B600       : baud = 600;       break;
--                	case B300       : baud = 300;       break;
--                        case B200       : baud = 200;       break;
--                	case B150       : baud = 150;       break;
--                	case B134       : baud = 134;       break;
--                	case B110       : baud = 110;       break;
--                	case B75        : baud = 75;        break;
--                	case B50        : baud = 50;        break;
--                	default         : baud = 9600;      break;
--                }
--
--                if (baud == 38400)
--                        baud = altbaud;
--
--                if (baud == 0)
--                        baud = 9600;
--
--                if (baud >= min && baud <= max)
--                        return baud;
--
--                termios->c_cflag &= ~CBAUD;
--                if (old) {
--                        termios->c_cflag |= old->c_cflag & CBAUD;
--                        old = NULL;
--                        continue;
--                }
--
--                termios->c_cflag |= B9600;
--        }
--
--        return 0;
-+	unsigned int try, baud, altbaud = 38400;
-+	upf_t flags = port->flags & UPF_SPD_MASK;
-+
-+	if (flags == UPF_SPD_HI)
-+		altbaud = 57600;
-+	if (flags == UPF_SPD_VHI)
-+		altbaud = 115200;
-+	if (flags == UPF_SPD_SHI)
-+		altbaud = 230400;
-+	if (flags == UPF_SPD_WARP)
-+		altbaud = 460800;
-+
-+	for (try = 0; try < 2; try++) {
-+
-+		switch (termios->c_cflag & (CBAUD | CBAUDEX)) {
-+		case B921600:
-+			baud = 921600;
-+			break;
-+		case B460800:
-+			baud = 460800;
-+			break;
-+		case B230400:
-+			baud = 230400;
-+			break;
-+		case B115200:
-+			baud = 115200;
-+			break;
-+		case B57600:
-+			baud = 57600;
-+			break;
-+		case B38400:
-+			baud = 38400;
-+			break;
-+		case B19200:
-+			baud = 19200;
-+			break;
-+		case B9600:
-+			baud = 9600;
-+			break;
-+		case B4800:
-+			baud = 4800;
-+			break;
-+		case B2400:
-+			baud = 2400;
-+			break;
-+		case B1800:
-+			baud = 1800;
-+			break;
-+		case B1200:
-+			baud = 1200;
-+			break;
-+		case B600:
-+			baud = 600;
-+			break;
-+		case B300:
-+			baud = 300;
-+			break;
-+		case B200:
-+			baud = 200;
-+			break;
-+		case B150:
-+			baud = 150;
-+			break;
-+		case B134:
-+			baud = 134;
-+			break;
-+		case B110:
-+			baud = 110;
-+			break;
-+		case B75:
-+			baud = 75;
-+			break;
-+		case B50:
-+			baud = 50;
-+			break;
-+		default:
-+			baud = 9600;
-+			break;
-+		}
-+
-+		if (baud == 38400)
-+			baud = altbaud;
-+
-+		if (baud == 0)
-+			baud = 9600;
-+
-+		if (baud >= min && baud <= max)
-+			return baud;
-+
-+		termios->c_cflag &= ~CBAUD;
-+		if (old) {
-+			termios->c_cflag |= old->c_cflag & CBAUD;
-+			old = NULL;
-+			continue;
-+		}
-+
-+		termios->c_cflag |= B9600;
-+	}
-+
-+	return 0;
- }
- unsigned int sb_uart_get_divisor(struct sb_uart_port *port, unsigned int baud)
- {
--        unsigned int quot;
-+	unsigned int quot;
- 
--        if (baud == 38400 && (port->flags & UPF_SPD_MASK) == UPF_SPD_CUST)
--                quot = port->custom_divisor;
--        else
--                quot = (port->uartclk + (8 * baud)) / (16 * baud);
-+	if (baud == 38400 && (port->flags & UPF_SPD_MASK) == UPF_SPD_CUST)
-+		quot = port->custom_divisor;
-+	else
-+		quot = (port->uartclk + (8 * baud)) / (16 * baud);
- 
--        return quot;
-+	return quot;
- }
- 
--
--
- static inline int sb_uart_handle_break(struct sb_uart_port *port)
- {
- 	struct sb_uart_info *info = port->info;
-@@ -363,6 +397,3 @@ static inline void sb_uart_handle_cts_change(struct sb_uart_port *port, unsigned
+-			init_mp_dev(dev, mp_pciboards[i]);	
++			init_mp_dev(dev, mp_pciboards[i]);
  		}
  	}
- }
--
--
--
+ 
 -- 
 1.7.10.4
 
