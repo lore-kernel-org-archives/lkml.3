@@ -1,139 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab3CSDHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 23:07:16 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57027 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab3CSDHO (ORCPT
+	id S932855Ab3CSDIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 23:08:32 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:43533 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab3CSDIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 23:07:14 -0400
-Message-ID: <5147D63B.4000400@linux.vnet.ibm.com>
-Date: Tue, 19 Mar 2013 11:06:35 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 18 Mar 2013 23:08:30 -0400
+Message-ID: <5147D6A7.5060008@gmail.com>
+Date: Tue, 19 Mar 2013 11:08:23 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 6/6] KVM: MMU: fast zap all shadow pages
-References: <514006AC.2020904@linux.vnet.ibm.com> <514007A0.1040400@linux.vnet.ibm.com> <20130318204601.GA16208@amt.cnet>
-In-Reply-To: <20130318204601.GA16208@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-4-git-send-email-mgorman@suse.de>
+In-Reply-To: <1363525456-10448-4-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031902-0260-0000-0000-000002AFBF2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 04:46 AM, Marcelo Tosatti wrote:
-> On Wed, Mar 13, 2013 at 12:59:12PM +0800, Xiao Guangrong wrote:
->> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
->> walk and zap all shadow pages one by one, also it need to zap all guest
->> page's rmap and all shadow page's parent spte list. Particularly, things
->> become worse if guest uses more memory or vcpus. It is not good for
->> scalability.
->>
->> Since all shadow page will be zapped, we can directly zap the mmu-cache
->> and rmap so that vcpu will fault on the new mmu-cache, after that, we can
->> directly free the memory used by old mmu-cache.
->>
->> The root shadow page is little especial since they are currently used by
->> vcpus, we can not directly free them. So, we zap the root shadow pages and
->> re-add them into the new mmu-cache.
->>
->> After this patch, kvm_mmu_zap_all can be faster 113% than before
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++-----
->>  1 files changed, 56 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index e326099..536d9ce 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -4186,18 +4186,68 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
->>
->>  void kvm_mmu_zap_all(struct kvm *kvm)
->>  {
->> -	struct kvm_mmu_page *sp, *node;
->> +	LIST_HEAD(root_mmu_pages);
->>  	LIST_HEAD(invalid_list);
->> +	struct list_head pte_list_descs;
->> +	struct kvm_mmu_cache *cache = &kvm->arch.mmu_cache;
->> +	struct kvm_mmu_page *sp, *node;
->> +	struct pte_list_desc *desc, *ndesc;
->> +	int root_sp = 0;
->>
->>  	spin_lock(&kvm->mmu_lock);
->> +
->>  restart:
->> -	list_for_each_entry_safe(sp, node,
->> -	      &kvm->arch.mmu_cache.active_mmu_pages, link)
->> -		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
->> -			goto restart;
->> +	/*
->> +	 * The root shadow pages are being used on vcpus that can not
->> +	 * directly removed, we filter them out and re-add them to the
->> +	 * new mmu cache.
->> +	 */
->> +	list_for_each_entry_safe(sp, node, &cache->active_mmu_pages, link)
->> +		if (sp->root_count) {
->> +			int ret;
->> +
->> +			root_sp++;
->> +			ret = kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
->> +			list_move(&sp->link, &root_mmu_pages);
->> +			if (ret)
->> +				goto restart;
->> +		}
->> +
->> +	list_splice(&cache->active_mmu_pages, &invalid_list);
->> +	list_replace(&cache->pte_list_descs, &pte_list_descs);
->> +
->> +	/*
->> +	 * Reset the mmu cache so that later vcpu will fault on the new
->> +	 * mmu cache.
->> +	 */
->> +	memset(cache, 0, sizeof(*cache));
->> +	kvm_mmu_init(kvm);
-> 
-> Xiao,
-> 
-> I suppose zeroing of kvm_mmu_cache can be avoided, if the links are
-> removed at prepare_zap_page. So perhaps
+Hi Mel,
+On 03/17/2013 09:04 PM, Mel Gorman wrote:
+> kswapd stops raising the scanning priority when at least SWAP_CLUSTER_MAX
+> pages have been reclaimed or the pgdat is considered balanced. It then
+> rechecks if it needs to restart at DEF_PRIORITY and whether high-order
+> reclaim needs to be reset. This is not wrong per-se but it is confusing
 
-The purpose of zeroing of kvm_mmu_cache is resetting the hashtable and
-some count numbers.
-[.n_request_mmu_pages and .n_max_mmu_pages should not be changed, i will
-fix this].
+per-se is short for what?
 
-> 
-> - spin_lock(mmu_lock)
-> - for each page
-> 	- zero sp->spt[], remove page from linked lists
+> to follow and forcing kswapd to stay at DEF_PRIORITY may require several
+> restarts before it has scanned enough pages to meet the high watermark even
+> at 100% efficiency. This patch irons out the logic a bit by controlling
+> when priority is raised and removing the "goto loop_again".
+>
+> This patch has kswapd raise the scanning priority until it is scanningmm: vmscan: Flatten kswapd priority loop
+> enough pages that it could meet the high watermark in one shrink of the
+> LRU lists if it is able to reclaim at 100% efficiency. It will not raise
 
-sizeof(mmu_cache) is:
-(1 << 10) * sizeof (hlist_head) + 4 * sizeof(unsigned int) = 2^13 + 16
-and it is constant. In your way, for every sp, we need to zap:
-512 entries + a hash-node = 2^12 + 8
-especially the workload depends on the size of guest memory.
-Why you think this way is better?
+Which kind of reclaim can be treated as 100% efficiency?
 
-> - flush remote TLB (batched)
-> - spin_unlock(mmu_lock)
-> - free data (which is safe because freeing has its own serialization)
+> the scanning prioirty higher unless it is failing to reclaim any pages.
+>
+> To avoid infinite looping for high-order allocation requests kswapd will
+> not reclaim for high-order allocations when it has reclaimed at least
+> twice the number of pages as the allocation request.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>   mm/vmscan.c | 86 ++++++++++++++++++++++++++++++-------------------------------
+>   1 file changed, 42 insertions(+), 44 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 182ff15..279d0c2 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2625,8 +2625,11 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>   /*
+>    * kswapd shrinks the zone by the number of pages required to reach
+>    * the high watermark.
+> + *
+> + * Returns true if kswapd scanned at least the requested number of
+> + * pages to reclaim.
+>    */
+> -static void kswapd_shrink_zone(struct zone *zone,
+> +static bool kswapd_shrink_zone(struct zone *zone,
+>   			       struct scan_control *sc,
+>   			       unsigned long lru_pages)
+>   {
+> @@ -2646,6 +2649,8 @@ static void kswapd_shrink_zone(struct zone *zone,
+>   
+>   	if (nr_slab == 0 && !zone_reclaimable(zone))
+>   		zone->all_unreclaimable = 1;
+> +
+> +	return sc->nr_scanned >= sc->nr_to_reclaim;
+>   }
+>   
+>   /*
+> @@ -2672,26 +2677,25 @@ static void kswapd_shrink_zone(struct zone *zone,
+>   static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   							int *classzone_idx)
+>   {
+> -	bool pgdat_is_balanced = false;
+>   	int i;
+>   	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+>   	unsigned long nr_soft_reclaimed;
+>   	unsigned long nr_soft_scanned;
+>   	struct scan_control sc = {
+>   		.gfp_mask = GFP_KERNEL,
+> +		.priority = DEF_PRIORITY,
+>   		.may_unmap = 1,
+>   		.may_swap = 1,
+> +		.may_writepage = !laptop_mode,
+>   		.order = order,
+>   		.target_mem_cgroup = NULL,
+>   	};
+> -loop_again:
+> -	sc.priority = DEF_PRIORITY;
+> -	sc.nr_reclaimed = 0;
+> -	sc.may_writepage = !laptop_mode;
+>   	count_vm_event(PAGEOUTRUN);
+>   
+>   	do {
+>   		unsigned long lru_pages = 0;
+> +		unsigned long nr_reclaimed = sc.nr_reclaimed;
+> +		bool raise_priority = true;
+>   
+>   		/*
+>   		 * Scan in the highmem->dma direction for the highest
+> @@ -2733,10 +2737,8 @@ loop_again:
+>   			}
+>   		}
+>   
+> -		if (i < 0) {
+> -			pgdat_is_balanced = true;
+> +		if (i < 0)
+>   			goto out;
+> -		}
+>   
+>   		for (i = 0; i <= end_zone; i++) {
+>   			struct zone *zone = pgdat->node_zones + i;
+> @@ -2803,8 +2805,16 @@ loop_again:
+>   
+>   			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+>   			    !zone_balanced(zone, testorder,
+> -					   balance_gap, end_zone))
+> -				kswapd_shrink_zone(zone, &sc, lru_pages);
+> +					   balance_gap, end_zone)) {
+> +				/*
+> +				 * There should be no need to raise the
+> +				 * scanning priority if enough pages are
+> +				 * already being scanned that that high
+> +				 * watermark would be met at 100% efficiency.
+> +				 */
+> +				if (kswapd_shrink_zone(zone, &sc, lru_pages))
+> +					raise_priority = false;
+> +			}
+>   
+>   			/*
+>   			 * If we're getting trouble reclaiming, start doing
+> @@ -2839,46 +2849,33 @@ loop_again:
+>   				pfmemalloc_watermark_ok(pgdat))
+>   			wake_up(&pgdat->pfmemalloc_wait);
+>   
+> -		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
+> -			pgdat_is_balanced = true;
+> -			break;		/* kswapd: all done */
+> -		}
+> -
+>   		/*
+> -		 * We do this so kswapd doesn't build up large priorities for
+> -		 * example when it is freeing in parallel with allocators. It
+> -		 * matches the direct reclaim path behaviour in terms of impact
+> -		 * on zone->*_priority.
+> +		 * Fragmentation may mean that the system cannot be rebalanced
+> +		 * for high-order allocations in all zones. If twice the
+> +		 * allocation size has been reclaimed and the zones are still
+> +		 * not balanced then recheck the watermarks at order-0 to
+> +		 * prevent kswapd reclaiming excessively. Assume that a
+> +		 * process requested a high-order can direct reclaim/compact.
+>   		 */
+> -		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+> -			break;
+> -	} while (--sc.priority >= 0);
+> +		if (order && sc.nr_reclaimed >= 2UL << order)
+> +			order = sc.order = 0;
 
-We should free the root sp in mmu-lock like my patch.
+If order == 0 is meet, should we do defrag for it?
 
-> - spin_lock(mmu_lock)
-> - account for the pages freed
-> - spin_unlock(mmu_lock)
-
-The count numbers are still inconsistent if other thread hold mmu-lock between
-zero shadow page and recount.
-
-Marcelo, i really confused what is the benefit in this way but i might
-completely misunderstand it.
+>   
+> -out:
+> -	if (!pgdat_is_balanced) {
+> -		cond_resched();
+> +		/* Check if kswapd should be suspending */
+> +		if (try_to_freeze() || kthread_should_stop())
+> +			break;
+>   
+> -		try_to_freeze();
+> +		/* If no reclaim progress then increase scanning priority */
+> +		if (sc.nr_reclaimed - nr_reclaimed == 0)
+> +			raise_priority = true;
+>   
+>   		/*
+> -		 * Fragmentation may mean that the system cannot be
+> -		 * rebalanced for high-order allocations in all zones.
+> -		 * At this point, if nr_reclaimed < SWAP_CLUSTER_MAX,
+> -		 * it means the zones have been fully scanned and are still
+> -		 * not balanced. For high-order allocations, there is
+> -		 * little point trying all over again as kswapd may
+> -		 * infinite loop.
+> -		 *
+> -		 * Instead, recheck all watermarks at order-0 as they
+> -		 * are the most important. If watermarks are ok, kswapd will go
+> -		 * back to sleep. High-order users can still perform direct
+> -		 * reclaim if they wish.
+> +		 * Raise priority if scanning rate is too low or there was no
+> +		 * progress in reclaiming pages
+>   		 */
+> -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+> -			order = sc.order = 0;
+> -
+> -		goto loop_again;
+> -	}
+> +		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
+> +			sc.priority--;
+> +	} while (sc.priority >= 0 &&
+> +		 !pgdat_balanced(pgdat, order, *classzone_idx));
+>   
+>   	/*
+>   	 * If kswapd was reclaiming at a higher order, it has the option of
+> @@ -2907,6 +2904,7 @@ out:
+>   			compact_pgdat(pgdat, order);
+>   	}
+>   
+> +out:
+>   	/*
+>   	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+>   	 * makes a decision on the order we were last reclaiming at. However,
 
