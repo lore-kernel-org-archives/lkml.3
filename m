@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab3CSTeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:34:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:43321 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757309Ab3CST2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 15:28:41 -0400
-X-IronPort-AV: E=Sophos;i="4.84,874,1355068800"; 
-   d="scan'208";a="6904496"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 01/21] workqueue: add missing POOL_FREEZING
-Date: Wed, 20 Mar 2013 03:28:01 +0800
-Message-Id: <1363721306-2030-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/20 03:27:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/20 03:27:14,
-	Serialize complete at 2013/03/20 03:27:14
+	id S932902Ab3CSTfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 15:35:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab3CSTfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 15:35:33 -0400
+Date: Tue, 19 Mar 2013 12:35:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+Subject: Re: [PATCH v3 07/21] vmcore, procfs: introduce a flag to
+ distinguish objects copied in 2nd kernel
+Message-Id: <20130319123531.9777a366ff0e1611727405cd@linux-foundation.org>
+In-Reply-To: <20130316040126.15064.67305.stgit@localhost6.localdomain6>
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040126.15064.67305.stgit@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we create a new pool via get_unbound_pool() when freezing.
-the pool->flags' POOL_FREEZING is incorrect.
+On Sat, 16 Mar 2013 13:01:26 +0900 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
 
-Fix it by adding POOL_FREEZING if workqueue_freezing.
-(wq_mutex is already held for accessing workqueue_freezing.)
+> The part of dump target memory is copied into the 2nd kernel if it
+> doesn't satisfy mmap()'s page-size boundary requirement. To
+> distinguish such copied object from usual old memory, a flag
+> MEM_TYPE_CURRENT_KERNEL is introduced. If this flag is set, the object
+> is considered being copied into buffer on the 2nd kernel.
+> 
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I don't understand this description at all :( Perhaps we can have a
+lengthier version which expands on the concepts a bit further?
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index e38d035..40f4017 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3503,6 +3503,9 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 	if (!pool || init_worker_pool(pool) < 0)
- 		goto fail;
- 
-+	if (workqueue_freezing)
-+		pool->flags |= POOL_FREEZING;
-+
- 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
- 	copy_workqueue_attrs(pool->attrs, attrs);
- 
--- 
-1.7.7.6
+> --- a/include/linux/proc_fs.h
+> +++ b/include/linux/proc_fs.h
+> @@ -97,11 +97,17 @@ struct kcore_list {
+>  	int type;
+>  };
+>  
+> +#define MEM_TYPE_CURRENT_KERNEL 0x1
 
+A comment describing this would be useful.
+
+>  struct vmcore {
+>  	struct list_head list;
+> -	unsigned long long paddr;
+> +	union {
+> +		unsigned long long paddr;
+> +		char *buf;
+> +	};
+
+This change wasn't described in the changelog?
+
+>  	unsigned long long size;
+>  	loff_t offset;
+> +	unsigned int flag;
+
+Presumably this is the place where we put MEM_TYPE_CURRENT_KERNEL? 
+That's unobvious from reading the code.  Add the text "vmcore.flag
+fields:" above the MEM_TYPE_CURRENT_KERNEL definition.
+
+
+>  };
+>  
+>  #ifdef CONFIG_PROC_FS
