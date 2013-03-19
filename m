@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab3CSFxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:53:06 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:36780 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab3CSFxF (ORCPT
+	id S933242Ab3CSFyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:54:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48612 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab3CSFyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:53:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363670161-9214-3-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1363670161-9214-3-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Mon, 18 Mar 2013 22:53:04 -0700
-X-Google-Sender-Auth: mUAmmbFP-uefZ3PhDvH15EVAYRg
-Message-ID: <CAE9FiQU-yCanj_jRSL2Pwdfg7L+832XYnsgR8m2gB=PJdTM_xw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm, nobootmem: do memset() after memblock_reserve()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 01:54:04 -0400
+Date: Tue, 19 Mar 2013 16:54:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: linux-next: Tree for Mar 19
+Message-Id: <20130319165402.d48c807899797f963f106a01@canb.auug.org.au>
+In-Reply-To: <20130319164748.8ee90374db5d5db4c2838105@canb.auug.org.au>
+References: <CA+icZUXufeB=Vvfbd1tv4k8w82-wwJVb1RxyV8nvKa4+mvWERg@mail.gmail.com>
+	<20130319164748.8ee90374db5d5db4c2838105@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Mar_2013_16_54_02_+1100_FdmgZWZetMCHbvc5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 10:16 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> Currently, we do memset() before reserving the area.
-> This may not cause any problem, but it is somewhat weird.
-> So change execution order.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 589c673..f11ec1c 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -46,8 +46,8 @@ static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
->                 return NULL;
->
->         ptr = phys_to_virt(addr);
-> -       memset(ptr, 0, size);
->         memblock_reserve(addr, size);
-> +       memset(ptr, 0, size);
+--Signature=_Tue__19_Mar_2013_16_54_02_+1100_FdmgZWZetMCHbvc5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-move down ptr = ... too ?
+Hi,
 
->         /*
->          * The min_count is set to 0 so that bootmem allocated blocks
->          * are never reported as leaks.
-> --
-> 1.7.9.5
+On Tue, 19 Mar 2013 16:47:48 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
+> On Tue, 19 Mar 2013 06:42:27 +0100 Sedat Dilek <sedat.dilek@gmail.com> wr=
+ote:
+> >
+> > did forget to sent your email [1] to linux-next ML?
+>=20
+> No, and I even checked my mail server's logs and it was accepted by vger.
+
+Also, I received a copy via the list within about 12 seconds of posting
+it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__19_Mar_2013_16_54_02_+1100_FdmgZWZetMCHbvc5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRR/16AAoJEECxmPOUX5FEyK4P/3OkZLV3gcJffkaRhmKwnTuC
+lENOweVLXZ69MXS0kDosHY0numZ32I+eDWvf1qGdrRn1kxXrb/6RRAR5oGbM+7k2
+d88mrDQ8lQY7bz20Q4G4QHiYuNTu/lX6bvRR1XXFKgOnTRDEwTRiDy/whDayOJXi
+jQ8R+mxnUfxLBCEURYvNdBDUz34tZ/f8bIDJH7asW2K64fMnoqxJOD4T/t6c6PIw
+iFoiJ2KuyxE0fs8TURS6XxRm4MjLhglWUuARy5ZRnpsdOwz3VhHWhP/dkeCGpiZl
+3H0A8mGe5U6IJ6UfaructjfMkk07cYSFf/g1LW5VbcoF+NdYDgCHgT6HYLFUjh8q
+nQ+ee7vbkiGD1Tk9ti2y0XdYx8pVmYTFSbSzntSOZRUQjvTBtDSpN/29BFwHWlIa
+fumek6g87bzF0cHsuP7BBRd5U4AioDjIPqZcHaPilkNnX19qBSssm2D4GMybSIMu
+P/0E5gEfurvyuv0tMazDs8tNn9apH7B1So2A8Nn/jveohQHbtKIirIwZn5QOy2LU
+eXXgZSffSolFJtI5IbzGQLkxXIOV4tmVD08uAgpFkaD24RbteLF5yCE5VFN040ry
+LHEnjiTCOA1hZ6yZ9wxXbTbOx54l5QoXsqrCLksKwX6kuopH9tT/5aWn/1m6D7HX
+sw8WJUNHu5khRK6wAOtI
+=u6TR
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Mar_2013_16_54_02_+1100_FdmgZWZetMCHbvc5--
