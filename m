@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3CSR21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:28:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50987 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab3CSR20 (ORCPT
+	id S933370Ab3CSR3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:29:43 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:53863 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933214Ab3CSR3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:28:26 -0400
+	Tue, 19 Mar 2013 13:29:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130319154600.GC5222@quack.suse.cz>
-References: <1362692649-25570-1-git-send-email-tj@kernel.org>
-	<1362692649-25570-4-git-send-email-tj@kernel.org>
-	<20130312150510.GF13152@quack.suse.cz>
-	<20130318223244.GA11188@quack.suse.cz>
-	<20130318223526.GH3042@htj.dyndns.org>
-	<20130319154600.GC5222@quack.suse.cz>
-Date: Tue, 19 Mar 2013 10:28:24 -0700
-X-Google-Sender-Auth: -epmqkaj3sV0lvXkLvGAbJ3HrK8
-Message-ID: <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
-Subject: Re: [PATCH 3/4] writeback: replace custom worker pool implementation
- with unbound workqueue
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kara <jack@suse.cz>
-Cc: axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
-        linux-kernel@vger.kernel.org, jmoyer@redhat.com
+In-Reply-To: <Pine.LNX.4.44L0.1303191139080.15684-100000@netrider.rowland.org>
+References: <CAP_ceTzvFkoqi3yC+qtvmW9XmdJ7Qv7Z5Jvf_n_gg0FVfChMeQ@mail.gmail.com>
+	<Pine.LNX.4.44L0.1303191139080.15684-100000@netrider.rowland.org>
+Date: Tue, 19 Mar 2013 10:29:40 -0700
+X-Google-Sender-Auth: 8wbvvB4kLOjmByEjOCgtfytNx7c
+Message-ID: <CAODwPW8bAo-ixwmJjGPT94kDVSb+4qO264mOXyZ5RjmisTkYFQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: Make USB persist default configurable
+From: Julius Werner <jwerner@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Vincent Palatin <vpalatin@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>, Sameer Nanda <snanda@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jan.
+> Yes, okay, that's true.  If a new USB device is plugged in while the
+> lid is shut, and then the lid is opened very briefly, it's possible
+> that the system could suspend again before the new device's "persist"
+> attribute is updated.  Does that case really matter?  The device isn't
+> likely to be in use at that point.
 
-On Tue, Mar 19, 2013 at 8:46 AM, Jan Kara <jack@suse.cz> wrote:
->   Well, but what you often get is just output of sysrq-w, or sysrq-t, or
-> splat from scheduler about stuck task. You often don't have the comfort of
-> tracing... Can't we somehow change 'comm' of the task when it starts
-> processing work of some bdi?
+It does matter if the device will be used after the next resume,
+because that one would use the persist code. If there was a driver
+problem it would fail, and if it was a USB stick that is swapped with
+a different one of the same model, you could get file system
+corruption.
 
-You sure can but I'd prefer not to do that. If you wanna do it
-properly, you have to grab task lock every time a work item starts
-execution. I'm not sure how beneficial having the block device
-identifier would be. Backtrace would be there the same. Is identifying
-the block device that important?
-
-Thanks.
-
--- 
-tejun
+I agree with you that buggy drivers should get fixed (and we are
+trying to do that as well), but at the same time we want to be able to
+have a system that can keep its policies at all times. We get a lot of
+USB problems (especially around suspend/resume), and we don't want to
+need to worry every time about which code path we hit and whether one
+of those race conditions could have something to do with it. I'm
+convinced that having this in the kernel is the cleanest solution for
+us, and I just thought it might be useful to standardize a mechanism
+for that (I don't really see the maintenance burden in that config
+option either, as the persist mechanism itself does not look like it
+was going to go away anytime soon).
