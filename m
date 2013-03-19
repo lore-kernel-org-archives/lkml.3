@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3CSFAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:00:20 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:54885 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3CSFAS (ORCPT
+	id S1755651Ab3CSFBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:01:18 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43450 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3CSFBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:00:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <cover.1363617402.git.viresh.kumar@linaro.org>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
-Date: Tue, 19 Mar 2013 10:30:17 +0530
-Message-ID: <CAKohpon8byMTbJ4uFxBAX9Fsch_KgUaOrzx_JCzddtJrNrrUhg@mail.gmail.com>
-Subject: Re: [PATCH V3 0/7] Create sched_select_cpu() and use it for workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
-Cc: linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 01:01:17 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-0e-5147f11b73bc
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nico@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2] ARM: mm: clean-up in order to reduce to call kmap_high_get()
+Date: Tue, 19 Mar 2013 14:01:27 +0900
+Message-Id: <1363669287-9049-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 March 2013 20:53, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> In order to save power, it would be useful to schedule light weight work on cpus
-> that aren't IDLE instead of waking up an IDLE one.
->
-> By idle cpu (from scheduler's perspective) we mean:
-> - Current task is idle task
-> - nr_running == 0
-> - wake_list is empty
+In kmap_atomic(), kmap_high_get() is invoked for checking already
+mapped area. In __flush_dcache_page() and dma_cache_maint_page(),
+we explicitly call kmap_high_get() before kmap_atomic()
+when cache_is_vipt(), so kmap_high_get() can be invoked twice.
+This is useless operation, so remove one.
 
-Oops!! I forgot the change log:
+v2: change cache_is_vipt() to cache_is_vipt_nonaliasing() in order to
+be self-documented
 
-V2->V3:
-- Dropped changes into core queue_work() API, rather create *_on_any_cpu()
-  APIs
-- Dropped running timers migration patch as that was broken
-- Migrated few users of workqueues to use *_on_any_cpu() APIs.
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+Hello Nicolas.
+I maintain your 'Acked-by' while updating this patch to v2.
+Please let me know if there is problem.
+
+Thanks.
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index e9db6b4..ef3e0f3 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -823,16 +823,17 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 		if (PageHighMem(page)) {
+ 			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			vaddr = kmap_high_get(page);
+-			if (vaddr) {
+-				vaddr += offset;
+-				op(vaddr, len, dir);
+-				kunmap_high(page);
+-			} else if (cache_is_vipt()) {
+-				/* unmapped pages might still be cached */
++
++			if (cache_is_vipt_nonaliasing()) {
+ 				vaddr = kmap_atomic(page);
+ 				op(vaddr + offset, len, dir);
+ 				kunmap_atomic(vaddr);
++			} else {
++				vaddr = kmap_high_get(page);
++				if (vaddr) {
++					op(vaddr + offset, len, dir);
++					kunmap_high(page);
++				}
+ 			}
+ 		} else {
+ 			vaddr = page_address(page) + offset;
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 1c8f7f5..0d473cc 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -170,15 +170,18 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
+ 	if (!PageHighMem(page)) {
+ 		__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
+ 	} else {
+-		void *addr = kmap_high_get(page);
+-		if (addr) {
+-			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
+-			kunmap_high(page);
+-		} else if (cache_is_vipt()) {
+-			/* unmapped pages might still be cached */
++		void *addr;
++
++		if (cache_is_vipt_nonaliasing()) {
+ 			addr = kmap_atomic(page);
+ 			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
+ 			kunmap_atomic(addr);
++		} else {
++			addr = kmap_high_get(page);
++			if (addr) {
++				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
++				kunmap_high(page);
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
+
