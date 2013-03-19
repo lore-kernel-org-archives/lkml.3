@@ -1,79 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3CSWhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:37:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404Ab3CSWhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:37:53 -0400
-Date: Tue, 19 Mar 2013 19:37:37 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 6/6] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130319223737.GB18959@amt.cnet>
-References: <514006AC.2020904@linux.vnet.ibm.com>
- <514007A0.1040400@linux.vnet.ibm.com>
- <20130318204601.GA16208@amt.cnet>
- <5147D63B.4000400@linux.vnet.ibm.com>
- <20130319144043.GA8767@amt.cnet>
- <51488642.4060809@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51488642.4060809@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933312Ab3CSWiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:38:24 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54005 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757423Ab3CSWiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 18:38:22 -0400
+Message-ID: <1363732701.1390.45.camel@x61.thuisdomein>
+Subject: [PATCH] mfd: remove twelve unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 23:38:21 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Mar 2013 22:38:21.0182 (UTC) FILETIME=[757831E0:01CE24F2]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 11:37:38PM +0800, Xiao Guangrong wrote:
-> On 03/19/2013 10:40 PM, Marcelo Tosatti wrote:
-> 
-> > 
-> > I misunderstood the benefit of your idea (now i got it: zap root
-> > and flush TLB guarantees vcpus will refault). What i'd like to avoid is
-> > 
-> > memset(cache, 0, sizeof(*cache));
-> > kvm_mmu_init(kvm);
-> > 
-> > I'd prefer normal operations on those data structures (in mmu_cache).
-> > And also the page accounting is a problem.
-> > 
-> > Perhaps you can use a generation number to consider whether shadow pages
-> > are valid? So: 
-> > 
-> > find_sp(gfn_t gfn)
-> > lookup hash
-> > if sp->generation_number != mmu->current_generation_number
-> > 	initialize page as if it were just allocated (but keep it in the hash list)
-> > 
-> > And on kvm_mmu_zap_all()
-> > spin_lock(mmu_lock)
-> > for each page
-> > if page->root_count
-> > 	zero sp->spt[]
-> > 
-> > flush TLB
-> > mmu->current_generation_number++
-> > spin_unlock(mmu_lock)
-> > 
-> > Then have kvm_mmu_free_all() that actually frees all data.
-> > 
-> > Hum, not sure if thats any better than your current patchset.
-> 
-> I also got the idea of generation number like yours which i mentioned
-> it in the [PATCH 0/6]:
-> 
-> * TODO
-> Avoiding Marcelo beat me :), they are some works not attached to make the
-> patchset more smaller:
-> (1): batch kvm_reload_remote_mmus for zapping root shadow pages
-> (2): free shadow pages by using generation-number
-> (3): remove unneeded kvm_reload_remote_mmus after kvm_mmu_zap_all
-> (4): drop unnecessary @npages from kvm_arch_create_memslot
-> (5): rename init_kvm_mmu to init_vcpu_mmu
+Twelve Kconfig symbols, all related to WM8350, WM8351, and WM8352, are
+unused. Commit 19d57ed5a308472a02e773f33c03ad4cb2ec6a9 ("mfd: Remove
+custom wm8350 cache implementation") removed all their (actual) users.
+Remove these symbols too.
 
-Long patch sets are OK. Problem are unrelated changes in a patchset.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Eyeball tested. (With a lot of help from "git grep", that is.)
+
+1) I did not sent this to the ARM maintainers!
+
+ arch/arm/mach-imx/Kconfig     |  2 --
+ arch/arm/mach-s3c64xx/Kconfig |  3 ---
+ drivers/mfd/Kconfig           | 48 -------------------------------------------
+ 3 files changed, 53 deletions(-)
+
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 4c9c6f9..6d9ae09 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -481,8 +481,6 @@ config MACH_MX31ADS_WM1133_EV1
+ 	depends on MACH_MX31ADS
+ 	depends on MFD_WM8350_I2C
+ 	depends on REGULATOR_WM8350 = y
+-	select MFD_WM8350_CONFIG_MODE_0
+-	select MFD_WM8352_CONFIG_MODE_0
+ 	help
+ 	  Include support for the Wolfson Microelectronics 1133-EV1 PMU
+ 	  and audio module for the MX31ADS platform.
+diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
+index 131c862..041da51 100644
+--- a/arch/arm/mach-s3c64xx/Kconfig
++++ b/arch/arm/mach-s3c64xx/Kconfig
+@@ -198,10 +198,7 @@ endchoice
+ config SMDK6410_WM1190_EV1
+ 	bool "Support Wolfson Microelectronics 1190-EV1 PMIC card"
+ 	depends on MACH_SMDK6410
+-	select MFD_WM8350_CONFIG_MODE_0
+-	select MFD_WM8350_CONFIG_MODE_3
+ 	select MFD_WM8350_I2C
+-	select MFD_WM8352_CONFIG_MODE_0
+ 	select REGULATOR
+ 	select REGULATOR_WM8350
+ 	select SAMSUNG_GPIO_EXTRA64
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index c346941..ebb1bed 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -687,54 +687,6 @@ config MFD_WM8350
+ 	bool
+ 	depends on GENERIC_HARDIRQS
+ 
+-config MFD_WM8350_CONFIG_MODE_0
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8350_CONFIG_MODE_1
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8350_CONFIG_MODE_2
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8350_CONFIG_MODE_3
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8351_CONFIG_MODE_0
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8351_CONFIG_MODE_1
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8351_CONFIG_MODE_2
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8351_CONFIG_MODE_3
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8352_CONFIG_MODE_0
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8352_CONFIG_MODE_1
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8352_CONFIG_MODE_2
+-	bool
+-	depends on MFD_WM8350
+-
+-config MFD_WM8352_CONFIG_MODE_3
+-	bool
+-	depends on MFD_WM8350
+-
+ config MFD_WM8350_I2C
+ 	bool "Support Wolfson Microelectronics WM8350 with I2C"
+ 	select MFD_WM8350
+-- 
+1.7.11.7
 
