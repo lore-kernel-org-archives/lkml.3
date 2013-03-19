@@ -1,189 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab3CSPGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:06:02 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20351 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab3CSPGA (ORCPT
+	id S1757035Ab3CSPGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:06:33 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37197 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392Ab3CSPGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:06:00 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5] x86, kdump: Set crashkernel_low automatically
-Date: Tue, 19 Mar 2013 08:05:26 -0700
-Message-Id: <1363705526-3197-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130319133326.GB3872@redhat.com>
-References: <20130319133326.GB3872@redhat.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 19 Mar 2013 11:06:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1303191044150.15684-100000@netrider.rowland.org>
+References: <20130319000656.GC6516@kroah.com> <Pine.LNX.4.44L0.1303191044150.15684-100000@netrider.rowland.org>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Tue, 19 Mar 2013 08:06:10 -0700
+X-Google-Sender-Auth: sT7JRTaKsZCm-dbBhev_PAByDDw
+Message-ID: <CAP_ceTzvFkoqi3yC+qtvmW9XmdJ7Qv7Z5Jvf_n_gg0FVfChMeQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: Make USB persist default configurable
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Julius Werner <jwerner@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>, Sameer Nanda <snanda@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chao said that kdump does does work well on his system on 3.8
-without extra parameter, even iommu does not work with kdump.
-And now have to append crashkernel_low=Y in first kernel to make
-kdump work.
+On Tue, Mar 19, 2013 at 7:56 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>
+> On Mon, 18 Mar 2013, Greg Kroah-Hartman wrote:
+>
+> > On Mon, Mar 18, 2013 at 05:02:19PM -0700, Julius Werner wrote:
+> > > > Why can't you just revert this in userspace?  Isn't that easier than
+> > > > doing a kernel patch and providing an option that we need to now
+> > > > maintain for pretty much forever?
+> > >
+> > > I could solve it in userspace, but that really feels like a hacky
+> > > workaround and not a long term solution. It would mean that every new
+> > > device starts with persist enabled and stays that way for a few
+> > > milliseconds (maybe up to seconds if it's connected on boot), until
+> > > userspace gets around to disable it again... opening the possibility
+> > > for very weird race conditions and bugs with drivers/devices that
+> > > don't work with persist.
+> >
+> > What drivers/devices don't work with persist?  We need to know that now,
+> > otherwise all other distros and users have problems, right?
+> >
+> > > This default is a policy that really resides in the kernel, it has
+> > > changed in the past, and since there is no definitive better choice
+> > > for all cases I thought making it configurable is the right thing to
+> > > do.
+> >
+> > Too many options can be a bad thing.
+> >
+> > I think Alan made this a "always on" option, so I'd like to get his
+> > opinion on it.  Alan?
+>
+> Originally the "persist" attribute defaulted to "off".  Linus disliked
+> this (at least, he disliked it for mass-storage devices) and so at his
+> request the default was changed to "on".  There didn't seem to be any
+> reason to treat other devices differently from mass-storage devices;
+> consequently the default is now "on" for everything.
+>
+> Julius's commit message mentions the disadvantage of "persist": Resume
+> times can be increased.  But it doesn't mention the chief advantage:
+> Filesystems stored on USB devices are much less likely to be lost
+> across suspends.
+>
+> The races mentioned above don't seem to be very dangerous.  How likely
+> is it that the system will be suspended within a few milliseconds of
+> probing a new USB device?
 
-We have now modified crashkernel=X to allocate memory beyong 4G (if
-available) and do not allocate low range for crashkernel if the user
-does not specify that with crashkernel_low=Y.  This causes regression
-if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
-first 4G and there is no low memory available to second kernel.
+For laptops, if the suspend/resume is triggered by the lid open/close
+detection, this is somewhat likely and bit us in the past :
+ the classical use case I have encountered is a back-to-back suspend
+triggered by the user opening the lid then closing it again in the
+next 2 or 3 seconds because he has changed is mind (damn user...),
+might be also triggered by lid hall sensor missing proper debouncing
+(but in that case, the mechanical time constant is often shorter than
+the latency of resuming USB devices).
 
-Set crashkernel_low automatically if the user does not specify that.
 
-For system that does support IOMMU with kdump properly, user could
-specify crashkernel_low=0 to save that 72M low ram.
+>
+> As for buggy devices and drivers that can't handle persist, we have
+> better ways of dealing with them.  Buggy devices can get a quirk flag
+> (USB_QUIRK_RESET).  Buggy drivers should be fixed.
+>
+> Alan Stern
+>
 
--v3: add swiotlb_size() according to Konrad.
--v4: add comments what 8M is for according to hpa.
-     also update more crashkernel_low= in kernel-parameters.txt
--v5: update changelog according to Vivek.
-
-Reported-by: WANG Chao <chaowang@redhat.com>
-Tested-by: WANG Chao <chaowang@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- Documentation/kernel-parameters.txt |   15 ++++++++++++---
- arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
- include/linux/swiotlb.h             |    1 +
- lib/swiotlb.c                       |   19 +++++++++++++++----
- 4 files changed, 45 insertions(+), 10 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -521,19 +521,33 @@ static void __init reserve_crashkernel_l
- 	unsigned long long low_base = 0, low_size = 0;
- 	unsigned long total_low_mem;
- 	unsigned long long base;
-+	bool auto_set = false;
- 	int ret;
- 
- 	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
- 	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
- 						&low_size, &base);
--	if (ret != 0 || low_size <= 0)
--		return;
-+	if (ret != 0) {
-+		/*
-+		 * two parts from lib/swiotlb.c:
-+		 *	swiotlb size: user specified with swiotlb= or default.
-+		 *	swiotlb overflow buffer: now is hardcoded to 32k,
-+		 *		round to 8M to cover more others.
-+		 */
-+		low_size = swiotlb_size_or_default() + (8UL<<20);
-+		auto_set = true;
-+	} else {
-+		/* passed with crashkernel_low=0 ? */
-+		if (!low_size)
-+			return;
-+	}
- 
- 	low_base = memblock_find_in_range(low_size, (1ULL<<32),
- 					low_size, alignment);
- 
- 	if (!low_base) {
--		pr_info("crashkernel low reservation failed - No suitable area found.\n");
-+		if (!auto_set)
-+			pr_info("crashkernel low reservation failed - No suitable area found.\n");
- 
- 		return;
- 	}
-Index: linux-2.6/include/linux/swiotlb.h
-===================================================================
---- linux-2.6.orig/include/linux/swiotlb.h
-+++ linux-2.6/include/linux/swiotlb.h
-@@ -25,6 +25,7 @@ extern int swiotlb_force;
- extern void swiotlb_init(int verbose);
- int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
- extern unsigned long swiotlb_nr_tbl(void);
-+unsigned long swiotlb_size_or_default(void);
- extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
- 
- /*
-Index: linux-2.6/lib/swiotlb.c
-===================================================================
---- linux-2.6.orig/lib/swiotlb.c
-+++ linux-2.6/lib/swiotlb.c
-@@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
- 	if (!strcmp(str, "force"))
- 		swiotlb_force = 1;
- 
--	return 1;
-+	return 0;
- }
--__setup("swiotlb=", setup_io_tlb_npages);
-+early_param("swiotlb", setup_io_tlb_npages);
- /* make io_tlb_overflow tunable too? */
- 
- unsigned long swiotlb_nr_tbl(void)
-@@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
- 	return io_tlb_nslabs;
- }
- EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
-+
-+/* default to 64MB */
-+#define IO_TLB_DEFAULT_SIZE (64UL<<20)
-+unsigned long swiotlb_size_or_default(void)
-+{
-+	unsigned long size;
-+
-+	size = io_tlb_nslabs << IO_TLB_SHIFT;
-+
-+	return size ? size : (IO_TLB_DEFAULT_SIZE);
-+}
-+
- /* Note that this doesn't work with highmem page */
- static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 				      volatile void *address)
-@@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
- void  __init
- swiotlb_init(int verbose)
- {
--	/* default to 64MB */
--	size_t default_size = 64UL<<20;
-+	size_t default_size = IO_TLB_DEFAULT_SIZE;
- 	unsigned char *vstart;
- 	unsigned long bytes;
- 
-Index: linux-2.6/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6/Documentation/kernel-parameters.txt
-@@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
- 			is selected automatically. Check
- 			Documentation/kdump/kdump.txt for further details.
- 
--	crashkernel_low=size[KMG]
--			[KNL, x86] parts under 4G.
--
- 	crashkernel=range1:size1[,range2:size2,...][@offset]
- 			[KNL] Same as above, but depends on the memory
- 			in the running system. The syntax of range is
-@@ -606,6 +603,18 @@ bytes respectively. Such letter suffixes
- 			a memory unit (amount[KMG]). See also
- 			Documentation/kdump/kdump.txt for an example.
- 
-+	crashkernel_low=size[KMG]
-+			[KNL, x86_64] range under 4G. When crashkernel= is
-+			passed, kernel allocate physical memory region
-+			above 4G, that cause second kernel crash on system
-+			that need swiotlb later. Kernel would try to allocate
-+			some region below 4G automatically. This one let
-+			user to specify own low range under 4G for second
-+			kernel instead.
-+			0: to disable low allocation on systems that do not
-+			need swiotlb, that will save 72M low ram in first
-+			kernel.
-+
- 	cs89x0_dma=	[HW,NET]
- 			Format: <dma>
- 
+-- 
+Vincent
