@@ -1,218 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933302Ab3CSQu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 12:50:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27610 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933233Ab3CSQug (ORCPT
+	id S933349Ab3CSQvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 12:51:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44373 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933322Ab3CSQv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 12:50:36 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=_7qTEbnReCAA:10 a=VwQbUJbxAAAA:8 a=vFcT9RBX5ffKzndqZqsA:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363711834.5938.39.camel@gandalf.local.home>
-Subject: Fixup for 3.4.34 merge conflict
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Date: Tue, 19 Mar 2013 12:50:34 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Mar 2013 12:51:28 -0400
+Message-ID: <514895C5.40706@free-electrons.com>
+Date: Tue, 19 Mar 2013 17:43:49 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        thomas.petazzoni@free-electrons.com,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Florian Fainelli <florian@openwrt.org>
+Subject: Re: [BUG][mvebu] mvneta: cannot request irq 25 on openblocks-ax3
+References: <51486445.8040506@hitachi.com> <20130319133928.GE3137@localhost> <514873FB.5050202@hitachi.com>
+In-Reply-To: <514873FB.5050202@hitachi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/mixed;
+ boundary="------------060409020006070206050307"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+This is a multi-part message in MIME format.
+--------------060409020006070206050307
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Merging 3.4.34 into stable 3.4-rt I hit the following conflict:
+On 03/19/2013 03:19 PM, Masami Hiramatsu wrote:
+> Hi Ezequiel,
+> 
+> (2013/03/19 22:39), Ezequiel Garcia wrote:
+>> Hi Masami,
+>>
+>> On Tue, Mar 19, 2013 at 10:12:37PM +0900, Masami Hiramatsu wrote:
+>>>
+>>> Here I've hit a bug on the recent kernel. As far as I know, this bug
+>>> exists on 3.9-rc1 too.
+>>>
+>>> When I tried the latest mvebu for-next tree
+>>> (git://git.infradead.org/users/jcooper/linux.git mvebu/for-next),
+>>> I got below warning at bootup time and mvneta didn't work (link was never up).
+>>> I ensured that "ifconfig ethX up" always caused that.
+>>>
+>>> Does anyone succeed to boot openblocks-ax3 recently or hit same
+>>> trouble?
+>>
+>> This is a known bug. Gregory Clement already has a fix and he
+>> will submit it soon. In case you need this fixed ASAP, I'm attaching
+>> you a patch with a fix.
+> 
+> Thanks! I'll try that.
+> 
+>> Please note the attached patch is not ready for mainline inclusion,
+>> as I said Gregory will submit a cleaner version soon.
+> 
+> Yeah, I look forward to it :)
 
-diff --cc kernel/hrtimer.c
-index 9114899,cdd5607..0000000
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@@ -643,30 -640,9 +643,33 @@@ static inline void hrtimer_init_hres(st
-   * and expiry check is done in the hrtimer_interrupt or in the softirq.
-   */
-  static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
-- 					    struct hrtimer_clock_base *base,
-- 					    int wakeup)
-+ 					    struct hrtimer_clock_base *base)
-  {
-++<<<<<<< HEAD
- +	if (base->cpu_base->hres_active && hrtimer_reprogram(timer, base)) {
- +		if (!wakeup)
- +			return -ETIME;
- +
- +#ifdef CONFIG_PREEMPT_RT_BASE
- +		/*
- +		 * Move softirq based timers away from the rbtree in
- +		 * case it expired already. Otherwise we would have a
- +		 * stale base->first entry until the softirq runs.
- +		 */
- +		if (!hrtimer_rt_defer(timer))
- +			return -ETIME;
- +#endif
- +		raw_spin_unlock(&base->cpu_base->lock);
- +		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
- +		raw_spin_lock(&base->cpu_base->lock);
- +
- +		return 0;
- +	}
- +
- +	return 0;
-++=======
-+ 	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
-++>>>>>>> v3.4.34
-  }
-  
-  static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-@@@ -1054,18 -982,19 +1056,34 @@@ int __hrtimer_start_range_ns(struct hrt
-  	 *
-  	 * XXX send_remote_softirq() ?
-  	 */
-++<<<<<<< HEAD
- +	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
- +		ret = hrtimer_enqueue_reprogram(timer, new_base, wakeup);
- +		if (ret) {
- +			/*
- +			 * In case we failed to reprogram the timer (mostly
- +			 * because out current timer is already elapsed),
- +			 * remove it again and report a failure. This avoids
- +			 * stale base->first entries.
- +			 */
- +			debug_deactivate(timer);
- +			__remove_hrtimer(timer, new_base,
- +					timer->state & HRTIMER_STATE_CALLBACK, 0);
-++=======
-+ 	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-+ 		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-+ 		if (wakeup) {
-+ 			/*
-+ 			 * We need to drop cpu_base->lock to avoid a
-+ 			 * lock ordering issue vs. rq->lock.
-+ 			 */
-+ 			raw_spin_unlock(&new_base->cpu_base->lock);
-+ 			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+ 			local_irq_restore(flags);
-+ 			return ret;
-+ 		} else {
-+ 			__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-++>>>>>>> v3.4.34
-  		}
-  	}
-  
+Hi Masami,
 
-As 3.4.34 stable included commit b22affe0a "hrtimer: Prevent
-hrtimer_enqueue_reprogram race" which conflicts with the current code in
--rt as you can see above.
+You can try this patch if you want.
+I don't have the hardware today so I didn't test it.
+If you (and also Florian and Ezequiel) can test it and if it fixed
+the bug, then I will be able send a proper email for it,
 
-Below is the final change I did to handle this code. I'm running tests
-on it now. I tried to keep the same basic logic that -rt has. Let me
-know if you have issues with this. I'll wait a few days before I push
-this to kernel.org.
-
--- Steve
+Thanks,
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
 
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 9114899..2328c04 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -643,30 +643,9 @@ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
-  * and expiry check is done in the hrtimer_interrupt or in the softirq.
-  */
- static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base,
--					    int wakeup)
-+					    struct hrtimer_clock_base *base)
- {
--	if (base->cpu_base->hres_active && hrtimer_reprogram(timer, base)) {
--		if (!wakeup)
--			return -ETIME;
--
--#ifdef CONFIG_PREEMPT_RT_BASE
--		/*
--		 * Move softirq based timers away from the rbtree in
--		 * case it expired already. Otherwise we would have a
--		 * stale base->first entry until the softirq runs.
--		 */
--		if (!hrtimer_rt_defer(timer))
--			return -ETIME;
--#endif
--		raw_spin_unlock(&base->cpu_base->lock);
--		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
--		raw_spin_lock(&base->cpu_base->lock);
--
--		return 0;
--	}
--
--	return 0;
-+	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
- }
+--------------060409020006070206050307
+Content-Type: text/x-diff;
+ name="0001-net-mvneta-convert-to-local-interrupt.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-net-mvneta-convert-to-local-interrupt.patch"
+
+>From a82800cbd4f2ff34a4a03c8caa688149b8770ab7 Mon Sep 17 00:00:00 2001
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Date: Tue, 19 Mar 2013 15:11:48 +0100
+Subject: [PATCH] net: mvneta: convert to local interrupt
+
+Since commit 3a6f08a37 "arm: mvebu: Add support for local interrupt",
+the mvneta interrupt is now managed as a local interrupt. That means
+that the driver have to use the request_percpu_irq() function instead
+of request_irq().
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ drivers/net/ethernet/marvell/mvneta.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index cd345b8..ad64a50 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -256,6 +256,8 @@ struct mvneta_port {
+ 	unsigned int link;
+ 	unsigned int duplex;
+ 	unsigned int speed;
++
++	struct mvneta_port __percpu **percpu_pp;
+ };
  
- static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-@@ -747,8 +726,7 @@ static inline int hrtimer_switch_to_hres(void) { return 0; }
- static inline void
- hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
- static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base,
--					    int wakeup)
-+					    struct hrtimer_clock_base *base)
+ /* The mvneta_tx_desc and mvneta_rx_desc structures describe the
+@@ -1799,7 +1801,7 @@ static void mvneta_set_rx_mode(struct net_device *dev)
+ /* Interrupt handling - the callback for request_irq() */
+ static irqreturn_t mvneta_isr(int irq, void *dev_id)
  {
- 	return 0;
- }
-@@ -1054,19 +1032,39 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	 *
- 	 * XXX send_remote_softirq() ?
- 	 */
--	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
--		ret = hrtimer_enqueue_reprogram(timer, new_base, wakeup);
--		if (ret) {
-+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-+		&& hrtimer_enqueue_reprogram(timer, new_base)) {
+-	struct mvneta_port *pp = (struct mvneta_port *)dev_id;
++	struct mvneta_port *pp = *(struct mvneta_port **)dev_id;
+ 
+ 	/* Mask all interrupts */
+ 	mvreg_write(pp, MVNETA_INTR_NEW_MASK, 0);
+@@ -2371,8 +2373,19 @@ static void mvneta_mdio_remove(struct mvneta_port *pp)
+ static int mvneta_open(struct net_device *dev)
+ {
+ 	struct mvneta_port *pp = netdev_priv(dev);
 +
-+		if (wakeup
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+		    /*
-+		     * Move softirq based timers away from the rbtree in
-+		     * case it expired already. Otherwise we would have a
-+		     * stale base->first entry until the softirq runs.
-+		     */
-+		    && hrtimer_rt_defer(timer)
-+#endif
-+			) {
- 			/*
--			 * In case we failed to reprogram the timer (mostly
--			 * because out current timer is already elapsed),
--			 * remove it again and report a failure. This avoids
--			 * stale base->first entries.
-+			 * We need to drop cpu_base->lock to avoid a
-+			 * lock ordering issue vs. rq->lock.
- 			 */
--			debug_deactivate(timer);
--			__remove_hrtimer(timer, new_base,
--					timer->state & HRTIMER_STATE_CALLBACK, 0);
-+			raw_spin_unlock(&new_base->cpu_base->lock);
-+			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+			local_irq_restore(flags);
-+			return ret;
- 		}
+ 	int ret;
+ 
++	/* As the mvneta interrupts are locals, we need to create a
++	 * percpu variable
++	 */
++	pp->percpu_pp = alloc_percpu(struct mvneta_port *);
++	if (!pp) {
++		ret = -ENOMEM;
++		goto err_percpu_alloc;
++	}
++	*__this_cpu_ptr(pp->percpu_pp) = pp;
 +
-+		/*
-+		 * In case we failed to reprogram the timer (mostly
-+		 * because out current timer is already elapsed),
-+		 * remove it again and report a failure. This avoids
-+		 * stale base->first entries.
-+		 */
-+		debug_deactivate(timer);
-+		__remove_hrtimer(timer, new_base,
-+				 timer->state & HRTIMER_STATE_CALLBACK, 0);
-+		ret = -ETIME;
+ 	mvneta_mac_addr_set(pp, dev->dev_addr, rxq_def);
+ 
+ 	pp->pkt_size = MVNETA_RX_PKT_SIZE(pp->dev->mtu);
+@@ -2385,13 +2398,15 @@ static int mvneta_open(struct net_device *dev)
+ 	if (ret)
+ 		goto err_cleanup_rxqs;
+ 
++
+ 	/* Connect to port interrupt line */
+-	ret = request_irq(pp->dev->irq, mvneta_isr, 0,
+-			  MVNETA_DRIVER_NAME, pp);
++	ret = request_percpu_irq(pp->dev->irq, mvneta_isr,
++				MVNETA_DRIVER_NAME, pp->percpu_pp);
+ 	if (ret) {
+ 		netdev_err(pp->dev, "cannot request irq %d\n", pp->dev->irq);
+ 		goto err_cleanup_txqs;
  	}
++	enable_percpu_irq(pp->dev->irq, 0);
  
- 	unlock_hrtimer_base(timer, &flags);
+ 	/* In default link is down */
+ 	netif_carrier_off(pp->dev);
+@@ -2407,11 +2422,13 @@ static int mvneta_open(struct net_device *dev)
+ 	return 0;
+ 
+ err_free_irq:
++	free_percpu(pp->percpu_pp);
+ 	free_irq(pp->dev->irq, pp);
+ err_cleanup_txqs:
+ 	mvneta_cleanup_txqs(pp);
+ err_cleanup_rxqs:
+ 	mvneta_cleanup_rxqs(pp);
++err_percpu_alloc:
+ 	return ret;
+ }
+ 
+@@ -2422,7 +2439,8 @@ static int mvneta_stop(struct net_device *dev)
+ 
+ 	mvneta_stop_dev(pp);
+ 	mvneta_mdio_remove(pp);
+-	free_irq(dev->irq, pp);
++	free_percpu(pp->percpu_pp);
++	free_percpu_irq(dev->irq, pp);
+ 	mvneta_cleanup_rxqs(pp);
+ 	mvneta_cleanup_txqs(pp);
+ 	del_timer(&pp->tx_done_timer);
+-- 
+1.7.9.5
 
 
+
+--------------060409020006070206050307--
