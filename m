@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab3CSJwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:52:20 -0400
+	id S1758019Ab3CSJw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:52:27 -0400
 Received: from smtp4.mundo-r.com ([212.51.32.151]:64137 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab3CSJwS (ORCPT
+	with ESMTP id S1757995Ab3CSJwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:52:18 -0400
+	Tue, 19 Mar 2013 05:52:21 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFJ1IQUVcGE4gYsjGQIY8OB4NAA5ZfiWyKITs
-X-IPAS-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFJ1IQUVcGE4gYsjGQIY8OB4NAA5ZfiWyKITs
+X-IronPort-Anti-Spam-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFJ1IQUVcGE4gYsjGQIY8OB4NAA5ZflA07
+X-IPAS-Result: Ap8CANk0SFFbdWObgWdsb2JhbABDxSKBWxYOAQEWJiiCJQEFJ1IQUVcGE4gYsjGQIY8OB4NAA5ZflA07
 X-IronPort-AV: E=Sophos;i="4.84,870,1355094000"; 
-   d="scan'208";a="18789992"
+   d="scan'208";a="18789994"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 7/9] staging/sb105x: use tty_port
-Date: Tue, 19 Mar 2013 10:51:28 +0100
-Message-Id: <1363686690-27090-8-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 3/9] staging/sb105x: delete debug printks
+Date: Tue, 19 Mar 2013 10:51:24 +0100
+Message-Id: <1363686690-27090-4-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363686690-27090-1-git-send-email-siglesias@igalia.com>
 References: <1363686690-27090-1-git-send-email-siglesias@igalia.com>
@@ -26,112 +26,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct tty_port wherever is needed, fixing compilation errors.
-
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/sb105x/sb_pci_mp.c   |   18 +++++++++++-------
- drivers/staging/sb105x/sb_ser_core.h |    1 +
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/staging/sb105x/sb_pci_mp.c |   20 --------------------
+ 1 file changed, 20 deletions(-)
 
 diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index 7fa6ef7..deeeed2 100644
+index 4c88bfc..7196412 100644
 --- a/drivers/staging/sb105x/sb_pci_mp.c
 +++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -878,7 +878,7 @@ static int mp_set_info(struct sb_uart_state *state, struct serial_struct *newinf
- 	state->closing_wait    = closing_wait;
- 	port->fifosize         = new_serial.xmit_fifo_size;
- 	if (state->info->tty)
--		state->info->tty->low_latency =
-+		port->tty_port.low_latency =
- 			(port->flags & UPF_LOW_LATENCY) ? 1 : 0;
+@@ -1288,26 +1288,20 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+ 	struct sb_uart_state *state = tty->driver_data;
+ 	struct sb_uart_port *port;
  
- check_and_exit:
-@@ -1323,6 +1323,7 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+-	printk("mp_close!\n");
+ 	if (!state || !state->port)
+ 		return;
+ 
+ 	port = state->port;
+-
+-	printk("close1 %d\n", __LINE__);
+ 	MP_STATE_LOCK(state);
+ 
+-	printk("close2 %d\n", __LINE__);
+ 	if (tty_hung_up_p(filp))
+ 		goto done;
+ 
+-	printk("close3 %d\n", __LINE__);
+ 	if ((tty->count == 1) && (state->count != 1)) {
+ 		printk("mp_close: bad serial port count; tty->count is 1, "
+ 				"state->count is %d\n", state->count);
+ 		state->count = 1;
+ 	}
+-	printk("close4 %d\n", __LINE__);
+ 	if (--state->count < 0) {
+ 		printk("rs_close: bad serial port count for ttyMP%d: %d\n",
+ 				port->line, state->count);
+@@ -1318,11 +1312,9 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+ 
+ 	tty->closing = 1;
+ 
+-	printk("close5 %d\n", __LINE__);
+ 	if (state->closing_wait != USF_CLOSING_WAIT_NONE)
+ 		tty_wait_until_sent(tty, state->closing_wait);
+ 
+-	printk("close6 %d\n", __LINE__);
+ 	if (state->info->flags & UIF_INITIALIZED) {
+ 		unsigned long flags;
+ 		spin_lock_irqsave(&port->lock, flags);
+@@ -1330,10 +1322,8 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+ 		spin_unlock_irqrestore(&port->lock, flags);
+ 		mp_wait_until_sent(tty, port->timeout);
+ 	}
+-	printk("close7 %d\n", __LINE__);
+ 
  	mp_shutdown(state);
+-	printk("close8 %d\n", __LINE__);
  	mp_flush_buffer(tty);
  	tty_ldisc_flush(tty);
-+	tty_port_close(&state->port->tty_port, tty, filp);
  	tty->closing = 0;
- 	state->info->tty = NULL;
+@@ -1350,13 +1340,11 @@ static void mp_close(struct tty_struct *tty, struct file *filp)
+ 	{
+ 		mp_change_pm(state, 3);
+ 	}
+-	printk("close8 %d\n", __LINE__);
  
-@@ -1525,7 +1526,7 @@ static int mp_open(struct tty_struct *tty, struct file *filp)
- 	mtpt  = (struct mp_port *)state->port;
+ 	state->info->flags &= ~UIF_NORMAL_ACTIVE;
+ 	wake_up_interruptible(&state->info->open_wait);
  
- 	tty->driver_data = state;
--	tty->low_latency = (state->port->flags & UPF_LOW_LATENCY) ? 1 : 0;
-+	state->port->tty_port.low_latency = (state->port->flags & UPF_LOW_LATENCY) ? 1 : 0;
- 	tty->alt_speed = 0;
- 	state->info->tty = tty;
- 
-@@ -1553,6 +1554,7 @@ static int mp_open(struct tty_struct *tty, struct file *filp)
- 
- 	uart_clear_mctrl(state->port, TIOCM_RTS);
- 	try_module_get(THIS_MODULE);
-+	retval = tty_port_open(&state->port->tty_port, tty, filp);
- fail:
- 	return retval;
+ done:
+-	printk("close done\n");
+ 	MP_STATE_UNLOCK(state);
+ 	module_put(THIS_MODULE);
  }
-@@ -1784,7 +1786,9 @@ static int mp_add_one_port(struct uart_driver *drv, struct sb_uart_port *port)
+@@ -1940,7 +1928,6 @@ static void autoconfig(struct mp_port *mtpt, unsigned int probeflags)
  
- 	mp_configure_port(drv, state, port);
+ 	if(mtpt->port.type == PORT_UNKNOWN )
+ 	{
+-printk("unknow2\n");
+ 		switch (scratch) {
+ 			case 0:
+ 			case 1:
+@@ -2221,10 +2208,8 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
+ 		mtpt = list_entry(lhead, struct mp_port, list);
  
--	tty_register_device(drv->tty_driver, port->line, port->dev);
-+	tty_port_init(&port->tty_port);
-+//	port->tty_port.ops = &mp_tty_port_ops; /* XXX: Need to define tty_port ops */
-+	tty_port_register_device(&port->tty_port, port->info->tty->driver, port->line, port->dev);
- 
- out:
- 	MP_MUTEX_UNLOCK(mp_mutex);
-@@ -1804,6 +1808,7 @@ static int mp_remove_one_port(struct uart_driver *drv, struct sb_uart_port *port
- 	MP_MUTEX_LOCK(mp_mutex);
- 
- 	tty_unregister_device(drv->tty_driver, port->line);
-+	tty_port_destroy(&port->tty_port);
- 
- 	mp_unconfigure_port(drv, state);
- 	state->port = NULL;
-@@ -2009,7 +2014,6 @@ static void multi_enable_ms(struct sb_uart_port *port)
- 
- static inline void receive_chars(struct mp_port *mtpt, int *status )
- {
--	struct tty_struct *tty = mtpt->port.info->tty;
- 	unsigned char lsr = *status;
- 	int max_count = 256;
- 	unsigned char ch;
-@@ -2044,17 +2048,17 @@ static inline void receive_chars(struct mp_port *mtpt, int *status )
- 					mtpt->port.icount.overrun++;
- 					flag = TTY_OVERRUN;
- 				}
--				tty_insert_flip_char(tty, ch, flag);
-+				tty_insert_flip_char(&mtpt->port.tty_port, ch, flag);
- 			} else {
- 				ch = serial_inp(mtpt, UART_RX);
--				tty_insert_flip_char(tty, ch, 0);
-+				tty_insert_flip_char(&mtpt->port.tty_port, ch, 0);
- 			}
+ 		iir = serial_in(mtpt, UART_IIR);
+-		printk("intrrupt! port %d, iir 0x%x\n", mtpt->port.line, iir); //wlee
+ 		if (!(iir & UART_IIR_NO_INT))
+ 		{
+-			printk("interrupt handle\n");
+ 			spin_lock(&mtpt->port.lock);
+ 			multi_handle_port(mtpt);
+ 			spin_unlock(&mtpt->port.lock);
+@@ -2238,8 +2223,6 @@ static irqreturn_t multi_interrupt(int irq, void *dev_id)
+ 		{
+ 			printk(KERN_ERR "multi: too much work for "
+ 					"irq%d\n", irq);
+-			printk( "multi: too much work for "
+-					"irq%d\n", irq);
+ 			break;
  		}
- ignore_char:
- 		lsr = serial_inp(mtpt, UART_LSR);
- 	} while ((lsr & UART_LSR_DR) && (max_count-- > 0));
+ 	} while (lhead != end);
+@@ -2619,7 +2602,6 @@ static void multi_set_termios(struct sb_uart_port *port, struct MP_TERMIOS *term
  
--	tty_flip_buffer_push(tty);
-+	tty_flip_buffer_push(&mtpt->port.tty_port);
- }
+ 	if(mtpt->device->device_id == PCI_DEVICE_ID_MP4M) {
+ 		SendATCommand(mtpt);
+-		printk("SendATCommand\n");
+ 	}
+ 
+ 	multi_set_mctrl(&mtpt->port, mtpt->port.mctrl);
+@@ -3064,12 +3046,10 @@ static int __init multi_init(void)
+         }
  
  
-diff --git a/drivers/staging/sb105x/sb_ser_core.h b/drivers/staging/sb105x/sb_ser_core.h
-index 41111b0..90de931 100644
---- a/drivers/staging/sb105x/sb_ser_core.h
-+++ b/drivers/staging/sb105x/sb_ser_core.h
-@@ -143,6 +143,7 @@ struct sb_uart_port {
- 	struct device		*dev;			/* parent device */
- 	unsigned char		hub6;			/* this should be in the 8250 driver */
- 	unsigned char		unused[3];
-+	struct tty_port         tty_port;
- };
+-	printk("MULTI INIT\n");
+ 	for( i = 0; i < mp_nrpcibrds; i++)
+ 	{
  
- #define mdmode			unused[2]
+ 		while( (dev = pci_get_device(mp_pciboards[i].vendor_id, mp_pciboards[i].device_id, dev) ) ) {
+-		printk("FOUND~~~\n");
+ //	Cent OS bug fix
+ //			if (mp_pciboards[i].device_id & 0x0800)
+ 			{
 -- 
 1.7.10.4
 
