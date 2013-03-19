@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933936Ab3CSXKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:10:04 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:56729 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754733Ab3CSXKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:10:01 -0400
-Message-ID: <1363734599.1390.50.camel@x61.thuisdomein>
-Subject: [PATCH] netfilter: remove unused "config IP_NF_QUEUE"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
+	id S1757584Ab3CSXMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:12:30 -0400
+Received: from mail.us.es ([193.147.175.20]:37029 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754742Ab3CSXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 19:12:28 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.6/16875. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-94.9/7.5):. 
+ Processed in 1.719598 secs); 19 Mar 2013 23:12:26 -0000
+X-Envelope-From: pneira@us.es
+Date: Wed, 20 Mar 2013 00:12:23 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
         Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
         James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
         coreteam@netfilter.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 00:09:59 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2013 23:10:00.0089 (UTC) FILETIME=[E14E6890:01CE24F6]
-X-RcptDomain: vger.kernel.org
+Subject: Re: [PATCH] netfilter: remove unused "config IP_NF_QUEUE"
+Message-ID: <20130319231223.GA4017@localhost>
+References: <1363734599.1390.50.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363734599.1390.50.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig symbol IP_NF_QUEUE is unused since commit
-d16cf20e2f2f13411eece7f7fb72c17d141c4a84 ("netfilter: remove ip_queue
-support"). Let's remove it too.
+On Wed, Mar 20, 2013 at 12:09:59AM +0100, Paul Bolle wrote:
+> Kconfig symbol IP_NF_QUEUE is unused since commit
+> d16cf20e2f2f13411eece7f7fb72c17d141c4a84 ("netfilter: remove ip_queue
+> support"). Let's remove it too.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Eyeball tested.
-
- net/ipv4/netfilter/Kconfig | 13 -------------
- 1 file changed, 13 deletions(-)
-
-diff --git a/net/ipv4/netfilter/Kconfig b/net/ipv4/netfilter/Kconfig
-index ce2d43e..0d755c5 100644
---- a/net/ipv4/netfilter/Kconfig
-+++ b/net/ipv4/netfilter/Kconfig
-@@ -36,19 +36,6 @@ config NF_CONNTRACK_PROC_COMPAT
- 
- 	  If unsure, say Y.
- 
--config IP_NF_QUEUE
--	tristate "IP Userspace queueing via NETLINK (OBSOLETE)"
--	depends on NETFILTER_ADVANCED
--	help
--	  Netfilter has the ability to queue packets to user space: the
--	  netlink device can be used to access them using this driver.
--
--	  This option enables the old IPv4-only "ip_queue" implementation
--	  which has been obsoleted by the new "nfnetlink_queue" code (see
--	  CONFIG_NETFILTER_NETLINK_QUEUE).
--
--	  To compile it as a module, choose M here.  If unsure, say N.
--
- config IP_NF_IPTABLES
- 	tristate "IP tables support (required for filtering/masq/NAT)"
- 	default m if NETFILTER_ADVANCED=n
--- 
-1.7.11.7
-
+Applied, thanks for catching up this leftover.
