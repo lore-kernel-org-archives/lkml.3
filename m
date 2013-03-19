@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964913Ab3CSUpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:45:34 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:40606 "EHLO
+	id S964871Ab3CSUpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:45:21 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:40544 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827Ab3CSUp2 (ORCPT
+	with ESMTP id S964827Ab3CSUpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:45:28 -0400
+	Tue, 19 Mar 2013 16:45:18 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
 Cc: Min Zhang <mzhang@mvista.com>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 10/18] n_tty: Remove read_cnt
-Date: Tue, 19 Mar 2013 16:21:45 -0400
-Message-Id: <1363724513-15604-11-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 18/18] n_tty: Separate buffer indices to prevent cache-line sharing
+Date: Tue, 19 Mar 2013 16:21:53 -0400
+Message-Id: <1363724513-15604-19-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
 References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
@@ -23,112 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Storing the read_cnt creates an unnecessary shared variable
-between the single-producer (n_tty_receive_buf()) and the
-single-consumer (n_tty_read()).
+If the read buffer indices are in the same cache-line, cpus will
+contended over the cache-line (so called 'false sharing').
 
-Compute read_cnt from head & tail instead of storing.
+Separate the producer-published fields from the consumer-published
+fields; document the locks relevant to each field.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/tty/n_tty.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 2b38bb2..f777ec6 100644
+index adccff8..9b828f0 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -101,7 +101,6 @@ struct n_tty_data {
- 	char *read_buf;
- 	size_t read_head;
- 	size_t read_tail;
--	int read_cnt;
- 	int minimum_to_wake;
+@@ -86,28 +86,38 @@
+ #define NO_ROOM		0
  
- 	unsigned char *echo_buf;
-@@ -120,7 +119,7 @@ struct n_tty_data {
+ struct n_tty_data {
+-	unsigned int column;
++	/* producer-published */
++	size_t read_head;
++	size_t canon_head;
++	DECLARE_BITMAP(process_char_map, 256);
++
++	/* private to n_tty_receive_overrun (single-threaded) */
+ 	unsigned long overrun_time;
+ 	int num_overrun;
  
- static inline size_t read_cnt(struct n_tty_data *ldata)
- {
--	return ldata->read_cnt;
-+	return ldata->read_head - ldata->read_tail;
- }
- 
- static inline unsigned char read_buf(struct n_tty_data *ldata, size_t i)
-@@ -220,7 +219,6 @@ static void put_tty_queue_nolock(unsigned char c, struct n_tty_data *ldata)
- 	if (read_cnt(ldata) < N_TTY_BUF_SIZE) {
- 		*read_buf_addr(ldata, ldata->read_head) = c;
- 		ldata->read_head++;
--		ldata->read_cnt++;
- 	}
- }
- 
-@@ -261,7 +259,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
++	/* atomic */
  	unsigned long flags;
  
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
--	ldata->read_head = ldata->read_tail = ldata->read_cnt = 0;
-+	ldata->read_head = ldata->read_tail = 0;
- 	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
++	/* must hold exclusive termios_rwsem to reset these */
+ 	unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
+ 	unsigned char echo_overrun:1;
  
- 	mutex_lock(&ldata->echo_lock);
-@@ -965,16 +963,12 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 	else {
- 		if (!L_ECHO(tty)) {
- 			raw_spin_lock_irqsave(&ldata->read_lock, flags);
--			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
--					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
- 			raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			return;
- 		}
- 		if (!L_ECHOK(tty) || !L_ECHOKE(tty) || !L_ECHOE(tty)) {
- 			raw_spin_lock_irqsave(&ldata->read_lock, flags);
--			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
--					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
- 			raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			finish_erasing(ldata);
-@@ -1012,7 +1006,6 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 		cnt = ldata->read_head - head;
- 		raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_head = head;
--		ldata->read_cnt -= cnt;
- 		raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 		if (L_ECHO(tty)) {
- 			if (L_ECHOPRT(tty)) {
-@@ -1471,7 +1464,6 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		i = min(count, i);
- 		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
- 		ldata->read_head += i;
--		ldata->read_cnt += i;
- 		cp += i;
- 		count -= i;
+-	DECLARE_BITMAP(process_char_map, 256);
++	/* shared by producer and consumer */
++	char *read_buf;
+ 	DECLARE_BITMAP(read_flags, N_TTY_BUF_SIZE);
  
-@@ -1480,7 +1472,6 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		i = min(count, i);
- 		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
- 		ldata->read_head += i;
--		ldata->read_cnt += i;
- 		raw_spin_unlock_irqrestore(&ldata->read_lock, cpuflags);
- 	} else {
- 		for (i = count, p = cp, f = fp; i; i--, p++) {
-@@ -1760,7 +1751,6 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 				ldata->icanon);
- 		raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_tail += n;
--		ldata->read_cnt -= n;
- 		/* Turn single EOF into zero-length read */
- 		if (L_EXTPROC(tty) && ldata->icanon && is_eof && !read_cnt(ldata))
- 			n = 0;
-@@ -1848,7 +1838,6 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+-	char *read_buf;
+-	size_t read_head;
+-	size_t read_tail;
+ 	int minimum_to_wake;
  
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 	ldata->read_tail += c;
--	ldata->read_cnt -= c;
- 	if (found) {
- 		__clear_bit(eol, ldata->read_flags);
- 		/* this test should be redundant:
++	/* consumer-published */
++	size_t read_tail;
++
++	/* protected by echo_lock */
+ 	unsigned char *echo_buf;
+ 	unsigned int echo_pos;
+ 	unsigned int echo_cnt;
+ 
+-	size_t canon_head;
++	/* protected by output lock */
++	unsigned int column;
+ 	unsigned int canon_column;
+ 
+ 	struct mutex atomic_read_lock;
 -- 
 1.8.1.2
 
