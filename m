@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3CSAtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:49:09 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:65324 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab3CSAtH (ORCPT
+	id S1757333Ab3CSAu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:50:28 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:53695 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab3CSAu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:49:07 -0400
-Date: Mon, 18 Mar 2013 17:50:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] zero-filled pages awareness
-Message-ID: <20130319005023.GA19891@kroah.com>
-References: <1363314860-22731-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
+	Mon, 18 Mar 2013 20:50:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363314860-22731-3-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130318210810.247845918@linuxfoundation.org>
+References: <20130318210810.247845918@linuxfoundation.org>
+Date: Mon, 18 Mar 2013 18:50:25 -0600
+Message-ID: <CAKocOOPeyVnL_x_fK6b52-S+bHFsw_D_83oQtEVoMOyPh0QD_g@mail.gmail.com>
+Subject: Re: [ 00/48] 3.4.37-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, parag.lkml@gmail.com,
+        eranian@google.com, torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 10:34:17AM +0800, Wanpeng Li wrote:
-> Compression of zero-filled pages can unneccessarily cause internal
-> fragmentation, and thus waste memory. This special case can be
-> optimized.
-> 
-> This patch captures zero-filled pages, and marks their corresponding
-> zcache backing page entry as zero-filled. Whenever such zero-filled
-> page is retrieved, we fill the page frame with zero.
-> 
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+On Mon, Mar 18, 2013 at 3:08 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.4.37 release.
+> There are 48 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Mar 20 21:07:59 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.37-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-This patch applies with a bunch of fuzz, meaning it wasn't made against
-the latest tree, which worries me.  Care to redo it, and the rest of the
-series, and resend it?
+I am seeing the following warning after suspend and resume:
 
-thanks,
+[  665.841331] Component: resume devices, time: 10628
+[  665.841335] Modules linked in: ip6table_filter ip6_tables
+ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
+nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
+iptable_filter ip_tables x_tables bridge stp llc kvm_intel kvm bnep
+rfcomm bluetooth arc4 iwlwifi radeon snd_hda_codec_analog
+snd_hda_intel snd_hda_codec mac80211 snd_hwdep snd_pcm snd_seq_midi
+binfmt_misc snd_rawmidi snd_seq_midi_event snd_seq ttm pata_pcmcia
+snd_timer cfg80211 drm_kms_helper drm snd_seq_device tpm_infineon
+pcmcia psmouse snd coretemp hp_wmi soundcore joydev sparse_keymap
+snd_page_alloc yenta_socket hp_accel pcmcia_rsrc dm_multipath video
+microcode serio_raw mac_hid lis3lv02d input_polldev ppdev tpm_tis
+i2c_algo_bit pcmcia_core wmi parport_pc lp parport firewire_ohci
+firewire_core crc_itu_t sdhci_pci sdhci e1000e
+[  665.841446] Pid: 2686, comm: bash Not tainted 3.4.37-rc1+ #13
+[  665.841450] Call Trace:
+[  665.841463]  [<ffffffff8105136f>] warn_slowpath_common+0x7f/0xc0
+[  665.841471]  [<ffffffff81051466>] warn_slowpath_fmt+0x46/0x50
+[  665.841478]  [<ffffffff81097086>] suspend_test_finish+0x86/0x90
+[  665.841484]  [<ffffffff81096c2e>] suspend_devices_and_enter+0x16e/0x330
+[  665.841491]  [<ffffffff81096f7f>] pm_suspend+0x18f/0x1f0
+[  665.841500]  [<ffffffff81095f97>] state_store+0xb7/0xf0
+[  665.841508]  [<ffffffff81309a7f>] kobj_attr_store+0xf/0x30
+[  665.841518]  [<ffffffff811e230f>] sysfs_write_file+0xef/0x170
+[  665.841528]  [<ffffffff81173b43>] vfs_write+0xb3/0x180
+[  665.841534]  [<ffffffff81173e6a>] sys_write+0x4a/0x90
+[  665.841543]  [<ffffffff81664329>] system_call_fastpath+0x16/0x1b
+[  665.841548] ---[ end trace bf9a1fe573180bcc ]---
+[  665.841843] PM: Finishing wakeup.
+[  665.841848] Restarting tasks ... done.
 
-greg k-h
+Same thing on 3.8.4-rc1.
+
+-- Shuah
