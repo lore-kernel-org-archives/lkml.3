@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab3CSFKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:10:40 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54354 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310Ab3CSFKh convert rfc822-to-8bit (ORCPT
+	id S1757355Ab3CSFL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:11:29 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44188 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab3CSFL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:10:37 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-74-5147f34bda64
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 2/2] perf tests: Add a test case for checking sw clock event frequency
-References: <1363574507-18808-1-git-send-email-namhyung@kernel.org>
-	<1363574507-18808-2-git-send-email-namhyung@kernel.org>
-	<20130318144243.GA3351@ghostprotocols.net>
-Date: Tue, 19 Mar 2013 14:10:35 +0900
-In-Reply-To: <20130318144243.GA3351@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Mon, 18 Mar 2013 11:42:43 -0300")
-Message-ID: <87y5dkht4k.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 19 Mar 2013 01:11:28 -0400
+X-AuditID: 9c930197-b7cc2ae000000eb7-24-5147f37ef7b6
+Date: Tue, 19 Mar 2013 14:11:48 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] correct load_balance()
+Message-ID: <20130319051147.GC8858@lge.com>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130225045659.GB12158@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225045659.GB12158@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Mon, Feb 25, 2013 at 01:56:59PM +0900, Joonsoo Kim wrote:
+> On Thu, Feb 14, 2013 at 02:48:33PM +0900, Joonsoo Kim wrote:
+> > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
+> > But, there are some missing parts for this feature to work properly.
+> > This patchset correct these things and make load_balance() robust.
+> > 
+> > Others are related to LBF_ALL_PINNED. This is fallback functionality
+> > when all tasks can't be moved as cpu affinity. But, currently,
+> > if imbalance is not large enough to task's load, we leave LBF_ALL_PINNED
+> > flag and 'redo' is triggered. This is not our intention, so correct it.
+> > 
+> > These are based on v3.8-rc7.
+> > 
+> > Joonsoo Kim (8):
+> >   sched: change position of resched_cpu() in load_balance()
+> >   sched: explicitly cpu_idle_type checking in rebalance_domains()
+> >   sched: don't consider other cpus in our group in case of NEWLY_IDLE
+> >   sched: clean up move_task() and move_one_task()
+> >   sched: move up affinity check to mitigate useless redoing overhead
+> >   sched: rename load_balance_tmpmask to load_balance_cpu_active
+> >   sched: prevent to re-select dst-cpu in load_balance()
+> >   sched: reset lb_env when redo in load_balance()
+> > 
+> >  kernel/sched/core.c |    9 +++--
+> >  kernel/sched/fair.c |  107 +++++++++++++++++++++++++++++----------------------
+> >  2 files changed, 67 insertions(+), 49 deletions(-)
+> 
+> Hello, Ingo and Peter.
+> 
+> Could you review this patch set?
+> Please let me know what I should do for merging this?
 
-On Mon, 18 Mar 2013 11:42:43 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Mar 18, 2013 at 11:41:47AM +0900, Namhyung Kim escreveu:
->> +static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
->> +{
->> +	int i, err = -1;
->> +	volatile int tmp = 0;
->> +	u64 total_periods = 0;
->> +	int nr_samples = 0;
->> +	union perf_event *event;
->> +	struct perf_evsel *evsel;
->> +	struct perf_evlist *evlist;
->> +	struct perf_event_attr attr = {
->> +		.type = PERF_TYPE_SOFTWARE,
->> +		.config = clock_id,
->> +		.sample_type = PERF_SAMPLE_PERIOD,
->> +		.exclude_kernel = 1,
->> +		.disabled = 1,
->> +		.freq = 1,
->> +		.sample_freq = 10000,
->> +	};
->
-> In some compilers we get:
->
-> tests/sw-clock.c: In function ‘__test__sw_clock_freq’:
-> tests/sw-clock.c:35: error: unknown field ‘sample_freq’ specified in initializer
->
-> So I'm moving the initialization to outside the struct named initialization block, i.e.:
->
-> @@ -32,9 +32,10 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
->                 .exclude_kernel = 1,
->                 .disabled = 1,
->                 .freq = 1,
-> -               .sample_freq = 10000,
->         };
->  
-> +       attr.sample_freq = 10000;
-> +
->
+Hello.
+One more ping :)
 
-Thanks for fixing this!
-Namhyung
+> 
+> Thanks.
+> 
+> > -- 
+> > 1.7.9.5
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
