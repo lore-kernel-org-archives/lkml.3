@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3CSFBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:01:18 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43450 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3CSFBR (ORCPT
+	id S1756182Ab3CSFEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:04:45 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52965 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab3CSFEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:01:17 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-0e-5147f11b73bc
+	Tue, 19 Mar 2013 01:04:44 -0400
+X-AuditID: 9c93016f-b7bfaae000003db8-71-5147f1eaaf1e
+Date: Tue, 19 Mar 2013 14:05:03 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nico@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2] ARM: mm: clean-up in order to reduce to call kmap_high_get()
-Date: Tue, 19 Mar 2013 14:01:27 +0900
-Message-Id: <1363669287-9049-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ARM: mm: disable kmap_high_get() for SMP
+Message-ID: <20130319050503.GA8858@lge.com>
+References: <1362372667-953-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
+ <20130307081258.GA14839@lge.com>
+ <alpine.LFD.2.03.1303071721540.28820@syhkavp.arg>
+ <CAAmzW4NjefPV7tryvySfLXPy6Zcz3BLTvfxD=UnTKCqrRB3voQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4NjefPV7tryvySfLXPy6Zcz3BLTvfxD=UnTKCqrRB3voQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kmap_atomic(), kmap_high_get() is invoked for checking already
-mapped area. In __flush_dcache_page() and dma_cache_maint_page(),
-we explicitly call kmap_high_get() before kmap_atomic()
-when cache_is_vipt(), so kmap_high_get() can be invoked twice.
-This is useless operation, so remove one.
+On Thu, Mar 07, 2013 at 07:35:51PM +0900, JoonSoo Kim wrote:
+> 2013/3/7 Nicolas Pitre <nicolas.pitre@linaro.org>:
+> > On Thu, 7 Mar 2013, Joonsoo Kim wrote:
+> >
+> >> Hello, Nicolas.
+> >>
+> >> On Tue, Mar 05, 2013 at 05:36:12PM +0800, Nicolas Pitre wrote:
+> >> > On Mon, 4 Mar 2013, Joonsoo Kim wrote:
+> >> >
+> >> > > With SMP and enabling kmap_high_get(), it makes users of kmap_atomic()
+> >> > > sequential ordered, because kmap_high_get() use global kmap_lock().
+> >> > > It is not welcome situation, so turn off this optimization for SMP.
+> >> >
+> >> > I'm not sure I understand the problem.
+> >> >
+> >> > The lock taken by kmap_high_get() is released right away before that
+> >> > function returns and therefore this is not actually serializing
+> >> > anything.
+> >>
+> >> Yes, you understand what I want to say correctly.
+> >> Sorry for bad explanation.
+> >>
+> >> Following is reasons why I send this patch with RFC tag.
+> >>
+> >> If we have more cpus, performance degration is possible although
+> >> it is very short time to holding the lock in kmap_high_get().
+> >>
+> >> And kmap has maximum 512 entries(512 * 4K = 2M) and some mobile devices
+> >> has 2G memory(highmem 1G>), so probability for finding matched entry
+> >> is approximately < 1/512. This probability can be more decreasing
+> >> for device which have more memory. So I think that waste time to find
+> >> matched entry is more than saved time.
+> >>
+> >> Above is my humble opinion, so please let me know what I am missing.
+> >
+> > Please look at the kmap_high_get() code again.  It performs no
+> > searching at all.  What it does is:
+> 
+> If page is not highmem, it may be already filtered in kmap_atomic().
+> So we only consider highmem page.
+> 
+> For highmem page, it perform searching.
+> In kmap_high_get(), page_address() is called.
+> In page_address(), it hash PA and iterate a list for this hashed value.
+> 
+> And another advantage of disabling ARCH_NEEDS_KMAP_HIGH_GET is
+> that kmap(), kunmap() works without irq disabled.
+> 
+> Thanks.
 
-v2: change cache_is_vipt() to cache_is_vipt_nonaliasing() in order to
-be self-documented
+Hello, Nicolas.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
-Hello Nicolas.
-I maintain your 'Acked-by' while updating this patch to v2.
-Please let me know if there is problem.
+For just confirm, you don't agree with this, right?
 
 Thanks.
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index e9db6b4..ef3e0f3 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -823,16 +823,17 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 		if (PageHighMem(page)) {
- 			if (len + offset > PAGE_SIZE)
- 				len = PAGE_SIZE - offset;
--			vaddr = kmap_high_get(page);
--			if (vaddr) {
--				vaddr += offset;
--				op(vaddr, len, dir);
--				kunmap_high(page);
--			} else if (cache_is_vipt()) {
--				/* unmapped pages might still be cached */
-+
-+			if (cache_is_vipt_nonaliasing()) {
- 				vaddr = kmap_atomic(page);
- 				op(vaddr + offset, len, dir);
- 				kunmap_atomic(vaddr);
-+			} else {
-+				vaddr = kmap_high_get(page);
-+				if (vaddr) {
-+					op(vaddr + offset, len, dir);
-+					kunmap_high(page);
-+				}
- 			}
- 		} else {
- 			vaddr = page_address(page) + offset;
-diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
-index 1c8f7f5..0d473cc 100644
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -170,15 +170,18 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
- 	if (!PageHighMem(page)) {
- 		__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
- 	} else {
--		void *addr = kmap_high_get(page);
--		if (addr) {
--			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
--			kunmap_high(page);
--		} else if (cache_is_vipt()) {
--			/* unmapped pages might still be cached */
-+		void *addr;
-+
-+		if (cache_is_vipt_nonaliasing()) {
- 			addr = kmap_atomic(page);
- 			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
- 			kunmap_atomic(addr);
-+		} else {
-+			addr = kmap_high_get(page);
-+			if (addr) {
-+				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
-+				kunmap_high(page);
-+			}
- 		}
- 	}
- 
--- 
-1.7.9.5
-
+> 
+> > - lock the kmap array against concurrent changes
+> >
+> > - if the given page is not highmem, unlock and return NULL
+> >
+> > - otherwise increment that page reference count, unlock, and return the
+> >   mapped address for that page.
+> >
+> > There is almost zero cost to this function, independently of the number
+> > of kmap entries, whereas it does save much bigger costs elsewhere when
+> > it is successful.
+> >
+> >
+> > Nicolas
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
