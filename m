@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab3CSRT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:19:59 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:44656 "EHLO
+	id S933481Ab3CSRVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:21:14 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44616 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933322Ab3CSRRF (ORCPT
+	with ESMTP id S933264Ab3CSRRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:17:05 -0400
+	Tue, 19 Mar 2013 13:17:04 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, drbd-dev@lists.linbit.com,
         lars.ellenberg@linbit.com
-Subject: [PATCH 09/18] drbd: split __drbd_make_request in before and after drbd_al_begin_io
-Date: Tue, 19 Mar 2013 18:16:50 +0100
-Message-Id: <1363713419-17803-10-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 05/18] drbd: mechanically rename la_size to la_size_sect
+Date: Tue, 19 Mar 2013 18:16:46 +0100
+Message-Id: <1363713419-17803-6-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
 References: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,108 +23,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-This is in preparation to be able to defer requests that need to wait
-for an activity log transaction to a submitter workqueue.
+Make it obvious that this value is in units of 512 Byte sectors.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_req.c |   40 ++++++++++++++++++++++++++++++----------
- 1 file changed, 30 insertions(+), 10 deletions(-)
+ drivers/block/drbd/drbd_main.c     |    6 +++---
+ drivers/block/drbd/drbd_nl.c       |   16 ++++++++--------
+ drivers/block/drbd/drbd_receiver.c |    2 +-
+ 3 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 7d1ff1a..96d5968 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -34,14 +34,14 @@
- static bool drbd_may_do_local_read(struct drbd_conf *mdev, sector_t sector, int size);
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index b9bfb10..d8bbb41 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2839,7 +2839,7 @@ void conn_md_sync(struct drbd_tconn *tconn)
  
- /* Update disk stats at start of I/O request */
--static void _drbd_start_io_acct(struct drbd_conf *mdev, struct drbd_request *req, struct bio *bio)
-+static void _drbd_start_io_acct(struct drbd_conf *mdev, struct drbd_request *req)
+ /* aligned 4kByte */
+ struct meta_data_on_disk {
+-	u64 la_size;           /* last agreed size. */
++	u64 la_size_sect;      /* last agreed size. */
+ 	u64 uuid[UI_SIZE];   /* UUIDs. */
+ 	u64 device_uuid;
+ 	u64 reserved_u64_1;
+@@ -2890,7 +2890,7 @@ void drbd_md_sync(struct drbd_conf *mdev)
+ 
+ 	memset(buffer, 0, sizeof(*buffer));
+ 
+-	buffer->la_size = cpu_to_be64(drbd_get_capacity(mdev->this_bdev));
++	buffer->la_size_sect = cpu_to_be64(drbd_get_capacity(mdev->this_bdev));
+ 	for (i = UI_CURRENT; i < UI_SIZE; i++)
+ 		buffer->uuid[i] = cpu_to_be64(mdev->ldev->md.uuid[i]);
+ 	buffer->flags = cpu_to_be32(mdev->ldev->md.flags);
+@@ -3052,7 +3052,7 @@ int drbd_md_read(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
+ 
+ 	rv = NO_ERROR;
+ 
+-	bdev->md.la_size_sect = be64_to_cpu(buffer->la_size);
++	bdev->md.la_size_sect = be64_to_cpu(buffer->la_size_sect);
+ 	for (i = UI_CURRENT; i < UI_SIZE; i++)
+ 		bdev->md.uuid[i] = be64_to_cpu(buffer->uuid[i]);
+ 	bdev->md.flags = be32_to_cpu(buffer->flags);
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 5621df8..d5211b0 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -819,7 +819,7 @@ void drbd_resume_io(struct drbd_conf *mdev)
+ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds_flags flags) __must_hold(local)
  {
--	const int rw = bio_data_dir(bio);
-+	const int rw = bio_data_dir(req->master_bio);
- 	int cpu;
- 	cpu = part_stat_lock();
- 	part_round_stats(cpu, &mdev->vdisk->part0);
- 	part_stat_inc(cpu, &mdev->vdisk->part0, ios[rw]);
--	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], bio_sectors(bio));
-+	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], req->i.size >> 9);
- 	(void) cpu; /* The macro invocations above want the cpu argument, I do not like
- 		       the compiler warning about cpu only assigned but never used... */
- 	part_inc_in_flight(&mdev->vdisk->part0, rw);
-@@ -1020,12 +1020,16 @@ drbd_submit_req_private_bio(struct drbd_request *req)
- 		bio_endio(bio, -EIO);
- }
+ 	sector_t prev_first_sect, prev_size; /* previous meta location */
+-	sector_t la_size, u_size;
++	sector_t la_size_sect, u_size;
+ 	sector_t size;
+ 	char ppb[10];
  
--void __drbd_make_request(struct drbd_conf *mdev, struct bio *bio, unsigned long start_time)
-+/* returns the new drbd_request pointer, if the caller is expected to
-+ * drbd_send_and_submit() it (to save latency), or NULL if we queued the
-+ * request on the submitter thread.
-+ * Returns ERR_PTR(-ENOMEM) if we cannot allocate a drbd_request.
-+ */
-+struct drbd_request *
-+drbd_request_prepare(struct drbd_conf *mdev, struct bio *bio, unsigned long start_time)
+@@ -842,7 +842,7 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
+ 
+ 	prev_first_sect = drbd_md_first_sector(mdev->ldev);
+ 	prev_size = mdev->ldev->md.md_size_sect;
+-	la_size = mdev->ldev->md.la_size_sect;
++	la_size_sect = mdev->ldev->md.la_size_sect;
+ 
+ 	/* TODO: should only be some assert here, not (re)init... */
+ 	drbd_md_set_sector_offsets(mdev, mdev->ldev);
+@@ -878,7 +878,7 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
+ 	if (rv == dev_size_error)
+ 		goto out;
+ 
+-	la_size_changed = (la_size != mdev->ldev->md.la_size_sect);
++	la_size_changed = (la_size_sect != mdev->ldev->md.la_size_sect);
+ 
+ 	md_moved = prev_first_sect != drbd_md_first_sector(mdev->ldev)
+ 		|| prev_size	   != mdev->ldev->md.md_size_sect;
+@@ -900,9 +900,9 @@ enum determine_dev_size drbd_determine_dev_size(struct drbd_conf *mdev, enum dds
+ 		drbd_md_mark_dirty(mdev);
+ 	}
+ 
+-	if (size > la_size)
++	if (size > la_size_sect)
+ 		rv = grew;
+-	if (size < la_size)
++	if (size < la_size_sect)
+ 		rv = shrunk;
+ out:
+ 	lc_unlock(mdev->act_log);
+@@ -917,7 +917,7 @@ drbd_new_dev_size(struct drbd_conf *mdev, struct drbd_backing_dev *bdev,
+ 		  sector_t u_size, int assume_peer_has_space)
  {
--	const int rw = bio_rw(bio);
--	struct bio_and_error m = { NULL, };
-+	const int rw = bio_data_dir(bio);
- 	struct drbd_request *req;
--	bool no_remote = false;
+ 	sector_t p_size = mdev->p_size;   /* partner's disk size. */
+-	sector_t la_size = bdev->md.la_size_sect; /* last agreed size. */
++	sector_t la_size_sect = bdev->md.la_size_sect; /* last agreed size. */
+ 	sector_t m_size; /* my size */
+ 	sector_t size = 0;
  
- 	/* allocate outside of all locks; */
- 	req = drbd_req_new(mdev, bio);
-@@ -1035,7 +1039,7 @@ void __drbd_make_request(struct drbd_conf *mdev, struct bio *bio, unsigned long
- 		 * if user cannot handle io errors, that's not our business. */
- 		dev_err(DEV, "could not kmalloc() req\n");
- 		bio_endio(bio, -ENOMEM);
--		return;
-+		return ERR_PTR(-ENOMEM);
- 	}
- 	req->start_time = start_time;
+@@ -931,8 +931,8 @@ drbd_new_dev_size(struct drbd_conf *mdev, struct drbd_backing_dev *bdev,
+ 	if (p_size && m_size) {
+ 		size = min_t(sector_t, p_size, m_size);
+ 	} else {
+-		if (la_size) {
+-			size = la_size;
++		if (la_size_sect) {
++			size = la_size_sect;
+ 			if (m_size && m_size < size)
+ 				size = m_size;
+ 			if (p_size && p_size < size)
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index a9eccfc..8172a2c 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -3992,7 +3992,7 @@ static int receive_state(struct drbd_tconn *tconn, struct packet_info *pi)
  
-@@ -1057,6 +1061,15 @@ void __drbd_make_request(struct drbd_conf *mdev, struct bio *bio, unsigned long
- 		drbd_al_begin_io(mdev, &req->i, true);
- 	}
+ 	clear_bit(DISCARD_MY_DATA, &mdev->flags);
  
-+	return req;
-+}
-+
-+static void drbd_send_and_submit(struct drbd_conf *mdev, struct drbd_request *req)
-+{
-+	const int rw = bio_rw(req->master_bio);
-+	struct bio_and_error m = { NULL, };
-+	bool no_remote = false;
-+
- 	spin_lock_irq(&mdev->tconn->req_lock);
- 	if (rw == WRITE) {
- 		/* This may temporarily give up the req_lock,
-@@ -1079,7 +1092,7 @@ void __drbd_make_request(struct drbd_conf *mdev, struct bio *bio, unsigned long
- 	}
+-	drbd_md_sync(mdev); /* update connected indicator, la_size, ... */
++	drbd_md_sync(mdev); /* update connected indicator, la_size_sect, ... */
  
- 	/* Update disk stats */
--	_drbd_start_io_acct(mdev, req, bio);
-+	_drbd_start_io_acct(mdev, req);
- 
- 	/* We fail READ/READA early, if we can not serve it.
- 	 * We must do this before req is registered on any lists.
-@@ -1137,7 +1150,14 @@ out:
- 
- 	if (m.bio)
- 		complete_master_bio(mdev, &m);
--	return;
-+}
-+
-+void __drbd_make_request(struct drbd_conf *mdev, struct bio *bio, unsigned long start_time)
-+{
-+	struct drbd_request *req = drbd_request_prepare(mdev, bio, start_time);
-+	if (IS_ERR_OR_NULL(req))
-+		return;
-+	drbd_send_and_submit(mdev, req);
+ 	return 0;
  }
- 
- void drbd_make_request(struct request_queue *q, struct bio *bio)
 -- 
 1.7.9.5
 
