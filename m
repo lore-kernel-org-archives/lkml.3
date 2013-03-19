@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab3CSOrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:47:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34285 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320Ab3CSOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:47:12 -0400
-Date: Tue, 19 Mar 2013 16:46:49 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <manjunath.goudar@linaro.org>
-Subject: Re: USB: simplify clock lookup for mv ehci/otg/udc
-Message-ID: <20130319144649.GA21922@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <2174936.bGhG5fu0iO@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-In-Reply-To: <2174936.bGhG5fu0iO@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756800Ab3CSOr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:47:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2402 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab3CSOry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:47:54 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=s5RgfaFXP7gA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=vcfcUXAzZI4A:10 a=dTCI8YJIh58n20LNyLQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363704473.5938.25.camel@gandalf.local.home>
+Subject: Re: [PATCH 5/9] perf util: Handle failure case in trace_report()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Tue, 19 Mar 2013 10:47:53 -0400
+In-Reply-To: <1363683224-28804-6-git-send-email-namhyung@kernel.org>
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+	 <1363683224-28804-6-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
 
-Hi,
+> @@ -3100,7 +3105,7 @@ int perf_event__process_tracing_data(union perf_event *event,
+>  		}
+>  	}
+>  
+> -	if (size_read + padding != size) {
+> +	if (size_read + padding != size || session->pevent == NULL) {
+>  		pr_err("%s: tracing data size mismatch", __func__);
 
-On Tue, Mar 19, 2013 at 02:44:46PM +0100, Arnd Bergmann wrote:
-> While going over the suggested changes for the ehci-mv separation patch,
-> we noticed that the driver uses a variable number of clock names it gets
-> passed from the platform code, which is highly unusual behavior and adds
-> a lot of extra complexity.
->=20
-> Even though there is a comment in the mv_udc driver stating that some SoCs
-> require multiple clocks, none of the code in the upstream kernel provides
-> more than one, and even if an out of tree SoC port needs multiple clocks,
-> it is still wrong to pass them them through platform data, since they are
-> a property of the device, not a property of the platform.
->=20
-> This patch attempts to clean up the situation by turning the one clock
-> that is passed into the ehci/udc/otg devices into an anomymous one and
-> removing the clkname array from the platform data. Another simplification
-> is to always call clk_prepare_enable/clk_disable_unprepare directly,
-> since that is a valid operation on a NULL clk pointer if the platform
-> has not attacked a clk to the device.
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+This is a strange error to give when pevent is NULL. Could have been a
+malloc failure.
 
-needs to be rebased on my -next branch. Also, it would be really good if
-dependencies between drivers and arch code would be cut to a minimum.
 
---=20
-balbi
+>  		return -1;
+>  	}
+> diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+> index 7cb24635adf2..129362b97ca5 100644
+> --- a/tools/perf/util/trace-event-read.c
+> +++ b/tools/perf/util/trace-event-read.c
+> @@ -293,7 +293,10 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+>  	int show_version = 0;
+>  	int show_funcs = 0;
+>  	int show_printk = 0;
+> -	ssize_t size;
+> +	ssize_t size = -1;
+> +	struct pevent *pevent;
+> +
+> +	*ppevent = NULL;
+>  
+>  	calc_data_size = 1;
+>  	repipe = __repipe;
+> @@ -317,34 +320,38 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+>  	file_bigendian = buf[0];
+>  	host_bigendian = bigendian();
+>  
+> -	*ppevent = read_trace_init(file_bigendian, host_bigendian);
+> -	if (*ppevent == NULL)
+> -		die("read_trace_init failed");
+> +	pevent = read_trace_init(file_bigendian, host_bigendian);
+> +	if (pevent == NULL) {
 
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Shouldn't we still set *ppevent to NULL? Or will the user now need to
+make sure that its pevent is NULL and always check for error?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- Steve
 
-iQIcBAEBAgAGBQJRSHpYAAoJEIaOsuA1yqREVjIQAIxk8piafrXnuS2zb2EWeKUi
-61vNePsKMP0RvhGp8hvNgIc4cjA0keJwC9EfHT7asxYcUGVJsrmtEVF1+bW5AUu5
-ytmPqFTGRKDJelhFcC7iwWqQBEg9PESeuU1esnItxZvTbtqsgkg4cALvo94sC8ti
-FaIL39FP1pbSh3bG8Wp028SXmHl1Wjcwsxl2lk2aHXMUv4VdW7G989idH15JqRCe
-d9iq3FmtUVe2Jmdv5tSyJvbhgcRGsMCdFQ11vhg5wSYH7sbiInONUY9K9aPQgm38
-C87C3ibhuF44lBEDKzo4lDrKsuHhlHjpNckjBr7Jef40Zz0bAJQJwEJqiiu8JESv
-Nx9YruNO3tHZYVQp2SMY6bdvcklFAZcJnbck1lgkAVQGnSSscD294eR0WmndeWw5
-Xe94cTAquQoL6Cx66BbYHA4KKYeUN4mAZ50+OoHAGMovM0+ZBghMvu4088AzPyN5
-Xml9rn5IjzwBlAQGYgXhnR6+z/K36BWPv/s++e6YmOG9CfwUBgiSnEIAg8InWPry
-8ELRHE5X5Wt/2/mZNEOldeLbIAl3HqOpZb3Xie0RuwhhYP917MpBEbGz6dEBZE6m
-Vidxw4Wwwz1ZXnW6uTPArxE66IMe2JJdbmEFjBjEnymfbAZZ94LrTokiBcy3s4xi
-PQa4BLKrZCJn0DKHnq/D
-=VGoB
------END PGP SIGNATURE-----
 
---NzB8fVQJ5HfG6fxh--
+> +		pr_err("read_trace_init failed");
+> +		goto out;
+> +	}
+>  
+>  	read_or_die(buf, 1);
+>  	long_size = buf[0];
+>  
+> -	page_size = read4(*ppevent);
+> -
+> -	read_header_files(*ppevent);
+> +	page_size = read4(pevent);
+>  
+> -	read_ftrace_files(*ppevent);
+> -	read_event_files(*ppevent);
+> -	read_proc_kallsyms(*ppevent);
+> -	read_ftrace_printk(*ppevent);
+> +	read_header_files(pevent);
+> +	read_ftrace_files(pevent);
+> +	read_event_files(pevent);
+> +	read_proc_kallsyms(pevent);
+> +	read_ftrace_printk(pevent);
+>  
+>  	size = calc_data_size - 1;
+>  	calc_data_size = 0;
+>  	repipe = false;
+>  
+>  	if (show_funcs) {
+> -		pevent_print_funcs(*ppevent);
+> -		return size;
+> -	}
+> -	if (show_printk) {
+> -		pevent_print_printk(*ppevent);
+> -		return size;
+> +		pevent_print_funcs(pevent);
+> +	} else if (show_printk) {
+> +		pevent_print_printk(pevent);
+>  	}
+>  
+> +	*ppevent = pevent;
+> +	pevent = NULL;
+> +
+> +out:
+> +	if (pevent)
+> +		pevent_free(pevent);
+>  	return size;
+>  }
+
+
