@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab3CSKxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:53:03 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42902 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3CSKxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:53:01 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-serial@vger.kernel.org,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: 8250_dw: add support for clk api
-Date: Tue, 19 Mar 2013 11:52:49 +0100
-Message-Id: <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363689316-7847-2-git-send-email-maxime.ripard@free-electrons.com>
-References: <1363689316-7847-2-git-send-email-maxime.ripard@free-electrons.com>
+	id S1751144Ab3CSK5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:57:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44621 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3CSK5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 06:57:41 -0400
+Message-ID: <51484485.3090503@ti.com>
+Date: Tue, 19 Mar 2013 16:27:09 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, <mturquette@linaro.org>,
+        <arnd@arndb.de>, <akpm@linux-foundation.org>, <shawn.guo@linaro.org>,
+        <rob.herring@calxeda.com>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
+        <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 02/11] clk: davinci - add PSC clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-3-git-send-email-m-karicheri2@ti.com> <CACRpkdaNfv13xxHyA0p9M7oqRqb7j0J9gvyYvYhgCs7-z4ifhQ@mail.gmail.com>
+In-Reply-To: <CACRpkdaNfv13xxHyA0p9M7oqRqb7j0J9gvyYvYhgCs7-z4ifhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
+On 10/29/2012 12:54 AM, Linus Walleij wrote:
+> On Thu, Oct 25, 2012 at 6:11 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> 
+>> This is the driver for the Power Sleep Controller (PSC) hardware
+>> found on DM SoCs as well Keystone SoCs (c6x). This driver borrowed
+>> code from arch/arm/mach-davinci/psc.c and implemented the driver
+>> as per common clock provider API. The PSC module is responsible for
+>> enabling/disabling the Power Domain and Clock domain for different IPs
+>> present in the SoC. The driver is configured through the clock data
+>> passed to the driver through struct clk_psc_data.
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Here is some pedantic stuff if you're really bored:
+> 
+>> diff --git a/drivers/clk/davinci/clk-psc.c b/drivers/clk/davinci/clk-psc.c
+> (...)
+>> +               ptcmd = 1 << domain;
+> 
+> ptcmd = BIT(domain);
+> 
+>> +               pdctl = readl(psc_base + PDCTL + 4 * domain);
+>> +               pdctl |= 0x100;
+> 
+> pdctl |= BIT(8); /* and here a comment explaing what on earth that means */
 
-This commit implements support for using the clk api; this lets us use
-the "clocks" property with device tree, instead of having to use
-clock-frequency.
+It turns out this piece of code is superfluous and the exact same thing
+is being done again just down below.
 
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
----
- drivers/tty/serial/8250/8250_dw.c |   33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index db0e66f..3dedd24 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -26,6 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/acpi.h>
-+#include <linux/clk.h>
- 
- #include "8250.h"
- 
-@@ -55,8 +56,9 @@
- 
- 
- struct dw8250_data {
--	int	last_lcr;
--	int	line;
-+	int		last_lcr;
-+	int		line;
-+	struct clk	*clk;
- };
- 
- static void dw8250_serial_out(struct uart_port *p, int offset, int value)
-@@ -136,8 +138,13 @@ static int dw8250_probe_of(struct uart_port *p)
- 	if (!of_property_read_u32(np, "reg-shift", &val))
- 		p->regshift = val;
- 
-+	/* clock got configured through clk api, all done */
-+	if (p->uartclk)
-+		return 0;
-+
-+	/* try to find out clock frequency from DT as fallback */
- 	if (of_property_read_u32(np, "clock-frequency", &val)) {
--		dev_err(p->dev, "no clock-frequency property set\n");
-+		dev_err(p->dev, "clk or clock-frequency not defined\n");
- 		return -EINVAL;
- 	}
- 	p->uartclk = val;
-@@ -294,9 +301,20 @@ static int dw8250_probe(struct platform_device *pdev)
- 	if (!uart.port.membase)
- 		return -ENOMEM;
- 
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(data->clk)) {
-+		clk_prepare_enable(data->clk);
-+		uart.port.uartclk = clk_get_rate(data->clk);
-+	}
-+
- 	uart.port.iotype = UPIO_MEM;
- 	uart.port.serial_in = dw8250_serial_in;
- 	uart.port.serial_out = dw8250_serial_out;
-+	uart.port.private_data = data;
- 
- 	dw8250_setup_port(&uart);
- 
-@@ -312,12 +330,6 @@ static int dw8250_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--
--	uart.port.private_data = data;
--
- 	data->line = serial8250_register_8250_port(&uart);
- 	if (data->line < 0)
- 		return data->line;
-@@ -333,6 +345,9 @@ static int dw8250_remove(struct platform_device *pdev)
- 
- 	serial8250_unregister_port(data->line);
- 
-+	if (!IS_ERR(data->clk))
-+		clk_disable_unprepare(data->clk);
-+
- 	return 0;
- }
- 
--- 
-1.7.10.4
-
+Thanks,
+Sekhar
