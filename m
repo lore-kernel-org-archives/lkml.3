@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933510Ab3CSSay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:30:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab3CSSax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:30:53 -0400
-Date: Tue, 19 Mar 2013 15:30:43 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH v2] davinci: vpif: Fix module build for capture and
- display
-Message-ID: <20130319153043.23f7d127@redhat.com>
-In-Reply-To: <1362739747-4166-1-git-send-email-prabhakar.lad@ti.com>
-References: <1362739747-4166-1-git-send-email-prabhakar.lad@ti.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757345Ab3CSScr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:32:47 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:36947 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3CSSco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:32:44 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <20130319170324.GI21522@ZenIV.linux.org.uk>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+	<1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+	<1944.1363525619@warthog.procyon.org.uk>
+	<20130318153936.GB28508@quack.suse.cz>
+	<20130318215333.GE21522@ZenIV.linux.org.uk>
+	<20130318230103.GF21522@ZenIV.linux.org.uk>
+	<20130319013805.GG21522@ZenIV.linux.org.uk>
+	<CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
+	<20130319170324.GI21522@ZenIV.linux.org.uk>
+Date: Tue, 19 Mar 2013 19:32:42 +0100
+Message-ID: <CAJfpeguXYY4Ldbuq+1YXRhZZ_pPhnRzM=hU1qhK=YqCmzbjXLQ@mail.gmail.com>
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri,  8 Mar 2013 16:19:07 +0530
-Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
+On Tue, Mar 19, 2013 at 6:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Mar 19, 2013 at 11:29:41AM +0100, Miklos Szeredi wrote:
+>
+>> Copy up is a once-in-a-lifetime event for an object.  Optimizing it is
+>> way down in the list of things to do.  I'd drop splice in a jiffy if
+>> it's in the way.
+>
+> What makes you think that write is any better?  Same deadlock there - check
+> generic_file_aio_write(), it calls the same sb_start_write()...  IOW,
+> switching from splice to write won't help at all.
 
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> export the symbols which are used by two modules vpif_capture and
-> vpif_display.
-> 
-> This patch fixes following error:
-> ERROR: "ch_params" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-> ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-> ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-> ERROR: "ch_params" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-> ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-> ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> 
-> Reported-by: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  Changes for v2:
->  1: use EXPORT_SYMBOL_GPL instead of EXPORT_SYMBOL() as pointed by
->     Sekhar.
-> 
->  drivers/media/platform/davinci/vpif.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-> index 28638a8..42c7eba 100644
-> --- a/drivers/media/platform/davinci/vpif.c
-> +++ b/drivers/media/platform/davinci/vpif.c
-> @@ -44,6 +44,8 @@ static struct resource	*res;
->  spinlock_t vpif_lock;
->  
->  void __iomem *vpif_base;
-> +EXPORT_SYMBOL_GPL(vpif_base);
-> +
->  struct clk *vpif_clk;
->  
->  /**
-> @@ -220,8 +222,10 @@ const struct vpif_channel_config_params ch_params[] = {
->  		.stdid = V4L2_STD_625_50,
->  	},
->  };
-> +EXPORT_SYMBOL_GPL(ch_params);
+Okay, I missed that. Yeah, that needs fixing...
 
-Please don't use simple names like that. It would be very easy that some
-other driver could try to declare the same symbol. Instead, prefix it
-with the driver name (vpif_ch_params).
+>> Much more interesting question:  what happens if we crash during a
+>> rename?  Whiteout implemented in the filesystem won't save us.  And
+>> the results are interesting: old versions of files become visible and
+>> similar fun.  Far from likely to happen, but ...
+>>
+>> Add a rename-with-whiteout primitive on filesystems?  That one is not
+>> going to be as simple as plain whiteout.  Or?
+>
+> Umm...  If/when we start caring about that kind of atomicity (and I agree
+> that we ought to) overlayfs approach to whiteouts will actually have much
+> harder time - it doesn't take much to teach a journalling fs how to do that
+> kind of ->rename() in a single transaction; the only question is how to tell
+> it that we want to leave a whiteout behind us.  Hell knows; one variant is
+> to add a flag, of course.  Another might be more interesting - we want some
+> kind of "directory is opaque" flag, so if we start reshuffling the methods,
+> we might try to merge unlink/rmdir/whiteout.  Rules:
+>         * victim is negative => create a whiteout
+>         * victim is a directory, parent opaque => rmdir
+>         * victim is a non-directory, parent opaque => unlink
+>         * victim is positive, parent _not_ opaque => replace with whiteout
+>         * old_dir in case of ->rename() is opaque => normal rename
+>         * old_dir in case of ->rename() is not opaque => leave whiteout behind
+> Non-unioned => opaque, of course (nothing showing through it).
+>
 
->  
->  const unsigned int vpif_ch_params_count = ARRAY_SIZE(ch_params);
-> +EXPORT_SYMBOL_GPL(vpif_ch_params_count);
->  
->  static inline void vpif_wr_bit(u32 reg, u32 bit, u32 val)
->  {
+I dunnow.  Overloading common paths with overlay/union specific things
+doesn't look very clean to me.
 
-Regards,
-Mauro
+I have a similar problem with union-mounts: it's hooking into lots of
+common paths in the VFS for the sake of a very specialized feature.
+
+> Getting good behaviour on rename interrupted by crash is going to be _very_
+> tricky with any strategy other than whiteouts-in-fs, AFAICS.
+>
+
+One idea is to add a journal to the overlay itself (yeah, namespace issues).
+
+Thanks,
+Miklos
