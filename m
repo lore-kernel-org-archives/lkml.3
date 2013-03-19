@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab3CSRS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:18:27 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:44774 "EHLO
+	id S933442Ab3CSRSZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:18:25 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44782 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933369Ab3CSRRG (ORCPT
+	with ESMTP id S933372Ab3CSRRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Mar 2013 13:17:06 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, drbd-dev@lists.linbit.com,
         lars.ellenberg@linbit.com
-Subject: [PATCH 14/18] lru_cache: introduce lc_get_cumulative()
-Date: Tue, 19 Mar 2013 18:16:55 +0100
-Message-Id: <1363713419-17803-15-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 16/18] drbd: move start io accounting before activity log transaction
+Date: Tue, 19 Mar 2013 18:16:57 +0100
+Message-Id: <1363713419-17803-17-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
 References: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,132 +23,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-New helper to be able to consolidate more updates
-into a single transaction.
-Without this, we can only grab a single refcount
-on an updated element while preparing a transaction.
-
-lc_get_cumulative - like lc_get; also finds to-be-changed elements
-  @lc: the lru cache to operate on
-  @enr: the label to look up
-
-  Unlike lc_get this also returns the element for @enr, if it is belonging to
-  a pending transaction, so the return values are like for lc_get(),
-  plus:
-
-  pointer to an element already on the "to_be_changed" list.
-	  In this case, the cache was already marked %LC_DIRTY.
-
-  Caller needs to make sure that the pending transaction is completed,
-  before proceeding to actually use this element.
+The IO accounting of the drbd "queue depth" was misleading.
+We only started IO accounting once we already wrote the activity log.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- include/linux/lru_cache.h |    1 +
- lib/lru_cache.c           |   55 ++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 46 insertions(+), 10 deletions(-)
+ drivers/block/drbd/drbd_req.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/lru_cache.h b/include/linux/lru_cache.h
-index 4019013..4626228 100644
---- a/include/linux/lru_cache.h
-+++ b/include/linux/lru_cache.h
-@@ -256,6 +256,7 @@ extern void lc_destroy(struct lru_cache *lc);
- extern void lc_set(struct lru_cache *lc, unsigned int enr, int index);
- extern void lc_del(struct lru_cache *lc, struct lc_element *element);
- 
-+extern struct lc_element *lc_get_cumulative(struct lru_cache *lc, unsigned int enr);
- extern struct lc_element *lc_try_get(struct lru_cache *lc, unsigned int enr);
- extern struct lc_element *lc_find(struct lru_cache *lc, unsigned int enr);
- extern struct lc_element *lc_get(struct lru_cache *lc, unsigned int enr);
-diff --git a/lib/lru_cache.c b/lib/lru_cache.c
-index d71d894..e8d5003 100644
---- a/lib/lru_cache.c
-+++ b/lib/lru_cache.c
-@@ -366,7 +366,13 @@ static int lc_unused_element_available(struct lru_cache *lc)
- 	return 0;
- }
- 
--static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool may_change)
-+/* used as internal flags to __lc_get */
-+enum {
-+	LC_GET_MAY_CHANGE = 1,
-+	LC_GET_MAY_USE_UNCOMMITTED = 2,
-+};
-+
-+static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, unsigned int flags)
- {
- 	struct lc_element *e;
- 
-@@ -381,22 +387,31 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
- 	 * this enr is currently being pulled in already,
- 	 * and will be available once the pending transaction
- 	 * has been committed. */
--	if (e && e->lc_new_number == e->lc_number) {
-+	if (e) {
-+		if (e->lc_new_number != e->lc_number) {
-+			/* It has been found above, but on the "to_be_changed"
-+			 * list, not yet committed.  Don't pull it in twice,
-+			 * wait for the transaction, then try again...
-+			 */
-+			if (!(flags & LC_GET_MAY_USE_UNCOMMITTED))
-+				RETURN(NULL);
-+			/* ... unless the caller is aware of the implications,
-+			 * probably preparing a cumulative transaction. */
-+			++e->refcnt;
-+			++lc->hits;
-+			RETURN(e);
-+		}
-+		/* else: lc_new_number == lc_number; a real hit. */
- 		++lc->hits;
- 		if (e->refcnt++ == 0)
- 			lc->used++;
- 		list_move(&e->list, &lc->in_use); /* Not evictable... */
- 		RETURN(e);
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index b923d41..d72f2fe 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1056,6 +1056,9 @@ drbd_request_prepare(struct drbd_conf *mdev, struct bio *bio, unsigned long star
+ 		req->private_bio = NULL;
  	}
-+	/* e == NULL */
  
- 	++lc->misses;
--	if (!may_change)
--		RETURN(NULL);
--
--	/* It has been found above, but on the "to_be_changed" list, not yet
--	 * committed.  Don't pull it in twice, wait for the transaction, then
--	 * try again */
--	if (e)
-+	if (!(flags & LC_GET_MAY_CHANGE))
- 		RETURN(NULL);
- 
- 	/* To avoid races with lc_try_lock(), first, mark us dirty
-@@ -478,7 +493,27 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
-  */
- struct lc_element *lc_get(struct lru_cache *lc, unsigned int enr)
- {
--	return __lc_get(lc, enr, 1);
-+	return __lc_get(lc, enr, LC_GET_MAY_CHANGE);
-+}
++	/* Update disk stats */
++	_drbd_start_io_acct(mdev, req);
 +
-+/**
-+ * lc_get_cumulative - like lc_get; also finds to-be-changed elements
-+ * @lc: the lru cache to operate on
-+ * @enr: the label to look up
-+ *
-+ * Unlike lc_get this also returns the element for @enr, if it is belonging to
-+ * a pending transaction, so the return values are like for lc_get(),
-+ * plus:
-+ *
-+ * pointer to an element already on the "to_be_changed" list.
-+ * 	In this case, the cache was already marked %LC_DIRTY.
-+ *
-+ * Caller needs to make sure that the pending transaction is completed,
-+ * before proceeding to actually use this element.
-+ */
-+struct lc_element *lc_get_cumulative(struct lru_cache *lc, unsigned int enr)
-+{
-+	return __lc_get(lc, enr, LC_GET_MAY_CHANGE|LC_GET_MAY_USE_UNCOMMITTED);
- }
+ 	if (rw == WRITE && req->private_bio && req->i.size
+ 	&& !test_bit(AL_SUSPENDED, &mdev->flags)) {
+ 		if (!drbd_al_begin_io_fastpath(mdev, &req->i)) {
+@@ -1095,9 +1098,6 @@ static void drbd_send_and_submit(struct drbd_conf *mdev, struct drbd_request *re
+ 		goto out;
+ 	}
  
- /**
+-	/* Update disk stats */
+-	_drbd_start_io_acct(mdev, req);
+-
+ 	/* We fail READ/READA early, if we can not serve it.
+ 	 * We must do this before req is registered on any lists.
+ 	 * Otherwise, drbd_req_complete() will queue failed READ for retry. */
 -- 
 1.7.9.5
 
