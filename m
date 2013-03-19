@@ -1,57 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965092Ab3CSVna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:43:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59758 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933781Ab3CSVn3 (ORCPT
+	id S965108Ab3CSVnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:43:41 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:24614 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933781Ab3CSVni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:43:29 -0400
-Message-ID: <5148DBFE.3040402@wwwdotorg.org>
-Date: Tue, 19 Mar 2013 15:43:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Mar 2013 17:43:38 -0400
+Message-ID: <201303192143.r2JLhZIX020469@farm-0021.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 19 Mar 2013 17:35:58 -0400
+Subject: [PATCH] dynticks: avoid flow_cache_flush() interrupting every core
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: add table lookup to mux
-References: <1363113747-6572-1-git-send-email-pdeschrijver@nvidia.com> <513F79BA.7000608@wwwdotorg.org> <20130319213706.8663.87186@quantum>
-In-Reply-To: <20130319213706.8663.87186@quantum>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 03:37 PM, Mike Turquette wrote:
-> Quoting Stephen Warren (2013-03-12 11:53:46)
->> On 03/12/2013 12:42 PM, Peter De Schrijver wrote:
->>> Add a table lookup feature to the mux clock. Also allow arbitrary masks
->>> instead of the width. This will be used by some clocks on Tegra114. Also
->>> adapt the tegra periph clk because it uses struct clk_mux directly.
->>>
->>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
->>>
->>> --
->>> Mike,
->>>
->>> This is the same patch I posted before which implements a table lookup
->>> feature for the mux clock. I squashed both the changes to clk-mux.c and
->>> tegra/clk.h together in order to make the patch bisectable.
->>
->> For the record in this thread, this is a dependency of the Tegra114
->> clock driver. Can this patch be added to a stable branch in the clk or
->> arm-soc trees, which I can merge before applying the Tegra114 clock
->> driver? Thanks.
-> 
-> Yes.  I don't have an immutable branch today, but I will have one by
-> -rc4.  It will be named clk-for-3.10.
+Previously, if you did an "ifconfig down" or similar on one core, and
+the kernel had CONFIG_XFRM enabled, every core would be interrupted to
+check its percpu flow list for items that could be garbage collected.
 
-Perhaps this series could be merged into an immutable topic branch of
-its own. That could then be merged into your clk-for-3.10, and Tegra's
-branch, and reduce the number of commits that get merged into the Tegra
-tree from outside?
+With this change, we generate a mask of cores that actually have any
+percpu items, and only interrupt those cores.  When we are trying to
+isolate a set of cpus from interrupts, this is important to do.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+This change stands alone so could be taken into the net tree if
+desired, but it is most useful in the context of Frederic Weisbecker's
+linux-dynticks work.  So it could be taken up through either tree,
+but it certainly needs sign-off from someone familiar with net/core/flow.c.
+
+ net/core/flow.c |   42 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/net/core/flow.c b/net/core/flow.c
+index c56ea6f..7fae135 100644
+--- a/net/core/flow.c
++++ b/net/core/flow.c
+@@ -323,6 +323,24 @@ static void flow_cache_flush_tasklet(unsigned long data)
+ 		complete(&info->completion);
+ }
+ 
++/*
++ * Return whether a cpu needs flushing.  Conservatively, we assume
++ * the presence of any entries means the core may require flushing,
++ * since the flow_cache_ops.check() function may assume it's running
++ * on the same core as the per-cpu cache component.
++ */
++static int flow_cache_percpu_empty(struct flow_cache *fc, int cpu)
++{
++	struct flow_cache_percpu *fcp;
++	int i;
++
++	fcp = &per_cpu(*fc->percpu, cpu);
++	for (i = 0; i < flow_cache_hash_size(fc); i++)
++		if (!hlist_empty(&fcp->hash_table[i]))
++			return 0;
++	return 1;
++}
++
+ static void flow_cache_flush_per_cpu(void *data)
+ {
+ 	struct flow_flush_info *info = data;
+@@ -337,22 +355,40 @@ void flow_cache_flush(void)
+ {
+ 	struct flow_flush_info info;
+ 	static DEFINE_MUTEX(flow_flush_sem);
++	cpumask_var_t mask;
++	int i, self;
++
++	/* Track which cpus need flushing to avoid disturbing all cores. */
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		return;
++	cpumask_clear(mask);
+ 
+ 	/* Don't want cpus going down or up during this. */
+ 	get_online_cpus();
+ 	mutex_lock(&flow_flush_sem);
+ 	info.cache = &flow_cache_global;
+-	atomic_set(&info.cpuleft, num_online_cpus());
++	for_each_online_cpu(i)
++		if (!flow_cache_percpu_empty(info.cache, i))
++			cpumask_set_cpu(i, mask);
++	atomic_set(&info.cpuleft, cpumask_weight(mask));
++	if (atomic_read(&info.cpuleft) == 0)
++		goto done;
++
+ 	init_completion(&info.completion);
+ 
+ 	local_bh_disable();
+-	smp_call_function(flow_cache_flush_per_cpu, &info, 0);
+-	flow_cache_flush_tasklet((unsigned long)&info);
++	self = cpumask_test_and_clear_cpu(smp_processor_id(), mask);
++	on_each_cpu_mask(mask, flow_cache_flush_per_cpu, &info, 0);
++	if (self)
++		flow_cache_flush_tasklet((unsigned long)&info);
+ 	local_bh_enable();
+ 
+ 	wait_for_completion(&info.completion);
++
++done:
+ 	mutex_unlock(&flow_flush_sem);
+ 	put_online_cpus();
++	free_cpumask_var(mask);
+ }
+ 
+ static void flow_cache_flush_task(struct work_struct *work)
+-- 
+1.7.10.3
+
