@@ -1,211 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965057Ab3CSVjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:39:18 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:45726 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933797Ab3CSVjQ (ORCPT
+	id S965064Ab3CSVl5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:41:57 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:12556
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933741Ab3CSVlz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:39:16 -0400
-Message-ID: <5148B0CB.4020605@free-electrons.com>
-Date: Tue, 19 Mar 2013 19:39:07 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Mar 2013 17:41:55 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>
+Subject: RE: [PATCH V2 1/3]  mm: Export split_page()
+Thread-Topic: [PATCH V2 1/3]  mm: Export split_page()
+Thread-Index: AQHOJBZDnHfz24Hs5E6pg/ppxgF85pitD6GAgAB8eHA=
+Date: Tue, 19 Mar 2013 21:39:46 +0000
+Message-ID: <3c47db9f28b944f985e8050d41334193@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
+ <1363639898-1615-1-git-send-email-kys@microsoft.com>
+ <20130319141317.GI7869@dhcp22.suse.cz>
+In-Reply-To: <20130319141317.GI7869@dhcp22.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Florian Fainelli <florian@openwrt.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, Stefan Roese <sr@denx.de>,
-        kevin@allwinnertech.com
-Subject: Re: [PATCH 1/5] net: Add davicom wemac ethernet driver found on Allwinner
- A10 SoC's
-References: <1363380605-6577-1-git-send-email-maxime.ripard@free-electrons.com> <1363380605-6577-2-git-send-email-maxime.ripard@free-electrons.com> <201303161541.37341.florian@openwrt.org>
-In-Reply-To: <201303161541.37341.florian@openwrt.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377424002)(377454001)(51704002)(13464002)(189002)(199002)(24454001)(5343655001)(15202345001)(47446002)(46406002)(54316002)(33646001)(65816001)(69226001)(80022001)(6806001)(23726001)(47776003)(47976001)(74662001)(4396001)(46102001)(31966008)(56776001)(50466001)(5343635001)(50986001)(47736001)(54356001)(51856001)(20776003)(74502001)(79102001)(76482001)(77982001)(59766001)(53806001)(66066001)(49866001)(56816002)(16676001)(63696002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB018;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0790FB1F33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
 
-Le 16/03/2013 15:41, Florian Fainelli a écrit :
-> Hello Maxime, Stefan,
+
+> -----Original Message-----
+> From: Michal Hocko [mailto:mhocko@suse.cz]
+> Sent: Tuesday, March 19, 2013 10:13 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com
+> Subject: Re: [PATCH V2 1/3] mm: Export split_page()
 > 
-> Please find below some comments regarding your PHY implementation in the driver 
-> as well as the transmit and transmit completion routines.
-
-Stefan implemented the changes you asked about the PHY, it will be in
-the next iteration of this patchset.
-
-On a general basis, we don't really know much about this chip, since
-we're working without any datasheet on this.
-
+> On Mon 18-03-13 13:51:36, K. Y. Srinivasan wrote:
+> > This symbol would be used in the Hyper-V balloon driver to support 2M
+> > allocations.
+> >
+> > In this version of the patch, based on feedback from Michal Hocko
+> > <mhocko@suse.cz>, I have updated the patch description.
 > 
->> +#define WEMAC_PHY		0x100	/* PHY address 0x01 */
+> I guess this part is not necessary ;)
 > 
-> This should be made configurable if possible.
-
-Ok
-
->> +	unsigned		power_gpio;
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 > 
-> you could make this an int, so that you use gpio_is_valid() on this one.
+> Anyway
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Alexander Shiyan suggested to move to the regulator API, so I guess we
-will just remove that variable.
+Greg,
 
->> +
->> +static void wemac_dumpblk_32bit(void __iomem *reg, int count)
->> +{
->> +	int i;
->> +	int tmp;
->> +
->> +	for (i = 0; i < (round_up(count, 4) / 4); i++)
->> +		tmp = readl(reg);
->> +}
+Would you be taking this patch through your tree?
+
+Regards,
+
+K. Y
 > 
-> This could probably be removed, tmp is a write only location, did you remove 
-> the variable printing that came along this?
-
-Hmmm, it looks that way yes. I'll remove it
-
->> +
->> +static int wemac_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
->> +{
->> +	struct wemac_board_info *dm = to_wemac_board(dev);
->> +
->> +	if (!netif_running(dev))
->> +		return -EINVAL;
->> +
->> +	return generic_mii_ioctl(&dm->mii, if_mii(req), cmd, NULL);
->> +}
->> +
->> +/* ethtool ops */
->> +static void wemac_get_drvinfo(struct net_device *dev,
->> +			      struct ethtool_drvinfo *info)
->> +{
->> +	strcpy(info->driver, DRV_NAME);
->> +	strcpy(info->version, DRV_VERSION);
+> > ---
+> >  mm/page_alloc.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 6cacfee..7e0ead6 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int order)
+> >  	for (i = 1; i < (1 << order); i++)
+> >  		set_page_refcounted(page + i);
+> >  }
+> > +EXPORT_SYMBOL_GPL(split_page);
+> >
+> >  static int __isolate_free_page(struct page *page, unsigned int order)
+> >  {
+> > --
+> > 1.7.4.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> You should use strlcpy() here to ensure null-termination, and you should also 
-> fill in the bus_info member of struct ethtool_drvinfo.
-
-ok, will do.
-
->> +	/* Init Driver variable */
->> +	db->tx_fifo_stat = 0;
->> +	dev->trans_start = 0;
+> --
+> Michal Hocko
+> SUSE Labs
 > 
-> I do not think this is required you are supposed to update this field only in 
-> the receive path.
 
-Ok, I'll remove that part.
 
->> +
->> +	channel = (channel == 1 ? 1 : 0);
->> +
->> +	spin_lock_irqsave(&db->lock, flags);
->> +
->> +	writel(channel, db->membase + EMAC_TX_INS_REG);
->> +
->> +	wemac_outblk_32bit(db->membase + EMAC_TX_IO_DATA_REG,
->> +			skb->data, skb->len);
->> +	dev->stats.tx_bytes += skb->len;
->> +
->> +	db->tx_fifo_stat |= 1 << channel;
->> +	/* TX control: First packet immediately send, second packet queue */
->> +	if (channel == 0) {
->> +		/* set TX len */
->> +		writel(skb->len, db->membase + EMAC_TX_PL0_REG);
->> +		/* start translate from fifo to phy */
->> +		writel(readl(db->membase + EMAC_TX_CTL0_REG) | 1,
->> +		       db->membase + EMAC_TX_CTL0_REG);
-> 
-> Do not you need some write barrier here to ensure your descriptor address and 
-> control are properly written before the EMAC will see these?
-
-writel has a write barrier, so it shouldn't be a problem I guess.
-
-> 
->> +
->> +		/* save the time stamp */
->> +		dev->trans_start = jiffies;
->> +	} else if (channel == 1) {
->> +		/* set TX len */
->> +		writel(skb->len, db->membase + EMAC_TX_PL1_REG);
->> +		/* start translate from fifo to phy */
->> +		writel(readl(db->membase + EMAC_TX_CTL1_REG) | 1,
->> +		       db->membase + EMAC_TX_CTL1_REG);
->> +
->> +		/* save the time stamp */
->> +		dev->trans_start = jiffies;
->> +	}
->> +
->> +	if ((db->tx_fifo_stat & 3) == 3) {
->> +		/* Second packet */
->> +		netif_stop_queue(dev);
-> 
-> Why is that required? Does that mean that your EMAC can only transmit one 
-> packet at a time?
-
-The original driver was working that way, so the hardware can probably
-send several packet at a time, but we don't really know how...
-
->> +static void wemac_tx_done(struct net_device *dev, struct wemac_board_info
->> *db, +			  unsigned int tx_status)
->> +{
->> +	/* One packet sent complete */
->> +	db->tx_fifo_stat &= ~(tx_status & 3);
->> +	if (3 == (tx_status & 3))
->> +		dev->stats.tx_packets += 2;
->> +	else
->> +		dev->stats.tx_packets++;
->> +
->> +	if (netif_msg_tx_done(db))
->> +		dev_dbg(db->dev, "tx done, NSR %02x\n", tx_status);
->> +
->> +	netif_wake_queue(dev);
-> 
-> Why is that also required? According to your start_xmit function you should do 
-> this only when you have transmitted 2 packets no?
-
-I don't know, maybe the code here is more about always having a buffer
-of one packet at any point in time. With the current code, when you have
-to send packets, it will:
-  - send the packet 1
-  - stop the queue
-  - wait for the packet 1 to be sent
-  - once packet 1 is sent, restart the queue, so that it can load a
-    packet 3
-  - start transmitting packet 2 if there's one, and loop, or just wait
-    for it
-
-Which would make sense, and for this, it looks to me that you should
-always restart the queue, no matter what the number of packets to send was.
-
->> +
->> +		reg_val = readl(db->membase + EMAC_RX_IO_DATA_REG);
->> +		if (netif_msg_rx_status(db))
->> +			dev_dbg(db->dev, "receive header: %x\n", reg_val);
->> +		if (reg_val != 0x0143414d) {
-> 
-> Where is that magic value coming from?
-
-The original code.
-
-Maybe I should define it to something like "UNDOCUMENTED_VOODOO_MAGIC1",
-or something like that, but I have no idea what it relates to in the
-hardware :S
-
-Thanks for your review,
-Maxime
-
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
