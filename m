@@ -1,158 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3CSO4D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:56:03 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56882 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab3CSO4A (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 19 Mar 2013 10:56:00 -0400
-Message-Id: <51488A8C02000078000C6C20@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 19 Mar 2013 14:55:56 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Roger Pau Monne" <roger.pau@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/5] xen-blkback: don't store
- dev_bus_addr
-References: <1363625376-35612-1-git-send-email-roger.pau@citrix.com>
- <1363625376-35612-2-git-send-email-roger.pau@citrix.com>
- <20130319143217.GC32432@phenom.dumpdata.com>
-In-Reply-To: <20130319143217.GC32432@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S932285Ab3CSO4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:56:09 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:58696 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756233Ab3CSO4F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:56:05 -0400
+Date: Tue, 19 Mar 2013 10:56:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Julius Werner <jwerner@chromium.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Lan Tianyu <tianyu.lan@intel.com>,
+        Sameer Nanda <snanda@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>
+Subject: Re: [PATCH] usb: Make USB persist default configurable
+In-Reply-To: <20130319000656.GC6516@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1303191044150.15684-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.03.13 at 15:32, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Mon, Mar 18, 2013 at 05:49:32PM +0100, Roger Pau Monne wrote:
->> dev_bus_addr returned in the grant ref map operation is the mfn of the
->> passed page, there's no need to store it in the persistent grant
->> entry, since we can always get it provided that we have the page.
->> 
->> This reduces the memory overhead of persistent grants in blkback.
+On Mon, 18 Mar 2013, Greg Kroah-Hartman wrote:
+
+> On Mon, Mar 18, 2013 at 05:02:19PM -0700, Julius Werner wrote:
+> > > Why can't you just revert this in userspace?  Isn't that easier than
+> > > doing a kernel patch and providing an option that we need to now
+> > > maintain for pretty much forever?
+> > 
+> > I could solve it in userspace, but that really feels like a hacky
+> > workaround and not a long term solution. It would mean that every new
+> > device starts with persist enabled and stays that way for a few
+> > milliseconds (maybe up to seconds if it's connected on boot), until
+> > userspace gets around to disable it again... opening the possibility
+> > for very weird race conditions and bugs with drivers/devices that
+> > don't work with persist.
 > 
-> I took this patch, but I redid it a bit:
+> What drivers/devices don't work with persist?  We need to know that now,
+> otherwise all other distros and users have problems, right?
 > 
-> commit 1d4cb410befdb8b373c6fad604b39e0200e0bee0
-> Author: Roger Pau Monne <roger.pau@citrix.com>
-> Date:   Mon Mar 18 17:49:32 2013 +0100
+> > This default is a policy that really resides in the kernel, it has
+> > changed in the past, and since there is no definitive better choice
+> > for all cases I thought making it configurable is the right thing to
+> > do.
 > 
->     xen-blkback: don't store dev_bus_addr
->     
->     dev_bus_addr returned in the grant ref map operation is the mfn of the
->     passed page, there's no need to store it in the persistent grant
->     entry, since we can always get it provided that we have the page.
->     
->     This reduces the memory overhead of persistent grants in blkback.
->     
->     While at it, rename the 'seg[i].buf' to be 'seg[i].offset' as
->     it makes much more sense - as we use that value in bio_add_page
->     which as the fourth argument expects the offset.
->     
->     We hadn't used the physical address as part of this at all.
->     
->     Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
->     Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Cc: xen-devel@lists.xen.org 
->     [v1: s/buf/offset/]
->     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Too many options can be a bad thing.
 > 
-> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> index 2cf8381..061c202 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -442,7 +442,7 @@ int xen_blkif_schedule(void *arg)
->  }
->  
->  struct seg_buf {
-> -	unsigned long buf;
-> +	unsigned long offset;
+> I think Alan made this a "always on" option, so I'd like to get his
+> opinion on it.  Alan?
 
-If you touch this anyway, why don't you reduce the type to
-"unsigned int", halving the overall structure size?
+Originally the "persist" attribute defaulted to "off".  Linus disliked 
+this (at least, he disliked it for mass-storage devices) and so at his 
+request the default was changed to "on".  There didn't seem to be any 
+reason to treat other devices differently from mass-storage devices; 
+consequently the default is now "on" for everything.
 
-Even more, the field seems pointless to me altogether, since ...
+Julius's commit message mentions the disadvantage of "persist": Resume
+times can be increased.  But it doesn't mention the chief advantage:  
+Filesystems stored on USB devices are much less likely to be lost
+across suspends.
 
->  	unsigned int nsec;
->  };
->  /*
-> @@ -621,30 +621,21 @@ static int xen_blkbk_map(struct blkif_request *req,
->  				 * If this is a new persistent grant
->  				 * save the handler
->  				 */
-> -				persistent_gnts[i]->handle = map[j].handle;
-> -				persistent_gnts[i]->dev_bus_addr =
-> -					map[j++].dev_bus_addr;
-> +				persistent_gnts[i]->handle = map[j++].handle;
->  			}
->  			pending_handle(pending_req, i) =
->  				persistent_gnts[i]->handle;
->  
->  			if (ret)
->  				continue;
-> -
-> -			seg[i].buf = persistent_gnts[i]->dev_bus_addr |
-> -				(req->u.rw.seg[i].first_sect << 9);
->  		} else {
-> -			pending_handle(pending_req, i) = map[j].handle;
-> +			pending_handle(pending_req, i) = map[j++].handle;
->  			bitmap_set(pending_req->unmap_seg, i, 1);
->  
-> -			if (ret) {
-> -				j++;
-> +			if (ret)
->  				continue;
-> -			}
-> -
-> -			seg[i].buf = map[j++].dev_bus_addr |
-> -				(req->u.rw.seg[i].first_sect << 9);
->  		}
-> +		seg[i].offset = (req->u.rw.seg[i].first_sect << 9);
+The races mentioned above don't seem to be very dangerous.  How likely
+is it that the system will be suspended within a few milliseconds of
+probing a new USB device?
 
-... this uses "i" as index on both sides, so ...
+As for buggy devices and drivers that can't handle persist, we have
+better ways of dealing with them.  Buggy devices can get a quirk flag
+(USB_QUIRK_RESET).  Buggy drivers should be fixed.
 
->  	}
->  	return ret;
->  }
-> @@ -971,7 +962,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  		       (bio_add_page(bio,
->  				     pages[i],
->  				     seg[i].nsec << 9,
-> -				     seg[i].buf & ~PAGE_MASK) == 0)) {
-> +				     seg[i].offset & ~PAGE_MASK) == 0)) {
-
-... this one could as well use the original field.
-
-And the masking with ~PAGE_MASK is not pointless in any case.
-
-Jan
-
->  
->  			bio = bio_alloc(GFP_KERNEL, nseg-i);
->  			if (unlikely(bio == NULL))
-> diff --git a/drivers/block/xen-blkback/common.h 
-> b/drivers/block/xen-blkback/common.h
-> index da78346..60103e2 100644
-> --- a/drivers/block/xen-blkback/common.h
-> +++ b/drivers/block/xen-blkback/common.h
-> @@ -187,7 +187,6 @@ struct persistent_gnt {
->  	struct page *page;
->  	grant_ref_t gnt;
->  	grant_handle_t handle;
-> -	uint64_t dev_bus_addr;
->  	struct rb_node node;
->  };
->  
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
-
+Alan Stern
 
