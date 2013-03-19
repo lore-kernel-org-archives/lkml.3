@@ -1,77 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab3CSPud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:50:33 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:62849 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab3CSPub (ORCPT
+	id S932773Ab3CSPvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:51:32 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:61491 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab3CSPvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:50:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130319023440.GA12425@aaronlu.sh.intel.com>
-References: <20130319023440.GA12425@aaronlu.sh.intel.com>
-Date: Tue, 19 Mar 2013 08:50:30 -0700
-Message-ID: <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
-Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
-From: Luigi Semenzato <semenzato@google.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Peter <peterasplund@gentoo.se>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Mar 2013 11:51:31 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Subject: [PATCH] x86: let userspace inject interrupts into the local APIC
+Date: Tue, 19 Mar 2013 16:51:13 +0100
+Message-Id: <1363708273-19653-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error 62 is ETIME.  The driver is timing out during a tpm_send,
-possibly trying to send the Tpm_SaveState command.
+There is no way for userspace to inject interrupts into a VCPU's
+local APIC, which is important in order to inject INITs coming from
+the chipset.  KVM_INTERRUPT is currently disabled when the in-kernel
+local APIC is used, so we can repurpose it.  The shorthand destination
+field must contain APIC_DEST_SELF, which has a double effect: first,
+the ICR2 register is not used and the 32-bit field of KVM_INTERRUPT is
+enough; second, it ensures that the valid range of the irq field is
+distinct in the userspace-APIC and kernel-APIC cases.
 
-It may be that you cannot talk to the TPM at all.  Have you tried
-sending messages to the TPM before suspending?
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ Documentation/virtual/kvm/api.txt | 13 ++++++++++---
+ arch/x86/kvm/lapic.c              | 20 +++++++++++++++-----
+ arch/x86/kvm/lapic.h              |  1 +
+ arch/x86/kvm/x86.c                |  6 +++---
+ 4 files changed, 29 insertions(+), 11 deletions(-)
 
-Are there any other tpm entries in the syslog?  Like at boot?
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index 4237c27..a69706b 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -396,8 +396,8 @@ Type: vcpu ioctl
+ Parameters: struct kvm_interrupt (in)
+ Returns: 0 on success, -1 on error
+ 
+-Queues a hardware interrupt vector to be injected.  This is only
+-useful if in-kernel local APIC or equivalent is not used.
++Queues a hardware interrupt vector to be injected into either the VCPU
++or into the in-kernel local APIC or equivalent (if in use).
+ 
+ /* for KVM_INTERRUPT */
+ struct kvm_interrupt {
+@@ -407,7 +407,14 @@ struct kvm_interrupt {
+ 
+ X86:
+ 
+-Note 'irq' is an interrupt vector, not an interrupt pin or line.
++If the in-kernel local APIC is enabled, 'irq' is sent to the local APIC
++as if it were written to the ICR register, except that it is not reflected
++into ICR if the guest reads it.  The destination (bits 18 and 19) must be
++set to APIC_DEST_SELF.
++
++If the in-kernel local APIC is disabled, 'irq' is an interrupt vector (not
++an interrupt pin or line) that is injected synchronously into the VCPU.
++
+ 
+ PPC:
+ 
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index a8e9369..efb67f7 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -826,12 +826,9 @@ void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector)
+ }
+ EXPORT_SYMBOL_GPL(kvm_apic_set_eoi_accelerated);
+ 
+-static void apic_send_ipi(struct kvm_lapic *apic)
++static void apic_send_ipi(struct kvm_lapic *apic, u32 icr_low, u32 icr_high)
+ {
+-	u32 icr_low = kvm_apic_get_reg(apic, APIC_ICR);
+-	u32 icr_high = kvm_apic_get_reg(apic, APIC_ICR2);
+ 	struct kvm_lapic_irq irq;
+-
+ 	irq.vector = icr_low & APIC_VECTOR_MASK;
+ 	irq.delivery_mode = icr_low & APIC_MODE_MASK;
+ 	irq.dest_mode = icr_low & APIC_DEST_MASK;
+@@ -855,6 +852,16 @@ static void apic_send_ipi(struct kvm_lapic *apic)
+ 	kvm_irq_delivery_to_apic(apic->vcpu->kvm, apic, &irq);
+ }
+ 
++int kvm_lapic_ioctl_interrupt(struct kvm_vcpu *vcpu, u32 value)
++{
++	if ((value & APIC_SHORT_MASK) != APIC_DEST_SELF)
++		return -EINVAL;
++
++	apic_send_ipi(vcpu->arch.apic, value, 0);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_lapic_ioctl_interrupt);
++
+ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+ {
+ 	ktime_t remaining;
+@@ -1155,7 +1162,10 @@ static int apic_reg_write(struct kvm_lapic *apic, u32 reg, u32 val)
+ 	case APIC_ICR:
+ 		/* No delay here, so we always clear the pending bit */
+ 		apic_set_reg(apic, APIC_ICR, val & ~(1 << 12));
+-		apic_send_ipi(apic);
++		apic_send_ipi(apic,
++			      kvm_apic_get_reg(apic, APIC_ICR),
++			      kvm_apic_get_reg(apic, APIC_ICR2));
++
+ 		break;
+ 
+ 	case APIC_ICR2:
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 2c721b9..0631b5c 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -49,6 +49,7 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu);
+ u64 kvm_lapic_get_cr8(struct kvm_vcpu *vcpu);
+ void kvm_lapic_set_tpr(struct kvm_vcpu *vcpu, unsigned long cr8);
+ void kvm_lapic_set_eoi(struct kvm_vcpu *vcpu);
++int kvm_lapic_ioctl_interrupt(struct kvm_vcpu *vcpu, u32 value);
+ void kvm_lapic_set_base(struct kvm_vcpu *vcpu, u64 value);
+ u64 kvm_lapic_get_base(struct kvm_vcpu *vcpu);
+ void kvm_apic_set_version(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 3e0a8ba..ab4a401 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2703,11 +2703,11 @@ static int kvm_vcpu_ioctl_set_lapic(struct kvm_vcpu *vcpu,
+ static int kvm_vcpu_ioctl_interrupt(struct kvm_vcpu *vcpu,
+ 				    struct kvm_interrupt *irq)
+ {
+-	if (irq->irq >= KVM_NR_INTERRUPTS)
+-		return -EINVAL;
+ 	if (irqchip_in_kernel(vcpu->kvm))
+-		return -ENXIO;
++		return kvm_lapic_ioctl_interrupt(vcpu, irq->irq);
+ 
++	if (irq->irq >= KVM_NR_INTERRUPTS)
++		return -EINVAL;
+ 	kvm_queue_interrupt(vcpu, irq->irq, false);
+ 	kvm_make_request(KVM_REQ_EVENT, vcpu);
+ 
+-- 
+1.8.1.4
 
-What model TPM is it?
-
-
-On Mon, Mar 18, 2013 at 7:34 PM, Aaron Lu <aaron.lu@intel.com> wrote:
-> Hi Rajiv,
->
-> Not sure if I should send this to you, please kindly forward it to the
-> appropriate person if not, thanks.
->
-> Peter has encountered a problem during suspend, the tpm_tis driver's
-> suspend callback will fail, the relevant message is:
->
-> [  192.281757] PM: Syncing filesystems ... done.
-> [  192.692479] Freezing user space processes ... (elapsed 0.01 seconds)
-> done.
-> [  192.708159] Freezing remaining freezable tasks ... (elapsed 0.01
-> seconds)
-> done.
-> [  192.724151] Suspending console(s) (use no_console_suspend to debug)
-> [  192.724612] sd 2:0:0:0: [sda] Synchronizing SCSI cache
-> [  192.724785] sd 2:0:0:0: [sda] Stopping disk
-> [  197.512047] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> [  197.512055] legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -62
-> [  197.512057] PM: Device 00:08 failed to suspend: error -62
-> [  197.512058] PM: Some devices failed to suspend
->
-> And the problem has been there since v2.6.32(shipped in ubuntu 10.04),
-> and the latest upstream tree(v3.9-rcx) also has this problem. The bug
-> link is here:
-> https://bugzilla.kernel.org/show_bug.cgi?id=45761
->
-> Please feel free to ask for more information, thanks.
->
-> -Aaron
->
->
-> ------------------------------------------------------------------------------
-> Everyone hates slow websites. So do we.
-> Make your web apps faster with AppDynamics
-> Download AppDynamics Lite for free today:
-> http://p.sf.net/sfu/appdyn_d2d_mar
-> _______________________________________________
-> tpmdd-devel mailing list
-> tpmdd-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
