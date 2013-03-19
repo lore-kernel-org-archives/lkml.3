@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934167Ab3CSUyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:54:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57714 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933289Ab3CSUyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:54:14 -0400
-Date: Tue, 19 Mar 2013 21:54:03 +0100
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Message-ID: <20130319205403.GG5222@quack.suse.cz>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
- <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
- <1944.1363525619@warthog.procyon.org.uk>
- <20130318153936.GB28508@quack.suse.cz>
- <20130318215333.GE21522@ZenIV.linux.org.uk>
- <20130318230103.GF21522@ZenIV.linux.org.uk>
+	id S934089Ab3CSVAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:00:21 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:36186 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3CSVAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 17:00:20 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040132.15064.42257.stgit@localhost6.localdomain6>
+Date: Tue, 19 Mar 2013 13:59:57 -0700
+In-Reply-To: <20130316040132.15064.42257.stgit@localhost6.localdomain6>
+	(HATAYAMA Daisuke's message of "Sat, 16 Mar 2013 13:01:32 +0900")
+Message-ID: <878v5jqf5e.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318230103.GF21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18vmAS1UqB4Fzlv3RMKztIvUrK5ZPNQZng=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 08/21] vmcore: copy non page-size aligned head and tail pages in 2nd kernel
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-03-13 23:01:03, Al Viro wrote:
-> On Mon, Mar 18, 2013 at 09:53:34PM +0000, Al Viro wrote:
-> > On Mon, Mar 18, 2013 at 04:39:36PM +0100, Jan Kara wrote:
-> > >   IMO the deadlock is real. In freeze_super() we wait for all writers to
-> > > the filesystem to finish while blocking beginning of any further writes. So
-> > > we have a deadlock scenario like:
-> > > 
-> > >   THREAD1		THREAD2				THREAD3
-> > > mnt_want_write()	mutex_lock(&inode->i_mutex);
-> > > ...							freeze_super()
-> > > block on mutex_lock(&inode->i_mutex)
-> > > 							  sb_wait_write(sb, SB_FREEZE_WRITE);
-> > > 			block in sb_start_write()
-> > 
-> > The bug is on fsfreeze side and this is not the only problem related to it.
-> > I've missed the implications when I applied "fs: Add freezing handling
-> > to mnt_want_write() / mnt_drop_write()" last June ;-/
-> > 
-> > The thing is, until then mnt_want_write() used to be a counter; it could be
-> > nested.  Now any such nesting is a deadlock you've just described.  This
-> > is seriously wrong, IMO.
-> > 
-> > BTW, having sb_start_write() buried in individual ->splice_write() is
-> > asking for trouble; could you describe the rules for that?  E.g. where
-> > does it nest wrt filesystem-private locks?  XFS iolock, for example...
-> 
-> I'm looking at the existing callers and I really wonder if we ought to
-> push sb_start_write() from ->splice_write()/->aio_write()/etc. into the
-> callers.
-  Yeah, that should be OK.
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-> Something like file_start_write()/file_end_write(), with check for file
-> being regular one might be a good starting point.  As it is, copyup is
-> really fucked both in unionmount and overlayfs...
-  Makes sense. I can do the patch. BTW, for months I'm trying to push to you
-a patch which creates a function like file_start_write() which returns
-EAGAIN if the file is open with O_NONBLOCK and fs is frozen (this allows me
-to solve a deadlock with bsd process accounting to frozen fs). After this
-change the patch will become trivial so I'll add it to the series and
-hopefully it won't get ignored.
+> Due to mmap() requirement, we need to copy pages not starting or
+> ending with page-size aligned address in 2nd kernel and to map them to
+> user-space.
+>
+> For example, see the map below:
+>
+>     00000000-00010000 : reserved
+>     00010000-0009f800 : System RAM
+>     0009f800-000a0000 : reserved
+>
+> where the System RAM ends with 0x9f800 that is not page-size
+> aligned. This map is divided into two parts:
+>
+>     00010000-0009f000
+>     0009f000-0009f800
+>
+> and the first one is kept in old memory and the 2nd one is copied into
+> buffer on 2nd kernel.
+>
+> This kind of non-page-size-aligned area can always occur since any
+> part of System RAM can be converted into reserved area at runtime.
+>
+> If not doing copying like this and if remapping non page-size aligned
+> pages on old memory directly, mmap() had to export memory which is not
+> dump target to user-space. In the above example this is reserved
+> 0x9f800-0xa0000.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+So I have a question.  Would it not be easier to only support mmaping on
+the things that are easily mmapable?  And in the oddball corner cases
+require reading the data instead.
+
+My gut feel says that would reduce the net complexity of the system a
+bit, and would also reduce the amount of memory that the kernel has to
+allocate.
+
+Alrernatively and probably better given the nature of what is happening
+here.  It seems entirely reasonable to round up the boundaries of the
+supported mappings to the nearest page.  A little memory leak of data
+in a reserved page should be harmless.
+
+Eric
