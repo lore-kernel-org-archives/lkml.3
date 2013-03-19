@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3CSOVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:21:11 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54871
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755134Ab3CSOVJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:21:09 -0400
-Message-ID: <1363702857.22553.50.camel@laptop>
-Subject: Re: [PATCH 3/8] sched: don't consider other cpus in our group in
- case of NEWLY_IDLE
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 19 Mar 2013 15:20:57 +0100
-In-Reply-To: <1360820921-2513-4-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1360820921-2513-4-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1756392Ab3CSOVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:21:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755420Ab3CSOVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:21:52 -0400
+Message-ID: <5148747C.9020803@redhat.com>
+Date: Tue, 19 Mar 2013 10:21:48 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
+References: <51444171.1080905@ladisch.de> <1363609488-25250-1-git-send-email-prarit@redhat.com> <5148171D.10807@ladisch.de>
+In-Reply-To: <5148171D.10807@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
-> Commit 88b8dac0 makes load_balance() consider other cpus in its group,
-> regardless of idle type. When we do NEWLY_IDLE balancing, we should not
-> consider it, because a motivation of NEWLY_IDLE balancing is to turn
-> this cpu to non idle state if needed. This is not the case of other cpus.
-> So, change code not to consider other cpus for NEWLY_IDLE balancing.
+
+
+On 03/19/2013 03:43 AM, Clemens Ladisch wrote:
+> Prarit Bhargava wrote:
+>> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
+>> registers to userspace.  The Kconfig help points out that in some cases this
+>> can be a security risk as some systems may erroneously configure the map such
+>> that additional data is exposed to userspace.
+>>
+>> This is a problem for distributions -- some users want the MMAP functionality
+>> but it comes with a significant security risk.  In an effort to mitigate this
+>> risk, and due to the low number of users of the MMAP functionality, I've
+>> introduced a kernel parameter, hpet_mmap_enable, that is required in order
+>> to actually have the HPET MMAP exposed.
+>>
+>> [v2]: Clemens suggested modifying the Kconfig help text and making the
+>> default setting configurable.
+>>
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> Cc: Clemens Ladisch <clemens@ladisch.de>
 > 
-> With this patch, assign 'if (pulled_task) this_rq->idle_stamp = 0'
-> in idle_balance() is corrected, because NEWLY_IDLE balancing doesn't
-> consider other cpus. Assigning to 'this_rq->idle_stamp' is now valid.
+>> +++ b/Documentation/kernel-parameters.txt
+>> +	hpet_mmap_enable [X86, HPET_MMAP] option to expose HPET MMAP to
+>> +			 userspace.  By default this is disabled.
 > 
-> Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> This now takes a value.
+> 
+>> +	int "Enable HPET MMAP access by default"
+>> +	range 0 1
+> 
+> Shouldn't this be bool?
 
-Fair enough, good catch.
+I'll fix those in v3.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+>> +	default 0
+> 
+> This breaks backwards compatibility.
 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 0c6aaf6..97498f4 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5016,8 +5016,15 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->  		.cpus		= cpus,
->  	};
->  
-> +	/* For NEWLY_IDLE load_balancing, we don't need to consider
-> +	 * other cpus in our group */
-> +	if (idle == CPU_NEWLY_IDLE) {
-> +		env.dst_grpmask = NULL;
-> +		max_lb_iterations = 0;
+Does backwards compatibility matter for something like?  I have no problem
+setting it to 1 but I'm more curious from a general kernel point of view.
 
-Just a small nit; I don't think we'll ever get to evaluate
-max_lb_iterations when !dst_grpmask. So strictly speaking its
-superfluous to touch it.
+I'll change this in v3 as well.
 
-> +	} else {
-> +		max_lb_iterations = cpumask_weight(env.dst_grpmask);
-> +	}
->  	cpumask_copy(cpus, cpu_active_mask);
-> -	max_lb_iterations = cpumask_weight(env.dst_grpmask);
->  
->  	schedstat_inc(sd, lb_count[idle]);
->  
+P.
 
 
+P.
+
+> 
+> 
+> Regards,
+> Clemens
