@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab3CSOVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:21:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420Ab3CSOVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:21:52 -0400
-Message-ID: <5148747C.9020803@redhat.com>
-Date: Tue, 19 Mar 2013 10:21:48 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
-References: <51444171.1080905@ladisch.de> <1363609488-25250-1-git-send-email-prarit@redhat.com> <5148171D.10807@ladisch.de>
-In-Reply-To: <5148171D.10807@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756206Ab3CSOZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:25:21 -0400
+Received: from mail-pb0-f66.google.com ([209.85.160.66]:54875 "EHLO
+	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab3CSOZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:25:19 -0400
+From: Baker Zhang <baker.kernel@gmail.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Baker Zhang <baker.zhang@gmail.com>
+Subject: [PATCH] use xfrm direction when lookup policy
+Date: Tue, 19 Mar 2013 22:24:30 +0800
+Message-Id: <1363703070-2910-1-git-send-email-baker.zhang@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+because xfrm policy direction has same value with corresponding
+flow direction, so this problem is covered.
 
+In xfrm_lookup and __xfrm_policy_check, flow_cache_lookup is used to
+accelerate the lookup.
 
-On 03/19/2013 03:43 AM, Clemens Ladisch wrote:
-> Prarit Bhargava wrote:
->> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
->> registers to userspace.  The Kconfig help points out that in some cases this
->> can be a security risk as some systems may erroneously configure the map such
->> that additional data is exposed to userspace.
->>
->> This is a problem for distributions -- some users want the MMAP functionality
->> but it comes with a significant security risk.  In an effort to mitigate this
->> risk, and due to the low number of users of the MMAP functionality, I've
->> introduced a kernel parameter, hpet_mmap_enable, that is required in order
->> to actually have the HPET MMAP exposed.
->>
->> [v2]: Clemens suggested modifying the Kconfig help text and making the
->> default setting configurable.
->>
->> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->> Cc: Clemens Ladisch <clemens@ladisch.de>
-> 
->> +++ b/Documentation/kernel-parameters.txt
->> +	hpet_mmap_enable [X86, HPET_MMAP] option to expose HPET MMAP to
->> +			 userspace.  By default this is disabled.
-> 
-> This now takes a value.
-> 
->> +	int "Enable HPET MMAP access by default"
->> +	range 0 1
-> 
-> Shouldn't this be bool?
+Flow direction is given to flow_cache_lookup by policy_to_flow_dir.
 
-I'll fix those in v3.
+When the flow cache is mismatched, callback 'resolver' is called.
 
-> 
->> +	default 0
-> 
-> This breaks backwards compatibility.
+'resolver' requires xfrm direction,
+so convert direction back to xfrm direction.
 
-Does backwards compatibility matter for something like?  I have no problem
-setting it to 1 but I'm more curious from a general kernel point of view.
+Signed-off-by: Baker Zhang <baker.zhang@gmail.com>
+---
+ net/xfrm/xfrm_policy.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-I'll change this in v3 as well.
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 167c67d..23cea0f 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1037,6 +1037,24 @@ __xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir
+ 	return xfrm_policy_lookup_bytype(net, XFRM_POLICY_TYPE_MAIN, fl, family, dir);
+ }
+ 
++static int flow_to_policy_dir(int dir)
++{
++	if (XFRM_POLICY_IN == FLOW_DIR_IN &&
++	    XFRM_POLICY_OUT == FLOW_DIR_OUT &&
++	    XFRM_POLICY_FWD == FLOW_DIR_FWD)
++		return dir;
++
++	switch (dir) {
++	default:
++	case FLOW_DIR_IN:
++		return XFRM_POLICY_IN;
++	case FLOW_DIR_OUT:
++		return XFRM_POLICY_OUT;
++	case FLOW_DIR_FWD:
++		return XFRM_POLICY_FWD;
++	}
++}
++
+ static struct flow_cache_object *
+ xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family,
+ 		   u8 dir, struct flow_cache_object *old_obj, void *ctx)
+@@ -1046,7 +1064,7 @@ xfrm_policy_lookup(struct net *net, const struct flowi *fl, u16 family,
+ 	if (old_obj)
+ 		xfrm_pol_put(container_of(old_obj, struct xfrm_policy, flo));
+ 
+-	pol = __xfrm_policy_lookup(net, fl, family, dir);
++	pol = __xfrm_policy_lookup(net, fl, family, flow_to_policy_dir(dir));
+ 	if (IS_ERR_OR_NULL(pol))
+ 		return ERR_CAST(pol);
+ 
+@@ -1932,7 +1950,8 @@ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
+ 	 * previous cache entry */
+ 	if (xdst == NULL) {
+ 		num_pols = 1;
+-		pols[0] = __xfrm_policy_lookup(net, fl, family, dir);
++		pols[0] = __xfrm_policy_lookup(net, fl, family,
++					       flow_to_policy_dir(dir));
+ 		err = xfrm_expand_policies(fl, family, pols,
+ 					   &num_pols, &num_xfrms);
+ 		if (err < 0)
+-- 
+1.7.9.5
 
-P.
-
-
-P.
-
-> 
-> 
-> Regards,
-> Clemens
