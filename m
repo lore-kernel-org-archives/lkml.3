@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933955Ab3CSUab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 16:30:31 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:19957 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab3CSUa1 (ORCPT
+	id S933969Ab3CSUbl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 16:31:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47430 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757343Ab3CSUbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 16:30:27 -0400
-Message-ID: <1363725022.4519.11.camel@lorien2>
-Subject: Re: [PATCH 2/2] dma-debug: Update DMA debug API to better handle
- multiple mappings of a buffer
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com, joerg.roedel@amd.com,
-        konrad@kernel.org, christoph.paasch@uclouvain.be, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, netdev@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com, shuah.khan@hp.com
-Date: Tue, 19 Mar 2013 14:30:22 -0600
-In-Reply-To: <20130318221249.7349.85892.stgit@ahduyck-cp1.jf.intel.com>
-References: <20130318220241.7349.5030.stgit@ahduyck-cp1.jf.intel.com>
-	 <20130318221249.7349.85892.stgit@ahduyck-cp1.jf.intel.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Mar 2013 16:31:38 -0400
+Message-ID: <1363725088.3937.387.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 45/82] USB: EHCI: dont check DMA values in QH overlays
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Mar 2013 20:31:28 +0000
+In-Reply-To: <Pine.LNX.4.44L0.1303191125100.15684-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1303191125100.15684-100000@netrider.rowland.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-id3N8bnucTz6dr/VL5AK"
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:5944:e226:2c7e:1b17
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-18 at 15:12 -0700, Alexander Duyck wrote:
-> There were reports of the igb driver unmapping buffers without calling
-> dma_mapping_error.  On closer inspection issues were found in the DMA debug
-> API and how it handled multiple mappings of the same buffer.
-> 
-> The issue I found is the fact that the debug_dma_mapping_error would only set
-> the map_err_type to MAP_ERR_CHECKED in the case that the was only one match
-> for device and device address.  However in the case of non-IOMMU, multiple
-> addresses existed and as a result it was not setting this field once a
-> second mapping was instantiated.  I have resolved this by changing the search
-> so that it instead will now set MAP_ERR_CHECKED on the first buffer that
-> matches the device and DMA address that is currently in the state
-> MAP_ERR_NOT_CHECKED.
-> 
-> A secondary side effect of this patch is that in the case of multiple buffers
-> using the same address only the last mapping will have a valid map_err_type.
-> The previous mappings will all end up with map_err_type set to
-> MAP_ERR_CHECKED because of the dma_mapping_error call in debug_dma_map_page.
-> However this behavior may be preferable as it means you will likely only see
-> one real error per multi-mapped buffer, versus the current behavior of
-> multiple false errors mer multi-mapped buffer.
-> 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> ---
 
-Looks good. Tested it as well.
+--=-id3N8bnucTz6dr/VL5AK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: shuah.khan@hp.com
-Tested-by: shuah.khan@hp.com
+On Tue, 2013-03-19 at 11:27 -0400, Alan Stern wrote:
+> On Tue, 19 Mar 2013, Ben Hutchings wrote:
+>=20
+> > On Mon, 2013-03-18 at 04:22 +0000, Ben Hutchings wrote:
+> > > 3.2-stable review patch.  If anyone has any objections, please let me=
+ know.
+> > >=20
+> > > ------------------
+> > >=20
+> > > From: Alan Stern <stern@rowland.harvard.edu>
+> > >=20
+> > > commit feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
+> > >=20
+> > > This patch (as1661) fixes a rather obscure bug in ehci-hcd.  In a
+> > > couple of places, the driver compares the DMA address stored in a QH'=
+s
+> > > overlay region with the address of a particular qTD, in order to see
+> > > whether that qTD is the one currently being processed by the hardware=
+.
+> > > (If it is then the status in the QH's overlay region is more
+> > > up-to-date than the status in the qTD, and if it isn't then the
+> > > overlay's value needs to be adjusted when the QH is added back to the
+> > > active schedule.)
+> > >=20
+> > > However, DMA address in the overlay region isn't always valid.  It
+> > > sometimes will contain a stale value, which may happen by coincidence
+> > > to be equal to a qTD's DMA address.  Instead of checking the DMA
+> > > address, we should check whether the overlay region is active and
+> > > valid.  The patch tests the ACTIVE bit in the overlay, and clears thi=
+s
+> > > bit when the overlay becomes invalid (which happens when the
+> > > currently-executing URB is unlinked).
+> > >=20
+> > > This is the second part of a fix for the regression reported at:
+> > >=20
+> > > 	https://bugs.launchpad.net/bugs/1088733
+> >=20
+> > Alan, the first part (commit 6402c796d3b4 aka as1660) didn't apply and =
+I
+> > couldn't see how to adapt it for 3.2.  Does this second part have any
+> > value without the first?  Or, if you could provide a backport of the
+> > first part, that would be very much appreciated.
+>=20
+> Without the first part, the second part can actually be dangerous. =20
+> Under the circumstances, I think it is best to apply neither.
 
-Thanks for finding and fixing the problem.
+Thanks, I've dropped this.
 
--- Shuah
+Ben.
 
+--=20
+Ben Hutchings
+When you say `I wrote a program that crashed Windows', people just stare ..=
+.
+and say `Hey, I got those with the system, *for free*'. - Linus Torvalds
+
+--=-id3N8bnucTz6dr/VL5AK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUUjLIOe/yOyVhhEJAQpJzxAAsdKsVMdm5z4ya38m/13ezBoV+LGXj7x/
+QK4LSKBx+pD69vEXJ3oVt5jfOM+u7cT+eUEVF73yrS8rsR/ILVQNJGPuc4binJfn
+PEGw/XryTfVfvBCkxu/nSue7KnfoTt5xwjo/9l7VNP8ekUVMlvrC04Cz0RPVvOOM
+o5Dv4+3ggocnzsp34sBljzD5xi/Z4RMLjLUQlqvEbty9BI4EP572byo02zd7R8cy
+qjiiXAVbuUQKAQg4G/US+S+YNiz5cqch7Kux0tFCPDpnSSClOwX/oji11abuqNuw
+CKATHMnPX6yu1E1Vw6SYFGfw9cPz0ejvq5J1k/I5jQf6rfLfQqhtbUwhNE9Jqk7n
+Lg94nnodv44MGip5ZXeKmvgbXA1h0naISkYCs8/uVRqZg2NCtaQKuNSmvgrRygR6
+NffJS2FVX/9HHJREuLCTZqtMuzBS+pJ+H2pOLolJpZGEnf4rqsCfTUctvAAPxq7Y
+PfIdwrQcQ3UZDyNh3Y0Lali+hikZv8xvZayqa2yGc+j5emsoLuOqxSlOE0LDO98n
+3tG/Gbpnn4WjmVNxV8qBc239J6tme7LftfwjZnlJ/BKMNErEDnuGFQ67gKJNA+bV
+k71Gl676qYeeWFCqMCFOja9uiGvD2+boxYvBVuvOF6WVLY+R0Qm/PL+k7Yl9Evcy
+WyB1jTNXNG8=
+=Yurc
+-----END PGP SIGNATURE-----
+
+--=-id3N8bnucTz6dr/VL5AK--
