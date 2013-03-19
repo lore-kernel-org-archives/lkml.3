@@ -1,50 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3CSNda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 09:33:30 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57377 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751860Ab3CSNd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 09:33:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18XXvNKIfnpvwgk6dJ4XDzn9Ghx7OTCe9w=
-Date: Tue, 19 Mar 2013 09:33:24 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arm-kernel@lists.infradead.org, thomas.petazzoni@free-electrons.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [BUG][mvebu] mvneta: cannot request irq 25 on openblocks-ax3
-Message-ID: <20130319133324.GS13280@titan.lakedaemon.net>
-References: <51486445.8040506@hitachi.com>
+	id S1756017Ab3CSNdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 09:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755946Ab3CSNdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 09:33:43 -0400
+Date: Tue, 19 Mar 2013 09:33:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] x86, kdump: Set crashkernel_low automatically
+Message-ID: <20130319133326.GB3872@redhat.com>
+References: <5147B0EC.2020907@zytor.com>
+ <1363655048-6772-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51486445.8040506@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1363655048-6772-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 10:12:37PM +0900, Masami Hiramatsu wrote:
-> Hi,
+On Mon, Mar 18, 2013 at 06:04:08PM -0700, Yinghai Lu wrote:
+> Current code does not set low range for crashkernel if the user
+> does not specify that.
+
+Hi Yinghai,
+
+While we are modifying changelog, it will also be beneficial to
+mention that how did we end up in this situation. Can we mention
+changelog little more explanatory, like as follows.
+
+We have now modified crashkernel=X to allocate memory beyong 4G (if
+available). And this will cause regression if iommu is not enabled.
+Without iommu, swiotlb needs to be setup in first 4G and there is no
+low memory available to second kernel.
+
+thanks
+Vivek
 > 
-> Here I've hit a bug on the recent kernel. As far as I know, this bug
-> exists on 3.9-rc1 too.
+> That cause regressions on system that does not support intel_iommu
+> properly.
 > 
-> When I tried the latest mvebu for-next tree
-> (git://git.infradead.org/users/jcooper/linux.git mvebu/for-next),
-
-FYI: that branch isn't stable, it's used as a merge-test of
-arm-soc/for-next (also not stable) and any branches I am trying to push
-upstream that day.
-
-Gregory has a patch in the works for this.  Hopefully he'll submit
-it by the end of the week.
-
-thx,
-
-Jason.
+> Chao said that his system does work well on 3.8 without extra parameter.
+> even iommu does not work with kdump.
+> 
+> Set crashkernel_low automatically if the user does not specify that.
+> 
+> For system that does support IOMMU with kdump properly, user could
+> specify crashkernel_low=0 to save that 72M low ram.
+> 
+> -v3: add swiotlb_size() according to Konrad.
+> -v4: add comments what 8M is for according to hpa.
+>      also update more crashkernel_low= in kernel-parameters.txt
+> 
+> Reported-by: WANG Chao <chaowang@redhat.com>
+> Tested-by: WANG Chao <chaowang@redhat.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  Documentation/kernel-parameters.txt |   15 ++++++++++++---
+>  arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
+>  include/linux/swiotlb.h             |    1 +
+>  lib/swiotlb.c                       |   19 +++++++++++++++----
+>  4 files changed, 45 insertions(+), 10 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/setup.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/setup.c
+> +++ linux-2.6/arch/x86/kernel/setup.c
+> @@ -521,19 +521,33 @@ static void __init reserve_crashkernel_l
+>  	unsigned long long low_base = 0, low_size = 0;
+>  	unsigned long total_low_mem;
+>  	unsigned long long base;
+> +	bool auto_set = false;
+>  	int ret;
+>  
+>  	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
+>  	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
+>  						&low_size, &base);
+> -	if (ret != 0 || low_size <= 0)
+> -		return;
+> +	if (ret != 0) {
+> +		/*
+> +		 * two parts from lib/swiotlb.c:
+> +		 *	swiotlb size: user specified with swiotlb= or default.
+> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
+> +		 *		round to 8M to cover more others.
+> +		 */
+> +		low_size = swiotlb_size_or_default() + (8UL<<20);
+> +		auto_set = true;
+> +	} else {
+> +		/* passed with crashkernel_low=0 ? */
+> +		if (!low_size)
+> +			return;
+> +	}
+>  
+>  	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+>  					low_size, alignment);
+>  
+>  	if (!low_base) {
+> -		pr_info("crashkernel low reservation failed - No suitable area found.\n");
+> +		if (!auto_set)
+> +			pr_info("crashkernel low reservation failed - No suitable area found.\n");
+>  
+>  		return;
+>  	}
+> Index: linux-2.6/include/linux/swiotlb.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/swiotlb.h
+> +++ linux-2.6/include/linux/swiotlb.h
+> @@ -25,6 +25,7 @@ extern int swiotlb_force;
+>  extern void swiotlb_init(int verbose);
+>  int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+>  extern unsigned long swiotlb_nr_tbl(void);
+> +unsigned long swiotlb_size_or_default(void);
+>  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+>  
+>  /*
+> Index: linux-2.6/lib/swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/lib/swiotlb.c
+> +++ linux-2.6/lib/swiotlb.c
+> @@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
+>  	if (!strcmp(str, "force"))
+>  		swiotlb_force = 1;
+>  
+> -	return 1;
+> +	return 0;
+>  }
+> -__setup("swiotlb=", setup_io_tlb_npages);
+> +early_param("swiotlb", setup_io_tlb_npages);
+>  /* make io_tlb_overflow tunable too? */
+>  
+>  unsigned long swiotlb_nr_tbl(void)
+> @@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
+>  	return io_tlb_nslabs;
+>  }
+>  EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+> +
+> +/* default to 64MB */
+> +#define IO_TLB_DEFAULT_SIZE (64UL<<20)
+> +unsigned long swiotlb_size_or_default(void)
+> +{
+> +	unsigned long size;
+> +
+> +	size = io_tlb_nslabs << IO_TLB_SHIFT;
+> +
+> +	return size ? size : (IO_TLB_DEFAULT_SIZE);
+> +}
+> +
+>  /* Note that this doesn't work with highmem page */
+>  static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+>  				      volatile void *address)
+> @@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
+>  void  __init
+>  swiotlb_init(int verbose)
+>  {
+> -	/* default to 64MB */
+> -	size_t default_size = 64UL<<20;
+> +	size_t default_size = IO_TLB_DEFAULT_SIZE;
+>  	unsigned char *vstart;
+>  	unsigned long bytes;
+>  
+> Index: linux-2.6/Documentation/kernel-parameters.txt
+> ===================================================================
+> --- linux-2.6.orig/Documentation/kernel-parameters.txt
+> +++ linux-2.6/Documentation/kernel-parameters.txt
+> @@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
+>  			is selected automatically. Check
+>  			Documentation/kdump/kdump.txt for further details.
+>  
+> -	crashkernel_low=size[KMG]
+> -			[KNL, x86] parts under 4G.
+> -
+>  	crashkernel=range1:size1[,range2:size2,...][@offset]
+>  			[KNL] Same as above, but depends on the memory
+>  			in the running system. The syntax of range is
+> @@ -606,6 +603,18 @@ bytes respectively. Such letter suffixes
+>  			a memory unit (amount[KMG]). See also
+>  			Documentation/kdump/kdump.txt for an example.
+>  
+> +	crashkernel_low=size[KMG]
+> +			[KNL, x86_64] range under 4G. When crashkernel= is
+> +			passed, kernel allocate physical memory region
+> +			above 4G, that cause second kernel crash on system
+> +			that need swiotlb later. Kernel would try to allocate
+> +			some region below 4G automatically. This one let
+> +			user to specify own low range under 4G for second
+> +			kernel instead.
+> +			0: to disable low allocation on systems that do not
+> +			need swiotlb, that will save 72M low ram in first
+> +			kernel.
+> +
+>  	cs89x0_dma=	[HW,NET]
+>  			Format: <dma>
+>  
