@@ -1,69 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3CUBVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 21:21:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab3CUBVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 21:21:10 -0400
-Message-ID: <514A604E.40303@redhat.com>
-Date: Wed, 20 Mar 2013 21:20:14 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754407Ab3CUBWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:22:47 -0400
+Received: from correo.ipsfa.mil.ve ([64.212.73.51]:39159 "EHLO
+	correo.ipsfa.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3CUBWp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 21:22:45 -0400
+X-Greylist: delayed 138596 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 21:22:45 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] mm: vmscan: Do not allow kswapd to scan at maximum
- priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-6-git-send-email-mgorman@suse.de>
-In-Reply-To: <1363525456-10448-6-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: 
+To: Recipients <infolan@lee.com>
+From: infolan@lee.com
+Date: Tue, 19 Mar 2013 10:28:30 +0530
+Reply-To: lee.mrlan@yahoo.com.hk
+Message-Id: <20130319045721.9A0EB1DD6B8@correo.ipsfa.gob.ve>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2013 09:04 AM, Mel Gorman wrote:
-> Page reclaim at priority 0 will scan the entire LRU as priority 0 is
-> considered to be a near OOM condition. Kswapd can reach priority 0 quite
-> easily if it is encountering a large number of pages it cannot reclaim
-> such as pages under writeback. When this happens, kswapd reclaims very
-> aggressively even though there may be no real risk of allocation failure
-> or OOM.
->
-> This patch prevents kswapd reaching priority 0 and trying to reclaim
-> the world. Direct reclaimers will still reach priority 0 in the event
-> of an OOM situation.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->   mm/vmscan.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 7513bd1..af3bb6f 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2891,7 +2891,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->   		 */
->   		if (raise_priority || !this_reclaimed)
->   			sc.priority--;
-> -	} while (sc.priority >= 0 &&
-> +	} while (sc.priority >= 1 &&
->   		 !pgdat_balanced(pgdat, order, *classzone_idx));
->
->   out:
->
-
-If priority 0 is way way way way way too aggressive, what makes
-priority 1 safe?
-
-This makes me wonder, are the priorities useful at all to kswapd?
-
--- 
-All rights reversed
+Hello,
+I have information for you about an unclaimed funds in my department.
+Please get back to me if interested so I would brief you in details.
+Email:lmrlee12@live.com
+Regards,
+Lan Lee
