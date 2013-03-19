@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3CSMfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 08:35:16 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54284
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855Ab3CSMfO (ORCPT
+	id S1754389Ab3CSMh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 08:37:56 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:40644 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3CSMhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 08:35:14 -0400
-Message-ID: <1363696502.22553.38.camel@laptop>
-Subject: Re: [PATCH v2] perf: fix ring_buffer perf_output_space() boundary
- calculation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, jolsa@redhat.com,
-        fweisbec@gmail.com
-Date: Tue, 19 Mar 2013 13:35:02 +0100
-In-Reply-To: <20130318133327.GA3056@quad>
-References: <20130318133327.GA3056@quad>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Mar 2013 08:37:55 -0400
+MIME-Version: 1.0
+X-Originating-IP: [109.186.17.83]
+In-Reply-To: <1360496352-29482-2-git-send-email-sjur.brandeland@stericsson.com>
+References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com> <1360496352-29482-2-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 19 Mar 2013 14:37:33 +0200
+Message-ID: <CAK=WgbYpTkjPsPRHO8is60SM-JR-LLCt8GK43mDAyBvt8EZP9w@mail.gmail.com>
+Subject: Re: [PATCH 1/9] remoteproc: Bugfix: Deallocate firmware image on shutdown
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Ido Yariv <ido@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-18 at 14:33 +0100, Stephane Eranian wrote:
-> This patch fixes a flaw in perf_output_space(). In case the size
-> of the space needed is bigger than the actual buffer size, there
-> may be situations where the function would return true (i.e., there
-> is space) when it should not. head > offset due to rounding of the
-> masking logic.
-> 
-> The problem can be tested by activating BTS on Intel processors.
-> A BTS record can be as big as 16 pages. The following command
-> fails:
-> 
-> $ perf record -m 4 -c 1 -e branches:u my_test_program
-> 
-> You will get a buffer corruption with this. Perf report won't be
-> able to parse the perf.data.
-> 
-> The fix is to first check that the requested space is smaller than the
-> buffer size. If so, then the masking logic will work fine. If not,
-> then
-> there is no chance the record can be saved and it will be gracefully
-> handled
-> by upper code layers.
-> 
-> In v2, we also make the logic for the writable more explicit by
-> renaming it to rb->overwrite because it tells whether or not the
-> buffer can overwrite its tail (suggested by PeterZ).
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
+Hi Sjur,
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Sun, Feb 10, 2013 at 1:39 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+>
+> Fixes coherent memory leakage, caused by non-deallocated
+> firmware image chunk.
 
-Thanks!
+I'll just slightly edit the subject + commit log to indicate this fix
+is STE-specific.
 
+> Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+
+Can I add your s-o-b here?
+
+Since you sent the patch, we should add your s-o-b after Dmitry's.
+
+Thanks,
+Ohad.
