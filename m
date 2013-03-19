@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3CSRZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:25:13 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49750 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab3CSRZL (ORCPT
+	id S1757229Ab3CSRZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:25:59 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64134 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932483Ab3CSRZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:25:11 -0400
-Date: Tue, 19 Mar 2013 17:25:06 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
- services
-Message-ID: <20130319172506.GA11969@srcf.ucam.org>
-References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
- <20130319014850.GA28934@srcf.ucam.org>
- <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
- <20130319163531.GA10879@srcf.ucam.org>
- <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
+	Tue, 19 Mar 2013 13:25:58 -0400
+Date: Tue, 19 Mar 2013 13:27:14 -0400
+From: Matt Porter <mporter@ti.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Tomas Novotny <tomas@novotny.cz>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [ 41/75] ARM: davinci: edma: fix dmaengine induced null pointer
+ dereference on da830
+Message-ID: <20130319172714.GD18335@beef>
+References: <20130318210510.203500214@linuxfoundation.org>
+ <20130318210513.183706082@linuxfoundation.org>
+ <f20a6d0dd7604c0fa6ed95604a8dfb35@DLEE70.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <f20a6d0dd7604c0fa6ed95604a8dfb35@DLEE70.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 05:17:27PM +0000, James Bottomley wrote:
-> On Tue, 2013-03-19 at 16:35 +0000, Matthew Garrett wrote:
-> > On Tue, Mar 19, 2013 at 08:14:45AM +0000, James Bottomley wrote:
+On Tue, Mar 19, 2013 at 04:25:35PM +0000, Luis Henriques wrote:
+> On Mon, Mar 18, 2013 at 02:07:04PM -0700, Greg Kroah-Hartman wrote:
+> > 3.8-stable review patch.  If anyone has any objections, please let me know.
 > > 
-> > > Any security assumptions that rely on inability to read certain
-> > > information aren't really going to be that secure.  Inability to modify,
-> > > sure, but inability to read, not really.
+> > ------------------
 > > 
-> > Well, I guess that's public/private key cryptography screwed.
+> > From: Matt Porter <mporter@ti.com>
+> > 
+> > commit 069552777a121eb39da29de4bc0383483dbe1f7e upstream.
+> > 
+> > This adds additional error checking to the private edma api implementation
+> > to catch the case where the edma_alloc_slot() has an invalid controller
+> > parameter. The edma dmaengine wrapper driver relies on this condition
+> > being handled in order to avoid setting up a second edma dmaengine
+> > instance on DA830.
+> > 
+> > Verfied using a DA850 with the second EDMA controller platform instance
+> > removed to simulate a DA830 which only has a single EDMA controller.
+> > 
+> > Reported-by: Tomas Novotny <tomas@novotny.cz>
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > Tested-by: Tomas Novotny <tomas@novotny.cz>
+> > Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> >  arch/arm/mach-davinci/dma.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > --- a/arch/arm/mach-davinci/dma.c
+> > +++ b/arch/arm/mach-davinci/dma.c
+> > @@ -743,6 +743,9 @@ EXPORT_SYMBOL(edma_free_channel);
+> >   */
+> >  int edma_alloc_slot(unsigned ctlr, int slot)
+> >  {
+> > +	if (!edma_cc[ctlr])
+> > +		return -EINVAL;
+> > +
+> >  	if (slot >= 0)
+> >  		slot = EDMA_CHAN_SLOT(slot);
 > 
-> Well, OK, it's ex-BIOS writers we're dealing with, so I won't say no-one
-> would be stupid enough to come up with a security scheme embedding
-> Private Keys in BS+NV variables, but I would have thought the fact that
-> Linux would blow the lid off it might be a good incentive not to do it
-> and thus a plus point for this patch.
+> I couldn't figure out the reason why this is tagged for v3.7.x+ only.
+> Shouldn't this be applied to 3.2, 3.4 and 3.5 as well?
 
-The hibernation scheme we'd discussed involved having the first stage 
-loader generating a keypair and handing half of it to the OS for 
-encryption of the hibernation partition, then handing the other half to 
-the OS on the next boot so it can decrypt it. That requires non-RT 
-variables to be restricted from OS visibility.
+The bug being fixed is triggered by the edma dmaengine driver (and only
+on one board) that was introduced in 3.7. Prior to that it is just a
+theoretical bug.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+-Matt
