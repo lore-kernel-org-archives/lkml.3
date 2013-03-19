@@ -1,128 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab3CSORF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:17:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45482 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3CSORC (ORCPT
+	id S1756042Ab3CSOTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:19:11 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51641 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab3CSOTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:17:02 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 2/3] kernel/SRCU: provide a static initializer
-Date: Tue, 19 Mar 2013 15:16:45 +0100
-Message-Id: <1363702606-31586-2-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de>
-References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 19 Mar 2013 10:19:10 -0400
+X-Greylist: delayed 3989 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Mar 2013 10:19:10 EDT
+Message-ID: <514873D9.6060704@hitachi.com>
+Date: Tue, 19 Mar 2013 23:19:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, thomas.petazzoni@free-electrons.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [BUG][mvebu] mvneta: cannot request irq 25 on openblocks-ax3
+References: <51486445.8040506@hitachi.com> <20130319133324.GS13280@titan.lakedaemon.net>
+In-Reply-To: <20130319133324.GS13280@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are macros for static initializer for the three out of four
-possible notifier types, that are:
-	ATOMIC_NOTIFIER_HEAD()
-	BLOCKING_NOTIFIER_HEAD()
-	RAW_NOTIFIER_HEAD()
+Hi Jason,
 
-This patch provides a static initilizer for the forth type to make it
-complete.
+(2013/03/19 22:33), Jason Cooper wrote:
+> On Tue, Mar 19, 2013 at 10:12:37PM +0900, Masami Hiramatsu wrote:
+>> Hi,
+>>
+>> Here I've hit a bug on the recent kernel. As far as I know, this bug
+>> exists on 3.9-rc1 too.
+>>
+>> When I tried the latest mvebu for-next tree
+>> (git://git.infradead.org/users/jcooper/linux.git mvebu/for-next),
+> 
+> FYI: that branch isn't stable, it's used as a merge-test of
+> arm-soc/for-next (also not stable) and any branches I am trying to push
+> upstream that day.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- include/linux/notifier.h |   26 +++++++++++++++++++++-----
- include/linux/srcu.h     |    6 +++---
- 2 files changed, 24 insertions(+), 8 deletions(-)
+Thanks! could you tell me which branch is stable?
+(however, I'd like to try new fixes/features on my device too :))
 
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index d65746e..6bfd703 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -42,9 +42,7 @@
-  * in srcu_notifier_call_chain(): no cache bounces and no memory barriers.
-  * As compensation, srcu_notifier_chain_unregister() is rather expensive.
-  * SRCU notifier chains should be used when the chain will be called very
-- * often but notifier_blocks will seldom be removed.  Also, SRCU notifier
-- * chains are slightly more difficult to use because they require special
-- * runtime initialization.
-+ * often but notifier_blocks will seldom be removed.
-  */
- 
- struct notifier_block {
-@@ -85,7 +83,7 @@ struct srcu_notifier_head {
- 		(name)->head = NULL;		\
- 	} while (0)
- 
--/* srcu_notifier_heads must be initialized and cleaned up dynamically */
-+/* srcu_notifier_heads must be cleaned up dynamically */
- extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
- #define srcu_cleanup_notifier_head(name)	\
- 		cleanup_srcu_struct(&(name)->srcu);
-@@ -98,7 +96,13 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
- 		.head = NULL }
- #define RAW_NOTIFIER_INIT(name)	{				\
- 		.head = NULL }
--/* srcu_notifier_heads cannot be initialized statically */
-+
-+#define SRCU_NOTIFIER_INIT(name, pcpu)				\
-+	{							\
-+		.mutex = __MUTEX_INITIALIZER(name.mutex),	\
-+		.head = NULL,					\
-+		.srcu = __SRCU_STRUCT_INIT(name.srcu, pcpu),	\
-+	}
- 
- #define ATOMIC_NOTIFIER_HEAD(name)				\
- 	struct atomic_notifier_head name =			\
-@@ -110,6 +114,18 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
- 	struct raw_notifier_head name =				\
- 		RAW_NOTIFIER_INIT(name)
- 
-+#define _SRCU_NOTIFIER_HEAD(name, mod)				\
-+	static DEFINE_PER_CPU(struct srcu_struct_array,		\
-+			name##_head_srcu_array);		\
-+	mod struct srcu_notifier_head name =			\
-+			SRCU_NOTIFIER_INIT(name, name##_head_srcu_array)
-+
-+#define SRCU_NOTIFIER_HEAD(name)				\
-+	_SRCU_NOTIFIER_HEAD(name, )
-+
-+#define SRCU_NOTIFIER_HEAD_STATIC(name)				\
-+	_SRCU_NOTIFIER_HEAD(name, static)
-+
- #ifdef __KERNEL__
- 
- extern int atomic_notifier_chain_register(struct atomic_notifier_head *nh,
-diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-index d04acb8..fe9efd4 100644
---- a/include/linux/srcu.h
-+++ b/include/linux/srcu.h
-@@ -84,10 +84,10 @@ int init_srcu_struct(struct srcu_struct *sp);
- 
- void process_srcu(struct work_struct *work);
- 
--#define __SRCU_STRUCT_INIT(name)					\
-+#define __SRCU_STRUCT_INIT(name, pcpu_name)				\
- 	{								\
- 		.completed = -300,					\
--		.per_cpu_ref = &name##_srcu_array,			\
-+		.per_cpu_ref = &pcpu_name,				\
- 		.queue_lock = __SPIN_LOCK_UNLOCKED(name.queue_lock),	\
- 		.running = false,					\
- 		.batch_queue = RCU_BATCH_INIT(name.batch_queue),	\
-@@ -105,7 +105,7 @@ void process_srcu(struct work_struct *work);
- #define _DEFINE_SRCU(name, mod)						\
- 	static DEFINE_PER_CPU(struct srcu_struct_array, name##_srcu_array);\
- 	mod struct srcu_struct name =					\
--				__SRCU_STRUCT_INIT(name);
-+				__SRCU_STRUCT_INIT(name, name##_srcu_array);
- 
- #define DEFINE_SRCU(name)		_DEFINE_SRCU(name, )
- #define DEFINE_STATIC_SRCU(name)	_DEFINE_SRCU(name, static)
+> Gregory has a patch in the works for this.  Hopefully he'll submit
+> it by the end of the week.
+
+Thank you,
+
 -- 
-1.7.10.4
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
