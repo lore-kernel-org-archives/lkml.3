@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933354Ab3CSCaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:30:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47001 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756965Ab3CSCaL (ORCPT
+	id S1755850Ab3CSCg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:36:29 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:48823 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab3CSCg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:30:11 -0400
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v3 02/21] vmcore: clean up by removing unnecessary variable
-To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-Date: Sat, 16 Mar 2013 13:00:58 +0900
-Message-ID: <20130316040058.15064.35158.stgit@localhost6.localdomain6>
-In-Reply-To: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	Mon, 18 Mar 2013 22:36:26 -0400
+Date: Mon, 18 Mar 2013 19:37:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Li, Fei" <fei.li@intel.com>
+Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] pm: print the name of failed suspend function for
+ platform device
+Message-ID: <20130319023743.GB21789@kroah.com>
+References: <1363586303.9792.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <20130318160514.GE3887@kroah.com>
+ <BEC9F67575FA1E429CA7CF5AE9BE3634421912@SHSMSX102.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634421912@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable j has int type but it's compared with u64 type.
+On Tue, Mar 19, 2013 at 02:05:02AM +0000, Li, Fei wrote:
+> > > Print more info when platform device suspend function failed.
+> > > Without this patch, we can not get the real platform device suspend
+> > > API info.
+> > >
+> > > Example without this patch:
+> > > pm_op(): platform_pm_suspend+0x0/0x50 returns -11
+> > > PM: Device power.0 failed to suspend: error -11
+> > >
+> > > And with this patch:
+> > > platform_pm_suspend(): power_suspend+0x0/0x30 returns -11
+> > > pm_op(): platform_pm_suspend+0x0/0x80 returns -11
+> > > PM: Device power.0 failed to suspend: error -11
+> > 
+> > How does that help someone out?  One extra line?  What is that going to
+> > allow a user to now do?
+> >
+> Thanks for your comments.
+> 
+> The intention is to print relatively complete call path for convenience of
+> debugging in case of error. With this, we can know the exact name of
+> the concrete failed function.
 
-Also, the purpose of the variable j is exactly what the variable
-real_sz is used for now. Replace the variable j by the variable
-real_sz and remove the variable j.
+And what was the failed function here, and what would that enable you to
+do?
 
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
+> Besides, currently such information is printed with level KERN_ERR,
+> and can be tuned through console_loglevel to avoid the possible impact
+> to end user.
 
- fs/proc/vmcore.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Huh?  End users see KERN_ERR.
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 163281e..94743d2 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -261,7 +261,6 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
- 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
- 	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
- 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
--		int j;
- 		void *notes_section;
- 		struct vmcore *new;
- 		u64 offset, max_sz, sz, real_sz = 0;
-@@ -279,7 +278,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		for (j = 0; j < max_sz; j += sz) {
-+		while (real_sz < max_sz) {
- 			if (nhdr_ptr->n_namesz == 0)
- 				break;
- 			sz = sizeof(Elf64_Nhdr) +
-@@ -342,7 +341,6 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
- 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
- 	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
- 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
--		int j;
- 		void *notes_section;
- 		struct vmcore *new;
- 		u64 offset, max_sz, sz, real_sz = 0;
-@@ -360,7 +358,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		for (j = 0; j < max_sz; j += sz) {
-+		while (real_sz < max_sz) {
- 			if (nhdr_ptr->n_namesz == 0)
- 				break;
- 			sz = sizeof(Elf32_Nhdr) +
+> Do you think it make sense?
+
+no.  But this is Rafael's file, so I'll defer to him.
+
+greg k-h
 
