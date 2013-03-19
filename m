@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab3CSGt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 02:49:29 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:59584 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3CSGt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 02:49:28 -0400
-From: Dong Hao <haodong@linux.vnet.ibm.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Dong Hao <haodong@linux.vnet.ibm.com>
-Subject: [PATCH][RESEND] lib/kobject: save old kobject name when rename failure 
-Date: Tue, 19 Mar 2013 14:49:16 +0800
-Message-Id: <1363675756-31528-1-git-send-email-haodong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031906-2966-0000-0000-000007093876
+	id S1757545Ab3CSGxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 02:53:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43034 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab3CSGxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 02:53:03 -0400
+Message-ID: <51480BAD.2040902@ti.com>
+Date: Tue, 19 Mar 2013 12:24:37 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCH 0/2] omap serial fix.
+References: <1363604081-11169-1-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1363604081-11169-1-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Hao <haodong@linux.vnet.ibm.com>
+On Monday 18 March 2013 04:24 PM, Sourav Poddar wrote:
+> The first patch is a rearrangement of a macro "OMAP_MAX_HSUART_PORTS"
+> to a header file so that it can be used in other file. 
+> The second patch fixes the wakeup from uart issue while using "no_console_suspend" in the
+> bootargs.
+> 
+> These patches are developed on 3.8 custom kernel containing omap5 supend/resume support.
+> 
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Thanks Sourav for sorting out the issue. With update of changelog
+suggested by Kevin on patch 1, Feel free to add,
+Acked-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Function kobject_set_name_vargs() was implemented to rename the existing kobject.
-It depends on kvasprintf() which might return NULL, so it's possible that kobject name
-becomes NULL and in that case we will lose the old name.
 
-This patch restores the old name when kvasprintf() returns NULL.
-
-Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
----
- lib/kobject.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/lib/kobject.c b/lib/kobject.c
-index f7d9f31..6e0186f 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -220,8 +220,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
- 		return 0;
- 
- 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
--	if (!kobj->name)
-+	if (!kobj->name) {
-+		kobj->name = old_name;
- 		return -ENOMEM;
-+	}
- 
- 	/* ewww... some of these buggers have '/' in the name ... */
- 	while ((s = strchr(kobj->name, '/')))
--- 
-1.7.9.5
+> Sourav Poddar (2):
+>   driver: serial-omap: move max uart count into generic header file.
+>   arm: mach-omap2: prevent UART console idle on suspend while using
+>     "no_console_suspend"
+> 
+>  arch/arm/mach-omap2/omap_device.c         |   36 ++++++++++++++++++++++++++++-
+>  drivers/tty/serial/omap-serial.c          |    2 -
+>  include/linux/platform_data/serial-omap.h |    1 +
+>  3 files changed, 36 insertions(+), 3 deletions(-)
+> 
 
