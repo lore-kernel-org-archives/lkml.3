@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab3CSOCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:02:34 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54705
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751874Ab3CSOCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:02:33 -0400
-Message-ID: <1363701741.22553.46.camel@laptop>
-Subject: Re: [PATCH 2/8] sched: explicitly cpu_idle_type checking in
- rebalance_domains()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 19 Mar 2013 15:02:21 +0100
-In-Reply-To: <1360820921-2513-3-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1360820921-2513-3-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1755447Ab3CSOGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:06:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38580 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752134Ab3CSOGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:06:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,872,1355126400"; 
+   d="scan'208";a="304477138"
+Message-ID: <1363702041.14966.20.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH -next] UBIFS: fix missing unlock on error in
+ ubifs_remount_rw()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: adrian.hunter@intel.com, yongjun_wei@trendmicro.com.cn,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Mar 2013 16:07:21 +0200
+In-Reply-To: <CAPgLHd8Uj4-OWahuXSMxcb4Z3siukbveTm=bWNO1toatPwwcmg@mail.gmail.com>
+References: <CAPgLHd8Uj4-OWahuXSMxcb4Z3siukbveTm=bWNO1toatPwwcmg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+X-Mailer: Evolution 3.6.4 (3.6.4-2.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
-> After commit 88b8dac0, dst-cpu can be changed in load_balance(),
-> then we can't know cpu_idle_type of dst-cpu when load_balance()
-> return positive. So, add explicit cpu_idle_type checking.
+On Mon, 2013-03-18 at 11:12 +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Add the missing unlock before return from function ubifs_remount_rw()
+> in the error handling case.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-No real objection I suppose, but did you actually see this go wrong?
+Thanks, I fixed this up in linux-ubifs.git.
 
+-- 
+Best Regards,
+Artem Bityutskiy
 
