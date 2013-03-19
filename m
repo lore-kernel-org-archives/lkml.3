@@ -1,121 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965108Ab3CSVnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 17:43:41 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:24614 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933781Ab3CSVni (ORCPT
+	id S965126Ab3CSVo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 17:44:26 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:55413 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964907Ab3CSVoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 17:43:38 -0400
-Message-ID: <201303192143.r2JLhZIX020469@farm-0021.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 19 Mar 2013 17:35:58 -0400
-Subject: [PATCH] dynticks: avoid flow_cache_flush() interrupting every core
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+	Tue, 19 Mar 2013 17:44:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040053.15064.93652.stgit@localhost6.localdomain6>
+Date: Tue, 19 Mar 2013 14:44:16 -0700
+In-Reply-To: <20130316040053.15064.93652.stgit@localhost6.localdomain6>
+	(HATAYAMA Daisuke's message of "Sat, 16 Mar 2013 13:00:53 +0900")
+Message-ID: <87ppyvnjyn.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+caWOOf/4mEW/H1pBqd8uc/2KNSu9m9RQ=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 01/21] vmcore: reference e_phoff member explicitly to get position of program header table
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, if you did an "ifconfig down" or similar on one core, and
-the kernel had CONFIG_XFRM enabled, every core would be interrupted to
-check its percpu flow list for items that could be garbage collected.
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-With this change, we generate a mask of cores that actually have any
-percpu items, and only interrupt those cores.  When we are trying to
-isolate a set of cpus from interrupts, this is important to do.
+> Currently, the code assumes that position of program header table is
+> next to ELF header. But future change can break the assumption on
+> kexec-tools and the 1st kernel. To avoid worst case, reference e_phoff
+> member explicitly to get position of program header table in
+> file-offset.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-This change stands alone so could be taken into the net tree if
-desired, but it is most useful in the context of Frederic Weisbecker's
-linux-dynticks work.  So it could be taken up through either tree,
-but it certainly needs sign-off from someone familiar with net/core/flow.c.
+In principle this looks good.  However when I read this it looks like
+you are going a little too far.
 
- net/core/flow.c |   42 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 39 insertions(+), 3 deletions(-)
+You are changing not only the reading of the supplied headers, but
+you are changing the generation of the new new headers that describe
+the data provided by /proc/vmcore.
 
-diff --git a/net/core/flow.c b/net/core/flow.c
-index c56ea6f..7fae135 100644
---- a/net/core/flow.c
-+++ b/net/core/flow.c
-@@ -323,6 +323,24 @@ static void flow_cache_flush_tasklet(unsigned long data)
- 		complete(&info->completion);
- }
- 
-+/*
-+ * Return whether a cpu needs flushing.  Conservatively, we assume
-+ * the presence of any entries means the core may require flushing,
-+ * since the flow_cache_ops.check() function may assume it's running
-+ * on the same core as the per-cpu cache component.
-+ */
-+static int flow_cache_percpu_empty(struct flow_cache *fc, int cpu)
-+{
-+	struct flow_cache_percpu *fcp;
-+	int i;
-+
-+	fcp = &per_cpu(*fc->percpu, cpu);
-+	for (i = 0; i < flow_cache_hash_size(fc); i++)
-+		if (!hlist_empty(&fcp->hash_table[i]))
-+			return 0;
-+	return 1;
-+}
-+
- static void flow_cache_flush_per_cpu(void *data)
- {
- 	struct flow_flush_info *info = data;
-@@ -337,22 +355,40 @@ void flow_cache_flush(void)
- {
- 	struct flow_flush_info info;
- 	static DEFINE_MUTEX(flow_flush_sem);
-+	cpumask_var_t mask;
-+	int i, self;
-+
-+	/* Track which cpus need flushing to avoid disturbing all cores. */
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		return;
-+	cpumask_clear(mask);
- 
- 	/* Don't want cpus going down or up during this. */
- 	get_online_cpus();
- 	mutex_lock(&flow_flush_sem);
- 	info.cache = &flow_cache_global;
--	atomic_set(&info.cpuleft, num_online_cpus());
-+	for_each_online_cpu(i)
-+		if (!flow_cache_percpu_empty(info.cache, i))
-+			cpumask_set_cpu(i, mask);
-+	atomic_set(&info.cpuleft, cpumask_weight(mask));
-+	if (atomic_read(&info.cpuleft) == 0)
-+		goto done;
-+
- 	init_completion(&info.completion);
- 
- 	local_bh_disable();
--	smp_call_function(flow_cache_flush_per_cpu, &info, 0);
--	flow_cache_flush_tasklet((unsigned long)&info);
-+	self = cpumask_test_and_clear_cpu(smp_processor_id(), mask);
-+	on_each_cpu_mask(mask, flow_cache_flush_per_cpu, &info, 0);
-+	if (self)
-+		flow_cache_flush_tasklet((unsigned long)&info);
- 	local_bh_enable();
- 
- 	wait_for_completion(&info.completion);
-+
-+done:
- 	mutex_unlock(&flow_flush_sem);
- 	put_online_cpus();
-+	free_cpumask_var(mask);
- }
- 
- static void flow_cache_flush_task(struct work_struct *work)
--- 
-1.7.10.3
+I get lost in following this after you mangle merge_note_headers.
 
+In principle removing silly assumptions seems reasonable, but I think
+it is completely orthogonal to the task of maping vmcore mmapable.
+
+I think it is fine to claim that the assumptions made here in vmcore are
+part of the kexec on panic ABI at this point, which would generally make
+this change unnecessary.
+
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+>
+>  fs/proc/vmcore.c |   56 +++++++++++++++++++++++++++++++++++-------------------
+>  1 files changed, 36 insertions(+), 20 deletions(-)
+>
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index b870f74..163281e 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -221,8 +221,8 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
+>  	Elf64_Phdr *phdr_ptr;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> -	size = sizeof(Elf64_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+> @@ -238,8 +238,8 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
+>  	Elf32_Phdr *phdr_ptr;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+> -	size = sizeof(Elf32_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+
+> @@ -259,7 +259,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	u64 phdr_sz = 0, note_off;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>  		int j;
+>  		void *notes_section;
+
+Up to here things look good.
+
+> @@ -305,7 +305,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	/* Prepare merged PT_NOTE program header. */
+>  	phdr.p_type    = PT_NOTE;
+>  	phdr.p_flags   = 0;
+> -	note_off = sizeof(Elf64_Ehdr) +
+> +	note_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
+
+And this is is just silly.  There is no point in changing where the
+regenerated headers live.
+
+>  	phdr.p_offset  = note_off;
+>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+> @@ -313,14 +313,14 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	phdr.p_align   = 0;
+>  
+>  	/* Add merged PT_NOTE program header*/
+> -	tmp = elfptr + sizeof(Elf64_Ehdr);
+> +	tmp = elfptr + ehdr_ptr->e_phoff;
+Again this looks very silly.
+
+>  	memcpy(tmp, &phdr, sizeof(phdr));
+>  	tmp += sizeof(phdr);
+>  
+>  	/* Remove unwanted PT_NOTE program headers. */
+>  	i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
+>  	*elfsz = *elfsz - i;
+> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
+> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf64_Phdr)));
+
+This is a regenerated header so this change is dubious.
+
+
+Eric
