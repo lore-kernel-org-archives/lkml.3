@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933979Ab3CSXAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:00:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32916 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425Ab3CSXAQ (ORCPT
+	id S965023Ab3CSXAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:00:37 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40494 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757207Ab3CSXAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:00:16 -0400
-Date: Tue, 19 Mar 2013 16:00:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: gen_pool_add broken with LPAE based systems
-Message-Id: <20130319160014.caabf567b11b5aef65c0ac1d@linux-foundation.org>
-In-Reply-To: <5148EB74.3020407@codeaurora.org>
-References: <514257B7.5080206@codeaurora.org>
-	<20130319145424.8711f4c1b23fb457d2611007@linux-foundation.org>
-	<5148EB74.3020407@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 19 Mar 2013 19:00:35 -0400
+Message-ID: <1363734031.2377.77.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
+ services
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Mar 2013 23:00:31 +0000
+In-Reply-To: <20130319185003.GA13301@srcf.ucam.org>
+References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
+	 <20130319014850.GA28934@srcf.ucam.org>
+	 <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
+	 <20130319163531.GA10879@srcf.ucam.org>
+	 <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
+	 <20130319172506.GA11969@srcf.ucam.org>
+	 <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
+	 <20130319182810.GA13003@srcf.ucam.org>
+	 <1363718456.2377.71.camel@dabdike.int.hansenpartnership.com>
+	 <20130319185003.GA13301@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Mar 2013 15:49:24 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
-
-> On 3/19/2013 2:54 PM, Andrew Morton wrote:
-> > On Thu, 14 Mar 2013 16:05:27 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
-> >
-> >> Hi,
-> >>
-> >> We use genalloc for managing certain pools of physical memory. genalloc
-> >> currently uses unsigned long for virtual addresses and phys_addr_t for
-> >> physical addresses. Our ARM LPAE systems have 64-bit physical addresses
-> >> but unsigned long is still 32 bits.  Using gen_pool_add breaks with
-> >> addresses > 4G because gen_pool_add treats the address passed in as the
-> >> virtual address. gen_pool allocates internally based on the 32 bit
-> >> virtual address as well so everything is broken if we want to be able to
-> >> manage the full address space after 4G. I see a couple of options:
-> >
-> > The above only makes sense if ARM LPAE has 64-bit (actually >= 33-bit)
-> > virtual addresses.  If so, I don't understand how ARM LPAE can work at
-> > all - the core MM assumes that addresses-fit-in-ulongs in eleventy
-> > trillion places.
-> >
-> > I think we need a better description of the problem, please.
-> >
+On Tue, 2013-03-19 at 18:50 +0000, Matthew Garrett wrote:
+> On Tue, Mar 19, 2013 at 06:40:56PM +0000, James Bottomley wrote:
+> > On Tue, 2013-03-19 at 18:28 +0000, Matthew Garrett wrote:
+> > > It requires the key to survive the system being entirely powered down, 
+> > > which means it needs to be BS+NV. It shouldn't be possible for userspace 
+> > > to access this key.
+> > 
+> > It requires the *public* key to survive power down, certainly.  The
+> > private key can be thrown away once the hibernate image is signed.  I
+> > think the scheme can be constructed so the private key is never in NV
+> > storage ... that also makes it more secure against tampering.
 > 
-> Sorry, let me clarify. ARM LPAE still has 32 bit virtual addresses.
-> 
-> Change 3c8f370ded3483b27f1218ff0051fcf0c7a2facd (lib/genalloc.c: add 
-> support for specifying the physical address) added support for using 
-> genalloc to know about both physical addresses and virtual addresses. 
-> Allocation in gen_pool is still based on the virtual address though.
-> 
-> The problem is we've been using genalloc to allocate physical addresses, 
-> not virtual ones so allocating and returning an unsigned long breaks 
-> with sizeof(phys_addr_t) > sizeof(unsigned long). It looks like genalloc 
-> was added and extended with virtual addresses in mind but apart from the 
-> address size limitation right now it should be able to work just fine 
-> for physical addresses.
-> 
-> There seem to be a few other clients scattered about who are using 
-> genalloc for physical addresses as well (although all are 32 bit systems 
-> right now)
+> Well, that somewhat complicates implementation - we'd be encrypting the 
+> entire contents of memory except for the key that we're using to encrypt 
+> memory. Keeping the public key away from userspace avoids having to care 
+> about that.
 
-I see.  So genpool has never worked properly for this application?
+I don't quite understand what you're getting at: the principle of public
+key cryptography is that you can make the public key, well public.  You
+only need to guard the private key.
 
-> A better subject would be 'genalloc broken on LPAE systems when used to 
-> allocate physical addresses instead of virtual addresses'
+James
 
-I'd say "extend genpool so we can use physical addresses instead of
-virtual addresses" ;)
 
-> >> 1) Change gen_pool_add to use physical addresses and allocate based on
-> >> physical addresses instead of virtual addresses
-> >> 2) Change the virtual address to be a 64 bit type or something
-> >> selectable to a 64 bit type.
-> >> 3) Allow a flag per pool to select whether the allocator is virtual or
-> >> physical and switch between those.
-> >> 4) Split the APIs into virtual <-> physical and physical only and have
-> >> separate types for each.
-> >>
-> >> Any of these suggestions seem reasonable or is there another option to
-> >> consider?
-> >
-> > 2) sounds least intrusive but I can't think with my head spinning so fast.
-
-I suppose using a bare u64 for `addr' would fix things up.
-
-I think it's rather regrettable that genpool.c contains terms like
-"addr", "phys" and "virt" at all.  It's in lib/ and it's a
-general-purpose container thing.  It should know whether it's operating
-on addresses or bananas or whatever.  A better layering would be to
-weed all that out of there, implement a truly general-purpose container
-and then add convenience wrappers around that for each particular
-application.
 
