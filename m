@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab3CSK3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 06:29:46 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:41700 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab3CSK3n (ORCPT
+	id S1754988Ab3CSKd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 06:33:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33874 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab3CSKdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 06:29:43 -0400
+	Tue, 19 Mar 2013 06:33:25 -0400
+Date: Tue, 19 Mar 2013 11:33:21 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] imx_drm: ipu_v3: fix invalid free of devm_* allocated
+ data
+Message-ID: <20130319103321.GN1906@pengutronix.de>
+References: <1363435356-2237-1-git-send-email-silviupopescu1990@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130319013805.GG21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
-	<1363184193-1796-1-git-send-email-miklos@szeredi.hu>
-	<1944.1363525619@warthog.procyon.org.uk>
-	<20130318153936.GB28508@quack.suse.cz>
-	<20130318215333.GE21522@ZenIV.linux.org.uk>
-	<20130318230103.GF21522@ZenIV.linux.org.uk>
-	<20130319013805.GG21522@ZenIV.linux.org.uk>
-Date: Tue, 19 Mar 2013 11:29:41 +0100
-Message-ID: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363435356-2237-1-git-send-email-silviupopescu1990@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:32:31 up 269 days,  1:44, 92 users,  load average: 0.81, 4.05,
+ 5.42
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 2:38 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Mar 18, 2013 at 11:01:03PM +0000, Al Viro wrote:
->
->> I'm looking at the existing callers and I really wonder if we ought to
->> push sb_start_write() from ->splice_write()/->aio_write()/etc. into the
->> callers.
->>
->> Something like file_start_write()/file_end_write(), with check for file
->> being regular one might be a good starting point.  As it is, copyup is
->> really fucked both in unionmount and overlayfs...
->
-> BTW, I wonder what's the right locking for that sucker; overlayfs is probably
-> too heavy - we are talking about copying a file from one fs to another, which
-> can obviously take quite a while, so holding ->i_mutex on _parent_ all along
-> is asking for very serious contention.
+On Sat, Mar 16, 2013 at 02:02:36PM +0200, Silviu-Mihai Popescu wrote:
+> The objects allocated by devm_* APIs are managed by devres and are freed
+> when the device is detached. There is no need to use kfree() explicitly.
 
-Copy up is a once-in-a-lifetime event for an object.  Optimizing it is
-way down in the list of things to do.  I'd drop splice in a jiffy if
-it's in the way.
+Not only 'no need', it's simply wrong.
 
-Much more interesting question:  what happens if we crash during a
-rename?  Whiteout implemented in the filesystem won't save us.  And
-the results are interesting: old versions of files become visible and
-similar fun.  Far from likely to happen, but ...
+> 
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 
-Add a rename-with-whiteout primitive on filesystems?  That one is not
-going to be as simple as plain whiteout.  Or?
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-Thanks,
-Miklos
+Sascha
+
+> ---
+>  drivers/staging/imx-drm/ipu-v3/ipu-dp.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> index 26aecaf..113b046 100644
+> --- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+> @@ -316,7 +316,6 @@ int ipu_dp_init(struct ipu_soc *ipu, struct device *dev, unsigned long base)
+>  
+>  	priv->base = devm_ioremap(dev, base, PAGE_SIZE);
+>  	if (!priv->base) {
+> -		kfree(priv);
+>  		return -ENOMEM;
+>  	}
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
