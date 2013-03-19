@@ -1,224 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3CSOam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:30:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36222 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007Ab3CSOal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:30:41 -0400
-Message-ID: <51487681.7060301@ti.com>
-Date: Tue, 19 Mar 2013 16:30:25 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1756593Ab3CSObZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:31:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27922 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab3CSObX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:31:23 -0400
+Date: Tue, 19 Mar 2013 10:31:05 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] xen-blkfront: switch from llist to list
+Message-ID: <20130319143105.GB32432@phenom.dumpdata.com>
+References: <1363625376-35612-1-git-send-email-roger.pau@citrix.com>
+ <1363625376-35612-4-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
-        <rnayak@ti.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
- AUXCLKs
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com>
-In-Reply-To: <1363703220-4777-2-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1363625376-35612-4-git-send-email-roger.pau@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 04:26 PM, Roger Quadros wrote:
-> Register a device tree clock provider for AUX clocks
-> on the OMAP4 SoC. Also provide the binding information.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  .../devicetree/bindings/clock/omap4-clock.txt      |   32 ++++++++++++++++++
->  arch/arm/boot/dts/omap4.dtsi                       |    5 +++
->  arch/arm/mach-omap2/board-generic.c                |    2 +-
->  arch/arm/mach-omap2/cclock44xx_data.c              |   35 ++++++++++++++++++++
->  arch/arm/mach-omap2/clock44xx.h                    |    1 +
->  arch/arm/mach-omap2/common.h                       |    9 +++++
->  arch/arm/mach-omap2/io.c                           |    6 +++
->  7 files changed, 89 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/omap4-clock.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/omap4-clock.txt b/Documentation/devicetree/bindings/clock/omap4-clock.txt
-> new file mode 100644
-> index 0000000..9d5448b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/omap4-clock.txt
-> @@ -0,0 +1,32 @@
-> +* Clock bindings for Texas Instruments OMAP4 SCRM clocks
-> +
-> +Required properties:
-> +- compatible: Should be "ti,omap4-scrm"
-> +- #clock-cells: Should be <1>
-> +
-> +The clock consumer should specify the desired clock by having the clock
-> +ID in its "clocks" phandle cell.  The following is a full list of SCRM
-> +clocks and IDs.
-> +
-> +	Clock		ID
-> +	------------------
-> +	auxclk0_ck	0
-> +	auxclk1_ck	1
-> +	auxclk1_ck	1
-> +	auxclk1_ck	1
-> +	auxclk1_ck	1
+On Mon, Mar 18, 2013 at 05:49:34PM +0100, Roger Pau Monne wrote:
+> Replace the use of llist with list.
+>
 
-Argh! should be 2,3,4,5
+I applied this patch, but I changed the git commit to be:
 
-> +
-> +Example:
-> +
-> +aux_clks: scrmclks {
-> +	compatible = "ti,omap4-scrm";
-> +	#clock-cells = <1>;
-> +};
-> +
-> +hsusb1_phy: hsusb1_phy {
-> +	compatible = "usb-nop-xceiv";
-> +	reset-supply = <&hsusb1_reset>;
-> +	clocks = <&aux_clks 3>;
-> +	clock-names = "main_clk";
-> +	clock-frequency = <19200000>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index b7db1a2..97de56c 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -101,6 +101,11 @@
->  			ti,hwmods = "counter_32k";
->  		};
->  
-> +		aux_clks: scrmclks {
-> +			compatible = "ti,omap4-scrm";
-> +			#clock-cells = <1>;
-> +		};
-> +
->  		omap4_pmx_core: pinmux@4a100040 {
->  			compatible = "ti,omap4-padconf", "pinctrl-single";
->  			reg = <0x4a100040 0x0196>;
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 0274ff7..23f2064 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -158,7 +158,7 @@ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
->  	.init_irq	= omap_gic_of_init,
->  	.init_machine	= omap_generic_init,
->  	.init_late	= omap4430_init_late,
-> -	.init_time	= omap4_local_timer_init,
-> +	.init_time	= omap4_init_time,
->  	.dt_compat	= omap4_boards_compat,
->  	.restart	= omap44xx_restart,
->  MACHINE_END
-> diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
-> index 3d58f33..bfc46c1 100644
-> --- a/arch/arm/mach-omap2/cclock44xx_data.c
-> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
-> @@ -27,6 +27,7 @@
->  #include <linux/clk-private.h>
->  #include <linux/clkdev.h>
->  #include <linux/io.h>
-> +#include <linux/of.h>
->  
->  #include "soc.h"
->  #include "iomap.h"
-> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
->  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
->  };
->  
-> +static struct clk *scrm_clks[] = {
-> +	&auxclk0_ck,
-> +	&auxclk1_ck,
-> +	&auxclk2_ck,
-> +	&auxclk3_ck,
-> +	&auxclk4_ck,
-> +	&auxclk5_ck,
-> +};
-> +
-> +static struct clk_onecell_data scrm_data;
-> +
-> +#ifdef CONFIG_OF
-> +int __init omap4_clk_init_dt(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-scrm");
-> +	if (np) {
-> +		scrm_data.clks = scrm_clks;
-> +		scrm_data.clk_num = ARRAY_SIZE(scrm_clks);
-> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&scrm_data);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +#else
-> +
-> +int __init omap4_clk_init_dt(void)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_OF */
-> +
->  int __init omap4xxx_clk_init(void)
->  {
->  	u32 cpu_clkflg;
-> diff --git a/arch/arm/mach-omap2/clock44xx.h b/arch/arm/mach-omap2/clock44xx.h
-> index 287a46f..6395f63 100644
-> --- a/arch/arm/mach-omap2/clock44xx.h
-> +++ b/arch/arm/mach-omap2/clock44xx.h
-> @@ -16,5 +16,6 @@
->  #define OMAP4430_REGM4XEN_MULT	4
->  
->  int omap4xxx_clk_init(void);
-> +int omap4_clk_init_dt(void);
->  
->  #endif
-> diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-> index 0a6b9c7..1941d1c 100644
-> --- a/arch/arm/mach-omap2/common.h
-> +++ b/arch/arm/mach-omap2/common.h
-> @@ -98,6 +98,7 @@ void am35xx_init_early(void);
->  void ti81xx_init_early(void);
->  void am33xx_init_early(void);
->  void omap4430_init_early(void);
-> +void omap4_init_time(void);
->  void omap5_init_early(void);
->  void omap3_init_late(void);	/* Do not use this one */
->  void omap4430_init_late(void);
-> @@ -143,6 +144,14 @@ static inline void omap44xx_restart(char mode, const char *cmd)
->  }
->  #endif
->  
-> +#ifdef CONFIG_ARCH_OMAP4
-> +void omap4_init_time(void);
-> +#else
-> +static inline void omap4_init_time(void)
-> +{
-> +}
-> +#endif
-> +
->  /* This gets called from mach-omap2/io.c, do not call this */
->  void __init omap2_set_globals_tap(u32 class, void __iomem *tap);
->  
-> diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-> index 2c3fdd6..c504363 100644
-> --- a/arch/arm/mach-omap2/io.c
-> +++ b/arch/arm/mach-omap2/io.c
-> @@ -603,6 +603,12 @@ void __init omap4430_init_late(void)
->  	omap4_pm_init();
->  	omap2_clk_enable_autoidle_all();
->  }
-> +
-> +void __init omap4_init_time(void)
-> +{
-> +	omap4_clk_init_dt();
-> +	omap4_local_timer_init();
-> +}
->  #endif
->  
->  #ifdef CONFIG_SOC_OMAP5
-> 
+ 
+commit 155b7edb51430a280f86c1e21b7be308b0d219d4
+Author: Roger Pau Monne <roger.pau@citrix.com>
+Date:   Mon Mar 18 17:49:34 2013 +0100
 
+    xen-blkfront: switch from llist to list
+    
+    The git commit f84adf4921ae3115502f44ff467b04bf2f88cf04
+    (xen-blkfront: drop the use of llist_for_each_entry_safe)
+    
+    was a stop-gate to fix a GCC4.1 bug. The appropiate way
+    is to actually use an list instead of using an llist.
+    
+    As such this patch replaces the usage of llist with an
+    list.
+    
+    Since we always manipulate the list while holding the io_lock, there's
+    no need for additional locking (llist used previously is safe to use
+    concurrently without additional locking).
+    
+    Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+    CC: stable@vger.kernel.org
+    [v1: Redid the git commit description]
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 9620644..97324cd1 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -44,7 +44,7 @@
+ #include <linux/mutex.h>
+ #include <linux/scatterlist.h>
+ #include <linux/bitmap.h>
+-#include <linux/llist.h>
++#include <linux/list.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/xenbus.h>
+@@ -68,7 +68,7 @@ enum blkif_state {
+ struct grant {
+ 	grant_ref_t gref;
+ 	unsigned long pfn;
+-	struct llist_node node;
++	struct list_head node;
+ };
+ 
+ struct blk_shadow {
+@@ -105,7 +105,7 @@ struct blkfront_info
+ 	struct work_struct work;
+ 	struct gnttab_free_callback callback;
+ 	struct blk_shadow shadow[BLK_RING_SIZE];
+-	struct llist_head persistent_gnts;
++	struct list_head persistent_gnts;
+ 	unsigned int persistent_gnts_c;
+ 	unsigned long shadow_free;
+ 	unsigned int feature_flush;
+@@ -371,10 +371,11 @@ static int blkif_queue_request(struct request *req)
+ 			lsect = fsect + (sg->length >> 9) - 1;
+ 
+ 			if (info->persistent_gnts_c) {
+-				BUG_ON(llist_empty(&info->persistent_gnts));
+-				gnt_list_entry = llist_entry(
+-					llist_del_first(&info->persistent_gnts),
+-					struct grant, node);
++				BUG_ON(list_empty(&info->persistent_gnts));
++				gnt_list_entry = list_first_entry(
++				                      &info->persistent_gnts,
++				                      struct grant, node);
++				list_del(&gnt_list_entry->node);
+ 
+ 				ref = gnt_list_entry->gref;
+ 				buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
+@@ -790,9 +791,8 @@ static void blkif_restart_queue(struct work_struct *work)
+ 
+ static void blkif_free(struct blkfront_info *info, int suspend)
+ {
+-	struct llist_node *all_gnts;
+-	struct grant *persistent_gnt, *tmp;
+-	struct llist_node *n;
++	struct grant *persistent_gnt;
++	struct grant *n;
+ 
+ 	/* Prevent new requests being issued until we fix things up. */
+ 	spin_lock_irq(&info->io_lock);
+@@ -804,20 +804,15 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+ 
+ 	/* Remove all persistent grants */
+ 	if (info->persistent_gnts_c) {
+-		all_gnts = llist_del_all(&info->persistent_gnts);
+-		persistent_gnt = llist_entry(all_gnts, typeof(*(persistent_gnt)), node);
+-		while (persistent_gnt) {
++		list_for_each_entry_safe(persistent_gnt, n,
++		                         &info->persistent_gnts, node) {
++			list_del(&persistent_gnt->node);
+ 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+ 			__free_page(pfn_to_page(persistent_gnt->pfn));
+-			tmp = persistent_gnt;
+-			n = persistent_gnt->node.next;
+-			if (n)
+-				persistent_gnt = llist_entry(n, typeof(*(persistent_gnt)), node);
+-			else
+-				persistent_gnt = NULL;
+-			kfree(tmp);
++			kfree(persistent_gnt);
++			info->persistent_gnts_c--;
+ 		}
+-		info->persistent_gnts_c = 0;
++		BUG_ON(info->persistent_gnts_c != 0);
+ 	}
+ 
+ 	/* No more gnttab callback work. */
+@@ -875,7 +870,7 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+ 	}
+ 	/* Add the persistent grant into the list of free grants */
+ 	for (i = 0; i < s->req.u.rw.nr_segments; i++) {
+-		llist_add(&s->grants_used[i]->node, &info->persistent_gnts);
++		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+ 		info->persistent_gnts_c++;
+ 	}
+ }
+@@ -1171,7 +1166,7 @@ static int blkfront_probe(struct xenbus_device *dev,
+ 	spin_lock_init(&info->io_lock);
+ 	info->xbdev = dev;
+ 	info->vdevice = vdevice;
+-	init_llist_head(&info->persistent_gnts);
++	INIT_LIST_HEAD(&info->persistent_gnts);
+ 	info->persistent_gnts_c = 0;
+ 	info->connected = BLKIF_STATE_DISCONNECTED;
+ 	INIT_WORK(&info->work, blkif_restart_queue);
