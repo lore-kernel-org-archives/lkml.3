@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab3CSOyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:54:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6561 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab3CSOya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:54:30 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=FVc5S2mYZKgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=-PlxAUMR4MkA:10 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=g4MMrkNaK493y_Y921UA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363704867.5938.28.camel@gandalf.local.home>
-Subject: Re: [PATCH 7/9] perf util: Get rid of read_or_die() in
- trace-event-read.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 19 Mar 2013 10:54:27 -0400
-In-Reply-To: <1363683224-28804-8-git-send-email-namhyung@kernel.org>
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	 <1363683224-28804-8-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756867Ab3CSOy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:54:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37557 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756654Ab3CSOyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:54:54 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCHv2 00/12] staging: [omap,ti-soc]-thermal: fixes and renaming
+Date: Tue, 19 Mar 2013 10:54:16 -0400
+Message-ID: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Rename it to do_read and original do_read to __do_read, and check
-> their return value.
-> 
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/trace-event-read.c | 80 +++++++++++++++++++++++++++-----------
->  1 file changed, 57 insertions(+), 23 deletions(-)
-> 
-> diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-> index 62dd2168f4f5..87f0ccd54cdc 100644
-> --- a/tools/perf/util/trace-event-read.c
-> +++ b/tools/perf/util/trace-event-read.c
-> @@ -48,7 +48,7 @@ static int long_size;
->  static ssize_t calc_data_size;
->  static bool repipe;
->  
-> -static int do_read(int fd, void *buf, int size)
-> +static int __do_read(int fd, void *buf, int size)
->  {
->  	int rsize = size;
->  
-> @@ -61,8 +61,10 @@ static int do_read(int fd, void *buf, int size)
->  		if (repipe) {
->  			int retw = write(STDOUT_FILENO, buf, ret);
->  
-> -			if (retw <= 0 || retw != ret)
-> -				die("repiping input file");
-> +			if (retw <= 0 || retw != ret) {
-> +				pr_debug("repiping input file");
+Hello Greg,
 
-Again, why debug and not err?
+This is version 2 of this series to rename omap-thermal driver
+inside staging tree. V1 is found here:
+http://lkml.org/lkml/2013/3/18/357
 
-> +				return -1;
-> +			}
->  		}
->  
->  		size -= ret;
-> @@ -72,14 +74,16 @@ static int do_read(int fd, void *buf, int size)
->  	return rsize;
->  }
->  
-> -static int read_or_die(void *data, int size)
-> +static int do_read(void *data, int size)
->  {
->  	int r;
->  
-> -	r = do_read(input_fd, data, size);
-> -	if (r <= 0)
-> -		die("reading input file (size expected=%d received=%d)",
-> -		    size, r);
-> +	r = __do_read(input_fd, data, size);
-> +	if (r <= 0) {
-> +		pr_debug("reading input file (size expected=%d received=%d)",
-> +			 size, r);
-> +		return -1;
-> +	}
->  
->  	if (calc_data_size)
->  		calc_data_size += r;
-> @@ -95,7 +99,7 @@ static void skip(int size)
->  
->  	while (size) {
->  		r = size > BUFSIZ ? BUFSIZ : size;
-> -		read_or_die(buf, r);
-> +		do_read(buf, r);
+The idea of the series is the same. It includes several fixes, but
+the major change is that now the driver will be named ti-soc-thermal,
+because it will support not only OMAP chips.
 
-Shouldn't this check the result of do_read()?
+Difference from previous version is that:
+. now PATCHv1 02/08 has been dropped (based on discussions),
+. PATCHv1 04/08 has been split, to make review process easier
+. last tree patch of this series are new fixes.
 
->  		size -= r;
->  	};
->  }
 
--- Steve
+For those interested in testing and trying the driver, these patches are
+also available, as usual, here:
+git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
+https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
 
+
+All best,
+
+Eduardo Valentin (12):
+  staging: omap-thermal: fix return value
+  staging: omap-thermal: rename bg_ptr to bgp
+  staging: rename omap-thermal driver to ti-soc-thermal
+  staging: ti-soc-thermal: rename Kconfig options
+  staging: ti-soc-thermal: rename symbols to use better prefix
+  staging: ti-soc-thermal: make unexported functions local
+  staging: ti-soc-thermal: split writable data from readonly data
+  stating: ti-soc-thermal: use sizeof(*pointer) while allocating
+  staging: ti-soc-thermal: fix several kernel-doc warnings and error
+  staging: ti-soc-thermal: fix condition to apply hyst
+  staging: ti-soc-thermal: fix bitfield writing while updating
+    thresholds
+  staging: ti-soc-thermal: propagate error code
+
+ drivers/staging/Kconfig                            |    2 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/omap-thermal/Makefile              |    5 -
+ drivers/staging/omap-thermal/omap-bandgap.c        | 1300 --------------------
+ drivers/staging/omap-thermal/omap-thermal-common.c |  338 -----
+ .../{omap-thermal => ti-soc-thermal}/Kconfig       |   20 +-
+ drivers/staging/ti-soc-thermal/Makefile            |    5 +
+ .../staging/{omap-thermal => ti-soc-thermal}/TODO  |    4 +-
+ .../omap4-thermal-data.c                           |   68 +-
+ .../omap4xxx-bandgap.h                             |    0
+ .../omap5-thermal-data.c                           |   20 +-
+ .../omap5xxx-bandgap.h                             |    0
+ drivers/staging/ti-soc-thermal/ti-bandgap.c        | 1297 +++++++++++++++++++
+ .../omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} |  190 ++--
+ drivers/staging/ti-soc-thermal/ti-thermal-common.c |  338 +++++
+ .../omap-thermal.h => ti-soc-thermal/ti-thermal.h} |   34 +-
+ .../ti_soc_thermal.txt}                            |    0
+ 17 files changed, 1813 insertions(+), 1810 deletions(-)
+ delete mode 100644 drivers/staging/omap-thermal/Makefile
+ delete mode 100644 drivers/staging/omap-thermal/omap-bandgap.c
+ delete mode 100644 drivers/staging/omap-thermal/omap-thermal-common.c
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/Kconfig (72%)
+ create mode 100644 drivers/staging/ti-soc-thermal/Makefile
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/TODO (90%)
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4-thermal-data.c (85%)
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4xxx-bandgap.h (100%)
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5-thermal-data.c (96%)
+ rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5xxx-bandgap.h (100%)
+ create mode 100644 drivers/staging/ti-soc-thermal/ti-bandgap.c
+ rename drivers/staging/{omap-thermal/omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} (74%)
+ create mode 100644 drivers/staging/ti-soc-thermal/ti-thermal-common.c
+ rename drivers/staging/{omap-thermal/omap-thermal.h => ti-soc-thermal/ti-thermal.h} (71%)
+ rename drivers/staging/{omap-thermal/omap_bandgap.txt => ti-soc-thermal/ti_soc_thermal.txt} (100%)
+
+-- 
+1.7.7.1.488.ge8e1c
 
