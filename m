@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933474Ab3CSSGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:06:09 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:60505 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083Ab3CSSGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:06:08 -0400
-Date: Tue, 19 Mar 2013 19:05:56 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>
-Subject: Re: drm/i915: new warning (regression) in 3.7.10 and 3.8.3
-Message-ID: <20130319180556.GA2439@netboy.at.omicron.at>
-References: <20130316122849.GA3753@netboy.at.omicron.at>
- <20130318083251.GQ9021@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130318083251.GQ9021@phenom.ffwll.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933569Ab3CSSL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:11:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933423Ab3CSSL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:11:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20130318131224.43ebcf542e6dea358f546198@canb.auug.org.au>
+References: <20130318131224.43ebcf542e6dea358f546198@canb.auug.org.au> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com> <567.1361470653@warthog.procyon.org.uk> <CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com> <20130221183445.GB20629@fenchurch.internal.datastacks.com> <CA+55aFwX5AmMgEAZ8uSdH=8g00xVD3NfnvgBbgSytMGdcifKMg@mail.gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Date: Tue, 19 Mar 2013 18:11:40 +0000
+Message-ID: <21286.1363716700@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 09:32:51AM +0100, Daniel Vetter wrote:
-> 
-> Another pesky BIOS which changes the display state behind our back on lid
-> closing! Should be duct-tapped over with
-> 
-> commit 45e2b5f640b3766da3eda48f6c35f088155c06f3
-> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Date:   Fri Nov 23 18:16:34 2012 +0100
-> 
->     drm/i915: force restore on lid open
-> 
-> which is in 3.8.
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-But that warning was from a 3.8.3 kernel. Any other ideas?
+> David, if I do remove it, are there other patches in your pekey tree that
+> are still going forward?
 
-Thanks,
-Richard
+No.
 
+David
