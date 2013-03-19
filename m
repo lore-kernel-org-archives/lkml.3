@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3CSP6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:58:50 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54528 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932540Ab3CSP6t (ORCPT
+	id S932954Ab3CSP7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:59:21 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:51414 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab3CSP7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:58:49 -0400
-Message-ID: <1363708727.1390.16.camel@x61.thuisdomein>
-Subject: [PATCH] sparc: remove unused "config BITS"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Mar 2013 16:58:47 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2013 15:58:47.0216 (UTC) FILETIME=[A3DF4B00:01CE24BA]
-X-RcptDomain: vger.kernel.org
+	Tue, 19 Mar 2013 11:59:19 -0400
+From: Christophe Aeschlimann <aeschlimann@gmail.com>
+To: khc@pm.waw.pl
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christophe Aeschlimann <c.aeschlimann@acn-group.ch>
+Subject: [PATCH] ixp4xx_eth: set the device dma_coherent_mask
+Date: Tue, 19 Mar 2013 16:59:25 +0100
+Message-Id: <1363708765-20778-1-git-send-email-c.aeschlimann@acn-group.ch>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sparc's asm/module.h got removed in commit
-786d35d45cc40b2a51a18f73e14e135d47fdced7 ("Make most arch asm/module.h
-files use asm-generic/module.h"). That removed the only two uses of this
-Kconfig symbol. So we can remove its entry too.
+Without the mask it is impossible to take the network interface up
+since it returns the following error:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> net eth1: coherent DMA mask is unset
+> ifconfig: SIOCSIFFLAGS: Cannot allocate memory
+
+Tested on an out-of-tree ixp425 based board.
+
+Signed-off-by: Christophe Aeschlimann <c.aeschlimann@acn-group.ch>
 ---
-Eyeball tested.
+ drivers/net/ethernet/xscale/ixp4xx_eth.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
- arch/sparc/Kconfig | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 289127d..991abb2 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -84,12 +84,6 @@ config ARCH_DEFCONFIG
- 	default "arch/sparc/configs/sparc32_defconfig" if SPARC32
- 	default "arch/sparc/configs/sparc64_defconfig" if SPARC64
+diff --git a/drivers/net/ethernet/xscale/ixp4xx_eth.c b/drivers/net/ethernet/xscale/ixp4xx_eth.c
+index 6958a5e..ff23c5c 100644
+--- a/drivers/net/ethernet/xscale/ixp4xx_eth.c
++++ b/drivers/net/ethernet/xscale/ixp4xx_eth.c
+@@ -1398,6 +1398,7 @@ static int eth_init_one(struct platform_device *pdev)
+ 		return -ENOMEM;
  
--# CONFIG_BITS can be used at source level to get 32/64 bits
--config BITS
--	int
--	default 32 if SPARC32
--	default 64 if SPARC64
--
- config IOMMU_HELPER
- 	bool
- 	default y if SPARC64
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
++	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+ 	port = netdev_priv(dev);
+ 	port->netdev = dev;
+ 	port->id = pdev->id;
 -- 
-1.7.11.7
+1.7.9
 
