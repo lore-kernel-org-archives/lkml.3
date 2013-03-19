@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab3CSA3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:29:49 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:65294 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab3CSA3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:29:47 -0400
-Date: Mon, 18 Mar 2013 17:29:42 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: use atomic_inc_unless_negative in sysfs_get_active
-Message-ID: <20130319002942.GI3042@htj.dyndns.org>
-References: <5139FEAF.5080200@gmail.com>
- <20130319001418.GA13502@kroah.com>
+	id S932912Ab3CSA35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:29:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41052 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754433Ab3CSA3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 20:29:54 -0400
+Message-ID: <5147B0EC.2020907@zytor.com>
+Date: Mon, 18 Mar 2013 17:27:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130319001418.GA13502@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] x86, kdump: Set crashkernel_low automatically
+References: <514783B4.2030401@zytor.com> <1363641957-5247-1-git-send-email-yinghai@kernel.org> <51479AAD.7040209@zytor.com> <CAE9FiQXFabEpW0SpJZ+88zMZmQvExTzXU7+MOqBRx-JD61aJPg@mail.gmail.com>
+In-Reply-To: <CAE9FiQXFabEpW0SpJZ+88zMZmQvExTzXU7+MOqBRx-JD61aJPg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 05:14:18PM -0700, Greg KH wrote:
-> On Fri, Mar 08, 2013 at 04:07:27PM +0100, Maarten Lankhorst wrote:
-> > It seems that sysfs has an interesting way of doing the same thing.
-> > This removes the cpu_relax unfortunately, but if it's really needed,
-> > it would be better to add this to include/linux/atomic.h to benefit
-> > all atomic ops users.
-> > 
-> > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> >  ---
+On 03/18/2013 04:26 PM, Yinghai Lu wrote:
 > 
-> Tejun wrote this code originally, so I'll defer to him as to if the
-> patch below is a valid cleanup or not.
+> now only have:
+> swiotlb overflow buffer
+> 
+>         v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
+>                                                 PAGE_ALIGN(io_tlb_overflow));
+> 
+> and
+>      /*
+>       * When the IOMMU overflows we return a fallback buffer. This
+> sets the size.
+>      */
+>      static unsigned long io_tlb_overflow = 32*1024;
+> 
+> so it is 32K, and I round it to 8M.
+> 
 
-Yeah, I think that code predates atomic_inc_unless_negative().
-
-> > diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> > index 2fbdff6..7f968ed 100644
-> > --- a/fs/sysfs/dir.c
-> > +++ b/fs/sysfs/dir.c
-> > @@ -165,21 +165,8 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
-> >  	if (unlikely(!sd))
-> >  		return NULL;
-> >  
-> > -	while (1) {
-> > -		int v, t;
-> > -
-> > -		v = atomic_read(&sd->s_active);
-> > -		if (unlikely(v < 0))
-> > -			return NULL;
-> > -
-> > -		t = atomic_cmpxchg(&sd->s_active, v, v + 1);
-> > -		if (likely(t == v))
-> > -			break;
-> > -		if (t < 0)
-> > -			return NULL;
-> > -
-> > -		cpu_relax();
-> > -	}
-> > +	if (!atomic_inc_unless_negative(&sd->s_active))
-> > +		return NULL;
-
-Looks good to me.
-
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
+So put that into prose, understandable by someone who hasn't followed
+this discussion (say, five years from now), and make that part of the
+commit.
 
 -- 
-tejun
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
