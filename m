@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933660Ab3CSSUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:20:00 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47341 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933258Ab3CSST7 (ORCPT
+	id S933621Ab3CSSXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:23:36 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39915 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933386Ab3CSSXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:19:59 -0400
-Date: Tue, 19 Mar 2013 18:19:40 +0000
-From: Catalin Marinas <Catalin.Marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm64 patches for 3.9
-Message-ID: <20130319181939.GD9321@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 19 Mar 2013 14:23:34 -0400
+Message-ID: <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
+ services
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Mar 2013 18:23:31 +0000
+In-Reply-To: <20130319172506.GA11969@srcf.ucam.org>
+References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
+	 <20130319014850.GA28934@srcf.ucam.org>
+	 <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
+	 <20130319163531.GA10879@srcf.ucam.org>
+	 <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
+	 <20130319172506.GA11969@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2013-03-19 at 17:25 +0000, Matthew Garrett wrote:
+> On Tue, Mar 19, 2013 at 05:17:27PM +0000, James Bottomley wrote:
+> > On Tue, 2013-03-19 at 16:35 +0000, Matthew Garrett wrote:
+> > > On Tue, Mar 19, 2013 at 08:14:45AM +0000, James Bottomley wrote:
+> > > 
+> > > > Any security assumptions that rely on inability to read certain
+> > > > information aren't really going to be that secure.  Inability to modify,
+> > > > sure, but inability to read, not really.
+> > > 
+> > > Well, I guess that's public/private key cryptography screwed.
+> > 
+> > Well, OK, it's ex-BIOS writers we're dealing with, so I won't say no-one
+> > would be stupid enough to come up with a security scheme embedding
+> > Private Keys in BS+NV variables, but I would have thought the fact that
+> > Linux would blow the lid off it might be a good incentive not to do it
+> > and thus a plus point for this patch.
+> 
+> The hibernation scheme we'd discussed involved having the first stage 
+> loader generating a keypair and handing half of it to the OS for 
+> encryption of the hibernation partition, then handing the other half to 
+> the OS on the next boot so it can decrypt it. That requires non-RT 
+> variables to be restricted from OS visibility.
 
-Please pull the arm64 fixes below. Thanks.
+The scheme we discussed, unless something radically changed, was to
+convey a temporary key pair via a mechanism to later verify the
+hybernate kernel on a resume.  That only requires reboot safe knowledge
+of the public key.  The private key can be conveyed in BS only (not NV),
+and should be consumed (as in deleted) by the OS when it receives it, so
+it wouldn't be exposed by this patch.
 
-The following changes since commit a937536b868b8369b98967929045f1df54234323:
+James
 
-  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
-
-for you to fetch changes up to 792072066d30372772137be9ee2f4d72d77329f9:
-
-  arm64: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS (2013-03-19 16:19:19 +0000)
-
-----------------------------------------------------------------
-- Fix !SMP build error.
-- Fix padding computation in struct ucontext (no ABI change).
-- Minor clean-up after the signal patches (unused var).
-- Two old Kconfig options clean-up.
-
-----------------------------------------------------------------
-Andreas Schwab (1):
-      arm64: fix padding computation in struct ucontext
-
-Catalin Marinas (2):
-      arm64: Removed unused variable in compat_setup_rt_frame()
-      arm64: Fix build error with !SMP
-
-Paul Bolle (2):
-      arm64: Do not select GENERIC_HARDIRQS_NO_DEPRECATED
-      arm64: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS
-
- arch/arm64/Kconfig                |  1 -
- arch/arm64/Kconfig.debug          | 11 -----------
- arch/arm64/configs/defconfig      |  1 -
- arch/arm64/include/asm/ucontext.h |  2 +-
- arch/arm64/kernel/arm64ksyms.c    |  2 ++
- arch/arm64/kernel/signal32.c      |  1 -
- 6 files changed, 3 insertions(+), 15 deletions(-)
