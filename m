@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3CSLFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 07:05:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8862 "EHLO mx1.redhat.com"
+	id S1752023Ab3CSLGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 07:06:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60936 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab3CSLFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 07:05:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com>
-References: <CAJfpegt8Zi3f5VxWc0kGRFcra3x_rze8j6dKCCTb4t+ViMCVYA@mail.gmail.com> <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <1944.1363525619@warthog.procyon.org.uk> <20130318153936.GB28508@quack.suse.cz> <20130318215333.GE21522@ZenIV.linux.org.uk> <20130318230103.GF21522@ZenIV.linux.org.uk> <20130319013805.GG21522@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Jan Kara <jack@suse.cz>, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Date: Tue, 19 Mar 2013 11:04:10 +0000
-Message-ID: <28283.1363691050@warthog.procyon.org.uk>
+	id S1750971Ab3CSLGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 07:06:52 -0400
+Date: Tue, 19 Mar 2013 11:06:48 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/10] mm: vmscan: Block kswapd if it is encountering
+ pages under writeback
+Message-ID: <20130319110648.GL2055@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-8-git-send-email-mgorman@suse.de>
+ <m21ubejd2p.fsf@firstfloor.org>
+ <20130317151917.GD2026@suse.de>
+ <20130317154013.GC20853@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130317154013.GC20853@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
-
-> > BTW, I wonder what's the right locking for that sucker; overlayfs is
-> > probably too heavy - we are talking about copying a file from one fs to
-> > another, which can obviously take quite a while, so holding ->i_mutex on
-> > _parent_ all along is asking for very serious contention.
+On Sun, Mar 17, 2013 at 04:40:13PM +0100, Andi Kleen wrote:
+> > > BTW longer term the code would probably be a lot clearer with a
+> > > real explicit state machine instead of all these custom state bits.
+> > > 
+> > 
+> > I would expect so even though it'd be a major overhawl.
 > 
-> Copy up is a once-in-a-lifetime event for an object.  Optimizing it is
-> way down in the list of things to do.  I'd drop splice in a jiffy if
-> it's in the way.
+> A lot of these VM paths need overhaul because they usually don't
+> do enough page batching to perform really well on larger systems.
+> 
 
-Yes, but it could block the parent directory for a long time.  I suspect it's
-fine if you can RCU walk through the parent, but if you have to grab a lock on
-it...
+While I agree this is also a serious issue and one you brought up last year,
+the issue here is that page reclaim is making bad decisions for ordinary
+machines. The figures in the leader patch show that a single-threaded
+background write is enough to push an active application into swap.
 
-David
+For reclaim, the batching that is meant to mitigate part of this problem
+is page lruvecs but that has been causing its own problems recently. At
+some point the bullet will have to be bitten by removing pagevecs, seeing
+what falls out and then design and implement a better batching mechanism
+for handling large numbers of struct pages.
+
+-- 
+Mel Gorman
+SUSE Labs
