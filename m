@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3CSCIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 22:08:22 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47194 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab3CSCIV (ORCPT
+	id S933290Ab3CSCJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:09:26 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:61975 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab3CSCJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 22:08:21 -0400
-Date: Tue, 19 Mar 2013 10:08:11 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, shangw@linux.vnet.ibm.com,
-        linuxram@us.ibm.com
-Subject: Re: [PATCH 1/2] driver core: remove device_add_attrs() in
- drivers/base/bus.c
-Message-ID: <20130319020811.GA10936@weiyang.vnet.ibm.com>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1362622966-20003-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <1362622966-20003-2-git-send-email-weiyang@linux.vnet.ibm.com>
- <20130319001822.GC13502@kroah.com>
+	Mon, 18 Mar 2013 22:09:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130319001822.GC13502@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031902-9574-0000-0000-000007185B9D
+In-Reply-To: <20130319020316.GB21319@kroah.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+	<20130316213519.2974.38954.stgit@amt.stowe>
+	<20130316221159.GA3702@kroah.com>
+	<1363477853.2423.25.camel@zim.stowe>
+	<20130317010317.GB9641@kroah.com>
+	<5147C541.1080304@gmail.com>
+	<20130319020316.GB21319@kroah.com>
+Date: Mon, 18 Mar 2013 20:09:22 -0600
+Message-ID: <CADLC3L2hKYPsW4fvg6tbptBc1r7LS=7Ndwhp4mZ3BKzJq6z-eg@mail.gmail.com>
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
+        kay@vrfy.org, linux-hotplug@vger.kernel.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 05:18:22PM -0700, Greg KH wrote:
->On Thu, Mar 07, 2013 at 10:22:45AM +0800, Wei Yang wrote:
->> Originally, we have two functions named device_add_attrs() in
->> drivers/base/bus.c and drivers/base/core.c. This will cause some confusion
->> when reading the code.
+On Mon, Mar 18, 2013 at 8:03 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Mar 18, 2013 at 07:54:09PM -0600, Robert Hancock wrote:
+>> On 03/16/2013 07:03 PM, Greg KH wrote:
+>> >On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
+>> >>On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
+>> >>>On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
+>> >>>>Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
+>> >>>>Port space and MMIO.  This memory regions correspond to the device's
+>> >>>>internal status and control registers used to drive the device.
+>> >>>>
+>> >>>>Accessing these registers from userspace such as "udevadm info
+>> >>>>--attribute-walk --path=/sys/devices/..." does can not be allowed as
+>> >>>>such accesses outside of the driver, even just reading, can yield
+>> >>>>catastrophic consequences.
+>> >>>>
+>> >>>>Udevadm-info skips parsing a specific set of sysfs entries including
+>> >>>>'resource'.  This patch extends the set to include the additional
+>> >>>>'resource<N>' entries that correspond to a PCI device's BARs.
+>> >>>
+>> >>>Nice, are you also going to patch bash to prevent a user from reading
+>> >>>these sysfs files as well?  :)
+>> >>>
+>> >>>And pciutils?
+>> >>>
+>> >>>You get my point here, right?  The root user just asked to read all of
+>> >>>the data for this device, so why wouldn't you allow it?  Just like
+>> >>>'lspci' does.  Or bash does.
+>>
+>> lspci doesn't randomly attempt to access device registers, AFAIK..
 >
->Why?  It's just static functions.
+> Have you read the man page for the '-xxx' option to lspci?  lspci can be
+> quite intrusive, and I used to have a number of systems that it would
+> trash very easily if you ran it on them as root.
+>
+>> >>Yes :P , you raise a very good point, there are a lot of way a user can
+>> >>poke around in those BARs.  However, there is a difference between
+>> >>shooting yourself in the foot and getting what you deserve versus
+>> >>unknowingly executing a common command such as udevadm and having the
+>> >>system hang.
+>> >>>
+>> >>>If this hardware has a problem, then it needs to be fixed in the kernel,
+>> >>>not have random band-aids added to various userspace programs to paper
+>> >>>over the root problem here.  Please fix the kernel driver and all should
+>> >>>be fine.  No need to change udevadm.
+>> >>
+>> >>Xiangliang initially proposed a patch within the PCI core.  Ignoring the
+>> >>specific issue with the proposal which I pointed out in the
+>> >>https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
+>> >>the right place to effect a change either as PCI's core isn't concerned
+>> >>with the contents or access limitations of those regions, those are
+>> >>issues that the driver concerns itself with.
+>> >>
+>> >>So things seem to be gravitating towards the driver.  I'm fairly
+>> >>ignorant of this area but as Robert succinctly pointed out in the
+>> >>originating thread - the AHCI driver only uses the device's MMIO region.
+>> >>The I/O related regions are for legacy SFF-compatible ATA ports and are
+>> >>not used to driver the device.  This, coupled with the observance that
+>> >>userspace accesses such as udevadm, and others like you additionally
+>> >>point out, do not filter through the device's driver for seems to
+>> >>suggest that changes to the driver will not help here either.
+>> >
+>> >A PCI quirk should handle this properly, right?  Why not do that?  Worse
+>> >thing, the quirk could just not expose these sysfs files for this
+>> >device, which would solve all userspace program issues, right?
+>>
+>> A PCI quirk implies there is something wrong with this device in
+>> particular. This isn't the case. The device responds properly when
+>> it's accessed as intended. The problem is that udevadm (or other
+>> processes, like a random grep through sysfs for example) is
+>> effectively reading registers willy-nilly. This is absolutely not
+>> safe to do on many devices - and certainly not while a driver is
+>> attached to the device and has claimed the port or MMIO regions that
+>> are being accessed.
+>
+> Then we need to fix that!
+>
+> In the kernel!
+>
+> Don't try to gloss over the problem by changing one random userspace
+> program, you will never catch them all.  Fix the root problem here
+> people, that's all I'm asking for.
+>
+>> Blocking access through these files to a device with an active driver
+>> that's claimed the regions would significantly reduce the chances of
+>> something like this causing problems.
+>
+> Great, that's one possible solution, the other is just not creating the
+> files at all for known problem devices, right?
 
-Hmm, yes, they are static functions.
-
-The confusion comes from myself. When I look for the definitions of the
-function in cscope, it pop out two line with the same name. So I just think
-whether we can help the reader, if there is only one pop up.
-
-Well, I have to admit this is my personal feeling and due to my lack of
-experence.
+I don't think one can reasonably enumerate all problem devices. There
+are probably countless devices which can potentially break if their
+resources (especially IO ports) are read in unexpected ways. Aside
+from devices like this one, which apparently don't like certain IO
+ports being read with certain access widths, there's every device in
+existence with read-to-reset type registers. The fix to this needs to
+apply to all devices.
 
 >
->> And the one in drivers/base/bus.c do the same action as device_add_attributes()
->> in drivers/base/core.c. That would be better to reuse this code.
->
->Possibly, yes, but you put the .h entry in the wrong place, thereby
->exposing a previously static function to the entire kernel, which is not
+> My main point here is, you aren't going to fix this in userspace, fix it
+> in the kernel.
 
-Agree, this is not a good idea to expose an extra interface to the entire
-kernel.
-
->good at all.  Why did you do that?  Are you now going to want to call
->that function from some driver?
-
-The reason for this patch is, the logic in these two functions are the same.
-My purpose is to reuse the code and save some space for the kernel image,
-well, I have to admit it is just a very small piece of space.
-
->
->greg k-h
-
--- 
-Richard Yang
-Help you, Help me
-
+The kernel can help the situation by blocking access to devices with
+an active driver, but it can't fix all cases. Suppose the device has
+no driver loaded yet, how is the kernel supposed to tell the
+difference between software with a legitimate need to access these
+files for virtualization device assignment, etc. and something like
+udevadm or a random grep command that's reading the files without any
+idea what it's doing? udevadm does need to be fixed to avoid accessing
+these files because it's unnecessary and dangerous.
