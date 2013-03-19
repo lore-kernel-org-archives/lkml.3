@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab3CSTtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 15:49:11 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:59997 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab3CSTtJ (ORCPT
+	id S1757276Ab3CSTvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 15:51:32 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:59731 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab3CSTvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 15:49:09 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        thomas.petazzoni@free-electrons.com,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [BUG][mvebu] mvneta: cannot request irq 25 on openblocks-ax3
-Date: Tue, 19 Mar 2013 20:48:41 +0100
-Message-ID: <2482565.pAEcuMH9qj@bender>
-Organization: OpenWrt
-User-Agent: KMail/4.9.5 (Linux/3.5.0-25-generic; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <514895C5.40706@free-electrons.com>
-References: <51486445.8040506@hitachi.com> <514873FB.5050202@hitachi.com> <514895C5.40706@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 19 Mar 2013 15:51:31 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        Dave Jones <davej@redhat.com>, Michel Lespinasse <walken@google.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 4/7] tty: Clarify ldisc variable
+Date: Tue, 19 Mar 2013 15:26:06 -0400
+Message-Id: <1363721169-22445-5-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1363721169-22445-1-git-send-email-peter@hurleysoftware.com>
+References: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+ <1363721169-22445-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 March 2013 17:43:49 Gregory CLEMENT wrote:
-> 
-> Hi Masami,
-> 
-> You can try this patch if you want.
-> I don't have the hardware today so I didn't test it.
-> If you (and also Florian and Ezequiel) can test it and if it fixed
-> the bug, then I will be able send a proper email for it,
+Rename o_ldisc to avoid confusion with the ldisc of the
+'other' tty.
 
-I just tested your patch on RD-A370-A1 and DB-MV784MP-GP and it works fine, 
-thanks! Feel free to add my Tested-by: Florian Fainelli <florian@openwrt.org> 
-to your next submission.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Thanks!
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index a150f95..9ace119 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -516,7 +516,7 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ {
+ 	int retval;
+-	struct tty_ldisc *o_ldisc, *new_ldisc;
++	struct tty_ldisc *old_ldisc, *new_ldisc;
+ 	struct tty_struct *o_tty = tty->link;
+ 
+ 	new_ldisc = tty_ldisc_get(tty, ldisc);
+@@ -540,7 +540,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	/* FIXME: why 'shutoff' input if the ldisc is locked? */
+ 	tty->receive_room = 0;
+ 
+-	o_ldisc = tty->ldisc;
++	old_ldisc = tty->ldisc;
+ 	tty_lock(tty);
+ 
+ 	/* FIXME: for testing only */
+@@ -555,8 +555,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 		return -EIO;
+ 	}
+ 
+-	/* Shutdown the current discipline. */
+-	tty_ldisc_close(tty, o_ldisc);
++	/* Shutdown the old discipline. */
++	tty_ldisc_close(tty, old_ldisc);
+ 
+ 	/* Now set up the new line discipline. */
+ 	tty->ldisc = new_ldisc;
+@@ -566,17 +566,17 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	if (retval < 0) {
+ 		/* Back to the old one or N_TTY if we can't */
+ 		tty_ldisc_put(new_ldisc);
+-		tty_ldisc_restore(tty, o_ldisc);
++		tty_ldisc_restore(tty, old_ldisc);
+ 	}
+ 
+ 	/* At this point we hold a reference to the new ldisc and a
+ 	   a reference to the old ldisc. If we ended up flipping back
+ 	   to the existing ldisc we have two references to it */
+ 
+-	if (tty->ldisc->ops->num != o_ldisc->ops->num && tty->ops->set_ldisc)
++	if (tty->ldisc->ops->num != old_ldisc->ops->num && tty->ops->set_ldisc)
+ 		tty->ops->set_ldisc(tty);
+ 
+-	tty_ldisc_put(o_ldisc);
++	tty_ldisc_put(old_ldisc);
+ 
+ 	/*
+ 	 *	Allow ldisc referencing to occur again
 -- 
-Florian
+1.8.1.2
+
