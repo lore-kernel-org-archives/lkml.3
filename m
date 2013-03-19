@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab3CSDkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 23:40:42 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:52609 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab3CSDkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 23:40:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <5147C821.6070703@gmail.com>
-References: <20130307052854.GA23745@redhat.com>
-	<20130307060230.GA31738@kroah.com>
-	<20130307062626.GA25095@redhat.com>
-	<51429D7A.30906@gmail.com>
-	<5142ABD3.4040106@gmail.com>
-	<CAJd=RBAQ9hxY64R7bn_3-jJ2ey8hMGa+Tm2hQVAosgLdRRtd9g@mail.gmail.com>
-	<CACVXFVN5GOa3wLsVgNu2hyymgMtB9aWMPyKzNsAV+9c8=fxM7A@mail.gmail.com>
-	<51448AC9.7080105@gmail.com>
-	<CACVXFVNDSRnG4avn7YdMQFXbQ7B_ONo79jmhWVGzjqEWGTMWYg@mail.gmail.com>
-	<CACVXFVNCGBAYLbbpE1sBiXFNkJpRxVzY44y3Vok+GA9C0MKr3w@mail.gmail.com>
-	<5144BB15.3020002@gmail.com>
-	<CACVXFVOKi=wKsLP850XJ95P=e1B2z+CP=t0GATCZL0gNDOCwnA@mail.gmail.com>
-	<5145D236.70203@gmail.com>
-	<CACVXFVP7XHO8sT68ETam=R-+cbPjSGqz_xfnt30OiSPEuC4-Sg@mail.gmail.com>
-	<5147C821.6070703@gmail.com>
-Date: Tue, 19 Mar 2013 11:40:39 +0800
-Message-ID: <CACVXFVNMtY5tvAvyqyAyYRwBzfTtZKkDambDUTUNYwd0Q3XkXA@mail.gmail.com>
-Subject: Re: use after free in sysfs_find_dirent
-From: Ming Lei <tom.leiming@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf307d05408c40a504d83ede0b
+	id S1757133Ab3CSDw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 23:52:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63371 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324Ab3CSDw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Mar 2013 23:52:26 -0400
+X-IronPort-AV: E=Sophos;i="4.84,869,1355068800"; 
+   d="scan'208";a="6898010"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: akpm@linux-foundation.org, bhelgaas@google.com
+Cc: linux-mm@kvack.org, x86@kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [PATCH] kernel/range.c: subtract_range: fix the broken phrase issued by printk
+Date: Tue, 19 Mar 2013 11:54:11 +0800
+Message-Id: <1363665251-14377-1-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <CAE9FiQUrt11A0YAOLgvv3uTAWtTvVg3Mho9eD53orbxW6Jd8Vg@mail.gmail.com>
+References: <CAE9FiQUrt11A0YAOLgvv3uTAWtTvVg3Mho9eD53orbxW6Jd8Vg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/19 11:50:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/19 11:51:00,
+	Serialize complete at 2013/03/19 11:51:00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf307d05408c40a504d83ede0b
-Content-Type: text/plain; charset=ISO-8859-1
+Also replace deprecated printk(KERN_ERR...) with pr_err() as suggested
+by Yinghai, attaching the function name to provide plenty info.
 
-Hi Sasha,
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ kernel/range.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-On Tue, Mar 19, 2013 at 10:06 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> [  232.822703] sysfs_dir_pos-973 sysfs_dirent use after free: vx855(vx855)-bind, 0-25520352
-
-Looks filp->f_pos is changed as zero by llseek(), so may leave
-filp->private_data
-point to one refcount-balanced sysfs_dirent object, which will be put
-again afterwards.
-
-Hope we are luck this time, please try the attachment patch.
-
-
-Thanks,
+diff --git a/kernel/range.c b/kernel/range.c
+index 9b8ae2d..071b0ab 100644
+--- a/kernel/range.c
++++ b/kernel/range.c
+@@ -97,7 +97,8 @@ void subtract_range(struct range *range, int az, u64 start, u64 end)
+ 				range[i].end = range[j].end;
+ 				range[i].start = end;
+ 			} else {
+-				printk(KERN_ERR "run of slot in ranges\n");
++				pr_err("%s: run out of slot in ranges\n",
++					__func__);
+ 			}
+ 			range[j].end = start;
+ 			continue;
 -- 
-Ming Lei
+1.8.0.1
 
---20cf307d05408c40a504d83ede0b
-Content-Type: application/octet-stream; name="sysfs-fix-readdir-v2.patch"
-Content-Disposition: attachment; filename="sysfs-fix-readdir-v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hegik9a50
-
-ZGlmZiAtLWdpdCBhL2ZzL3N5c2ZzL2Rpci5jIGIvZnMvc3lzZnMvZGlyLmMKaW5kZXggMmZiZGZm
-Ni4uYTU1ODA4NyAxMDA2NDQKLS0tIGEvZnMvc3lzZnMvZGlyLmMKKysrIGIvZnMvc3lzZnMvZGly
-LmMKQEAgLTI4MCw2ICsyODAsMTEgQEAgdm9pZCByZWxlYXNlX3N5c2ZzX2RpcmVudChzdHJ1Y3Qg
-c3lzZnNfZGlyZW50ICogc2QpCiAJICogc2QtPnNfcGFyZW50IHdvbid0IGNoYW5nZSBiZW5lYXRo
-IHVzLgogCSAqLwogCXBhcmVudF9zZCA9IHNkLT5zX3BhcmVudDsKKwlpZighKHNkLT5zX2ZsYWdz
-ICYgU1lTRlNfRkxBR19SRU1PVkVEKSkgeworCQlwcmludGsoIiVzLSVkIHN5c2ZzX2RpcmVudCB1
-c2UgYWZ0ZXIgZnJlZTogJXMtJXNcbiIsCisJCQlfX2Z1bmNfXywgX19MSU5FX18sIHBhcmVudF9z
-ZC0+c19uYW1lLCBzZC0+c19uYW1lKTsKKwkJZHVtcF9zdGFjaygpOworCX0KIAogCWlmIChzeXNm
-c190eXBlKHNkKSA9PSBTWVNGU19LT0JKX0xJTkspCiAJCXN5c2ZzX3B1dChzZC0+c19zeW1saW5r
-LnRhcmdldF9zZCk7CkBAIC05NjIsNiArOTY3LDEyIEBAIHN0YXRpYyBzdHJ1Y3Qgc3lzZnNfZGly
-ZW50ICpzeXNmc19kaXJfcG9zKGNvbnN0IHZvaWQgKm5zLAogCQlpbnQgdmFsaWQgPSAhKHBvcy0+
-c19mbGFncyAmIFNZU0ZTX0ZMQUdfUkVNT1ZFRCkgJiYKIAkJCXBvcy0+c19wYXJlbnQgPT0gcGFy
-ZW50X3NkICYmCiAJCQloYXNoID09IHBvcy0+c19oYXNoOworCisJCWlmICgoYXRvbWljX3JlYWQo
-JnBvcy0+c19jb3VudCkgPT0gMSkpIHsKKwkJCXByaW50aygiJXMtJWQgc3lzZnNfZGlyZW50IHVz
-ZSBhZnRlciBmcmVlOiAlcyglcyktJXMsICVsbGQtJXVcbiIsCisJCQkJX19mdW5jX18sIF9fTElO
-RV9fLCBwYXJlbnRfc2QtPnNfbmFtZSwgcG9zLT5zX3BhcmVudC0+c19uYW1lLAorCQkJCXBvcy0+
-c19uYW1lLCBoYXNoLCBwb3MtPnNfaGFzaCk7CisJCX0KIAkJc3lzZnNfcHV0KHBvcyk7CiAJCWlm
-ICghdmFsaWQpCiAJCQlwb3MgPSBOVUxMOwpAQCAtMTAxMiw1NiArMTAyMyw4MCBAQCBzdGF0aWMg
-aW50IHN5c2ZzX3JlYWRkaXIoc3RydWN0IGZpbGUgKiBmaWxwLCB2b2lkICogZGlyZW50LCBmaWxs
-ZGlyX3QgZmlsbGRpcikKIAllbnVtIGtvYmpfbnNfdHlwZSB0eXBlOwogCWNvbnN0IHZvaWQgKm5z
-OwogCWlub190IGlubzsKKwlsb2ZmX3QgY3VycjsKKwlpbnQgZGVsdGE7CiAKIAl0eXBlID0gc3lz
-ZnNfbnNfdHlwZShwYXJlbnRfc2QpOwogCW5zID0gc3lzZnNfaW5mbyhkZW50cnktPmRfc2IpLT5u
-c1t0eXBlXTsKIAotCWlmIChmaWxwLT5mX3BvcyA9PSAwKSB7CisJbXV0ZXhfbG9jaygmc3lzZnNf
-bXV0ZXgpOworc3RhcnQ6CisJZGVsdGEgPSAwOworCWN1cnIgPSBmaWxwLT5mX3BvczsKKwltdXRl
-eF91bmxvY2soJnN5c2ZzX211dGV4KTsKKworCWlmIChjdXJyID09IDApIHsKIAkJaW5vID0gcGFy
-ZW50X3NkLT5zX2lubzsKLQkJaWYgKGZpbGxkaXIoZGlyZW50LCAiLiIsIDEsIGZpbHAtPmZfcG9z
-LCBpbm8sIERUX0RJUikgPT0gMCkKLQkJCWZpbHAtPmZfcG9zKys7CisJCWlmIChmaWxsZGlyKGRp
-cmVudCwgIi4iLCAxLCAwLCBpbm8sIERUX0RJUikgPT0gMCkKKwkJCWRlbHRhKys7CiAJfQotCWlm
-IChmaWxwLT5mX3BvcyA9PSAxKSB7CisJaWYgKGN1cnIgPT0gMSkgewogCQlpZiAocGFyZW50X3Nk
-LT5zX3BhcmVudCkKIAkJCWlubyA9IHBhcmVudF9zZC0+c19wYXJlbnQtPnNfaW5vOwogCQllbHNl
-CiAJCQlpbm8gPSBwYXJlbnRfc2QtPnNfaW5vOwotCQlpZiAoZmlsbGRpcihkaXJlbnQsICIuLiIs
-IDIsIGZpbHAtPmZfcG9zLCBpbm8sIERUX0RJUikgPT0gMCkKLQkJCWZpbHAtPmZfcG9zKys7CisJ
-CWlmIChmaWxsZGlyKGRpcmVudCwgIi4uIiwgMiwgMSwgaW5vLCBEVF9ESVIpID09IDApCisJCQlk
-ZWx0YSsrOwogCX0KKwogCW11dGV4X2xvY2soJnN5c2ZzX211dGV4KTsKKwlpZiAoY3VyciA9PSBm
-aWxwLT5mX3BvcykKKwkJZmlscC0+Zl9wb3MgKz0gZGVsdGE7CiAJZm9yIChwb3MgPSBzeXNmc19k
-aXJfcG9zKG5zLCBwYXJlbnRfc2QsIGZpbHAtPmZfcG9zLCBwb3MpOwogCSAgICAgcG9zOwogCSAg
-ICAgcG9zID0gc3lzZnNfZGlyX25leHRfcG9zKG5zLCBwYXJlbnRfc2QsIGZpbHAtPmZfcG9zLCBw
-b3MpKSB7CiAJCWNvbnN0IGNoYXIgKiBuYW1lOwogCQl1bnNpZ25lZCBpbnQgdHlwZTsKIAkJaW50
-IGxlbiwgcmV0OworCQlsb2ZmX3Qgb2ZmOwogCiAJCW5hbWUgPSBwb3MtPnNfbmFtZTsKIAkJbGVu
-ID0gc3RybGVuKG5hbWUpOwogCQlpbm8gPSBwb3MtPnNfaW5vOwogCQl0eXBlID0gZHRfdHlwZShw
-b3MpOwotCQlmaWxwLT5mX3BvcyA9IHBvcy0+c19oYXNoOworCQlvZmYgPSBmaWxwLT5mX3BvcyA9
-IHBvcy0+c19oYXNoOwogCQlmaWxwLT5wcml2YXRlX2RhdGEgPSBzeXNmc19nZXQocG9zKTsKIAog
-CQltdXRleF91bmxvY2soJnN5c2ZzX211dGV4KTsKLQkJcmV0ID0gZmlsbGRpcihkaXJlbnQsIG5h
-bWUsIGxlbiwgZmlscC0+Zl9wb3MsIGlubywgdHlwZSk7CisJCXJldCA9IGZpbGxkaXIoZGlyZW50
-LCBuYW1lLCBsZW4sIG9mZiwgaW5vLCB0eXBlKTsKIAkJbXV0ZXhfbG9jaygmc3lzZnNfbXV0ZXgp
-OwogCQlpZiAocmV0IDwgMCkKIAkJCWJyZWFrOworCQlpZiAoZmlscC0+Zl9wb3MgPT0gMCB8fCBm
-aWxwLT5mX3BvcyA9PSAxKQorCQkJCWdvdG8gc3RhcnQ7CiAJfQotCW11dGV4X3VubG9jaygmc3lz
-ZnNfbXV0ZXgpOwogCWlmICgoZmlscC0+Zl9wb3MgPiAxKSAmJiAhcG9zKSB7IC8qIEVPRiAqLwog
-CQlmaWxwLT5mX3BvcyA9IElOVF9NQVg7CiAJCWZpbHAtPnByaXZhdGVfZGF0YSA9IE5VTEw7CiAJ
-fQorCW11dGV4X3VubG9jaygmc3lzZnNfbXV0ZXgpOwogCXJldHVybiAwOwogfQogCitzdGF0aWMg
-bG9mZl90IHN5c2ZzX2Rpcl9sbHNlZWsoc3RydWN0IGZpbGUgKmZpbGUsIGxvZmZfdCBvZmZzZXQs
-IGludCB3aGVuY2UpCit7CisJCWxvZmZfdCByZXQ7CisKKwkJbXV0ZXhfbG9jaygmc3lzZnNfbXV0
-ZXgpOworCQlyZXQgPSBnZW5lcmljX2ZpbGVfbGxzZWVrKGZpbGUsIG9mZnNldCwgd2hlbmNlKTsK
-KwkJbXV0ZXhfdW5sb2NrKCZzeXNmc19tdXRleCk7CisKKwkJcmV0dXJuIHJldDsKK30KIAogY29u
-c3Qgc3RydWN0IGZpbGVfb3BlcmF0aW9ucyBzeXNmc19kaXJfb3BlcmF0aW9ucyA9IHsKIAkucmVh
-ZAkJPSBnZW5lcmljX3JlYWRfZGlyLAogCS5yZWFkZGlyCT0gc3lzZnNfcmVhZGRpciwKIAkucmVs
-ZWFzZQk9IHN5c2ZzX2Rpcl9yZWxlYXNlLAotCS5sbHNlZWsJCT0gZ2VuZXJpY19maWxlX2xsc2Vl
-aywKKwkubGxzZWVrCQk9IHN5c2ZzX2Rpcl9sbHNlZWssCiB9Owo=
---20cf307d05408c40a504d83ede0b--
