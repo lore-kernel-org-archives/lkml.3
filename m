@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab3CSG7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 02:59:49 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:60939 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab3CSG7r (ORCPT
+	id S932816Ab3CSHBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 03:01:19 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:46674 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab3CSHBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 02:59:47 -0400
-Message-ID: <51480C99.8090206@linux.vnet.ibm.com>
-Date: Tue, 19 Mar 2013 14:58:33 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 19 Mar 2013 03:01:18 -0400
+Message-ID: <51480D07.5060505@lab.ntt.co.jp>
+Date: Tue, 19 Mar 2013 16:00:23 +0900
+From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Dong Hao <haodong@linux.vnet.ibm.com>
-CC: gregkh@linuxfoundation.org, shangw@linux.vnet.ibm.com,
-        weiyang@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] lib/kobject: Panic when kobj or ktype is not properly
- assigned
-References: <1363675621-31186-1-git-send-email-haodong@linux.vnet.ibm.com> <1363675621-31186-2-git-send-email-haodong@linux.vnet.ibm.com>
-In-Reply-To: <1363675621-31186-2-git-send-email-haodong@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 13031906-0260-0000-0000-000002B00A14
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/mod: add device table offsets file to list of
+ files to clean
+References: <1362391043.6156.2.camel@nexus.lab.ntt.co.jp>
+In-Reply-To: <1362391043.6156.2.camel@nexus.lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 02:47 PM, Dong Hao wrote:
-> From: Dong Hao <haodong@linux.vnet.ibm.com>
-> 
-> kobj and ktype are two important attributes which will be used after kobject_init(),
+Hi Michal,
 
-> and (!kobj)|(!ktype) may cause FS corruption which could not be recovered.
-
-delete this line, i am not very convinced about corruption  ...
-
-> Panic instead of dump_stack() when neither kobj nor ktype is properly assigned to
-> detect the bug early.
-> 
-> Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
+On 2013/03/04 18:57, Fernando Luis Vázquez Cao wrote:
+> From: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
+>
+> This file is generated so it does not get cleaned automagically. In other words
+> we need to added to the clean-files list.
+>
+> Signed-off-by: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
 > ---
->  lib/kobject.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/lib/kobject.c b/lib/kobject.c
-> index 279a172..ff9b3c3 100644
-> --- a/lib/kobject.c
-> +++ b/lib/kobject.c
-> @@ -290,7 +290,7 @@ void kobject_init(struct kobject *kobj, struct kobj_type *ktype)
-> 
->  error:
->  	printk(KERN_ERR "kobject (%p): %s\n", kobj, err_str);
-> -	dump_stack();
-> +	BUG_ON(1);
->  }
->  EXPORT_SYMBOL(kobject_init);
-> 
+>
+> diff -urNp linux-3.9-rc1-orig/scripts/mod/Makefile linux-3.9-rc1/scripts/mod/Makefile
+> --- linux-3.9-rc1-orig/scripts/mod/Makefile	2013-03-04 16:09:29.297904000 +0900
+> +++ linux-3.9-rc1/scripts/mod/Makefile	2013-03-04 18:06:16.359389000 +0900
+> @@ -49,3 +49,5 @@ $(obj)/elfconfig.h: $(obj)/empty.o $(obj
+>   	$(call if_changed,elfconfig)
+>   
+>   targets += elfconfig.h
+> +
+> +clean-files	:= $(devicetable-offsets-file)
 
+Do you see any problem with this patch?
+
+Thanks,
+Fernando
