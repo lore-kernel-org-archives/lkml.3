@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964847Ab3CSWpC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:45:02 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:35266 "EHLO inx.pm.waw.pl"
+	id S934440Ab3CSWpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:45:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933289Ab3CSWpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:45:00 -0400
-X-Greylist: delayed 551 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Mar 2013 18:45:00 EDT
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Christophe Aeschlimann <aeschlimann@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christophe Aeschlimann <c.aeschlimann@acn-group.ch>
-Subject: Re: [PATCH] ixp4xx_eth: set the device dma_coherent_mask
-References: <1363708765-20778-1-git-send-email-c.aeschlimann@acn-group.ch>
-Date: Tue, 19 Mar 2013 23:35:46 +0100
-In-Reply-To: <1363708765-20778-1-git-send-email-c.aeschlimann@acn-group.ch>
-	(Christophe Aeschlimann's message of "Tue, 19 Mar 2013 16:59:25
-	+0100")
-Message-ID: <m3sj3rdnlp.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S933289Ab3CSWpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 18:45:17 -0400
+Message-ID: <1363733113.24132.480.camel@bling.home>
+Subject: [GIT PULL] vfio fix for 3.9-rc4
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 19 Mar 2013 16:45:13 -0600
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christophe Aeschlimann <aeschlimann@gmail.com> writes:
+Hi Linus,
 
-> Without the mask it is impossible to take the network interface up
-> since it returns the following error:
->
->> net eth1: coherent DMA mask is unset
->> ifconfig: SIOCSIFFLAGS: Cannot allocate memory
->
-> +++ b/drivers/net/ethernet/xscale/ixp4xx_eth.c
-> @@ -1398,6 +1398,7 @@ static int eth_init_one(struct platform_device *pdev)
->  		return -ENOMEM;
->  
->  	SET_NETDEV_DEV(dev, &pdev->dev);
-> +	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->  	port = netdev_priv(dev);
->  	port->netdev = dev;
->  	port->id = pdev->id;
+Please pull for the next rc.  Thanks!
 
-This happens to work but seems to me like a bad "solution". The real
-issue is that current ARM coherent_dma_mask (and regular dma_mask)
-handling is just broken (at least on platforms with
-CONFIG_ARCH_HAS_DMA_SET_COHERENT_MASK). I'm thinking how can it be
-fixed.
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-The problematic parts include the dmabouncer (which takes over DMA
-operations and provide services similar to swiotlb), the host DMA and
-coherent DMA masks (which are property of the buses) and the device
-masks, which should be ANDed with bus masks (but aren't).
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-What the driver should use is:
-	err = dma_set_coherent_mask(xxx);
+are available in the git repository at:
 
-(but the subsystem have to be fixed first).
-Also, according to DMA-API, 32-bit is the default.
--- 
-Krzysztof Halasa
+  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc4
+
+for you to fetch changes up to 25e9789ddd9d14a8971f4a421d04f282719ab733:
+
+  vfio: include <linux/slab.h> for kmalloc (2013-03-15 12:58:20 -0600)
+
+----------------------------------------------------------------
+vfio fix for v3.9-rc4
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      vfio: include <linux/slab.h> for kmalloc
+
+ drivers/vfio/pci/vfio_pci_config.c | 1 +
+ drivers/vfio/pci/vfio_pci_intrs.c  | 1 +
+ 2 files changed, 2 insertions(+)
+
+
