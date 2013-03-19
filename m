@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab3CSJzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 05:55:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57557 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab3CSJzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 05:55:19 -0400
-Date: Tue, 19 Mar 2013 09:55:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130319095514.GA2055@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
- <5147A8EC.5010908@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <5147A8EC.5010908@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934279Ab3CSJ5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 05:57:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1842 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753531Ab3CSJ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 05:57:51 -0400
+X-IronPort-AV: E=Sophos;i="4.84,871,1355068800"; 
+   d="scan'208";a="6901521"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, rusty@rustcorp.com.au,
+        mst@redhat.com, asias@redhat.com, JBottomley@parallels.com,
+        pbonzini@redhat.com, gaowanlong@cn.fujitsu.com
+Subject: [PATCH V5 3/5] virtio-scsi: push vq lock/unlock into virtscsi_vq_done
+Date: Tue, 19 Mar 2013 17:57:35 +0800
+Message-Id: <1363687057-13580-4-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.rc2
+In-Reply-To: <1363687057-13580-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1363687057-13580-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/19 17:55:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/19 17:55:11,
+	Serialize complete at 2013/03/19 17:55:11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 07:53:16AM +0800, Simon Jeons wrote:
-> Hi Mel,
-> On 03/17/2013 09:04 PM, Mel Gorman wrote:
-> >The number of pages kswapd can reclaim is bound by the number of pages it
-> >scans which is related to the size of the zone and the scanning priority. In
-> >many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
-> >reclaimed pages but in the event kswapd scans a large number of pages it
-> >cannot reclaim, it will raise the priority and potentially discard a large
-> >percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
-> >effect is a reclaim "spike" where a large percentage of memory is suddenly
-> >freed. It would be bad enough if this was just unused memory but because
-> 
-> Since there is nr_reclaimed >= nr_to_reclaim check if priority is
-> large than DEF_PRIORITY in shrink_lruvec, how can a large percentage
-> of memory is suddenly freed happen?
-> 
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-Because of the priority checks made in get_scan_count(). Patch 5 has
-more detail on why this happens.
+Avoid duplicated code in all of the callers.
 
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Asias He <asias@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index bcab9d7..94a64ad 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -167,28 +167,30 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+ 	sc->scsi_done(sc);
+ }
+ 
+-static void virtscsi_vq_done(struct virtio_scsi *vscsi, struct virtqueue *vq,
++static void virtscsi_vq_done(struct virtio_scsi *vscsi,
++			     struct virtio_scsi_vq *virtscsi_vq,
+ 			     void (*fn)(struct virtio_scsi *vscsi, void *buf))
+ {
+ 	void *buf;
+ 	unsigned int len;
++	unsigned long flags;
++	struct virtqueue *vq = virtscsi_vq->vq;
+ 
++	spin_lock_irqsave(&virtscsi_vq->vq_lock, flags);
+ 	do {
+ 		virtqueue_disable_cb(vq);
+ 		while ((buf = virtqueue_get_buf(vq, &len)) != NULL)
+ 			fn(vscsi, buf);
+ 	} while (!virtqueue_enable_cb(vq));
++	spin_unlock_irqrestore(&virtscsi_vq->vq_lock, flags);
+ }
+ 
+ static void virtscsi_req_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_cmd);
+-	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->req_vq, virtscsi_complete_cmd);
+ };
+ 
+ static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+@@ -205,11 +207,8 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->ctrl_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_free);
+-	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
+ };
+ 
+ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
+@@ -344,11 +343,8 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+-	virtscsi_vq_done(vscsi, vq, virtscsi_complete_event);
+-	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
++	virtscsi_vq_done(vscsi, &vscsi->event_vq, virtscsi_complete_event);
+ };
+ 
+ /**
 -- 
-Mel Gorman
-SUSE Labs
+1.8.2.rc2
+
