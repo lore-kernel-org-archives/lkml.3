@@ -1,165 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874Ab3CSAgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 20:36:40 -0400
-Received: from longford.logfs.org ([213.229.74.203]:58723 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3CSAgj (ORCPT
+	id S1757259Ab3CSAhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 20:37:05 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:44036 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab3CSAhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 20:36:39 -0400
-Date: Mon, 18 Mar 2013 19:11:54 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel@vger.kernel.org,
-        target-devel <target-devel@vger.kernel.org>
-Subject: [PATCH v2] target: close target_put_sess_cmd() vs.
- core_tmr_abort_task() race
-Message-ID: <20130318231154.GC9685@logfs.org>
-References: <20130318222853.GA9358@logfs.org>
- <20130319000411.GA6406@kroah.com>
- <20130318225657.GA9685@logfs.org>
- <20130319002742.GA11050@kroah.com>
+	Mon, 18 Mar 2013 20:37:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130319002742.GA11050@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130316200047.GA6155@polaris.bitmath.org>
+References: <1363218651-22457-1-git-send-email-bleung@chromium.org>
+	<1363218651-22457-3-git-send-email-bleung@chromium.org>
+	<20130316200047.GA6155@polaris.bitmath.org>
+Date: Mon, 18 Mar 2013 17:37:01 -0700
+X-Google-Sender-Auth: ndcIGe0VLLbutNGlbw0Nj9qcRUk
+Message-ID: <CANLzEku6s-831vfrP56eS2ZCGT==8i8JqjGNs++ujAvr8enxQg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] Input: cyapa - Firmware update via request firmware
+From: Benson Leung <bleung@chromium.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Olof Johansson <olofj@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, Dudley Du <dudl@cypress.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 March 2013 17:27:42 -0700, Greg Kroah-Hartman wrote:
-> On Mon, Mar 18, 2013 at 06:56:57PM -0400, Jörn Engel wrote:
-> > 
-> > Back when I originally wrote this patch, kref_put_mutex() didn't exist
-> > yet.  So there is my evil predetermined plan to introduce random
-> > inconsistencies by being consistent with atomic_dec_and_lock()
-> > instead.
-> 
-> Don't be evil, leave that up to the professionals :)
+On Sat, Mar 16, 2013 at 1:00 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Userspace can initiate the firmware update procedure by copying cyapa.bin
+>> to /lib/firmware, and then writing anything to the device sysfs attribute:
+>>   /sys/bus/i2c/devices/7-0067/update_fw
+>
+> Why do you need to trigger this from userland via sysfs?
+>
 
-I wouldn't dare question your authority in such matters. :-P
+It's a confluence of factors that drives the decision trigger from userland.
+- As a part of the cold-boot probe steps, the trackpad's bootloader
+will load an operational firmware from its flash memory. In the
+average case, the trackpad driver does not need to update the firmware
+because it's current. (the non-average cases are cases where on device
+firmware is corrupted or out of date)
+- The cypress firmware payloads we are working with here do not
+contain an indication of firmware version in the payload itself, so
+the driver can't tell at probe time whether what it would get if it
+request_firmware is newer, older, or the same version as what's
+already loaded on the trackpad.
+- On a 400kHz i2c bus, it takes 13 seconds to send the 31K payload to
+the device and to wait for it to jump into the operational mode
+firmware. This is too long to block probe every time.
+- Because it takes so long to do a firmware update, our user space
+would like to put up a warning message anyhow to tell the user that
+the touchpad is being updated, and not to disturb the system.
 
-> > If you think this matters I can rename the function and resend.
-> 
-> Please do, it is good to name things correctly, when we have the chance.
+>> +     if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
+>> +             dev_warn(dev, "error creating sysfs entries.\n");
+>> +
+>
+> Would it not be neat to invoke the firmware update automatically instead?
 
-Fair enough.
+The one situation where I could see an automatic firmware update being
+useful would be cases where the driver, during probe, discovered that
+the trackpad is in Bootloader mode because no valid firmware was found
+(a case of corruption of some kind due to the system powering down
+during a previous fw update, or example). In that case, the driver can
+request firmware and update it without user space having to trigger it
+later.
 
-Jörn
+Another driver in input does it the same way. atmel_mxt_ts.c, which
+our team is actively working on as well, also has an update_fw sysfs
+for a lot of the same reasons.
+
+Thanks,
 
 --
-ticks = jiffies;
-while (ticks == jiffies);
-ticks = jiffies;
--- /usr/src/linux/init/main.c
-
-
-It is possible for one thread to to take se_sess->sess_cmd_lock in
-core_tmr_abort_task() before taking a reference count on
-se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
-se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
-
-This introduces kref_put_and_lock() and uses it in
-target_put_sess_cmd() to close the race window.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/target/target_core_transport.c |   17 +++++++++++------
- include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 04ec9cb..b98c158 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
- {
- 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
- 	struct se_session *se_sess = se_cmd->se_sess;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
- 	if (list_empty(&se_cmd->se_cmd_list)) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		se_cmd->se_tfo->release_cmd(se_cmd);
- 		return;
- 	}
- 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		complete(&se_cmd->cmd_wait_comp);
- 		return;
- 	}
- 	list_del(&se_cmd->se_cmd_list);
--	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+	spin_unlock(&se_sess->sess_cmd_lock);
- 
- 	se_cmd->se_tfo->release_cmd(se_cmd);
- }
-@@ -2232,7 +2230,14 @@ static void target_release_cmd_kref(struct kref *kref)
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
--	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
-+	unsigned long flags;
-+	int ret;
-+
-+	local_irq_save(flags);
-+	ret = kref_put_spinlock(&se_cmd->cmd_kref, target_release_cmd_kref,
-+			&se_sess->sess_cmd_lock);
-+	local_irq_restore(flags);
-+	return ret;
- }
- EXPORT_SYMBOL(target_put_sess_cmd);
- 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..c40eaf6 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -19,6 +19,7 @@
- #include <linux/atomic.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
-+#include <linux/spinlock_types.h>
- 
- struct kref {
- 	atomic_t refcount;
-@@ -95,6 +96,31 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put_and_lock - decrement refcount for object.
-+ * @kref: object.
-+ * @release: pointer to the function that will clean up the object when the
-+ *	     last reference to the object is released.
-+ *	     This pointer is required, and it is not acceptable to pass kfree
-+ *	     in as this function.
-+ * @lock: lock to take in release case
-+ *
-+ * Behaves identical to kref_put with one exception.  If the reference count
-+ * drops to zero, the lock will be taken atomically wrt dropping the reference
-+ * count.
-+ */
-+static inline int kref_put_spinlock(struct kref *kref,
-+		void (*release)(struct kref *kref),
-+		spinlock_t *lock)
-+{
-+	WARN_ON(release == NULL);
-+	if (atomic_dec_and_lock(&kref->refcount, lock)) {
-+		release(kref);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
--- 
-1.7.10.4
-
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
