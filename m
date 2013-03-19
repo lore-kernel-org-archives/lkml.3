@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab3CSSTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:19:38 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:55874 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933258Ab3CSSTg (ORCPT
+	id S933660Ab3CSSUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:20:00 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47341 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933258Ab3CSST7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:19:36 -0400
-Date: Tue, 19 Mar 2013 19:19:27 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Howells <dhowells@redhat.com>, linux-mips@linux-mips.org,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix breakage in MIPS siginfo handling
-Message-ID: <20130319181927.GA10535@linux-mips.org>
-References: <20130319150053.32135.61438.stgit@warthog.procyon.org.uk>
- <20130319150530.GH21522@ZenIV.linux.org.uk>
+	Tue, 19 Mar 2013 14:19:59 -0400
+Date: Tue, 19 Mar 2013 18:19:40 +0000
+From: Catalin Marinas <Catalin.Marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arm64 patches for 3.9
+Message-ID: <20130319181939.GD9321@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130319150530.GH21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 03:05:30PM +0000, Al Viro wrote:
+Hi Linus,
 
-> ACKed-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> but I think it should go via mips tree (or straight to Linus, for that
-> matter).  I can apply it in signal.git and push it to Linus today, though...
+Please pull the arm64 fixes below. Thanks.
 
-I've applied it to my tree.  Since I applied a number of other 3.9 fixes
-I'm going to wait for another day before sending out a pull request to
-Linus.
+The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
-Thanks,
+  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
 
-  Ralf
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
+
+for you to fetch changes up to 792072066d30372772137be9ee2f4d72d77329f9:
+
+  arm64: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS (2013-03-19 16:19:19 +0000)
+
+----------------------------------------------------------------
+- Fix !SMP build error.
+- Fix padding computation in struct ucontext (no ABI change).
+- Minor clean-up after the signal patches (unused var).
+- Two old Kconfig options clean-up.
+
+----------------------------------------------------------------
+Andreas Schwab (1):
+      arm64: fix padding computation in struct ucontext
+
+Catalin Marinas (2):
+      arm64: Removed unused variable in compat_setup_rt_frame()
+      arm64: Fix build error with !SMP
+
+Paul Bolle (2):
+      arm64: Do not select GENERIC_HARDIRQS_NO_DEPRECATED
+      arm64: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS
+
+ arch/arm64/Kconfig                |  1 -
+ arch/arm64/Kconfig.debug          | 11 -----------
+ arch/arm64/configs/defconfig      |  1 -
+ arch/arm64/include/asm/ucontext.h |  2 +-
+ arch/arm64/kernel/arm64ksyms.c    |  2 ++
+ arch/arm64/kernel/signal32.c      |  1 -
+ 6 files changed, 3 insertions(+), 15 deletions(-)
