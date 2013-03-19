@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934259Ab3CSW23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:28:29 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:50313 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933274Ab3CSW22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:28:28 -0400
-Date: Tue, 19 Mar 2013 17:28:22 -0500
-From: William Hubbs <williamh@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: w.d.hubbs@gmail.com, hpa@zytor.com, rob@landley.net, mpagano@gentoo.org,
-        ryao@gentoo.org, gregkh@gentoo.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
-Message-ID: <20130319222822.GA2338@linux1>
-References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com>
- <510AFCA1.5000700@zytor.com>
- <1360032141.12062.12@driftwood>
- <a6a99589-ac94-4cfc-a871-095431bfd8ef@email.android.com>
+	id S1755091Ab3CSWfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:35:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752116Ab3CSWfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 18:35:20 -0400
+Date: Tue, 19 Mar 2013 19:35:04 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [GIT PULL] KVM fixes for 3.9-rc3
+Message-ID: <20130319223504.GA21944@amt.cnet>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a6a99589-ac94-4cfc-a871-095431bfd8ef@email.android.com>
+X-Mutt-Fcc: ~/inbox/sent-mutt-Aug-2012
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---x+6KMIRAuhnl3hBn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Linus,
 
-All,
+Please pull from
 
-I haven't heard any more on this patch, so I wanted to ping the thread
-again and find out the status.
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-The original message is linked below[1].
+To receive the following KVM bug fixes
 
-The issue is that /dev/root appears in /proc/mounts if you do not boot
-with an initramfs, but /dev/root is not a device node. In the past, udev
-created a symbolic link from /dev/root to the appropriate block device,
-but it does not do this any longer. Also, devtmpfs does not create this
-symbolic link.
 
-This is causing bugs with software that depends on the existence of
-/dev/root [2] for example.
+Andy Honig (3):
+      KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+      KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+      KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
 
-Do you need any more information on this patch, or is there some reason
-it can't go in?
+Kevin Hilman (1):
+      KVM: allow host header to be included even for !CONFIG_KVM
 
-Thanks much,
+Marcelo Tosatti (1):
+      KVM: x86: fix deadlock in clock-in-progress request handling
 
-William
-
-[1] https://lkml.org/lkml/2013/1/31/574
-[2] https://bugs.gentoo.org/show_bug.cgi?id=438028
-
---x+6KMIRAuhnl3hBn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlFI5oYACgkQblQW9DDEZTiqpQCaA2VastTrGEa/ZXJWYhCpq5Vc
-KacAniA9CiS+lL9i6AqXTCrDYuMaJa50
-=F85/
------END PGP SIGNATURE-----
-
---x+6KMIRAuhnl3hBn--
+ arch/x86/include/asm/kvm_host.h |    4 +-
+ arch/x86/kvm/x86.c              |   70 +++++++++++++++++++---------------------
+ include/linux/kvm_host.h        |    7 +++-
+ virt/kvm/ioapic.c               |    7 ++--
+ 4 files changed, 47 insertions(+), 41 deletions(-)
