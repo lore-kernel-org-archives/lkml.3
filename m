@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3CSS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:28:16 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50420 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab3CSS2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:28:15 -0400
-Date: Tue, 19 Mar 2013 18:28:10 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
- services
-Message-ID: <20130319182810.GA13003@srcf.ucam.org>
-References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
- <20130319014850.GA28934@srcf.ucam.org>
- <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
- <20130319163531.GA10879@srcf.ucam.org>
- <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
- <20130319172506.GA11969@srcf.ucam.org>
- <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S933510Ab3CSSay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932135Ab3CSSax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:30:53 -0400
+Date: Tue, 19 Mar 2013 15:30:43 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH v2] davinci: vpif: Fix module build for capture and
+ display
+Message-ID: <20130319153043.23f7d127@redhat.com>
+In-Reply-To: <1362739747-4166-1-git-send-email-prabhakar.lad@ti.com>
+References: <1362739747-4166-1-git-send-email-prabhakar.lad@ti.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 06:23:31PM +0000, James Bottomley wrote:
+Em Fri,  8 Mar 2013 16:19:07 +0530
+Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
 
-> The scheme we discussed, unless something radically changed, was to
-> convey a temporary key pair via a mechanism to later verify the
-> hybernate kernel on a resume.  That only requires reboot safe knowledge
-> of the public key.  The private key can be conveyed in BS only (not NV),
-> and should be consumed (as in deleted) by the OS when it receives it, so
-> it wouldn't be exposed by this patch.
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> export the symbols which are used by two modules vpif_capture and
+> vpif_display.
+> 
+> This patch fixes following error:
+> ERROR: "ch_params" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+> ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+> ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+> ERROR: "ch_params" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+> ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+> ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> 
+> Reported-by: Sekhar Nori <nsekhar@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  Changes for v2:
+>  1: use EXPORT_SYMBOL_GPL instead of EXPORT_SYMBOL() as pointed by
+>     Sekhar.
+> 
+>  drivers/media/platform/davinci/vpif.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
+> index 28638a8..42c7eba 100644
+> --- a/drivers/media/platform/davinci/vpif.c
+> +++ b/drivers/media/platform/davinci/vpif.c
+> @@ -44,6 +44,8 @@ static struct resource	*res;
+>  spinlock_t vpif_lock;
+>  
+>  void __iomem *vpif_base;
+> +EXPORT_SYMBOL_GPL(vpif_base);
+> +
+>  struct clk *vpif_clk;
+>  
+>  /**
+> @@ -220,8 +222,10 @@ const struct vpif_channel_config_params ch_params[] = {
+>  		.stdid = V4L2_STD_625_50,
+>  	},
+>  };
+> +EXPORT_SYMBOL_GPL(ch_params);
 
-It requires the key to survive the system being entirely powered down, 
-which means it needs to be BS+NV. It shouldn't be possible for userspace 
-to access this key.
+Please don't use simple names like that. It would be very easy that some
+other driver could try to declare the same symbol. Instead, prefix it
+with the driver name (vpif_ch_params).
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+>  
+>  const unsigned int vpif_ch_params_count = ARRAY_SIZE(ch_params);
+> +EXPORT_SYMBOL_GPL(vpif_ch_params_count);
+>  
+>  static inline void vpif_wr_bit(u32 reg, u32 bit, u32 val)
+>  {
+
+Regards,
+Mauro
