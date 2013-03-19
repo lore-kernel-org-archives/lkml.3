@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab3CSB7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 21:59:06 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:61759 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab3CSB7E (ORCPT
+	id S1757522Ab3CSCCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 22:02:03 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33137 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab3CSCCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 21:59:04 -0400
-Date: Mon, 18 Mar 2013 19:00:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/75] 3.8.4-stable review
-Message-ID: <20130319020019.GA21319@kroah.com>
-References: <20130318210510.203500214@linuxfoundation.org>
- <CAKocOOMj7HMi-v1_KiYh=L_rKb1K6Mcu-vC8momC1iUzJbZmaA@mail.gmail.com>
- <20130319005721.GA20560@kroah.com>
- <CAKocOON4SxqHtuD4OjuCFTPf7Xzpw-UhSJZ3TOLX_=s+rK0HaQ@mail.gmail.com>
+	Mon, 18 Mar 2013 22:02:00 -0400
+Date: Mon, 18 Mar 2013 19:03:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Myron Stowe <mstowe@redhat.com>, Myron Stowe <myron.stowe@redhat.com>,
+        kay@vrfy.org, linux-hotplug@vger.kernel.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        yuxiangl@marvell.com, yxlraid@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] udevadm-info: Don't access sysfs 'resource<N>' files
+Message-ID: <20130319020316.GB21319@kroah.com>
+References: <20130316213512.2974.17303.stgit@amt.stowe>
+ <20130316213519.2974.38954.stgit@amt.stowe>
+ <20130316221159.GA3702@kroah.com>
+ <1363477853.2423.25.camel@zim.stowe>
+ <20130317010317.GB9641@kroah.com>
+ <5147C541.1080304@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKocOON4SxqHtuD4OjuCFTPf7Xzpw-UhSJZ3TOLX_=s+rK0HaQ@mail.gmail.com>
+In-Reply-To: <5147C541.1080304@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 07:09:11PM -0600, Shuah Khan wrote:
-> On Mon, Mar 18, 2013 at 6:57 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Mar 18, 2013 at 06:51:37PM -0600, Shuah Khan wrote:
-> >> On Mon, Mar 18, 2013 at 3:06 PM, Greg Kroah-Hartman
-> >> <gregkh@linuxfoundation.org> wrote:
-> >> > This is the start of the stable review cycle for the 3.8.4 release.
-> >> > There are 75 patches in this series, all will be posted as a response
-> >> > to this one.  If anyone has any issues with these being applied, please
-> >> > let me know.
-> >> >
-> >> > Responses should be made by Wed Mar 20 21:04:55 UTC 2013.
-> >> > Anything received after that time might be too late.
-> >> >
-> >> > The whole patch series can be found in one patch at:
-> >> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.4-rc1.gz
-> >> > and the diffstat can be found below.
-> >> >
-> >> > thanks,
-> >> >
-> >> > greg k-h
-> >> >
-> >>
-> >> Here is the warn from 3.8.4-rc1
-> >> [  700.009112] Component: resume devices, time: 10004
-> >> [  700.009204] Modules linked in: ip6table_filter ip6_tables
-> >> ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
-> >> nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
-> >> iptable_filter ip_tables x_tables bridge stp llc bnep rfcomm bluetooth
-> >> arc4 iwldvm snd_hda_codec_analog radeon snd_hda_intel mac80211
-> >> coretemp snd_hda_codec kvm_intel kvm snd_hwdep binfmt_misc snd_pcm
-> >> snd_seq_midi iwlwifi snd_rawmidi ttm snd_seq_midi_event cfg80211
-> >> drm_kms_helper pata_pcmcia snd_seq tpm_infineon drm psmouse snd_timer
-> >> joydev pcmcia snd_seq_device snd yenta_socket tpm_tis microcode
-> >> pcmcia_rsrc pcmcia_core ppdev dm_multipath i2c_algo_bit video hp_wmi
-> >> mac_hid sparse_keymap serio_raw soundcore snd_page_alloc lpc_ich wmi
-> >> hp_accel lis3lv02d input_polldev parport_pc lp parport firewire_ohci
-> >> sdhci_pci sdhci firewire_core crc_itu_t e1000e
-> >> [  700.009212] Pid: 2637, comm: bash Not tainted 3.8.4-rc1+ #8
-> >
-> > Do you get this same warning on 3.9-rc3?
-> >
-> > I thought I got all of the needed fixes for this warning, what am I
-> > missing here?
-> >
-> > thanks,
-> >
-> > greg k-h
+On Mon, Mar 18, 2013 at 07:54:09PM -0600, Robert Hancock wrote:
+> On 03/16/2013 07:03 PM, Greg KH wrote:
+> >On Sat, Mar 16, 2013 at 05:50:53PM -0600, Myron Stowe wrote:
+> >>On Sat, 2013-03-16 at 15:11 -0700, Greg KH wrote:
+> >>>On Sat, Mar 16, 2013 at 03:35:19PM -0600, Myron Stowe wrote:
+> >>>>Sysfs includes entries to memory that backs a PCI device's BARs, both I/O
+> >>>>Port space and MMIO.  This memory regions correspond to the device's
+> >>>>internal status and control registers used to drive the device.
+> >>>>
+> >>>>Accessing these registers from userspace such as "udevadm info
+> >>>>--attribute-walk --path=/sys/devices/..." does can not be allowed as
+> >>>>such accesses outside of the driver, even just reading, can yield
+> >>>>catastrophic consequences.
+> >>>>
+> >>>>Udevadm-info skips parsing a specific set of sysfs entries including
+> >>>>'resource'.  This patch extends the set to include the additional
+> >>>>'resource<N>' entries that correspond to a PCI device's BARs.
+> >>>
+> >>>Nice, are you also going to patch bash to prevent a user from reading
+> >>>these sysfs files as well?  :)
+> >>>
+> >>>And pciutils?
+> >>>
+> >>>You get my point here, right?  The root user just asked to read all of
+> >>>the data for this device, so why wouldn't you allow it?  Just like
+> >>>'lspci' does.  Or bash does.
 > 
-> I think this is a new one. You did pull in the two patches you needed.
-> I am getting ready to test it in 3.9.0-rc1. Will let you know in a
-> bit. I have to do a git pull for the latest and do a compile.
+> lspci doesn't randomly attempt to access device registers, AFAIK..
 
-Please try 3.9-rc3, -rc1 didn't have the original patch that caused the
-warning to show up in it.
+Have you read the man page for the '-xxx' option to lspci?  lspci can be
+quite intrusive, and I used to have a number of systems that it would
+trash very easily if you ran it on them as root.
 
-thanks,
+> >>Yes :P , you raise a very good point, there are a lot of way a user can
+> >>poke around in those BARs.  However, there is a difference between
+> >>shooting yourself in the foot and getting what you deserve versus
+> >>unknowingly executing a common command such as udevadm and having the
+> >>system hang.
+> >>>
+> >>>If this hardware has a problem, then it needs to be fixed in the kernel,
+> >>>not have random band-aids added to various userspace programs to paper
+> >>>over the root problem here.  Please fix the kernel driver and all should
+> >>>be fine.  No need to change udevadm.
+> >>
+> >>Xiangliang initially proposed a patch within the PCI core.  Ignoring the
+> >>specific issue with the proposal which I pointed out in the
+> >>https://lkml.org/lkml/2013/3/7/242 thread, that just doesn't seem like
+> >>the right place to effect a change either as PCI's core isn't concerned
+> >>with the contents or access limitations of those regions, those are
+> >>issues that the driver concerns itself with.
+> >>
+> >>So things seem to be gravitating towards the driver.  I'm fairly
+> >>ignorant of this area but as Robert succinctly pointed out in the
+> >>originating thread - the AHCI driver only uses the device's MMIO region.
+> >>The I/O related regions are for legacy SFF-compatible ATA ports and are
+> >>not used to driver the device.  This, coupled with the observance that
+> >>userspace accesses such as udevadm, and others like you additionally
+> >>point out, do not filter through the device's driver for seems to
+> >>suggest that changes to the driver will not help here either.
+> >
+> >A PCI quirk should handle this properly, right?  Why not do that?  Worse
+> >thing, the quirk could just not expose these sysfs files for this
+> >device, which would solve all userspace program issues, right?
+> 
+> A PCI quirk implies there is something wrong with this device in
+> particular. This isn't the case. The device responds properly when
+> it's accessed as intended. The problem is that udevadm (or other
+> processes, like a random grep through sysfs for example) is
+> effectively reading registers willy-nilly. This is absolutely not
+> safe to do on many devices - and certainly not while a driver is
+> attached to the device and has claimed the port or MMIO regions that
+> are being accessed.
+
+Then we need to fix that!
+
+In the kernel!
+
+Don't try to gloss over the problem by changing one random userspace
+program, you will never catch them all.  Fix the root problem here
+people, that's all I'm asking for.
+
+> Blocking access through these files to a device with an active driver
+> that's claimed the regions would significantly reduce the chances of
+> something like this causing problems.
+
+Great, that's one possible solution, the other is just not creating the
+files at all for known problem devices, right?
+
+My main point here is, you aren't going to fix this in userspace, fix it
+in the kernel.
 
 greg k-h
