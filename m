@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933921Ab3CSWE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 18:04:29 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43652 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab3CSWE2 convert rfc822-to-8bit (ORCPT
+	id S934154Ab3CSWFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 18:05:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45214 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933917Ab3CSWFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 18:04:28 -0400
-From: Vladimir Davydov <VDavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<devel@openvz.org>" <devel@openvz.org>,
-        "Doug Ledford" <dledford@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] mqueue: sys_mq_open: do not call mnt_drop_write() if
- read-only
-Thread-Topic: [PATCH] mqueue: sys_mq_open: do not call mnt_drop_write() if
- read-only
-Thread-Index: AQHOJOYWgM451JYjsUG/OGs2vTCvnJitTooA
-Date: Tue, 19 Mar 2013 22:04:16 +0000
-Message-ID: <049D7A4CCB8B694CACDEEB03BE35F306184853A6@MSK-EXCH.sw.swsoft.com>
-References: <1363685478-9997-1-git-send-email-vdavydov@parallels.com>
- <20130319140940.fa84e0b678235076815fce64@linux-foundation.org>
-In-Reply-To: <20130319140940.fa84e0b678235076815fce64@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.24.21.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <D164C0204E6DE640904626FB22539333@sw.swsoft.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 19 Mar 2013 18:05:51 -0400
+Date: Wed, 20 Mar 2013 09:05:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the workqueues tree with Linus'
+ tree
+Message-Id: <20130320090540.81c687d28ffe3a6abe905816@canb.auug.org.au>
+In-Reply-To: <20130319211233.GN3042@htj.dyndns.org>
+References: <20130319131938.73dd0f1233c8aba41742aded@canb.auug.org.au>
+	<20130319211233.GN3042@htj.dyndns.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Mar_2013_09_05_40_+1100_D4RR3TCg2r+0RJLg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 20, 2013, at 1:09 AM, Andrew Morton <akpm@linux-foundation.org>
- wrote:
+--Signature=_Wed__20_Mar_2013_09_05_40_+1100_D4RR3TCg2r+0RJLg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, 19 Mar 2013 13:31:18 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
-> 
->> mnt_drop_write() must be called only if mnt_want_write() succeeded,
->> otherwise the mnt_writers counter will diverge.
->> 
->> ...
->> 
->> --- a/ipc/mqueue.c
->> +++ b/ipc/mqueue.c
->> @@ -840,7 +840,8 @@ out_putfd:
->> 		fd = error;
->> 	}
->> 	mutex_unlock(&root->d_inode->i_mutex);
->> -	mnt_drop_write(mnt);
->> +	if (!ro)
->> +		mnt_drop_write(mnt);
->> out_putname:
->> 	putname(name);
->> 	return fd;
-> 
-> huh, that's been there for a while.  What were the runtime-visible
-> effects of the bug?
+Hi Tejun,
 
-mnt_writers counters are used to check if remounting FS as read-only is OK, so after an extra mnt_drop_write() call, it would be impossible to remount mqueue FS as read-only. Besides, on umount a warning would be printed like this one:
+On Tue, 19 Mar 2013 14:12:33 -0700 Tejun Heo <tj@kernel.org> wrote:
+>
+> On Tue, Mar 19, 2013 at 01:19:38PM +1100, Stephen Rothwell wrote:
+> > @@@ -456,40 -462,30 +462,30 @@@ static int worker_pool_assign_id(struc
+> >   {
+> >   	int ret;
+> >  =20
+> > - 	mutex_lock(&worker_pool_idr_mutex);
+> > - 	ret =3D idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
+> > - 	if (ret >=3D 0)
+> > - 		pool->id =3D ret;
+> > - 	mutex_unlock(&worker_pool_idr_mutex);
+> > + 	lockdep_assert_held(&wq_mutex);
+> > +=20
+> > + 	do {
+> >  -		if (!idr_pre_get(&worker_pool_idr, GFP_KERNEL))
+> >  -			return -ENOMEM;
+> >  -		ret =3D idr_get_new(&worker_pool_idr, pool, &pool->id);
+> > ++		ret =3D idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
+> > ++		if (ret >=3D 0)
+> > ++			pool->id =3D ret;
+> > + 	} while (ret =3D=3D -EAGAIN);
+> >  =20
+> >  -	return ret;
+> >  +	return ret < 0 ? ret : 0;
+>=20
+> We don't need the loop anymore, so it should look like
+>=20
+>   static int worker_pool_assign_id(struct worker_pool *pool)
+>   {
+> 	  int ret;
+>=20
+> 	  lockdep_assert_held(&wq_mutex);
+>=20
+> 	  ret =3D idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
+> 	  if (ret >=3D 0) {
+> 		  pool->id =3D ret;
+> 		  return 0;
+> 	  }
+> 	  return ret;
+>   }
+>=20
+> Anyways, I pulled master into wq/for-next and resolved it there, so it
+> shouldn't cause you any more trouble.
 
-[  194.714880] =====================================
-[  194.719680] [ BUG: bad unlock balance detected! ]
-[  194.724488] 3.9.0-rc3 #5 Not tainted
-[  194.728159] -------------------------------------
-[  194.732958] a.out/12486 is trying to release lock (sb_writers) at:
-[  194.739355] [<ffffffff811b177f>] mnt_drop_write+0x1f/0x30
-[  194.744851] but there are no more locks to release!
+Ah, OK, thanks.   One small point, when you do a back merge like that,
+you should always put an explanation in the commit message for the merge.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Mar_2013_09_05_40_+1100_D4RR3TCg2r+0RJLg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSOE0AAoJEECxmPOUX5FEKSUP/3UZCWTzIwi07hlLDjLmbzSh
+rVAWDS3PoeX3TZlmaKWeFY6rSwSZGPiKqBnUtgb5izkaE2BPFs3ta3Jr85PRG26q
+1DGugWiNfhDhuzh865lHjCny9xNLt5AoGI21f79CJ+Fn/0gdal4KpVQg8yx8Dx5O
+FrdgsLbqRNOe/qy1uuEGsOQMgrtrDCjGpG0gZiHnLK/X3ppJaJiig+naUq6de0gf
+czjHd0/pahOlMeXqPadVw9sEvXe7+A6NijaLbPyEo6JPwHl60js6kXoTaKfFehv0
+gFwlXVjZEHY9hnREUNSDVd07b/YOzGEEsxwHyfNZx6kLPqHSJ0+CC2dorwMQgV7p
+9myq/lzJaLB5IQW3lovcX4Bn2qGoDEh7SLTy5jKz5iGtERayEIfZUraqewyWndRL
+oo52sPnM3iMAhHzkd49Ut8SfXFtcvE2GLsl+E60nq1sxjUYbunhjC0HQ75GfC9i3
+tNejpmDU9sAxUykmqqOJx2GzL9UxzWtadnXUDDg94D3/AgiD06zPss80bDLrzdgz
+ftmYfcLe+ph6RQwp8KfaJ7vecg8A8ASrG34ivowJuAxxBbuSZ7ZeFQiQUrxAV8z+
+OLX0rWxse0fdOeipsA3St7svXlko3u9psCWt+FVKZaAQgmxHJKYkGBmMoZRBD2Im
+lsSjp0ViC/H1HU+kCmSF
+=Fw4X
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Mar_2013_09_05_40_+1100_D4RR3TCg2r+0RJLg--
