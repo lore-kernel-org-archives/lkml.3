@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab3CSXMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 19:12:30 -0400
-Received: from mail.us.es ([193.147.175.20]:37029 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754742Ab3CSXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 19:12:28 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16875. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-94.9/7.5):. 
- Processed in 1.719598 secs); 19 Mar 2013 23:12:26 -0000
-X-Envelope-From: pneira@us.es
-Date: Wed, 20 Mar 2013 00:12:23 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: remove unused "config IP_NF_QUEUE"
-Message-ID: <20130319231223.GA4017@localhost>
-References: <1363734599.1390.50.camel@x61.thuisdomein>
+	id S1757593Ab3CSXPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 19:15:11 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:47779 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab3CSXPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 19:15:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363734599.1390.50.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+References: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+Date: Tue, 19 Mar 2013 16:15:09 -0700
+X-Google-Sender-Auth: HIPnNQ9hKGvU_UTlIDBK0flvHIk
+Message-ID: <CAE9FiQVhziaB9vEUNw-EBvA1Bfey=uMEw+CERuqSyPgU3qCJUA@mail.gmail.com>
+Subject: Re: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical address
+ by __pa_nodebug()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        penguin-kernel@i-love.sakura.ne.jp,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 12:09:59AM +0100, Paul Bolle wrote:
-> Kconfig symbol IP_NF_QUEUE is unused since commit
-> d16cf20e2f2f13411eece7f7fb72c17d141c4a84 ("netfilter: remove ip_queue
-> support"). Let's remove it too.
+On Tue, Mar 19, 2013 at 8:04 AM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+>
+> In 32-bit, __pa_symbol() in CONFIG_DEBUG_VIRTUAL accesses kernel data (e.g.
+> max_low_pfn) that haven't been setup yet in such early boot phase. To fix the
+> issue, __pa_nodebug() replaces __pa_symbol() to get a global symbol's physical
+> address.
 
-Applied, thanks for catching up this leftover.
+That explanation is not precise.
+
+__phys_addr in 32bit when DEBUG_VIRTUAL is set, it does have check
+        /* max_low_pfn is set early, but not _that_ early */
+        if (max_low_pfn) {
+         ....
+        }
+the reason should be:
+in head_32.S, 32bit flat mode, you need to switch to phys addr to access
+global variable max_low_pfn.
+
+Thanks
+
+Yinghai
