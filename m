@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933577Ab3CSSlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 14:41:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39969 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757294Ab3CSSlA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 14:41:00 -0400
-Message-ID: <1363718456.2377.71.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
- services
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Mar 2013 18:40:56 +0000
-In-Reply-To: <20130319182810.GA13003@srcf.ucam.org>
-References: <1363596014.2412.8.camel@dabdike.int.hansenpartnership.com>
-	 <20130319014850.GA28934@srcf.ucam.org>
-	 <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
-	 <20130319163531.GA10879@srcf.ucam.org>
-	 <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
-	 <20130319172506.GA11969@srcf.ucam.org>
-	 <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
-	 <20130319182810.GA13003@srcf.ucam.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933442Ab3CSSni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:43:38 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49956 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753640Ab3CSSng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 14:43:36 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/+29ZW4sj+1wPa+g736d61a0yTHzWPpfHA7a/M7u
+	ElpKJjMGlfM7gZ
+From: Sven Joachim <svenjoac@gmx.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Stephen Thirlwall <sdt@dr.com>
+Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI controllers
+References: <Pine.LNX.4.44L0.1303191415580.1302-100000@iolanthe.rowland.org>
+Date: Tue, 19 Mar 2013 19:43:28 +0100
+In-Reply-To: <Pine.LNX.4.44L0.1303191415580.1302-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Tue, 19 Mar 2013 14:17:10 -0400 (EDT)")
+Message-ID: <87ehfbjkmn.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 18:28 +0000, Matthew Garrett wrote:
-> On Tue, Mar 19, 2013 at 06:23:31PM +0000, James Bottomley wrote:
-> 
-> > The scheme we discussed, unless something radically changed, was to
-> > convey a temporary key pair via a mechanism to later verify the
-> > hybernate kernel on a resume.  That only requires reboot safe knowledge
-> > of the public key.  The private key can be conveyed in BS only (not NV),
-> > and should be consumed (as in deleted) by the OS when it receives it, so
-> > it wouldn't be exposed by this patch.
-> 
-> It requires the key to survive the system being entirely powered down, 
-> which means it needs to be BS+NV. It shouldn't be possible for userspace 
-> to access this key.
+On 2013-03-19 19:17 +0100, Alan Stern wrote:
 
-It requires the *public* key to survive power down, certainly.  The
-private key can be thrown away once the hibernate image is signed.  I
-think the scheme can be constructed so the private key is never in NV
-storage ... that also makes it more secure against tampering.
+> On Tue, 19 Mar 2013, Sven Joachim wrote:
+>
+>> On 2013-03-18 22:06 +0100, Greg Kroah-Hartman wrote:
+>> 
+>> > 3.8-stable review patch.  If anyone has any objections, please let me know.
+>> 
+>> This patch breaks resume from suspend on my system if the following
+>> device is plugged in:
+>> 
+>> ,----
+>> | $ lsusb | head -n1
+>> | Bus 005 Device 002: ID 07d1:3c03 D-Link System AirPlus G DWL-G122 Wireless Adapter(rev.C1) [Ralink RT2571W]
+>> `----
+>> 
+>> The same problem exists in 3.9-rc3, FWIW.
+>> 
+>> Detailed lsusb output follows, I'll be happy to provide more information
+>> if needed.
+>
+> In what way is resume broken?
 
-James
+The kernel comes back, but the screen is black.  Manually switching VT's
+is possible, and if I type something I can see it on the screen, but
+there is no response and the cursor does not blink.  It looks as if the
+VT is not switched backed on resume, and userspace tasks are not
+restarted.  Sysrq combinations apparently work, but produce no output.
 
-
-
+Cheers,
+       Sven
