@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab3CSL35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 07:29:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23176 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3CSL34 (ORCPT
+	id S1751882Ab3CSLcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 07:32:15 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38826 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750779Ab3CSLcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 07:29:56 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=bGeQnFoGQusA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mxv2HPhRFNcA:10 a=frLJNqDbYEwVCny_utsA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363692594.5938.14.camel@gandalf.local.home>
-Subject: Re: [PATCH] scheduler: convert BUG_ON()s in try_to_wake_up_local()
- to WARN_ON_ONCE()s
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 19 Mar 2013 07:29:54 -0400
-In-Reply-To: <1363688074.22553.14.camel@laptop>
-References: <20130318192234.GD3042@htj.dyndns.org>
-	 <1363688074.22553.14.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+	Tue, 19 Mar 2013 07:32:13 -0400
+Message-ID: <1363692727.2377.53.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH V5 1/5] virtio-scsi: redo allocation of target data
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, mst@redhat.com, asias@redhat.com,
+        pbonzini@redhat.com
+Date: Tue, 19 Mar 2013 11:32:07 +0000
+In-Reply-To: <1363687057-13580-2-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1363687057-13580-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	 <1363687057-13580-2-git-send-email-gaowanlong@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 11:14 +0100, Peter Zijlstra wrote:
-> On Mon, 2013-03-18 at 12:22 -0700, Tejun Heo wrote:
-> > try_to_wake_up_local() should only be invoked to wake up another task
-> > in the same runqueue and BUG_ON()s are used to enforce the rule.
-> > Missing try_to_wake_up_local() can stall workqueue execution but such
-> > stalls are likely to be finite either by another work item being
-> > queued or the one blocked getting unblocked.  There's no reason to
-> > trigger BUG while holding rq lock crashing the whole system.
-> > 
-> > Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
+On Tue, 2013-03-19 at 17:57 +0800, Wanlong Gao wrote:
+> From: Paolo Bonzini <pbonzini@redhat.com>
 > 
-> Doesn't really matter either way, the printk()s triggered by either
-> will very likely kill the system anyhow ;-)
+> virtio_scsi_target_state is now empty.  We will find new uses for it in
+> the next few patches, so this patch does not drop it completely.
+> However, having dropped the sglist flexible array member, we can turn
+> the tgt array-of-pointers into a simple array.  This simplifies the
+> allocation.
+> 
+> Even simpler would be to place the virtio_scsi_target_state structs in a
+> flexible array member at the end of struct virtio_scsi.  But we do not
+> do that, because we will place the virtqueues there in the next patches.
 
-Only if something blocks on the console lock, and it tries to wake it
-up. But even then, it has to be a reverse rq locking order, or wakeup on
-the same rq that its running on (which is very unlikely).
+I'm really sorry, but I must have been asleep at the wheel when I let
+code like this go in.  No modern driver should have fixed arrays for
+target information.  The way this is supposed to work is that you have
+entries in the host template for target_alloc and target_destroy.  You
+hook into these and attach your struct virtio_scsi_target_state to
+scsi_target->hostdata, which you kmalloc in the target_alloc routine and
+kfree in the target_destroy routine.  Now you get at it from the sdev
+with scsi_target(sdev)->hostdata. No messing around with fixed size
+arrays and bulk memory allocation and no need to pass in the maximum
+target size as a parameter because everything should now happen
+dynamically.
 
-I admit that it doesn't "solve" the bug. But at least there's a chance
-to investigate what happened when the bug does occur. Right now we have
-only one conclusion when the bug triggers, and that's a hard lockup.
+Since you're redoing the code anyway, can you fix it to work this way?
 
--- Steve
+Thanks,
+
+James
 
 
