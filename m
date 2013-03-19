@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3CSPEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 11:04:08 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55045
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756831Ab3CSPEG (ORCPT
+	id S1756951Ab3CSPEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 11:04:34 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:55233 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab3CSPEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 11:04:06 -0400
-Message-ID: <1363705443.22553.60.camel@laptop>
-Subject: Re: [PATCH 3/9] perf util: Get rid of write_or_die() from
- trace-event-info.c
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 19 Mar 2013 16:04:03 +0100
-In-Reply-To: <1363705197.5938.31.camel@gandalf.local.home>
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	 <1363683224-28804-4-git-send-email-namhyung@kernel.org>
-	 <1363703711.5938.20.camel@gandalf.local.home>
-	 <1363704594.22553.56.camel@laptop>
-	 <1363705197.5938.31.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	Tue, 19 Mar 2013 11:04:33 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 19 Mar 2013 16:04:19 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: Remove two unneeded checks for macros
+Message-ID: <20130319160419.26197406@stein>
+In-Reply-To: <1363439347.1335.129.camel@x61.thuisdomein>
+References: <1363439347.1335.129.camel@x61.thuisdomein>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 10:59 -0400, Steven Rostedt wrote:
-> On Tue, 2013-03-19 at 15:49 +0100, Peter Zijlstra wrote:
-> > On Tue, 2013-03-19 at 10:35 -0400, Steven Rostedt wrote:
-> > > What about:
-> > >         int err = 0;
-> > > 
-> > >         err += tracing_data_header();
-> > >         err += read_header_files();
-> > >         [...]
-> > > 
-> > >         if (err < 0) {
-> > >                 free(tdata);
-> > >                 tdata = NULL;
-> > >         }
-> > > 
-> > > Also, is the only clean up needed be freeing tdata?
-> > 
-> > I always use err |= foo() and if (err) but I suppose it doesn't matter
-> > the original error codes are lost both ways which doesn't seem to be a
-> > problem here.
+On Mar 16 Paul Bolle wrote:
+> The old IEEE 1394 driver stack was removed in v2.6.37. That made the
+> checks for two Kconfig (module) macros unneeded, since they will now
+> always evaluate to true. Remove these two checks.
 > 
-> err |= foo() is fine too. Both are better that err1, err2, err3, ...,
-> errN :-)
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-<whinge>
+Looks good to me, will commit it sometime soon.
 
-The += thing has a problem where functions can return both positive and
-negative values, you could get an accidental 0 (success) but coupled
-with the proposed <0 test you get a much larger accident space :-)
+> ---
+> Perhaps these alias can be dropped entirely. Bat that's not my call.
 
-And while totally hideous the err1..errN case preserves the actual
-return codes if one would actually need those.
+Perhaps.  One could look through various distributor mkinitrds, but I
+suspect that would be an impossible task.  First of all, I have no idea
+what the package names could be.  Second, there seem to be quite a few
+distributions which don't have any sensible public FTP/HTTP server from
+which packages can be downloaded separately.
 
-</whinge>
+>  drivers/firewire/ohci.c | 2 --
+>  drivers/firewire/sbp2.c | 2 --
+>  2 files changed, 4 deletions(-)
+> 
+> diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+> index 45912e6..4a55b51 100644
+> --- a/drivers/firewire/ohci.c
+> +++ b/drivers/firewire/ohci.c
+> @@ -3837,6 +3837,4 @@ MODULE_DESCRIPTION("Driver for PCI OHCI IEEE1394 controllers");
+>  MODULE_LICENSE("GPL");
+>  
+>  /* Provide a module alias so root-on-sbp2 initrds don't break. */
+> -#ifndef CONFIG_IEEE1394_OHCI1394_MODULE
+>  MODULE_ALIAS("ohci1394");
+> -#endif
+> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+> index 1162d6b..12ec0e6 100644
+> --- a/drivers/firewire/sbp2.c
+> +++ b/drivers/firewire/sbp2.c
+> @@ -1636,9 +1636,7 @@ MODULE_LICENSE("GPL");
+>  MODULE_DEVICE_TABLE(ieee1394, sbp2_id_table);
+>  
+>  /* Provide a module alias so root-on-sbp2 initrds don't break. */
+> -#ifndef CONFIG_IEEE1394_SBP2_MODULE
+>  MODULE_ALIAS("sbp2");
+> -#endif
+>  
+>  static int __init sbp2_init(void)
+>  {
 
-/me crawls back under his rock noaw :-)
-
+-- 
+Stefan Richter
+-=====-===-= --== =--==
+http://arcgraph.de/sr/
