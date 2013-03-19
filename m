@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab3CSRBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:01:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64429 "EHLO mx1.redhat.com"
+	id S1757194Ab3CSRDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 13:03:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49067 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932483Ab3CSRBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:01:20 -0400
-Message-ID: <51489979.2070403@draigBrady.com>
-Date: Tue, 19 Mar 2013 16:59:37 +0000
-From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755440Ab3CSRDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 13:03:09 -0400
+Date: Tue, 19 Mar 2013 18:03:06 +0100
+From: Jiri Bohac <jbohac@suse.cz>
+To: Thomas Gleixner <tglx@linutronix.de>, Dimitri Sivanich <sivanich@sgi.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RFC] specific do_timer_cpu value for nohz off mode
+Message-ID: <20130319170306.GA23272@midget.suse.cz>
+References: <20111108191149.GA7236@sgi.com>
+ <alpine.LFD.2.02.1202151512420.2794@ionos>
+ <20120215143710.GA10543@sgi.com>
+ <alpine.LFD.2.02.1202151547520.2794@ionos>
+ <20120215153438.GB11343@sgi.com>
+ <alpine.LFD.2.02.1202152131280.2794@ionos>
+ <20120216145900.GA3772@sgi.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Hillf Danton <dhillf@gmail.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>, mm <linux-mm@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd craziness round 2
-References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com> <512F8D8B.3070307@suse.cz> <CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com> <5138EC6C.6030906@suse.cz> <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com> <513A7263.5090303@suse.cz>
-In-Reply-To: <513A7263.5090303@suse.cz>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216145900.GA3772@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 11:21 PM, Jiri Slaby wrote:
-> On 03/08/2013 07:42 AM, Hillf Danton wrote:
->> On Fri, Mar 8, 2013 at 3:37 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>> On 03/01/2013 03:02 PM, Hillf Danton wrote:
->>>> On Fri, Mar 1, 2013 at 1:02 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>>>>
->>>>> Ok, no difference, kswap is still crazy. I'm attaching the output of
->>>>> "grep -vw '0' /proc/vmstat" if you see something there.
->>>>>
->>>> Thanks to you for test and data.
->>>>
->>>> Lets try to restore the deleted nap, then.
->>>
->>> Oh, it seems to be nice now:
->>> root       579  0.0  0.0      0     0 ?        S    Mar04   0:13 [kswapd0]
->>>
->> Double thanks.
+Hi,
+
+following up on a very old thread:
+http://thread.gmane.org/gmane.linux.kernel/1212777
+
+On Thu, Feb 16, 2012 at 08:59:00AM -0600, Dimitri Sivanich wrote:
+> On Wed, Feb 15, 2012 at 09:36:47PM +0100, Thomas Gleixner wrote:
+> > On Wed, 15 Feb 2012, Dimitri Sivanich wrote:
+> > > On Wed, Feb 15, 2012 at 03:52:06PM +0100, Thomas Gleixner wrote:
+> > > > So the first CPU which registers a clock event device takes it. That's
+> > > > the boot CPU, no matter what.
+> > > >
+> > > Both kernel tracing and the original patch that I proposed for this
+> > > showed plainly (at the time) that the tick_do_timer_cpu was not always cpu 0
+> > > prior to modifying it for nohz=off.  Maybe that is no longer the case?
+> > 
+> > This logic has not been changed in years.
 > 
-> There is one downside. I'm not sure whether that patch was the culprit.
-> My Thunderbird is jerky when scrolling and lags while writing this
-> message. The letters sometimes appear later than typed and in groups. Like
-> I (kbd): My Thunder
-> TB: My Thunder
-> I (kbd): b-i-r-d
-> TB: is silent
-> I (kbd): still typing...
-> TB: bird is
+> I did some tracing of all points where tick_do_timer_cpu is set in the
+> 3.3.0-rc3+ kernel.
 > 
-> Perhaps it's not only TB.
+> > 
+> > tick_do_timer_cpu is initialized to TICK_DO_TIMER_BOOT and the first
+> > cpu which registers either a global or a per cpu clock event device
+> > takes it over. This is at least on x86 always the boot cpu, i.e. cpu0.
+> > After that point nothing touches that variable when nohz is disabled
+> > (runtime or compile time).
+> 
+> At that point it is set to cpu 0.  However, when we go into highres mode
+> it does change.  Below are the two places it was set during boot with
+> nohz=off on one of our x86 based machines.
+> 
+> [    0.000000] tick_setup_device: tick_do_timer_cpu 0
+> [    1.924098] tick_broadcast_setup_oneshot: tick_do_timer_cpu 17
+> 
+> So in this example it's now cpu 17, and it stays that way from that point on.
+> 
+> A traceback at that point shows tick_init_highres is indeed initiating this:
+> 
+> [    1.924863]  [<ffffffff81087e01>] tick_broadcast_setup_oneshot+0x71/0x160
+> [    1.924863]  [<ffffffff81087f23>] tick_broadcast_switch_to_oneshot+0x33/0x50
+> [    1.924863]  [<ffffffff81088841>] tick_switch_to_oneshot+0x81/0xd0
+> [    1.924863]  [<ffffffff810888a0>] tick_init_highres+0x10/0x20
+> [    1.924863]  [<ffffffff81061e71>] hrtimer_run_pending+0x71/0xd0
+> 
+> > 
+> > So I really want to see proper proof why that would not be the
+> > case. If it really happens then we fix the root cause instead of
+> > adding random sysfs interfaces.
 
-I notice the same thunderbird issue on the much older 2.6.40.4-5.fc15.x86_64
-which I'd hoped would be fixed on upgrade :(
+As Dimitri wrote above, the switch from cpu 0 is done by
+tick_broadcast_setup_oneshot. The first CPU switching to highres
+takes the broadcast responsibility and also sets
+tick_do_timer_cpu to itself.
 
-My Thunderbird is using 1957m virt, 722m RSS on my 3G system.
-What are your corresponding mem values?
+This behaviour has been introduced by 7300711e
+(clockevents: broadcast fixup possible waiters).
 
-For reference:
-http://marc.info/?t=130865025500001&r=1&w=2
-https://bugzilla.redhat.com/show_bug.cgi?id=712019
+I don't see a good reason assign tick_do_timer_cpu to the CPU
+doing the one-shot timer broadcasts. The timer interrupt will be
+generated on any other CPU as well, be it through the broadcast
+IPI or a per-CPU clockevent device. Any online CPU can do that
+job, so how about just dropping the assignment?
 
-thanks,
-Pádraig.
+The do_timer() code should not suffer from the jitter introduced
+by the interrupt being generated by the broadcast, should it?
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -572,9 +572,6 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 
+ 		bc->event_handler = tick_handle_oneshot_broadcast;
+ 
+-		/* Take the do_timer update */
+-		tick_do_timer_cpu = cpu;
+-
+ 		/*
+ 		 * We must be careful here. There might be other CPUs
+ 		 * waiting for periodic broadcast. We need to set the
+
+
+
+-- 
+Jiri Bohac <jbohac@suse.cz>
+SUSE Labs, SUSE CZ
+
