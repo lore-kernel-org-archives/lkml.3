@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab3CSR6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 13:58:14 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:43213 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933316Ab3CSR6M (ORCPT
+	id S1757297Ab3CSSAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 14:00:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63044 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3CSSAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 13:58:12 -0400
+	Tue, 19 Mar 2013 14:00:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+Date: Tue, 19 Mar 2013 17:59:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <201303191648.31527.arnd@arndb.de> <CAHkwnC9FL9W07=n6bWvcwiE058zcBZwqUwtRB-VVNpU0gv0mNw@mail.gmail.com>
+In-Reply-To: <CAHkwnC9FL9W07=n6bWvcwiE058zcBZwqUwtRB-VVNpU0gv0mNw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyOypoeXgBWP0d7KmL3YezmjwEgrB=ntZaZdYjdmFkQpA@mail.gmail.com>
-References: <kg69ef$vdb$1@ger.gmane.org>
-	<CAPM=9ty0Apsk_5v+aguHQMzFhi9A9kMcWb8fXBmWus9Z=tA=JA@mail.gmail.com>
-	<5126C3E1.80801@gmail.com>
-	<513BACAC.9050800@gmail.com>
-	<CA+55aFyOypoeXgBWP0d7KmL3YezmjwEgrB=ntZaZdYjdmFkQpA@mail.gmail.com>
-Date: Tue, 19 Mar 2013 10:58:11 -0700
-X-Google-Sender-Auth: BiqGV5Sp52y0u6cIrtksLkwKhzs
-Message-ID: <CA+55aFyE3qCSnEfnCN6MkkKOj1kt_OCroJzTHEKkhUh+8Y7nXA@mail.gmail.com>
-Subject: Re: Regression: Screen turns off when booting in EFI mode
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303191759.27762.arnd@arndb.de>
+X-Provags-ID: V02:K0:SLjbsCDkB+PZsHDMeU2POGqnZ8bcvPfesHFk2ztvwsl
+ RqeNHL2H9b3SEpEVogLJK0msGuISv9eO9UMWa4l4TTdB2QLBPj
+ XpUnCYRa6tptmrJh8LNlgmbb2OWv+qcmyhbCPmb8/NyhxeAWVN
+ tW45XToz4pHX/NKKx8joryFKelyMJIMtU7+EB4WLYINbVHEgDV
+ htPBM4Pr5x1SxdGs+uB6bU1zk94YBvCjDH8KxUh+s3HbWNB2ZU
+ Me72qBJGvbCz2c3hkWv7YfkddBdZmL7UNS0+BxOjhSz1Eq0hu0
+ eHTD6jelyBFz89G7agB0uYPOO76YU3f6QqtstkB6c0YMnyEteN
+ iegFQwIzNfTZCUd2TWqw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 10:09 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Doing things like blindly trusting the firmware data without even
-> validating it is a really really bad idea. The commit actually looks
-> seriously broken in other ways too, like blindly doing phys_to_virt()
-> on that, and then trusting the result
+On Tuesday 19 March 2013, Fabio Porcedda wrote:
+> On Tue, Mar 19, 2013 at 5:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 19 March 2013, Geert Uytterhoeven wrote:
+> >> Hmm, so we may have drivers that (now) work perfectly fine with
+> >> module_platform_driver_probe()/platform_driver_probe(), but will start
+> >> failing suddenly in the future?
+> >
+> > They will fail if someone changes the initialization order. That would
+> > already break drivers before deferred probing support (and was the reason
+> > we added feature in the first place), but now we can be much more liberal
+> > with the order in which drivers are initialized, except when they are
+> > using platform_driver_probe()
+> >
+> >> I guess we need a big fat WARN_ON(-EPROBE_DEFER) in
+> >> platform_driver_probe() to catch these?
+> >
+> > Yes, very good idea.
+> 
+> If it's fine, I'll send a patch for that.
 
-Ok, looks like the only thing filling it in is eboot.c, and I guess it
-relies on the EFI memory allocations having been mapped. Which they
-hopefully have been.
+That would be cool, yes. I looked at it earlier (after sending my email above)
+and couldn't find an easy way to do it though, because platform_drv_probe
+does not know whether it is called from platform_driver_probe or not.
 
-Still, even that seems somewhat debatable. eboot.c does a plain
-memcpy() on the pci->romimage returned by
-EfiPciIoAttributeOperationGet. And I can *guarantee* that that doesn't
-work on some PCI chips that end up sharing the decoder for the ROM and
-the graphics aperture or other device oddities. Afaik, some Radeons do
-that, for example.
+Maybe using something other than platform_driver_register would work here.
 
-So whoever wrote that eboot thing seems to assume that the world is a
-lot simpler and saner than it actually is, and that everybody
-magically got things right. Which they never do. The code was
-presumably tested on just a couple of machines.
-
-The problem (well, at least *one* problem) is that pci_map_rom()
-actually knows about some of these issues, but if dev->rom and
-dev->romlen have been set, it trusts them unconditionally. So we'd
-either need to fix that, or we need to be really *really* sure that we
-only set dev->rom to guaranteed-correct buffers.
-
-At least the radeon code seems to verify that the ROM image starts
-with 0x55/0xaa, but I'm guessing we can't do that in general, even if
-it is the traditional PC rom pattern.
-
-We only have a few users of "pci_map_rom()", I'm wondering if we can
-move the "dev->rom/romsize" cases into the callers. Then the callers
-could decide if they want to trust that "pseudo-shadowed" ROM image
-(which would test that 55/aa pattern for example), or whether they
-want to try to map the actual physical ROM.
-
-                      Linus
+	Arnd
