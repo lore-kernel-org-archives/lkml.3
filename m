@@ -1,112 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3CSFEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:04:45 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52965 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab3CSFEo (ORCPT
+	id S1757064Ab3CSFIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:08:38 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54848 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab3CSFIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:04:44 -0400
-X-AuditID: 9c93016f-b7bfaae000003db8-71-5147f1eaaf1e
-Date: Tue, 19 Mar 2013 14:05:03 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] ARM: mm: disable kmap_high_get() for SMP
-Message-ID: <20130319050503.GA8858@lge.com>
-References: <1362372667-953-1-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
- <20130307081258.GA14839@lge.com>
- <alpine.LFD.2.03.1303071721540.28820@syhkavp.arg>
- <CAAmzW4NjefPV7tryvySfLXPy6Zcz3BLTvfxD=UnTKCqrRB3voQ@mail.gmail.com>
+	Tue, 19 Mar 2013 01:08:36 -0400
+Date: Mon, 18 Mar 2013 22:09:54 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH v4] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race
+Message-ID: <20130319050954.GA23390@kroah.com>
+References: <20130318222853.GA9358@logfs.org>
+ <20130319000411.GA6406@kroah.com>
+ <20130318225657.GA9685@logfs.org>
+ <20130319002742.GA11050@kroah.com>
+ <20130318231154.GC9685@logfs.org>
+ <20130318233413.GD9685@logfs.org>
+ <20130319015354.GA21045@kroah.com>
+ <20130319033112.GA11307@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAAmzW4NjefPV7tryvySfLXPy6Zcz3BLTvfxD=UnTKCqrRB3voQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130319033112.GA11307@logfs.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 07:35:51PM +0900, JoonSoo Kim wrote:
-> 2013/3/7 Nicolas Pitre <nicolas.pitre@linaro.org>:
-> > On Thu, 7 Mar 2013, Joonsoo Kim wrote:
-> >
-> >> Hello, Nicolas.
-> >>
-> >> On Tue, Mar 05, 2013 at 05:36:12PM +0800, Nicolas Pitre wrote:
-> >> > On Mon, 4 Mar 2013, Joonsoo Kim wrote:
-> >> >
-> >> > > With SMP and enabling kmap_high_get(), it makes users of kmap_atomic()
-> >> > > sequential ordered, because kmap_high_get() use global kmap_lock().
-> >> > > It is not welcome situation, so turn off this optimization for SMP.
-> >> >
-> >> > I'm not sure I understand the problem.
-> >> >
-> >> > The lock taken by kmap_high_get() is released right away before that
-> >> > function returns and therefore this is not actually serializing
-> >> > anything.
-> >>
-> >> Yes, you understand what I want to say correctly.
-> >> Sorry for bad explanation.
-> >>
-> >> Following is reasons why I send this patch with RFC tag.
-> >>
-> >> If we have more cpus, performance degration is possible although
-> >> it is very short time to holding the lock in kmap_high_get().
-> >>
-> >> And kmap has maximum 512 entries(512 * 4K = 2M) and some mobile devices
-> >> has 2G memory(highmem 1G>), so probability for finding matched entry
-> >> is approximately < 1/512. This probability can be more decreasing
-> >> for device which have more memory. So I think that waste time to find
-> >> matched entry is more than saved time.
-> >>
-> >> Above is my humble opinion, so please let me know what I am missing.
-> >
-> > Please look at the kmap_high_get() code again.  It performs no
-> > searching at all.  What it does is:
+On Mon, Mar 18, 2013 at 11:31:12PM -0400, Jörn Engel wrote:
+> On Mon, 18 March 2013 18:53:54 -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Mar 18, 2013 at 07:34:13PM -0400, Jörn Engel wrote:
+> > > ---
+> > >  drivers/target/target_core_transport.c |   17 +++++++++++------
+> > >  include/linux/kref.h                   |   26 ++++++++++++++++++++++++++
+> > >  2 files changed, 37 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> > > index 04ec9cb..b98c158 100644
+> > > --- a/drivers/target/target_core_transport.c
+> > > +++ b/drivers/target/target_core_transport.c
+> > > @@ -2207,21 +2207,19 @@ static void target_release_cmd_kref(struct kref *kref)
+> > >  {
+> > >  	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+> > >  	struct se_session *se_sess = se_cmd->se_sess;
+> > > -	unsigned long flags;
+> > >  
+> > > -	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+> > >  	if (list_empty(&se_cmd->se_cmd_list)) {
+> > > -		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> > > +		spin_unlock(&se_sess->sess_cmd_lock);
+> > 
+> > Wait, who has this locked?  You took out the call to spin_lock_* above.
 > 
-> If page is not highmem, it may be already filtered in kmap_atomic().
-> So we only consider highmem page.
-> 
-> For highmem page, it perform searching.
-> In kmap_high_get(), page_address() is called.
-> In page_address(), it hash PA and iterate a list for this hashed value.
-> 
-> And another advantage of disabling ARCH_NEEDS_KMAP_HIGH_GET is
-> that kmap(), kunmap() works without irq disabled.
-> 
-> Thanks.
+> The spinlock needs to be taken atomically wrt. the final kref_put.  So
+> either the kref_put was not final and we don't end up calling
+> target_release_cmd_kref() or it was and the spinlock is already taken
+> when calling the release function.  You could call that the central
+> bit of the patch. ;)
 
-Hello, Nicolas.
+Ah, ok.
 
-For just confirm, you don't agree with this, right?
+> > And why not _irqstore() anymore?
+> 
+> Because I thought the resulting code would be horrible.  But going
+> through the excercise, it does seem half as bad as I feared.  In fact,
+> I rather like it now.
 
-Thanks.
+You changed the kref code too, does it work better now?
+
+
 
 > 
-> > - lock the kmap array against concurrent changes
-> >
-> > - if the given page is not highmem, unlock and return NULL
-> >
-> > - otherwise increment that page reference count, unlock, and return the
-> >   mapped address for that page.
-> >
-> > There is almost zero cost to this function, independently of the number
-> > of kmap entries, whereas it does save much bigger costs elsewhere when
-> > it is successful.
-> >
-> >
-> > Nicolas
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Jörn
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Happiness isn't having what you want, it's wanting what you have.
+> -- unknown
+> 
+> 
+> It is possible for one thread to to take se_sess->sess_cmd_lock in
+> core_tmr_abort_task() before taking a reference count on
+> se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+> se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+> 
+> This introduces kref_put_spinlock_irqsave() and uses it in
+> target_put_sess_cmd() to close the race window.
+> 
+> Signed-off-by: Joern Engel <joern@logfs.org>
+> ---
+>  drivers/target/target_core_transport.c |    7 +++----
+>  include/linux/kref.h                   |   32 ++++++++++++++++++++++++++++++++
+>  2 files changed, 35 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 04ec9cb..7e856b9 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2203,13 +2203,11 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void target_release_cmd_kref(struct kref *kref)
+> +static void target_release_cmd_kref(struct kref *kref, unsigned long flags)
+>  {
+>  	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+>  	struct se_session *se_sess = se_cmd->se_sess;
+> -	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+
+Why pass flags to a release function?
+
+I don't think you can do that, but it's been a while since I looked at
+the spinlock code.
+
+greg k-h
