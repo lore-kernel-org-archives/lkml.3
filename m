@@ -1,122 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab3CSOfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 10:35:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34236 "EHLO mx1.redhat.com"
+	id S1756771Ab3CSOgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 10:36:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33679 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab3CSOfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 10:35:44 -0400
-Date: Tue, 19 Mar 2013 15:35:09 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCHv4] perf: Fix vmalloc ring buffer pages handling
-Message-ID: <20130319143509.GA1128@krava.brq.redhat.com>
-References: <20130312100502.GC1348@krava.brq.redhat.com>
- <1363084030.14933.23.camel@laptop>
- <20130312135219.GA32001@krava.brq.redhat.com>
- <1363101972.24558.3.camel@laptop>
- <20130312153609.GC32001@krava.brq.redhat.com>
- <1363105490.24558.12.camel@laptop>
- <20130312170416.GD32001@krava.brq.redhat.com>
- <20130313111557.GC1064@krava.brq.redhat.com>
- <20130318190548.GA18920@krava.brq.redhat.com>
- <1363693618.22553.33.camel@laptop>
+	id S1755134Ab3CSOgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 10:36:48 -0400
+Message-ID: <514877F1.8020204@ti.com>
+Date: Tue, 19 Mar 2013 10:36:33 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363693618.22553.33.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 0/8] staging: [omap,ti-soc]-thermal: fixes and renaming
+References: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1363618756-15851-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 12:46:58PM +0100, Peter Zijlstra wrote:
-> 
-> > are you going to include that, or should I repost it?
-> 
-> Ah, please repost (and prettify) it, I'm still very limited in the
-> amount of work that I can do :/
-> 
+Hello Greg,
 
-ok, attached
 
-jirka
+On 18-03-2013 10:59, Eduardo Valentin wrote:
+> Hi Greg,
+>
+> I am sending extra patches on omap-thermal driver, under staging.
+>
+> There are couple of fixes based on Dan Carpenter's review on
+> the last patch set I sent. On top of these, there are some
+> changes on the naming convention for this driver. This rename
+> is based on previous review cycles that this driver has got.
+> Besides, it must support other chip families, apart from OMAP,
+> that's mainly why there is a big rename on this patch set.
+> And as  usual, there are couple of extra fixes.
 
----
-If we allocate perf ring buffer with the size of single (user)
-page, we will get memory corruption when releasing itin rb_free_work
-function (for CONFIG_PERF_USE_VMALLOC option).
+I am going to resend this series, dropping  patch 02 and splitting 
+patch 04. It will also include extra fixes.
 
-For single page sized ring buffer the page_order is -1 (because
-nr_pages is 0). This needs to be recognized in the rb_free_work
-function to release proper amount of pages.
 
-Adding data_page_nr function that returns number of allocated
-data pages. Customizing the rest of the code to use it.
-
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Original-patch-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/events/ring_buffer.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 23cb34f..27a1af4 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -312,11 +312,16 @@ void rb_free(struct ring_buffer *rb)
- }
- 
- #else
-+static int data_page_nr(struct ring_buffer *rb)
-+{
-+	return rb->nr_pages << page_order(rb);
-+}
- 
- struct page *
- perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
- {
--	if (pgoff > (1UL << page_order(rb)))
-+	/* The '>' counts in the user page. */
-+	if (pgoff > data_page_nr(rb))
- 		return NULL;
- 
- 	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
-@@ -336,10 +341,11 @@ static void rb_free_work(struct work_struct *work)
- 	int i, nr;
- 
- 	rb = container_of(work, struct ring_buffer, work);
--	nr = 1 << page_order(rb);
-+	nr = data_page_nr(rb);
- 
- 	base = rb->user_page;
--	for (i = 0; i < nr + 1; i++)
-+	/* The '<=' counts in the user page. */
-+	for (i = 0; i <= nr; i++)
- 		perf_mmap_unmark_page(base + (i * PAGE_SIZE));
- 
- 	vfree(base);
-@@ -373,7 +379,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
- 	rb->user_page = all_buf;
- 	rb->data_pages[0] = all_buf + PAGE_SIZE;
- 	rb->page_order = ilog2(nr_pages);
--	rb->nr_pages = 1;
-+	rb->nr_pages = !!nr_pages;
- 
- 	ring_buffer_init(rb, watermark, flags);
- 
--- 
-1.7.11.7
+>
+> All these are based on your staging/staging-next branch.
+>
+> For those interested in testing and trying the driver, these patches are
+> also available, as usual, here:
+> git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
+> https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/ti-thermal-rename
+>
+> BR,
+>
+> Eduardo Valentin (8):
+>    staging: omap-thermal: fix return value
+>    staging: omap-thermal: use spin_lock_irqsave inside IRQ handler
+>    staging: omap-thermal: rename bg_ptr to bgp
+>    staging: rename omap-thermal driver to ti-soc-thermal
+>    staging: ti-soc-thermal: make unexported functions local
+>    staging: ti-soc-thermal: split writable data from readonly data
+>    stating: ti-soc-thermal: use sizeof(*pointer) while allocating
+>    staging: ti-soc-thermal: fix several kernel-doc warnings and error
+>
+>   drivers/staging/Kconfig                            |    2 +-
+>   drivers/staging/Makefile                           |    2 +-
+>   drivers/staging/omap-thermal/Makefile              |    5 -
+>   drivers/staging/omap-thermal/omap-bandgap.c        | 1300 --------------------
+>   drivers/staging/omap-thermal/omap-thermal-common.c |  338 -----
+>   .../{omap-thermal => ti-soc-thermal}/Kconfig       |   14 +-
+>   drivers/staging/ti-soc-thermal/Makefile            |    5 +
+>   .../staging/{omap-thermal => ti-soc-thermal}/TODO  |    0
+>   .../omap4-thermal-data.c                           |   68 +-
+>   .../omap4xxx-bandgap.h                             |    0
+>   .../omap5-thermal-data.c                           |   20 +-
+>   .../omap5xxx-bandgap.h                             |    0
+>   .../omap_bandgap.txt                               |    0
+>   drivers/staging/ti-soc-thermal/ti-bandgap.c        | 1299 +++++++++++++++++++
+>   .../omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} |  181 ++--
+>   drivers/staging/ti-soc-thermal/ti-thermal-common.c |  338 +++++
+>   .../omap-thermal.h => ti-soc-thermal/ti-thermal.h} |   30 +-
+>   17 files changed, 1803 insertions(+), 1799 deletions(-)
+>   delete mode 100644 drivers/staging/omap-thermal/Makefile
+>   delete mode 100644 drivers/staging/omap-thermal/omap-bandgap.c
+>   delete mode 100644 drivers/staging/omap-thermal/omap-thermal-common.c
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/Kconfig (82%)
+>   create mode 100644 drivers/staging/ti-soc-thermal/Makefile
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/TODO (100%)
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4-thermal-data.c (85%)
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap4xxx-bandgap.h (100%)
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5-thermal-data.c (96%)
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap5xxx-bandgap.h (100%)
+>   rename drivers/staging/{omap-thermal => ti-soc-thermal}/omap_bandgap.txt (100%)
+>   create mode 100644 drivers/staging/ti-soc-thermal/ti-bandgap.c
+>   rename drivers/staging/{omap-thermal/omap-bandgap.h => ti-soc-thermal/ti-bandgap.h} (75%)
+>   create mode 100644 drivers/staging/ti-soc-thermal/ti-thermal-common.c
+>   rename drivers/staging/{omap-thermal/omap-thermal.h => ti-soc-thermal/ti-thermal.h} (72%)
+>
 
