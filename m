@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab3CSQKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 12:10:34 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56626 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754705Ab3CSQKd (ORCPT
+	id S932900Ab3CSQRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 12:17:41 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2685 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab3CSQRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 12:10:33 -0400
-Date: Tue, 19 Mar 2013 16:10:06 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Kconfig.debug: Remove unused CONFIG_DEBUG_ERRORS
-Message-ID: <20130319161006.GA9321@arm.com>
-References: <1363707697.1390.13.camel@x61.thuisdomein>
+	Tue, 19 Mar 2013 12:17:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 09:17:39 -0700
+Message-ID: <51488FA2.2090509@nvidia.com>
+Date: Tue, 19 Mar 2013 12:17:38 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363707697.1390.13.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [Patch v3 2/4] mfd: tps65090: Add resources for charger
+References: <1363126089-9071-1-git-send-email-rklein@nvidia.com> <1363126089-9071-3-git-send-email-rklein@nvidia.com>
+In-Reply-To: <1363126089-9071-3-git-send-email-rklein@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 03:41:37PM +0000, Paul Bolle wrote:
-> The Kconfig entry for DEBUG_ERRORS is a verbatim copy of the former arm
-> entry for that symbol. It got removed in v2.6.39 because it wasn't
-> actually used anywhere. There are still no users of DEBUG_ERRORS so
-> remove this entry too.
+On 3/12/2013 6:08 PM, Rhyland Klein wrote:
+> Add irq resources to pass to the charger mfd sub dev so
+> the charger can listen for interrupts.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
+> v3:
+>  - no changes since v2
+> v2:
+>  - no changes since v1
+> 
+>  drivers/mfd/tps65090.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index 98edb5be..88846ae 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -56,12 +56,22 @@
+>  #define TPS65090_INT2_MASK_OVERLOAD_FET6		6
+>  #define TPS65090_INT2_MASK_OVERLOAD_FET7		7
+>  
+> +static struct resource charger_resources[] = {
+> +	{
+> +		.start  = TPS65090_IRQ_VAC_STATUS_CHANGE,
+> +		.end    = TPS65090_IRQ_VAC_STATUS_CHANGE,
+> +		.flags  = IORESOURCE_IRQ,
+> +	}
+> +};
+> +
+>  static struct mfd_cell tps65090s[] = {
+>  	{
+>  		.name = "tps65090-pmic",
+>  	},
+>  	{
+>  		.name = "tps65090-charger",
+> +		.num_resources = ARRAY_SIZE(charger_resources),
+> +		.resources = &charger_resources[0],
+>  	},
+>  };
+>  
+> 
 
-Thanks, applied.
+Samuel, Anton merged patches 3 & 4 of this series. Have you had a chance
+to review patches 1 & 2 ?
+
+-rhyland
 
 -- 
-Catalin
+nvpublic
