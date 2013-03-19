@@ -1,128 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3CSBSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Mar 2013 21:18:00 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36366 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753835Ab3CSBR6 (ORCPT
+	id S1757466Ab3CSBSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Mar 2013 21:18:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40952 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754222Ab3CSBSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Mar 2013 21:17:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgIbAOS7R1F5LMSe/2dsb2JhbABDh0a4UoUjAQMBgV8XdIIkAQEEATocIwULCAMYCSUPBSUDIROIDgWyMpAZFY1gIB5dB4NAA5MYg0WRA4MeKA
-Date: Tue, 19 Mar 2013 12:17:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Michel Lespinasse <walken@google.com>, Alex Shi <alex.shi@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a
- reader
-Message-ID: <20130319011754.GU6369@dastard>
-References: <1362612111-28673-1-git-send-email-walken@google.com>
- <1362612111-28673-12-git-send-email-walken@google.com>
- <20130309003221.GE23616@dastard>
- <CANN689F9Zy=cTdi3D4d4iw66eeGLTtpudmAJgxYHGgDUsNU2Mg@mail.gmail.com>
- <20130311001650.GB20565@dastard>
- <CANN689FF+fjphwNqRz_ixpo4hW-rkXq6fbmJf7xDacBbP48BXw@mail.gmail.com>
- <20130312023658.GH21651@dastard>
- <CANN689Hu4S6hQaZ0tytNuToCpwtdJmyisyqyrDrNK+buJXTsKA@mail.gmail.com>
- <20130313032334.GU21651@dastard>
- <1363226451.25976.170.camel@thor.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363226451.25976.170.camel@thor.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Mar 2013 21:18:37 -0400
+Message-ID: <1363655903.3937.350.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 04/21] target/pscsi: Fix page increment
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Asias He <asias@redhat.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+Date: Tue, 19 Mar 2013 01:18:23 +0000
+In-Reply-To: <20130319005659.GB15879@hj.localdomain>
+References: <20130312223245.109098379@linuxfoundation.org>
+	 <20130312223245.664885170@linuxfoundation.org>
+	 <1363399822.3937.161.camel@deadeye.wl.decadent.org.uk>
+	 <20130318053519.GE6232@hj.localdomain>
+	 <1363640434.3156.36.camel@haakon2.linux-iscsi.org>
+	 <1363649447.3937.348.camel@deadeye.wl.decadent.org.uk>
+	 <20130319005659.GB15879@hj.localdomain>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Q0o54vILwLAc2gWg+fCO"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d98f:da4e:f620:7bea
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 10:00:51PM -0400, Peter Hurley wrote:
-> On Wed, 2013-03-13 at 14:23 +1100, Dave Chinner wrote:
-> > We don't care about the ordering between multiple concurrent
-> > metadata modifications - what matters is whether the ongoing data IO
-> > around them is ordered correctly.
-> 
-> Dave,
-> 
-> The point that Michel is making is that there never was any ordering
-> guarantee by rwsem. It's an illusion.
 
-Weasel words.
+--=-Q0o54vILwLAc2gWg+fCO
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> The reason is simple: to even get to the lock the cpu has to be
-> sleep-able. So for every submission that you believe is ordered, is by
-> its very nature __not ordered__, even when used by kernel code.
->
-> Why? Because any thread on its way to claim the lock (reader or writer)
-> could be pre-empted for some other task, thus delaying the submission of
-> whatever i/o you believed to be ordered.
+On Tue, 2013-03-19 at 08:56 +0800, Asias He wrote:
+> On Mon, Mar 18, 2013 at 11:30:47PM +0000, Ben Hutchings wrote:
+> > On Mon, 2013-03-18 at 14:00 -0700, Nicholas A. Bellinger wrote:
+> > > On Mon, 2013-03-18 at 13:35 +0800, Asias He wrote:
+> > > > On Sat, Mar 16, 2013 at 02:10:22AM +0000, Ben Hutchings wrote:
+> > > > > On Tue, 2013-03-12 at 15:44 -0700, Greg Kroah-Hartman wrote:
+> > > > > > 3.0-stable review patch.  If anyone has any objections, please =
+let me know.
+> > > > > >=20
+> > > > > > ------------------
+> > > > > >=20
+> > > > > > From: Asias He <asias@redhat.com>
+> > > > > >=20
+> > > > > > commit 472b72f2db7831d7dbe22ffdff4adee3bd49b05d upstream.
+> > > > > >=20
+> > > > > > The page++ is wrong. It makes bio_add_pc_page() pointing to a w=
+rong page
+> > > > > > address if the 'while (len > 0 && data_len > 0) { ... }' loop i=
+s
+> > > > > > executed more than one once.
+> > > > > >=20
+> > > > > > Signed-off-by: Asias He <asias@redhat.com>
+> > > > > > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > > > > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > > >=20
+> > > > > > ---
+> > > > > >  drivers/target/target_core_pscsi.c |    1 -
+> > > > > >  1 file changed, 1 deletion(-)
+> > > > > >=20
+> > > > > > --- a/drivers/target/target_core_pscsi.c
+> > > > > > +++ b/drivers/target/target_core_pscsi.c
+> > > > > > @@ -1210,7 +1210,6 @@ static int __pscsi_map_task_SG(
+> > > > > >  				bio =3D NULL;
+> > > > > >  			}
+> > > > > > =20
+> > > > > > -			page++;
+> > > > > >  			len -=3D bytes;
+> > > > > >  			data_len -=3D bytes;
+> > > > > >  			off =3D 0;
+> > > > >=20
+> > > > > So in case a fragment crosses a page boundary, we wrap around to =
+the
+> > > > > beginning of the same page?  That doesn't look right.
+> > > >=20
+> > > > If the fragment crosses a page boundary, what is the correct page
+> > > > for it?
+> > > >=20
+> > > > Nicholas, can we assume sg->length + sg->offset should be less than=
+ PAGE_SIZE here?
+> > > >=20
+> > >=20
+> > > sg->length + sg->offset can be less than or equal to PAGE_SIZE here.
+> > >
+> > > For everything other than tcm_loop + tcm_vhost using externally
+> > > allocated SGLs, we can expect fragments to never cross the page
+> > > boundary.
+> > >=20
+> > > For tcm_loop + tcm_vhost, there are a few special cases with control =
+CDB
+> > > paylaods (usually going through scsi-generic) where we can have a non
+> > > zero sg->offset, but at least in the cases I've seen this is still no=
+t
+> > > using SGL elements that exceed PAGE_SIZE.
+> > >
+> > > So, I think this logic is OK for SGLs that cross page boundries, give=
+n
+> > > that it's done outside of the inner loop where *page is set during ea=
+ch
+> > > for_each_sg().
+> >=20
+> > The page is set using sg_page() in the outer loop and was then
+> > incremented in the inner loop.
+> >=20
+> > 	for_each_sg(sgl, sg, sgl_nents, i) {
+> > 		page =3D sg_page(sg);
+> > 		off =3D sg->offset;
+> > 		len =3D sg->length;
+> >=20
+> > 		while (len > 0 && data_len > 0) {
+> > 			bytes =3D min_t(unsigned int, len, PAGE_SIZE - off);
+> > 			bytes =3D min(bytes, data_len);
+> > 			...
+> > 			/* page++; */
+> > 			len -=3D bytes;
+> > 			data_len -=3D bytes;
+> > 			off =3D 0;
+> > 		}
+> > 	}
+> >=20
+> > The inner loop is apparently meant to iterate over pages of a segment,
+> > but is now just wrapping around a single page.
+>=20
+> Yes, but we never loop more than once in the inner loop.
 
-You think I don't know this?  You're arguing fine grained, low level
-behaviour between tasks is unpredictable. I get that. I understand
-that. But I'm not arguing about fine-grained, low level, microsecond
-semantics of the locking order....
+If you're sure of that, then:
 
-What you (and Michael) appear to be failing to see is what happens
-on a macro level when you have read locks being held for periods
-measured in *seconds* (e.g. direct IO gets queued behind a few
-thousand other IOs in the elevator waiting for a request slot),
-and the subsequent effect of inserting an operation that requires a
-write lock into that IO stream.
+> So, how about
+> 1) fail on  sg->offset + sg->length > PAGE_SIZE (we can not find a
+> proper page address in this case)
+> 2) remove the inner while loop, run the code was in the loop only once.
 
-IOWs, it simply doesn't matter if there's a micro-level race between
-the write lock and a couple of the readers. That's the level you
-guys are arguing at but it simply does not matter in the cases I'm
-describing. I'm talking about high level serialisation behaviours
-that might take of *seconds* to play out and the ordering behaviours
-observed at that scale.
+this is fine, but then I don't understand why you sent a no-op change to
+stable in the first place.
 
-That is, I don't care if a couple of threads out of a few thousand
-race with the write lock over few tens to hundreds of microseconds,
-but I most definitely care if a few thousand IOs issued seconds
-after the write lock is queued jump over the write lock. That is a
-gross behavioural change at the macro-level.....
+Ben.
 
-> So just to reiterate: there is no 'queue' and no 'barrier'. The
-> guarantees that rwsem makes are;
-> 1. Multiple readers can own the lock.
-> 2. Only a single writer can own the lock.
-> 3. Readers will not starve writers.
+--=20
+Ben Hutchings
+When you say `I wrote a program that crashed Windows', people just stare ..=
+.
+and say `Hey, I got those with the system, *for free*'. - Linus Torvalds
 
-You've conveniently ignored the fact that the current implementation
-also provides following guarantee:
+--=-Q0o54vILwLAc2gWg+fCO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-4. new readers will block behind existing writers
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-And that's the behaviour we currently depend on, whether you like it
-or not.
+iQIVAwUAUUe83+e/yOyVhhEJAQoMlhAAzXSh0LvVc3FwmgPk8KCSIq5Pv3J7gHC8
+lGK/BK1oRBxNjkuLrc5sS7FCPeFibZK/cjR/geg34tZ8FPPCGqEle7X+Nf2c6RF3
+4QZfFveMfcmxlhsG0Gp3iB2Q+DKvV1nD6PXxD6BEN4ue7Uta8qqiDK3PbGxMaiaA
+GHqgxtpzDjNS+0ZHHtpGR1eWywuQQ0qnQzjM/AzX1O31cKP3L4damZQOtXwcgHDn
+Gugwm3BAvJ+R8P4h/usMiyYLcnkDG1HndQzeeJEPc0bRUXQN5fDnsJOOncB4MyqF
+lw6/4RE4fxBXK15cTIElafUOorBy8IQUVbkw1YkVi3DcI5mGiGrfXcmXnAIpurAH
+xhvUvkdCcaka/F8IK9T1VT6wkx5P+bKO/6tJtlJN1WK3OKgnoxkAzaijX4Bhvctg
+JqhpMRMM09bpKtEgYPpuES+lScDlUNsiex1oOcZHnE6jzRxTsMVcXJEH6LVKFjpV
+Qb9guYjW1h5te1BQhvr4F7BAeE/gjzHhJJnfXVx7Z78vxELxFsUs8vjlvGYoBtCc
+MBOcnaMDRtRita1BySBcyFvoTYJdrAhjMujbTdbgdeLs0FVrtlR4XNu0xDv7aFTU
+PwS3fOE2gjeA8bJ266faKOuq18Ln91f1mapJ1pxSQksKTUFoBgSm640deU+LI+mv
+D//doulkL+A=
+=WOnf
+-----END PGP SIGNATURE-----
 
-> Where lock policy can have a significant impact is on performance. But
-> predicting that impact is difficult -- it's better just to measure.
-
-Predicting the impact in this case is trivial - it's obvious that
-ordering of operations will change and break high level assumptions
-that userspace currently makes about various IO operations on XFS
-filesystems
-
-> It's not my intention to convince you (or anyone else) that there should
-> only be One True Rwsem, because I don't believe that. But I didn't want
-> the impression to persist that rwsem does anything more than implement a
-> fair reader/writer semaphore.
-
-I'm sorry, but redefining "fair" to suit your own needs doesn't
-convince me of anything. rwsem behaviour has been unchanged for at
-least 10 years and hence the current implementation defines what is
-"fair", not what you say is fair....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--=-Q0o54vILwLAc2gWg+fCO--
