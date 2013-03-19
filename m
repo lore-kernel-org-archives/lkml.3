@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab3CSFal (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 01:30:41 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:33410 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab3CSFaj (ORCPT
+	id S933025Ab3CSFbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 01:31:39 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53946 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3CSFbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 01:30:39 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-d9-5147f7fdc9a4
+	Tue, 19 Mar 2013 01:31:38 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-4a-5147f839c5f7
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>
 Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH v2 1/2] extcon: max8997: use dev_err() instead of pr_err()
-Date: Tue, 19 Mar 2013 14:30:37 +0900
-Message-id: <000101ce2462$e31b5fa0$a9521ee0$%han@samsung.com>
+References: <000101ce2462$e31b5fa0$a9521ee0$%han@samsung.com>
+In-reply-to: <000101ce2462$e31b5fa0$a9521ee0$%han@samsung.com>
+Subject: [PATCH v2 2/2] extcon: max8997: add missing const
+Date: Tue, 19 Mar 2013 14:31:36 +0900
+Message-id: <000201ce2463$06750e60$135f2b20$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4kYt9lRWnD2nPSSoCwWKQtUrUYLA==
+Thread-index: Ac4kYt9lRWnD2nPSSoCwWKQtUrUYLAAAAhzg
 Content-language: ko
-x-cr-hashedpuzzle: Ae0y GOS6 J5DF Wg/Z ap2s brVv cXNX coLR g8Kc hjAY iys8 lo9N
- mBzS mv3H nKR3
- odtF;4;YwB3ADAAMAAuAGMAaABvAGkAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG0AeQB1AG4AZwBqAG8AbwAuAGgAYQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Sosha1_v1;7;{99013C4A-18B3-453D-8F1A-72A99840450C};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Tue,
- 19 Mar 2013 05:30:31
- GMT;WwBQAEEAVABDAEgAIAB2ADIAIAAxAC8AMgBdACAAZQB4AHQAYwBvAG4AOgAgAG0AYQB4ADgAOQA5ADcAOgAgAHUAcwBlACAAZABlAHYAXwBlAHIAcgAoACkAIABpAG4AcwB0AGUAYQBkACAAbwBmACAAcAByAF8AZQByAHIAKAApAA==
-x-cr-puzzleid: {99013C4A-18B3-453D-8F1A-72A99840450C}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zI92/390DDdb80rO4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZjTcyCl6xVjw/cJW5gfE9SxcjJ4eEgInEgk8nmCFsMYkL99az
-	dTFycQgJLGOU+NG5mhmmaOmGX4wQiUWMEpN+PmaFcGYzSUyYupkNpIpNQE3iy5fD7CC2iICu
-	xMurt8G6mQXyJKYc2QVmCwt4SRw69JIJxGYRUJWY1gyxmlfAVuLl/8NsELagxI/J91ggerUk
-	1u88zgRhy0tsXvMWqJ4D6CJ1iUd/dUFMEQE9ibWPvSAqRCT2vXgHdqeEwBJWiTMfdrJBPGAq
-	8f0myGkgiUXsEgu/TGaHuEFA4tvkQywQM2UlNh2AelhS4uCKGywTGCVmIbloFpKLZiG5aBaS
-	3QsYWVYxiqYWJBcUJ6UXmegVJ+YWl+al6yXn525ihETWhB2M9w5YH2JMBlo/kVlKNDkfGJl5
-	JfGGxmZGFqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDMrk9h
-	14+WC1FI2c473/yJjcVslvO7fjabZRqYZJ/4Wj2LuVX3+py1JYsteji4lpVX9fcmThY/3xZS
-	8fPOjxrNGQ7WOzUTt5Ze2dBatsIy3++KzGuR8turc9gaD+5doFq0bp9KJafSrx+XcrdWl2ZZ
-	/Lw2v/Hu29qtqgs2eW23nKPIMe0p5zMlluKMREMt5qLiRACqjhI2wgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgO7f7+6BBhOnaFtc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjMYbGQWvWCueH7jK3MD4
-	nqWLkZNDQsBEYumGX4wQtpjEhXvr2boYuTiEBBYxSkz6+ZgVwpnNJDFh6mY2kCo2ATWJL18O
-	s4PYIgK6Ei+v3mYGsZkF8iSmHNkFZgsLeEkcOvSSCcRmEVCVmNZ8AizOK2Ar8fL/YTYIW1Di
-	x+R7LBC9WhLrdx5ngrDlJTaveQtUzwF0kbrEo7+6IKaIgJ7E2sdeEBUiEvtevGMEOU1CYAmr
-	xJkPO9kgHjCV+H7zMPsERqFZSDbMQrJhFpINs5DMWsDIsopRNLUguaA4KT3XUK84Mbe4NC9d
-	Lzk/dxMjOG6fSe1gXNlgcYhRgINRiYf3RLB7oBBrYllxZe4hRgkOZiUR3mB/oBBvSmJlVWpR
-	fnxRaU5q8SHGZGAATGSWEk3OB6aUvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGan
-	phakFsFsYeLglGpg5A4+nCXoejj9jrPg6R3VrwJf2ZRe7Jt4wt6lVpnbKb+B7+4PrUWNbcX2
-	x97+cVoW+1/4XBCH9MGrH2/fa5PftSpFcocQ5/pzZ1gn/t+e6PNDma9OcWXIueiVhyRNl6rM
-	OrR1+Qzml80r93rGP41yXVZWa9D/bPlMpjlq/RaLmfa/7PXP3iXxQomlOCPRUIu5qDgRALtQ
-	XlMfAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zI13LH+6BBn/XsFhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MaS2X2Av28lbsPnqHvYGxj7uLkZNDQsBEYtH3JewQtpjEhXvr
+	2boYuTiEBJYxSny8/IkNpujC843sEIlFjBLTP1xhhHBmM0n86bzOCFLFJqAm8eXLYbBRIgK6
+	Ei+v3mYGsZkF8iSmHNkFZgsJ2Eoc+bASzOYUsJOYuPMsE4gtLGAlsfZjFwuIzSKgKvHp31uw
+	zbxA9U0z2lggbEGJH5PvsUDM1JJYv/M4E4QtL7F5zVugmRxAl6pLPPqrC3GCkcS7M9fZIUpE
+	JPa9eAd2s4TAPHaJNUd/skHsEpD4NvkQC0SvrMSmA8wQD0tKHFxxg2UCo8QsJJtnIdk8C8nm
+	WUhWLGBkWcUomlqQXFCclF5krFecmFtcmpeul5yfu4kRElv9OxjvHrA+xJgMtH4is5Rocj4w
+	NvNK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwDgj
+	5I3hSonsA+wnVCSEc24a3N4wVW7uryj3HTsEj28uELdmNWROdb+87q9I8vcM958BNxbVXXx/
+	sjPnU9bdqIb4g8891OXLbq81Ciq8OtWsdoXj0t2izy8GLruxPCFIPFShSlRo/Ro5hSNTi/ba
+	/uO8sebWtm/TJtgL7/zYuuiPDn9fxvJzjLlKLMUZiYZazEXFiQBe1TL5wwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgK7lD/dAg2cmFpd3zWFzYPT4vEku
+	gDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2io
+	kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjFjWssl9oK9vBW7j95hb2Ds
+	4+5i5OSQEDCRuPB8IzuELSZx4d56ti5GLg4hgUWMEtM/XGGEcGYzSfzpvM4IUsUmoCbx5cth
+	sA4RAV2Jl1dvM4PYzAJ5ElOO7AKzhQRsJY58WAlmcwrYSUzceZYJxBYWsJJY+7GLBcRmEVCV
+	+PTvLRuIzQtU3zSjjQXCFpT4MfkeC8RMLYn1O48zQdjyEpvXvAWayQF0qbrEo7+6ECcYSbw7
+	c50dokREYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+
+	7iZGcNw+k9rBuLLB4hCjAAejEg/viWD3QCHWxLLiytxDjBIczEoivMH+QCHelMTKqtSi/Pii
+	0pzU4kOMyUCPTmSWEk3OB6aUvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphak
+	FsFsYeLglGpgZFom4bEqOb3XcYdVQoCCp2WdkcCiewvd7SwPB8y8GcjgI73jVsXvjyXZOv47
+	2nqWGObXpoqU7QrcFjI7pPhIqsTHPZMzN7tnNt362jzLVU7ctNHwjXt1h9jpfVkzbisyCBw5
+	FFuh9WHW1uO+FQac+rllS/7wsTdP+Dm/4nSvyftPSXnTmR4qsRRnJBpqMRcVJwIAp5q3Sx8D	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,28 +53,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_err() is more preferred than pr_err().
+Fixed the checkpatch warning as below:
+
+  WARNING: static const char * array should probably be static const char * const
+  #163: FILE: drivers/extcon/extcon-max8997.c:163:
+  +static const char *max8997_extcon_cable[] = {
+
+Also, const is added to variable 'supported_cable' to prevent
+build warning as below:
+
+  drivers/extcon/extcon-max8997.c: In function 'max8997_muic_probe':
+  drivers/extcon/extcon-max8997.c:708:30: warning: assignment discards 'const' qualifier from pointer target type [enabled by
+default]
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
-No Changes since v1:
+Changes since v1:
+- Added const to variable 'supported_cable'
 
  drivers/extcon/extcon-max8997.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/extcon.h          |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 69641bc..20772ad 100644
+index 20772ad..b82a591 100644
 --- a/drivers/extcon/extcon-max8997.c
 +++ b/drivers/extcon/extcon-max8997.c
-@@ -646,7 +646,7 @@ static void max8997_muic_detect_cable_wq(struct work_struct *work)
+@@ -160,7 +160,7 @@ enum {
+ 	_EXTCON_CABLE_NUM,
+ };
  
- 	ret = max8997_muic_detect_dev(info);
- 	if (ret < 0)
--		pr_err("failed to detect cable type\n");
-+		dev_err(info->dev, "failed to detect cable type\n");
- }
+-static const char *max8997_extcon_cable[] = {
++static const char * const max8997_extcon_cable[] = {
+ 	[EXTCON_CABLE_USB]			= "USB",
+ 	[EXTCON_CABLE_USB_HOST]			= "USB-Host",
+ 	[EXTCON_CABLE_TA]			= "TA",
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index fcb51c8..741a491 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -113,7 +113,7 @@ struct extcon_cable;
+ struct extcon_dev {
+ 	/* --- Optional user initializing data --- */
+ 	const char	*name;
+-	const char **supported_cable;
++	const char * const *supported_cable;
+ 	const u32	*mutually_exclusive;
  
- static int max8997_muic_probe(struct platform_device *pdev)
+ 	/* --- Optional callbacks to override class functions --- */
 -- 
 1.7.2.5
 
