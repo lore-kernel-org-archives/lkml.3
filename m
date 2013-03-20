@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab3CTQy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:54:57 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:33726 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab3CTQy4 (ORCPT
+	id S933184Ab3CTQ4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:56:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56036 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754361Ab3CTQ4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:54:56 -0400
-Date: Wed, 20 Mar 2013 09:56:20 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 1/2] of: Make device nodes kobjects so they show up in
- sysfs
-Message-ID: <20130320165620.GB28307@kroah.com>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
- <1363791074-16415-2-git-send-email-grant.likely@secretlab.ca>
- <1363791432.12701.8.camel@pasglop>
+	Wed, 20 Mar 2013 12:56:19 -0400
+Message-ID: <5149EA30.8020302@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 10:56:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363791432.12701.8.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>
+Subject: Re: [PATCH 2/2] regulator: palmas: add input supply names
+References: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com> <20130320123128.GM28775@opensource.wolfsonmicro.com> <5149B19E.90400@nvidia.com> <5149DEB5.7000709@wwwdotorg.org> <20130320163833.GT28775@opensource.wolfsonmicro.com> <5149E6F2.5070205@wwwdotorg.org> <20130320165227.GU28775@opensource.wolfsonmicro.com>
+In-Reply-To: <20130320165227.GU28775@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 03:57:12PM +0100, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-03-20 at 14:51 +0000, Grant Likely wrote:
-> > Device tree nodes are already treated as objects, and we already want to
-> > expose them to userspace which is done using the /proc filesystem today.
-> > Right now the kernel has to do a lot of work to keep the /proc view in
-> > sync with the in-kernel representation. If device_nodes are switched to
-> > be kobjects then the device tree code can be a whole lot simpler. It
-> > also turns out that switching to using /sysfs from /proc results in
-> > smaller code and data size, and the userspace ABI won't change if
-> > /proc/device-tree symlinks to /sys/device-tree
-> > 
-> > Switching to sysfs does introduce two limitations however. First, normal
-> > sysfs attributes have a maximum size of PAGE_SIZE. Any properties larger
-> > than 4k will still show up in sysfs, but attempting to read them will
-> > result in truncated data. Practically speaking this should not be an
-> > issue assuming large binary blobs aren't encoded into the device tree.
+On 03/20/2013 10:52 AM, Mark Brown wrote:
+> On Wed, Mar 20, 2013 at 10:42:26AM -0600, Stephen Warren wrote:
+>> On 03/20/2013 10:38 AM, Mark Brown wrote:
+>>> On Wed, Mar 20, 2013 at 10:07:17AM -0600, Stephen Warren
+>>> wrote:
+>>>> On 03/20/2013 06:54 AM, Laxman Dewangan wrote:
 > 
-> Unfortunately they occasionally are... VPDs can be pretty big for
-> example.
-
-If the attributes are binary blobs, use the binary file capability of
-sysfs to properly handle them.
-
-> > Second, all normal sysfs attributes report their size as 4096 bytes
-> > instead of the actual property size reported in /proc/device-tree. It is
-> > possible that this change will cause some userspace tools to break.
+>>>>> I generally send a patches on single git-send command git 
+>>>>> send-emal --to=ldewangan@nvidia.com 0000.patch 0001.patch
 > 
-> This is btw a complete idiocy of sysfs and should/could be fixed.
+>>>> Don't do that; send *.patch. If you don't, then patches 2..n 
+>>>> don't end up being "in-reply-to" patch 1, so they won't show
+>>>> up as a single email thread.
+> 
+>>> The two should be equivalent (though the glob is much easier
+>>> to type)? The result of the globbing ought to be what Laxman is
+>>> typing by hand assuming that he's getting the order correct.
+> 
+>> If you send *.patch at once, git send-email adds an in-reply-to
+>> header to the email which sets up the threading. If you send the
+>> patches 1-by-1, this header isn't added, since git send-email
+>> doesn't have a clue what message ID it chose for patch 1. Unless
+>> you pass the --in-reply-to command-line option, that is.
+> 
+> Indeed - I think you may have quoted the wrong bit of Laxman's
+> mail there?  The bit you're replying to is doing it as a single
+> command, though he did talk about doing this in multiple commands
+> elsewhere in his mail.
 
-How can sysfs change this?  It doesn't know the size of the attribute
-ahead of time, and it can change depending on what happens in the
-system.  So we default to a page size, which is the largest size an
-attribute can be.
-
-thanks,
-
-greg k-h
+Oh right yes. I'd seen 0000.patch and not that there were multiple
+entries in the command-line that listed (I assume) all the files.
+Sorry for the noise.
