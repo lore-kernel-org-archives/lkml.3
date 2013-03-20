@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab3CTEST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 00:18:19 -0400
-Received: from mail.lang.hm ([64.81.33.126]:53820 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab3CTESS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 00:18:18 -0400
-X-Greylist: delayed 725 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 00:18:13 EDT
-Date: Tue, 19 Mar 2013 21:04:15 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Martin Steigerwald <Martin@lichtvoll.de>
-cc: tux3@phunq.net, Daniel Phillips <daniel.raymond.phillips@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        linux-kernel@vger.kernel.org, tux3@tux3.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Tux3 Report: Initial fsck has landed
-In-Reply-To: <201303200000.33356.Martin@lichtvoll.de>
-Message-ID: <alpine.DEB.2.02.1303192102350.31505@nftneq.ynat.uz>
-References: <CAEsagEgeaHC_2ULhr_yAtOuNUxk+PZC=aPXU4PQyY9NnUC=TyQ@mail.gmail.com> <20130129014000.GA7003@thunk.org> <CAEsagEhZkkr+G0gFr6rnsyjFmCckNMkOnTVcUMvaj8EHD-qGQw@mail.gmail.com> (sfid-20130129_203331_599683_707322ED)
- <201303200000.33356.Martin@lichtvoll.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1751918Ab3CTEUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 00:20:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48393 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab3CTEUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 00:20:19 -0400
+Date: Wed, 20 Mar 2013 15:20:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, Greg KH <greg@kroah.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: manual merge of the akpm tree with the char-misc tree
+Message-Id: <20130320152007.56de4a48eaf2760ccc07f02b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Mar_2013_15_20_07_+1100_OSPkR6SmVSmodvUy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Mar 2013, Martin Steigerwald wrote:
+--Signature=_Wed__20_Mar_2013_15_20_07_+1100_OSPkR6SmVSmodvUy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Am Dienstag, 29. Januar 2013 schrieb Daniel Phillips:
->> On Mon, Jan 28, 2013 at 5:40 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->>> On Mon, Jan 28, 2013 at 04:20:11PM -0800, Darrick J. Wong wrote:
->>>> On Mon, Jan 28, 2013 at 03:27:38PM -0800, David Lang wrote:
->>>>> The situation I'm thinking of is when dealing with VMs, you make a
->>>>> filesystem image once and clone it multiple times. Won't that end up
->>>>> with the same UUID in the superblock?
->>>>
->>>> Yes, but one ought to be able to change the UUID a la tune2fs
->>>> -U.  Even still... so long as the VM images have a different UUID
->>>> than the fs that they live on, it ought to be fine.
->>>
->>> ... and this is something most system administrators should be
->>> familiar with.  For example, it's one of those things that Norton
->>> Ghost when makes file system image copes (the equivalent of "tune2fs
->>> -U random /dev/XXX")
->>
->> Hmm, maybe I missed something but it does not seem like a good idea
->> to use the volume UID itself to generate unique-per-volume metadata
->> hashes, if users expect to be able to change it. All the metadata hashes
->> would need to be changed.
->
-> I believe that is what BTRFS is doing.
->
-> And yes, AFAIK there is no easy way to change the UUID of a BTRFS filesystems
-> after it was created.
+Hi Andrew,
 
-In a world where systems are cloned, and many VMs are started from one master 
-copy of a filesystem, a UUID is about as far from unique as anything you can 
-generate.
+Today's linux-next merge of the akpm tree got a conflict in
+include/linux/hyperv.h between commit 96dd86fa5881 ("Drivers: hv: Add a
+new driver to support host initiated backup") from the char-misc  tree
+and commit "drivers/video: add Hyper-V Synthetic Video Frame Buffer
+Driver" from the akpm tree.
 
-BTRFS may have this problem, but why should Tux3 copy the problem?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-David Lang
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/hyperv.h
+index 95d0850,a460ee4..0000000
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@@ -1310,13 -1253,16 +1310,25 @@@ void vmbus_driver_unregister(struct hv_
+  		}
+ =20
+  /*
+ + * VSS (Backup/Restore) GUID
+ + */
+ +#define HV_VSS_GUID \
+ +	.guid =3D { \
+ +			0x29, 0x2e, 0xfa, 0x35, 0x23, 0xea, 0x36, 0x42, \
+ +			0x96, 0xae, 0x3a, 0x6e, 0xba, 0xcb, 0xa4,  0x40 \
+ +		}
+++
+++/*
++  * Synthetic Video GUID
++  * {DA0A7802-E377-4aac-8E77-0558EB1073F8}
++  */
++ #define HV_SYNTHVID_GUID \
++ 	.guid =3D { \
++ 			0x02, 0x78, 0x0a, 0xda, 0x77, 0xe3, 0xac, 0x4a, \
++ 			0x8e, 0x77, 0x05, 0x58, 0xeb, 0x10, 0x73, 0xf8 \
++ 		}
++=20
++=20
+  /*
+   * Common header for Hyper-V ICs
+   */
+
+--Signature=_Wed__20_Mar_2013_15_20_07_+1100_OSPkR6SmVSmodvUy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSTj3AAoJEECxmPOUX5FEiTwP/iIaByM5dKpdkjodf2kV55GK
+MUN0fMijC9e+pa1v0w+L3dJ1VygI6TgKWbdeCfvRb8LBozGQZu3/z87+chorf9up
+R+fmbtDTXnbEX6ZvTKu/POCzqztgupuSbiwXcJ4XAtEfPtKdAC/FYcgfonbl/beA
+4elqx2mt+7ZxPJ7iEghDkrhJVh+on8bHwH+YL+8VPTojWgVLlSPUxd3CmKz+nn2f
+dSeH9Qki2vwMoFD6CIg1jLM5xVoWeYb5T+bDHVvjhZ9VHOQC8/Y3HpgTnXl0nBAY
+YBFl9EgzNag+AuTs9Z0PtXIq7FLHCHO9kPEph9kqXp/oj6Kw0ngtbQsgPbQcveid
+cgnofy/CIRmN9O/txVldgixnnAw67tWKlIcHa/GfubAGDuLDyASkyhwoEPLA3qa1
+Kaju23kYxtSlwoa8RUOtH/MG65Z0RjzfPoLU7rNdTzEPgqPSBmrmdZKSSMNQdHG5
+ZqqgQ1ScrC0UiXuXESxBQkAVBuPOeqBSE6bqKTIf7qznFgsnmrSGS4stALQKcXXB
+h/G3G2DYhGLF7CCuEgSx5eTiJ2nDo8ACwvjwD/bAxenhLJTt3R2XRAwQnhlz94zd
+MYdE+mN+X382u6u9hjdDEQHIJfc7jzWqSIY2oykAgbO+WRQN2zFBF+L4PWReEapG
+R13tM1zu5o3jFnaYBgcP
+=d5Tu
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Mar_2013_15_20_07_+1100_OSPkR6SmVSmodvUy--
