@@ -1,250 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934346Ab3CTA3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:29:11 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:55246 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab3CTA3J (ORCPT
+	id S1757773Ab3CTAbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:31:14 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:53365 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab3CTAbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:29:09 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Benoit Lourdelet <blourdel@juniper.net>, linux-kernel@vger.kernel.org,
-        lxc-users <lxc-users@lists.sourceforge.net>
-References: <20130319182829.GA15451@sergelap>
-	<CD6E73D8.71FE%blourdel@juniper.net> <20130319203422.GA27263@sergelap>
-Date: Tue, 19 Mar 2013 17:29:00 -0700
-In-Reply-To: <20130319203422.GA27263@sergelap> (Serge Hallyn's message of
-	"Tue, 19 Mar 2013 15:34:22 -0500")
-Message-ID: <87txo6ewxf.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 19 Mar 2013 20:31:12 -0400
+Message-ID: <5149034A.5050907@gmail.com>
+Date: Wed, 20 Mar 2013 08:31:06 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+YvjO7p7Pyc75Opt+j1Kt9mriLOIxnHgA=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Serge Hallyn <serge.hallyn@ubuntu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [Lxc-users] Containers slow to start after 1600
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com> <20130318154057.GS10192@dhcp22.suse.cz> <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@ubuntu.com> writes:
-
-> Hi,
+Hi Naoya,
+On 03/19/2013 08:07 AM, Naoya Horiguchi wrote:
+> On Mon, Mar 18, 2013 at 04:40:57PM +0100, Michal Hocko wrote:
+>> On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
+>>> This patch extends check_range() to handle vma with VM_HUGETLB set.
+>>> With this changes, we can migrate hugepage with migrate_pages(2).
+>>> Note that for larger hugepages (covered by pud entries, 1GB for
+>>> x86_64 for example), we simply skip it now.
+>>>
+>>> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>> ---
+>>>  include/linux/hugetlb.h |  6 ++++--
+>>>  mm/hugetlb.c            | 10 ++++++++++
+>>>  mm/mempolicy.c          | 46 ++++++++++++++++++++++++++++++++++------------
+>>>  3 files changed, 48 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
+>>> index 8f87115..eb33df5 100644
+>>> --- v3.8.orig/include/linux/hugetlb.h
+>>> +++ v3.8/include/linux/hugetlb.h
+>>> @@ -69,6 +69,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+>>>  int dequeue_hwpoisoned_huge_page(struct page *page);
+>>>  void putback_active_hugepage(struct page *page);
+>>>  void putback_active_hugepages(struct list_head *l);
+>>> +void migrate_hugepage_add(struct page *page, struct list_head *list);
+>>>  void copy_huge_page(struct page *dst, struct page *src);
+>>>  
+>>>  extern unsigned long hugepages_treat_as_movable;
+>>> @@ -88,8 +89,8 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+>>>  				pmd_t *pmd, int write);
+>>>  struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+>>>  				pud_t *pud, int write);
+>>> -int pmd_huge(pmd_t pmd);
+>>> -int pud_huge(pud_t pmd);
+>>> +extern int pmd_huge(pmd_t pmd);
+>>> +extern int pud_huge(pud_t pmd);
+>> extern is not needed here.
+> OK.
 >
-> Benoit was kind enough to follow up on some scalability issues with
-> larger (but not huge imo) numbers of containers.  Running a script
-> to simply time the creation of veth pairs on a rather large (iiuc)
-> machine, he got the following numbers (time is for creation of the
-> full number, not latest increment - so 1123 seconds to create 5000
-> veth pairs)
-
-A kernel version and a profile would be interesting.
-
-At first glance it looks like things are dramatically slowing down as
-things get longer which should not happen.
-
-There used to be quadratic issues in proc and sysfs that should have
-been reduced to O(NlogN) as of 3.4 or so.  A comparison to the dummy
-device which is a touch simpler than veth and is more frequently
-benchmarked could also be revealing.
-
->> >Quoting Benoit Lourdelet (blourdel@juniper.net):
->> >> Hello Serge,
->> >> 
->> >> I put together a small table, running your script for various values :
->> >> 
->> >> Time are in seconds,
->> >> 
->> >> Number of veth, time to create, time to delete:
->> >> 
->> >> 500  18  26
->> >> 
->> >> 1000 57 70
->> >> 
->> >> 2000 193 250
->> >> 
->> >> 3000 435 510
->> >> 
->> >> 4000 752  824
->> >> 
->> >> 5000 1123  1185
+>>>  unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>>>  		unsigned long address, unsigned long end, pgprot_t newprot);
+>>>  
+>>> @@ -134,6 +135,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+>>>  
+>>>  #define putback_active_hugepage(p) 0
+>>>  #define putback_active_hugepages(l) 0
+>>> +#define migrate_hugepage_add(p, l) 0
+>>>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>>>  {
+>>>  }
+>>> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
+>>> index cb9d43b8..86ffcb7 100644
+>>> --- v3.8.orig/mm/hugetlb.c
+>>> +++ v3.8/mm/hugetlb.c
+>>> @@ -3202,3 +3202,13 @@ void putback_active_hugepages(struct list_head *l)
+>>>  	list_for_each_entry_safe(page, page2, l, lru)
+>>>  		putback_active_hugepage(page);
+>>>  }
+>>> +
+>>> +void migrate_hugepage_add(struct page *page, struct list_head *list)
+>>> +{
+>>> +	VM_BUG_ON(!PageHuge(page));
+>>> +	get_page(page);
+>>> +	spin_lock(&hugetlb_lock);
+>> Why hugetlb_lock? Comment for this lock says that it protects
+>> hugepage_freelists, nr_huge_pages, and free_huge_pages.
+> I think that this comment is out of date and hugepage_activelists,
+> which was introduced recently, should be protected because this
+> patchset adds is_hugepage_movable() which runs through the list.
+> So I'll update the comment in the next post.
 >
->> 
->> Benoit
+>>> +	list_move_tail(&page->lru, list);
+>>> +	spin_unlock(&hugetlb_lock);
+>>> +	return;
+>>> +}
+>>> diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
+>>> index e2df1c1..8627135 100644
+>>> --- v3.8.orig/mm/mempolicy.c
+>>> +++ v3.8/mm/mempolicy.c
+>>> @@ -525,6 +525,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+>>>  	return addr != end;
+>>>  }
+>>>  
+>>> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
+>>> +		const nodemask_t *nodes, unsigned long flags,
+>>> +				    void *private)
+>>> +{
+>>> +#ifdef CONFIG_HUGETLB_PAGE
+>>> +	int nid;
+>>> +	struct page *page;
+>>> +
+>>> +	spin_lock(&vma->vm_mm->page_table_lock);
+>>> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
+>>> +	spin_unlock(&vma->vm_mm->page_table_lock);
+>> I am a bit confused why page_table_lock is used here and why it doesn't
+>> cover the page usage.
+> I expected this function to do the same for pmd as check_pte_range() does
+> for pte, but the above code didn't do it. I should've put spin_unlock
+> below migrate_hugepage_add(). Sorry for the confusion.
+
+I still confuse! Could you explain more in details?
+
 >
-> Ok.  Ran some tests on a tiny cloud instance.  When I simply run 2k tasks in
-> unshared new network namespaces, it flies by.
+>>> +	nid = page_to_nid(page);
+>>> +	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
+>>> +	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
+>>> +		|| flags & MPOL_MF_MOVE_ALL))
+>>> +		migrate_hugepage_add(page, private);
+>>> +#else
+>>> +	BUG();
+>>> +#endif
+>>> +}
+>>> +
+>>>  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>>>  		unsigned long addr, unsigned long end,
+>>>  		const nodemask_t *nodes, unsigned long flags,
+>>> @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>>>  	pmd = pmd_offset(pud, addr);
+>>>  	do {
+>>>  		next = pmd_addr_end(addr, end);
+>>> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
+>> Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
+>> sufficient?
+> I think we need both check here because if we use only pmd_huge(),
+> pmd for thp goes into this branch wrongly. 
 >
-> #!/bin/sh
-> rm -f /tmp/timings3
-> date | tee -a /tmp/timings3
-> for i in `seq 1 2000`; do
->     nsexec -n -- /bin/sleep 1000 &
->     if [ $((i % 100)) -eq 0 ]; then
->            echo $i | tee -a /tmp/timings3
->            date | tee -a /tmp/timings3
->     fi
-> done
+> Thanks,
+> Naoya
 >
-> (all scripts run under sudo, and nsexec can be found at
-> https://code.launchpad.net/~serge-hallyn/+junk/nsexec))
->
-> So that isn't an issue.
->
-> When I run a script to just time veth pair creations like Benoit ran,
-> creating 2000 veth pairs and timing the results for each 100, the time
-> does degrade, from 1 second for the first 100 up to 8 seconds for the
-> last 100.
->
-> (that script for me is:
->
-> #!/bin/sh
-> rm -f /tmp/timings
-> for i in `seq 1 2000`; do
->        ip link add type veth
->        if [ $((i % 100)) -eq 0 ]; then
->                echo $i | tee -a /tmp/timings
->                date | tee -a /tmp/timings
->                ls /sys/class/net > /dev/null
->        fi
-> done
-> )
->
-> But when I actually pass veth instances to those unshared network
-> namespaces:
->
-> #!/bin/sh
-> rm -f /tmp/timings2
-> echo 0 | tee -a /tmp/timings2
-> date | tee -a /tmp/timings2
-> for i in `seq 1 2000`; do
->     nsexec -n -P /tmp/pid.$i -- /bin/sleep 1000 &
->     ip link add type veth
->     dev2=`ls -d /sys/class/net/veth* | tail -1`
->     dev=`basename $dev2`
->     pid=`cat /tmp/pid.$i`
->     ip link set $dev netns $pid
->     if [ $((i % 100)) -eq 0 ]; then
->            echo $i | tee -a /tmp/timings2
->            date | tee -a /tmp/timings2
->     fi
->     rm -f /tmp/pid.*
-> done
->
-> it goes from 4 seconds for the first hundred to 16 seconds for
-> the last hundred - a worse regression than simply creating the
-> veths.  Though I guess that could be accounted for simply by
-> sysfs actions when a veth is moved from the old netns to the
-> new?
+>>> +			check_hugetlb_pmd_range(vma, pmd, nodes,
+>>> +						flags, private);
+>>> +			continue;
+>>> +		}
+>>>  		split_huge_page_pmd(vma, addr, pmd);
+>>>  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+>>>  			continue;
+>> [...]
+>> -- 
+>> Michal Hocko
+>> SUSE Labs
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-And network stack actions.  Creating one end of the veth in the desired
-network namespace is likely desirable. "ip link add type veth peer netns ..."
-
-rcu in the past has also played a critical role, as what the network
-configuration is when devices are torn down.
-
-For device movement and device teardown there is at least one
-synchronize_rcu, which at scale can slow things down. But if the
-syncrhonize_rcu dominates it should be mostly a constant factor cost not
-something that gets worse with each device creation.
-
-Oh and to start with I would specify the name of each network device to
-create.  Last I looked coming up with a network device name is a O(N)
-operation in the number of device names.
-
-Just to see what I am seeing in 3.9-rc1 I did:
-
-# time for i in $(seq 1 2000) ; do ip link add a$i type veth peer name b$i; done
-real	0m23.607s
-user	0m0.656s
-sys	0m18.132s
-
-# time for i in $(seq 1 2000) ; do ip link del a$i ; done
-real	2m8.038s
-user	0m0.964s
-sys	0m18.688s
-
-Which is tremendously better than you are reporting below for device creation.
-Now the deletes are still slow because it is hard to back that kind of
-delete, having a bunch of network namespaces exit all at once would
-likely be much faster as they can be batched and the syncrhonize_rcu
-calls drastically reduced.
-
-What is making you say there is a regression?  A regression compared to what?
-
-Hmm.
-
-# time for i in $(seq 1 5000) ; do ip link add a$i type veth peer name b$i; done
-real	2m11.007s
-user	0m3.508s
-sys	1m55.452s
-
-Ok there is most definitely something non-linear about the cost of
-creating network devices.
-
-I am happy to comment from previous experience but I'm not volunteering
-to profile and fix this one.
-
-Eric
-
-
-> 0
-> Tue Mar 19 20:15:26 UTC 2013
-> 100
-> Tue Mar 19 20:15:30 UTC 2013
-> 200
-> Tue Mar 19 20:15:35 UTC 2013
-> 300
-> Tue Mar 19 20:15:41 UTC 2013
-> 400
-> Tue Mar 19 20:15:47 UTC 2013
-> 500
-> Tue Mar 19 20:15:54 UTC 2013
-> 600
-> Tue Mar 19 20:16:02 UTC 2013
-> 700
-> Tue Mar 19 20:16:09 UTC 2013
-> 800
-> Tue Mar 19 20:16:17 UTC 2013
-> 900
-> Tue Mar 19 20:16:26 UTC 2013
-> 1000
-> Tue Mar 19 20:16:35 UTC 2013
-> 1100
-> Tue Mar 19 20:16:46 UTC 2013
-> 1200
-> Tue Mar 19 20:16:57 UTC 2013
-> 1300
-> Tue Mar 19 20:17:08 UTC 2013
-> 1400
-> Tue Mar 19 20:17:21 UTC 2013
-> 1500
-> Tue Mar 19 20:17:33 UTC 2013
-> 1600
-> Tue Mar 19 20:17:46 UTC 2013
-> 1700
-> Tue Mar 19 20:17:59 UTC 2013
-> 1800
-> Tue Mar 19 20:18:13 UTC 2013
-> 1900
-> Tue Mar 19 20:18:29 UTC 2013
-> 2000
-> Tue Mar 19 20:18:48 UTC 2013
->
-> -serge
