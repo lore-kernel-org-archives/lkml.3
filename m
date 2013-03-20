@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892Ab3CTJYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:24:41 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:56489 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab3CTJYh (ORCPT
+	id S1758174Ab3CTJ1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:27:22 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:38273 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab3CTJYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:24:37 -0400
+	Wed, 20 Mar 2013 05:24:17 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 23/30] compat: embrace LINUX_BACKPORT() for v3.7
-Date: Wed, 20 Mar 2013 02:22:48 -0700
-Message-Id: <1363771375-31715-24-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 18/30] compat: embrace LINUX_BACKPORT() for v3.0
+Date: Wed, 20 Mar 2013 02:22:43 -0700
+Message-Id: <1363771375-31715-19-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,40 +53,34 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- include/linux/compat-3.7.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/compat-3.0.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/compat-3.7.h b/include/linux/compat-3.7.h
-index dd05e00..96662e3 100644
---- a/include/linux/compat-3.7.h
-+++ b/include/linux/compat-3.7.h
-@@ -45,6 +45,7 @@ static inline struct user_namespace *seq_user_ns(struct seq_file *seq)
- #define genl_info_snd_portid(__genl_info) (__genl_info->snd_pid)
- #define NETLINK_CB_PORTID(__skb) NETLINK_CB(cb->skb).pid
+diff --git a/include/linux/compat-3.0.h b/include/linux/compat-3.0.h
+index ba25846..7fcd763 100644
+--- a/include/linux/compat-3.0.h
++++ b/include/linux/compat-3.0.h
+@@ -23,10 +23,12 @@
+  *
+  * First part is in compat-3.0.c.
+  */
++#define shmem_read_mapping_page_gfp LINUX_BACKPORT(shmem_read_mapping_page_gfp)
+ extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
+ 						pgoff_t index, gfp_t gfp);
  
-+#define mod_delayed_work LINUX_BACKPORT(mod_delayed_work)
- bool mod_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
- 		      unsigned long delay);
  
-@@ -55,12 +56,18 @@ bool mod_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
- #define tty_port_register_device(port, driver, index, device) \
- 	tty_register_device(driver, index, device)
++#define shmem_read_mapping_page LINUX_BACKPORT(shmem_read_mapping_page)
+ static inline struct page *shmem_read_mapping_page(
+                                struct address_space *mapping, pgoff_t index)
+ {
+@@ -77,6 +79,7 @@ struct bcma_device_id {
+ #define BCMA_ANY_CLASS		0xFF
+ #endif /* BCMA_CORE */
  
-+#define pcie_capability_read_word LINUX_BACKPORT(pcie_capability_read_word)
- int pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val);
-+#define pcie_capability_read_dword LINUX_BACKPORT(pcie_capability_read_dword)
- int pcie_capability_read_dword(struct pci_dev *dev, int pos, u32 *val);
-+#define pcie_capability_write_word LINUX_BACKPORT(pcie_capability_write_word)
- int pcie_capability_write_word(struct pci_dev *dev, int pos, u16 val);
-+#define pcie_capability_write_dword LINUX_BACKPORT(pcie_capability_write_dword)
- int pcie_capability_write_dword(struct pci_dev *dev, int pos, u32 val);
-+#define pcie_capability_clear_and_set_word LINUX_BACKPORT(pcie_capability_clear_and_set_word)
- int pcie_capability_clear_and_set_word(struct pci_dev *dev, int pos,
- 				       u16 clear, u16 set);
-+#define pcie_capability_clear_and_set_dword LINUX_BACKPORT(pcie_capability_clear_and_set_dword)
- int pcie_capability_clear_and_set_dword(struct pci_dev *dev, int pos,
- 					u32 clear, u32 set);
++#define mac_pton LINUX_BACKPORT(mac_pton)
+ int mac_pton(const char *s, u8 *mac);
  
+ int __must_check kstrtoull_from_user(const char __user *s, size_t count, unsigned int base, unsigned long long *res);
 -- 
 1.7.10.4
 
