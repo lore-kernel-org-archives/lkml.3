@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3CTKbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 06:31:03 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43954 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3CTKbC (ORCPT
+	id S1755149Ab3CTKiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 06:38:13 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57969 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750835Ab3CTKiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 06:31:02 -0400
-Message-ID: <51498FCE.60603@oracle.com>
-Date: Wed, 20 Mar 2013 18:30:38 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+	Wed, 20 Mar 2013 06:38:12 -0400
+Message-ID: <1363775886.1390.90.camel@x61.thuisdomein>
+Subject: [PATCH] m68k: clean up unused "config ROMVECSIZE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/8] staging: zcache: zero-filled pages awareness
-References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com> <1363685150-18303-3-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1363685150-18303-3-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 20 Mar 2013 11:38:06 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginalArrivalTime: 20 Mar 2013 10:38:07.0123 (UTC) FILETIME=[024BD630:01CE2557]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kconfig symbol ROMVECSIZE is unused since commit
+f84f52a5c15db7d14a534815f27253b001735183 ("m68knommu: clean up linker
+script"). Let's clean up its Kconfig entry too.
 
-> @@ -641,16 +691,22 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  {
->  	struct page *page = NULL;
->  	unsigned int zsize, zpages;
-> +	bool zero_filled = false;
->  
->  	BUG_ON(preemptible());
-> -	if (pampd_is_remote(pampd)) {
-> +
-> +	if (pampd == (void *)ZERO_FILLED)
-> +		zero_filled = true;
-> +
-> +	if (pampd_is_remote(pampd) && !zero_filled) {
->  		BUG_ON(!ramster_enabled);
->  		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
->  		if (pampd == NULL)
->  			return;
->  	}
->  	if (is_ephemeral(pool)) {
-> -		page = zbud_free_and_delist((struct zbudref *)pampd,
-> +		if (!zero_filled)
-> +			page = zbud_free_and_delist((struct zbudref *)pampd,
->  						true, &zsize, &zpages);
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-This check should also apply for !is_ephemeral(pool).
+ arch/m68k/Kconfig.machine | 9 ---------
+ 1 file changed, 9 deletions(-)
 
->  		if (page)
->  			dec_zcache_eph_pageframes();
-> @@ -667,7 +723,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  	}
->  	if (!is_local_client(pool->client))
->  		ramster_count_foreign_pages(is_ephemeral(pool), -1);
-> -	if (page)
-> +	if (page && !zero_filled)
->  		zcache_free_page(page);
->  }
->  
-> 
-
+diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
+index 7240584..28ec0c0 100644
+--- a/arch/m68k/Kconfig.machine
++++ b/arch/m68k/Kconfig.machine
+@@ -539,15 +539,6 @@ config ROMVEC
+ 	  68000 type variants the vectors are at the base of the boot device
+ 	  on system startup.
+ 
+-config ROMVECSIZE
+-	hex "Size of ROM vector region (in bytes)"
+-	default "0x400"
+-	depends on ROM
+-	help
+-	  Define the size of the vector region in ROM. For most 68000
+-	  variants this would be 0x400 bytes in size. Set to 0 if you do
+-	  not want a vector region at the start of the ROM.
+-
+ config ROMSTART
+ 	hex "Address of the base of system image in ROM"
+ 	default "0x400"
 -- 
-Regards,
--Bob
+1.7.11.7
+
