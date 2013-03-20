@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab3CTFuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 01:50:17 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44635 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3CTFuP (ORCPT
+	id S934078Ab3CTFvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 01:51:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43046 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574Ab3CTFvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 01:50:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
-References: <CADB-GoLzX-G5j92oEsLeUq6PRpKwb15U6LL_jw4zh6Nhh+ZHLg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
-Date: Wed, 20 Mar 2013 13:50:13 +0800
-Message-ID: <CADB-GoL_ZMqtzdyyzaUQRn0S9vbgamsjWP5tEjq09S8PLsaKvQ@mail.gmail.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        sarah.a.sharp@linux.intel.com, Julia.Lawall@lip6.fr,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, john453@faraday-tech.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Mar 2013 01:51:06 -0400
+Date: Wed, 20 Mar 2013 16:50:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, postmaster@vger.kernel.org
+Subject: Re: linux-next: Tree for Mar 20
+Message-Id: <20130320165049.2f3e5c0d0897c05c24159087@canb.auug.org.au>
+In-Reply-To: <CA+icZUXHw9M0es4yT8e7uJavZ9uDrSWGNxnBA3eZ+SwkTF=SEg@mail.gmail.com>
+References: <CA+icZUXHw9M0es4yT8e7uJavZ9uDrSWGNxnBA3eZ+SwkTF=SEg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 11:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 19 Mar 2013, Yuan-Hsin Chen wrote:
->
->> > What about the port_status registers?  They're not between command and
->> > async_next.  If they aren't consistent with EHCI, it makes things a lot
->> > more complicated.
->>
->> fusbh200 has only one port_status register with different offset,
->> 0x30, and the position of some bits are different from EHCI.
->
-> That's pretty nasty.  Integrating that with the standard EHCI driver
-> would be considerably more difficult.
->
-> Why was the FUSBH200 designed in this strange way?  Why doesn't it use
-> the standard EHCI register layout?  Were the engineers at Faraday
-> deliberately trying to make life harder for driver writers?
+--Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since FUSBH200 was designed more than eight years ago, the engineers
-responsible for FUSBH200 are no longer working for Faraday. I have the
-same question as you, but no one here could answer it. The strange
-register layout and other implementation incompatible with EHCI are
-the reasons why the FUSBH200 driver was not tried to submit to
-mainline in the past.
+Hi Sedat,
 
+On Wed, 20 Mar 2013 06:44:45 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
+e:
 >
->> Also, usbmode_ex, hostpc, and txfill_tuning other than configured_flag
->> are non-existent in fusbh200. They are used in both ehci-hcd.c and
->> ehci-hub.c for several times.
->
-> They are used only if the hardware supports them, that is, only if the
-> ehci->has_hostpc flag is set.
->
-> Alan Stern
->
+> again I can read this offline before I have received it online (in my
+> Gmail-account).
+> Why shall I subscribe a ML when I am faster reading it offline?
+> Whom to contact in such a case (ML-admin)?
+
+Probably postmaster@vger.kernel.org (cc'd).  I am not sure why you have a
+problem, again the mailing list copy of the announcement was in my inbox
+10 seconds after I posted it.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSU45AAoJEECxmPOUX5FEmh0P/iO/UKdaIqPkM7ghs2zvKgwU
+0M3EisDDc1JpHAc8sWHxjEAEepfYEnyMp5fC3Si44ZE7BJI+Ar9bc2kIatm58IJx
+3U0mFoJ7tlMVcj09sfxdVw+xypFYyK6nicOvB7kyxZCj9rQ8V+zMKTEanUI6RG+K
+WmOW0CCm4+acECp6lgPq66TWI5Hw98TwyUkJaLj2Jky2QoU+IiRC9uZP6uliFkSA
+J/NCBIc5AqMeD73Y1u2onMDBVyuNyZP0Cw6GnL+LBo523SPJ7/xwYBwNXcD8FTYc
+kkOzcbgkVarVFV8mvohT3NQ1sNH7A5MNE+GIkTcTitM+NAXJyd6gAEbLOtUBggPl
+lruc1a08E6uvV9pWjWVZvWTvVRCjtQs9pJNhg+5lIbbbGy8/JXPxtpBX5mZlFW2i
+5uYndz/jeULIqhFVGfRQjmjQjpTAYFn+YUbqxtT6wIGD1UNXkdjtYLy3O5u+7vqQ
+T2mnvW+vBC60zhm++7KQzuj8347rtyVmsVQdZGywhHRMx3FASS+95eN5iikn+sB0
+ZzF30e7uGmo/JT8C/Nj4YIpFKuug+yFWTu6+puT5vKuke68AMhqHC2y3keKvEeVA
+8JPzHJuL82888BR4shfXwEe6MbGBiAfWgPJ4d/q74ltm6FfYuSVIZ7bZiEE4pKjO
+bkfSBhdKUnEDWoDMG984
+=k+kt
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog--
