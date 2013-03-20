@@ -1,92 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab3CTF1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 01:27:14 -0400
-Received: from ozlabs.org ([203.10.76.45]:57381 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab3CTF1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 01:27:13 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kbuild@vger.kernel.org, Jon Masters <jcm@redhat.com>
-Subject: Re: [RFC PATCH] Allow optional module parameters
-In-Reply-To: <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
-References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net> <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com> <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com> <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 20 Mar 2013 14:15:12 +1030
-Message-ID: <87sj3qpwdz.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757593Ab3CTF2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 01:28:40 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:41907 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab3CTF2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 01:28:38 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3] davinci: vpif: Fix module build for capture and display
+Date: Wed, 20 Mar 2013 10:58:27 +0530
+Message-Id: <1363757307-12635-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
-> Hi Rusty,
->
-> On Mon, Mar 18, 2013 at 11:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>> On Sun, Mar 17, 2013 at 7:24 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>> On Thu, Mar 14, 2013 at 10:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>>>> Err, yes.  Don't remove module parameters, they're part of the API.  Do
->>>>>> you have a particular example?
->>>>>
->>>>> So things like i915.i915_enable_ppgtt, which is there to enable
->>>>> something experimental, needs to stay forever once the relevant
->>>>> feature becomes non-experimental and non-optional?  This seems silly.
->> ...
->>>>> Having the module parameter go away while still allowing the module to
->>>>> load seems like a good solution (possibly with a warning in the logs
->>>>> so the user can eventually delete the parameter).
->>>>
->>>> Why not do that for *every* missing parameter then?  Why have this weird
->>>> notation where the user must know that the parameter might one day go
->>>> away?
->>>
->>> Fair enough.  What about the other approach, then?  Always warn if an
->>> option doesn't match (built-in or otherwise) but load the module
->>> anyways.
->>
->> What does everyone think of this?  Jon, Lucas, does this match your
->> experience?
->>
->> Thanks,
->> Rusty.
->>
->> Subject: modules: don't fail to load on unknown parameters.
->>
->> Although parameters are supposed to be part of the kernel API, experimental
->> parameters are often removed.  In addition, downgrading a kernel might cause
->> previously-working modules to fail to load.
->
-> I agree with this reasoning
->
->>
->> On balance, it's probably better to warn, and load the module anyway.
->
-> However loading the module anyway would bring at least one drawback:
-> if the user made a typo when passing the option the module would load
-> anyway and he will probably not even look in the log, since there's
-> was no errors from modprobe.
->
-> For finit_module we could put a flag to trigger this behavior and
-> propagate it to modprobe, but this is not possible with init_module().
-> I can't think in any other option right now... do you have any?
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-No good ones :(
+export the symbols which are used by two modules vpif_capture and
+vpif_display. renamed "ch_params" to "vpif_ch_params" so as to avoid
+name collision.
 
-MODULE_PARM_DESC isn't compulsory, so you can't rely on that to tell you
-about option names.  
+This patch fixes following error:
+ERROR: "ch_params" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_display.ko] undefined!
+ERROR: "ch_params" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
+make[1]: *** [__modpost] Error 1
 
-Even if we had a flag, how would you know to set it?  I guess you could
-try without then try with, and if it works the second time print a
-warning about typos.  But it's still pretty ugly.
+Reported-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ Changes for v3:
+ 1: prefixed "ch_params" with driver name to make it "vpif_ch_params"
+    as pointed by Mauro.
 
-We could implement such a flag with a fake "IGNORE_BAD_PARAMS"
-parameter, for example.  That would fail nicely on older kernels, too.
+ Changes for v2:
+ 1: use EXPORT_SYMBOL_GPL instead of EXPORT_SYMBOL() as pointed by
+    Sekhar.
 
-Hmmm....
-Rusty.
+ drivers/media/platform/davinci/vpif.c         |   10 +++++++---
+ drivers/media/platform/davinci/vpif.h         |    2 +-
+ drivers/media/platform/davinci/vpif_capture.c |    2 +-
+ drivers/media/platform/davinci/vpif_display.c |    2 +-
+ 4 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
+index 28638a8..3bc4db8 100644
+--- a/drivers/media/platform/davinci/vpif.c
++++ b/drivers/media/platform/davinci/vpif.c
+@@ -44,13 +44,15 @@ static struct resource	*res;
+ spinlock_t vpif_lock;
+ 
+ void __iomem *vpif_base;
++EXPORT_SYMBOL_GPL(vpif_base);
++
+ struct clk *vpif_clk;
+ 
+ /**
+- * ch_params: video standard configuration parameters for vpif
++ * vpif_ch_params: video standard configuration parameters for vpif
+  * The table must include all presets from supported subdevices.
+  */
+-const struct vpif_channel_config_params ch_params[] = {
++const struct vpif_channel_config_params vpif_ch_params[] = {
+ 	/* HDTV formats */
+ 	{
+ 		.name = "480p59_94",
+@@ -220,8 +222,10 @@ const struct vpif_channel_config_params ch_params[] = {
+ 		.stdid = V4L2_STD_625_50,
+ 	},
+ };
++EXPORT_SYMBOL_GPL(vpif_ch_params);
+ 
+-const unsigned int vpif_ch_params_count = ARRAY_SIZE(ch_params);
++const unsigned int vpif_ch_params_count = ARRAY_SIZE(vpif_ch_params);
++EXPORT_SYMBOL_GPL(vpif_ch_params_count);
+ 
+ static inline void vpif_wr_bit(u32 reg, u32 bit, u32 val)
+ {
+diff --git a/drivers/media/platform/davinci/vpif.h b/drivers/media/platform/davinci/vpif.h
+index a1ab6a0..9956e67 100644
+--- a/drivers/media/platform/davinci/vpif.h
++++ b/drivers/media/platform/davinci/vpif.h
+@@ -638,7 +638,7 @@ struct vpif_channel_config_params {
+ };
+ 
+ extern const unsigned int vpif_ch_params_count;
+-extern const struct vpif_channel_config_params ch_params[];
++extern const struct vpif_channel_config_params vpif_ch_params[];
+ 
+ struct vpif_video_params;
+ struct vpif_params;
+diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+index b15e948..1846cc5 100644
+--- a/drivers/media/platform/davinci/vpif_capture.c
++++ b/drivers/media/platform/davinci/vpif_capture.c
+@@ -563,7 +563,7 @@ static int vpif_update_std_info(struct channel_obj *ch)
+ 	vpif_dbg(2, debug, "vpif_update_std_info\n");
+ 
+ 	for (index = 0; index < vpif_ch_params_count; index++) {
+-		config = &ch_params[index];
++		config = &vpif_ch_params[index];
+ 		if (config->hd_sd == 0) {
+ 			vpif_dbg(2, debug, "SD format\n");
+ 			if (config->stdid & vid_ch->stdid) {
+diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+index efdd462..48ed400 100644
+--- a/drivers/media/platform/davinci/vpif_display.c
++++ b/drivers/media/platform/davinci/vpif_display.c
+@@ -511,7 +511,7 @@ static int vpif_update_std_info(struct channel_obj *ch)
+ 	int i;
+ 
+ 	for (i = 0; i < vpif_ch_params_count; i++) {
+-		config = &ch_params[i];
++		config = &vpif_ch_params[i];
+ 		if (config->hd_sd == 0) {
+ 			vpif_dbg(2, debug, "SD format\n");
+ 			if (config->stdid & vid_ch->stdid) {
+-- 
+1.7.4.1
+
