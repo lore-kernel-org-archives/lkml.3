@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3CTRFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:05:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27443 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754782Ab3CTRFs convert rfc822-to-8bit (ORCPT
+	id S1757542Ab3CTRHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:07:00 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:49513 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3CTRG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:05:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,880,1355126400"; 
-   d="scan'208";a="273689637"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Shaun Ruffell <sruffell@digium.com>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [3.9-rc1] Bug in bootup code or debug code?
-Thread-Topic: [3.9-rc1] Bug in bootup code or debug code?
-Thread-Index: AQHOH+41JMUeuBHQvESU+8AmIyoShpijvDbQgACeM4CAADKXgIAJEDzggAGFlQD//62lwIAAfqCA//+LDuA=
-Date: Wed, 20 Mar 2013 17:05:40 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122055947296@ORSMSX105.amr.corp.intel.com>
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp>
- <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp>
- <201303132224.BEC60922.JStQOFMVFFOHLO@I-love.SAKURA.ne.jp>
- <3E5A0FA7E9CA944F9D5414FEC6C71220528C2DFF@ORSMSX105.amr.corp.intel.com>
- <5140BB13.10806@linux.intel.com>
- <201303140545.DAC69253.FtSJOOFMHVFOLQ@I-love.SAKURA.ne.jp>
- <3E5A0FA7E9CA944F9D5414FEC6C7122055946F23@ORSMSX105.amr.corp.intel.com>
- <20130320142444.GA10492@digium.com>
- <3E5A0FA7E9CA944F9D5414FEC6C712205594724E@ORSMSX105.amr.corp.intel.com>
- <20130320170310.GA23362@digium.com>
-In-Reply-To: <20130320170310.GA23362@digium.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Mar 2013 13:06:59 -0400
+Message-ID: <5149ECA9.9000100@free-electrons.com>
+Date: Wed, 20 Mar 2013 18:06:49 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCHv3 08/10] clocksource: time-armada-370-xp: Fix sparse warning
+References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-9-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1363198676-30417-9-git-send-email-sboyd@codeaurora.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Shaun Ruffell [mailto:sruffell@digium.com]
-> On Wed, Mar 20, 2013 at 04:32:14PM +0000, Yu, Fenghua wrote:
-> > > From: Shaun Ruffell [mailto:sruffell@digium.com]
-> > > On Tue, Mar 19, 2013 at 10:12:39PM +0000, Yu, Fenghua wrote:
-> > > > > From: Tetsuo Handa [mailto:penguin-kernel@I-love.SAKURA.ne.jp]
-> > > > > H. Peter Anvin wrote:
-> Thanks for the link. That patch applied on 3.9-rc3 did allow me to boot
-> with my
-> default kernel config.
-
-Great!
-
+On 03/13/2013 07:17 PM, Stephen Boyd wrote:
+> drivers/clocksource/time-armada-370-xp.c:217:13: warning: symbol
+> 'armada_370_xp_timer_init' was not declared. Should it be static?
 > 
-> Not related to this patch, and not sure it really matters, but FYI: I
-> just
-> noticed the following warning when building the patched kernel:
+> Also remove the __init marking in the prototype as it's
+> unnecessary and drop the init.h file.
 > 
-> WARNING: vmlinux.o(.text+0x2a1a7): Section mismatch in reference from
-> the function apply_microcode_early() to the
-> function .cpuinit.text:print_ucode()
-> The function apply_microcode_early() references
-> the function __cpuinit print_ucode().
-> This is often because apply_microcode_early lacks a __cpuinit
-> annotation or the annotation of print_ucode is wrong.
+> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/clocksource/time-armada-370-xp.c | 3 ++-
+>  include/linux/time-armada-370-xp.h       | 4 +---
+>  2 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+> index 47a6730..efe4aef 100644
+> --- a/drivers/clocksource/time-armada-370-xp.c
+> +++ b/drivers/clocksource/time-armada-370-xp.c
+> @@ -27,10 +27,11 @@
+>  #include <linux/of_address.h>
+>  #include <linux/irq.h>
+>  #include <linux/module.h>
+> +#include <linux/percpu.h>
+> +#include <linux/time-armada-370-xp.h>
+>  
+>  #include <asm/sched_clock.h>
+>  #include <asm/localtimer.h>
+> -#include <linux/percpu.h>
+>  /*
+>   * Timer block registers.
+>   */
+> diff --git a/include/linux/time-armada-370-xp.h b/include/linux/time-armada-370-xp.h
+> index dfdfdc0..6fb0856 100644
+> --- a/include/linux/time-armada-370-xp.h
+> +++ b/include/linux/time-armada-370-xp.h
+> @@ -11,8 +11,6 @@
+>  #ifndef __TIME_ARMADA_370_XPPRCMU_H
+>  #define __TIME_ARMADA_370_XPPRCMU_H
+>  
+> -#include <linux/init.h>
+> -
+> -void __init armada_370_xp_timer_init(void);
+> +void armada_370_xp_timer_init(void);
+>  
+>  #endif
+> 
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Could you please send your .config to me?
-
-Thanks.
-
--Fenghua
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
