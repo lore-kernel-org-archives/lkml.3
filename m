@@ -1,487 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab3CTWqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 18:46:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34695 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab3CTWoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753982Ab3CTWoz (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 20 Mar 2013 18:44:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,880,1355126400"; 
-   d="scan'208";a="282469840"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 08/11 V4] mei: nfc: Initial nfc implementation
-Date: Thu, 21 Mar 2013 00:44:26 +0200
-Message-Id: <1363819469-696-9-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1363819469-696-1-git-send-email-tomas.winkler@intel.com>
-References: <1363819469-696-1-git-send-email-tomas.winkler@intel.com>
+Received: from plane.gmane.org ([80.91.229.3]:41608 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752151Ab3CTWoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 18:44:44 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Sebastian Gottschall <s.gottschall@dd-wrt.com>
+Subject: Re: Linux 3.8.4
+Date: Wed, 20 Mar 2013 23:25:13 +0100
+Message-ID: <kidd01$2o6$1@ger.gmane.org>
+References: <20130320201554.GA18281@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p579bf2b1.dip.t-dialin.net
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+In-Reply-To: <20130320201554.GA18281@kroah.com>
+Cc: stable@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samuel Ortiz <sameo@linux.intel.com>
+consider that this kernel is not compileable on mips targets due the 
+patch in kernel/signal.c
 
-NFC ME device is exported through the MEI bus to be consumed by the
-NFC subsystem.
+SA_RESTORER is defined in mips, but sa_restorer does not exist on that 
+platform
 
-NFC is represented by two mei clients: An info one and the actual
-NFC one. In order to properly build the ME id we first need to retrieve
-the firmware information from the info client.
 
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/Kconfig   |   7 ++
- drivers/misc/mei/Makefile  |   1 +
- drivers/misc/mei/client.c  |   3 +
- drivers/misc/mei/init.c    |   2 +
- drivers/misc/mei/mei_dev.h |  28 ++++++
- drivers/misc/mei/nfc.c     | 209 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/misc/mei/nfc.h     | 122 ++++++++++++++++++++++++++
- 7 files changed, 372 insertions(+)
- create mode 100644 drivers/misc/mei/nfc.c
- create mode 100644 drivers/misc/mei/nfc.h
+Am 20.03.2013 21:15, schrieb Greg KH:
+> I'm announcing the release of the 3.8.4 kernel.
+>
+> All users of the 3.8 kernel series must upgrade.
+>
+> The updated 3.8.y git tree can be found at:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.8.y
+> and can be browsed at the normal kernel.org git web browser:
+> 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+>
+> thanks,
+>
+> greg k-h
+>
+> ------------
+>
+>   Documentation/devicetree/bindings/tty/serial/of-serial.txt |    3
+>   Makefile                                                   |    2
+>   arch/arm/mach-at91/board-foxg20.c                          |    1
+>   arch/arm/mach-at91/board-stamp9g20.c                       |    1
+>   arch/arm/mach-davinci/dma.c                                |    3
+>   arch/arm/mach-ixp4xx/vulcan-setup.c                        |    1
+>   arch/arm/mach-kirkwood/board-dt.c                          |   24
+>   arch/arm/mach-pxa/raumfeld.c                               |    1
+>   arch/powerpc/include/asm/mmu-hash64.h                      |  128 ++---
+>   arch/powerpc/kernel/cputable.c                             |    2
+>   arch/powerpc/kernel/exceptions-64s.S                       |   34 -
+>   arch/powerpc/kvm/book3s_64_mmu_host.c                      |    4
+>   arch/powerpc/mm/hash_utils_64.c                            |   22
+>   arch/powerpc/mm/mmu_context_hash64.c                       |   11
+>   arch/powerpc/mm/pgtable_64.c                               |    2
+>   arch/powerpc/mm/slb_low.S                                  |   50 -
+>   arch/powerpc/mm/tlb_hash64.c                               |    2
+>   arch/s390/include/asm/tlbflush.h                           |    2
+>   arch/s390/kernel/entry.S                                   |    3
+>   arch/s390/kernel/entry64.S                                 |    5
+>   arch/x86/kernel/cpu/perf_event_intel_ds.c                  |   10
+>   arch/x86/power/cpu.c                                       |    2
+>   drivers/block/loop.c                                       |   24
+>   drivers/char/hw_random/virtio-rng.c                        |   13
+>   drivers/gpu/drm/i915/i915_dma.c                            |   23
+>   drivers/gpu/drm/i915/i915_drv.c                            |   13
+>   drivers/gpu/drm/i915/i915_drv.h                            |    1
+>   drivers/gpu/drm/i915/i915_irq.c                            |    4
+>   drivers/hwmon/lineage-pem.c                                |    2
+>   drivers/hwmon/pmbus/ltc2978.c                              |   14
+>   drivers/mtd/nand/nand_base.c                               |   16
+>   drivers/mtd/nand/nand_ids.c                                |   80 +--
+>   drivers/net/bonding/bond_main.c                            |    5
+>   drivers/net/ethernet/atheros/atl1c/atl1c_main.c            |    2
+>   drivers/net/ethernet/mellanox/mlx4/en_netdev.c             |   16
+>   drivers/net/macvlan.c                                      |    1
+>   drivers/net/team/team.c                                    |    2
+>   drivers/net/tun.c                                          |    2
+>   drivers/net/vxlan.c                                        |    9
+>   drivers/staging/comedi/drivers/dt9812.c                    |   16
+>   drivers/staging/vt6656/main_usb.c                          |    4
+>   drivers/tty/pty.c                                          |    1
+>   drivers/tty/serial/8250/8250.c                             |   52 ++
+>   drivers/tty/serial/8250/8250_pci.c                         |   21
+>   drivers/tty/serial/8250/8250_pnp.c                         |   12
+>   drivers/tty/serial/Kconfig                                 |    4
+>   drivers/tty/serial/of_serial.c                             |    6
+>   drivers/tty/tty_buffer.c                                   |    2
+>   drivers/usb/class/cdc-wdm.c                                |   23
+>   drivers/usb/dwc3/core.c                                    |    1
+>   drivers/usb/host/ehci-q.c                                  |   18
+>   drivers/usb/serial/cp210x.c                                |   20
+>   drivers/usb/serial/option.c                                |    5
+>   drivers/usb/serial/qcaux.c                                 |    1
+>   drivers/usb/serial/qcserial.c                              |    7
+>   drivers/usb/storage/initializers.c                         |   76 ---
+>   drivers/usb/storage/initializers.h                         |    4
+>   drivers/usb/storage/unusual_devs.h                         |  329 ++++++++++++-
+>   drivers/video/atmel_lcdfb.c                                |   22
+>   drivers/w1/masters/w1-gpio.c                               |    4
+>   drivers/w1/w1.c                                            |    3
+>   drivers/xen/xen-pciback/pciback_ops.c                      |    3
+>   fs/block_dev.c                                             |    4
+>   fs/btrfs/volumes.c                                         |    6
+>   fs/ext3/super.c                                            |    4
+>   include/linux/mtd/nand.h                                   |    7
+>   include/linux/perf_event.h                                 |    6
+>   include/uapi/linux/serial_core.h                           |    5
+>   include/video/atmel_lcdc.h                                 |    1
+>   kernel/signal.c                                            |    3
+>   net/bridge/br_mdb.c                                        |    4
+>   net/core/dev.c                                             |    1
+>   net/core/rtnetlink.c                                       |    1
+>   net/dcb/dcbnl.c                                            |    8
+>   net/ieee802154/6lowpan.h                                   |    2
+>   net/ipv4/tcp_input.c                                       |    6
+>   net/ipv6/ip6_input.c                                       |    3
+>   net/ipv6/route.c                                           |    3
+>   net/l2tp/l2tp_ppp.c                                        |    1
+>   net/netlabel/netlabel_unlabeled.c                          |   27 -
+>   net/rds/message.c                                          |    3
+>   net/sctp/socket.c                                          |    6
+>   scripts/Makefile.headersinst                               |   11
+>   security/selinux/xfrm.c                                    |    2
+>   sound/core/seq/seq_timer.c                                 |    8
+>   tools/usb/ffs-test.c                                       |    2
+>   86 files changed, 903 insertions(+), 395 deletions(-)
+>
+> Alan Stern (1):
+>        USB: EHCI: don't check DMA values in QH overlays
+>
+> Amir Vadai (2):
+>        net/mlx4_en: Initialize RFS filters lock and list in init_netdev
+>        net/mlx4_en: Disable RFS when running in SRIOV mode
+>
+> Amit Shah (1):
+>        virtio: rng: disallow multiple device registrations, fixes crashes
+>
+> Aneesh Kumar K.V (3):
+>        powerpc: Make VSID_BITS* dependency explicit
+>        powerpc: Update kernel VSID range
+>        powerpc: Rename USER_ESID_BITS* to ESID_BITS*
+>
+> Axel Lin (1):
+>        hwmon: (lineage-pem) Add missing terminating entry for pem_[input|fan]_attributes
+>
+> Benjamin Herrenschmidt (2):
+>        powerpc: Fix STAB initialization
+>        powerpc: Fix cputable entry for 970MP rev 1.0
+>
+> Bjørn Mork (2):
+>        USB: option: add Huawei E5331
+>        USB: storage: fix Huawei mode switching regression
+>
+> Brian Norris (1):
+>        mtd: nand: reintroduce NAND_NO_READRDY as NAND_NEED_READRDY
+>
+> Christian Schmiedl (1):
+>        USB: added support for Cinterion's products AH6 and PLS8
+>
+> Cong Wang (1):
+>        rds: limit the size allocated by rds_message_alloc()
+>
+> Cristian Bercaru (1):
+>        bridging: fix rx_handlers return code
+>
+> Dan Carpenter (1):
+>        selinux: use GFP_ATOMIC under spin_lock
+>
+> Dan Williams (2):
+>        qcaux: add Franklin U600
+>        qcserial: bind to DM/DIAG port on Gobi 1K devices
+>
+> David Rientjes (1):
+>        perf,x86: fix link failure for non-Intel configs
+>
+> Eric Dumazet (1):
+>        tun: add a missing nf_reset() in tun_net_xmit()
+>
+> Eric Sandeen (1):
+>        btrfs: use rcu_barrier() to wait for bdev puts at unmount
+>
+> Felipe Balbi (1):
+>        usb: dwc3: core: don't forget to free coherent memory
+>
+> Greg Kroah-Hartman (3):
+>        Revert "drm/i915: enable irqs earlier when resuming"
+>        Revert "drm/i915: reorder setup sequence to have irqs for output setup"
+>        Linux 3.8.4
+>
+> Guenter Roeck (2):
+>        hwmon: (pmbus/ltc2978) Fix temperature reporting
+>        net/sctp: Validate parameter size for SCTP_GET_ASSOC_STATS
+>
+> Guillaume Nault (1):
+>        l2tp: Restore socket refcount when sendmsg succeeds
+>
+> Guo Chao (3):
+>        block: use i_size_write() in bd_set_size()
+>        loopdev: fix a deadlock
+>        loopdev: remove an user triggerable oops
+>
+> Hannes Frederic Sowa (1):
+>        ipv6: stop multicast forwarding to process interface scoped addresses
+>
+> Heiko Carstens (1):
+>        s390/mm: fix flush_tlb_kernel_range()
+>
+> Huang, Xiong (1):
+>        atl1c: restore buffer state
+>
+> Ian Abbott (1):
+>        staging: comedi: dt9812: use CR_CHAN() for channel number
+>
+> Jiri Slaby (2):
+>        TTY: disable debugging warning
+>        TTY: do not reset master's packet mode
+>
+> Johan Hovold (3):
+>        ARM: w1-gpio: fix erroneous gpio requests
+>        w1-gpio: remove erroneous __exit and __exit_p()
+>        atmel_lcdfb: fix 16-bpp modes on older SOCs
+>
+> Josh Boyer (1):
+>        serial: 8250: Keep 8250.<xxxx> module options functional after driver rename
+>
+> Kees Cook (1):
+>        signal: always clear sa_restorer on execve
+>
+> Konrad Rzeszutek Wilk (1):
+>        xen/pciback: Don't disable a PCI device that is already disabled.
+>
+> Lars-Peter Clausen (1):
+>        ext3: Fix format string issues
+>
+> Ley Foon Tan (1):
+>        tty/serial: Add support for Altera serial port
+>
+> Linus Torvalds (1):
+>        perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+>
+> Lorenzo Colitti (1):
+>        net: ipv6: Don't purge default router if accept_ra=2
+>
+> Malcolm Priestley (1):
+>        staging: vt6656: Fix oops on resume from suspend.
+>
+> Marcin Jurkowski (1):
+>        w1: fix oops when w1_search is called from netlink connector
+>
+> Martin Schwidefsky (1):
+>        s390: critical section cleanup vs. machine checks
+>
+> Mathias Krause (3):
+>        bridge: fix mdb info leaks
+>        rtnl: fix info leak on RTM_GETLINK request for VF devices
+>        dcbnl: fix various netlink info leaks
+>
+> Matt Porter (1):
+>        ARM: davinci: edma: fix dmaengine induced null pointer dereference on da830
+>
+> Matwey V. Kornilov (1):
+>        usb: cp210x new Vendor/Device IDs
+>
+> Maxin B. John (1):
+>        tools: usb: ffs-test: Fix build failure
+>
+> Neal Cardwell (1):
+>        tcp: fix double-counted receiver RTT when leaving receiver fast path
+>
+> Oliver Neukum (1):
+>        USB: cdc-wdm: fix buffer overflow
+>
+> Paul Bolle (2):
+>        tty: serial: fix typo "ARCH_S5P6450"
+>        tty: serial: fix typo "SERIAL_S3C2412"
+>
+> Paul Moore (1):
+>        netlabel: correctly list all the static label mappings
+>
+> Sam Ravnborg (1):
+>        kbuild: fix make headers_check with make 3.80
+>
+> Scott Ashcroft (1):
+>        Fix 4 port and add support for 8 port 'Unknown' PCI serial port cards
+>
+> Sean Young (1):
+>        tty/8250_pnp: serial port detection regression since v3.7
+>
+> Sebastian Hesselbarth (1):
+>        ARM: kirkwood: fix to retain gbe MAC addresses for DT kernels
+>
+> Stephane Eranian (1):
+>        perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
+>
+> Steve Conklin (1):
+>        usb: serial: Add Rigblaster Advantage to device table
+>
+> Takashi Iwai (1):
+>        ALSA: seq: Fix missing error handling in snd_seq_timer_open()
+>
+> Veaceslav Falico (1):
+>        bonding: fire NETDEV_RELEASE event only on 0 slaves
+>
+> Vlad Yasevich (2):
+>        team: unsyc the devices addresses when port is removed
+>        macvlan: Set IFF_UNICAST_FLT flag to prevent unnecessary promisc mode.
+>
+> Wang YanQing (1):
+>        serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller
+>
+> YOSHIFUJI Hideaki (1):
+>        6lowpan: Fix endianness issue in is_addr_link_local().
+>
+> Zang MingJie (1):
+>        vxlan: fix oops when delete netns containing vxlan
+>
 
-diff --git a/drivers/misc/mei/Kconfig b/drivers/misc/mei/Kconfig
-index d21b4d0..66e84ef 100644
---- a/drivers/misc/mei/Kconfig
-+++ b/drivers/misc/mei/Kconfig
-@@ -35,3 +35,10 @@ config INTEL_MEI_ME
- 	  82Q33 Express
- 	  82X38/X48 Express
- 
-+config INTEL_MEI_BUS_NFC
-+        bool "MEI bus NFC support"
-+        depends on INTEL_MEI
-+	help
-+	  When selecting this option the ME NFC device will be added to the
-+	  MEI bus. This is needed by the NFC kernel subsystem for sending and
-+	  receiving HCI frames to and from the NFC device.
-diff --git a/drivers/misc/mei/Makefile b/drivers/misc/mei/Makefile
-index 5948621..644f92e 100644
---- a/drivers/misc/mei/Makefile
-+++ b/drivers/misc/mei/Makefile
-@@ -11,5 +11,6 @@ mei-objs += main.o
- mei-objs += amthif.o
- mei-objs += wd.o
- mei-objs += bus.o
-+mei-$(CONFIG_INTEL_MEI_BUS_NFC) += nfc.o
- mei-$(CONFIG_INTEL_MEI_ME) += pci-me.o
- mei-$(CONFIG_INTEL_MEI_ME) += hw-me.o
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index e14397b..eb27bf6 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -358,6 +358,9 @@ void mei_host_client_init(struct work_struct *work)
- 			mei_amthif_host_init(dev);
- 		else if (!uuid_le_cmp(client_props->protocol_name, mei_wd_guid))
- 			mei_wd_host_init(dev);
-+		else if (!uuid_le_cmp(client_props->protocol_name, mei_nfc_guid))
-+			mei_nfc_host_init(dev);
-+
- 	}
- 
- 	dev->dev_state = MEI_DEV_ENABLED;
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 27df330..5de933d 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -206,6 +206,8 @@ void mei_stop(struct mei_device *dev)
- 
- 	mei_wd_stop(dev);
- 
-+	mei_nfc_host_exit();
-+
- 	dev->dev_state = MEI_DEV_POWER_DOWN;
- 	mei_reset(dev, 0);
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 7199789..390d57e 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -499,6 +499,34 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
- 
- void mei_amthif_run_next_cmd(struct mei_device *dev);
- 
-+#ifdef CONFIG_INTEL_MEI_BUS_NFC
-+/*
-+ * NFC functions
-+ */
-+int mei_nfc_host_init(struct mei_device *dev);
-+void mei_nfc_host_exit(void);
-+
-+/*
-+ * NFC Client UUID
-+ */
-+extern const uuid_le mei_nfc_guid;
-+
-+#else /* CONFIG_INTEL_MEI_BUS_NFC */
-+
-+static inline int mei_nfc_host_init(struct mei_device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline void mei_nfc_host_exit(void)
-+{
-+	return;
-+}
-+
-+static const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
-+					    0x94, 0xd4, 0x50, 0x26,
-+					    0x67, 0x23, 0x77, 0x5c);
-+#endif /* CONFIG_INTEL_MEI_BUS_NFC */
- 
- int mei_amthif_irq_write_complete(struct mei_device *dev, s32 *slots,
- 			struct mei_cl_cb *cb, struct mei_cl_cb *cmpl_list);
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-new file mode 100644
-index 0000000..867cbe7
---- /dev/null
-+++ b/drivers/misc/mei/nfc.c
-@@ -0,0 +1,209 @@
-+/*
-+ *
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Copyright (c) 2003-2012, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/device.h>
-+#include <linux/pci.h>
-+#include <linux/mei.h>
-+#include <linux/mei_cl_bus.h>
-+
-+#include "mei_dev.h"
-+#include "client.h"
-+#include "nfc.h"
-+
-+/** mei_nfc_dev - NFC mei device
-+ *
-+ * @cl_info: NFC info host client
-+ * @init_work: perform connection to the info client
-+ * @fw_ivn: NFC Intervace Version Number
-+ * @vendor_id: NFC manufacturer ID
-+ * @radio_type: NFC radio type
-+ */
-+struct mei_nfc_dev {
-+	struct mei_cl *cl_info;
-+	struct work_struct init_work;
-+	u8 fw_ivn;
-+	u8 vendor_id;
-+	u8 radio_type;
-+};
-+
-+static struct mei_nfc_dev nfc_dev;
-+
-+/* UUIDs for NFC F/W clients */
-+const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
-+				     0x94, 0xd4, 0x50, 0x26,
-+				     0x67, 0x23, 0x77, 0x5c);
-+
-+static const uuid_le mei_nfc_info_guid = UUID_LE(0xd2de1625, 0x382d, 0x417d,
-+					0x48, 0xa4, 0xef, 0xab,
-+					0xba, 0x8a, 0x12, 0x06);
-+
-+static void mei_nfc_free(struct mei_nfc_dev *ndev)
-+{
-+	if (ndev->cl_info) {
-+		list_del(&ndev->cl_info->device_link);
-+		mei_cl_unlink(ndev->cl_info);
-+		kfree(ndev->cl_info);
-+	}
-+}
-+
-+static int mei_nfc_if_version(struct mei_nfc_dev *ndev)
-+{
-+	struct mei_device *dev;
-+	struct mei_cl *cl;
-+
-+	struct mei_nfc_cmd cmd;
-+	struct mei_nfc_reply *reply = NULL;
-+	struct mei_nfc_if_version *version;
-+	size_t if_version_length;
-+	int bytes_recv, ret;
-+
-+	cl = ndev->cl_info;
-+	dev = cl->dev;
-+
-+	memset(&cmd, 0, sizeof(struct mei_nfc_cmd));
-+	cmd.command = MEI_NFC_CMD_MAINTENANCE;
-+	cmd.data_size = 1;
-+	cmd.sub_command = MEI_NFC_SUBCMD_IF_VERSION;
-+
-+	ret = __mei_cl_send(cl, (u8 *)&cmd, sizeof(struct mei_nfc_cmd));
-+	if (ret < 0) {
-+		dev_err(&dev->pdev->dev, "Could not send IF version cmd\n");
-+		return ret;
-+	}
-+
-+	/* to be sure on the stack we alloc memory */
-+	if_version_length = sizeof(struct mei_nfc_reply) +
-+		sizeof(struct mei_nfc_if_version);
-+
-+	reply = kzalloc(if_version_length, GFP_KERNEL);
-+	if (!reply)
-+		return -ENOMEM;
-+
-+	bytes_recv = __mei_cl_recv(cl, (u8 *)reply, if_version_length);
-+	if (bytes_recv < 0 || bytes_recv < sizeof(struct mei_nfc_reply)) {
-+		dev_err(&dev->pdev->dev, "Could not read IF version\n");
-+		ret = -EIO;
-+		goto err;
-+	}
-+
-+	version = (struct mei_nfc_if_version *)reply->data;
-+
-+	ndev->fw_ivn = version->fw_ivn;
-+	ndev->vendor_id = version->vendor_id;
-+	ndev->radio_type = version->radio_type;
-+
-+err:
-+	kfree(reply);
-+	return ret;
-+}
-+
-+static void mei_nfc_init(struct work_struct *work)
-+{
-+	struct mei_device *dev;
-+	struct mei_nfc_dev *ndev;
-+	struct mei_cl *cl_info;
-+	int ret;
-+
-+	ndev = container_of(work, struct mei_nfc_dev, init_work);
-+
-+	cl_info = ndev->cl_info;
-+	dev = cl_info->dev;
-+
-+	mutex_lock(&dev->device_lock);
-+
-+	if (mei_cl_connect(cl_info, NULL) < 0) {
-+		mutex_unlock(&dev->device_lock);
-+		dev_err(&dev->pdev->dev,
-+			"Could not connect to the NFC INFO ME client");
-+
-+		goto err;
-+	}
-+
-+	mutex_unlock(&dev->device_lock);
-+
-+	ret = mei_nfc_if_version(ndev);
-+	if (ret < 0) {
-+		dev_err(&dev->pdev->dev, "Could not get the NFC interfave version");
-+
-+		goto err;
-+	}
-+
-+	dev_info(&dev->pdev->dev,
-+		"NFC MEI VERSION: IVN 0x%x Vendor ID 0x%x Type 0x%x\n",
-+		ndev->fw_ivn, ndev->vendor_id, ndev->radio_type);
-+
-+	return;
-+
-+err:
-+	mei_nfc_free(ndev);
-+
-+	return;
-+}
-+
-+
-+int mei_nfc_host_init(struct mei_device *dev)
-+{
-+	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_cl *cl_info;
-+	int i, ret;
-+
-+	/* already initialzed */
-+	if (ndev->cl_info)
-+		return 0;
-+
-+	cl_info = mei_cl_allocate(dev);
-+	if (!cl_info)
-+		return -ENOMEM;
-+
-+	/* check for valid client id */
-+	i = mei_me_cl_by_uuid(dev, &mei_nfc_info_guid);
-+	if (i < 0) {
-+		dev_info(&dev->pdev->dev, "nfc: failed to find the client\n");
-+		return -ENOENT;
-+	}
-+
-+	cl_info->me_client_id = dev->me_clients[i].client_id;
-+
-+	ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
-+	if (ret)
-+		goto err;
-+
-+	cl_info->device_uuid = mei_nfc_info_guid;
-+
-+	list_add_tail(&cl_info->device_link, &dev->device_list);
-+
-+	ndev->cl_info = cl_info;
-+
-+	INIT_WORK(&ndev->init_work, mei_nfc_init);
-+	schedule_work(&ndev->init_work);
-+
-+	return 0;
-+
-+err:
-+	mei_nfc_free(ndev);
-+
-+	return ret;
-+}
-+
-+void mei_nfc_host_exit(void)
-+{
-+	struct mei_nfc_dev *ndev = &nfc_dev;
-+
-+	mei_nfc_free(ndev);
-+}
-diff --git a/drivers/misc/mei/nfc.h b/drivers/misc/mei/nfc.h
-new file mode 100644
-index 0000000..59e6703
---- /dev/null
-+++ b/drivers/misc/mei/nfc.h
-@@ -0,0 +1,122 @@
-+/******************************************************************************
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Intel MEI Interface Header
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2003 - 2012 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
-+ * USA
-+ *
-+ * The full GNU General Public License is included in this distribution
-+ * in the file called LICENSE.GPL.
-+ *
-+ * Contact Information:
-+ *	Intel Corporation.
-+ *	linux-mei@linux.intel.com
-+ *	http://www.intel.com
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2003 - 2012 Intel Corporation. All rights reserved.
-+ * All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+ *  * Redistributions of source code must retain the above copyright
-+ *    notice, this list of conditions and the following disclaimer.
-+ *  * Redistributions in binary form must reproduce the above copyright
-+ *    notice, this list of conditions and the following disclaimer in
-+ *    the documentation and/or other materials provided with the
-+ *    distribution.
-+ *  * Neither the name Intel Corporation nor the names of its
-+ *    contributors may be used to endorse or promote products derived
-+ *    from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ *****************************************************************************/
-+
-+#ifndef _MEI_NFC_H
-+#define _MEI_NFC_H
-+
-+#include <linux/types.h>
-+
-+struct mei_nfc_cmd {
-+	uint8_t command;
-+	uint8_t status;
-+	uint16_t req_id;
-+	uint32_t reserved;
-+	uint16_t data_size;
-+	uint8_t sub_command;
-+	uint8_t data[];
-+} __packed;
-+
-+struct mei_nfc_reply {
-+	uint8_t command;
-+	uint8_t status;
-+	uint16_t req_id;
-+	uint32_t reserved;
-+	uint16_t data_size;
-+	uint8_t sub_command;
-+	uint8_t reply_status;
-+	uint8_t data[];
-+} __packed;
-+
-+struct mei_nfc_if_version {
-+	uint8_t radio_version_sw[3];
-+	uint8_t reserved[3];
-+	uint8_t radio_version_hw[3];
-+	uint8_t i2c_addr;
-+	uint8_t fw_ivn;
-+	uint8_t vendor_id;
-+	uint8_t radio_type;
-+} __packed;
-+
-+struct mei_nfc_connect {
-+	uint8_t fw_ivn;
-+	uint8_t vendor_id;
-+} __packed;
-+
-+struct mei_nfc_connect_resp {
-+	uint8_t fw_ivn;
-+	uint8_t vendor_id;
-+	uint16_t me_major;
-+	uint16_t me_minor;
-+	uint16_t me_hotfix;
-+	uint16_t me_build;
-+} __packed;
-+
-+#define MEI_NFC_CMD_MAINTENANCE 0x00
-+
-+#define MEI_NFC_SUBCMD_CONNECT    0x00
-+#define MEI_NFC_SUBCMD_IF_VERSION 0x01
-+
-+#endif /* _MEI_NFC_H */
--- 
-1.8.1.3
 
