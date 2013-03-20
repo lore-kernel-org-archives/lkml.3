@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab3CTJQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:16:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38603 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3CTJP5 (ORCPT
+	id S934397Ab3CTJQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:16:05 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:33505 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab3CTJP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:15:57 -0400
-Date: Wed, 20 Mar 2013 12:15:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCHv2 00/12] staging: [omap,ti-soc]-thermal: fixes and
- renaming
-Message-ID: <20130320091543.GY9138@mwanda>
-References: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 20 Mar 2013 05:15:59 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] blackfin: twi: Remove bogus #endif
+Date: Wed, 20 Mar 2013 10:15:51 +0100
+Message-Id: <1363770951-28158-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These look nice.  Thanks for breaking up the move and api rename
-into separate patches.
+arch/blackfin/mach-bf538/boards/ezkit.c:768:2: error: #endif without #if
 
-regards,
-dan carpenter
+Introduced by commit cf93feb3a0dee97c7896016a352a3226139fbcf4 ("blackfin:
+twi: Move TWI peripheral pin request array to platform data"), which
+removed the #if, but forgot about the #endif.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/8427477/
+
+ arch/blackfin/mach-bf538/boards/ezkit.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/blackfin/mach-bf538/boards/ezkit.c b/arch/blackfin/mach-bf538/boards/ezkit.c
+index a4fce03..755f0dc 100644
+--- a/arch/blackfin/mach-bf538/boards/ezkit.c
++++ b/arch/blackfin/mach-bf538/boards/ezkit.c
+@@ -764,7 +764,6 @@ static struct platform_device i2c_bfin_twi1_device = {
+ 	.num_resources = ARRAY_SIZE(bfin_twi1_resource),
+ 	.resource = bfin_twi1_resource,
+ };
+-#endif	/* CONFIG_BF542 */
+ #endif	/* CONFIG_I2C_BLACKFIN_TWI */
+ 
+ #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+-- 
+1.7.0.4
 
