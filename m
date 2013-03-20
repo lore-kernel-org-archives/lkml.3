@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3CTM5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 08:57:18 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11747 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3CTM5Q (ORCPT
+	id S1757254Ab3CTNCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:02:40 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10010 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757102Ab3CTNCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 08:57:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 05:57:15 -0700
-Message-ID: <5149B19E.90400@nvidia.com>
-Date: Wed, 20 Mar 2013 18:24:54 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 20 Mar 2013 09:02:39 -0400
+From: <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, <Radovan.Lekanovic@sonymobile.com>,
+        Truls Bengtsson <truls.bengtsson@sonymobile.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: [PATCHv2] usb: f_rndis: Avoid to use ERROR macro if cdev can be null
+Date: Wed, 20 Mar 2013 14:02:25 +0100
+Message-ID: <1363784545-24274-1-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "lrg@ti.com" <lrg@ti.com>
-Subject: Re: [PATCH 2/2] regulator: palmas: add input supply names
-References: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com> <20130320123128.GM28775@opensource.wolfsonmicro.com>
-In-Reply-To: <20130320123128.GM28775@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 March 2013 06:01 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Mar 18, 2013 at 02:59:48PM +0530, Laxman Dewangan wrote:
->
-> There's something odd about several recent patch serieses you've posted,
-> they end up with patch 2 before instead of after patch 1.  Anyway...
+From: Truls Bengtsson <truls.bengtsson@sonymobile.com>
 
-I generally send a patches on single git-send command
-git send-emal --to=ldewangan@nvidia.com 0000.patch 0001.patch
+The udc_irq service runs the isr_tr_complete_handler which in turn
+"nukes" the endpoints, including a call to rndis_response_complete,
+if appropriate. If the rndis_msg_parser fails here, an error will
+be printed using a dev_err call (through the ERROR() macro).
 
-So file names are in seq but not sure why it is not on seq. Something 
-mail exchange  resuffle.
-Probably I need to send one by one...
+However, if the usb cable was just disconnected the device (cdev)
+might not be available and will be null. Since the dev_err macro will
+dereference the cdev pointer we get a null pointer exception.
 
+Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/f_rndis.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
->
->> +		if (config.init_data)
->> +			pmic->desc[id].supply_name = palmas_regs_info[id].sname;
->> +
-> This looks wrong...  why is it conditional on init_data?
-
-Some of the rails are not used in board and hence their inputs are also 
-left floating (unconnected). In this case, during DT population, I did 
-not put entry
-i.e. if ldo1 is not used then ldo1-in is not connected on board and hence
-entry on DT
-
-ldo1-in-supply=<&xyzreg>;
-
-is not there.
-
-The regulator core register the regulator even if there is NULL 
-init_data and in this case, it tries to findout the input-supply 
-(provided through desc->supply_name) and it fails to find out the supply 
-handle and so regulator register fails cause all regulator registration 
-to fail.
-
-So providing the dec->supply_name only in case of valid init_data.
-
-
+diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+index 71beeb8..cc9c49c 100644
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -447,14 +447,13 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
+ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
+ {
+ 	struct f_rndis			*rndis = req->context;
+-	struct usb_composite_dev	*cdev = rndis->port.func.config->cdev;
+ 	int				status;
+ 
+ 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
+ //	spin_lock(&dev->lock);
+ 	status = rndis_msg_parser(rndis->config, (u8 *) req->buf);
+ 	if (status < 0)
+-		ERROR(cdev, "RNDIS command error %d, %d/%d\n",
++		pr_err("RNDIS command error %d, %d/%d\n",
+ 			status, req->actual, req->length);
+ //	spin_unlock(&dev->lock);
+ }
+-- 
+1.7.8.6
 
