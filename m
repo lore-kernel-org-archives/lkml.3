@@ -1,133 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab3CTJXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:23:05 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:51765 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3CTJXD (ORCPT
+	id S1756934Ab3CTJXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:23:13 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:43152 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3CTJXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:23:03 -0400
+	Wed, 20 Mar 2013 05:23:06 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 00/30] compat: deal with kernel backport namespace
-Date: Wed, 20 Mar 2013 02:22:25 -0700
-Message-Id: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 01/30] compat: add LINUX_BACKPORT() for prefixing symbols
+Date: Wed, 20 Mar 2013 02:22:26 -0700
+Message-Id: <1363771375-31715-2-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-This patch series deals with the project that aims at
-backporting the Linux kernel [0]. If you don't care
-for that, at least read this and patch #1, the rest
-you can nuke.
+Ben Hutchings notes that "compat_" is already taken as a
+prefix for symbols and while this is only slightly true
+in practice its best we avoid any future issues.
 
-Ben reports compat_ namespace is already taken by the
-kernel, and while this is slightly true, I rather just
-deal with this now and avoid any future issues.
+Others in the past have noted issues with symbols exported
+by backporting effort to conflict with other symbols that
+might be preferred by the running kernel. In the worst
+case scenerio we'd have the same subsystems with two eras
+with two sets of drivers using a subystem from an era each.
+This patch doesn't address that but tries to address the
+namespace conflict by compat itself. The best alternative I
+was hoping for was to use core module symbol namespaces but
+after reviewing that effort introduced in 2007
+by Andi Kleen [0] I see in the end Rusty Russell nack'd
+these patches [1] so we're left with dealing with symbol
+renaming.
 
-I've chosen backport_. Any nay's?
+Define LINUX_BACKPORT() to be used to allow us to rename
+symbols with a backport_ prefix. The the cleanest, but
+its a start. It isn't clean but its something, I welcome
+other ideas.
 
-I've broken this set for easier review to one per kernel
-backported. Each patch is test compiled with ckmake [1]
-for kernels 2.6.24 - 3.9. I've then test compiled all this
-against compat-drivers-2013-03-15, which sucks in Ethernet,
-802.11 Bluetooth, and DRM video drivers against linux-next
-tag next-20130315 and it all went fine for all kernels
-2.6.24 - 3.9.
+[0] http://thread.gmane.org/gmane.linux.network/78674
+[1] http://article.gmane.org/gmane.linux.kernel/606885
 
-I suppose the next set here, if we really are adamant about
-any possible namespace issues (is it necessary?) is to use
-include/linux/backport/ instead of include/linux/compat/ and
-likewise rename the compat module to backports as with
-COMPAT_* macros.
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ include/linux/compat-2.6.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-I'm sending these as RFCs in hopes to get reviews / testing
-prior to any radical change, but more importantly in hopes
-anyone who cares for maintaining a Linux distribution will
-review.
-
-[0] https://backports.wiki.kernel.org
-[1] https://git.kernel.org/cgit/linux/kernel/git/mcgrof/compat.git/tree/bin/ckmake
-
-Luis R. Rodriguez (30):
-  compat: add LINUX_BACKPORT() for prefixing symbols
-  compat: embrace LINUX_BACKPORT() for v2.6.23
-  compat: embrace LINUX_BACKPORT() for v2.6.24
-  compat: embrace LINUX_BACKPORT() for v2.6.25
-  compat: embrace LINUX_BACKPORT() for v2.6.26
-  compat: embrace LINUX_BACKPORT() for v2.6.27
-  compat: embrace LINUX_BACKPORT() for v2.6.28
-  compat: embrace LINUX_BACKPORT() for v2.6.29
-  compat: embrace LINUX_BACKPORT() for v2.6.31
-  compat: embrace LINUX_BACKPORT() for v2.6.32
-  compat: embrace LINUX_BACKPORT() for v2.6.33
-  compat: embrace LINUX_BACKPORT() for v2.6.34
-  compat: embrace LINUX_BACKPORT() for v2.6.35
-  compat: embrace LINUX_BACKPORT() for v2.6.36
-  compat: embrace LINUX_BACKPORT() for v2.6.37
-  compat: embrace LINUX_BACKPORT() for v2.6.38
-  compat: embrace LINUX_BACKPORT() for v2.6.39
-  compat: embrace LINUX_BACKPORT() for v3.0
-  compat: embrace LINUX_BACKPORT() for v3.1
-  compat: embrace LINUX_BACKPORT() for v3.2
-  compat: embrace LINUX_BACKPORT() for v3.3
-  compat: embrace LINUX_BACKPORT() for v3.4
-  compat: embrace LINUX_BACKPORT() for v3.7
-  compat: embrace LINUX_BACKPORT() for v3.8
-  compat: embrace LINUX_BACKPORT() for cordic
-  compat: embrace LINUX_BACKPORT() for crc8
-  compat: embrace LINUX_BACKPORT() for kfifo
-  compat: embrace LINUX_BACKPORT() for pm_qos_params
-  compat: embrace LINUX_BACKPORT() for uidgid
-  compat: use backport_ prefix for main compat module calls
-
- compat/compat-2.6.23.c        |    2 +
- compat/compat-2.6.34.c        |    8 +--
- compat/compat-2.6.34.h        |    4 +-
- compat/compat-2.6.35.c        |    4 +-
- compat/compat-2.6.36.c        |   32 ++++-----
- compat/compat-2.6.37.c        |    4 +-
- compat/compat-2.6.38.c        |    8 +--
- compat/compat-3.1.c           |   12 ++--
- compat/main.c                 |   25 +++----
- compat/pm_qos_params.c        |    4 +-
- include/linux/compat-2.6.23.h |    3 +
- include/linux/compat-2.6.24.h |    5 ++
- include/linux/compat-2.6.25.h |   15 +++--
- include/linux/compat-2.6.26.h |    1 +
- include/linux/compat-2.6.27.h |    5 ++
- include/linux/compat-2.6.28.h |   15 +++--
- include/linux/compat-2.6.29.h |    6 ++
- include/linux/compat-2.6.31.h |   65 +++++++-----------
- include/linux/compat-2.6.32.h |    1 +
- include/linux/compat-2.6.33.h |   24 +++----
- include/linux/compat-2.6.34.h |    8 +--
- include/linux/compat-2.6.35.h |    7 +-
- include/linux/compat-2.6.36.h |   53 ++++++++-------
- include/linux/compat-2.6.37.h |    5 +-
- include/linux/compat-2.6.38.h |    9 +--
- include/linux/compat-2.6.39.h |    3 +-
- include/linux/compat-2.6.h    |   10 +--
- include/linux/compat-3.0.h    |    3 +
- include/linux/compat-3.1.h    |   12 +---
- include/linux/compat-3.2.h    |    1 +
- include/linux/compat-3.3.h    |    1 +
- include/linux/compat-3.4.h    |    2 +
- include/linux/compat-3.7.h    |    7 ++
- include/linux/compat-3.8.h    |    2 +
- include/linux/cordic.h        |    1 +
- include/linux/crc8.h          |    3 +
- include/linux/kfifo.h         |  146 +++++++++++++++++++++++------------------
- include/linux/pm_qos_params.h |    6 ++
- include/linux/uidgid.h        |   16 +++++
- 39 files changed, 305 insertions(+), 233 deletions(-)
-
+diff --git a/include/linux/compat-2.6.h b/include/linux/compat-2.6.h
+index 68e95d5..d1d24d0 100644
+--- a/include/linux/compat-2.6.h
++++ b/include/linux/compat-2.6.h
+@@ -3,6 +3,8 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++#define LINUX_BACKPORT(__sym) backport_ ##__sym
++
+ #include <linux/version.h>
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0))
+ #include <linux/kconfig.h>
 -- 
 1.7.10.4
 
