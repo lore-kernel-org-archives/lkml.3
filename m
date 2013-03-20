@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3CTHMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:12:38 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:37977 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab3CTHMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:12:37 -0400
+	id S1755075Ab3CTHXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:23:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65124 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab3CTHXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:23:12 -0400
+X-IronPort-AV: E=Sophos;i="4.84,876,1355068800"; 
+   d="scan'208";a="6908534"
+Message-ID: <51496430.6000804@cn.fujitsu.com>
+Date: Wed, 20 Mar 2013 15:24:32 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Date: Wed, 20 Mar 2013 00:12:32 -0700
-Message-ID: <CAEtk5gdUeaCEtj6wG_ScuazNm=q74u0QBJ70Lz-x8+vXrzYnaw@mail.gmail.com>
-Subject: Question pertaining to request_threaded_irq
-From: Vijay Dixit <thelonejoker@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Venkatesh Srinivas <venkateshs@google.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, mst@redhat.com, JBottomley@parallels.com,
+        virtualization@lists.linux-foundation.org, pbonzini@redhat.com,
+        vsrinivas@ops101.org, digitaleric@google.com, mikew@google.com,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V5 4/5] virtio-scsi: introduce multiqueue support
+References: <1363687057-13580-1-git-send-email-gaowanlong@cn.fujitsu.com> <1363687057-13580-5-git-send-email-gaowanlong@cn.fujitsu.com> <20130320014657.GA14714@google.com>
+In-Reply-To: <20130320014657.GA14714@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/20 15:21:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/20 15:21:45,
+	Serialize complete at 2013/03/20 15:21:45
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I am new to the Kernel-Mailing list. I am not subscribed at the moment
-and would really appreciate it, if I can be CC'd in the
-reply/responses for my question.
+On 03/20/2013 09:46 AM, Venkatesh Srinivas wrote:
+> This looks pretty good!
+> 
+> I rather like the (lack of) locking in I/O completion (around the req
+> count vs. target/queue binding). It is unfortunate that you need to hold the per-target lock in virtscsi_pick_vq() though; have any idea
+> how much that lock hurts?
 
-I have searched all over the web but haven't found a convincing answer
-to a couple of related questions I have, with regard to the
-"request_threaded_irq" feature.
+Paolo?
 
----Firstly, I was reading this article, regarding threaded IRQ's:
+> 
+> Just two minor comments:
+> 
+> (in struct virtio_scsi_target_data):
+> +       /* This spinlock never help at the same time as vq_lock. */
+>                                ^^^^ held?
+> 
+> (in struct virtio_scsi):
+> +       /* Does the affinity hint is set for virtqueues? */
+> Could you rephrase that, please?
 
-http://lwn.net/Articles/302043/
+Thank you, fixed in V6, please review.
 
-and there is this one line that isn't clear to me:
+> 
+> Tested on qemu and w/ Google Compute Engine's virtio-scsi device.
 
-"Converting an interrupt to threaded makes only sense when the handler
-code takes advantage of it by integrating tasklet/softirq
-functionality and simplifying the locking."
+Cool.
 
-I understand had we gone ahead with a "traditional", top half/bottom
-half approach, we would have needed either spin-locks or disable local
-IRQ to meddle with shared data. But, what I don't understand is, how
-would threaded interrupts simplify the need for locking by integrating
-tasklet/softirq functionality.
+> 
+> Reviewed-and-tested-by: Venkatesh Srinivas <venkateshs@google.com>
 
----Secondly, what advantage (if any), does a request_threaded_handler
-approach have over a work_queue based bottom half approach ? In both
-cases it seems, as though the "work" is deferred to a dedicated
-thread. So, what is the difference ?
+Do you mind review and test the V6? Thank you.
 
----Lastly, in the following prototype:
+Regards,
+Wanlong Gao
 
-int request_threaded_irq(unsigned int irq, irq_handler_t handler,
-irq_handler_t thread_fn, unsigned long irqflags, const char *devname,
-void *dev_id)
+> 
+> Thanks,
+> -- vs;
+> 
 
-Is it possible that the "handler" part of the IRQ is continuously
-triggered by the relevant IRQ (say a UART receving characters at a
-high rate), even while the "thread_fn"(writing rx'd bytes to a
-circular buffer) part of the interrupt handler is busy processing
-IRQ's from previous wakeups ? So, wouldn't the handler be trying to
-"wakeup" an already running "thread_fn" ? How would the running irq
-thread_fn behave in that case ?
-
-I would really appreciate if someone can help me understand this.
-
-Thanks,
-vj
