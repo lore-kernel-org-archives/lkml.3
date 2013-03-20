@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab3CTJpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:45:25 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:47185 "EHLO
-	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757892Ab3CTJpY (ORCPT
+	id S1758208Ab3CTJuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:50:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18130 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3CTJuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:45:24 -0400
-Date: Wed, 20 Mar 2013 10:48:42 +0100
-From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
-Message-ID: <20130320094842.GL17291@dell.arpanet.local>
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
- <1363270024-12127-5-git-send-email-jonarne@jonarne.no>
- <201303180929.07864.hverkuil@xs4all.nl>
+	Wed, 20 Mar 2013 05:50:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 02:50:01 -0700
+Date: Wed, 20 Mar 2013 11:49:57 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: add table lookup to mux
+Message-ID: <20130320094957.GG18519@tbergstrom-lnx.Nvidia.com>
+References: <1363113747-6572-1-git-send-email-pdeschrijver@nvidia.com>
+ <20130319235110.8663.67548@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201303180929.07864.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130319235110.8663.67548@quantum>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 09:29:07AM +0100, Hans Verkuil wrote:
-> On Thu March 14 2013 15:07:00 Jon Arne Jørgensen wrote:
-> > This file is responsible for registering the device with the v4l2 subsystem,
-> > and the communication with v4l2.
-> > Most of the v4l2 ioctls are just passed on to vidbuf2.
-> > 
-> > Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> > ---
-> >  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
-> >  1 file changed, 566 insertions(+)
-> >  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
-> > 
-> > diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
-> > new file mode 100644
-> > index 0000000..d402093
-> > --- /dev/null
-> > +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
-> > @@ -0,0 +1,566 @@
+On Wed, Mar 20, 2013 at 12:51:10AM +0100, Mike Turquette wrote:
+> Quoting Peter De Schrijver (2013-03-12 11:42:23)
+> > diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+> > index 9c7f580..53d39c2 100644
+> > --- a/include/linux/clk-private.h
+> > +++ b/include/linux/clk-private.h
+> > @@ -144,12 +144,13 @@ struct clk {
+> >  
+> >  #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags, \
+> >                                 _reg, _shift, _width,           \
+> > -                               _mux_flags, _lock)              \
+> > +                               _mux_flags, _table, _lock)      \
+> >         static struct clk _name;                                \
+> >         static struct clk_mux _name##_hw = {                    \
+> >                 .hw = {                                         \
+> >                         .clk = &_name,                          \
+> >                 },                                              \
+> > +               .table = _table,                                \
+> >                 .reg = _reg,                                    \
+> >                 .shift = _shift,                                \
+> >                 .width = _width,                                \
 > 
-> ...
+> This breaks OMAP horribly since OMAP already uses this macro.  There are
+> two options:
 > 
-> > +int smi2021_vb2_setup(struct smi2021_dev *dev)
-> > +{
-> > +	int rc;
-> > +	struct vb2_queue *q;
-> > +
-> > +	q = &dev->vb_vidq;
-> > +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-> > +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
-> > +	q->drv_priv = dev;
-> > +	q->buf_struct_size = sizeof(struct smi2021_buffer);
-> > +	q->ops = &smi2021_video_qops;
-> > +	q->mem_ops = &vb2_vmalloc_memops;
-> 
-> q->timestamp_type isn't filled in.
->
-I'll add that
- 
-> For that matter, neither the sequence number nor the timestamp are filled in
-> in v4l2_buffer during capturing.
-> 
-> You need to add a buf_finish op to fill those in (use v4l2_timestamp() for the
-> timestamp).
->
+> 1) stop using statically initialized data and no longer use
+> clk-private.h macros.  I was under the impression that the tegra clock
+> data no longer required this?
 
-I'm filling these variables in the smi2021_buffer_done function in
-smi2021_video.c?
+Ok. We don't do that anymore. Maybe I just modified it out of habbit...
 
-Should I do that somewhere else?
-
- 
-> Regards,
 > 
-> 	Hans
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 2) if you must continue to use the clk-private.h macros (temporarily!)
+> then create a new one, DEFINE_CLK_MUX_TABLE.
+
+Hopefully not needed.
+
+Cheers,
+
+Peter.
