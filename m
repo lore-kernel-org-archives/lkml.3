@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3CTXel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 19:34:41 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:36409 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3CTXeh (ORCPT
+	id S1753106Ab3CTXhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 19:37:01 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:52239 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab3CTXhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 19:34:37 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH 2/3] init/Kconfig: virt CPU accounting: drop 64-bit requirment
-Date: Wed, 20 Mar 2013 16:34:26 -0700
-Message-Id: <1363822467-6275-3-git-send-email-khilman@linaro.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1363822467-6275-1-git-send-email-khilman@linaro.org>
-References: <1363822467-6275-1-git-send-email-khilman@linaro.org>
+	Wed, 20 Mar 2013 19:37:00 -0400
+Message-ID: <514A4815.4040206@gmail.com>
+Date: Thu, 21 Mar 2013 07:36:53 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] migrate: add migrate_entry_wait_huge()
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com> <5148FB6C.4070202@gmail.com> <1363816399-c6e7mofc-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363816399-c6e7mofc-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 64-bit requirement can be removed after the conversion of
-the conversion of the nsec granularity cputime to work on !64_BIT
+Hi Naoya,
+On 03/21/2013 05:53 AM, Naoya Horiguchi wrote:
+> On Wed, Mar 20, 2013 at 07:57:32AM +0800, Simon Jeons wrote:
+>> Hi Naoya,
+>> On 02/22/2013 03:41 AM, Naoya Horiguchi wrote:
+>>> When we have a page fault for the address which is backed by a hugepage
+>>> under migration, the kernel can't wait correctly until the migration
+>>> finishes. This is because pte_offset_map_lock() can't get a correct
+>> It seems that current hugetlb_fault still wait hugetlb page under
+>> migration, how can it work without lock 2MB memory?
+> Hugetlb_fault() does call migration_entry_wait(), but returns immediately.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- init/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Could you point out to me which code in function migration_entry_wait()
+lead to return immediately?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 8a1dac2..1f1a328 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -329,7 +329,7 @@ config VIRT_CPU_ACCOUNTING_NATIVE
- 
- config VIRT_CPU_ACCOUNTING_GEN
- 	bool "Full dynticks CPU time accounting"
--	depends on HAVE_CONTEXT_TRACKING && 64BIT
-+	depends on HAVE_CONTEXT_TRACKING
- 	select VIRT_CPU_ACCOUNTING
- 	select CONTEXT_TRACKING
- 	help
--- 
-1.8.2
+> So page fault happens over and over again until the migration completes.
+> IOW, migration_entry_wait() is now broken for hugepage and doesn't work
+> as expected.
+>
+> Thanks,
+> Naoya
 
