@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab3CTOtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:49:08 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46636 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756933Ab3CTOtG (ORCPT
+	id S932191Ab3CTOt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:49:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58416 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757113Ab3CTOt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:49:06 -0400
-Date: Wed, 20 Mar 2013 07:48:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 01/10] workqueue: add wq_numa_tbl_len and
- wq_numa_possible_cpumask[]
-Message-ID: <20130320144859.GU3042@htj.dyndns.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
- <1363737629-16745-2-git-send-email-tj@kernel.org>
- <CAAmzW4OosERgCwGnDx7HGHOf7BxbBPNYugA_V8wbegKvOiDqgQ@mail.gmail.com>
+	Wed, 20 Mar 2013 10:49:57 -0400
+Date: Wed, 20 Mar 2013 10:49:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Vincent Palatin <vpalatin@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Sameer Nanda <snanda@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>
+Subject: Re: [PATCH] usb: Make USB persist default configurable
+In-Reply-To: <CAODwPW8bAo-ixwmJjGPT94kDVSb+4qO264mOXyZ5RjmisTkYFQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1303201045250.1701-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAmzW4OosERgCwGnDx7HGHOf7BxbBPNYugA_V8wbegKvOiDqgQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:08:29PM +0900, JoonSoo Kim wrote:
-> 2013/3/20 Tejun Heo <tj@kernel.org>:
-> > Unbound workqueues are going to be NUMA-affine.  Add wq_numa_tbl_len
-> > and wq_numa_possible_cpumask[] in preparation.  The former is the
-> > highest NUMA node ID + 1 and the latter is masks of possibles CPUs for
-> > each NUMA node.
+On Tue, 19 Mar 2013, Julius Werner wrote:
+
+> > Yes, okay, that's true.  If a new USB device is plugged in while the
+> > lid is shut, and then the lid is opened very briefly, it's possible
+> > that the system could suspend again before the new device's "persist"
+> > attribute is updated.  Does that case really matter?  The device isn't
+> > likely to be in use at that point.
 > 
-> It is better to move this code to topology.c or cpumask.c,
-> then it can be generally used.
+> It does matter if the device will be used after the next resume,
+> because that one would use the persist code. If there was a driver
+> problem it would fail, and if it was a USB stick that is swapped with
+> a different one of the same model, you could get file system
+> corruption.
 
-Yeah, it just isn't clear where it should go.  Most NUMA
-initialization happens during early boot and arch-specific and
-different archs expect NUMA information to be valid at different
-point.  We can do it from one of the early initcalls by which all NUMA
-information should be valid but, I don't know, having different NUMA
-information coming up at different times seems error-prone.  There
-would be no apparent indication that certain part is available while
-others are not.
+To be honest, when it comes to filesystem corruption and lost data, you
+should be more worried about the consequences of leaving "persist"
+turned off than of leaving it on.  Be that as it may...
 
-We could solve this by unifying how NUMA information is represented
-and initialized.  e.g. if all NUMA archs used
-CONFIG_USE_PERCPU_NUMA_NODE_ID, we can simply modify
-set_cpu_numa_node() to build all data structures as NUMA nodes are
-discovered.  Unfortunately, this isn't true yet and it's gonna be a
-bit of work to get it in consistent state as it spans over multiple
-architectures (not too many tho, NUMA fortunately is rare), so if
-somebody can clean it up, I'll be happy to move these to topology.
-Right now, I think it's best to just carry it in workqueue.c.
+> I agree with you that buggy drivers should get fixed (and we are
+> trying to do that as well), but at the same time we want to be able to
+> have a system that can keep its policies at all times. We get a lot of
+> USB problems (especially around suspend/resume), and we don't want to
+> need to worry every time about which code path we hit and whether one
+> of those race conditions could have something to do with it. I'm
+> convinced that having this in the kernel is the cleanest solution for
+> us, and I just thought it might be useful to standardize a mechanism
+> for that (I don't really see the maintenance burden in that config
+> option either, as the persist mechanism itself does not look like it
+> was going to go away anytime soon).
 
-Thanks.
+If you feel strongly about this, I don't have any real objection to 
+adding the Kconfig option.  Practically everyone will leave it in its 
+default state and ignore the whole thing.
 
--- 
-tejun
+Alternatively, you could keep the patch out of mainline, as an in-house
+addition to your own kernels.  That would require more effort on your 
+part, though.
+
+Alan Stern
+
