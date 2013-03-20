@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab3CTQRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:17:36 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:51278 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757946Ab3CTQRe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:17:34 -0400
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH] cpufreq/intel_pstate: Add function to check that all MSR's are valid
-Date: Wed, 20 Mar 2013 09:17:24 -0700
-Message-Id: <1363796244-6658-1-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757938Ab3CTQSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:18:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45304 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab3CTQSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:18:51 -0400
+Date: Wed, 20 Mar 2013 17:18:47 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
+ reclaims at each priority
+Message-ID: <20130320161847.GD27375@dhcp22.suse.cz>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-2-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363525456-10448-2-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Sun 17-03-13 13:04:07, Mel Gorman wrote:
+[...]
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 88c5fed..4835a7a 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>  }
+>  
+>  /*
+> + * kswapd shrinks the zone by the number of pages required to reach
+> + * the high watermark.
+> + */
+> +static void kswapd_shrink_zone(struct zone *zone,
+> +			       struct scan_control *sc,
+> +			       unsigned long lru_pages)
+> +{
+> +	unsigned long nr_slab;
+> +	struct reclaim_state *reclaim_state = current->reclaim_state;
+> +	struct shrink_control shrink = {
+> +		.gfp_mask = sc->gfp_mask,
+> +	};
+> +
+> +	/* Reclaim above the high watermark. */
+> +	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
 
-Some VMs seem to try to implement some MSRs but not all the registers
-the driver needs.  Check to make sure all the MSR that we need are
-available. If any of the required MSRs are not available refuse to
-load.
+OK, so the cap is at high watermark which sounds OK to me, although I
+would expect balance_gap being considered here. Is it not used
+intentionally or you just wanted to have a reasonable upper bound?
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- drivers/cpufreq/intel_pstate.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+I am not objecting to that it just hit my eyes.
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index f6dd1e7..cd9c5f4 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -752,6 +752,29 @@ static struct cpufreq_driver intel_pstate_driver = {
- 
- static int __initdata no_load;
- 
-+static int intel_pstate_msrs_not_valid(void)
-+{
-+	/* Check that all the msr's we are using are valid. */
-+	u64 aperf, mperf, tmp;
-+
-+	rdmsrl(MSR_IA32_APERF, aperf);
-+	rdmsrl(MSR_IA32_MPERF, mperf);
-+
-+	if (!intel_pstate_min_pstate() ||
-+		!intel_pstate_max_pstate() ||
-+		!intel_pstate_turbo_pstate())
-+		return -ENODEV;
-+
-+	rdmsrl(MSR_IA32_APERF, tmp);
-+	if (!(tmp - aperf))
-+		return -ENODEV;
-+
-+	rdmsrl(MSR_IA32_MPERF, tmp);
-+	if (!(tmp - mperf))
-+		return -ENODEV;
-+
-+	return 0;
-+}
- static int __init intel_pstate_init(void)
- {
- 	int cpu, rc = 0;
-@@ -764,6 +787,9 @@ static int __init intel_pstate_init(void)
- 	if (!id)
- 		return -ENODEV;
- 
-+	if (intel_pstate_msrs_not_valid())
-+		return -ENODEV;
-+
- 	pr_info("Intel P-state driver initializing.\n");
- 
- 	all_cpu_data = vmalloc(sizeof(void *) * num_possible_cpus());
+> +	shrink_zone(zone, sc);
+> +
+> +	reclaim_state->reclaimed_slab = 0;
+> +	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+> +	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> +
+> +	if (nr_slab == 0 && !zone_reclaimable(zone))
+> +		zone->all_unreclaimable = 1;
+> +}
+> +
+> +/*
+>   * For kswapd, balance_pgdat() will work across all this node's zones until
+>   * they are all at high_wmark_pages(zone).
+>   *
 -- 
-1.7.7.6
-
+Michal Hocko
+SUSE Labs
