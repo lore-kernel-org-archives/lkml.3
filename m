@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab3CTU7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 16:59:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34437 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3CTU7t (ORCPT
+	id S1752038Ab3CTVDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 17:03:53 -0400
+Received: from canardo.mork.no ([148.122.252.1]:47018 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242Ab3CTVDw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 16:59:49 -0400
-Message-ID: <514A233F.8010105@wwwdotorg.org>
-Date: Wed, 20 Mar 2013 14:59:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 20 Mar 2013 17:03:52 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Shawn Starr <shawn.starr@rogers.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Intel][RNG] PCI IDs commented out for 82801I (ICH9 Mobile and non-mobile)?
+Organization: m
+References: <1597390.RUFC41Uyje@segfault.sh0n.net>
+Date: Wed, 20 Mar 2013 22:03:46 +0100
+In-Reply-To: <1597390.RUFC41Uyje@segfault.sh0n.net> (Shawn Starr's message of
+	"Wed, 20 Mar 2013 16:42:22 -0400")
+Message-ID: <8738vppyvh.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
-        akpm@linux-foundation.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com>
-In-Reply-To: <1363770725-13717-6-git-send-email-kishon@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
-> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
-> binding in order for the driver to use the new generic PHY framework.
-> Also updated the Documentation to include the binding information.
+Shawn Starr <shawn.starr@rogers.com> writes:
 
-> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> index abce256..3d6f9f6 100644
-> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
->   - power : Should be "50". This signifies the controller can supply upto
->     100mA when operating in host mode.
->   - usb-phy : the phandle for the PHY device
-> + - phy : the phandle for the PHY device (used by generic PHY framework)
-> + - phy-names : the names of the PHY corresponding to the PHYs present in the
-> +   *phy* phandle.
+> Hello folks,
+>
+> I was looking at why I can't load the Intel RNG driver (or why it doesn't load automatically) and 
+> it just so happens I have both the mobile and non-mobile ICH9 chipset. Looking at the driver I noticed:
+>
+>  /* BAM, CAM, DBM, FBM, GxM
+>        { PCI_DEVICE(0x8086, 0x2448) }, */
+>  
+>  /* BA, CA, DB, Ex, 6300, Fx, 631x/632x, Gx
+>        { PCI_DEVICE(0x8086, 0x244e) }, */
+>
+> IDs from both machines:
+>  
+> 00:1e.0 PCI bridge [0604]: Intel Corporation 82801 Mobile PCI Bridge [8086:2448] (rev 93)
+> 00:1e.0 PCI bridge [0604]: Intel Corporation 82801 PCI Bridge [8086:244e] (rev 92)
+>  
+> I saw a thread from 2006 explaining the 50% chance there's no RNG (but these days all modern chipsets should have an RNG) and I know 
+> this chipset I have does have an RNG so I'd like to use the HW random generator vs software.
+>
+> Do we need to revisit this? Even if I try to force it to load it still fails:
+>
+> # modprobe intel_rng no_fwh_detect=-1 or =1 
+> modprobe: ERROR: could not insert 'intel_rng': No such device
 
-If the intent is for those properties to be generic and used by any DT
-binding that refers to a PHY node, I think you'd want to define those
-properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
-like common clock/GPIO/... properties are defined in standalone common
-files.
+The module verifies that you have one of the PCI devices in that table,
+so you need to modify it to get the driver to load:
 
-I think you want to require that DT nodes that represent PHYs have a
-#phy-cells property, and that the format of the phy property be
-<&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
-defines how many cells are part of phy_specifier*, just like (almost)
-any other DT property that references another node by phandle. That way,
-if a single DT node represents a HW block that implements e.g. 3 PHYs,
-it can use #phy-cells = <1>, and the referencing phy property can
-include a cell that indicates which of those 3 PHYs is being referenced.
+static int __init mod_init(void)
+{
+        int err = -ENODEV;
+        int i;
+        struct pci_dev *dev = NULL;
+        void __iomem *mem = mem;
+        u8 hw_status;
+        struct intel_rng_hw *intel_rng_hw;
+
+        for (i = 0; !dev && pci_tbl[i].vendor; ++i)
+                dev = pci_get_device(pci_tbl[i].vendor, pci_tbl[i].device,
+                                     NULL);
+
+        if (!dev)
+                goto out; /* Device not found. */
+
+
+
+Bjørn
