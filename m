@@ -1,132 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab3CTF2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 01:28:40 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:41907 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3CTF2i (ORCPT
+	id S1757770Ab3CTF3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 01:29:16 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:49217 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139Ab3CTF3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 01:28:38 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v3] davinci: vpif: Fix module build for capture and display
-Date: Wed, 20 Mar 2013 10:58:27 +0530
-Message-Id: <1363757307-12635-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 20 Mar 2013 01:29:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org>
+References: <cover.1362381470.git.viresh.kumar@linaro.org>
+	<0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org>
+Date: Wed, 20 Mar 2013 10:59:13 +0530
+Message-ID: <CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
+Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances
+ of governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 4 March 2013 13:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Currently, there can't be multiple instances of single governor_type. If we have
+> a multi-package system, where we have multiple instances of struct policy (per
+> package), we can't have multiple instances of same governor. i.e. We can't have
+> multiple instances of ondemand governor for multiple packages.
+>
+> Governors directory in sysfs is created at /sys/devices/system/cpu/cpufreq/
+> governor-name/. Which again reflects that there can be only one instance of a
+> governor_type in the system.
+>
+> This is a bottleneck for multicluster system, where we want different packages
+> to use same governor type, but with different tunables.
+>
+> This patch uses the infrastructure provided by earlier patch and implements
+> init/exit routines for ondemand and conservative governors.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-export the symbols which are used by two modules vpif_capture and
-vpif_display. renamed "ch_params" to "vpif_ch_params" so as to avoid
-name collision.
+As discussed in other patch thread, i dropped "cpufreq: Add Kconfig option
+to enable/disable have_multiple_policies" patch and following is the fixup
+to this patch:
 
-This patch fixes following error:
-ERROR: "ch_params" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_display.ko] undefined!
-ERROR: "ch_params" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-ERROR: "vpif_ch_params_count" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-ERROR: "vpif_base" [drivers/media/platform/davinci/vpif_capture.ko] undefined!
-make[1]: *** [__modpost] Error 1
+I have queued all patches i had for 3.10 here:
 
-Reported-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-3.10
+
+commit f02fca9a2478088c4f7dadf82d998ae007a56285
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Wed Mar 20 10:50:33 2013 +0530
+
+    fixup! cpufreq: governor: Implement per policy instances of governors
 ---
- Changes for v3:
- 1: prefixed "ch_params" with driver name to make it "vpif_ch_params"
-    as pointed by Mauro.
+ drivers/cpufreq/cpufreq.c |  8 ++++++++
+ include/linux/cpufreq.h   | 22 ++++++++--------------
+ 2 files changed, 16 insertions(+), 14 deletions(-)
 
- Changes for v2:
- 1: use EXPORT_SYMBOL_GPL instead of EXPORT_SYMBOL() as pointed by
-    Sekhar.
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index a843855..3d83b02 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -128,6 +128,14 @@ void disable_cpufreq(void)
+ static LIST_HEAD(cpufreq_governor_list);
+ static DEFINE_MUTEX(cpufreq_governor_mutex);
 
- drivers/media/platform/davinci/vpif.c         |   10 +++++++---
- drivers/media/platform/davinci/vpif.h         |    2 +-
- drivers/media/platform/davinci/vpif_capture.c |    2 +-
- drivers/media/platform/davinci/vpif_display.c |    2 +-
- 4 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-index 28638a8..3bc4db8 100644
---- a/drivers/media/platform/davinci/vpif.c
-+++ b/drivers/media/platform/davinci/vpif.c
-@@ -44,13 +44,15 @@ static struct resource	*res;
- spinlock_t vpif_lock;
- 
- void __iomem *vpif_base;
-+EXPORT_SYMBOL_GPL(vpif_base);
++struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy)
++{
++       if (cpufreq_driver->have_multiple_policies)
++               return &policy->kobj;
++       else
++               return cpufreq_global_kobject;
++}
 +
- struct clk *vpif_clk;
- 
- /**
-- * ch_params: video standard configuration parameters for vpif
-+ * vpif_ch_params: video standard configuration parameters for vpif
-  * The table must include all presets from supported subdevices.
-  */
--const struct vpif_channel_config_params ch_params[] = {
-+const struct vpif_channel_config_params vpif_ch_params[] = {
- 	/* HDTV formats */
- 	{
- 		.name = "480p59_94",
-@@ -220,8 +222,10 @@ const struct vpif_channel_config_params ch_params[] = {
- 		.stdid = V4L2_STD_625_50,
- 	},
- };
-+EXPORT_SYMBOL_GPL(vpif_ch_params);
- 
--const unsigned int vpif_ch_params_count = ARRAY_SIZE(ch_params);
-+const unsigned int vpif_ch_params_count = ARRAY_SIZE(vpif_ch_params);
-+EXPORT_SYMBOL_GPL(vpif_ch_params_count);
- 
- static inline void vpif_wr_bit(u32 reg, u32 bit, u32 val)
+ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
  {
-diff --git a/drivers/media/platform/davinci/vpif.h b/drivers/media/platform/davinci/vpif.h
-index a1ab6a0..9956e67 100644
---- a/drivers/media/platform/davinci/vpif.h
-+++ b/drivers/media/platform/davinci/vpif.h
-@@ -638,7 +638,7 @@ struct vpif_channel_config_params {
- };
- 
- extern const unsigned int vpif_ch_params_count;
--extern const struct vpif_channel_config_params ch_params[];
-+extern const struct vpif_channel_config_params vpif_ch_params[];
- 
- struct vpif_video_params;
- struct vpif_params;
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index b15e948..1846cc5 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -563,7 +563,7 @@ static int vpif_update_std_info(struct channel_obj *ch)
- 	vpif_dbg(2, debug, "vpif_update_std_info\n");
- 
- 	for (index = 0; index < vpif_ch_params_count; index++) {
--		config = &ch_params[index];
-+		config = &vpif_ch_params[index];
- 		if (config->hd_sd == 0) {
- 			vpif_dbg(2, debug, "SD format\n");
- 			if (config->stdid & vid_ch->stdid) {
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index efdd462..48ed400 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -511,7 +511,7 @@ static int vpif_update_std_info(struct channel_obj *ch)
- 	int i;
- 
- 	for (i = 0; i < vpif_ch_params_count; i++) {
--		config = &ch_params[i];
-+		config = &vpif_ch_params[i];
- 		if (config->hd_sd == 0) {
- 			vpif_dbg(2, debug, "SD format\n");
- 			if (config->stdid & vid_ch->stdid) {
--- 
-1.7.4.1
+        struct cpufreq_policy *data;
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 6e1abd2..805c4d3 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -107,11 +107,6 @@ struct cpufreq_policy {
+        unsigned int            policy; /* see above */
+        struct cpufreq_governor *governor; /* see below */
+        void                    *governor_data;
+-       /* This should be set by init() of platforms having multiple
+-        * clock-domains, i.e.  supporting multiple policies. With this sysfs
+-        * directories of governor would be created in cpu/cpu<num>/cpufreq/
+-        * directory */
+-       bool                    have_multiple_policies;
 
+        struct work_struct      update; /* if update_policy() needs to be
+                                         * called, but you're in IRQ context */
+@@ -139,15 +134,6 @@ static inline bool policy_is_shared(struct
+cpufreq_policy *policy)
+        return cpumask_weight(policy->cpus) > 1;
+ }
+
+-static inline struct kobject *
+-get_governor_parent_kobj(struct cpufreq_policy *policy)
+-{
+-       if (policy->have_multiple_policies)
+-               return &policy->kobj;
+-       else
+-               return cpufreq_global_kobject;
+-}
+-
+ /******************** cpufreq transition notifiers *******************/
+
+ #define CPUFREQ_PRECHANGE      (0)
+@@ -245,6 +231,13 @@ struct cpufreq_driver {
+        struct module           *owner;
+        char                    name[CPUFREQ_NAME_LEN];
+        u8                      flags;
++       /*
++        * This should be set by init() of platforms having multiple
++        * clock-domains, i.e.  supporting multiple policies. With this sysfs
++        * directories of governor would be created in cpu/cpu<num>/cpufreq/
++        * directory
++        */
++       bool                    have_multiple_policies;
+
+        /* needed by all drivers */
+        int     (*init)         (struct cpufreq_policy *policy);
+@@ -329,6 +322,7 @@ const char *cpufreq_get_current_driver(void);
+  *********************************************************************/
+ int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
+ int cpufreq_update_policy(unsigned int cpu);
++struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
+
+ #ifdef CONFIG_CPU_FREQ
+ /* query the current CPU frequency (in kHz). If zero, cpufreq
+couldn't detect it */
