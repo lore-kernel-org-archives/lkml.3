@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965105Ab3CTJaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:30:52 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:42329 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3CTJaq (ORCPT
+	id S934546Ab3CTJbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:31:21 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:40980 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933981Ab3CTJbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:30:46 -0400
+	Wed, 20 Mar 2013 05:31:17 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 09/30] compat: embrace LINUX_BACKPORT() for v2.6.31
-Date: Wed, 20 Mar 2013 02:22:34 -0700
-Message-Id: <1363771375-31715-10-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 08/30] compat: embrace LINUX_BACKPORT() for v2.6.29
+Date: Wed, 20 Mar 2013 02:22:33 -0700
+Message-Id: <1363771375-31715-9-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,100 +53,49 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- include/linux/compat-2.6.31.h |   65 +++++++++++++++--------------------------
- 1 file changed, 23 insertions(+), 42 deletions(-)
+ include/linux/compat-2.6.29.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/linux/compat-2.6.31.h b/include/linux/compat-2.6.31.h
-index ce90f0a..096c131 100644
---- a/include/linux/compat-2.6.31.h
-+++ b/include/linux/compat-2.6.31.h
-@@ -25,25 +25,19 @@
- #define ADVERTISED_10000baseKR_Full    (1 << 19)
- #define ADVERTISED_10000baseR_FEC      (1 << 20)
+diff --git a/include/linux/compat-2.6.29.h b/include/linux/compat-2.6.29.h
+index 9ebc5d5..c8cf898 100644
+--- a/include/linux/compat-2.6.29.h
++++ b/include/linux/compat-2.6.29.h
+@@ -245,6 +245,7 @@ static inline int ndo_do_ioctl(struct net_device *dev,
+ }
  
--/*
-- * These macros allow us to backport rfkill without any
-- * changes on cfg80211 through compat.diff. Note that this
-- * file will be included by rfkill_backport.h so we must
-- * not conflict with things there.
-- */
--#define rfkill_get_led_trigger_name	backport_rfkill_get_led_trigger_name
--#define rfkill_set_led_trigger_name	backport_rfkill_set_led_trigger_name
--#define rfkill_set_hw_state	backport_rfkill_set_hw_state
--#define rfkill_set_sw_state	backport_rfkill_set_sw_state
--#define rfkill_init_sw_state	backport_rfkill_init_sw_state
--#define rfkill_set_states	backport_rfkill_set_states
--#define rfkill_pause_polling	backport_rfkill_pause_polling
--#define rfkill_resume_polling	backport_rfkill_resume_polling
--#define rfkill_blocked		backport_rfkill_blocked
--#define rfkill_alloc		backport_rfkill_alloc
--#define rfkill_register		backport_rfkill_register
--#define rfkill_unregister	backport_rfkill_unregister
--#define rfkill_destroy		backport_rfkill_destroy
-+#define rfkill_get_led_trigger_name LINUX_BACKPORT(rfkill_get_led_trigger_name)
-+#define rfkill_set_led_trigger_name LINUX_BACKPORT(rfkill_set_led_trigger_name)
-+#define rfkill_set_hw_state LINUX_BACKPORT(rfkill_set_hw_state)
-+#define rfkill_set_sw_state LINUX_BACKPORT(rfkill_set_sw_state)
-+#define rfkill_init_sw_state LINUX_BACKPORT(rfkill_init_sw_state)
-+#define rfkill_set_states LINUX_BACKPORT(rfkill_set_states)
-+#define rfkill_pause_polling LINUX_BACKPORT(rfkill_pause_polling)
-+#define rfkill_resume_polling LINUX_BACKPORT(rfkill_resume_polling)
-+#define rfkill_blocked LINUX_BACKPORT(rfkill_blocked)
-+#define rfkill_alloc LINUX_BACKPORT(rfkill_alloc)
-+#define rfkill_register LINUX_BACKPORT(rfkill_register)
-+#define rfkill_unregister LINUX_BACKPORT(rfkill_unregister)
-+#define rfkill_destroy LINUX_BACKPORT(rfkill_destroy)
  
- #ifndef ERFKILL
- #if !defined(CONFIG_ALPHA) && !defined(CONFIG_MIPS) && !defined(CONFIG_PARISC) && !defined(CONFIG_SPARC)
-@@ -63,29 +57,14 @@
++#define netdev_attach_ops LINUX_BACKPORT(netdev_attach_ops)
+ void netdev_attach_ops(struct net_device *dev,
+ 		       const struct net_device_ops *ops);
+ 
+@@ -287,6 +288,7 @@ static inline struct net_device_stats *dev_get_stats(struct net_device *dev)
+ 
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23))
+ #if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
++#define usb_unpoison_anchored_urbs LINUX_BACKPORT(usb_unpoison_anchored_urbs)
+ extern void usb_unpoison_anchored_urbs(struct usb_anchor *anchor);
+ #endif /* CONFIG_USB */
  #endif
+@@ -298,8 +300,11 @@ extern void usb_unpoison_anchored_urbs(struct usb_anchor *anchor);
+ }							\
+ )
+ 
++#define eth_mac_addr LINUX_BACKPORT(eth_mac_addr)
+ extern int eth_mac_addr(struct net_device *dev, void *p);
++#define eth_change_mtu LINUX_BACKPORT(eth_change_mtu)
+ extern int eth_change_mtu(struct net_device *dev, int new_mtu);
++#define eth_validate_addr LINUX_BACKPORT(eth_validate_addr)
+ extern int eth_validate_addr(struct net_device *dev);
+ 
+ #ifdef CONFIG_NET_NS
+@@ -327,6 +332,7 @@ static inline struct net *read_pnet(struct net * const *pnet)
+ 
  #endif
  
--/*
-- * These changes allow us to backport and forward port
-- * the driver/net/mdio module. What we do is simply
-- * rename the exported symbols to other symbols and
-- * rely on the fact that compat-drivers will take care
-- * of renaming that module. This allows in-place drivers
-- * to use the old module and have the newer supplied
-- * drivers through compat-drivers to use the new bacported
-- * module.
-- *
-- * XXX: maybe we should have a COMPAT_EXPORT_SYMBOL() that
-- * takes care of renaming the symbols with a compat_ prefix?
-- * There are other ideas of using a separate namespace for
-- * modules supplied by compat -- someone already did the work
-- * but never sent the patches ;) who are you out there ?
-- */
--#define mdio45_probe			compat_mdio45_probe
--#define mdio_set_flag			compat_mdio_set_flag
--#define mdio45_links_ok			compat_mdio45_links_ok
--#define mdio45_nway_restart		compat_mdio45_nway_restart
--#define mdio45_ethtool_gset_npage	compat_mdio45_ethtool_gset_npage
--#define mdio45_ethtool_spauseparam_an	compat_mdio45_ethtool_spauseparam_an
--#define mdio_mii_ioctl			compat_mdio_mii_ioctl
-+#define mdio45_probe LINUX_BACKPORT(mdio45_probe)
-+#define mdio_set_flag LINUX_BACKPORT(mdio_set_flag)
-+#define mdio45_links_ok LINUX_BACKPORT(mdio45_links_ok)
-+#define mdio45_nway_restart LINUX_BACKPORT(mdio45_nway_restart)
-+
-+#define mdio45_ethtool_gset_npage LINUX_BACKPORT(mdio45_ethtool_gset_npage)
-+#define mdio45_ethtool_spauseparam_an LINUX_BACKPORT(mdio45_ethtool_spauseparam_an)
-+#define mdio_mii_ioctl LINUX_BACKPORT(mdio_mii_ioctl)
++#define init_dummy_netdev LINUX_BACKPORT(init_dummy_netdev)
+ extern int		init_dummy_netdev(struct net_device *dev);
  
- #ifndef NETDEV_PRE_UP
- #define NETDEV_PRE_UP		0x000D
-@@ -245,7 +224,9 @@ typedef struct {
- 	long long counter;
- } atomic64_t;
- 
-+#define atomic64_read LINUX_BACKPORT(atomic64_read)
- extern long long atomic64_read(const atomic64_t *v);
-+#define atomic64_add_return LINUX_BACKPORT(atomic64_add_return)
- extern long long atomic64_add_return(long long a, atomic64_t *v);
- 
- #define atomic64_inc_return(v)          atomic64_add_return(1LL, (v))
+ #else /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29)) */
 -- 
 1.7.10.4
 
