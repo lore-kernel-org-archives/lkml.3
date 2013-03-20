@@ -1,52 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3CTP3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:29:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42641 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab3CTP3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:29:53 -0400
-Date: Wed, 20 Mar 2013 16:29:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Lijo Antony <lijo.kernel@gmail.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>, Ben Skeggs <bskeggs@redhat.com>,
-        Lucas Stach <dev@lynxeye.de>, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [Nouveau] nouveau lockdep splat
-Message-ID: <20130320152948.GD15471@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Lijo Antony <lijo.kernel@gmail.com>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Ben Skeggs <bskeggs@redhat.com>, Lucas Stach <dev@lynxeye.de>,
-	nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, Dave Airlie <airlied@linux.ie>
-References: <20130304211608.GD22274@pd.tnic>
- <1362501052.1933.2.camel@antimon>
- <20130319202432.GC4570@pd.tnic>
- <1363725620.3413.29.camel@thor.lan>
- <5149589D.6090403@gmail.com>
- <5149D467.7030908@gmail.com>
+	id S933099Ab3CTPaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:30:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41327 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757531Ab3CTP36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 11:29:58 -0400
+Date: Wed, 20 Mar 2013 15:29:51 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alice Ferrazzi <alice.ferrazzi@gmail.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: serial2002: fixed consistent spacing
+ issue
+Message-ID: <20130320152951.GO21522@ZenIV.linux.org.uk>
+References: <1363782411-11729-1-git-send-email-alice.ferrazzi@gmail.com>
+ <20130320124753.GZ9138@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5149D467.7030908@gmail.com>
+In-Reply-To: <20130320124753.GZ9138@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 07:23:19PM +0400, Lijo Antony wrote:
-> # bad: [fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb] Merge branch
-> 'drm-next' of git://people.freedesktop.org/~airlied/linux
-> git bisect bad fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb
+On Wed, Mar 20, 2013 at 03:47:53PM +0300, Dan Carpenter wrote:
 
-This is a merge commit which means something went wrong along the way of
-the bisection.
+> The original code here needs to broken up into functions so it isn't
+> squashed up against the 80 character limit.
 
--- 
-Regards/Gruss,
-    Boris.
+I'd say what needs to be done to the original code...
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Observation 1:
+if (foo) {
+	A /* two lines */
+} else {
+	B /* huge pile of shite */
+}
+return result;
+
+is equivalent to
+
+if (foo) {
+	A
+	return result;
+}
+B
+return result;
+
+Observation 2:
+while (1) {
+	A	/* a couple of lines */
+	if (foo) {
+		break;
+	} else {
+		B /* huge pile of shite */
+	}
+}
+is equivalent to
+while (1) {
+	A
+	if (foo)
+		break;
+	B
+}
+
+Observation 3:
+while (1) {
+	A	/* moderate pile of shite, assigning foo */
+	if (foo) {
+		B /* huge pile of shite */
+	}
+}
+is equivalent to
+while (1) {
+	A
+	if (!foo)
+		continue;
+	B
+}
+
+Observation 4: functions are there for purpose.  When you have two identical
+piles of garbage (avert your eyes, or risk taking another look at your dinner)
+such as
+				int unit, sign, min;
+				unit =
+				    (data.value >> 10) &
+				    0x7;
+				sign =
+				    (data.value >> 13) &
+				    0x1;
+				min =
+				    (data.value >> 14) &
+				    0xfffff;
+
+				switch (unit) {
+				case 0:{
+						min =
+						    min
+						    *
+						    1000000;
+					}
+					break;
+				case 1:{
+						min =
+						    min
+						    *
+						    1000;
+					}
+					break;
+				case 2:{
+						min =
+						    min
+						    * 1;
+					}
+					break;
+				}
+				if (sign)
+					min = -min;
+
+you just might consider turning that pile of excrements into a helper
+function.  Incidentally, min = min * 1 is somewhat, er, pointless...
+
+Observation 5:
+for (i = 0; i <= 4; i++) {
+{
+	switch (i) {
+	case 0: c = non_NULL_1; ... break;
+	case 1: c = non_NULL_2; ... break;
+	case 2: c = non_NULL_3; ... break;
+	case 3: c = non_NULL_4; ... break;
+	case 4: c = non_NULL_5; ... break;
+	default: c = NULL; break;
+	}
+	if (c) {
+		pile_of_shite
+	}
+}
+might, perhaps, be taking defensive programming a bit too far...
+
+Observation 6:
+the Vogon whose brain has produced that code up had been brought up on Pascal,
+Ada or something worse, and had been badly traumatized by semantics of switch
+and break.
+switch (foo) {
+	case 0: {
+		bar = baz;
+	} break;
+	case 1: {
+	.....
+}
+is not quite conventional for C.
+
+Observation 7: down, not across...
