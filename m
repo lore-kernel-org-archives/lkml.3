@@ -1,130 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933031Ab3CTNK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:10:27 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:41225 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab3CTNJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:09:14 -0400
-From: tal.tchwella@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: tchwella@mit.edu
-Subject: [PATCH 1/3] enabled chroot for all users
-Date: Wed, 20 Mar 2013 06:09:05 -0700
-Message-Id: <1363784947-24060-2-git-send-email-tal.tchwella@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363784947-24060-1-git-send-email-tal.tchwella@gmail.com>
-References: <1363784947-24060-1-git-send-email-tal.tchwella@gmail.com>
+	id S932773Ab3CTNM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:12:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40557 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754806Ab3CTNM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:12:57 -0400
+Date: Wed, 20 Mar 2013 15:12:40 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <notasas@gmail.com>
+Subject: Re: [PATCH 0/5] usb: musb/otg: cleanup and fixes
+Message-ID: <20130320131240.GA15157@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363164430-19118-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+In-Reply-To: <1363164430-19118-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tal Tchwella <tchwella@mit.edu>
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch enables chroot for all users, not just root users,
-by disabling the appropriate checks in fs/open.c.
-It also disables nested chroots by non-root users,
-so they will not be able to break out of a chroot using classic techniques.
+On Wed, Mar 13, 2013 at 02:17:05PM +0530, Kishon Vijay Abraham I wrote:
+> This series has some misc cleanup and fixes. The fix solves the cold
+> plug issue in omap3 which some have reported. Developed these patches on
+> Linux 3.9-rc2 after applying http://www.spinics.net/lists/linux-usb/msg81=
+563.html
+> (Grazvydas Ignotas patch series)
+>=20
+> Tested for g_zero enumeration in pandaboard and beagleboard in both
+> cold plug and hot plug case. Any kind of testing for this series is welco=
+me.
+>=20
+> Kishon Vijay Abraham I (5):
+>   usb: musb: omap: remove the check before calling otg_set_vbus
+>   usb: musb: omap: always glue have the correct vbus/id status
+>   usb: otg: twl4030: use devres API for regulator get and request irq
+>   usb: musb: omap: add usb_phy_init in omap2430_musb_init
+>   usb: otg: twl4030: fix cold plug on OMAP3
+>=20
+>  drivers/usb/musb/omap2430.c   |   22 ++++++++++------------
+>  drivers/usb/otg/twl4030-usb.c |   35 ++++++++++++-----------------------
+>  2 files changed, 22 insertions(+), 35 deletions(-)
 
-Signed-off-by: Tal Tchwella <tchwella@mit.edu>
----
- fs/exec.c             |    3 +++
- fs/open.c             |    8 ++++++--
- include/linux/sched.h |   12 ++++++++++++
- init/main.c           |    1 +
- kernel/fork.c         |    2 ++
- 5 files changed, 24 insertions(+), 2 deletions(-)
+this needs to be rebased against my 'next' branch.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 7d27def..e2303ef 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1299,6 +1299,9 @@ int prepare_binprm(struct linux_binprm *bprm)
- 	    !current->no_new_privs) {
- 		/* Set-uid? */
- 		if (mode & S_ISUID) {
-+			/* chroot by a regular, non root, user? */
-+			if (current->user_chroot == CHROOT_USER_MODE)
-+				return -EACCES;
- 			bprm->per_clear |= PER_CLEAR_ON_SETID;
- 			bprm->cred->euid = inode->i_uid;
- 		}
-diff --git a/fs/open.c b/fs/open.c
-index a47a0a7..82832d8 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -435,9 +435,13 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
- 	if (error)
- 		goto dput_and_out;
- 
--	error = -EPERM;
-+	/* Are we in a nested chroot by a regular, non root, user? */
-+	if (current->user_chroot != CHROOT_USER_MODE)
-+		current->user_chroot = CHROOT_ROOT_MODE;
-+
- 	if (!capable(CAP_SYS_CHROOT))
--		goto dput_and_out;
-+		current->user_chroot = CHROOT_USER_MODE;
-+
- 	error = security_path_chroot(&path);
- 	if (error)
- 		goto dput_and_out;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9e960d4..315e6fe 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -30,6 +30,16 @@
- #define CLONE_NEWNET		0x40000000	/* New network namespace */
- #define CLONE_IO		0x80000000	/* Clone io context */
- 
-+ /*
-+  * chroot syscall Modes: INIT, USER, ROOT
-+  * Init mode is to be used only by main.
-+  * User mode is initialized when a non-root user tries to enter chroot mode.
-+  * ROOT mode is the normal mode of operation for chroot.
-+  */
-+#define CHROOT_INIT		0
-+#define CHROOT_USER_MODE	1
-+#define CHROOT_ROOT_MODE	2
-+
- /*
-  * Scheduling policies
-  */
-@@ -1232,6 +1242,8 @@ struct task_struct {
- 	unsigned int flags;	/* per process flags, defined below */
- 	unsigned int ptrace;
- 
-+	unsigned int user_chroot;
-+
- #ifdef CONFIG_SMP
- 	struct llist_node wake_entry;
- 	int on_cpu;
-diff --git a/init/main.c b/init/main.c
-index 0ec0731..044c655 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -781,6 +781,7 @@ static noinline int init_post(void)
- 
- 
- 	current->signal->flags |= SIGNAL_UNKILLABLE;
-+	current->user_chroot = CHROOT_INIT;
- 
- 	if (ramdisk_execute_command) {
- 		run_init_process(ramdisk_execute_command);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0269b2a..7f6d662 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -276,6 +276,8 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 	if (err)
- 		goto out;
- 
-+	tsk->user_chroot = orig->user_chroot;
-+
- 	tsk->stack = ti;
- 
- 	setup_thread_stack(tsk, orig);
--- 
-1.7.9.5
+--=20
+balbi
 
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRSbXIAAoJEIaOsuA1yqRErUkP/AjduTc5xTRXX/YYPnWfHLnF
+bSFKycxf19XSSserz3nX1q+sSPqQpCIwxFhhHZxTMjou4SAsMtjfSMX9SHBfc4jx
+TG1rElChK4h0DRUKRTOC43484q6WCUGUwnRRvaTmRz5sAJaAI377safl8wCUSt3T
+zWyjqDqHASJWjIr+ouDdUs5SWJ6fYEuRQCjBomva2n6I0yS/7uEpemx3R7llXHI/
+MilE/Hy+XIlTY7Kv0IjhfzMp6TFev7qXCCEgy0Gi0ylXWHJ6KKrTNozDau3iSYBH
+qSxfUFS/PU6WguWbZ9l+pr2XIhe58ogiiOTRJheYLZLRQJhxHeCF+oOC0uyBUmRN
+EQakgWxnDc4eOiHt2tP1RlowOXwSi9/aD91htZ03zVUJD2CWoJ7vCv6Cmu1q80z/
+oWXYh666Na5N9B9S0W6QIvaP0vXWNW4AQ69hYp3M0gf0betUPphMuwfEqYnqtQL2
+ChH7otbxhjBCkPHsWrcI6750fQFZVuVKPi/gB7Rf8XV2Q0zCzrjwhVJknj+DMoZK
+V3SA0a6AbZyVmRk2avhEOSi/1mHFIaZNXMQN8soOU16ZUMVV9rTaUSaphlqgQ8wc
+/vnpb2Xkn2PTp3i0sLLVm9EnEeDwnS9Xzxp9SW4xWlwJhBjugZbNwCVdb1INi6Ba
+Gd7ASLtLpETWUHUC1ZOd
+=c7nc
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
