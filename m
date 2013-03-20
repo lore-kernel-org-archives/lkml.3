@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab3CTR01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:26:27 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:49608 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695Ab3CTR0Z (ORCPT
+	id S1755153Ab3CTR3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:29:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59113 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3CTR3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:26:25 -0400
-Message-ID: <5149F13E.7060901@free-electrons.com>
-Date: Wed, 20 Mar 2013 18:26:22 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv3 09/10] clocksource: time-armada-370-xp: Divorce from
- local timer API
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-10-git-send-email-sboyd@codeaurora.org> <5149ED53.5060002@free-electrons.com> <5149EFFA.1050408@codeaurora.org>
-In-Reply-To: <5149EFFA.1050408@codeaurora.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Mar 2013 13:29:04 -0400
+Date: Wed, 20 Mar 2013 13:29:01 -0400 (EDT)
+Message-Id: <20130320.132901.1638904507644521607.davem@davemloft.net>
+To: fweisbec@gmail.com
+Cc: cmetcalf@tilera.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gilad@benyossef.com, sasha.levin@oracle.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, yoshfuji@linux-ipv6.org
+Subject: Re: [PATCH] dynticks: avoid flow_cache_flush() interrupting every
+ core
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAFTL4hwUuRdxUNF0rA9DVNREyBign6FRnAXFp_W+-YfYUfzU9Q@mail.gmail.com>
+References: <201303192143.r2JLhZIX020469@farm-0021.internal.tilera.com>
+	<20130320.121704.1797978839297064162.davem@davemloft.net>
+	<CAFTL4hwUuRdxUNF0rA9DVNREyBign6FRnAXFp_W+-YfYUfzU9Q@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 20 Mar 2013 10:29:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 06:20 PM, Stephen Boyd wrote:
-> On 03/20/13 10:09, Gregory CLEMENT wrote:
->> On 03/13/2013 07:17 PM, Stephen Boyd wrote:
->>> Separate the armada 370xp local timers from the local timer API.
->>> This will allow us to remove ARM local timer support in the near
->>> future and makes this driver multi-architecture friendly.
->> At first view the code looks good, but when I applied your patch set on
->> linux-next, build it and run it on a Armada XP based board (AX3 with 2 cores),
->> it crashed:
-> [...]
->> Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
->> Modules linked in:
->> CPU: 0    Not tainted  (3.9.0-rc3-next-20130319-00010-g728b448 #153)
->> PC is at 0xe92d45f0
->> LR is at armada_370_xp_timer_interrupt+0x3c/0x4c
->> pc : [<e92d45f0>]    lr : [<c023c2bc>]    psr: 600001d3
->> sp : c0635eb8  ip : 00000000  fp : c063c3f0
->> r10: 000003ff  r9 : 00000000  r8 : 00000010
->> r7 : c22b3c40  r6 : ef007c00  r5 : c0640fcc  r4 : c0053e30
->> r3 : e92d45f0  r2 : fffffffe  r1 : c22b3c40  r0 : c0053e30
->> Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
->> Control: 10c53c7d  Table: 0000406a  DAC: 00000015
->> Process swapper/0 (pid: 0, stack limit = 0xc0634238)
->> Stack: (0xc0635eb8 to 0xc0636000)
->> 5ea0:                                                       ef004c80 c0063224
->> 5ec0: 00000010 00000010 00000000 c0660ac0 c0635f18 c005fcb8 c0632b90 c000ed94
->> 5ee0: c0313c60 60000153 00000001 c00085a8 c0313c54 c0313c60 60000153 ffffffff
->> 5f00: c0635f4c 00000000 562f5842 c06360c0 00000000 c000db60 0000001a ffff8ad0
->> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
->> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
->> 5f60: 00000021 00000000 00000003 00000004 0000006e c065fcc0 c067924c c063ceb8
->> 5f80: c063cc84 c006d8c0 00000005 c065fcc0 c067924c c0421764 c22ad780 c063c42c
->> 5fa0: 562f5842 c063cca8 c06605c0 c04379c0 c22ad780 00000000 562f5842 00000000
->> 5fc0: 00000000 c0417754 ffffffff ffffffff c04172dc 00000000 00000000 c04379c0
->> 5fe0: 10c53c7d c063c414 c04379bc c063febc 0000406a 00008074 00000000 00000000
->> [<c023c2bc>] (armada_370_xp_timer_interrupt+0x3c/0x4c) from [<c0063224>] (handle_percpu_devid_irq+0x64/0x80)
->> [<c0063224>] (handle_percpu_devid_irq+0x64/0x80) from [<c005fcb8>] (generic_handle_irq+0x20/0x30)
->> [<c005fcb8>] (generic_handle_irq+0x20/0x30) from [<c000ed94>] (handle_IRQ+0x38/0x90)
->> [<c000ed94>] (handle_IRQ+0x38/0x90) from [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0)
->> [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0) from [<c000db60>] (__irq_svc+0x40/0x50)
->> Exception stack(0xc0635f18 to 0xc0635f60)
->> 5f00:                                                       0000001a ffff8ad0
->> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
->> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
->> [<c000db60>] (__irq_svc+0x40/0x50) from [<c0313c60>] (calibrate_delay+0x378/0x528)
->> [<c0313c60>] (calibrate_delay+0x378/0x528) from [<c0417754>] (start_kernel+0x250/0x2dc)
->> [<c0417754>] (start_kernel+0x250/0x2dc) from [<00008074>] (0x8074)
->> Code: 1fe7deb7 cd5772dd fff5692e ed55f79e (7ed5a5f7)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Wed, 20 Mar 2013 17:37:04 +0100
+
+> 2013/3/20 David Miller <davem@davemloft.net>:
+>> From: Chris Metcalf <cmetcalf@tilera.com>
+>> Date: Tue, 19 Mar 2013 17:35:58 -0400
 >>
+>>> Previously, if you did an "ifconfig down" or similar on one core, and
+>>> the kernel had CONFIG_XFRM enabled, every core would be interrupted to
+>>> check its percpu flow list for items that could be garbage collected.
+>>>
+>>> With this change, we generate a mask of cores that actually have any
+>>> percpu items, and only interrupt those cores.  When we are trying to
+>>> isolate a set of cpus from interrupts, this is important to do.
+>>>
+>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>>> ---
+>>> This change stands alone so could be taken into the net tree if
+>>> desired, but it is most useful in the context of Frederic Weisbecker's
+>>> linux-dynticks work.  So it could be taken up through either tree,
+>>> but it certainly needs sign-off from someone familiar with net/core/flow.c.
 >>
+>> I'm find with this going into the dynticks changes:
 >>
->> I am trying to figure out what happened.
+>> Acked-by: David S. Miller <davem@davemloft.net>
 > 
-> Argh. Stupid casting again. Can you try this?
+> At it looks pretty self-contained, can that perhaps go through the
+> networking tree?
 
-Our emails  must have crossed, your fix is also fine :)
-
-
-> 
-> ---8<----
-> 
-> diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-> index ee2e50c5..a9bf37a 100644
-> --- a/drivers/clocksource/time-armada-370-xp.c
-> +++ b/drivers/clocksource/time-armada-370-xp.c
-> @@ -150,7 +150,7 @@ static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
->         /*
->          * ACK timer interrupt and call event handler.
->          */
-> -       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-> +       struct clock_event_device *evt = dev_id;
->  
->         writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
->         evt->event_handler(evt);
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Fair enough, applied to net-next, thanks.
