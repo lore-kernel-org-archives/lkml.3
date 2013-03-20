@@ -1,54 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab3CTL6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:58:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45919 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756056Ab3CTL6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:58:35 -0400
-Date: Wed, 20 Mar 2013 12:58:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: ML netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: 3.9-rc3 forcedeth lockdep splat with netconsole
-Message-ID: <20130320115831.GC15471@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	ML netdev <netdev@vger.kernel.org>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20130320110150.GB15471@pd.tnic>
+	id S932710Ab3CTMAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 08:00:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1474 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab3CTMAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 08:00:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 20 Mar 2013 04:53:29 -0700
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: <mturquette@linaro.org>, <hdoyu@nvidia.com>, <t.figa@samsung.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH V3] clk: Add composite clock type
+Date: Wed, 20 Mar 2013 17:30:34 +0530
+Message-ID: <1363780834-1289-1-git-send-email-pgaikwad@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130320110150.GB15471@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 12:01:51PM +0100, Borislav Petkov wrote:
-> Hi,
-> 
-> when trying to log stuff with netconsole, I get the following:
-> 
-> [ … ]
-> 
-> [    2.036977] netpoll: netconsole: device eth0 not up yet, forcing it
-> [    2.037632] forcedeth 0000:00:08.0: irq 42 for MSI/MSI-X
-> [    2.037763] forcedeth 0000:00:08.0 eth0: MSI enabled
-> [    2.038074] forcedeth 0000:00:08.0 eth0: no link during initialization
-> [    2.780061] forcedeth 0000:00:08.0 eth0: link up
+Not all clocks are required to be decomposed into basic clock
+types but at the same time want to use the functionality
+provided by these basic clock types instead of duplicating.
 
-Hehe,
+For example, Tegra SoC has ~100 clocks which can be decomposed
+into Mux -> Div -> Gate clock types making the clock count to
+~300. Also, parent change operation can not be performed on gate
+clock which forces to use mux clock in driver if want to change
+the parent.
 
-so it is actually funny to see the things lockdep is warning about,
-in action: I was just able to hang the box with the last line above
-appearing on the screen.
+Instead aggregate the basic clock types functionality into one
+clock and just use this clock for all operations. This clock
+type re-uses the functionality of basic clock types and not
+limited to basic clock types but any hardware-specific
+implementation.
 
-Fun.
+Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+---
 
+Changes from V2:
+- Move clk_ops inside clk_composite instead of dynamically allocation.
+
+---
+ drivers/clk/Makefile         |    1 +
+ drivers/clk/clk-composite.c  |  201 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk-provider.h |   31 +++++++
+ 3 files changed, 233 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/clk-composite.c
+
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 0147022..097ed01 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
++obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ 
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+new file mode 100644
+index 0000000..097dee4
+--- /dev/null
++++ b/drivers/clk/clk-composite.c
+@@ -0,0 +1,201 @@
++/*
++ * Copyright (c) 2013 NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++
++#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
++
++static u8 clk_composite_get_parent(struct clk_hw *hw)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *mux_ops = composite->mux_ops;
++	struct clk_hw *mux_hw = composite->mux_hw;
++
++	mux_hw->clk = hw->clk;
++
++	return mux_ops->get_parent(mux_hw);
++}
++
++static int clk_composite_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *mux_ops = composite->mux_ops;
++	struct clk_hw *mux_hw = composite->mux_hw;
++
++	mux_hw->clk = hw->clk;
++
++	return mux_ops->set_parent(mux_hw, index);
++}
++
++static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
++					    unsigned long parent_rate)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *div_ops = composite->div_ops;
++	struct clk_hw *div_hw = composite->div_hw;
++
++	div_hw->clk = hw->clk;
++
++	return div_ops->recalc_rate(div_hw, parent_rate);
++}
++
++static long clk_composite_round_rate(struct clk_hw *hw, unsigned long rate,
++				  unsigned long *prate)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *div_ops = composite->div_ops;
++	struct clk_hw *div_hw = composite->div_hw;
++
++	div_hw->clk = hw->clk;
++
++	return div_ops->round_rate(div_hw, rate, prate);
++}
++
++static int clk_composite_set_rate(struct clk_hw *hw, unsigned long rate,
++			       unsigned long parent_rate)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *div_ops = composite->div_ops;
++	struct clk_hw *div_hw = composite->div_hw;
++
++	div_hw->clk = hw->clk;
++
++	return div_ops->set_rate(div_hw, rate, parent_rate);
++}
++
++static int clk_composite_is_enabled(struct clk_hw *hw)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *gate_ops = composite->gate_ops;
++	struct clk_hw *gate_hw = composite->gate_hw;
++
++	gate_hw->clk = hw->clk;
++
++	return gate_ops->is_enabled(gate_hw);
++}
++
++static int clk_composite_enable(struct clk_hw *hw)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *gate_ops = composite->gate_ops;
++	struct clk_hw *gate_hw = composite->gate_hw;
++
++	gate_hw->clk = hw->clk;
++
++	return gate_ops->enable(gate_hw);
++}
++
++static void clk_composite_disable(struct clk_hw *hw)
++{
++	struct clk_composite *composite = to_clk_composite(hw);
++	const struct clk_ops *gate_ops = composite->gate_ops;
++	struct clk_hw *gate_hw = composite->gate_hw;
++
++	gate_hw->clk = hw->clk;
++
++	gate_ops->disable(gate_hw);
++}
++
++struct clk *clk_register_composite(struct device *dev, const char *name,
++			const char **parent_names, int num_parents,
++			struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
++			struct clk_hw *div_hw, const struct clk_ops *div_ops,
++			struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
++			unsigned long flags)
++{
++	struct clk *clk;
++	struct clk_init_data init;
++	struct clk_composite *composite;
++	struct clk_ops *clk_composite_ops;
++
++	composite = kzalloc(sizeof(*composite), GFP_KERNEL);
++	if (!composite) {
++		pr_err("%s: could not allocate composite clk\n", __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	init.name = name;
++	init.flags = flags | CLK_IS_BASIC;
++	init.parent_names = parent_names;
++	init.num_parents = num_parents;
++
++	clk_composite_ops = &composite->ops;
++
++	if (mux_hw && mux_ops) {
++		if (!mux_ops->get_parent || !mux_ops->set_parent) {
++			clk = ERR_PTR(-EINVAL);
++			goto err;
++		}
++
++		composite->mux_hw = mux_hw;
++		composite->mux_ops = mux_ops;
++		clk_composite_ops->get_parent = clk_composite_get_parent;
++		clk_composite_ops->set_parent = clk_composite_set_parent;
++	}
++
++	if (div_hw && div_ops) {
++		if (!div_ops->recalc_rate || !div_ops->round_rate ||
++		    !div_ops->set_rate) {
++			clk = ERR_PTR(-EINVAL);
++			goto err;
++		}
++
++		composite->div_hw = div_hw;
++		composite->div_ops = div_ops;
++		clk_composite_ops->recalc_rate = clk_composite_recalc_rate;
++		clk_composite_ops->round_rate = clk_composite_round_rate;
++		clk_composite_ops->set_rate = clk_composite_set_rate;
++	}
++
++	if (gate_hw && gate_ops) {
++		if (!gate_ops->is_enabled || !gate_ops->enable ||
++		    !gate_ops->disable) {
++			clk = ERR_PTR(-EINVAL);
++			goto err;
++		}
++
++		composite->gate_hw = gate_hw;
++		composite->gate_ops = gate_ops;
++		clk_composite_ops->is_enabled = clk_composite_is_enabled;
++		clk_composite_ops->enable = clk_composite_enable;
++		clk_composite_ops->disable = clk_composite_disable;
++	}
++
++	init.ops = clk_composite_ops;
++	composite->hw.init = &init;
++
++	clk = clk_register(dev, &composite->hw);
++	if (IS_ERR(clk))
++		goto err;
++
++	if (composite->mux_hw)
++		composite->mux_hw->clk = clk;
++
++	if (composite->div_hw)
++		composite->div_hw->clk = clk;
++
++	if (composite->gate_hw)
++		composite->gate_hw->clk = clk;
++
++	return clk;
++
++err:
++	kfree(composite);
++	return clk;
++}
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7f197d7..33e7e64 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -325,6 +325,37 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		unsigned int mult, unsigned int div);
+ 
++/***
++ * struct clk_composite - aggregate clock of mux, divider and gate clocks
++ *
++ * @hw:		handle between common and hardware-specific interfaces
++ * @mux_hw:	handle between composite and hardware-specifix mux clock
++ * @div_hw:	handle between composite and hardware-specifix divider clock
++ * @gate_hw:	handle between composite and hardware-specifix gate clock
++ * @mux_ops:	clock ops for mux
++ * @div_ops:	clock ops for divider
++ * @gate_ops:	clock ops for gate
++ */
++struct clk_composite {
++	struct clk_hw	hw;
++	struct clk_ops	ops;
++
++	struct clk_hw	*mux_hw;
++	struct clk_hw	*div_hw;
++	struct clk_hw	*gate_hw;
++
++	const struct clk_ops	*mux_ops;
++	const struct clk_ops	*div_ops;
++	const struct clk_ops	*gate_ops;
++};
++
++struct clk *clk_register_composite(struct device *dev, const char *name,
++		const char **parent_names, int num_parents,
++		struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
++		struct clk_hw *div_hw, const struct clk_ops *div_ops,
++		struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
++		unsigned long flags);
++
+ /**
+  * clk_register - allocate a new clock, register it and return an opaque cookie
+  * @dev: device that is registering this clock
 -- 
-Regards/Gruss,
-    Boris.
+1.7.4.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
