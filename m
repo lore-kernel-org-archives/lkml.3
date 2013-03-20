@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934342Ab3CTJXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:23:31 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:60077 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933907Ab3CTJX2 (ORCPT
+	id S934446Ab3CTJXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:23:37 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:54041 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933907Ab3CTJXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:23:28 -0400
+	Wed, 20 Mar 2013 05:23:32 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 06/30] compat: embrace LINUX_BACKPORT() for v2.6.27
-Date: Wed, 20 Mar 2013 02:22:31 -0700
-Message-Id: <1363771375-31715-7-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 07/30] compat: embrace LINUX_BACKPORT() for v2.6.28
+Date: Wed, 20 Mar 2013 02:22:32 -0700
+Message-Id: <1363771375-31715-8-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,40 +53,79 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- include/linux/compat-2.6.27.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/compat-2.6.28.h |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/compat-2.6.27.h b/include/linux/compat-2.6.27.h
-index 2eae9f2..b71a3b5 100644
---- a/include/linux/compat-2.6.27.h
-+++ b/include/linux/compat-2.6.27.h
-@@ -87,6 +87,7 @@ static inline bool qdisc_all_tx_empty(const struct net_device *dev)
- 	return skb_queue_empty(&dev->qdisc->q);
- }
+diff --git a/include/linux/compat-2.6.28.h b/include/linux/compat-2.6.28.h
+index 97f2066..3b5f3ea 100644
+--- a/include/linux/compat-2.6.28.h
++++ b/include/linux/compat-2.6.28.h
+@@ -38,6 +38,7 @@ struct hid_device_id {
+ #include <linux/pci_regs.h>
+ #include <linux/platform_device.h>
  
-+#define pci_pme_capable LINUX_BACKPORT(pci_pme_capable)
- bool pci_pme_capable(struct pci_dev *dev, pci_power_t state);
++#define platform_device_register_data LINUX_BACKPORT(platform_device_register_data)
+ extern struct platform_device *platform_device_register_data(struct device *,
+ 		const char *, int, const void *, size_t);
  
- /*
-@@ -207,7 +208,9 @@ static inline void list_splice_tail_init(struct list_head *list,
- }
+@@ -83,6 +84,7 @@ typedef u32 phys_addr_t;
  
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24))
-+#define mmc_align_data_size LINUX_BACKPORT(mmc_align_data_size)
- extern unsigned int mmc_align_data_size(struct mmc_card *, unsigned int);
-+#define sdio_align_size LINUX_BACKPORT(sdio_align_size)
- extern unsigned int sdio_align_size(struct sdio_func *func, unsigned int sz);
- #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24) */
+ /* From : include/pcmcia/ds.h */
+ /* loop CIS entries for valid configuration */
++#define pcmcia_loop_config LINUX_BACKPORT(pcmcia_loop_config)
+ int pcmcia_loop_config(struct pcmcia_device *p_dev,
+ 		       int	(*conf_check)	(struct pcmcia_device *p_dev,
+ 						 cistpl_cftable_entry_t *cfg,
+@@ -98,19 +100,24 @@ int pcmcia_loop_config(struct pcmcia_device *p_dev,
  
-@@ -251,6 +254,8 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
+ #if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
+ #if 0
++#define usb_poison_urb LINUX_BACKPORT(usb_poison_urb)
+ extern void usb_poison_urb(struct urb *urb);
+ #endif
++#define usb_unpoison_urb LINUX_BACKPORT(usb_unpoison_urb)
+ extern void usb_unpoison_urb(struct urb *urb);
  
- #endif /* arm */
+ #if 0
++#define usb_poison_anchored_urbs LINUX_BACKPORT(usb_poison_anchored_urbs)
+ extern void usb_poison_anchored_urbs(struct usb_anchor *anchor);
+ #endif
  
-+#define debugfs_remove_recursive LINUX_BACKPORT(debugfs_remove_recursive)
-+
- #if defined(CONFIG_DEBUG_FS)
- void debugfs_remove_recursive(struct dentry *dentry);
- #else
++#define usb_anchor_empty LINUX_BACKPORT(usb_anchor_empty)
+ extern int usb_anchor_empty(struct usb_anchor *anchor);
+ #endif /* CONFIG_USB */
+ #endif
+ 
+ 
++#define pci_ioremap_bar LINUX_BACKPORT(pci_ioremap_bar)
+ void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar);
+ 
+ /**
+@@ -266,11 +273,7 @@ static inline void skb_queue_splice_tail(const struct sk_buff_head *list,
+ 
+ #endif
+ 
+-/* openSuse includes round_jiffies_up in it's kernel 2.6.27.
+- * This is needed to prevent conflicts with the openSuse definition.
+- */
+-#define round_jiffies_up backport_round_jiffies_up
+-
++#define round_jiffies_up LINUX_BACKPORT(round_jiffies_up)
+ unsigned long round_jiffies_up(unsigned long j);
+ 
+ extern void v2_6_28_skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page,
+@@ -279,9 +282,11 @@ extern void v2_6_28_skb_add_rx_frag(struct sk_buff *skb, int i, struct page *pag
+ #define wake_up_interruptible_poll(x, m)			\
+ 	__wake_up(x, TASK_INTERRUPTIBLE, 1, (void *) (m))
+ 
++#define n_tty_ioctl_helper LINUX_BACKPORT(n_tty_ioctl_helper)
+ extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 		       unsigned int cmd, unsigned long arg);
+ 
++#define pci_wake_from_d3 LINUX_BACKPORT(pci_wake_from_d3)
+ int pci_wake_from_d3(struct pci_dev *dev, bool enable);
+ 
+ #define alloc_workqueue(name, flags, max_active) __create_workqueue(name, flags, max_active)
 -- 
 1.7.10.4
 
