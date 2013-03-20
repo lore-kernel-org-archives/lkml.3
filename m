@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab3CTQSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:18:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45304 "EHLO mx2.suse.de"
+	id S1758004Ab3CTQUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:20:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52899 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab3CTQSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:18:51 -0400
-Date: Wed, 20 Mar 2013 17:18:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130320161847.GD27375@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
+	id S1752090Ab3CTQUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:20:07 -0400
+Date: Wed, 20 Mar 2013 18:19:48 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 01/21] usb: phy: nop: Add some parameters to platform
+ data
+Message-ID: <20130320161947.GJ1567@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
+ <1363794300-31526-2-git-send-email-rogerq@ti.com>
+ <20130320155555.GG1567@arwen.pp.htv.fi>
+ <20130320161324.GL16413@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W/D3X8sky0X3AmG5"
 Content-Disposition: inline
-In-Reply-To: <1363525456-10448-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <20130320161324.GL16413@atomide.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 17-03-13 13:04:07, Mel Gorman wrote:
-[...]
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 88c5fed..4835a7a 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->  }
->  
->  /*
-> + * kswapd shrinks the zone by the number of pages required to reach
-> + * the high watermark.
-> + */
-> +static void kswapd_shrink_zone(struct zone *zone,
-> +			       struct scan_control *sc,
-> +			       unsigned long lru_pages)
-> +{
-> +	unsigned long nr_slab;
-> +	struct reclaim_state *reclaim_state = current->reclaim_state;
-> +	struct shrink_control shrink = {
-> +		.gfp_mask = sc->gfp_mask,
-> +	};
-> +
-> +	/* Reclaim above the high watermark. */
-> +	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+--W/D3X8sky0X3AmG5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, so the cap is at high watermark which sounds OK to me, although I
-would expect balance_gap being considered here. Is it not used
-intentionally or you just wanted to have a reasonable upper bound?
+On Wed, Mar 20, 2013 at 09:13:24AM -0700, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [130320 09:00]:
+> > On Wed, Mar 20, 2013 at 05:44:40PM +0200, Roger Quadros wrote:
+> > > Add clk_rate parameter to platform data. If supplied, the
+> > > NOP phy driver will program the clock to that rate during probe.
+> > >=20
+> > > Also add 2 flags, needs_vcc and needs_reset.
+> > > If the flag is set and the regulator couldn't be found
+> > > then the driver will bail out with -EPROBE_DEFER.
+> > >=20
+> > > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > > Acked-by: Felipe Balbi <balbi@ti.com>
+> >=20
+> > Hi Tony,
+> >=20
+> > maybe you might prefer to merge commit 1f0972f from my next branch which
+> > is exactly this patch. Basically, if you:
+> >=20
+> > $ git fetch git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git=
+ next
+> > $ git merge 1f0972f
+> >=20
+> > you get $SUBJECT and can apply the others without fear of conflicts
+> > later.
+>=20
+> OK thanks will use commit 1f0972f, so let's consider that commit immutabl=
+e.
 
-I am not objecting to that it just hit my eyes.
+yeah, once it hits my 'next' branch, I don't rebase anymore.
 
-> +	shrink_zone(zone, sc);
-> +
-> +	reclaim_state->reclaimed_slab = 0;
-> +	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> +	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> +
-> +	if (nr_slab == 0 && !zone_reclaimable(zone))
-> +		zone->all_unreclaimable = 1;
-> +}
-> +
-> +/*
->   * For kswapd, balance_pgdat() will work across all this node's zones until
->   * they are all at high_wmark_pages(zone).
->   *
--- 
-Michal Hocko
-SUSE Labs
+cheers
+
+ps: that's valid for 'next' and 'fixes'
+
+--=20
+balbi
+
+--W/D3X8sky0X3AmG5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRSeGjAAoJEIaOsuA1yqREgfMQAI3BsA8bkQwbJl1JKrwp+kv+
+9JUPJClLwXT7TFYE0pJYCgSd/zn6283BL5WdWV9ROgjagD1PEDp3oChDX9mVTwVz
+7RkoGY1KCsvTQQB7hmO1ewhDspsxvewiwL3ju4Of1VjP1Bh8Xkme/pdDUZVvShbz
+OGJ+djlf0TxAjdsEg07mac5gpbErWQ2YLIYg6x+MBwphshKNOPJ6J8sYV5F8YACS
+sAELbxYuDwd698nIpxj9aerSZ5u05siOSSK7UfWzTDTXAysTKw/5ST0kQxgPr/v/
+7DbOhyLjHjyV2C5o19eqqLhDULqFaS6Hr94nGRe9SChhYtJlPIvZtd436LIyv4kA
+bw/oV5tz9Vg/s1A583kR/8xytd6wRNbIGJYYJwrQsY5B4xiyEmuna+fVkknUiFRM
++u/TmyE1XgmykLzZAERa2asy3vlOphwS4bUeWHZ5etPNjwn2S2uYRfVby/Et0BPK
+zhlijQEnf6T4rDR1OFoqmhmEBMLQT3SXb5TESPULHmPuCqakQyQzzPAD3Wjzo052
+3iF4vtRg6S39D8VJVWtxHwFbFwkyTQnCr7tcb8Ko5E//ELbIYmDhUi+h23Z21Uh6
+/JW2+Wvh/iTCVaxctZOoAtLnU07rjB7lATyGyy+W7FyDhlh5jq5hwC3l1l5JNgz6
+r6tfwBgDnfu3VLa9EeDN
+=RSGV
+-----END PGP SIGNATURE-----
+
+--W/D3X8sky0X3AmG5--
