@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab3CTASP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:18:15 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:48364 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab3CTASO (ORCPT
+	id S934216Ab3CTAUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:20:24 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:51429 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933452Ab3CTAUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:18:14 -0400
-Date: Tue, 19 Mar 2013 17:18:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] mm, hugetlb: include hugepages in meminfo
-Message-ID: <alpine.DEB.2.02.1303191714440.13526@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 19 Mar 2013 20:20:23 -0400
+Date: Tue, 19 Mar 2013 19:20:17 -0500
+From: William Hubbs <w.d.hubbs@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, rob@landley.net, mpagano@gentoo.org,
+        ryao@gentoo.org, gregkh@gentoo.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
+Message-ID: <20130320002017.GA2810@linux1>
+References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com>
+ <510AFCA1.5000700@zytor.com>
+ <1360032141.12062.12@driftwood>
+ <a6a99589-ac94-4cfc-a871-095431bfd8ef@email.android.com>
+ <20130319222822.GA2338@linux1>
+ <5148F1F7.7080706@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <5148F1F7.7080706@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Particularly in oom conditions, it's troublesome that hugetlb memory is 
-not displayed.  All other meminfo that is emitted will not add up to what 
-is expected, and there is no artifact left in the kernel log to show that 
-a potentially significant amount of memory is actually allocated as 
-hugepages which are not available to be reclaimed.
 
-Booting with hugepages=8192 on the command line, this memory is now shown 
-in oom conditions.  For example, with echo m > /proc/sysrq-trigger:
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Node 0 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-Node 1 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-Node 2 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-Node 3 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
+On Tue, Mar 19, 2013 at 04:17:11PM -0700, H. Peter Anvin wrote:
+> On 03/19/2013 03:28 PM, William Hubbs wrote:
+> > The issue is that /dev/root appears in /proc/mounts if you do not
+> > boot with an initramfs, but /dev/root is not a device node. In the
+> > past, udev created a symbolic link from /dev/root to the
+> > appropriate block device, but it does not do this any longer. Also,
+> > devtmpfs does not create this symbolic link.
+> >=20
+> > This is causing bugs with software that depends on the existence
+> > of /dev/root [2] for example.
+>=20
+> Seems okay to me, although even better would be to use the udev name
+> of the device in question.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/hugetlb.h |  4 ++++
- mm/hugetlb.c            | 14 ++++++++++++++
- mm/page_alloc.c         |  3 +++
- 3 files changed, 21 insertions(+)
+I'm not following what you mean.
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -58,6 +58,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
- void hugetlb_report_meminfo(struct seq_file *);
- int hugetlb_report_node_meminfo(int, char *);
-+void hugetlb_show_meminfo(void);
- unsigned long hugetlb_total_pages(void);
- int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, unsigned int flags);
-@@ -114,6 +115,9 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- {
- }
- #define hugetlb_report_node_meminfo(n, buf)	0
-+static inline void hugetlb_show_meminfo(void)
-+{
-+}
- #define follow_huge_pmd(mm, addr, pmd, write)	NULL
- #define follow_huge_pud(mm, addr, pud, write)	NULL
- #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2121,6 +2121,20 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
- 		nid, h->surplus_huge_pages_node[nid]);
- }
- 
-+void hugetlb_show_meminfo(void)
-+{
-+	struct hstate *h = &default_hstate;
-+	int nid;
-+
-+	for_each_node_state(nid, N_MEMORY)
-+		pr_info("Node %d hugepages_total=%u hugepages_free=%u hugepages_surp=%u hugepages_size=%lukB\n",
-+		        nid,
-+			h->nr_huge_pages_node[nid],
-+			h->free_huge_pages_node[nid],
-+			h->surplus_huge_pages_node[nid],
-+			1UL << (huge_page_order(h) + PAGE_SHIFT - 10));
-+}
-+
- /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
- unsigned long hugetlb_total_pages(void)
- {
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -58,6 +58,7 @@
- #include <linux/prefetch.h>
- #include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
-+#include <linux/hugetlb.h>
- #include <linux/sched/rt.h>
- 
- #include <asm/tlbflush.h>
-@@ -3105,6 +3106,8 @@ void show_free_areas(unsigned int filter)
- 		printk("= %lukB\n", K(total));
- 	}
- 
-+	hugetlb_show_meminfo();
-+
- 	printk("%ld total pagecache pages\n", global_page_state(NR_FILE_PAGES));
- 
- 	show_swap_cache_info();
+The problem is that "/dev/root" should not be in /proc/mounts,
+since there is always another entry that points to the root
+file system.
+
+William
+
+
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlFJAMEACgkQblQW9DDEZTgeXACdEyNFrKVib9OBHvOqmUNpZ7tc
+6ysAn0A4yNg8v0uBGOpYU3603hypEh5V
+=zMga
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
