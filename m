@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965001Ab3CTJ0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:26:47 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:63886 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3CTJYu (ORCPT
+	id S964892Ab3CTJYl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:24:41 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:56489 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758046Ab3CTJYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:24:50 -0400
+	Wed, 20 Mar 2013 05:24:37 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 26/30] compat: embrace LINUX_BACKPORT() for crc8
-Date: Wed, 20 Mar 2013 02:22:51 -0700
-Message-Id: <1363771375-31715-27-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 23/30] compat: embrace LINUX_BACKPORT() for v3.7
+Date: Wed, 20 Mar 2013 02:22:48 -0700
+Message-Id: <1363771375-31715-24-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,37 +53,40 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- include/linux/crc8.h |    3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/compat-3.7.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/crc8.h b/include/linux/crc8.h
-index 13c8dab..f0a92ef 100644
---- a/include/linux/crc8.h
-+++ b/include/linux/crc8.h
-@@ -52,6 +52,7 @@
-  *
-  * - lsb first: poly = 10101011(1) = 0xAB
-  */
-+#define crc8_populate_lsb LINUX_BACKPORT(crc8_populate_lsb)
- void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
+diff --git a/include/linux/compat-3.7.h b/include/linux/compat-3.7.h
+index dd05e00..96662e3 100644
+--- a/include/linux/compat-3.7.h
++++ b/include/linux/compat-3.7.h
+@@ -45,6 +45,7 @@ static inline struct user_namespace *seq_user_ns(struct seq_file *seq)
+ #define genl_info_snd_portid(__genl_info) (__genl_info->snd_pid)
+ #define NETLINK_CB_PORTID(__skb) NETLINK_CB(cb->skb).pid
  
- /**
-@@ -70,6 +71,7 @@ void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-  *
-  * - msb first: poly = (1)11010101 = 0xD5
-  */
-+#define crc8_populate_msb LINUX_BACKPORT(crc8_populate_msb)
- void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
++#define mod_delayed_work LINUX_BACKPORT(mod_delayed_work)
+ bool mod_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
+ 		      unsigned long delay);
  
- /**
-@@ -96,6 +98,7 @@ void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-  * Williams, Ross N., ross<at>ross.net
-  * (see URL http://www.ross.net/crc/download/crc_v3.txt).
-  */
-+#define crc8 LINUX_BACKPORT(crc8)
- u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc);
+@@ -55,12 +56,18 @@ bool mod_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
+ #define tty_port_register_device(port, driver, index, device) \
+ 	tty_register_device(driver, index, device)
  
- #endif /* __CRC8_H_ */
++#define pcie_capability_read_word LINUX_BACKPORT(pcie_capability_read_word)
+ int pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val);
++#define pcie_capability_read_dword LINUX_BACKPORT(pcie_capability_read_dword)
+ int pcie_capability_read_dword(struct pci_dev *dev, int pos, u32 *val);
++#define pcie_capability_write_word LINUX_BACKPORT(pcie_capability_write_word)
+ int pcie_capability_write_word(struct pci_dev *dev, int pos, u16 val);
++#define pcie_capability_write_dword LINUX_BACKPORT(pcie_capability_write_dword)
+ int pcie_capability_write_dword(struct pci_dev *dev, int pos, u32 val);
++#define pcie_capability_clear_and_set_word LINUX_BACKPORT(pcie_capability_clear_and_set_word)
+ int pcie_capability_clear_and_set_word(struct pci_dev *dev, int pos,
+ 				       u16 clear, u16 set);
++#define pcie_capability_clear_and_set_dword LINUX_BACKPORT(pcie_capability_clear_and_set_dword)
+ int pcie_capability_clear_and_set_dword(struct pci_dev *dev, int pos,
+ 					u32 clear, u32 set);
+ 
 -- 
 1.7.10.4
 
