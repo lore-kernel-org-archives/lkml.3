@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab3CTBrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 21:47:05 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:54214 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab3CTBrD (ORCPT
+	id S933635Ab3CTBtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 21:49:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37322 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3CTBto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 21:47:03 -0400
-Date: Tue, 19 Mar 2013 18:46:57 -0700
-From: Venkatesh Srinivas <venkateshs@google.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com, JBottomley@parallels.com,
-        virtualization@lists.linux-foundation.org, pbonzini@redhat.com,
-        vsrinivas@ops101.org, digitaleric@google.com, mikew@google.com
-Subject: Re: [PATCH V5 4/5] virtio-scsi: introduce multiqueue support
-Message-ID: <20130320014657.GA14714@google.com>
-References: <1363687057-13580-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <1363687057-13580-5-git-send-email-gaowanlong@cn.fujitsu.com>
+	Tue, 19 Mar 2013 21:49:44 -0400
+Message-ID: <514915B5.7000808@wwwdotorg.org>
+Date: Tue, 19 Mar 2013 19:49:41 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1363687057-13580-5-git-send-email-gaowanlong@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Danny Huang <dahuang@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Joseph Lo <josephl@nvidia.com>, Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: tegra114: add speedo-based process identification
+References: <1363605454-24176-1-git-send-email-dahuang@nvidia.com>  <5148A645.9020009@wwwdotorg.org> <1363743771.3573.55.camel@dahuang-vm>
+In-Reply-To: <1363743771.3573.55.camel@dahuang-vm>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks pretty good!
+On 03/19/2013 07:42 PM, Danny Huang wrote:
+> On Wed, 2013-03-20 at 01:54 +0800, Stephen Warren wrote:
+>> On 03/18/2013 05:17 AM, Danny Huang wrote:
+>>> Add speedo-based process identifictaion for Tegra114.
+>>
+>> I have applied this to Tegra's for-3.10/soc branch, with one addition below:
+>>
+>>> diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
+>>
+>>> +#include <linux/kernel.h>
+>>
+>> Here, I also added:
+>>
+>> #include <linux/bug.h>
+>>
+>> That's not needed in the Tegra for-next branch (which is based on
+>> 3.9-rc1), but is needed when merged into linux-next, and hence will
+>> presumably be needed once this is submitted into 3.10.
+> 
+> Thanks. Does it mean that we have to include the bug.h for all newly
+> created file for 3.10?
 
-I rather like the (lack of) locking in I/O completion (around the req
-count vs. target/queue binding). It is unfortunate that you need to 
-hold the per-target lock in virtscsi_pick_vq() though; have any idea
-how much that lock hurts?
+It's only needed in files that use its contents.
 
-Just two minor comments:
-
-(in struct virtio_scsi_target_data):
-+       /* This spinlock never help at the same time as vq_lock. */
-                                ^^^^ held?
-
-(in struct virtio_scsi):
-+       /* Does the affinity hint is set for virtqueues? */
-Could you rephrase that, please?
-
-Tested on qemu and w/ Google Compute Engine's virtio-scsi device.
-
-Reviewed-and-tested-by: Venkatesh Srinivas <venkateshs@google.com>
-
-Thanks,
--- vs;
