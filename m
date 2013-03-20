@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab3CTVWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 17:22:55 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:39827 "EHLO
+	id S1751755Ab3CTV2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 17:28:23 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:56878 "EHLO
 	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab3CTVWx (ORCPT
+	with ESMTP id S1750886Ab3CTV2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 17:22:53 -0400
-Date: Wed, 20 Mar 2013 14:22:48 -0700
-From: Venkatesh Srinivas <venkateshs@google.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, mst@redhat.com, asias@redhat.com,
-        JBottomley@parallels.com, pbonzini@redhat.com
-Subject: Re: [PATCH V6 4/5] virtio-scsi: introduce multiqueue support
-Message-ID: <20130320212247.GA18276@google.com>
-References: <1363762884-11000-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <1363762884-11000-5-git-send-email-gaowanlong@cn.fujitsu.com>
+	Wed, 20 Mar 2013 17:28:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1363762884-11000-5-git-send-email-gaowanlong@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363791432.12701.8.camel@pasglop>
+References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
+ <1363791074-16415-2-git-send-email-grant.likely@secretlab.ca> <1363791432.12701.8.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 20 Mar 2013 21:28:01 +0000
+X-Google-Sender-Auth: Suh293YpHGLFMQlcFcvRJwGOwu8
+Message-ID: <CACxGe6vw5sevcv=NgeQDhH1QuGgTphia-AnKbSQkVm64tSgNSA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] of: Make device nodes kobjects so they show up in sysfs
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 03:01:23PM +0800, Wanlong Gao wrote:
->From: Paolo Bonzini <pbonzini@redhat.com>
+On Wed, Mar 20, 2013 at 2:57 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2013-03-20 at 14:51 +0000, Grant Likely wrote:
+>> Both of the above problems can be worked around by using
+>> sysfs_create_bin_file() instead of sysfs_create_file(), but doing so
+>> adds an additional 20 to 40 bytes of overhead per property. A device
+>> tree has a lot of properties in it. That overhead will very quickly add
+>> up. The other option is to create a new custom sysfs attribute type
+>> would solve the problem without additional overhead, but at the cost of
+>> more complexity in the sysfs support code. However, I'm hopeful that
+>> these problems are just imaginary and we can stick with normal sysfs
+>> attributes.
 >
->This patch adds queue steering to virtio-scsi.  When a target is sent
->multiple requests, we always drive them to the same queue so that FIFO
->processing order is kept.  However, if a target was idle, we can choose
->a queue arbitrarily.  In this case the queue is chosen according to the
->current VCPU, so the driver expects the number of request queues to be
->equal to the number of VCPUs.  This makes it easy and fast to select
->the queue, and also lets the driver optimize the IRQ affinity for the
->virtqueues (each virtqueue's affinity is set to the CPU that "owns"
->the queue).
->
->The speedup comes from improving cache locality and giving CPU affinity
->to the virtqueues, which is why this scheme was selected.  Assuming that
->the thread that is sending requests to the device is I/O-bound, it is
->likely to be sleeping at the time the ISR is executed, and thus executing
->the ISR on the same processor that sent the requests is cheap.
->
->However, the kernel will not execute the ISR on the "best" processor
->unless you explicitly set the affinity.  This is because in practice
->you will have many such I/O-bound processes and thus many otherwise
->idle processors.  Then the kernel will execute the ISR on a random
->processor, rather than the one that is sending requests to the device.
->
->The alternative to per-CPU virtqueues is per-target virtqueues.  To
->achieve the same locality, we could dynamically choose the virtqueue's
->affinity based on the CPU of the last task that sent a request.  This
->is less appealing because we do not set the affinity directly---we only
->provide a hint to the irqbalanced running in userspace.  Dynamically
->changing the affinity only works if the userspace applies the hint
->fast enough.
+> Disagreed. It would break stuff, especially the incorrect file size.
 
-Looks good! Tested as V5.
+I retried with bin files. Turns out I should stop making assumptions
+and actually try things. It requires less code, is simpler and pretty
+much eliminates the issues listed above. :-)
 
-Tested-by: Venkatesh Srinivas <venkateshs@google.com>
+I'll post a new series with the fixes.
 
--- vs;
+g.
