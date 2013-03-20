@@ -1,319 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab3CTMAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 08:00:49 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1474 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757960Ab3CTMAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 08:00:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Mar 2013 04:53:29 -0700
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <mturquette@linaro.org>, <hdoyu@nvidia.com>, <t.figa@samsung.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH V3] clk: Add composite clock type
-Date: Wed, 20 Mar 2013 17:30:34 +0530
-Message-ID: <1363780834-1289-1-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-X-NVConfidentiality: public
+	id S1757570Ab3CTMGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 08:06:36 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36959 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753596Ab3CTMGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 08:06:34 -0400
+Message-ID: <5149A63C.4000102@ti.com>
+Date: Wed, 20 Mar 2013 17:36:20 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Kevin Hilman <khilman@linaro.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Rajendra nayak <rnayak@ti.com>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH/Resend 2/2] arm: mach-omap2: prevent UART console idle
+ on suspend while using "no_console_suspend"
+References: <1363612924-349-1-git-send-email-sourav.poddar@ti.com> <87fvzsilnv.fsf@linaro.org> <5149A221.5@ti.com>
+In-Reply-To: <5149A221.5@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all clocks are required to be decomposed into basic clock
-types but at the same time want to use the functionality
-provided by these basic clock types instead of duplicating.
-
-For example, Tegra SoC has ~100 clocks which can be decomposed
-into Mux -> Div -> Gate clock types making the clock count to
-~300. Also, parent change operation can not be performed on gate
-clock which forces to use mux clock in driver if want to change
-the parent.
-
-Instead aggregate the basic clock types functionality into one
-clock and just use this clock for all operations. This clock
-type re-uses the functionality of basic clock types and not
-limited to basic clock types but any hardware-specific
-implementation.
-
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
----
-
-Changes from V2:
-- Move clk_ops inside clk_composite instead of dynamically allocation.
-
----
- drivers/clk/Makefile         |    1 +
- drivers/clk/clk-composite.c  |  201 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h |   31 +++++++
- 3 files changed, 233 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/clk-composite.c
-
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 0147022..097ed01 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
-+obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- 
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
-new file mode 100644
-index 0000000..097dee4
---- /dev/null
-+++ b/drivers/clk/clk-composite.c
-@@ -0,0 +1,201 @@
-+/*
-+ * Copyright (c) 2013 NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+
-+#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
-+
-+static u8 clk_composite_get_parent(struct clk_hw *hw)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *mux_ops = composite->mux_ops;
-+	struct clk_hw *mux_hw = composite->mux_hw;
-+
-+	mux_hw->clk = hw->clk;
-+
-+	return mux_ops->get_parent(mux_hw);
-+}
-+
-+static int clk_composite_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *mux_ops = composite->mux_ops;
-+	struct clk_hw *mux_hw = composite->mux_hw;
-+
-+	mux_hw->clk = hw->clk;
-+
-+	return mux_ops->set_parent(mux_hw, index);
-+}
-+
-+static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
-+					    unsigned long parent_rate)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *div_ops = composite->div_ops;
-+	struct clk_hw *div_hw = composite->div_hw;
-+
-+	div_hw->clk = hw->clk;
-+
-+	return div_ops->recalc_rate(div_hw, parent_rate);
-+}
-+
-+static long clk_composite_round_rate(struct clk_hw *hw, unsigned long rate,
-+				  unsigned long *prate)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *div_ops = composite->div_ops;
-+	struct clk_hw *div_hw = composite->div_hw;
-+
-+	div_hw->clk = hw->clk;
-+
-+	return div_ops->round_rate(div_hw, rate, prate);
-+}
-+
-+static int clk_composite_set_rate(struct clk_hw *hw, unsigned long rate,
-+			       unsigned long parent_rate)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *div_ops = composite->div_ops;
-+	struct clk_hw *div_hw = composite->div_hw;
-+
-+	div_hw->clk = hw->clk;
-+
-+	return div_ops->set_rate(div_hw, rate, parent_rate);
-+}
-+
-+static int clk_composite_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *gate_ops = composite->gate_ops;
-+	struct clk_hw *gate_hw = composite->gate_hw;
-+
-+	gate_hw->clk = hw->clk;
-+
-+	return gate_ops->is_enabled(gate_hw);
-+}
-+
-+static int clk_composite_enable(struct clk_hw *hw)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *gate_ops = composite->gate_ops;
-+	struct clk_hw *gate_hw = composite->gate_hw;
-+
-+	gate_hw->clk = hw->clk;
-+
-+	return gate_ops->enable(gate_hw);
-+}
-+
-+static void clk_composite_disable(struct clk_hw *hw)
-+{
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	const struct clk_ops *gate_ops = composite->gate_ops;
-+	struct clk_hw *gate_hw = composite->gate_hw;
-+
-+	gate_hw->clk = hw->clk;
-+
-+	gate_ops->disable(gate_hw);
-+}
-+
-+struct clk *clk_register_composite(struct device *dev, const char *name,
-+			const char **parent_names, int num_parents,
-+			struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
-+			struct clk_hw *div_hw, const struct clk_ops *div_ops,
-+			struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
-+			unsigned long flags)
-+{
-+	struct clk *clk;
-+	struct clk_init_data init;
-+	struct clk_composite *composite;
-+	struct clk_ops *clk_composite_ops;
-+
-+	composite = kzalloc(sizeof(*composite), GFP_KERNEL);
-+	if (!composite) {
-+		pr_err("%s: could not allocate composite clk\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+
-+	clk_composite_ops = &composite->ops;
-+
-+	if (mux_hw && mux_ops) {
-+		if (!mux_ops->get_parent || !mux_ops->set_parent) {
-+			clk = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+
-+		composite->mux_hw = mux_hw;
-+		composite->mux_ops = mux_ops;
-+		clk_composite_ops->get_parent = clk_composite_get_parent;
-+		clk_composite_ops->set_parent = clk_composite_set_parent;
-+	}
-+
-+	if (div_hw && div_ops) {
-+		if (!div_ops->recalc_rate || !div_ops->round_rate ||
-+		    !div_ops->set_rate) {
-+			clk = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+
-+		composite->div_hw = div_hw;
-+		composite->div_ops = div_ops;
-+		clk_composite_ops->recalc_rate = clk_composite_recalc_rate;
-+		clk_composite_ops->round_rate = clk_composite_round_rate;
-+		clk_composite_ops->set_rate = clk_composite_set_rate;
-+	}
-+
-+	if (gate_hw && gate_ops) {
-+		if (!gate_ops->is_enabled || !gate_ops->enable ||
-+		    !gate_ops->disable) {
-+			clk = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+
-+		composite->gate_hw = gate_hw;
-+		composite->gate_ops = gate_ops;
-+		clk_composite_ops->is_enabled = clk_composite_is_enabled;
-+		clk_composite_ops->enable = clk_composite_enable;
-+		clk_composite_ops->disable = clk_composite_disable;
-+	}
-+
-+	init.ops = clk_composite_ops;
-+	composite->hw.init = &init;
-+
-+	clk = clk_register(dev, &composite->hw);
-+	if (IS_ERR(clk))
-+		goto err;
-+
-+	if (composite->mux_hw)
-+		composite->mux_hw->clk = clk;
-+
-+	if (composite->div_hw)
-+		composite->div_hw->clk = clk;
-+
-+	if (composite->gate_hw)
-+		composite->gate_hw->clk = clk;
-+
-+	return clk;
-+
-+err:
-+	kfree(composite);
-+	return clk;
-+}
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 7f197d7..33e7e64 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -325,6 +325,37 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned int mult, unsigned int div);
- 
-+/***
-+ * struct clk_composite - aggregate clock of mux, divider and gate clocks
-+ *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @mux_hw:	handle between composite and hardware-specifix mux clock
-+ * @div_hw:	handle between composite and hardware-specifix divider clock
-+ * @gate_hw:	handle between composite and hardware-specifix gate clock
-+ * @mux_ops:	clock ops for mux
-+ * @div_ops:	clock ops for divider
-+ * @gate_ops:	clock ops for gate
-+ */
-+struct clk_composite {
-+	struct clk_hw	hw;
-+	struct clk_ops	ops;
-+
-+	struct clk_hw	*mux_hw;
-+	struct clk_hw	*div_hw;
-+	struct clk_hw	*gate_hw;
-+
-+	const struct clk_ops	*mux_ops;
-+	const struct clk_ops	*div_ops;
-+	const struct clk_ops	*gate_ops;
-+};
-+
-+struct clk *clk_register_composite(struct device *dev, const char *name,
-+		const char **parent_names, int num_parents,
-+		struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
-+		struct clk_hw *div_hw, const struct clk_ops *div_ops,
-+		struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
-+		unsigned long flags);
-+
- /**
-  * clk_register - allocate a new clock, register it and return an opaque cookie
-  * @dev: device that is registering this clock
--- 
-1.7.4.1
+Realised the list  to whom the patch was send got dropped. Ccing them all..
+On Wednesday 20 March 2013 05:18 PM, Sourav Poddar wrote:
+> Hi Kevin,
+> On Tuesday 19 March 2013 12:24 AM, Kevin Hilman wrote:
+>> Sourav Poddar<sourav.poddar@ti.com>  writes:
+>>
+>>> With dt boot, uart wakeup after suspend is non functional on omap4/5 
+>>> while using
+>>> "no_console_suspend" in the bootargs. With "no_console_suspend" 
+>>> used, od->flags
+>>> should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not 
+>>> allowing the console
+>>> to idle in the suspend path. For non-dt case, this was taken care by 
+>>> platform data.
+>>>
+>>> Tested on omap5430evm, omap4430sdp.
+>>>
+>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>> Cc: Felipe Balbi<balbi@ti.com>
+>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>> This patch creates a dependency between omap_device (generic,
+>> device-independent code) and a specific driver (UART.)
+>>
+>> If you need to do something like this that's DT boot specific, then
+>> we probably need some late initcall in serial.c to handle this.  It does
+>> not belong in omap_device.
+>>
+> The following function "omap_device_disable_idle_on_suspend(pdev)" 
+> should only
+> be called once the omap device has been build, which in the case of 
+> device tree is
+> done in omap_device.c file. Moreover, the above call should be 
+> executed conditionally
+> and should depend on the following two parameter.
+>
+> [1]  a. Whether "no_console_suspend" is set and
+>      b.  the device build is a console uart.
+>
+> When I look closely into the serial.c file, I realised that
+> "core_initcall(omap_serial_early_init)" gets called irrespective
+> of dt/non dt boot and will take care of most of the stuff(checking 
+> whether
+> "no_console_suspend" is used and which uart is used as a console uart) 
+> which the
+> $subject patch is proposing.
+>
+> But the problem is that we need to exchange the parsed information
+> from serial.c to the omap_device file for the condtional execution of
+> "omap_device_disable_idle_on_suspend"
+>
+> In this case,
+> from "serial.c" we need
+>     1. no_console_suspend = true
+>     2. strcpy(console_name, oh_name), where oh_name corresponds to the 
+> console uart.
+>
+> then in "omap_device.c" do
+>     if (no_console_suspend && !strcmp(oh->name, console_name))
+>                 omap_device_disable_idle_on_suspend(pdev);
+>
+> Please correct if I am understanding it incorrectly.
+>
+> If the above understanding looks good to you, is there a way we can 
+> make this
+> exchange of information happen between serial.c and omap_device.c file?
+>> Kevin
+>>
+>>> ---
+>>>   arch/arm/mach-omap2/omap_device.c |   34 
+>>> +++++++++++++++++++++++++++++++++-
+>>>   1 files changed, 33 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_device.c 
+>>> b/arch/arm/mach-omap2/omap_device.c
+>>> index 381be7a..71f5a73 100644
+>>> --- a/arch/arm/mach-omap2/omap_device.c
+>>> +++ b/arch/arm/mach-omap2/omap_device.c
+>>> @@ -35,11 +35,17 @@
+>>>   #include<linux/pm_runtime.h>
+>>>   #include<linux/of.h>
+>>>   #include<linux/notifier.h>
+>>> +#include<linux/platform_data/serial-omap.h>
+>>>
+>>>   #include "soc.h"
+>>>   #include "omap_device.h"
+>>>   #include "omap_hwmod.h"
+>>>
+>>> +#define MAX_UART_HWMOD_NAME_LEN         16
+>>> +
+>>> +static u8 no_console_suspend;
+>>> +static u8 console_uart_num;
+>>> +
+>>>   /* Private functions */
+>>>
+>>>   static void _add_clkdev(struct omap_device *od, const char 
+>>> *clk_alias,
+>>> @@ -108,6 +114,12 @@ static void _add_hwmod_clocks_clkdev(struct 
+>>> omap_device *od,
+>>>           _add_clkdev(od, oh->opt_clks[i].role, oh->opt_clks[i].clk);
+>>>   }
+>>>
+>>> +static char *cmdline_find_option(char *str)
+>>> +{
+>>> +    extern char *saved_command_line;
+>>> +
+>>> +    return strstr(saved_command_line, str);
+>>> +}
+>>>
+>>>   /**
+>>>    * omap_device_build_from_dt - build an omap_device with multiple 
+>>> hwmods
+>>> @@ -129,6 +141,7 @@ static int omap_device_build_from_dt(struct 
+>>> platform_device *pdev)
+>>>       struct device_node *node = pdev->dev.of_node;
+>>>       const char *oh_name;
+>>>       int oh_cnt, i, ret = 0;
+>>> +    static u8 console_uart_id;
+>>>
+>>>       oh_cnt = of_property_count_strings(node, "ti,hwmods");
+>>>       if (!oh_cnt || IS_ERR_VALUE(oh_cnt)) {
+>>> @@ -170,7 +183,12 @@ static int omap_device_build_from_dt(struct 
+>>> platform_device *pdev)
+>>>               r->name = dev_name(&pdev->dev);
+>>>       }
+>>>
+>>> -    if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+>>> +    if (no_console_suspend&&  !strncmp(oh->name, "uart", 4)) {
+>>> +        if (console_uart_num == console_uart_id)
+>>> +            omap_device_disable_idle_on_suspend(pdev);
+>>> +        else
+>>> +            console_uart_id++;
+>>> +    } else if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+>>>           omap_device_disable_idle_on_suspend(pdev);
+>>>
+>>>       pdev->dev.pm_domain =&omap_device_pm_domain;
+>>> @@ -838,7 +856,21 @@ static struct notifier_block platform_nb = {
+>>>
+>>>   static int __init omap_device_init(void)
+>>>   {
+>>> +    int i;
+>>> +    char uart_name[MAX_UART_HWMOD_NAME_LEN];
+>>> +
+>>>       bus_register_notifier(&platform_bus_type,&platform_nb);
+>>> +
+>>> +    if (cmdline_find_option("no_console_suspend")) {
+>>> +        no_console_suspend = true;
+>>> +        for (i = 0; i<  OMAP_MAX_HSUART_PORTS; i++) {
+>>> +            snprintf(uart_name, MAX_UART_HWMOD_NAME_LEN,
+>>> +                "%s%d", OMAP_SERIAL_NAME, i);
+>>> +            if (cmdline_find_option(uart_name))
+>>> +                console_uart_num = i;
+>>> +        }
+>>> +    }
+>>> +
+>>>       return 0;
+>>>   }
+>>>   omap_core_initcall(omap_device_init);
+>
 
