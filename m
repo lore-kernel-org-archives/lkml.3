@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab3CTPto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:49:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50571 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757823Ab3CTPp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:45:28 -0400
+	id S1757795Ab3CTPp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:45:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47186 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757333Ab3CTPpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 11:45:20 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 10/21] ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
-Date: Wed, 20 Mar 2013 17:44:49 +0200
-Message-ID: <1363794300-31526-11-git-send-email-rogerq@ti.com>
+Subject: [PATCH v4 05/21] ARM: OMAP3: 3430SDP: Adapt to ehci-omap changes
+Date: Wed, 20 Mar 2013 17:44:44 +0200
+Message-ID: <1363794300-31526-6-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363794300-31526-1-git-send-email-rogerq@ti.com>
 References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
@@ -28,50 +29,52 @@ and the NOP PHY devices.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/board-cm-t3517.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap2/board-3430sdp.c |   21 +++++++++++++++------
+ 1 files changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-cm-t3517.c b/arch/arm/mach-omap2/board-cm-t3517.c
-index a66da80..6920f6cf 100644
---- a/arch/arm/mach-omap2/board-cm-t3517.c
-+++ b/arch/arm/mach-omap2/board-cm-t3517.c
-@@ -188,15 +188,22 @@ static inline void cm_t3517_init_rtc(void) {}
- #define HSUSB2_RESET_GPIO	(147)
- #define USB_HUB_RESET_GPIO	(152)
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index ce812de..7eb9651 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -445,16 +445,23 @@ static void enable_board_wakeup_source(void)
+ 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
+ }
  
 +static struct usbhs_phy_data phy_data[] __initdata = {
 +	{
 +		.port = 1,
-+		.reset_gpio = HSUSB1_RESET_GPIO,
++		.reset_gpio = 57,
 +		.vcc_gpio = -EINVAL,
 +	},
 +	{
 +		.port = 2,
-+		.reset_gpio = HSUSB2_RESET_GPIO,
++		.reset_gpio = 61,
 +		.vcc_gpio = -EINVAL,
 +	},
 +};
 +
- static struct usbhs_omap_platform_data cm_t3517_ehci_pdata __initdata = {
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
+ 
  	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
  	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
 -	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
 -
 -	.phy_reset  = true,
--	.reset_gpio_port[0]  = HSUSB1_RESET_GPIO,
--	.reset_gpio_port[1]  = HSUSB2_RESET_GPIO,
--	.reset_gpio_port[2]  = -EINVAL,
+-	.reset_gpio_port[0]  = 57,
+-	.reset_gpio_port[1]  = 61,
+-	.reset_gpio_port[2]  = -EINVAL
  };
  
- static int __init cm_t3517_init_usbh(void)
-@@ -213,6 +220,7 @@ static int __init cm_t3517_init_usbh(void)
- 		msleep(1);
- 	}
- 
+ #ifdef CONFIG_OMAP_MUX
+@@ -606,6 +613,8 @@ static void __init omap_3430sdp_init(void)
+ 	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
+ 	sdp3430_display_init();
+ 	enable_board_wakeup_source();
++
 +	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
- 	usbhs_init(&cm_t3517_ehci_pdata);
+ 	usbhs_init(&usbhs_bdata);
+ }
  
- 	return 0;
 -- 
 1.7.4.1
 
