@@ -1,191 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab3CTHb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:31:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9597 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab3CTHbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:31:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,876,1355126400"; 
-   d="scan'208";a="282110815"
-Message-ID: <51496616.8080901@intel.com>
-Date: Wed, 20 Mar 2013 15:32:38 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S933493Ab3CTHcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:32:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38706 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665Ab3CTHb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:31:57 -0400
+X-IronPort-AV: E=Sophos;i="4.84,877,1355068800"; 
+   d="scan'208";a="6908591"
+Message-ID: <51496636.8040000@cn.fujitsu.com>
+Date: Wed, 20 Mar 2013 15:33:10 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Danny Baumann <dannybaumann@web.de>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH v4 1/3] ACPI video: Fix brightness control initialization
- for some laptops.
-References: <1363710172-2906-1-git-send-email-dannybaumann@web.de> <5148913D.5080309@web.de>
-In-Reply-To: <5148913D.5080309@web.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Asias He <asias@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, mst@redhat.com, JBottomley@parallels.com,
+        venkateshs@google.com, pbonzini@redhat.com
+Subject: Re: [PATCH V6 5/5] virtio-scsi: reset virtqueue affinity when doing
+ cpu hotplug
+References: <1363762884-11000-1-git-send-email-gaowanlong@cn.fujitsu.com> <1363762884-11000-6-git-send-email-gaowanlong@cn.fujitsu.com> <20130320072425.GA23182@hj.localdomain>
+In-Reply-To: <20130320072425.GA23182@hj.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/20 15:30:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/20 15:30:24,
+	Serialize complete at 2013/03/20 15:30:24
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 12:24 AM, Danny Baumann wrote:
-> v3 incorporates Aaron's feedback, v4 fixes my inability to use git 
-> send-email properly. Sorry for that.
+On 03/20/2013 03:24 PM, Asias He wrote:
+> On Wed, Mar 20, 2013 at 03:01:24PM +0800, Wanlong Gao wrote:
+>> Add hot cpu notifier to reset the request virtqueue affinity
+>> when doing cpu hotplug.
+>>
+>> Cc: linux-scsi@vger.kernel.org
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>> Reviewed-by: Asias He <asias@redhat.com>
+>> ---
+>>  drivers/scsi/virtio_scsi.c | 29 +++++++++++++++++++++++++++++
+>>  1 file changed, 29 insertions(+)
+>>
+>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>> index 13d7672..0ad9017 100644
+>> --- a/drivers/scsi/virtio_scsi.c
+>> +++ b/drivers/scsi/virtio_scsi.c
+>> @@ -110,6 +110,9 @@ struct virtio_scsi {
+>>  	/* if the affinity hint is set for virtqueues */
+>>  	bool affinity_hint_set;
+>>  
+>> +	/* CPU hotplug notifier */
+>> +	struct notifier_block nb;
+>> +
+>>  	struct virtio_scsi_vq ctrl_vq;
+>>  	struct virtio_scsi_vq event_vq;
+>>  	struct virtio_scsi_vq req_vqs[];
+>> @@ -762,6 +765,23 @@ static void virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+>>  	put_online_cpus();
+>>  }
+>>  
+>> +static int virtscsi_cpu_callback(struct notifier_block *nfb,
+>> +				 unsigned long action, void *hcpu)
+>> +{
+>> +	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
+>> +	switch(action) {
+>> +	case CPU_ONLINE:
+>> +	case CPU_ONLINE_FROZEN:
+>> +	case CPU_DEAD:
+>> +	case CPU_DEAD_FROZEN:
+>> +		__virtscsi_set_affinity(vscsi, true);
+>> +		break;
+>> +	default:
+>> +		break;
+>> +	}
+>> +	return NOTIFY_OK;
+>> +}
+>> +
+>>  static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+>>  			     struct virtqueue *vq)
+>>  {
+>> @@ -884,6 +904,13 @@ static int virtscsi_probe(struct virtio_device *vdev)
+>>  	if (err)
+>>  		goto virtscsi_init_failed;
+>>  
+>> +	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
+>> +	err = register_hotcpu_notifier(&vscsi->nb);
+>> +	if (err) {
+>> +		pr_err("registering cpu notifier failed\n");
+>> +		goto scsi_add_host_failed;
+>> +	}
+>> +
+>>  	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
+>>  	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
+>>  	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
+>> @@ -921,6 +948,8 @@ static void virtscsi_remove(struct virtio_device *vdev)
+>>  
+>>  	scsi_remove_host(shost);
+>>  
+>> +	unregister_hotcpu_notifier(&vscsi->nb);
+>> +
+>>  	virtscsi_remove_vqs(vdev);
+>>  	scsi_host_put(shost);
+>>  }
+>> -- 
+>> 1.8.2.rc2
+>>
+> 
+> This one does not apply on top of virtio-next + patch 1-4 in this series.
 
-For the 3 patches, Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Oops, it's my fault. There may be something wrong here. But you can use "3-way merge"
+to apply them, I'll take care next time.
 
-BTW, you can put things like what has been changed in a new series in
-patch 0.
 
 Thanks,
-Aaron
+Wanlong Gao
 
-> 
-> Regards,
-> 
-> Danny
-> 
-> Am 19.03.2013 17:22, schrieb Danny Baumann:
->> In particular, this fixes brightness control initialization for all
->> devices that return index values from _BQC and don't happen to have the
->> initial index set by the BIOS in their _BCL table. One example for that
->> is the Dell Inspiron 15R SE (model number 7520).
->>
->> What happened for those devices is that acpi_init_brightness queried the
->> initial brightness by calling acpi_video_device_lcd_get_level_current.
->> This called _BQC, which returned e.g. 13. As _BQC_use_index isn't
->> determined at this point (and thus has its initial value of 0), the
->> index isn't converted into the actual level. As '13' isn't present in
->> the _BCL list, *level is later overwritten with brightness->curr, which
->> was initialized to max_level (100) before. Later in
->> acpi_init_brightness, level_old (with the value 100) is used as an index
->> into the _BCL table, which causes a value outside of the actual table to
->> be used as input into acpi_video_device_lcd_set_level(). Depending on
->> the (undefined) value of that location, this call will fail, causing the
->> brightness control for the device in question not to be enabled.
->>
->> Fix that by returning the raw value returned by the _BQC call in the
->> initialization case.
->>
->> Signed-off-by: Danny Baumann <dannybaumann@web.de>
->> ---
->>   drivers/acpi/video.c | 43 ++++++++++++++++++++++++++-----------------
->>   1 file changed, 26 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
->> index 313f959..09e4722 100644
->> --- a/drivers/acpi/video.c
->> +++ b/drivers/acpi/video.c
->> @@ -222,7 +222,7 @@ static int acpi_video_device_lcd_set_level(struct acpi_video_device *device,
->>   			int level);
->>   static int acpi_video_device_lcd_get_level_current(
->>   			struct acpi_video_device *device,
->> -			unsigned long long *level, int init);
->> +			unsigned long long *level, bool raw);
->>   static int acpi_video_get_next_level(struct acpi_video_device *device,
->>   				     u32 level_current, u32 event);
->>   static int acpi_video_switch_brightness(struct acpi_video_device *device,
->> @@ -236,7 +236,7 @@ static int acpi_video_get_brightness(struct backlight_device *bd)
->>   	struct acpi_video_device *vd =
->>   		(struct acpi_video_device *)bl_get_data(bd);
->>
->> -	if (acpi_video_device_lcd_get_level_current(vd, &cur_level, 0))
->> +	if (acpi_video_device_lcd_get_level_current(vd, &cur_level, false))
->>   		return -EINVAL;
->>   	for (i = 2; i < vd->brightness->count; i++) {
->>   		if (vd->brightness->levels[i] == cur_level)
->> @@ -281,7 +281,7 @@ static int video_get_cur_state(struct thermal_cooling_device *cooling_dev, unsig
->>   	unsigned long long level;
->>   	int offset;
->>
->> -	if (acpi_video_device_lcd_get_level_current(video, &level, 0))
->> +	if (acpi_video_device_lcd_get_level_current(video, &level, false))
->>   		return -EINVAL;
->>   	for (offset = 2; offset < video->brightness->count; offset++)
->>   		if (level == video->brightness->levels[offset]) {
->> @@ -452,7 +452,7 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
->>
->>   static int
->>   acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
->> -					unsigned long long *level, int init)
->> +					unsigned long long *level, bool raw)
->>   {
->>   	acpi_status status = AE_OK;
->>   	int i;
->> @@ -463,6 +463,15 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
->>   		status = acpi_evaluate_integer(device->dev->handle, buf,
->>   						NULL, level);
->>   		if (ACPI_SUCCESS(status)) {
->> +			if (raw) {
->> +				/*
->> +				 * Caller has indicated he wants the raw
->> +				 * value returned by _BQC, so don't furtherly
->> +				 * mess with the value.
->> +				 */
->> +				return 0;
->> +			}
->> +
->>   			if (device->brightness->flags._BQC_use_index) {
->>   				if (device->brightness->flags._BCL_reversed)
->>   					*level = device->brightness->count
->> @@ -476,16 +485,14 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
->>   					device->brightness->curr = *level;
->>   					return 0;
->>   			}
->> -			if (!init) {
->> -				/*
->> -				 * BQC returned an invalid level.
->> -				 * Stop using it.
->> -				 */
->> -				ACPI_WARNING((AE_INFO,
->> -					      "%s returned an invalid level",
->> -					      buf));
->> -				device->cap._BQC = device->cap._BCQ = 0;
->> -			}
->> +			/*
->> +			 * BQC returned an invalid level.
->> +			 * Stop using it.
->> +			 */
->> +			ACPI_WARNING((AE_INFO,
->> +				      "%s returned an invalid level",
->> +				      buf));
->> +			device->cap._BQC = device->cap._BCQ = 0;
->>   		} else {
->>   			/* Fixme:
->>   			 * should we return an error or ignore this failure?
->> @@ -703,7 +710,8 @@ acpi_video_init_brightness(struct acpi_video_device *device)
->>   	if (!device->cap._BQC)
->>   		goto set_level;
->>
->> -	result = acpi_video_device_lcd_get_level_current(device, &level_old, 1);
->> +	result = acpi_video_device_lcd_get_level_current(device,
->> +							 &level_old, true);
->>   	if (result)
->>   		goto out_free_levels;
->>
->> @@ -714,7 +722,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
->>   	if (result)
->>   		goto out_free_levels;
->>
->> -	result = acpi_video_device_lcd_get_level_current(device, &level, 0);
->> +	result = acpi_video_device_lcd_get_level_current(device, &level, true);
->>   	if (result)
->>   		goto out_free_levels;
->>
->> @@ -1268,7 +1276,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
->>   		goto out;
->>
->>   	result = acpi_video_device_lcd_get_level_current(device,
->> -							 &level_current, 0);
->> +							 &level_current,
->> +							 false);
->>   	if (result)
->>   		goto out;
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
