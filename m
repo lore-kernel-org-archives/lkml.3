@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab3CTNsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:48:30 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9969 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3CTNsC (ORCPT
+	id S1755390Ab3CTNsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:48:38 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37362 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab3CTNsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:48:02 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Mar 2013 06:40:37 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/4] ARM: tegra: enable Tegra114 based platform PMICs
-Date: Wed, 20 Mar 2013 19:14:27 +0530
-Message-ID: <1363787070-14801-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
-References: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
+	Wed, 20 Mar 2013 09:48:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1363783096.3724.5.camel@laptop>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1360820921-2513-8-git-send-email-iamjoonsoo.kim@lge.com>
+	<1363705546.22553.61.camel@laptop>
+	<20130320074330.GE11672@lge.com>
+	<1363783096.3724.5.camel@laptop>
+Date: Wed, 20 Mar 2013 22:48:32 +0900
+Message-ID: <CAAmzW4NqX5NTjoaaFWJJmN_SAxNudZd8mgQWB_c4XKTgsMwcJA@mail.gmail.com>
+Subject: Re: [PATCH 7/8] sched: prevent to re-select dst-cpu in load_balance()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 have two reference platform, Dalmore and Pluto.
-Dalmore uses the following PMICs:
-- TPS65913 as primary PMIC.
-- TPS65090 as secondary PMIC used for switch regulators and battery charging.
-- TPS51632 for cpu regulator.
+2013/3/20 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2013-03-20 at 16:43 +0900, Joonsoo Kim wrote:
+>> On Tue, Mar 19, 2013 at 04:05:46PM +0100, Peter Zijlstra wrote:
+>> > On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
+>> > > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
+>> > > But, in that, there is no code for preventing to re-select dst-cpu.
+>> > > So, same dst-cpu can be selected over and over.
+>> > >
+>> > > This patch add functionality to load_balance() in order to exclude
+>> > > cpu which is selected once.
+>> >
+>> > Oh man.. seriously? Did you see this happen? Also, can't we simply
+>> > remove it from lb->cpus?
+>>
+>> I didn't see it, I do just logical thinking. :)
+>> lb->cpus is for source cpus and dst-cpu is for dest cpus. So, it doesn't
+>> works to remove it from lb->cpus.
+>
+> How about we interpret ->cpus as the total mask to balance; so both
+> source and destination. That way clearing a cpu means we won't take nor
+> put tasks on it.
 
-Pluto uses the TPS65913 as the PMIC.
+In my quick thought, it may be possible.
+I will try to do it.
 
-Enable config variable of these PMICs for Dalomore and Pluto.
+Thanks.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/configs/tegra_defconfig |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index aba4881..34b9342 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -126,6 +126,7 @@ CONFIG_SPI=y
- CONFIG_SPI_TEGRA20_SFLASH=y
- CONFIG_SPI_TEGRA20_SLINK=y
- CONFIG_GPIO_PCA953X_IRQ=y
-+CONFIG_GPIO_PALMAS=y
- CONFIG_GPIO_TPS6586X=y
- CONFIG_GPIO_TPS65910=y
- CONFIG_POWER_SUPPLY=y
-@@ -136,12 +137,17 @@ CONFIG_SENSORS_LM90=y
- CONFIG_MFD_TPS6586X=y
- CONFIG_MFD_TPS65910=y
- CONFIG_MFD_MAX8907=y
-+CONFIG_MFD_TPS65090=y
-+CONFIG_MFD_PALMAS=y
- CONFIG_REGULATOR=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
- CONFIG_REGULATOR_GPIO=y
- CONFIG_REGULATOR_MAX8907=y
-+CONFIG_REGULATOR_PALMAS=y
-+CONFIG_REGULATOR_TPS51632=y
- CONFIG_REGULATOR_TPS62360=y
-+CONFIG_REGULATOR_TPS65090=y
- CONFIG_REGULATOR_TPS6586X=y
- CONFIG_REGULATOR_TPS65910=y
- CONFIG_MEDIA_SUPPORT=y
-@@ -191,6 +197,7 @@ CONFIG_RTC_INTF_SYSFS=y
- CONFIG_RTC_INTF_PROC=y
- CONFIG_RTC_INTF_DEV=y
- CONFIG_RTC_DRV_MAX8907=y
-+CONFIG_RTC_DRV_PALMAS=y
- CONFIG_RTC_DRV_TPS6586X=y
- CONFIG_RTC_DRV_TPS65910=y
- CONFIG_RTC_DRV_EM3027=y
--- 
-1.7.1.1
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
