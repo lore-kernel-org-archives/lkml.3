@@ -1,111 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875Ab3CTSkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:40:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5211 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab3CTSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:40:14 -0400
-Date: Wed, 20 Mar 2013 14:39:53 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        dmitry.kasatkin@intel.com, akpm@linux-foundation.org,
-        ebiederm@xmission.com, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 4/4] binfmt_elf: Elf executable signature verification
-Message-ID: <20130320183953.GF2273@redhat.com>
-References: <1363379758-10071-1-git-send-email-vgoyal@redhat.com>
- <1363379758-10071-5-git-send-email-vgoyal@redhat.com>
- <1363703941.2532.27.camel@falcor1>
- <20130320152134.GA2273@redhat.com>
- <1363801290.2580.44.camel@falcor1.watson.ibm.com>
+	id S932898Ab3CTSlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:41:44 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:36123 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754263Ab3CTSlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 14:41:42 -0400
+Message-ID: <514A02E2.9030700@fold.natur.cuni.cz>
+Date: Wed, 20 Mar 2013 19:41:38 +0100
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363801290.2580.44.camel@falcor1.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takashi Iwai <tiwai@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Oliver Neukum <oneukum@suse.de>, Michal Marek <mmarek@suse.cz>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
+References: <s5h38vqjhk6.wl%tiwai@suse.de>
+In-Reply-To: <s5h38vqjhk6.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 01:41:30PM -0400, Mimi Zohar wrote:
+Hi Takashi,
+  would you please describe your test system in more detail? How
+about 'lspci -tv'? And 'lsusb -v' of the broken device?
 
-[..]
-> Defining another Kconfig option will either memlock all signed
-> executables or none.  If a distro ships with this new Kconfig enabled,
-> then the 'ima_appraise_tcb' boot command line option would result in all
-> executables, owned by root, being memlocked.
+1. For me on Dell Vostro 3550 with a SandyBridge chip doing all SATA+USB2+ExpressCardSlot:
 
-ima_appraise_tcb and elf signing + memlock are offering two
-different features. ima_appraise_tcb is offering only disk integrity
-of file while elf signing + memlock is offering in memory integrity
-of executable file (even if there are root unsigned executables).
+00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor Family DRAM Controller (rev 09)
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller (rev 09) (prog-if 00 [VGA controller])
+00:16.0 Communication controller: Intel Corporation 6 Series/C200 Series Chipset Family MEI Controller #1 (rev 04)
+00:1a.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #2 (rev 05) (prog-if 20 [EHCI])
+00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset Family High Definition Audio Controller (rev 05)
+00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 1 (rev b5) (prog-if 00 [Normal decode])
+00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2 (rev b5) (prog-if 00 [Normal decode])
+00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 4 (rev b5) (prog-if 00 [Normal decode])
+00:1c.4 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 5 (rev b5) (prog-if 00 [Normal decode])
+00:1c.7 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 8 (rev b5) (prog-if 00 [Normal decode])
+00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #1 (rev 05) (prog-if 20 [EHCI])
+00:1f.0 ISA bridge: Intel Corporation HM67 Express Chipset Family LPC Controller (rev 05)
+00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series Chipset Family 6 port SATA AHCI Controller (rev 05) (prog-if 01 [AHCI 1.0])
+00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family SMBus Controller (rev 05)
+05:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168 PCI Express Gigabit Ethernet controller (rev 06)
+09:00.0 Network controller: Intel Corporation Centrino Wireless-N 1030 [Rainbow Peak] (rev 34)
+0b:00.0 USB controller: Texas Instruments TUSB73x0 SuperSpeed USB 3.0 xHCI Host Controller (rev 02) (prog-if 30 [XHCI])
+11:00.0 Mass storage controller: Silicon Image, Inc. SiI 3132 Serial ATA Raid II Controller (rev 01)
+#
 
-So distributrions which support ima_appraise_tcb, can ship with elf
-signing and memlock feature disabled. (assuming they don't need 
-in memory integrity of executable).
+If I have Realtek MediaCardReader enabled in BIOS, no card in it, coldboot, and hot
+insert an ExpressCard into the slot, the Realtek MediaCardReader pops up in dmesg as
+a new PCI device. How about you?
 
-If they do need in-memory integrity of executable (like booting on
-secureboot platform), then they do need to enable this feautre and
-live with the cost because they do need this feature.
+My card does NOT show in lspci (maybe because I never plugged in a data card into it) but does show in lsusb:
 
-I think one area of optimization is more interesting and that is what
-if those distributions are booting on a platform with secureboot disabled.
-How about defining a command line option to disable memlock behavior
-(only when secureboot is disabled).
+Bus 002 Device 005: ID 0bda:0138 Realtek Semiconductor Corp. RTS5138 Card Reader Controller
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x0bda Realtek Semiconductor Corp.
+  idProduct          0x0138 RTS5138 Card Reader Controller
+  bcdDevice           38.82
+  iManufacturer           1 Generic
+  iProduct                2 USB2.0-CRW
+  iSerial                 3 20090516388200000
 
-> Giving of privileges based
-> on the existence of a signature, does not scale.
 
-If an application is signed by right keys, one should be able to
-trust it and give priviliges. Agreed locking down executable in memory
-inhibits scalability. But in general we don't want to sign whole of the
-user space. And for signing selected executables this seems to be only
-option (to make things foolproof).
+Can you try coldboot without a media card inserted before power up without
+your patch and check whether the CardReader pops up after you plugin some
+ExpressCard into an ExpressCardSlot (not the CardReader)? I presume it is
+a laptop. ;-)
 
-Do you have other ideas on how to achieve in-memory integrity of file without
-locking down executable in a selectively signed user space.
+2. Is the hotplug broken also under acpiphp? And again, does it get detected
+once you plugin some card into an ExpressCard slot?
 
-> Again, do not hard
-> code policy in the kernel.
+3. Does the device appear under lsusb also in addition to lspci?
 
-Do you have suggestions on how to do this while we don't trust root.
+4. How does the 'lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit'
+manifest in 'lspci -vvv' output? A diff before and after the patch?
 
-Given the fact that it is a config option and possibly a command line
-option to disable it, it is not exactly hard-coded.
+5. Where is the *real* bug in the code that "linux" ignores the fact that one of
+the PCIe Root Ports (or the whole PCI Bridge?) does not support 'hotplug surprise'?
+Or is this about the hooked up "third-party" PCI devices? Why does it affect
+other PCIe ports of the bridge?
 
-As per this argument, signature verification can be called though of a as a
-policy too and should be configurable.  Then all the module signature code
-should be modified to enable module signature only if root configures so
-using a command line option. I am sure I can find other things which can be
-called policy but are in kernel. I think we also need to look at what is
-easy to use and what makes sense given the constraints.
 
+Would be nice if you look into any of my previous emails to linux-pci and
+with your current knowledge comment whether here or there I faced a same
+problem. Looks like. Disabling the hotplug is a no go for me, I need hotplug
+for my ExpressCards. So far am rather having disabled the MediaCardReader in
+BIOS. But thank you, I did not know that inserting a data card into a CardReader
+is supposed to give me a lspci entry for it. So far I saw only the one in lsusb.
+
+Thank you,
+Martin
+
+
+Takashi Iwai wrote:
+> We encountered a problem that on some HP machines the Realtek PCI-e
+> card reader device appears only when you inserted a card before the
+> cold boot.  While debugging, it turned out that the device is actually
+> handled via PCI-e hotplug in some level.  The device sends a presence
+> change notification, and pciehp receives it, but it's ignored because
+> of lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit.
+> Once when this check passes, everything starts working -- the device
+> appears upon plugging the card properly.
 > 
-> > > 
-> > > Lastly, adding 'VM_LOCKED' here seems to change existing, expected
-> > > behavior.  According to the mlock(2) man pages, "Memory locks are not
-> > > inherited by a child created via fork(2) and are automatically removed
-> > > (unlocked) during an execve(2) or when the process terminates."  Someone
-> > > else needs to comment on this sort of change.  Andrew?  Al?
-> > 
-> > I will read more about it. I know that some more work is needed here. For
-> > example, one can say munlock()/munlockall() on already locked pages. I
-> > was thinkingof defining a new flag say VM_LOCKED_PERM. So any pages which
-> > have been locked by kernel are permanent and can not be unlocked by user
-> > space until and unless process exits.
-> > 
-> > I just need to spend more time in this memory locking area to cover all
-> > the corner cases and make sure kernel mlocked pages are not unlocked.
+> There are a few other bug reports indicating the similar problems
+> (e.g. on recent Dell laptops), and I guess the culprit is same.
 > 
-> Vivek, there must be a good reason that execve intentionally,
-> automatically unlocks the memory. 
-
-Once a process has called execve, it gets new vma and has no
-correlation to old vmas and its locks. So it think it makes sense that
-newly setup vmas don't have any locks. But again, I am not an expert
-in that area either. So if an expert can provide some insights here, that
-would help a lot.
-
-Thanks
-Vivek
+> This patch adds a new module option, pciehp_surprise, to pciehp as a
+> workaround.  When pciehp_surprise=1 is given, pciehp handles the
+> presence change as the device on/off as if PCI_EXP_SLTCAP_HPS is set.
+> Unless it's set explicitly, there is no impact on the existing
+> behavior.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/pci/hotplug/pciehp.h      | 3 ++-
+>  drivers/pci/hotplug/pciehp_core.c | 3 +++
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+> index 2c113de..314f3be 100644
+> --- a/drivers/pci/hotplug/pciehp.h
+> +++ b/drivers/pci/hotplug/pciehp.h
+> @@ -44,6 +44,7 @@ extern bool pciehp_poll_mode;
+>  extern int pciehp_poll_time;
+>  extern bool pciehp_debug;
+>  extern bool pciehp_force;
+> +extern bool pciehp_surprise;
+>  
+>  #define dbg(format, arg...)						\
+>  do {									\
+> @@ -122,7 +123,7 @@ struct controller {
+>  #define MRL_SENS(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_MRLSP)
+>  #define ATTN_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_AIP)
+>  #define PWR_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_PIP)
+> -#define HP_SUPR_RM(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS)
+> +#define HP_SUPR_RM(ctrl)	(pciehp_surprise || ((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS))
+>  #define EMI(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_EIP)
+>  #define NO_CMD_CMPL(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_NCCS)
+>  #define PSN(ctrl)		((ctrl)->slot_cap >> 19)
+> diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+> index 7d72c5e..c3a574e 100644
+> --- a/drivers/pci/hotplug/pciehp_core.c
+> +++ b/drivers/pci/hotplug/pciehp_core.c
+> @@ -42,6 +42,7 @@ bool pciehp_debug;
+>  bool pciehp_poll_mode;
+>  int pciehp_poll_time;
+>  bool pciehp_force;
+> +bool pciehp_surprise;
+>  
+>  #define DRIVER_VERSION	"0.4"
+>  #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
+> @@ -55,10 +56,12 @@ module_param(pciehp_debug, bool, 0644);
+>  module_param(pciehp_poll_mode, bool, 0644);
+>  module_param(pciehp_poll_time, int, 0644);
+>  module_param(pciehp_force, bool, 0644);
+> +module_param(pciehp_surprise, bool, 0644);
+>  MODULE_PARM_DESC(pciehp_debug, "Debugging mode enabled or not");
+>  MODULE_PARM_DESC(pciehp_poll_mode, "Using polling mechanism for hot-plug events or not");
+>  MODULE_PARM_DESC(pciehp_poll_time, "Polling mechanism frequency, in seconds");
+>  MODULE_PARM_DESC(pciehp_force, "Force pciehp, even if OSHP is missing");
+> +MODULE_PARM_DESC(pciehp_surprise, "Force to set hotplug-surprise capability");
+>  
+>  #define PCIE_MODULE_NAME "pciehp"
+>  
+> 
