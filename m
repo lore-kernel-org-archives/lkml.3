@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab3CTMcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 08:32:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756611Ab3CTMcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 08:32:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130320023308.GM21522@ZenIV.linux.org.uk>
-References: <20130320023308.GM21522@ZenIV.linux.org.uk> <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <1944.1363525619@warthog.procyon.org.uk> <20130318153936.GB28508@quack.suse.cz> <20130318215333.GE21522@ZenIV.linux.org.uk> <20130319202543.GF5222@quack.suse.cz> <20130319213831.GK21522@ZenIV.linux.org.uk> <20130319221032.GL21522@ZenIV.linux.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: dhowells@redhat.com, Jan Kara <jack@suse.cz>,
-        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Date: Wed, 20 Mar 2013 12:30:49 +0000
-Message-ID: <29635.1363782649@warthog.procyon.org.uk>
+	id S932883Ab3CTMia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 08:38:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36937 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab3CTMi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 08:38:29 -0400
+Message-ID: <1363783096.3724.5.camel@laptop>
+Subject: Re: [PATCH 7/8] sched: prevent to re-select dst-cpu in
+ load_balance()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 20 Mar 2013 13:38:16 +0100
+In-Reply-To: <20130320074330.GE11672@lge.com>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1360820921-2513-8-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1363705546.22553.61.camel@laptop> <20130320074330.GE11672@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
-
-> fs/cachefiles/rdwr.c:967:                       ret = file->f_op->write(
+On Wed, 2013-03-20 at 16:43 +0900, Joonsoo Kim wrote:
+> On Tue, Mar 19, 2013 at 04:05:46PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
+> > > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
+> > > But, in that, there is no code for preventing to re-select dst-cpu.
+> > > So, same dst-cpu can be selected over and over.
+> > > 
+> > > This patch add functionality to load_balance() in order to exclude
+> > > cpu which is selected once.
+> > 
+> > Oh man.. seriously? Did you see this happen? Also, can't we simply
+> > remove it from lb->cpus?
 > 
-> cachefiles_write_page(); no fucking idea what locks might be held by caller
-> and potentially that's a rather nasty source of PITA
+> I didn't see it, I do just logical thinking. :)
+> lb->cpus is for source cpus and dst-cpu is for dest cpus. So, it doesn't
+> works to remove it from lb->cpus.
 
-The caller of cachefiles_write_page() (ie. fscache_write_op()) holds no locks
-over the call.
+How about we interpret ->cpus as the total mask to balance; so both
+source and destination. That way clearing a cpu means we won't take nor
+put tasks on it.
 
-__fscache_write_page() queues the pages for writing to the cache from the
-netfs's read-side routines and returns immediately.
-
-fscache_write_op() then picks them up in the background and passes them over
-to the backend (eg. cachefiles_write_page()) which writes them out to the
-cache.
-
-So I think it should be safe to call file_start/end_write() or whatever around
-the file->f_op->write() calls.
-
-David
