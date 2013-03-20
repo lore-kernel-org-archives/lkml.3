@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab3CTLLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:11:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36489 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab3CTLLu (ORCPT
+	id S1756806Ab3CTLNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 07:13:35 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55735 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752087Ab3CTLNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:11:50 -0400
-Message-ID: <1363777891.2612.7.camel@laptop>
-Subject: Re: [PATCH 4/8] sched: clean up move_task() and move_one_task()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+	Wed, 20 Mar 2013 07:13:33 -0400
+Message-ID: <1363778011.1390.96.camel@x61.thuisdomein>
+Subject: [PATCH] S3C24XX: remove unneeded "config SMDK2440_CPU2442"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 12:11:31 +0100
-In-Reply-To: <20130320073355.GC11672@lge.com>
-References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1360820921-2513-5-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1363703415.22553.54.camel@laptop> <20130320073355.GC11672@lge.com>
+Date: Wed, 20 Mar 2013 12:13:31 +0100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Mar 2013 11:13:31.0857 (UTC) FILETIME=[F4BC8410:01CE255B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 16:33 +0900, Joonsoo Kim wrote:
+The Kconfig entry for SMDK2440_CPU2442 was moved from one Kconfig file
+to another in commit acf2d41d8595829eb0ac7bf6891f4875a78d4d6e ("ARM:
+S3C24XX: Move mach-s3c2440/ pll into mach-s3c24xx/"). In that move it
+also lost its statement to select CPU_S3C2442. That was not needed
+anymore because it now depended on that same symbol.
 
-> > Right, so I'm not so taken with this one. The whole load stuff really
-> > is a balance heuristic that's part of move_tasks(), move_one_task()
-> > really doesn't care about that.
-> > 
-> > So why did you include it? Purely so you didn't have to re-order the
-> > tests? I don't see any reason not to flip a tests around.
-> 
-> I think that I'm not fully understand what you are concerning, because of
-> my poor English. If possible, please elaborate on a problem in more detail.
+But without its select this entry became a nop: enabling it has no
+effect, as it changes no code. It can safely be removed.
 
-OK, so your initial Changelog said it wanted to remove some code
-duplication between move_tasks() and move_one_task(); but then you put
-in the load heuristics and add a boolean argument to only enable those
-for move_tasks() -- so clearly that wasn't duplicated.
+Fix a related, and trivial, comment typo too.
 
-So why move that code.. I proposed that this was due a reluctance to
-re-arrange the various tests that stop the migration from happening.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-Now you say:
+ arch/arm/mach-s3c24xx/Kconfig | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-> ... Just moving up can_migrate_task() above
-> load evaluation code may raise side effect, because can_migrate_task() have
-> other checking which is 'cache hottness'. I don't want a side effect. So
-> embedding load evaluation to can_migrate_task() and re-order checking and
-> makes load evaluation disabled for move_one_task().
-
-Which pretty much affirms this. However I also said that I don't think
-the order really matters that much; each test will cancel the migration
-of this task; the order of these tests seem immaterial.
-
-> If your recommandation is to move up can_mirate_task() above
-> load evaluation code, yes, I can, and will do that. :)
-
-I would actually propose moving the throttled test into
-can_migrate_task() and leave it at that.
+diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+index 37f513d..92c07a2 100644
+--- a/arch/arm/mach-s3c24xx/Kconfig
++++ b/arch/arm/mach-s3c24xx/Kconfig
+@@ -663,10 +663,7 @@ config MACH_RX1950
+ 	help
+ 	   Say Y here if you're using HP iPAQ rx1950
+ 
+-config SMDK2440_CPU2442
+-	bool "SMDM2440 with S3C2442 CPU module"
+-
+-endif	# CPU_S3C2440
++endif	# CPU_S3C2442
+ 
+ if CPU_S3C2443 || CPU_S3C2416
+ 
+-- 
+1.7.11.7
 
