@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab3CTDSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 23:18:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3CTDSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 23:18:31 -0400
-Message-ID: <1363749503.24132.482.camel@bling.home>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Tue, 19 Mar 2013 21:18:23 -0600
-In-Reply-To: <51492828.5070803@zytor.com>
-References: <3pfl8u1ugprwkcs5xmtjth3l.1363742692541@email.android.com>
-	 <51492379.3090302@zytor.com> <51492828.5070803@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757982Ab3CTDSu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 23:18:50 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:49983 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab3CTDSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 23:18:40 -0400
+From: kpark3469@gmail.com
+To: rostedt@goodmis.org
+Cc: keun-o.park@windriver.com, linux-kernel@vger.kernel.org,
+        kpark3469@gmail.com
+Subject: [PATCH] tracepoints: prevents null probe from being added
+Date: Wed, 20 Mar 2013 12:18:17 +0900
+Message-Id: <1363749497-12176-1-git-send-email-kpark3469@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-19 at 20:08 -0700, H. Peter Anvin wrote:
-> On 03/19/2013 07:48 PM, H. Peter Anvin wrote:
-> > On 03/19/2013 06:28 PM, Matthew Garrett wrote:
-> >> Mm. The question is whether we can reliably determine the ranges a
-> device should be able to access without having to trust userspace
-> (and, ideally, without having to worry about whether iommu vendors
-> have done their job). It's pretty important for PCI passthrough, so we
-> do need to care. 
-> > 
-> > It is actually very simple: the device should be able to DMA into/out of:
-> > 
-> > 1. pinned pages
-> > 2. owned by the process controlling the device
-> > 
-> > ... and nothing else.
-> > 
-> 
-> The "pinning" process needs to involve a call to the kernel to process
-> the page for DMA (pinning the page and opening it in the iommu) and
-> return a transaction address, of course.
-> 
-> I think we have the interface for that in vfio, but I haven't followed
-> that work.
+From: Sahara <keun-o.park@windriver.com>
 
-Yes, vfio does this and is meant to provide a secure-boot-friendly PCI
-passthrough interface.  Thanks,
+Somehow tracepoint_entry_add/remove_probe functions allow a null probe
+function. Especially on getting a null probe in remove function, it seems
+to be used to remove all probe functions in the entry.
+But, the code is not handled as expected. Since the tracepoint_entry
+maintains funcs array's last func as NULL in order to mark it as the end
+of the array. Also NULL func is used in for-loop to check out the end of
+the loop. So if there's NULL func in the entry's funcs, the for-loop
+will be abruptly ended in the middle of operation.
+Also checking out if probe is null in for-loop is not efficient.
 
-Alex
+Signed-off-by: Sahara <keun-o.park@windriver.com>
+---
+ kernel/tracepoint.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 0c05a45..30f427e 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -112,7 +112,10 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
+ 	int nr_probes = 0;
+ 	struct tracepoint_func *old, *new;
+ 
+-	WARN_ON(!probe);
++	if (unlikely(!probe)) {
++		WARN_ON(!probe);
++		return ERR_PTR(-EINVAL);
++	}
+ 
+ 	debug_print_probes(entry);
+ 	old = entry->funcs;
+@@ -147,15 +150,19 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+ 
+ 	old = entry->funcs;
+ 
++	if (unlikely(!probe)) {
++		WARN_ON(!probe);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	if (!old)
+ 		return ERR_PTR(-ENOENT);
+ 
+ 	debug_print_probes(entry);
+ 	/* (N -> M), (N > 1, M >= 0) probes */
+ 	for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
+-		if (!probe ||
+-		    (old[nr_probes].func == probe &&
+-		     old[nr_probes].data == data))
++		if (old[nr_probes].func == probe &&
++		     old[nr_probes].data == data)
+ 			nr_del++;
+ 	}
+ 
+@@ -173,8 +180,7 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+ 		if (new == NULL)
+ 			return ERR_PTR(-ENOMEM);
+ 		for (i = 0; old[i].func; i++)
+-			if (probe &&
+-			    (old[i].func != probe || old[i].data != data))
++			if (old[i].func != probe || old[i].data != data)
+ 				new[j++] = old[i];
+ 		new[nr_probes - nr_del].func = NULL;
+ 		entry->refcount = nr_probes - nr_del;
+-- 
+1.7.1
 
