@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3CTRVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:21:00 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47794 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab3CTRU7 (ORCPT
+	id S1753949Ab3CTRVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:21:15 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:58567 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab3CTRVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:20:59 -0400
-X-IronPort-AV: E=Sophos;i="4.84,880,1355126400"; 
-   d="scan'208";a="31026159"
-Message-ID: <5149EFFA.1050408@codeaurora.org>
-Date: Wed, 20 Mar 2013 10:20:58 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv3 09/10] clocksource: time-armada-370-xp: Divorce from
- local timer API
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-10-git-send-email-sboyd@codeaurora.org> <5149ED53.5060002@free-electrons.com>
-In-Reply-To: <5149ED53.5060002@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 13:21:12 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ilya Zykov <linux@izyk.ru>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] tty: Fix race condition if flushing tty flip buffers
+Date: Wed, 20 Mar 2013 13:20:43 -0400
+Message-Id: <1363800043-21449-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <5149AFD0.8020604@izyk.ru>
+References: <5149AFD0.8020604@izyk.ru>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/13 10:09, Gregory CLEMENT wrote:
-> On 03/13/2013 07:17 PM, Stephen Boyd wrote:
->> Separate the armada 370xp local timers from the local timer API.
->> This will allow us to remove ARM local timer support in the near
->> future and makes this driver multi-architecture friendly.
-> At first view the code looks good, but when I applied your patch set on
-> linux-next, build it and run it on a Armada XP based board (AX3 with 2 cores),
-> it crashed:
-[...]
-> Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
-> Modules linked in:
-> CPU: 0    Not tainted  (3.9.0-rc3-next-20130319-00010-g728b448 #153)
-> PC is at 0xe92d45f0
-> LR is at armada_370_xp_timer_interrupt+0x3c/0x4c
-> pc : [<e92d45f0>]    lr : [<c023c2bc>]    psr: 600001d3
-> sp : c0635eb8  ip : 00000000  fp : c063c3f0
-> r10: 000003ff  r9 : 00000000  r8 : 00000010
-> r7 : c22b3c40  r6 : ef007c00  r5 : c0640fcc  r4 : c0053e30
-> r3 : e92d45f0  r2 : fffffffe  r1 : c22b3c40  r0 : c0053e30
-> Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c53c7d  Table: 0000406a  DAC: 00000015
-> Process swapper/0 (pid: 0, stack limit = 0xc0634238)
-> Stack: (0xc0635eb8 to 0xc0636000)
-> 5ea0:                                                       ef004c80 c0063224
-> 5ec0: 00000010 00000010 00000000 c0660ac0 c0635f18 c005fcb8 c0632b90 c000ed94
-> 5ee0: c0313c60 60000153 00000001 c00085a8 c0313c54 c0313c60 60000153 ffffffff
-> 5f00: c0635f4c 00000000 562f5842 c06360c0 00000000 c000db60 0000001a ffff8ad0
-> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
-> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
-> 5f60: 00000021 00000000 00000003 00000004 0000006e c065fcc0 c067924c c063ceb8
-> 5f80: c063cc84 c006d8c0 00000005 c065fcc0 c067924c c0421764 c22ad780 c063c42c
-> 5fa0: 562f5842 c063cca8 c06605c0 c04379c0 c22ad780 00000000 562f5842 00000000
-> 5fc0: 00000000 c0417754 ffffffff ffffffff c04172dc 00000000 00000000 c04379c0
-> 5fe0: 10c53c7d c063c414 c04379bc c063febc 0000406a 00008074 00000000 00000000
-> [<c023c2bc>] (armada_370_xp_timer_interrupt+0x3c/0x4c) from [<c0063224>] (handle_percpu_devid_irq+0x64/0x80)
-> [<c0063224>] (handle_percpu_devid_irq+0x64/0x80) from [<c005fcb8>] (generic_handle_irq+0x20/0x30)
-> [<c005fcb8>] (generic_handle_irq+0x20/0x30) from [<c000ed94>] (handle_IRQ+0x38/0x90)
-> [<c000ed94>] (handle_IRQ+0x38/0x90) from [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0)
-> [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0) from [<c000db60>] (__irq_svc+0x40/0x50)
-> Exception stack(0xc0635f18 to 0xc0635f60)
-> 5f00:                                                       0000001a ffff8ad0
-> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
-> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
-> [<c000db60>] (__irq_svc+0x40/0x50) from [<c0313c60>] (calibrate_delay+0x378/0x528)
-> [<c0313c60>] (calibrate_delay+0x378/0x528) from [<c0417754>] (start_kernel+0x250/0x2dc)
-> [<c0417754>] (start_kernel+0x250/0x2dc) from [<00008074>] (0x8074)
-> Code: 1fe7deb7 cd5772dd fff5692e ed55f79e (7ed5a5f7)
->
->
->
-> I am trying to figure out what happened.
+As Ilya Zykov identified in his patch 'PROBLEM: Race condition in
+tty buffer's function flush_to_ldisc()', a race condition exists
+which allows a parallel flush_to_ldisc() to flush and free the tty
+flip buffers while those buffers are in-use. For example,
 
-Argh. Stupid casting again. Can you try this?
+  CPU 0                         |  CPU 1                                  |  CPU 2
+                                | flush_to_ldisc()                        |
+                                |  grab spin lock                         |
+tty_buffer_flush()              |                                         | flush_to_ldisc()
+ wait for spin lock             |                                         |  wait for spin lock
+                                |   if (!test_and_set_bit(TTYP_FLUSHING)) |
+                                |    while (next flip buffer)             |
+                                |     ...                                 |
+                                |     drop spin lock                      |
+  grab spin lock                |                                         |
+   if (test_bit(TTYP_FLUSHING)) |                                         |
+    set_bit(TTYP_FLUSHPENDING)  |      receive_buf()                      |
+    drop spin lock              |                                         |
+                                |                                         |   grab spin lock
+                                |                                         |    if (!test_and_set_bit(TTYP_FLUSHING))
+                                |                                         |    if (test_bit(TTYP_FLUSHPENDING))
+                                |                                         |    __tty_buffer_flush()
 
----8<----
+CPU 2 has just flushed and freed all tty flip buffers while CPU 1 is
+transferring data from the head flip buffer.
 
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index ee2e50c5..a9bf37a 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -150,7 +150,7 @@ static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
-        /*
-         * ACK timer interrupt and call event handler.
-         */
--       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+       struct clock_event_device *evt = dev_id;
+The original patch was rejected under the assumption that parallel
+flush_to_ldisc() was not possible. Because of necessary changes to
+the workqueue api, work items can execute in parallel on SMP.
+
+This patch differs slightly from the original patch by testing for
+a pending flush _after_ each receive_buf(), since TTYP_FLUSHPENDING
+can only be set while the lock is dropped around receive_buf().
+
+Reported-by: Ilya Zykov <linux@izyk.ru>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_buffer.c | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index bb11993..9fd8acd 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -449,11 +449,6 @@ static void flush_to_ldisc(struct work_struct *work)
+ 				tty_buffer_free(port, head);
+ 				continue;
+ 			}
+-			/* Ldisc or user is trying to flush the buffers
+-			   we are feeding to the ldisc, stop feeding the
+-			   line discipline as we want to empty the queue */
+-			if (test_bit(TTYP_FLUSHPENDING, &port->iflags))
+-				break;
+ 			if (!tty->receive_room)
+ 				break;
+ 			if (count > tty->receive_room)
+@@ -465,17 +460,20 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			disc->ops->receive_buf(tty, char_buf,
+ 							flag_buf, count);
+ 			spin_lock_irqsave(&buf->lock, flags);
++			/* Ldisc or user is trying to flush the buffers.
++			   We may have a deferred request to flush the
++			   input buffer, if so pull the chain under the lock
++			   and empty the queue */
++			if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
++				__tty_buffer_flush(port);
++				clear_bit(TTYP_FLUSHPENDING, &port->iflags);
++				wake_up(&tty->read_wait);
++				break;
++			}
+ 		}
+ 		clear_bit(TTYP_FLUSHING, &port->iflags);
+ 	}
  
-        writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
-        evt->event_handler(evt);
-
+-	/* We may have a deferred request to flush the input buffer,
+-	   if so pull the chain under the lock and empty the queue */
+-	if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
+-		__tty_buffer_flush(port);
+-		clear_bit(TTYP_FLUSHPENDING, &port->iflags);
+-		wake_up(&tty->read_wait);
+-	}
+ 	spin_unlock_irqrestore(&buf->lock, flags);
+ 
+ 	tty_ldisc_deref(disc);
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
 
