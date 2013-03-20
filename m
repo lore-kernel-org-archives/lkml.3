@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab3CTQtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:49:41 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:35008
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751207Ab3CTQtk (ORCPT
+	id S933672Ab3CTQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:51:58 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:35627 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757852Ab3CTQv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:49:40 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Topic: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Index: AQHOJCAqmvU0usyXI0yxxCAslUbX+ZiscZuAgAJZ0ICAAAIXAA==
-Date: Wed, 20 Mar 2013 16:49:26 +0000
-Message-ID: <1363798166.2553.29.camel@x230.sbx07502.somerma.wayport.net>
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-	 <alpine.LRH.2.02.1303191542200.30973@tundra.namei.org>
-	 <1363797717.2580.10.camel@falcor1.watson.ibm.com>
-In-Reply-To: <1363797717.2580.10.camel@falcor1.watson.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <CFFF9AAF2DD7E140831E2625553BC0C9@namprd05.prod.outlook.com>
+	Wed, 20 Mar 2013 12:51:56 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18NM8j74z0IyXGrl1QToQUd
+Date: Wed, 20 Mar 2013 09:51:41 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
+        akpm@linux-foundation.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, b-cousson@ti.com,
+        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
+        mchehab@redhat.com, santosh.shilimkar@ti.com,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 4/6] ARM: OMAP: USB: Add phy binding information
+Message-ID: <20130320165141.GP16413@atomide.com>
+References: <1363770725-13717-1-git-send-email-kishon@ti.com>
+ <1363770725-13717-5-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363770725-13717-5-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2KGne1a001097
 
-On Wed, 2013-03-20 at 12:41 -0400, Mimi Zohar wrote:
+* Kishon Vijay Abraham I <kishon@ti.com> [130320 02:17]:
+> 
+> --- a/arch/arm/mach-omap2/board-2430sdp.c
+> +++ b/arch/arm/mach-omap2/board-2430sdp.c
+> @@ -265,6 +266,7 @@ static void __init omap_2430sdp_init(void)
+>  
+>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
+>  	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+> +	phy_bind("musb-hdrc.0.auto", 0, "twl4030_usb");
+>  	usb_musb_init(NULL);
+>  
+>  	board_smc91x_init();
+> --- a/arch/arm/mach-omap2/board-3430sdp.c
+> +++ b/arch/arm/mach-omap2/board-3430sdp.c
+> @@ -601,6 +602,7 @@ static void __init omap_3430sdp_init(void)
+>  	omap_serial_init();
+>  	omap_sdrc_init(hyb18m512160af6_sdrc_params, NULL);
+>  	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+> +	phy_bind("musb-hdrc.0.auto", 0, "twl4030_usb");
+>  	usb_musb_init(NULL);
+>  	board_smc91x_init();
+>  	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
 
-> Matthrew, perhaps you could clarify whether this will be tied to MAC
-> security.  Based on the kexec thread, I'm under the impression that is
-> not the intention, or at least not for kexec.  As root isn't trusted,
-> neither is the boot command line, nor any policy that is loaded by root,
-> including those for MAC.
+Can't you call phy_bind() from usb_musb_init() with the default
+values automatically when usb_musb_init() is passed NULL?
 
-The work done on signed initramfs fragments would seem to be the best
-option here so far?
+That way you don't have to patch every board-*.c file with the
+same lines, and don't need to include <linux/phy/phy.h> in each
+board-*.c file.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> --- a/arch/arm/mach-omap2/board-4430sdp.c
+> +++ b/arch/arm/mach-omap2/board-4430sdp.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/platform_data/omap4-keypad.h>
+>  #include <linux/usb/musb.h>
+>  #include <linux/usb/phy.h>
+> +#include <linux/phy/phy.h>
+>  
+>  #include <asm/mach-types.h>
+>  #include <asm/mach/arch.h>
+> @@ -725,6 +726,7 @@ static void __init omap_4430sdp_init(void)
+>  	omap4_twl6030_hsmmc_init(mmc);
+>  
+>  	usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
+> +	phy_bind("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
+>  	usb_musb_init(&musb_board_data);
+>  
+>  	status = omap_ethernet_init();
+
+Here usb_musb_init() gets called with musb_board_data, so
+keeping the phy_bind() in the board-4430sdp.c can then override
+the default in usb_musb_init().
+
+Regards,
+
+Tony
