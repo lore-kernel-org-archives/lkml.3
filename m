@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab3CTGNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 02:13:41 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:51340 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750902Ab3CTGNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 02:13:39 -0400
-Message-ID: <5149538F.2080402@sgi.com>
-Date: Tue, 19 Mar 2013 23:13:35 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Jason Wessel <jason.wessel@windriver.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH 13/14] x86/UV: Update UV support for external NMI signals
-References: <20130312193823.212544181@gulag1.americas.sgi.com> <20130312193825.244350065@gulag1.americas.sgi.com> <20130314072019.GC7869@gmail.com>
-In-Reply-To: <20130314072019.GC7869@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758008Ab3CTGNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 02:13:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21597 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757958Ab3CTGNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 02:13:53 -0400
+Date: Wed, 20 Mar 2013 02:12:54 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Message-ID: <1363759974-38t0k25g-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130319071113.GD5112@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130318154057.GS10192@dhcp22.suse.cz>
+ <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130319071113.GD5112@dhcp22.suse.cz>
+Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 3/14/2013 12:20 AM, Ingo Molnar wrote:
+On Tue, Mar 19, 2013 at 08:11:13AM +0100, Michal Hocko wrote:
+> On Mon 18-03-13 20:07:16, Naoya Horiguchi wrote:
+> > On Mon, Mar 18, 2013 at 04:40:57PM +0100, Michal Hocko wrote:
+> > > On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
+...
+> > > > @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+> > > >  	pmd = pmd_offset(pud, addr);
+> > > >  	do {
+> > > >  		next = pmd_addr_end(addr, end);
+> > > > +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
+> > > 
+> > > Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
+> > > sufficient?
+> > 
+> > I think we need both check here because if we use only pmd_huge(),
+> > pmd for thp goes into this branch wrongly. 
 > 
-> * Mike Travis <travis@sgi.com> wrote:
-> 
->>
->> There is an exception where the NMI_LOCAL notifier chain is used. When 
->> the perf tools are in use, it's possible that our NMI was captured by 
->> some other NMI handler and then ignored.  We set a per_cpu flag for 
->> those CPUs that ignored the initial NMI, and then send them an IPI NMI 
->> signal.
-> 
-> "Other" NMI handlers should never lose NMIs - if they do then they should 
-> be fixed I think.
-> 
-> Thanks,
-> 
-> 	Ingo
+> Bahh. You are right. I thought that pmd_huge is hugetlb thingy but it
+> obviously checks only _PAGE_PSE same as pmd_large() which is really
+> unfortunate and confusing. Can we make it hugetlb specific?
 
-Hi Ingo,
+I agree that we had better fix this confusion.
 
-I suspect that the other NMI handlers would not grab ours if we were
-on the NMI_LOCAL chain to claim them.  The problem though is the UV
-Hub is not designed to have that amount of traffic reading the MMRs.
-This was handled in previous kernel versions by a.) putting us at the
-bottom of the chain; and b.) as soon as a handler claimed an NMI as
-it's own, the search would be stopped.
+What pmd_huge() (or pmd_large() in some architectures) does is just
+checking whether a given pmd is pointing to huge/large page or not.
+It does not say which type of hugepage it is.
+So it shouldn't be used to decide whether the hugepage are hugetlbfs or not.
+I think it would be better to introduce pmd_hugetlb() which has pmd and vma
+as arguments and returns true only for hugetlbfs pmd.
+Checking pmd_hugetlb() should come before checking pmd_trans_huge() because
+pmd_trans_huge() implicitly assumes that the vma which covers the virtual
+address of a given pmd is not hugetlbfs vma.
 
-Neither of these are true any more as all handlers are called for
-all NMIs.  (I measured anywhere from .5M to 4M NMIs per second on a
-64 socket, 1024 cpu thread system [not sure why the rate changes]).
-This was the primary motivation for placing the UV NMI handler on the
-NMI_UNKNOWN chain, so it would be called only if all other handlers
-"gave up", and thus not incur the overhead of the MMR reads on every
-NMI event.
-
-The good news is that I haven't yet encountered a case where the
-"missing" cpus were not called into the NMI loop.  Even better news
-is that on the previous (3.0 vintage) kernels running two perf tops
-would almost always cause either tons of the infamous "dazed and
-confused" messages, or would lock up the system.  Now it results in
-quite a few messages like:
-
-[  961.119417] perf_event_intel: clearing PMU state on CPU#652
-
-followed by a dump of a number of cpu PMC registers.  But the system
-remains responsive.  (This was experienced in our Customer Training
-Lab where multiple system admins were in the class.)
-
-The bad news is I'm not sure why the errant NMI interrupts are lost.
-I have noticed that restricting the 'perf tops' to separate and
-distinct cpusets seems to lessen this "stomping on each other's perf
-event handlers" effect, which might be more representative of actual
-customer usage.
-
-So in total the situation is vastly improved... :)
+I'm interested in this cleanup, so will work on it after this patchset.
 
 Thanks,
-Mike
+Naoya
