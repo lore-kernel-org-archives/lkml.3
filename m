@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3CTX51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 19:57:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50904 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab3CTX5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 19:57:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <514A4CCD.6000608@jp.fujitsu.com>
-Date: Thu, 21 Mar 2013 08:57:01 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1754438Ab3CTX6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 19:58:49 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:59483
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751676Ab3CTX6r convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 19:58:47 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Wed, 20 Mar 2013 18:58:41 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH] KVM: allow host header to be included even for
+ !CONFIG_KVM
+To: Kevin Hilman <khilman@linaro.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, <linaro-kernel@lists.linaro.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
+In-Reply-To: <1363306426-27209-1-git-send-email-khilman@linaro.org> (from
+	khilman@linaro.org on Thu Mar 14 19:13:46 2013)
+X-Mailer: Balsa 2.4.11
+Message-ID: <1363823921.25034.35@snotra>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove acpi_memory_info->failed bit
-References: <514022BF.3080303@jp.fujitsu.com>  <1363186213.12845.174.camel@misato.fc.hp.com>  <514679BC.5020700@jp.fujitsu.com> <1363705437.11659.5.camel@misato.fc.hp.com>
-In-Reply-To: <1363705437.11659.5.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On 03/14/2013 07:13:46 PM, Kevin Hilman wrote:
+> The new context tracking subsystem unconditionally includes kvm_host.h
+> headers for the guest enter/exit macros.  This causes a compile
+> failure when KVM is not enabled.
+> 
+> Fix by adding an IS_ENABLED(CONFIG_KVM) check to kvm_host so it can
+> be included/compiled even when KVM is not enabled.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+> Applies on v3.9-rc2
+> 
+>  include/linux/kvm_host.h | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 
-2013/03/20 0:03, Toshi Kani wrote:
-> On Mon, 2013-03-18 at 11:19 +0900, Yasuaki Ishimatsu wrote:
->> Hi Toshi,
->>
->> Sorry for the late reply
->>
->> 2013/03/13 23:50, Toshi Kani wrote:
->>> On Wed, 2013-03-13 at 15:54 +0900, Yasuaki Ishimatsu wrote:
->>>> At http://marc.info/?l=linux-acpi&m=135769405622667&w=2 thread,
->>>> Toshi Kani mentioned as follows:
->>>>
->>>> "I have a question about the change you made in commit 65479472 in
->>>> acpi_memhotplug.c.  This change seems to require that
->>>> acpi_memory_enable_device() calls add_memory() to add all memory ranges
->>>> represented by memory device objects at boot-time, and keep the results
->>>> be used for hot-remove.
->>>>
->>>> If I understand it right, this add_memory() call fails with EEXIST at
->>>> boot-time since all memory ranges should have been added from EFI memory
->>>> table (or e820) already.  This results all memory ranges be marked as !
->>>> enabled & !failed.  I think this means that we cannot hot-delete any
->>>> memory ranges presented at boot-time since acpi_memory_remove_memory()
->>>> only calls remove_memory() when the enabled flag is set.  Is that
->>>> correct?"
->>>>
->>>> Above mention is correct. Thus even if memory device supports hotplug,
->>>> memory presented at boot-time cannot be hot removed since the memory
->>>> device's acpi_memory_info->enabled is always 0.
->>>>
->>>> This patch changes to set 1 to "acpi_memory_info->enabled" of memory
->>>> device presented at boot-time for hot removing the memory device.
->>>>
->>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>
->>>> ---
->>>>    drivers/acpi/acpi_memhotplug.c |    4 ++--
->>>>    1 files changed, 2 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->>>> index da1f82b..88fd46a 100644
->>>> --- a/drivers/acpi/acpi_memhotplug.c
->>>> +++ b/drivers/acpi/acpi_memhotplug.c
->>>> @@ -254,8 +254,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->>>>    			continue;
->>>>    		}
->>>>
->>>> -		if (!result)
->>>> -			info->enabled = 1;
->>>> +		info->enabled = 1;
->>>
->>> Do we still need to keep the enable bit?  I think !failed means enabled
->>> with this change.
->>
->> For controlling memory hotplug, we need either failed bit or enabled bit.
->> So I want to remove failed bit as follows:
->>
->> ---
->>
->> acpi_memory_info has enabled bit and failed bit for controlling memory
->> hotplug. But we don't need to keep both bits.
->>
->> The patch removes acpi_memory_info->failed bit.
->
-> Thanks for the update.  Which branch does this patch apply to?  I tried
-> several, but could not apply.
+This broke the PPC non-KVM build, which was relying on stub functions  
+in kvm_ppc.h, which relies on "struct vcpu" in kvm_host.h.
 
-These patches are based on linux-3.9-rc3.
-O.K. I'll make them based on linux-pm.git/bleeding-edge.
+Why can't the entirety kvm_host.h be included regardless of CONFIG_KVM,  
+just like most other feature-specific headers?  Why can't the if/else  
+just go around the functions that you want to stub out for non-KVM  
+builds?
 
-Thanks,
-Yasuaki Ishimatsu
-
-> -Toshi
->
->
-
-
+-Scott
