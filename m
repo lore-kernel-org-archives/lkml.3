@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab3CTPpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:45:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54175 "EHLO arroyo.ext.ti.com"
+	id S1758150Ab3CTPpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:45:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54182 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab3CTPpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:45:46 -0400
+	id S933284Ab3CTPpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 11:45:50 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 18/21] ARM: OMAP: zoom: Adapt to ehci-omap changes
-Date: Wed, 20 Mar 2013 17:44:57 +0200
-Message-ID: <1363794300-31526-19-git-send-email-rogerq@ti.com>
+        <linux-kernel@vger.kernel.org>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>
+Subject: [PATCH v4 21/21] ARM: dts: omap3-beagle: Add USB Host support
+Date: Wed, 20 Mar 2013 17:45:00 +0200
+Message-ID: <1363794300-31526-22-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363794300-31526-1-git-send-email-rogerq@ti.com>
 References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use usbhs_init_phys() to register the PHY's RESET regulator
-and the NOP PHY device.
+Provide RESET and Power regulators for the USB PHY,
+the USB Host port mode and the PHY device.
 
+Also provide pin multiplexer information for USB host
+pins.
+
+CC: Benoît Cousson <b-cousson@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/board-zoom.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/omap3-beagle.dts |   71 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 71 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-zoom.c b/arch/arm/mach-omap2/board-zoom.c
-index 5e4d4c9..1a3dd86 100644
---- a/arch/arm/mach-omap2/board-zoom.c
-+++ b/arch/arm/mach-omap2/board-zoom.c
-@@ -92,14 +92,16 @@ static struct mtd_partition zoom_nand_partitions[] = {
- 	},
- };
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index f624dc8..02d23f1 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -38,6 +38,57 @@
+ 		};
+ 	};
  
-+static struct usbhs_phy_data phy_data[] __initdata = {
-+	{
-+		.port = 2,
-+		.reset_gpio = ZOOM3_EHCI_RESET_GPIO,
-+		.vcc_gpio = -EINVAL,
-+	},
++	/* HS USB Port 2 RESET */
++	hsusb2_reset: hsusb2_reset_reg {
++		compatible = "regulator-fixed";
++		regulator-name = "hsusb2_reset";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio5 19 0>;	/* gpio_147 */
++		startup-delay-us = <70000>;
++		enable-active-high;
++	};
++
++	/* HS USB Port 2 Power */
++	hsusb2_power: hsusb2_power_reg {
++		compatible = "regulator-fixed";
++		regulator-name = "hsusb2_vbus";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
++		startup-delay-us = <70000>;
++	};
++
++	/* HS USB Host PHY on PORT 2 */
++	hsusb2_phy: hsusb2_phy {
++		compatible = "usb-nop-xceiv";
++		reset-supply = <&hsusb2_reset>;
++		vcc-supply = <&hsusb2_power>;
++	};
 +};
 +
- static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
--	.port_mode[0]		= OMAP_USBHS_PORT_MODE_UNUSED,
- 	.port_mode[1]		= OMAP_EHCI_PORT_MODE_PHY,
--	.port_mode[2]		= OMAP_USBHS_PORT_MODE_UNUSED,
--	.phy_reset		= true,
--	.reset_gpio_port[0]	= -EINVAL,
--	.reset_gpio_port[1]	= ZOOM3_EHCI_RESET_GPIO,
--	.reset_gpio_port[2]	= -EINVAL,
++&omap3_pmx_core {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusbb2_pins
++	>;
++
++	hsusbb2_pins: pinmux_hsusbb2_pins {
++		pinctrl-single,pins = <
++			0x5c0 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_clk OUTPUT */
++			0x5c2 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_stp OUTPUT */
++			0x5c4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dir INPUT | PULLDOWN */
++			0x5c6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_nxt INPUT | PULLDOWN */
++			0x5c8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat0 INPUT | PULLDOWN */
++			0x5cA 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat1 INPUT | PULLDOWN */
++			0x1a4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat2 INPUT | PULLDOWN */
++			0x1a6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat3 INPUT | PULLDOWN */
++			0x1a8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat4 INPUT | PULLDOWN */
++			0x1aa 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat5 INPUT | PULLDOWN */
++			0x1ac 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat6 INPUT | PULLDOWN */
++			0x1ae 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat7 INPUT | PULLDOWN */
++		>;
++	};
  };
  
- static void __init omap_zoom_init(void)
-@@ -109,6 +111,8 @@ static void __init omap_zoom_init(void)
- 	} else if (machine_is_omap_zoom3()) {
- 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
- 		omap_mux_init_gpio(ZOOM3_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
+ &i2c1 {
+@@ -65,3 +116,23 @@
+ &mmc3 {
+ 	status = "disabled";
+ };
 +
-+		usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
- 		usbhs_init(&usbhs_bdata);
- 	}
- 
++&usbhshost {
++	port2-mode = "ehci-phy";
++};
++
++&usbhsehci {
++	phys = <0 &hsusb2_phy>;
++};
++
++&twl_gpio {
++	ti,use-leds;
++	/* pullups: BIT(1) */
++	ti,pullups = <0x000002>;
++	/*
++	 * pulldowns:
++	 * BIT(2), BIT(6), BIT(7), BIT(8), BIT(13)
++	 * BIT(15), BIT(16), BIT(17)
++	 */
++	ti,pulldowns = <0x03a1c4>;
++};
 -- 
 1.7.4.1
 
