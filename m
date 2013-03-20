@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab3CTNM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:12:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40557 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806Ab3CTNM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:12:57 -0400
-Date: Wed, 20 Mar 2013 15:12:40 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <notasas@gmail.com>
-Subject: Re: [PATCH 0/5] usb: musb/otg: cleanup and fixes
-Message-ID: <20130320131240.GA15157@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1363164430-19118-1-git-send-email-kishon@ti.com>
+	id S1757132Ab3CTNRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:17:16 -0400
+Received: from [213.199.154.205] ([213.199.154.205]:23374 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751711Ab3CTNRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:17:14 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Thread-Topic: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Thread-Index: AQHOJCAqmvU0usyXI0yxxCAslUbX+ZitxQyAgADMzQA=
+Date: Wed, 20 Mar 2013 13:15:55 +0000
+Message-ID: <1363785354.2553.15.camel@x230.sbx07502.somerma.wayport.net>
+References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
+	 <51490ABD.3050205@zytor.com>
+In-Reply-To: <51490ABD.3050205@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <DC5092F7787488468759C704BBD7BF60@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
-Content-Disposition: inline
-In-Reply-To: <1363164430-19118-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2KDHHGl032157
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2013-03-19 at 18:02 -0700, H. Peter Anvin wrote:
 
-On Wed, Mar 13, 2013 at 02:17:05PM +0530, Kishon Vijay Abraham I wrote:
-> This series has some misc cleanup and fixes. The fix solves the cold
-> plug issue in omap3 which some have reported. Developed these patches on
-> Linux 3.9-rc2 after applying http://www.spinics.net/lists/linux-usb/msg81=
-563.html
-> (Grazvydas Ignotas patch series)
->=20
-> Tested for g_zero enumeration in pandaboard and beagleboard in both
-> cold plug and hot plug case. Any kind of testing for this series is welco=
-me.
->=20
-> Kishon Vijay Abraham I (5):
->   usb: musb: omap: remove the check before calling otg_set_vbus
->   usb: musb: omap: always glue have the correct vbus/id status
->   usb: otg: twl4030: use devres API for regulator get and request irq
->   usb: musb: omap: add usb_phy_init in omap2430_musb_init
->   usb: otg: twl4030: fix cold plug on OMAP3
->=20
->  drivers/usb/musb/omap2430.c   |   22 ++++++++++------------
->  drivers/usb/otg/twl4030-usb.c |   35 ++++++++++++-----------------------
->  2 files changed, 22 insertions(+), 35 deletions(-)
+> Looking at it in detail, EVERYTHING in CAP_SYS_RAWIO has the possibility
+> of compromising the kernel, because they let device drivers be bypassed,
+> which means arbitrary DMA, which means you have everything.
 
-this needs to be rebased against my 'next' branch.
+Having checked again, I don't think this is true. The most obvious case
+is libata, which uses CAP_SYS_RAWIO to limit the ability to send raw ATA
+commands. Being able to do so clearly permits userspace to avoid any
+kind of policy the vfs has put in place, but there's no obvious way for
+the user to modify the running kernel. Are you suggesting that removing
+the CAP_SYS_RAWIO check there would be reasonable?
 
---=20
-balbi
-
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRSbXIAAoJEIaOsuA1yqRErUkP/AjduTc5xTRXX/YYPnWfHLnF
-bSFKycxf19XSSserz3nX1q+sSPqQpCIwxFhhHZxTMjou4SAsMtjfSMX9SHBfc4jx
-TG1rElChK4h0DRUKRTOC43484q6WCUGUwnRRvaTmRz5sAJaAI377safl8wCUSt3T
-zWyjqDqHASJWjIr+ouDdUs5SWJ6fYEuRQCjBomva2n6I0yS/7uEpemx3R7llXHI/
-MilE/Hy+XIlTY7Kv0IjhfzMp6TFev7qXCCEgy0Gi0ylXWHJ6KKrTNozDau3iSYBH
-qSxfUFS/PU6WguWbZ9l+pr2XIhe58ogiiOTRJheYLZLRQJhxHeCF+oOC0uyBUmRN
-EQakgWxnDc4eOiHt2tP1RlowOXwSi9/aD91htZ03zVUJD2CWoJ7vCv6Cmu1q80z/
-oWXYh666Na5N9B9S0W6QIvaP0vXWNW4AQ69hYp3M0gf0betUPphMuwfEqYnqtQL2
-ChH7otbxhjBCkPHsWrcI6750fQFZVuVKPi/gB7Rf8XV2Q0zCzrjwhVJknj+DMoZK
-V3SA0a6AbZyVmRk2avhEOSi/1mHFIaZNXMQN8soOU16ZUMVV9rTaUSaphlqgQ8wc
-/vnpb2Xkn2PTp3i0sLLVm9EnEeDwnS9Xzxp9SW4xWlwJhBjugZbNwCVdb1INi6Ba
-Gd7ASLtLpETWUHUC1ZOd
-=c7nc
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
