@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab3CTNsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:48:38 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37362 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab3CTNsg (ORCPT
+	id S1755882Ab3CTNtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:49:04 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9966 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3CTNsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:48:36 -0400
+	Wed, 20 Mar 2013 09:48:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 06:47:53 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/4] ARM: tegra: dalmore: add cpu regulator's node
+Date: Wed, 20 Mar 2013 19:14:28 +0530
+Message-ID: <1363787070-14801-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
+References: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <1363783096.3724.5.camel@laptop>
-References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1360820921-2513-8-git-send-email-iamjoonsoo.kim@lge.com>
-	<1363705546.22553.61.camel@laptop>
-	<20130320074330.GE11672@lge.com>
-	<1363783096.3724.5.camel@laptop>
-Date: Wed, 20 Mar 2013 22:48:32 +0900
-Message-ID: <CAAmzW4NqX5NTjoaaFWJJmN_SAxNudZd8mgQWB_c4XKTgsMwcJA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] sched: prevent to re-select dst-cpu in load_balance()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/20 Peter Zijlstra <peterz@infradead.org>:
-> On Wed, 2013-03-20 at 16:43 +0900, Joonsoo Kim wrote:
->> On Tue, Mar 19, 2013 at 04:05:46PM +0100, Peter Zijlstra wrote:
->> > On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
->> > > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
->> > > But, in that, there is no code for preventing to re-select dst-cpu.
->> > > So, same dst-cpu can be selected over and over.
->> > >
->> > > This patch add functionality to load_balance() in order to exclude
->> > > cpu which is selected once.
->> >
->> > Oh man.. seriously? Did you see this happen? Also, can't we simply
->> > remove it from lb->cpus?
->>
->> I didn't see it, I do just logical thinking. :)
->> lb->cpus is for source cpus and dst-cpu is for dest cpus. So, it doesn't
->> works to remove it from lb->cpus.
->
-> How about we interpret ->cpus as the total mask to balance; so both
-> source and destination. That way clearing a cpu means we won't take nor
-> put tasks on it.
+Dalmore uses the TPS51632 as cpu regulator. This device
+is connected on I2C5.
 
-In my quick thought, it may be possible.
-I will try to do it.
+Add dt node for this device.
 
-Thanks.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/boot/dts/tegra114-dalmore.dts |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index a61974e..6be9434 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -718,6 +718,21 @@
+ 		clock-frequency = <408000000>;
+ 	};
+ 
++	i2c@7000d000 {
++		status = "okay";
++		clock-frequency = <400000>;
++
++		tps51632 {
++			compatible = "ti,tps51632";
++			reg = <0x43>;
++			regulator-name = "vdd-cpu";
++			regulator-min-microvolt = <500000>;
++			regulator-max-microvolt = <1520000>;
++			regulator-boot-on;
++			regulator-always-on;
++		};
++	};
++
+ 	pmc {
+ 		nvidia,invert-interrupt;
+ 	};
+-- 
+1.7.1.1
+
