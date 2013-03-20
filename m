@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab3CTQ57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:57:59 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19761 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab3CTQ55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:57:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 09:57:52 -0700
-Message-ID: <5149EA8F.6090806@nvidia.com>
-Date: Wed, 20 Mar 2013 12:57:51 -0400
-From: Rhyland Klein <rklein@nvidia.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1758278Ab3CTQ70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:59:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55265 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755465Ab3CTQ7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:59:25 -0400
+Message-ID: <5149EAE7.7040800@ti.com>
+Date: Wed, 20 Mar 2013 18:59:19 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/4] ARM: tegra: dalmore: add dt node for TPS65090's regulators
-References: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com> <1363787070-14801-4-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1363787070-14801-4-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Jon Hunter <jon-hunter@ti.com>
+CC: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: video: omap2: dss: Use PTR_RET function
+References: <1363680194-10404-1-git-send-email-gheorghiuandru@gmail.com> <5149A3D0.2010902@ti.com> <5149D95D.2030505@ti.com>
+In-Reply-To: <5149D95D.2030505@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig3DFCFFE47C963A6D568D3A58"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/20/2013 9:44 AM, Laxman Dewangan wrote:
-> NVIDIA's Tegra114 platform, Dalmore, uses the TPS65090 as
-> secondary PMICs which mainly act as voltage switch controlled
-> by I2C communication.
-> 
-> Add regulator node for this device.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  .../devicetree/bindings/regulator/tps65090.txt     |    4 +-
->  arch/arm/boot/dts/tegra114-dalmore.dts             |   90 ++++++++++++++++++++
->  2 files changed, 92 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
-> index 313a60b..8926e2d 100644
-> --- a/Documentation/devicetree/bindings/regulator/tps65090.txt
-> +++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
-> @@ -41,8 +41,8 @@ Example:
->  		infet5-supply = <&some_reg>;
->  		infet6-supply = <&some_reg>;
->  		infet7-supply = <&some_reg>;
-> -		vsys_l1-supply = <&some_reg>;
-> -		vsys_l2-supply = <&some_reg>;
-> +		vsys-l1-supply = <&some_reg>;
-> +		vsys-l2-supply = <&some_reg>;
->  
->  		regulators {
->  			dcdc1 {
-> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-> index 6be9434..a47c3d2 100644
-> --- a/arch/arm/boot/dts/tegra114-dalmore.dts
-> +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-> @@ -731,6 +731,82 @@
->  			regulator-boot-on;
->  			regulator-always-on;
->  		};
-> +
-> +		tps65090@48 {
-> +			compatible = "ti,tps65090";
-> +			reg = <0x48>;
-> +			interrupt-parent = <&gpio>;
-> +			interrupts = <72 0x04>; /* gpio PJ0 */
-> +
-> +			vsys1-supply = <&vdd_ac_bat_reg>;
-> +			vsys2-supply = <&vdd_ac_bat_reg>;
-> +			vsys3-supply = <&vdd_ac_bat_reg>;
-> +			infet1-supply = <&vdd_ac_bat_reg>;
-> +			infet2-supply = <&vdd_ac_bat_reg>;
-> +			infet3-supply = <&tps65090_dcdc2_reg>;
-> +			infet4-supply = <&tps65090_dcdc2_reg>;
-> +			infet5-supply = <&tps65090_dcdc2_reg>;
-> +			infet6-supply = <&tps65090_dcdc2_reg>;
-> +			infet7-supply = <&tps65090_dcdc2_reg>;
-> +			vsys-l1-supply = <&vdd_ac_bat_reg>;
-> +			vsys-l2-supply = <&vdd_ac_bat_reg>;
-> +
-> +			regulators {
-> +				dcdc1 {
-> +					regulator-name = "vdd-sys-5v0";
-> +					regulator-always-on;
-> +					regulator-boot-on;
-> +				};
+--------------enig3DFCFFE47C963A6D568D3A58
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-You should also add the tps65090_dcdc1_reg label to dcdc1. I believe you
-make use of it in patch 4 and this currently causes build breaks.
+On 2013-03-20 17:44, Jon Hunter wrote:
+>=20
+> On 03/20/2013 06:56 AM, Tomi Valkeinen wrote:
+>> On 2013-03-19 10:03, Alexandru Gheorghiu wrote:
+>>> Use PTR_RET function instead of IS_ERR and PTR_ERR.
+>>> Patch found using coccinelle.
+>>>
+>>> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+>>> ---
+>>>  drivers/video/omap2/dss/core.c |    5 +----
+>>>  1 file changed, 1 insertion(+), 4 deletions(-)
+>>>
+>>> diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss=
+/core.c
+>>> index f8779d4..60cc6fe 100644
+>>> --- a/drivers/video/omap2/dss/core.c
+>>> +++ b/drivers/video/omap2/dss/core.c
+>>> @@ -181,10 +181,7 @@ int dss_debugfs_create_file(const char *name, vo=
+id (*write)(struct seq_file *))
+>>>  	d =3D debugfs_create_file(name, S_IRUGO, dss_debugfs_dir,
+>>>  			write, &dss_debug_fops);
+>>> =20
+>>> -	if (IS_ERR(d))
+>>> -		return PTR_ERR(d);
+>>> -
+>>> -	return 0;
+>>> +	return PTR_RET(d);
+>>>  }
+>>>  #else /* CONFIG_OMAP2_DSS_DEBUGFS */
+>>>  static inline int dss_initialize_debugfs(void)
+>>>
+>>
+>> Thanks. I'll apply to omapdss tree.
+>=20
+> Is this correct? If debugfs_create_file() returns a valid pointer, then=
 
-> +
-> +				tps65090_dcdc2_reg: dcdc2 {
-> +					regulator-name = "vdd-sys-3v3";
-> +					regulator-always-on;
-> +					regulator-boot-on;
-> +				};
-> +
-> 
+> now dss_debugfs_create_file() will return a non-zero value on success. =
+I
+> don't think this is what you want. A similar case came up recently here=
+ [1].
 
--rhyland
+Hmm. I don't follow. And I don't understand the post where you referred.
 
--- 
-nvpublic
+PTR_RET is defined as:
+
+if (IS_ERR(ptr))
+        return PTR_ERR(ptr);
+else
+        return 0;
+
+How's that different from the original code?
+
+ Tomi
+
+
+
+--------------enig3DFCFFE47C963A6D568D3A58
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRSernAAoJEPo9qoy8lh71Z+UP/2p5ZVvjNTbzQUypqWowSGYo
+HYPhofYLt4fIR9k79f+M2R3XxA4yn8nGl6IjpezHjEpV2u8ngOZjcEU7zY8NXX1X
+pxW0KCTEOMzjRUc9CllmSERABDMLpoT0dbACvnmKZ3vj6/hYy+vapbjzmUq3OJJT
+fufZpvCiUA1oVpY6yeQXB1OWcUNqJSTErDqaHdlFL93n2sydE06tPKUV69DmIco3
+HoFnsPFDIFKdHeBbW7DfIXCvJlg0RM24fClmQlfl5tLtr24V4nPGWTH/vHy5KZWX
+bDdhw8BLmrP8srsR3IfR1J5wJT7mmBj554aj2HeNnTLROFYl5CdxAKXdyOjruc/o
+R6Lcde92s4d63H707+HlAjP/eTFfk/kZv7gx9Tbbqhx9R427xY8UdPrNnqPj+BVU
++Mb7NBdNUL3M+gCQj83bcNm9ksT39auQZ2aej71T2uDV8iH5iQrkkIpjGt2nuGpP
+T0j8peqq/EfTpHbY/l1ktCFr2dmlnGPZm5FBdISIbun7bNAMAGZ0z34gb/9RRVOx
++gYXEFD67ugTxckMnjJWC5jDafO8HqOzjFSdALbnZguMno93j1K8RfpCwa/mwpKj
+vGTxrr9y30RIrVBcvhouLbkKR8skRCjy0KMOzGkh/esvNjH8z8/a3ccIfNLNSqm4
+pXCBVgWiZ22OSGo2DA7o
+=H6B3
+-----END PGP SIGNATURE-----
+
+--------------enig3DFCFFE47C963A6D568D3A58--
