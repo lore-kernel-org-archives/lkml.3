@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3CTSCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:02:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33676 "EHLO arroyo.ext.ti.com"
+	id S1756969Ab3CTSDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:03:49 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:41645 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab3CTSCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:02:32 -0400
-Message-ID: <5149F9B4.2020400@ti.com>
-Date: Wed, 20 Mar 2013 13:02:28 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: video: omap2: dss: Use PTR_RET function
-References: <1363680194-10404-1-git-send-email-gheorghiuandru@gmail.com> <5149A3D0.2010902@ti.com> <5149D95D.2030505@ti.com> <5149EAE7.7040800@ti.com>
-In-Reply-To: <5149EAE7.7040800@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+	id S1752500Ab3CTSDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 14:03:46 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 1/5] mm: Try harder to allocate vmemmap blocks
+Date: Wed, 20 Mar 2013 14:03:28 -0400
+Message-Id: <1363802612-32127-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1363802612-32127-1-git-send-email-hannes@cmpxchg.org>
+References: <1363802612-32127-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ben Hutchings <ben@decadent.org.uk>
 
-On 03/20/2013 11:59 AM, Tomi Valkeinen wrote:
-> On 2013-03-20 17:44, Jon Hunter wrote:
->>
->> On 03/20/2013 06:56 AM, Tomi Valkeinen wrote:
->>> On 2013-03-19 10:03, Alexandru Gheorghiu wrote:
->>>> Use PTR_RET function instead of IS_ERR and PTR_ERR.
->>>> Patch found using coccinelle.
->>>>
->>>> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
->>>> ---
->>>>  drivers/video/omap2/dss/core.c |    5 +----
->>>>  1 file changed, 1 insertion(+), 4 deletions(-)
->>>>
->>>> diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss/core.c
->>>> index f8779d4..60cc6fe 100644
->>>> --- a/drivers/video/omap2/dss/core.c
->>>> +++ b/drivers/video/omap2/dss/core.c
->>>> @@ -181,10 +181,7 @@ int dss_debugfs_create_file(const char *name, void (*write)(struct seq_file *))
->>>>  	d = debugfs_create_file(name, S_IRUGO, dss_debugfs_dir,
->>>>  			write, &dss_debug_fops);
->>>>  
->>>> -	if (IS_ERR(d))
->>>> -		return PTR_ERR(d);
->>>> -
->>>> -	return 0;
->>>> +	return PTR_RET(d);
->>>>  }
->>>>  #else /* CONFIG_OMAP2_DSS_DEBUGFS */
->>>>  static inline int dss_initialize_debugfs(void)
->>>>
->>>
->>> Thanks. I'll apply to omapdss tree.
->>
->> Is this correct? If debugfs_create_file() returns a valid pointer, then
->> now dss_debugfs_create_file() will return a non-zero value on success. I
->> don't think this is what you want. A similar case came up recently here [1].
-> 
-> Hmm. I don't follow. And I don't understand the post where you referred.
-> 
-> PTR_RET is defined as:
-> 
-> if (IS_ERR(ptr))
->         return PTR_ERR(ptr);
-> else
->         return 0;
-> 
-> How's that different from the original code?
+Hot-adding memory on x86_64 normally requires huge page allocation.
+When this is done to a VM guest, it's usually because the system is
+already tight on memory, so the request tends to fail.  Try to avoid
+this by adding __GFP_REPEAT to the allocation flags.
 
-Oops sorry, I missed that you were returning PTR_RET() and not
-PTR_ERR(). Yes that looks fine. Sorry for the noise!
+Reported-and-tested-by: Bernhard Schmidt <Bernhard.Schmidt@lrz.de>
+Reference: http://bugs.debian.org/699913
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/sparse-vmemmap.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Jon
+diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+index 1b7e22a..22b7e18 100644
+--- a/mm/sparse-vmemmap.c
++++ b/mm/sparse-vmemmap.c
+@@ -53,10 +53,12 @@ void * __meminit vmemmap_alloc_block(unsigned long size, int node)
+ 		struct page *page;
+ 
+ 		if (node_state(node, N_HIGH_MEMORY))
+-			page = alloc_pages_node(node,
+-				GFP_KERNEL | __GFP_ZERO, get_order(size));
++			page = alloc_pages_node(
++				node, GFP_KERNEL | __GFP_ZERO | __GFP_REPEAT,
++				get_order(size));
+ 		else
+-			page = alloc_pages(GFP_KERNEL | __GFP_ZERO,
++			page = alloc_pages(
++				GFP_KERNEL | __GFP_ZERO | __GFP_REPEAT,
+ 				get_order(size));
+ 		if (page)
+ 			return page_address(page);
+-- 
+1.7.11.7
+
