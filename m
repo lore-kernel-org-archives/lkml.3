@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab3CTNCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:02:40 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10010 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757102Ab3CTNCj (ORCPT
+	id S1757209Ab3CTNE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:04:28 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:37439 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab3CTNE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:02:39 -0400
-From: <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, <Radovan.Lekanovic@sonymobile.com>,
-        Truls Bengtsson <truls.bengtsson@sonymobile.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>
-Subject: [PATCHv2] usb: f_rndis: Avoid to use ERROR macro if cdev can be null
-Date: Wed, 20 Mar 2013 14:02:25 +0100
-Message-ID: <1363784545-24274-1-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.7.8.6
+	Wed, 20 Mar 2013 09:04:27 -0400
+Date: Wed, 20 Mar 2013 10:04:19 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 6/9] perf util: Get rid of malloc_or_die() in
+ trace-event-read.c
+Message-ID: <20130320130419.GC1964@ghostprotocols.net>
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+ <1363683224-28804-7-git-send-email-namhyung@kernel.org>
+ <1363704602.5938.26.camel@gandalf.local.home>
+ <87ehfaj2ic.fsf@sejong.aot.lge.com>
+ <1363744502.6345.1.camel@gandalf.local.home>
+ <871ubaixlw.fsf@sejong.aot.lge.com>
+ <1363749205.6345.5.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363749205.6345.5.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Truls Bengtsson <truls.bengtsson@sonymobile.com>
+Em Tue, Mar 19, 2013 at 11:13:25PM -0400, Steven Rostedt escreveu:
+> On Wed, 2013-03-20 at 12:00 +0900, Namhyung Kim wrote:
+> > On Tue, 19 Mar 2013 21:55:02 -0400, Steven Rostedt wrote:
+> > > On Wed, 2013-03-20 at 10:14 +0900, Namhyung Kim wrote:
+> > >> On Tue, 19 Mar 2013 10:50:02 -0400, Steven Rostedt wrote:
+> > >> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
+> > >> > I think I like the err += func() and check for err < 0, better.
 
-The udc_irq service runs the isr_tr_complete_handler which in turn
-"nukes" the endpoints, including a call to rndis_response_complete,
-if appropriate. If the rndis_msg_parser fails here, an error will
-be printed using a dev_err call (through the ERROR() macro).
+> > >> Okay, I'll change them to err |= func() style if you're fine as Peter
+> > >> suggested.
 
-However, if the usb cable was just disconnected the device (cdev)
-might not be available and will be null. Since the dev_err macro will
-dereference the cdev pointer we get a null pointer exception.
+> > > += or |= I'm not picky ;-)
 
-Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/f_rndis.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> > Ah, one thing I also care was the short-circuit logic.  I think we don't
+> > need to call later functions if one fails, do we?
 
-diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-index 71beeb8..cc9c49c 100644
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -447,14 +447,13 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
- static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
- {
- 	struct f_rndis			*rndis = req->context;
--	struct usb_composite_dev	*cdev = rndis->port.func.config->cdev;
- 	int				status;
- 
- 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
- //	spin_lock(&dev->lock);
- 	status = rndis_msg_parser(rndis->config, (u8 *) req->buf);
- 	if (status < 0)
--		ERROR(cdev, "RNDIS command error %d, %d/%d\n",
-+		pr_err("RNDIS command error %d, %d/%d\n",
- 			status, req->actual, req->length);
- //	spin_unlock(&dev->lock);
- }
--- 
-1.7.8.6
+> Yeah, good point. It still looks ugly, but it does make sense.
 
+Yes, I dislike all this += or |=, it should be normal exception
+handling, just like everywhere in the kernel codebase:
+
+	err = foo();
+	if (err)
+		goto out_err;
+
+	err = bar();
+	if (err)
+		goto out_foo;
+
+	err = baz();
+	if (err)
+		goto out_bar;
+
+	err = new_foo();
+	if (err)
+		goto out_baz;
+
+	return 0;
+out_baz:
+	baz_cleanup();
+out_bar:
+	bar_cleanup();
+out_foo:
+	foo_cleanup();
+out_err:
+	return err;
+
+----
+
+	That way exception handling code lies at the end of the
+function, i.e. in source and binary code it has a lower chance of
+polluting brain and CPU caches, and we don't need to call N functions
+if we'll bail out when the one of them fails.
+
+	I.e. nothing new here, just follow kernel coding style, move
+along :-)
+
+- Arnaldo
