@@ -1,132 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934327Ab3CTIau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:30:50 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41671 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934225Ab3CTIaq (ORCPT
+	id S1758116Ab3CTIdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:33:24 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46014 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3CTIdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:30:46 -0400
+	Wed, 20 Mar 2013 04:33:20 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: mtosatti@redhat.com
 Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/7] KVM: MMU: introduce mmu_cache->pte_list_descs
-Date: Wed, 20 Mar 2013 16:30:21 +0800
-Message-Id: <1363768227-4782-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v2 6/7] KVM: MMU: fast zap all shadow pages
+Date: Wed, 20 Mar 2013 16:30:26 +0800
+Message-Id: <1363768227-4782-7-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032008-9574-0000-0000-0000071F152F
+x-cbid: 13032008-2000-0000-0000-00000B6A5967
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This list is used to link all the pte_list_desc used by mmu cache, so
-we can easily free the memory used by gfn's rmap and parent spte list
+The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+walk and zap all shadow pages one by one, also it need to zap all guest
+page's rmap and all shadow page's parent spte list. Particularly, things
+become worse if guest uses more memory or vcpus. It is not good for
+scalability.
+
+Since all shadow page will be zapped, we can directly zap the mmu-cache
+and rmap so that vcpu will fault on the new mmu-cache, after that, we can
+directly free the memory used by old mmu-cache.
+
+The root shadow page is little especial since they are currently used by
+vcpus, we can not directly free them. So, we zap the root shadow pages and
+re-add them into the new mmu-cache.
+
+After this patch, kvm_mmu_zap_all can be faster 113% than before
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h |    7 ++++---
- arch/x86/kvm/mmu.c              |   14 +++++++++++++-
- arch/x86/kvm/mmu.h              |    1 +
- arch/x86/kvm/x86.c              |    2 +-
- 4 files changed, 19 insertions(+), 5 deletions(-)
+ arch/x86/kvm/mmu.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 59 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 3f205c6c..c8899c6 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -526,15 +526,16 @@ struct kvm_apic_map {
- };
- 
- struct kvm_arch {
-+	/* MMU cache members. */
- 	unsigned int n_used_mmu_pages;
- 	unsigned int n_requested_mmu_pages;
- 	unsigned int n_max_mmu_pages;
- 	unsigned int indirect_shadow_pages;
-+	/* Hash table of struct kvm_mmu_page. */
- 	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
--	/*
--	 * Hash table of struct kvm_mmu_page.
--	 */
- 	struct list_head active_mmu_pages;
-+	struct list_head pte_list_descs;
-+
- 	struct list_head assigned_dev_head;
- 	struct iommu_domain *iommu_domain;
- 	int iommu_flags;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c1a9b7b..dc37512 100644
+index e880cdd..72e5bdb 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -156,6 +156,7 @@ module_param(dbg, bool, 0644);
- struct pte_list_desc {
- 	u64 *sptes[PTE_LIST_EXT];
- 	struct pte_list_desc *more;
-+	struct list_head list;
- };
+@@ -4196,17 +4196,72 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
  
- struct kvm_shadow_walk_iterator {
-@@ -704,11 +705,16 @@ static void *mmu_memory_cache_alloc(struct kvm_mmu_memory_cache *mc)
- 
- static struct pte_list_desc *mmu_alloc_pte_list_desc(struct kvm_vcpu *vcpu)
+ void kvm_mmu_zap_all(struct kvm *kvm)
  {
--	return mmu_memory_cache_alloc(&vcpu->arch.mmu_pte_list_desc_cache);
-+	struct pte_list_desc *desc;
+-	struct kvm_mmu_page *sp, *node;
++	LIST_HEAD(root_mmu_pages);
+ 	LIST_HEAD(invalid_list);
++	struct list_head pte_list_descs;
++	struct kvm_mmu_page *sp, *node;
++	struct pte_list_desc *desc, *ndesc;
++	int root_sp = 0;
+ 
+ 	spin_lock(&kvm->mmu_lock);
 +
-+	desc = mmu_memory_cache_alloc(&vcpu->arch.mmu_pte_list_desc_cache);
-+	list_add(&desc->list, &vcpu->kvm->arch.pte_list_descs);
-+	return desc;
- }
- 
- static void mmu_free_pte_list_desc(struct pte_list_desc *pte_list_desc)
- {
-+	list_del(&pte_list_desc->list);
- 	kmem_cache_free(pte_list_desc_cache, pte_list_desc);
- }
- 
-@@ -4337,6 +4343,12 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
- 
-+void kvm_mmu_cache_init(struct kvm *kvm)
-+{
-+	INIT_LIST_HEAD(&kvm->arch.active_mmu_pages);
-+	INIT_LIST_HEAD(&kvm->arch.pte_list_descs);
-+}
+ restart:
++	/*
++	 * The root shadow pages are being used on vcpus that can not
++	 * directly removed, we filter them out and re-add them to the
++	 * new mmu cache.
++	 */
+ 	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link)
+-		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+-			goto restart;
++		if (sp->root_count) {
++			int ret;
 +
- void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
- {
- 	ASSERT(vcpu);
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index 3b1ad00..2923fd2 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -50,6 +50,7 @@
- #define PFERR_RSVD_MASK (1U << 3)
- #define PFERR_FETCH_MASK (1U << 4)
- 
-+void kvm_mmu_cache_init(struct kvm *kvm);
- int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
- void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
- int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index d3c4787..6622ac0 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6778,7 +6778,7 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
- 	if (type)
- 		return -EINVAL;
- 
--	INIT_LIST_HEAD(&kvm->arch.active_mmu_pages);
++			root_sp++;
++			ret = __kvm_mmu_prepare_zap_page(kvm, sp,
++							 &invalid_list);
++			list_move(&sp->link, &root_mmu_pages);
++			if (ret)
++				goto restart;
++		}
++
++	list_splice(&kvm->arch.active_mmu_pages, &invalid_list);
++	list_replace(&kvm->arch.pte_list_descs, &pte_list_descs);
++
++	/*
++	 * Reset the mmu cache so that later vcpu will fault on the new
++	 * mmu cache.
++	 */
++	kvm->arch.indirect_shadow_pages = 0;
++	/* Root shadow pages will be added to the new mmu cache. */
++	kvm_mod_used_mmu_pages(kvm,  -(kvm->arch.n_used_mmu_pages - root_sp));
++	memset(kvm->arch.mmu_page_hash, 0, sizeof(kvm->arch.mmu_page_hash));
 +	kvm_mmu_cache_init(kvm);
- 	INIT_LIST_HEAD(&kvm->arch.assigned_dev_head);
++
++	/*
++	 * Now, the mmu cache has been reset, we can re-add the root shadow
++	 * pages into the cache.
++	 */
++	list_replace(&root_mmu_pages, &kvm->arch.active_mmu_pages);
++
++	/* Reset gfn's rmap and lpage info. */
++	kvm_clear_all_gfn_page_info(kvm);
++
++	/*
++	 * Notify all vcpus to reload and flush TLB if root shadow pages
++	 * were zapped (KVM_REQ_MMU_RELOAD forces TLB to be flushed).
++	 *
++	 * The TLB need not be flushed if no root shadow page was found
++	 * since no vcpu uses shadow page.
++	 */
++	if (root_sp)
++		kvm_reload_remote_mmus(kvm);
  
- 	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
+-	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 	spin_unlock(&kvm->mmu_lock);
++
++	list_for_each_entry_safe(sp, node, &invalid_list, link)
++		kvm_mmu_free_page(sp);
++
++	list_for_each_entry_safe(desc, ndesc, &pte_list_descs, list)
++		mmu_free_pte_list_desc(desc);
+ }
+ 
+ void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
 -- 
 1.7.7.6
 
