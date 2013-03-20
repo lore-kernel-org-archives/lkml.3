@@ -1,42 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab3CTH5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:57:35 -0400
-Received: from webmail.fii.gob.ve ([201.249.174.161]:50357 "EHLO
-	webmail.fii.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab3CTH5d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:57:33 -0400
-X-Greylist: delayed 12833 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 03:57:33 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1756213Ab3CTH5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:57:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46922 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752134Ab3CTH5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:57:42 -0400
+Date: Wed, 20 Mar 2013 08:57:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
+ hugepage
+Message-ID: <20130320075736.GC20045@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130318160737.GU10192@dhcp22.suse.cz>
+ <1363751733-1fg9kic6-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Hello
-To: Recipients <ourvis@ourvis.com>
-From: "Wenzhou Ourvis" <ourvis@ourvis.com>
-Date: Tue, 19 Mar 2013 21:46:19 -0300
-Message-Id: <20130320003533.05C531CCF62E@webmail.fii.gob.ve>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363751733-1fg9kic6-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear E-mail User,
+On Tue 19-03-13 23:55:33, Naoya Horiguchi wrote:
+> On Mon, Mar 18, 2013 at 05:07:37PM +0100, Michal Hocko wrote:
+> > On Thu 21-02-13 14:41:47, Naoya Horiguchi wrote:
+[...]
+> > > As for larger hugepages (1GB for x86_64), it's not easy to do hotremove
+> > > over them because it's larger than memory block. So we now simply leave
+> > > it to fail as it is.
+> > 
+> > What we could do is to check whether there is a free gb huge page on
+> > other node and migrate there.
+> 
+> Correct, and 1GB page migration needs more code in migration core code
+> (mainly it's related to migration entry in pud) and enough testing,
+> so I want to do it in separate patchset.
 
+Sure, this was just a note that it is achievable not that it has to be
+done in the patchset.
 
-  This is to immediately inform you that your email address with Micros ID: IDJT-32238-EHI-676GI-8ED has won you 2,485,000.00 GBP and a brand new Range Rover SUV from the Wenzhou Ourvis yearly draw promo.
+[...]
+> > > diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
+> > > index ccf9995..c28e6c9 100644
+> > > --- v3.8.orig/mm/hugetlb.c
+> > > +++ v3.8/mm/hugetlb.c
+> > > @@ -843,6 +843,30 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+> > >  	return ret;
+> > >  }
+> > >  
+> > > +/* Dissolve a given free hugepage into free pages. */
+> > > +void dissolve_free_huge_page(struct page *page)
+> > > +{
+> > > +	if (PageHuge(page) && !page_count(page)) {
+> > 
+> > Could you clarify why you are cheking page_count here? I assume it is to
+> > make sure the page is free but what prevents it being increased before
+> > you take hugetlb_lock?
+> 
+> There's nothing to prevent it, so it's not safe to check refcount outside
+> hugetlb_lock.
 
-Use the details below to login and fill in the claim form to immediately begin your claims.
+OK, so the lock has to be moved up.
 
+[...]
+> > > diff --git v3.8.orig/mm/memory_hotplug.c v3.8/mm/memory_hotplug.c
+> > > index d04ed87..6418de2 100644
+> > > --- v3.8.orig/mm/memory_hotplug.c
+> > > +++ v3.8/mm/memory_hotplug.c
+> > > @@ -29,6 +29,7 @@
+> > >  #include <linux/suspend.h>
+> > >  #include <linux/mm_inline.h>
+> > >  #include <linux/firmware-map.h>
+> > > +#include <linux/hugetlb.h>
+> > >  
+> > >  #include <asm/tlbflush.h>
+> > >  
+> > > @@ -985,10 +986,12 @@ static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+> > >  }
+> > >  
+> > >  /*
+> > > - * Scanning pfn is much easier than scanning lru list.
+> > > - * Scan pfn from start to end and Find LRU page.
+> > > + * Scan pfn range [start,end) to find movable/migratable pages (LRU pages
+> > > + * and hugepages). We scan pfn because it's much easier than scanning over
+> > > + * linked list. This function returns the pfn of the first found movable
+> > > + * page if it's found, otherwise 0.
+> > >   */
+> > > -static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
+> > > +static unsigned long scan_movable_pages(unsigned long start, unsigned long end)
+> > >  {
+> > >  	unsigned long pfn;
+> > >  	struct page *page;
+> > > @@ -997,6 +1000,12 @@ static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
+> > >  			page = pfn_to_page(pfn);
+> > >  			if (PageLRU(page))
+> > >  				return pfn;
+> > > +			if (PageHuge(page)) {
+> > > +				if (is_hugepage_movable(page))
+> > > +					return pfn;
+> > > +				else
+> > > +					pfn += (1 << compound_order(page)) - 1;
+> > > +			}
+> > 
+> > scan_lru_pages's name gets really confusing after this change because
+> > hugetlb pages are not on the LRU. Maybe it would be good to rename it.
+> 
+> Yes, and that's done in right above chunk.
 
+bahh, I am blind. I got confused by the name in the hunk header. Sorry
+about that.
 
-WEBSITE: www.wenzhourviss.cla.fr
-USERNAME: ISO912PP
-PASSWORD: XNO87PS
+> 
+> > 
+> > >  		}
+> > >  	}
+> > >  	return 0;
+> > > @@ -1019,6 +1028,30 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+> > >  		page = pfn_to_page(pfn);
+> > >  		if (!get_page_unless_zero(page))
+> > >  			continue;
+> > 
+> > All tail pages have 0 reference count (according to prep_compound_page)
+> > so they would be skipped anyway. This makes the below pfn tweaks
+> > pointless.
+> 
+> I was totally mistaken about what we should do here, sorry. If we call
+> do_migrate_range() for 1GB hugepage, we should return with error (maybe -EBUSY)
+> instead of just skipping it, otherwise the caller __offline_pages() repeats
+> 'goto repeat' until timeout. In order to do that, we had better insert
+> if(PageHuge) block before getting refcount. And ...
+> 
+> > > +		if (PageHuge(page)) {
+> > > +			/*
+> > > +			 * Larger hugepage (1GB for x86_64) is larger than
+> > > +			 * memory block, so pfn scan can start at the tail
+> > > +			 * page of larger hugepage. In such case,
+> > > +			 * we simply skip the hugepage and move the cursor
+> > > +			 * to the last tail page.
+> > > +			 */
+> > > +			if (PageTail(page)) {
+> > > +				struct page *head = compound_head(page);
+> > > +				pfn = page_to_pfn(head) +
+> > > +					(1 << compound_order(head)) - 1;
+> > > +				put_page(page);
+> > > +				continue;
+> > > +			}
+> > > +			pfn = (1 << compound_order(page)) - 1;
+> > > +			if (huge_page_size(page_hstate(page)) != PMD_SIZE) {
+> > > +				put_page(page);
+> > > +				continue;
+> > > +			}
+> > 
+> > There might be other hugepage sizes which fit into memblock so this test
+> > doesn't seem right.
+> 
+> yes, so compound_order(head) > PFN_SECTION_SHIFT would be better.
 
+I would rather see compound_order(head) < MAX_ORDER to be more coupled
+with the allocator.
 
-Regards,
-Dr. Warren Payne,
-Wenzhou Ourvis Company.
-European Zonal Coordinator,
-United Kingdom.
+> I'll replace this chunk with the following if I don't get any other
+> suggestion.
+> 
+> @@ -1017,6 +1026,21 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+>  		if (!pfn_valid(pfn))
+>  			continue;
+>  		page = pfn_to_page(pfn);
+> +
+> +		if (PageHuge(page)) {
+> +			struct page *head = compound_head(page);
+> +			pfn = page_to_pfn(head) + (1 << compound_order(head)) - 1;
+
+I do not think this is safe without an elevated ref count. Your page
+might be on the way to be freed. So you need to put get_page_unless_zero
+before compound_order check.
+
+Besides that I do not see too much point in optimizing this path on the
+code complexity behalf. Sure we would call get_page_unless_zero
+pointlessly for all tail pages but this is hardly a hot path.
+
+> +			if (compound_order(head) > PFN_SECTION_SHIFT) {
+> +				ret = -EBUSY;
+> +				break;
+> +			}
+> +			if (!get_page_unless_zero(page))
+
+Should be head.
+
+> +				continue;
+> +			list_move_tail(&head->lru, &source);
+> +			move_pages -= 1 << compound_order(head);
+> +			continue;
+> +		}
+> +
+>  		if (!get_page_unless_zero(page))
+>  			continue;
+>  		/*
+> 
+> Thanks,
+> Naoya
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
