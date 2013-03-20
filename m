@@ -1,124 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab3CTJOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:14:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59802 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab3CTJNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:13:01 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>
-CC: <davem@davemloft.net>, <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <kishon@ti.com>, <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 0/6] Generic PHY Framework
-Date: Wed, 20 Mar 2013 14:41:59 +0530
-Message-ID: <1363770725-13717-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757883Ab3CTJPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:15:08 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:36452
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750991Ab3CTJPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 05:15:00 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 20 Mar 2013 17:15:04 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Anson Huang <b20788@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 3/3] ARM: imx: enable RBC to support anatop LPM mode
+Message-ID: <20130320085721.GF26941@S2101-09.ap.freescale.net>
+References: <1363801180-8284-1-git-send-email-b20788@freescale.com>
+ <1363801180-8284-3-git-send-email-b20788@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1363801180-8284-3-git-send-email-b20788@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a generic PHY framework that provides a set of APIs for the PHY drivers
-to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-the PHY with or without using phandle. To obtain a reference to the PHY
-without using phandle, the platform specfic intialization code (say from board
-file) should have already called phy_bind with the binding information. The
-binding information consists of phy's device name, phy user device name and an
-index. The index is used when the same phy user binds to mulitple phys.
+On Wed, Mar 20, 2013 at 01:39:40PM -0400, Anson Huang wrote:
+> RBC is to control whether some ANATOP sub modules
+> can enter lpm mode when SOC is into STOP mode, if
+> RBC is enabled and PMIC_VSTBY_REQ is set, ANATOP
+> will have below behaviors:
+> 
+> 1. Digital LDOs(CORE, SOC and PU) are bypassed;
+> 2. Analog LDOs(1P1, 2P5, 3P0) are disabled;
+> 
+> As the 2P5 is necessary for DRAM IO pre-drive in
+> STOP mode, so we need to enable weak 2P5 in STOP
+> mode when 2P5 LDO is disabled.
+> 
+> For RBC settings, there are some rules as below
+> due to hardware designe:
 
-This framework will be of use only to devices that uses external PHY (PHY
-functionality is not embedded within the controller).
+s/designe/design
 
-The intention of creating this framework is to bring the phy drivers spread
-all over the Linux kernel to drivers/phy to increase code re-use and to
-increase code maintainability.
+> 
+> 1. All interrupts must be masked during operating
+>    RBC registers;
+> 2. At least 2 CKIL(32K) cycles is needed after the
+>    RBC setting is changed.
+> 
+> Signed-off-by: Anson Huang <b20788@freescale.com>
+> ---
+>  arch/arm/mach-imx/anatop.c    |   19 +++++++++++++++++++
+>  arch/arm/mach-imx/clk-imx6q.c |   35 +++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-imx/common.h    |    3 +++
+>  arch/arm/mach-imx/gpc.c       |   21 ++++++++++++++++++++-
+>  arch/arm/mach-imx/pm-imx6q.c  |    2 ++
+>  5 files changed, 79 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/anatop.c b/arch/arm/mach-imx/anatop.c
+> index 8f6ab27..38b4f44 100644
+> --- a/arch/arm/mach-imx/anatop.c
+> +++ b/arch/arm/mach-imx/anatop.c
+> @@ -18,12 +18,29 @@
+>  
+>  #define REG_SET		0x4
+>  #define REG_CLR		0x8
+> +#define ANA_MISC0	0x150
+>  #define ANA_REG_CORE	0x140
+> +#define ANA_REG_2P5	0x130
 
-Comments to make PHY as bus wasn't done because PHY devices can be part of
-other bus and making a same device attached to multiple bus leads to bad
-design.
+Please put these registers in acceding offset.
 
-Making omap-usb2 and twl4030 to use this framework is provided as a sample.
+>  
+> +#define BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG	0x40000
+> +#define BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG	0x1000
+>  #define BM_ANADIG_REG_CORE_FET_ODRIVE		0x20000000
+>  
+>  static struct regmap *anatop;
+>  
+> +void imx_anatop_enable_weak2p5(bool enable)
 
-This patch series is developed on 3.9-rc3. Once the patch series gets finalised
-I'll resend omap-usb2 and twl4030 part based on Felipe's tree.
+static
 
-Changes from v2:
-* removed phy_descriptor structure completely so changed the APIs which were
-  taking phy_descriptor as parameters
-* Added 2 more APIs *of_phy_get_byname* and *devm_of_phy_get_byname* to be used
-  by PHY user drivers which has *phy* and *phy-names* binding in the dt data
-* Fixed a few typos
-* Removed phy_list and we now use class_dev_iter_init, class_dev_iter_next and
-  class_dev_iter_exit for traversing through the phy list. (Note we still need
-  phy_bind list and phy_bind_mutex).
-* Changed the sysfs entry name from *bind* to *phy_bind*.
+> +{
+> +	u32 val;
+> +
+> +	regmap_read(anatop, ANA_MISC0, &val);
+> +
+> +	/* can only be enabled when stop_mode_config is clear. */
+> +	regmap_write(anatop, ANA_REG_2P5 + ((enable &&
+> +		((val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG)
+> +		== 0)) ? REG_SET : REG_CLR),
+> +		BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG);
 
-Changes from v1:
-* Added Documentation for the PHY framework
-* Added few more APIs mostly w.r.t devres
-* Modified omap-usb2 and twl4030 to make use of the new framework
+It's a little difficult to parse the expression even it's on the same
+line, not mentioning with indentation.  There are so many levels of
+parentheses.
 
-Did USB enumeration testing in panda and beagle.
-Kishon Vijay Abraham I (6):
-  drivers: phy: add generic PHY framework
-  usb: phy: omap-usb2: use the new generic PHY framework
-  usb: otg: twl4030: use the new generic PHY framework
-  ARM: OMAP: USB: Add phy binding information
-  ARM: dts: omap: update usb_otg_hs data
-  usb: musb: omap2430: use the new generic PHY framework
+  ((enable && ((val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG) == 0)) ? REG_SET : REG_CLR)
 
- Documentation/ABI/testing/sysfs-class-phy          |   15 +
- Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +
- Documentation/phy.txt                              |  108 ++++
- MAINTAINERS                                        |    7 +
- arch/arm/boot/dts/omap3.dtsi                       |    2 +
- arch/arm/boot/dts/omap4.dtsi                       |    2 +
- arch/arm/mach-omap2/board-2430sdp.c                |    2 +
- arch/arm/mach-omap2/board-3430sdp.c                |    2 +
- arch/arm/mach-omap2/board-4430sdp.c                |    2 +
- arch/arm/mach-omap2/board-cm-t35.c                 |    2 +
- arch/arm/mach-omap2/board-devkit8000.c             |    2 +
- arch/arm/mach-omap2/board-igep0020.c               |    2 +
- arch/arm/mach-omap2/board-ldp.c                    |    2 +
- arch/arm/mach-omap2/board-omap3beagle.c            |    2 +
- arch/arm/mach-omap2/board-omap3evm.c               |    2 +
- arch/arm/mach-omap2/board-omap3logic.c             |    2 +
- arch/arm/mach-omap2/board-omap3pandora.c           |    2 +
- arch/arm/mach-omap2/board-omap3stalker.c           |    2 +
- arch/arm/mach-omap2/board-omap3touchbook.c         |    2 +
- arch/arm/mach-omap2/board-omap4panda.c             |    2 +
- arch/arm/mach-omap2/board-overo.c                  |    2 +
- arch/arm/mach-omap2/board-rm680.c                  |    2 +
- arch/arm/mach-omap2/board-rx51.c                   |    2 +
- arch/arm/mach-omap2/board-zoom-peripherals.c       |    2 +
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    2 +
- drivers/phy/Kconfig                                |   13 +
- drivers/phy/Makefile                               |    5 +
- drivers/phy/phy-core.c                             |  574 ++++++++++++++++++++
- drivers/usb/musb/musb_core.h                       |    2 +
- drivers/usb/musb/omap2430.c                        |   22 +-
- drivers/usb/otg/twl4030-usb.c                      |   36 ++
- drivers/usb/phy/omap-usb2.c                        |   47 ++
- include/linux/phy/phy.h                            |  218 ++++++++
- 34 files changed, 1090 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-phy
- create mode 100644 Documentation/phy.txt
- create mode 100644 drivers/phy/Kconfig
- create mode 100644 drivers/phy/Makefile
- create mode 100644 drivers/phy/phy-core.c
- create mode 100644 include/linux/phy/phy.h
+What about rewriting it as below to make it easy for people to read?
 
--- 
-1.7.10.4
+        reg = ANA_REG_2P5;
+        reg += (enable && (val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG) == 0) ?
+		REG_SET : REG_CLR;
+        regmap_write(anatop, reg, BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG);
+
+> +}
+> +
+>  void imx_anatop_enable_fet_odrive(bool enable)
+>  {
+>  	regmap_write(anatop, ANA_REG_CORE + (enable ?
+> @@ -32,12 +49,14 @@ void imx_anatop_enable_fet_odrive(bool enable)
+>  
+>  void imx_anatop_pre_suspend(void)
+>  {
+> +	imx_anatop_enable_weak2p5(true);
+>  	imx_anatop_enable_fet_odrive(true);
+>  }
+>  
+>  void imx_anatop_post_resume(void)
+>  {
+>  	imx_anatop_enable_fet_odrive(false);
+> +	imx_anatop_enable_weak2p5(false);
+>  }
+>  
+>  void __init imx_anatop_init(void)
+> diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+> index b365efc..646ce12 100644
+> --- a/arch/arm/mach-imx/clk-imx6q.c
+> +++ b/arch/arm/mach-imx/clk-imx6q.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/types.h>
+>  #include <linux/clk.h>
+>  #include <linux/clkdev.h>
+> +#include <linux/delay.h>
+>  #include <linux/err.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> @@ -25,6 +26,8 @@
+>  
+>  #define CCR				0x0
+>  #define BM_CCR_WB_COUNT			(0x7 << 16)
+> +#define BM_CCR_RBC_BYPASS_COUNT		(0x3f << 21)
+> +#define BM_CCR_RBC_EN			(0x1 << 27)
+>  
+>  #define CCGR0				0x68
+>  #define CCGR1				0x6c
+> @@ -70,6 +73,38 @@ void imx6q_set_chicken_bit(void)
+>  	writel_relaxed(val, ccm_base + CGPR);
+>  }
+>  
+> +void imx6q_set_rbc(bool enable)
+
+Same question as imx6q_set_wb, can we manage to call it in
+imx6q_set_lpm()?  The intension behind this is we should try to
+a centralized place to configure CCM registers/bits for suspend
+instead of exporting so many functions to suspend routine to call
+individually.
+
+> +{
+> +	u32 val;
+> +
+> +	/*
+> +	 * need to mask all interrupts in GPC before
+> +	 * operating RBC configurations
+> +	 */
+> +	imx_gpc_mask_all();
+> +
+> +	/* configurate RBC enable bit */
+
+s/configurate/configure
+
+> +	val = readl_relaxed(ccm_base + CCR);
+> +	val &= ~BM_CCR_RBC_EN;
+> +	val |= enable ? BM_CCR_RBC_EN : 0;
+> +	writel_relaxed(val, ccm_base + CCR);
+> +
+> +	/* configurate RBC count */
+
+Ditto
+
+> +	val = readl_relaxed(ccm_base + CCR);
+> +	val &= ~BM_CCR_RBC_BYPASS_COUNT;
+> +	val |= enable ? BM_CCR_RBC_BYPASS_COUNT : 0;
+> +	writel(val, ccm_base + CCR);
+> +
+> +	/*
+> +	 * need to delay at least 2 cycles of CKIL(32K)
+> +	 * due to hardware design requirement, which is
+> +	 * ~61us, here we use 65us for safe
+> +	 */
+> +	udelay(65);
+
+Nit, have a new line here.
+
+> +	/* restore GPC interrupt mask settings */
+> +	imx_gpc_restore_all();
+> +}
+> +
+>  void imx6q_set_wb(bool enable)
+>  {
+>  	u32 val;
+> diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
+> index b9125cf..66fe41c 100644
+> --- a/arch/arm/mach-imx/common.h
+> +++ b/arch/arm/mach-imx/common.h
+> @@ -129,11 +129,14 @@ extern void imx_src_prepare_restart(void);
+>  extern void imx_gpc_init(void);
+>  extern void imx_gpc_pre_suspend(void);
+>  extern void imx_gpc_post_resume(void);
+> +extern void imx_gpc_mask_all(void);
+> +extern void imx_gpc_restore_all(void);
+>  extern void imx_anatop_init(void);
+>  extern void imx_anatop_pre_suspend(void);
+>  extern void imx_anatop_post_resume(void);
+>  extern int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode);
+>  extern void imx6q_set_chicken_bit(void);
+> +extern void imx6q_set_rbc(bool enable);
+>  extern void imx6q_set_wb(bool enable);
+
+Since they are taking "enable" parameter, can we rename them as below?
+
+ void imx6q_enable_rbc(bool enable);
+ void imx6q_enable_wb(bool enable);
+
+>  extern void imx_cpu_die(unsigned int cpu);
+>  extern int imx_cpu_kill(unsigned int cpu);
+> diff --git a/arch/arm/mach-imx/gpc.c b/arch/arm/mach-imx/gpc.c
+> index a96ccc7..504049e 100644
+> --- a/arch/arm/mach-imx/gpc.c
+> +++ b/arch/arm/mach-imx/gpc.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * Copyright 2011 Freescale Semiconductor, Inc.
+> + * Copyright 2011-2013 Freescale Semiconductor, Inc.
+>   * Copyright 2011 Linaro Ltd.
+>   *
+>   * The code contained herein is licensed under the GNU General Public
+> @@ -68,6 +68,25 @@ static int imx_gpc_irq_set_wake(struct irq_data *d, unsigned int on)
+>  	return 0;
+>  }
+>  
+> +void imx_gpc_mask_all(void)
+> +{
+> +	void __iomem *reg_imr1 = gpc_base + GPC_IMR1;
+> +	int i;
+> +
+> +	for (i = 0; i < IMR_NUM; i++)
+> +		writel_relaxed(0xffffffff, reg_imr1 + i * 4);
+> +
+> +}
+> +
+> +void imx_gpc_restore_all(void)
+> +{
+> +	void __iomem *reg_imr1 = gpc_base + GPC_IMR1;
+> +	int i;
+> +
+> +	for (i = 0; i < IMR_NUM; i++)
+> +		writel_relaxed(gpc_saved_imrs[i], reg_imr1 + i * 4);
+> +}
+> +
+>  static void imx_gpc_irq_unmask(struct irq_data *d)
+>  {
+>  	void __iomem *reg;
+> diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
+> index 57ca274..24ac7bc 100644
+> --- a/arch/arm/mach-imx/pm-imx6q.c
+> +++ b/arch/arm/mach-imx/pm-imx6q.c
+> @@ -36,10 +36,12 @@ static int imx6q_pm_enter(suspend_state_t state)
+>  		imx_gpc_pre_suspend();
+
+This call saves mask in gpc_saved_imrs and mask all interrupts except
+those wakeup sources ...
+
+>  		imx_anatop_pre_suspend();
+>  		imx_set_cpu_jump(0, v7_cpu_resume);
+> +		imx6q_set_rbc(true);
+
+At the end of imx6q_set_rbc(), imx_gpc_restore_all() will be called to
+restore mask bits with gpc_saved_imrs, so wakeup source handling gets
+lost, and any in-use interrupt will wake up system, which is
+undesirable.
+
+Shawn
+
+>  		imx6q_set_wb(true);
+>  		/* Zzz ... */
+>  		cpu_suspend(0, imx6q_suspend_finish);
+>  		imx6q_set_wb(false);
+> +		imx6q_set_rbc(false);
+>  		imx_smp_prepare();
+>  		imx_anatop_post_resume();
+>  		imx_gpc_post_resume();
+> -- 
+> 1.7.9.5
+> 
+> 
 
