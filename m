@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3CTDAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 23:00:46 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63337 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab3CTDAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 23:00:44 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-cc-5149265bf9b8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 6/9] perf util: Get rid of malloc_or_die() in trace-event-read.c
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	<1363683224-28804-7-git-send-email-namhyung@kernel.org>
-	<1363704602.5938.26.camel@gandalf.local.home>
-	<87ehfaj2ic.fsf@sejong.aot.lge.com>
-	<1363744502.6345.1.camel@gandalf.local.home>
-Date: Wed, 20 Mar 2013 12:00:43 +0900
-In-Reply-To: <1363744502.6345.1.camel@gandalf.local.home> (Steven Rostedt's
-	message of "Tue, 19 Mar 2013 21:55:02 -0400")
-Message-ID: <871ubaixlw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757904Ab3CTDFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 23:05:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42975 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3CTDFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 23:05:00 -0400
+Message-ID: <514926C0.3020502@zytor.com>
+Date: Tue, 19 Mar 2013 20:02:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: Re: [PATCH v2] x86: add a new SMP bring up way for tboot case
+References: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE4E0171@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE4E0171@SHSMSX102.ccr.corp.intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Mar 2013 21:55:02 -0400, Steven Rostedt wrote:
-> On Wed, 2013-03-20 at 10:14 +0900, Namhyung Kim wrote:
->> On Tue, 19 Mar 2013 10:50:02 -0400, Steven Rostedt wrote:
->> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
->> >>  	free(version);
->> >> @@ -331,11 +354,12 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
->> >>  
->> >>  	page_size = read4(pevent);
->> >>  
->> >> -	read_header_files(pevent);
->> >> -	read_ftrace_files(pevent);
->> >> -	read_event_files(pevent);
->> >> -	read_proc_kallsyms(pevent);
->> >> -	read_ftrace_printk(pevent);
->> >> +	if (read_header_files(pevent) ||
->> >> +	    read_ftrace_files(pevent) ||
->> >> +	    read_event_files(pevent) ||
->> >> +	    read_proc_kallsyms(pevent) ||
->> >> +	    read_ftrace_printk(pevent))
->> >> +		goto out;
->> >
->> > I think I like the err += func() and check for err < 0, better.
->> 
->> Okay, I'll change them to err |= func() style if you're fine as Peter
->> suggested.
->
-> += or |= I'm not picky ;-)
+On 03/19/2013 07:14 PM, Ren, Qiaowei wrote:
+> Any comments on this patch?
+> 
+> Thanks,
+> Qiaowei
 
-Ah, one thing I also care was the short-circuit logic.  I think we don't
-need to call later functions if one fails, do we?
+The biggest question is probably if we can use an existing hook of some
+sort.
 
-Thanks,
-Namhyung
+Overriding the apic method is probably not the right way to go, though.
+ tglx, do you have any opinions here?
+
+Furthermore, this really is not nice:
+
+> +int tboot_wake_up(int apicid, unsigned long sipi_vec) {
+> +	if (!tboot_enabled())
+> +		return 0;
+> +
+> +	if ((tboot->version < 6) ||
+> +	    !(tboot->flags & TB_FLAG_AP_WAKE_SUPPORT))
+> +		return 0;
+> +
+> +	tboot->ap_wake_addr = sipi_vec;
+> +	tboot->ap_wake_trigger = apicid;
+> +
+> +	return 1;
+> +}
+
+Not only don't you set boot_error for the code above it, but there is
+absolutely no indication how that does its job (are those active
+operations?  If so they should use writel()), nor does it include any
+kind of synchronization.
+
+	-hpa
+
