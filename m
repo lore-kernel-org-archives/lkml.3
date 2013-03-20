@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab3CTSpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:45:15 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:45196 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757646Ab3CTSpM (ORCPT
+	id S933205Ab3CTSqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:46:16 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:64131 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932773Ab3CTSqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:45:12 -0400
-Date: Wed, 20 Mar 2013 19:45:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hedi Berriche <hedi@sgi.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
- after zone_reclaim()
-Message-ID: <20130320184508.GB970@dhcp22.suse.cz>
-References: <20130320181957.GA1878@suse.de>
+	Wed, 20 Mar 2013 14:46:15 -0400
+Date: Wed, 20 Mar 2013 11:46:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: include hugepages in meminfo
+In-Reply-To: <20130320095306.GA21856@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1303201145260.17761@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1303191714440.13526@chino.kir.corp.google.com> <20130320095306.GA21856@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130320181957.GA1878@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-03-13 18:19:57, Mel Gorman wrote:
-> The following problem was reported against a distribution kernel when
-> zone_reclaim was enabled but the same problem applies to the mainline
-> kernel. The reproduction case was as follows
-> 
-> 1. Run numactl -m +0 dd if=largefile of=/dev/null
->    This allocates a large number of clean pages in node 0
-> 
-> 2. numactl -N +0 memhog 0.5*Mg
->    This start a memory-using application in node 0.
-> 
-> The expected behaviour is that the clean pages get reclaimed and the
-> application uses node 0 for its memory. The observed behaviour was that
-> the memory for the memhog application was allocated off-node since commits
-> cd38b11 (mm: page allocator: initialise ZLC for first zone eligible for
-> zone_reclaim) and commit 76d3fbf (mm: page allocator: reconsider zones
-> for allocation after direct reclaim).
-> 
-> The assumption of those patches was that it was always preferable to
-> allocate quickly than stall for long periods of time and they were
-> meant to take care that the zone was only marked full when necessary but
-> an important case was missed.
-> 
-> In the allocator fast path, only the low watermarks are checked. If the
-> zones free pages are between the low and min watermark then allocations
-> from the allocators slow path will succeed. However, zone_reclaim
-> will only reclaim SWAP_CLUSTER_MAX or 1<<order pages. There is no
-> guarantee that this will meet the low watermark causing the zone to be
-> marked full prematurely.
-> 
-> This patch will only mark the zone full after zone_reclaim if it the min
-> watermarks are checked or if page reclaim failed to make sufficient
-> progress.
-> 
-> Reported-and-tested-by: Hedi Berriche <hedi@sgi.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Wed, 20 Mar 2013, Michal Hocko wrote:
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/page_alloc.c | 17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
+> On Tue 19-03-13 17:18:12, David Rientjes wrote:
+> > Particularly in oom conditions, it's troublesome that hugetlb memory is 
+> > not displayed.  All other meminfo that is emitted will not add up to what 
+> > is expected, and there is no artifact left in the kernel log to show that 
+> > a potentially significant amount of memory is actually allocated as 
+> > hugepages which are not available to be reclaimed.
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 8fcced7..adce823 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1940,9 +1940,24 @@ zonelist_scan:
->  				continue;
->  			default:
->  				/* did we reclaim enough */
-> -				if (!zone_watermark_ok(zone, order, mark,
-> +				if (zone_watermark_ok(zone, order, mark,
->  						classzone_idx, alloc_flags))
-> +					goto try_this_zone;
-> +
-> +				/*
-> +				 * Failed to reclaim enough to meet watermark.
-> +				 * Only mark the zone full if checking the min
-> +				 * watermark or if we failed to reclaim just
-> +				 * 1<<order pages or else the page allocator
-> +				 * fastpath will prematurely mark zones full
-> +				 * when the watermark is between the low and
-> +				 * min watermarks.
-> +				 */
-> +				if ((alloc_flags & ALLOC_WMARK_MIN) ||
-> +				    ret == ZONE_RECLAIM_SOME)
->  					goto this_zone_full;
-> +
-> +				continue;
->  			}
->  		}
->  
+> Yes, I like the idea. It's bitten me already in the past.
+> 
+> The only objection I have is that you print only default_hstate. You
+> just need to wrap your for_each_node_state by for_each_hstate to do
+> that.  With that applied, feel free to add my
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
 
--- 
-Michal Hocko
-SUSE Labs
+I didn't do this because it isn't already exported in /proc/meminfo and 
+since we've made an effort to reduce the amount of information emitted by 
+the oom killer at oom kill time to avoid spamming the kernel log, I only 
+print the default hstate.
