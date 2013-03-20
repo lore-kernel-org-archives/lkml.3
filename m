@@ -1,71 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab3CTJCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:02:48 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:62380 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab3CTJCo (ORCPT
+	id S1752246Ab3CTJIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:08:51 -0400
+Received: from [216.32.180.12] ([216.32.180.12]:21191 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751381Ab3CTJIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:02:44 -0400
+	Wed, 20 Mar 2013 05:08:48 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839h944hd25hd2bhf0ah107ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Wed, 20 Mar 2013 18:06:53 -0400
+From: Anson Huang <b20788@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 3/3] ARM: imx: enable RBC to support anatop LPM mode
+Message-ID: <20130320220653.GC13929@ubuntu>
+References: <1363801180-8284-1-git-send-email-b20788@freescale.com>
+ <1363801180-8284-3-git-send-email-b20788@freescale.com>
+ <20130320090117.GA27071@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-In-Reply-To: <201303191759.27762.arnd@arndb.de>
-References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
- <201303191648.31527.arnd@arndb.de> <CAHkwnC9FL9W07=n6bWvcwiE058zcBZwqUwtRB-VVNpU0gv0mNw@mail.gmail.com>
- <201303191759.27762.arnd@arndb.de>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Wed, 20 Mar 2013 10:02:23 +0100
-Message-ID: <CAHkwnC-3_dDM3JO8y3yeNFz7=fpP=MtZ9D-3cMH8rNF9C1NZBA@mail.gmail.com>
-Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130320090117.GA27071@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 6:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 19 March 2013, Fabio Porcedda wrote:
->> On Tue, Mar 19, 2013 at 5:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Tuesday 19 March 2013, Geert Uytterhoeven wrote:
->> >> Hmm, so we may have drivers that (now) work perfectly fine with
->> >> module_platform_driver_probe()/platform_driver_probe(), but will start
->> >> failing suddenly in the future?
->> >
->> > They will fail if someone changes the initialization order. That would
->> > already break drivers before deferred probing support (and was the reason
->> > we added feature in the first place), but now we can be much more liberal
->> > with the order in which drivers are initialized, except when they are
->> > using platform_driver_probe()
->> >
->> >> I guess we need a big fat WARN_ON(-EPROBE_DEFER) in
->> >> platform_driver_probe() to catch these?
->> >
->> > Yes, very good idea.
->>
->> If it's fine, I'll send a patch for that.
->
-> That would be cool, yes. I looked at it earlier (after sending my email above)
-> and couldn't find an easy way to do it though, because platform_drv_probe
-> does not know whether it is called from platform_driver_probe or not.
->
-> Maybe using something other than platform_driver_register would work here.
->
->         Arnd
+On Wed, Mar 20, 2013 at 05:01:19PM +0800, Shawn Guo wrote:
+> On Wed, Mar 20, 2013 at 01:39:40PM -0400, Anson Huang wrote:
+> > RBC is to control whether some ANATOP sub modules
+> > can enter lpm mode when SOC is into STOP mode, if
+> > RBC is enabled and PMIC_VSTBY_REQ is set, ANATOP
+> > will have below behaviors:
+> > 
+> > 1. Digital LDOs(CORE, SOC and PU) are bypassed;
+> > 2. Analog LDOs(1P1, 2P5, 3P0) are disabled;
+> > 
+> > As the 2P5 is necessary for DRAM IO pre-drive in
+> > STOP mode, so we need to enable weak 2P5 in STOP
+> > mode when 2P5 LDO is disabled.
+> > 
+> > For RBC settings, there are some rules as below
+> > due to hardware designe:
+> 
+> s/designe/design
+Accepted.
+> 
+> > 
+> > 1. All interrupts must be masked during operating
+> >    RBC registers;
+> > 2. At least 2 CKIL(32K) cycles is needed after the
+> >    RBC setting is changed.
+> > 
+> > Signed-off-by: Anson Huang <b20788@freescale.com>
+> > ---
+> >  arch/arm/mach-imx/anatop.c    |   19 +++++++++++++++++++
+> >  arch/arm/mach-imx/clk-imx6q.c |   35 +++++++++++++++++++++++++++++++++++
+> >  arch/arm/mach-imx/common.h    |    3 +++
+> >  arch/arm/mach-imx/gpc.c       |   21 ++++++++++++++++++++-
+> >  arch/arm/mach-imx/pm-imx6q.c  |    2 ++
+> >  5 files changed, 79 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/mach-imx/anatop.c b/arch/arm/mach-imx/anatop.c
+> > index 8f6ab27..38b4f44 100644
+> > --- a/arch/arm/mach-imx/anatop.c
+> > +++ b/arch/arm/mach-imx/anatop.c
+> > @@ -18,12 +18,29 @@
+> >  
+> >  #define REG_SET		0x4
+> >  #define REG_CLR		0x8
+> > +#define ANA_MISC0	0x150
+> >  #define ANA_REG_CORE	0x140
+> > +#define ANA_REG_2P5	0x130
+> 
+> Please put these registers in acceding offset.
+Accepted.
+> 
+> >  
+> > +#define BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG	0x40000
+> > +#define BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG	0x1000
+> >  #define BM_ANADIG_REG_CORE_FET_ODRIVE		0x20000000
+> >  
+> >  static struct regmap *anatop;
+> >  
+> > +void imx_anatop_enable_weak2p5(bool enable)
+> 
+> static
+Accepted.
+> 
+> > +{
+> > +	u32 val;
+> > +
+> > +	regmap_read(anatop, ANA_MISC0, &val);
+> > +
+> > +	/* can only be enabled when stop_mode_config is clear. */
+> > +	regmap_write(anatop, ANA_REG_2P5 + ((enable &&
+> > +		((val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG)
+> > +		== 0)) ? REG_SET : REG_CLR),
+> > +		BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG);
+> 
+> It's a little difficult to parse the expression even it's on the same
+> line, not mentioning with indentation.  There are so many levels of
+> parentheses.
+> 
+>   ((enable && ((val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG) == 0)) ? REG_SET : REG_CLR)
+> 
+> What about rewriting it as below to make it easy for people to read?
+> 
+>         reg = ANA_REG_2P5;
+>         reg += (enable && (val & BM_ANADIG_ANA_MISC0_STOP_MODE_CONFIG) == 0) ?
+> 		REG_SET : REG_CLR;
+>         regmap_write(anatop, reg, BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG);
+Accepted.
+> 
+> > +}
+> > +
+> >  void imx_anatop_enable_fet_odrive(bool enable)
+> >  {
+> >  	regmap_write(anatop, ANA_REG_CORE + (enable ?
+> > @@ -32,12 +49,14 @@ void imx_anatop_enable_fet_odrive(bool enable)
+> >  
+> >  void imx_anatop_pre_suspend(void)
+> >  {
+> > +	imx_anatop_enable_weak2p5(true);
+> >  	imx_anatop_enable_fet_odrive(true);
+> >  }
+> >  
+> >  void imx_anatop_post_resume(void)
+> >  {
+> >  	imx_anatop_enable_fet_odrive(false);
+> > +	imx_anatop_enable_weak2p5(false);
+> >  }
+> >  
+> >  void __init imx_anatop_init(void)
+> > diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+> > index b365efc..646ce12 100644
+> > --- a/arch/arm/mach-imx/clk-imx6q.c
+> > +++ b/arch/arm/mach-imx/clk-imx6q.c
+> > @@ -14,6 +14,7 @@
+> >  #include <linux/types.h>
+> >  #include <linux/clk.h>
+> >  #include <linux/clkdev.h>
+> > +#include <linux/delay.h>
+> >  #include <linux/err.h>
+> >  #include <linux/io.h>
+> >  #include <linux/of.h>
+> > @@ -25,6 +26,8 @@
+> >  
+> >  #define CCR				0x0
+> >  #define BM_CCR_WB_COUNT			(0x7 << 16)
+> > +#define BM_CCR_RBC_BYPASS_COUNT		(0x3f << 21)
+> > +#define BM_CCR_RBC_EN			(0x1 << 27)
+> >  
+> >  #define CCGR0				0x68
+> >  #define CCGR1				0x6c
+> > @@ -70,6 +73,38 @@ void imx6q_set_chicken_bit(void)
+> >  	writel_relaxed(val, ccm_base + CGPR);
+> >  }
+> >  
+> > +void imx6q_set_rbc(bool enable)
+> 
+> Same question as imx6q_set_wb, can we manage to call it in
+> imx6q_set_lpm()?  The intension behind this is we should try to
+> a centralized place to configure CCM registers/bits for suspend
+> instead of exporting so many functions to suspend routine to call
+> individually.
+Will do it in the way as well bias did.
+> 
+> > +{
+> > +	u32 val;
+> > +
+> > +	/*
+> > +	 * need to mask all interrupts in GPC before
+> > +	 * operating RBC configurations
+> > +	 */
+> > +	imx_gpc_mask_all();
+> > +
+> > +	/* configurate RBC enable bit */
+> 
+> s/configurate/configure
+Accepted.
+> 
+> > +	val = readl_relaxed(ccm_base + CCR);
+> > +	val &= ~BM_CCR_RBC_EN;
+> > +	val |= enable ? BM_CCR_RBC_EN : 0;
+> > +	writel_relaxed(val, ccm_base + CCR);
+> > +
+> > +	/* configurate RBC count */
+> 
+> Ditto
+Accepted.
+> 
+> > +	val = readl_relaxed(ccm_base + CCR);
+> > +	val &= ~BM_CCR_RBC_BYPASS_COUNT;
+> > +	val |= enable ? BM_CCR_RBC_BYPASS_COUNT : 0;
+> > +	writel(val, ccm_base + CCR);
+> > +
+> > +	/*
+> > +	 * need to delay at least 2 cycles of CKIL(32K)
+> > +	 * due to hardware design requirement, which is
+> > +	 * ~61us, here we use 65us for safe
+> > +	 */
+> > +	udelay(65);
+> 
+> Nit, have a new line here.
+Accepted.
+> 
+> > +	/* restore GPC interrupt mask settings */
+> > +	imx_gpc_restore_all();
+> > +}
+> > +
+> >  void imx6q_set_wb(bool enable)
+> >  {
+> >  	u32 val;
+> > diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
+> > index b9125cf..66fe41c 100644
+> > --- a/arch/arm/mach-imx/common.h
+> > +++ b/arch/arm/mach-imx/common.h
+> > @@ -129,11 +129,14 @@ extern void imx_src_prepare_restart(void);
+> >  extern void imx_gpc_init(void);
+> >  extern void imx_gpc_pre_suspend(void);
+> >  extern void imx_gpc_post_resume(void);
+> > +extern void imx_gpc_mask_all(void);
+> > +extern void imx_gpc_restore_all(void);
+> >  extern void imx_anatop_init(void);
+> >  extern void imx_anatop_pre_suspend(void);
+> >  extern void imx_anatop_post_resume(void);
+> >  extern int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode);
+> >  extern void imx6q_set_chicken_bit(void);
+> > +extern void imx6q_set_rbc(bool enable);
+> >  extern void imx6q_set_wb(bool enable);
+> 
+> Since they are taking "enable" parameter, can we rename them as below?
+> 
+>  void imx6q_enable_rbc(bool enable);
+>  void imx6q_enable_wb(bool enable);
+OK.
+> 
+> >  extern void imx_cpu_die(unsigned int cpu);
+> >  extern int imx_cpu_kill(unsigned int cpu);
+> > diff --git a/arch/arm/mach-imx/gpc.c b/arch/arm/mach-imx/gpc.c
+> > index a96ccc7..504049e 100644
+> > --- a/arch/arm/mach-imx/gpc.c
+> > +++ b/arch/arm/mach-imx/gpc.c
+> > @@ -1,5 +1,5 @@
+> >  /*
+> > - * Copyright 2011 Freescale Semiconductor, Inc.
+> > + * Copyright 2011-2013 Freescale Semiconductor, Inc.
+> >   * Copyright 2011 Linaro Ltd.
+> >   *
+> >   * The code contained herein is licensed under the GNU General Public
+> > @@ -68,6 +68,25 @@ static int imx_gpc_irq_set_wake(struct irq_data *d, unsigned int on)
+> >  	return 0;
+> >  }
+> >  
+> > +void imx_gpc_mask_all(void)
+> > +{
+> > +	void __iomem *reg_imr1 = gpc_base + GPC_IMR1;
+> > +	int i;
+> > +
+> > +	for (i = 0; i < IMR_NUM; i++)
+> > +		writel_relaxed(0xffffffff, reg_imr1 + i * 4);
+> > +
+> > +}
+> > +
+> > +void imx_gpc_restore_all(void)
+> > +{
+> > +	void __iomem *reg_imr1 = gpc_base + GPC_IMR1;
+> > +	int i;
+> > +
+> > +	for (i = 0; i < IMR_NUM; i++)
+> > +		writel_relaxed(gpc_saved_imrs[i], reg_imr1 + i * 4);
+> > +}
+> > +
+> >  static void imx_gpc_irq_unmask(struct irq_data *d)
+> >  {
+> >  	void __iomem *reg;
+> > diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
+> > index 57ca274..24ac7bc 100644
+> > --- a/arch/arm/mach-imx/pm-imx6q.c
+> > +++ b/arch/arm/mach-imx/pm-imx6q.c
+> > @@ -36,10 +36,12 @@ static int imx6q_pm_enter(suspend_state_t state)
+> >  		imx_gpc_pre_suspend();
+> 
+> This call saves mask in gpc_saved_imrs and mask all interrupts except
+> those wakeup sources ...
+> 
+> >  		imx_anatop_pre_suspend();
+> >  		imx_set_cpu_jump(0, v7_cpu_resume);
+> > +		imx6q_set_rbc(true);
+> 
+> At the end of imx6q_set_rbc(), imx_gpc_restore_all() will be called to
+> restore mask bits with gpc_saved_imrs, so wakeup source handling gets
+> lost, and any in-use interrupt will wake up system, which is
+> undesirable.
+Oh, my mistake, will fix it in V2.
+> 
+> Shawn
+> 
+> >  		imx6q_set_wb(true);
+> >  		/* Zzz ... */
+> >  		cpu_suspend(0, imx6q_suspend_finish);
+> >  		imx6q_set_wb(false);
+> > +		imx6q_set_rbc(false);
+> >  		imx_smp_prepare();
+> >  		imx_anatop_post_resume();
+> >  		imx_gpc_post_resume();
+> > -- 
+> > 1.7.9.5
+> > 
+> > 
 
-I think we can check inside the  deferred_probe_work_func()
-if the dev->probe function pointer is equal to platform_drv_probe_fail().
-
-Regards
---
-Fabio Porcedda
