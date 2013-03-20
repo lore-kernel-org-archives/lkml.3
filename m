@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab3CTTZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 15:25:33 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:53713 "EHLO
-	mail.izyk.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3CTTZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 15:25:32 -0400
-Message-ID: <514A0D28.4060804@izyk.ru>
-Date: Wed, 20 Mar 2013 23:25:28 +0400
-From: Ilya Zykov <linux@izyk.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1757531Ab3CTT0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 15:26:50 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42293 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab3CTT0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 15:26:48 -0400
+Date: Wed, 20 Mar 2013 19:26:04 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        Michal Marek <mmarek@suse.cz>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
+Message-ID: <20130320192604.GA11660@srcf.ucam.org>
+References: <s5h38vqjhk6.wl%tiwai@suse.de>
+ <20130320175234.GA8948@srcf.ucam.org>
+ <s5hppytq430.wl%tiwai@suse.de>
+ <20130320191250.GA11262@srcf.ucam.org>
+ <s5hmwtxq3ic.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Min Zhang <mzhang@mvista.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/18] tty: Simplify tty buffer/ldisc interface with helper
- function
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>   <1363724513-15604-4-git-send-email-peter@hurleysoftware.com>   <5148E9D2.4030305@izyk.ru> <1363737036.3413.49.camel@thor.lan>  <5149AFD0.8020604@izyk.ru> <1363801796.4280.24.camel@thor.lan>
-In-Reply-To: <1363801796.4280.24.camel@thor.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hmwtxq3ic.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.03.2013 21:49, Peter Hurley wrote:
-> The motivation for changing the workqueue api to allow parallel work
-> items on SMP was to fix a class of deadlocks where forward progress
-> could not be made due to subtle dependencies between work items
-> (actually that potential still exists with self-modifying work-items,
-> ie., work items that change their function).
+On Wed, Mar 20, 2013 at 08:23:39PM +0100, Takashi Iwai wrote:
+> At Wed, 20 Mar 2013 19:12:50 +0000,
+> Matthew Garrett wrote:
+> > On Wed, Mar 20, 2013 at 08:11:15PM +0100, Takashi Iwai wrote:
+> > > I'm afraid that it's too radical to enable always.
+> > 
+> > Why?
 > 
-> The tty layer would need a detailed and thorough analysis of potential
-> dependencies to avoid creating problems. The drivers that use work items
-> might need examination as well.
+> Because I'm conservative :)
+> Well, dunno.  It's just my feeling without deep thought.
 
-Sorry, but I don't understand.
-My knowledge is very weak.
+Adding a parameter means it's broken until people discover that they 
+need to pass a parameter to make it work, and many people will just be 
+stuck with it not working. It really should be the last resort.
 
-We say about three works:
-hangup_work, SAK_work, buf.work
-or anything else?
+> > > Or, what about to check this bit only for disable path?
+> > 
+> > What happens if you unplug the device on one of the affected machines?
+> 
+> It continues working.  I mean, the PCI device is still there after
+> unplug, but the Realtek driver unmounts it smoothly.  Re-plugging also
+> works, too.  So, the handling via pciehp is needed only for the very
+> first time to register the PCI device.
 
+But if I plug in a different device, things will be broken, right?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
