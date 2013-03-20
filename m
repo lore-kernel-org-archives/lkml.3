@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab3CTPXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:23:30 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:57337 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab3CTPX3 (ORCPT
+	id S1757337Ab3CTPZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:25:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52287 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3CTPZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:23:29 -0400
-Message-ID: <5149D467.7030908@gmail.com>
-Date: Wed, 20 Mar 2013 19:23:19 +0400
-From: Lijo Antony <lijo.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Borislav Petkov <bp@alien8.de>, Ben Skeggs <bskeggs@redhat.com>,
-        Lucas Stach <dev@lynxeye.de>, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [Nouveau] nouveau lockdep splat
-References: <20130304211608.GD22274@pd.tnic>  <1362501052.1933.2.camel@antimon> <20130319202432.GC4570@pd.tnic> <1363725620.3413.29.camel@thor.lan> <5149589D.6090403@gmail.com>
-In-Reply-To: <5149589D.6090403@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 11:25:35 -0400
+Date: Thu, 21 Mar 2013 02:25:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Lartey <ian@slimlogic.co.uk>, Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio
+ tree relatred)
+Message-Id: <20130321022524.37baf9fedb1848cdbdfc0eef@canb.auug.org.au>
+In-Reply-To: <CACxGe6sZKRjSnwa-CHC1OhJoGP-ZQe4H2YbMYjDjNYcSdSyuow@mail.gmail.com>
+References: <20130306114452.a041ab0737783f9730c1486e@canb.auug.org.au>
+	<CACxGe6sZKRjSnwa-CHC1OhJoGP-ZQe4H2YbMYjDjNYcSdSyuow@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Mar_2013_02_25_24_+1100_1Wc0LShpCWl8Gme8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 10:35 AM, Lijo Antony wrote:
-> I think this is same as https://lkml.org/lkml/2013/3/16/143 (btw, git
-> bisect in that mail is incorrect). While investigating, I found this
-> issue was introduced during 3.9 merge window. For me this comes when I
-> connect my TV via HDMI.
+--Signature=_Thu__21_Mar_2013_02_25_24_+1100_1Wc0LShpCWl8Gme8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FWIW, git bisect gave this log,
+Hi Grant,
 
-git bisect start 'drivers/gpu/'
-# good: [e450fcc6669705ef49784080ac6dd8513df37763] drm/tegra: Add list 
-of framebuffers to debugfs
-git bisect good e450fcc6669705ef49784080ac6dd8513df37763
-# bad: [6dbe51c251a327e012439c4772097a13df43c5b8] Linux 3.9-rc1
-git bisect bad 6dbe51c251a327e012439c4772097a13df43c5b8
-# good: [bab588fcfb6335c767d811a8955979f5440328e0] Merge tag 'soc' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
-git bisect good bab588fcfb6335c767d811a8955979f5440328e0
-# good: [be88298b0a3f771a4802f20c5e66af74bfd1dff1] drm/tilcdc: only 
-build on arm
-git bisect good be88298b0a3f771a4802f20c5e66af74bfd1dff1
-# bad: [4d53233a36fdda567cd4d080e27e1ee4b669ddd1] drm: don't use 
-idr_remove_all()
-git bisect bad 4d53233a36fdda567cd4d080e27e1ee4b669ddd1
-# good: [9afa3195b96da7d2320ec44d19fbfbded7a15571] Merge branch 
-'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial
-git bisect good 9afa3195b96da7d2320ec44d19fbfbded7a15571
-# good: [496ad9aa8ef448058e36ca7a787c61f2e63f0f54] new helper: 
-file_inode(file)
-git bisect good 496ad9aa8ef448058e36ca7a787c61f2e63f0f54
-# bad: [d895cb1af15c04c522a25c79cc429076987c089b] Merge branch 
-'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
-git bisect bad d895cb1af15c04c522a25c79cc429076987c089b
-# bad: [fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb] Merge branch 
-'drm-next' of git://people.freedesktop.org/~airlied/linux
-git bisect bad fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb
+On Wed, 6 Mar 2013 09:10:42 +0800 Grant Likely <grant.likely@secretlab.ca> =
+wrote:
+>
+> On Wed, Mar 6, 2013 at 8:44 AM, Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+> >
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> >
+> > drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_probe':
+> > drivers/gpio/gpio-palmas.c:173:2: error: implicit declaration of functi=
+on 'is_palmas_charger' [-Werror=3Dimplicit-function-declaration]
+> > drivers/gpio/gpio-palmas.c:173:30: error: 'struct palmas' has no member=
+ named 'product_id'
+> >
+> > Caused by commit 82d4d6637fdf ("gpio/palmas: add in GPIO support for
+> > palmas charger").  I wonder if this was ever build tested. :-(
+>=20
+> Probably not. Looks like this driver doesn't get enabled without the
+> associated option in MFD. I didn't go searching for it, so my build
+> tests didn't catch it. I'll drop the patch from my tree. Sorry for the
+> pain.
 
--lijo
+I am still having to revert this commit ....  :-(
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__21_Mar_2013_02_25_24_+1100_1Wc0LShpCWl8Gme8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSdTkAAoJEECxmPOUX5FEH6cP/RADQ4Ht+EBco0QQbYZ/9aaP
+DfyU+9WQ/mwxbugqZ1X5c5w35VFrhbZOQFoC91J9RN6X+TG5uXZUWiOVqkhi6KWE
+CgR4JTm+MIAwt2/9TwO3FfIOGOiMaJpemf0Ff0FuaRIk0x6GG57Uctq+YQLC6cTc
+1LFJUEH4NTagnu/pgs7llxE/4JNo+LFzUdZo0s2arzs7ONdHR1cb7dY13SkhRasp
+BtAw7yp35AVC9m+ddklHGwGDbgqzyESyPV20urBaw7uIu79lkgWoEJQqrcEeFd6D
+aMnOYmZeM+kGYj+0YRX/3E4nWVNi2bLIZLUIG3DDm5v2ztLeumzSHSmraHjgs4d1
+jXmLGuLLwt0QEGEI56KZm9E8bMfwUP7zydQDL1zF2Y9qRLYIQMXMDuVkKRJYhKIK
+pkwQiwLu6tOh6xqsvdr5vRKlS7HIlHoPol0UHVRs4I5Ia4LzvsgUfhz6YrtobTOG
+2/AJVg4hsKweY4ATsz1T6eC6ZyVKwe1UgNb4/y9Dc4xdPkxiimTTGNJDONnXxSaU
+CGVo2wRiAO0a2Q+UXwlp2rhIyaV0lURNE5DDPF2eYR1tVri7KbaVwQNJMYKFWRNq
+1PWqheFmV1iLJ9PUmc+HqtdRR/HnGfVuWInKJLeCX7vR6DQTTgS9PD06+BX8+iA1
+lF3ERZog9ttkSTvjQork
+=nFjn
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__21_Mar_2013_02_25_24_+1100_1Wc0LShpCWl8Gme8--
