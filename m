@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab3CTNXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:23:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754739Ab3CTNXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:23:38 -0400
-Date: Wed, 20 Mar 2013 10:23:22 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
-        feng.tang@intel.com
-Subject: Re: Perf tool won't build without libnewt
-Message-ID: <20130320132322.GE23423@infradead.org>
-References: <20130320121111.GB16485@e106331-lin.cambridge.arm.com>
+	id S932563Ab3CTNYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:24:19 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:47241 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab3CTNYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:24:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130320121111.GB16485@e106331-lin.cambridge.arm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
+References: <CADB-GoLzX-G5j92oEsLeUq6PRpKwb15U6LL_jw4zh6Nhh+ZHLg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
+Date: Wed, 20 Mar 2013 21:24:14 +0800
+Message-ID: <CADB-GoLncGoXmJsxXPUZocz1fJe9uUBX+mtgBVkuUR1SqbOBEQ@mail.gmail.com>
+Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        sarah.a.sharp@linux.intel.com, Julia.Lawall@lip6.fr,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>, john453@faraday-tech.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 20, 2013 at 12:11:11PM +0000, Mark Rutland escreveu:
-> I attempted to cross-build v3.9-rc3's perf tool for an arm system today, and
-> got the following out of the build system:
-> 
-> CHK libnewt
-> Makefile:655: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
-> [...]
-> builtin-report.c: In function ‘__cmd_report’:
-> builtin-report.c:478:15: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
-> builtin-report.c:478:15: note: each undeclared identifier is reported only once for each function it appears in
-> builtin-report.c: In function ‘cmd_report’:
-> builtin-report.c:821:13: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
-> make: *** [builtin-report.o] Error 1
-> make: *** Waiting for unfinished jobs....
-> 
-> I've bisected this down to ad0de0971b: "perf report: Enable the runtime
-> switching of perf data file".
+Hi,
 
-Can you try with latest tip/perf/urgent, should go to Linus soon.
+On Tue, Mar 19, 2013 at 11:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Tue, 19 Mar 2013, Yuan-Hsin Chen wrote:
+>
+>> > What about the port_status registers?  They're not between command and
+>> > async_next.  If they aren't consistent with EHCI, it makes things a lot
+>> > more complicated.
+>>
+>> fusbh200 has only one port_status register with different offset,
+>> 0x30, and the position of some bits are different from EHCI.
 
-This cset should fix it:
+How about adding kernel configuration to adjust offset for FUSBH200 in
+ehci_def.h? So port_status would be in offset 0x20 from ehci_regs.
 
-commit 5f7439e07822942f32b9e0a66f4a3cc9c3e29e67
-Author: Michael Ellerman <michael@ellerman.id.au>
-Date:   Tue Feb 26 16:02:03 2013 +1100
+For example,
 
-    perf report: Fix build with NO_NEWT=1
+        /* ASYNCLISTADDR: offset 0x18 */
+        u32             async_next;     /* address of next async queue head */
 
-----
+#ifndef CONFIG_USB_EHCI_HCD_FUSBH200
+        u32             reserved1[2];
 
-	Thanks for reporting!
+        /* TXFILLTUNING: offset 0x24 */
+        u32             txfill_tuning;  /* TX FIFO Tuning register */
+#define TXFIFO_DEFAULT  (8<<16)         /* FIFO burst threshold 8 */
 
-- Arnaldo
+        u32             reserved2[6];
+
+        /* CONFIGFLAG: offset 0x40 */
+        u32             configured_flag;
+#define FLAG_CF         (1<<0)          /* true: we'll support "high speed" */
+
+#else
+        u32             reserved1;
+#endif
+        /* PORTSC: offset 0x44 */
+        u32             port_status[0]; /* up to N_PORTS */
+
+
+Furthermore, there are PORT_POWER, PORT_OWNER, PORT_LED_XXX,
+PORT_TEST, PORT_WKCONN_E, PORT_WKDISC_E, PORT_WKOC_E absent in
+port_status of FUSBH200. Also PORT_OC and PORT_OCC are in another
+register. Is it ok to use quirk flag also?
+
+>
+> That's pretty nasty.  Integrating that with the standard EHCI driver
+> would be considerably more difficult.
+>
+> Why was the FUSBH200 designed in this strange way?  Why doesn't it use
+> the standard EHCI register layout?  Were the engineers at Faraday
+> deliberately trying to make life harder for driver writers?
+>
+>> Also, usbmode_ex, hostpc, and txfill_tuning other than configured_flag
+>> are non-existent in fusbh200. They are used in both ehci-hcd.c and
+>> ehci-hub.c for several times.
+>
+> They are used only if the hardware supports them, that is, only if the
+> ehci->has_hostpc flag is set.
+>
+> Alan Stern
+>
+
+Thank you for your help.
+
+Yuan-Hsin
