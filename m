@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933803Ab3CTQw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:52:28 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:55915 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933711Ab3CTQwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:52:15 -0400
-Date: Wed, 20 Mar 2013 09:53:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shankar Brahadeeswaran <shankoo77@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_mmap and
- ashmem_read
-Message-ID: <20130320165339.GA28307@kroah.com>
-References: <CAJsYZ5ksvPCR2O39=sj9zeptfppP1w6FM08rw8Aw+L+2dEPCnQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJsYZ5ksvPCR2O39=sj9zeptfppP1w6FM08rw8Aw+L+2dEPCnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933748Ab3CTQw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:52:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932536Ab3CTQw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:52:57 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <21286.1363716700@warthog.procyon.org.uk>
+References: <21286.1363716700@warthog.procyon.org.uk> <20130318131224.43ebcf542e6dea358f546198@canb.auug.org.au> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com> <567.1361470653@warthog.procyon.org.uk> <CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com> <20130221183445.GB20629@fenchurch.internal.datastacks.com> <CA+55aFwX5AmMgEAZ8uSdH=8g00xVD3NfnvgBbgSytMGdcifKMg@mail.gmail.com>
+Cc: dhowells@redhat.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Date: Wed, 20 Mar 2013 16:52:39 +0000
+Message-ID: <2731.1363798359@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 09:08:03PM +0530, Shankar Brahadeeswaran wrote:
-> Hi Greg, Dan,
-> 
-> Few days back I posted a patch to fix a dead lock issue in the ashmem
-> driver that got merged in staging-next branch
-> https://lkml.org/lkml/2013/2/20/429
-> 
-> I'm seeing that there exists another path in the ashmem driver that
-> could lead to the similar issue. But this time I'm unable to think of
-> a way to fix the problem.
+David Howells <dhowells@redhat.com> wrote:
 
-Why not copy the android developers who wrote this code on this thread?
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> > David, if I do remove it, are there other patches in your pekey tree that
+> > are still going forward?
+> 
+> No.
 
-greg k-h
+Well, maybe.  But feel free to drop it anyway for the moment.
+
+David
