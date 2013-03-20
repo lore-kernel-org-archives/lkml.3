@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab3CTK3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 06:29:47 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:55356 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3CTK3p convert rfc822-to-8bit (ORCPT
+	id S1754127Ab3CTKbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 06:31:03 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43954 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3CTKbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 06:29:45 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: David Lang <david@lang.hm>
-Subject: Re: Tux3 Report: Initial fsck has landed
-Date: Wed, 20 Mar 2013 11:29:41 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc3-tp520; KDE/4.9.5; x86_64; ; )
-Cc: tux3@phunq.net, Daniel Phillips <daniel.raymond.phillips@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        linux-kernel@vger.kernel.org, tux3@tux3.org,
-        linux-fsdevel@vger.kernel.org
-References: <CAEsagEgeaHC_2ULhr_yAtOuNUxk+PZC=aPXU4PQyY9NnUC=TyQ@mail.gmail.com> <201303200000.33356.Martin@lichtvoll.de> <alpine.DEB.2.02.1303192102350.31505@nftneq.ynat.uz> (sfid-20130320_112832_061423_065C04E5)
-In-Reply-To: <alpine.DEB.2.02.1303192102350.31505@nftneq.ynat.uz>
+	Wed, 20 Mar 2013 06:31:02 -0400
+Message-ID: <51498FCE.60603@oracle.com>
+Date: Wed, 20 Mar 2013 18:30:38 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303201129.41996.Martin@lichtvoll.de>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/8] staging: zcache: zero-filled pages awareness
+References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com> <1363685150-18303-3-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1363685150-18303-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 20. März 2013 schrieb David Lang:
-> On Wed, 20 Mar 2013, Martin Steigerwald wrote:
-> > Am Dienstag, 29. Januar 2013 schrieb Daniel Phillips:
-> >> On Mon, Jan 28, 2013 at 5:40 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >>> On Mon, Jan 28, 2013 at 04:20:11PM -0800, Darrick J. Wong wrote:
-> >>>> On Mon, Jan 28, 2013 at 03:27:38PM -0800, David Lang wrote:
-> >>>>> The situation I'm thinking of is when dealing with VMs, you make a
-> >>>>> filesystem image once and clone it multiple times. Won't that end
-> >>>>> up with the same UUID in the superblock?
-> >>>> 
-> >>>> Yes, but one ought to be able to change the UUID a la tune2fs
-> >>>> -U.  Even still... so long as the VM images have a different UUID
-> >>>> than the fs that they live on, it ought to be fine.
-> >>> 
-> >>> ... and this is something most system administrators should be
-> >>> familiar with.  For example, it's one of those things that Norton
-> >>> Ghost when makes file system image copes (the equivalent of "tune2fs
-> >>> -U random /dev/XXX")
-> >> 
-> >> Hmm, maybe I missed something but it does not seem like a good idea
-> >> to use the volume UID itself to generate unique-per-volume metadata
-> >> hashes, if users expect to be able to change it. All the metadata
-> >> hashes would need to be changed.
-> > 
-> > I believe that is what BTRFS is doing.
-> > 
-> > And yes, AFAIK there is no easy way to change the UUID of a BTRFS
-> > filesystems after it was created.
-> 
-> In a world where systems are cloned, and many VMs are started from one
-> master copy of a filesystem, a UUID is about as far from unique as
-> anything you can generate.
-> 
-> BTRFS may have this problem, but why should Tux3 copy the problem?
 
-I didn´t ask for copying that behavior. I just mentioned it :)
+> @@ -641,16 +691,22 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+>  {
+>  	struct page *page = NULL;
+>  	unsigned int zsize, zpages;
+> +	bool zero_filled = false;
+>  
+>  	BUG_ON(preemptible());
+> -	if (pampd_is_remote(pampd)) {
+> +
+> +	if (pampd == (void *)ZERO_FILLED)
+> +		zero_filled = true;
+> +
+> +	if (pampd_is_remote(pampd) && !zero_filled) {
+>  		BUG_ON(!ramster_enabled);
+>  		pampd = ramster_pampd_free(pampd, pool, oid, index, acct);
+>  		if (pampd == NULL)
+>  			return;
+>  	}
+>  	if (is_ephemeral(pool)) {
+> -		page = zbud_free_and_delist((struct zbudref *)pampd,
+> +		if (!zero_filled)
+> +			page = zbud_free_and_delist((struct zbudref *)pampd,
+>  						true, &zsize, &zpages);
+
+This check should also apply for !is_ephemeral(pool).
+
+>  		if (page)
+>  			dec_zcache_eph_pageframes();
+> @@ -667,7 +723,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+>  	}
+>  	if (!is_local_client(pool->client))
+>  		ramster_count_foreign_pages(is_ephemeral(pool), -1);
+> -	if (page)
+> +	if (page && !zero_filled)
+>  		zcache_free_page(page);
+>  }
+>  
+> 
 
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Regards,
+-Bob
