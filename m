@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab3CTUPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 16:15:50 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:38946 "EHLO
+	id S1756169Ab3CTURR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 16:17:17 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:38947 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756069Ab3CTUPo (ORCPT
+	with ESMTP id S1757528Ab3CTUPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 16:15:44 -0400
+	Wed, 20 Mar 2013 16:15:47 -0400
 From: Rik van Riel <riel@surriel.com>
 To: torvalds@linux-foundation.org
 Cc: davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
         walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com,
-        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 6/7] ipc,sem: have only one list in struct sem_queue
-Date: Wed, 20 Mar 2013 15:55:36 -0400
-Message-Id: <1363809337-29718-7-git-send-email-riel@surriel.com>
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH 3/7] ipc: introduce lockless pre_down ipcctl
+Date: Wed, 20 Mar 2013 15:55:33 -0400
+Message-Id: <1363809337-29718-4-git-send-email-riel@surriel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1363809337-29718-1-git-send-email-riel@surriel.com>
 References: <1363809337-29718-1-git-send-email-riel@surriel.com>
@@ -23,183 +23,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having only one list in struct sem_queue, and only queueing simple
-semaphore operations on the list for the semaphore involved, allows
-us to introduce finer grained locking for semtimedop.
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+
+Various forms of ipc use the ipcctl_pre_down() function to
+retrieve an ipc object and check permissions, mostly for IPC_RMID
+and IPC_SET commands.
+
+Introduce ipcctl_pre_down_nolock(), a lockless version of this function.
+The locking version is maintained, yet modified to call the nolock version,
+without affecting its semantics, thus transparent to all ipc callers.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- ipc/sem.c |   65 +++++++++++++++++++++++++++++++-----------------------------
- 1 files changed, 34 insertions(+), 31 deletions(-)
+ ipc/util.c |   31 ++++++++++++++++++++++++++-----
+ ipc/util.h |    3 +++
+ 2 files changed, 29 insertions(+), 5 deletions(-)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index d25f9b6..468e2c1 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -99,7 +99,6 @@ struct sem {
- 
- /* One queue for each sleeping process in the system. */
- struct sem_queue {
--	struct list_head	simple_list; /* queue of pending operations */
- 	struct list_head	list;	 /* queue of pending operations */
- 	struct task_struct	*sleeper; /* this process */
- 	struct sem_undo		*undo;	 /* undo structure */
-@@ -517,7 +516,7 @@ static void wake_up_sem_queue_prepare(struct list_head *pt,
- 	q->status = IN_WAKEUP;
- 	q->pid = error;
- 
--	list_add_tail(&q->simple_list, pt);
-+	list_add_tail(&q->list, pt);
- }
- 
- /**
-@@ -535,7 +534,7 @@ static void wake_up_sem_queue_do(struct list_head *pt)
- 	int did_something;
- 
- 	did_something = !list_empty(pt);
--	list_for_each_entry_safe(q, t, pt, simple_list) {
-+	list_for_each_entry_safe(q, t, pt, list) {
- 		wake_up_process(q->sleeper);
- 		/* q can disappear immediately after writing q->status. */
- 		smp_wmb();
-@@ -548,9 +547,7 @@ static void wake_up_sem_queue_do(struct list_head *pt)
- static void unlink_queue(struct sem_array *sma, struct sem_queue *q)
+diff --git a/ipc/util.c b/ipc/util.c
+index 65c3d6c..6a98e62 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -825,11 +825,28 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 				      struct ipc64_perm *perm, int extra_perm)
  {
- 	list_del(&q->list);
--	if (q->nsops == 1)
--		list_del(&q->simple_list);
--	else
-+	if (q->nsops > 1)
- 		sma->complex_count--;
+ 	struct kern_ipc_perm *ipcp;
++
++	ipcp = ipcctl_pre_down_nolock(ns, ids, id, cmd, perm, extra_perm);
++	if (IS_ERR(ipcp))
++		goto out;
++
++	spin_lock(&ipcp->lock);
++out:
++	return ipcp;
++}
++
++struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
++					     struct ipc_ids *ids, int id, int cmd,
++					     struct ipc64_perm *perm, int extra_perm)
++{
+ 	kuid_t euid;
+-	int err;
++	int err = -EPERM;
++	struct kern_ipc_perm *ipcp;
+ 
+ 	down_write(&ids->rw_mutex);
+-	ipcp = ipc_lock_check(ids, id);
++	rcu_read_lock();
++
++	ipcp = ipc_obtain_object_check(ids, id);
+ 	if (IS_ERR(ipcp)) {
+ 		err = PTR_ERR(ipcp);
+ 		goto out_up;
+@@ -838,17 +855,21 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 	audit_ipc_obj(ipcp);
+ 	if (cmd == IPC_SET)
+ 		audit_ipc_set_perm(extra_perm, perm->uid,
+-					 perm->gid, perm->mode);
++				   perm->gid, perm->mode);
+ 
+ 	euid = current_euid();
+ 	if (uid_eq(euid, ipcp->cuid) || uid_eq(euid, ipcp->uid)  ||
+ 	    ns_capable(ns->user_ns, CAP_SYS_ADMIN))
+ 		return ipcp;
+ 
+-	err = -EPERM;
+-	ipc_unlock(ipcp);
+ out_up:
++	/*
++	 * Unsuccessful lookup, unlock and return
++	 * the corresponding error.
++	 */
++	rcu_read_unlock();
+ 	up_write(&ids->rw_mutex);
++
+ 	return ERR_PTR(err);
  }
  
-@@ -603,9 +600,9 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
- 	}
- 	/*
- 	 * semval is 0. Check if there are wait-for-zero semops.
--	 * They must be the first entries in the per-semaphore simple queue
-+	 * They must be the first entries in the per-semaphore queue
- 	 */
--	h = list_first_entry(&curr->sem_pending, struct sem_queue, simple_list);
-+	h = list_first_entry(&curr->sem_pending, struct sem_queue, list);
- 	BUG_ON(h->nsops != 1);
- 	BUG_ON(h->sops[0].sem_num != q->sops[0].sem_num);
- 
-@@ -625,8 +622,9 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
-  * @pt: list head for the tasks that must be woken up.
-  *
-  * update_queue must be called after a semaphore in a semaphore array
-- * was modified. If multiple semaphore were modified, then @semnum
-- * must be set to -1.
-+ * was modified. If multiple semaphores were modified, update_queue must
-+ * be called with semnum = -1, as well as with the number of each modified
-+ * semaphore.
-  * The tasks that must be woken up are added to @pt. The return code
-  * is stored in q->pid.
-  * The function return 1 if at least one semop was completed successfully.
-@@ -636,30 +634,19 @@ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
- 	struct sem_queue *q;
- 	struct list_head *walk;
- 	struct list_head *pending_list;
--	int offset;
- 	int semop_completed = 0;
- 
--	/* if there are complex operations around, then knowing the semaphore
--	 * that was modified doesn't help us. Assume that multiple semaphores
--	 * were modified.
--	 */
--	if (sma->complex_count)
--		semnum = -1;
--
--	if (semnum == -1) {
-+	if (semnum == -1)
- 		pending_list = &sma->sem_pending;
--		offset = offsetof(struct sem_queue, list);
--	} else {
-+	else
- 		pending_list = &sma->sem_base[semnum].sem_pending;
--		offset = offsetof(struct sem_queue, simple_list);
--	}
- 
- again:
- 	walk = pending_list->next;
- 	while (walk != pending_list) {
- 		int error, restart;
- 
--		q = (struct sem_queue *)((char *)walk - offset);
-+		q = container_of(walk, struct sem_queue, list);
- 		walk = walk->next;
- 
- 		/* If we are scanning the single sop, per-semaphore list of
-@@ -718,9 +705,18 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
- 	if (sma->complex_count || sops == NULL) {
- 		if (update_queue(sma, -1, pt))
- 			otime = 1;
-+	}
-+
-+	if (!sops) {
-+		/* No semops; something special is going on. */
-+		for (i = 0; i < sma->sem_nsems; i++) {
-+			if (update_queue(sma, i, pt))
-+				otime = 1;
-+		}
- 		goto done;
- 	}
- 
-+	/* Check the semaphores that were modified. */
- 	for (i = 0; i < nsops; i++) {
- 		if (sops[i].sem_op > 0 ||
- 			(sops[i].sem_op < 0 &&
-@@ -791,6 +787,7 @@ static void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 	struct sem_queue *q, *tq;
- 	struct sem_array *sma = container_of(ipcp, struct sem_array, sem_perm);
- 	struct list_head tasks;
-+	int i;
- 
- 	/* Free the existing undo structures for this semaphore set.  */
- 	assert_spin_locked(&sma->sem_perm.lock);
-@@ -809,6 +806,13 @@ static void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 		unlink_queue(sma, q);
- 		wake_up_sem_queue_prepare(&tasks, q, -EIDRM);
- 	}
-+	for (i = 0; i < sma->sem_nsems; i++) {
-+		struct sem *sem = sma->sem_base + i;
-+		list_for_each_entry_safe(q, tq, &sem->sem_pending, list) {
-+			unlink_queue(sma, q);
-+			wake_up_sem_queue_prepare(&tasks, q, -EIDRM);
-+		}
-+	}
- 
- 	/* Remove the semaphore set from the IDR */
- 	sem_rmid(ns, sma);
-@@ -1532,21 +1536,20 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	queue.undo = un;
- 	queue.pid = task_tgid_vnr(current);
- 	queue.alter = alter;
--	if (alter)
--		list_add_tail(&queue.list, &sma->sem_pending);
--	else
--		list_add(&queue.list, &sma->sem_pending);
- 
- 	if (nsops == 1) {
- 		struct sem *curr;
- 		curr = &sma->sem_base[sops->sem_num];
- 
- 		if (alter)
--			list_add_tail(&queue.simple_list, &curr->sem_pending);
-+			list_add_tail(&queue.list, &curr->sem_pending);
- 		else
--			list_add(&queue.simple_list, &curr->sem_pending);
-+			list_add(&queue.list, &curr->sem_pending);
- 	} else {
--		INIT_LIST_HEAD(&queue.simple_list);
-+		if (alter)
-+			list_add_tail(&queue.list, &sma->sem_pending);
-+		else
-+			list_add(&queue.list, &sma->sem_pending);
- 		sma->complex_count++;
- 	}
- 
+diff --git a/ipc/util.h b/ipc/util.h
+index bfc8d4e..13d92fe 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -128,6 +128,9 @@ struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id);
+ void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
+ void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
+ int ipc_update_perm(struct ipc64_perm *in, struct kern_ipc_perm *out);
++struct kern_ipc_perm *ipcctl_pre_down_nolock(struct ipc_namespace *ns,
++					     struct ipc_ids *ids, int id, int cmd,
++					     struct ipc64_perm *perm, int extra_perm);
+ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 				      struct ipc_ids *ids, int id, int cmd,
+ 				      struct ipc64_perm *perm, int extra_perm);
 -- 
 1.7.7.6
 
