@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab3CTNsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:48:06 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9971 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab3CTNsE (ORCPT
+	id S1754222Ab3CTNsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:48:03 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16969 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3CTNr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:48:04 -0400
+	Wed, 20 Mar 2013 09:47:59 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Mar 2013 06:40:42 -0700
+	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 06:47:58 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 3/4] ARM: tegra: dalmore: add dt node for TPS65090's regulators
-Date: Wed, 20 Mar 2013 19:14:29 +0530
-Message-ID: <1363787070-14801-4-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 4/4] ARM: tegra: dalmore: add fixed regulator's node
+Date: Wed, 20 Mar 2013 19:14:30 +0530
+Message-ID: <1363787070-14801-5-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
 References: <1363787070-14801-1-git-send-email-ldewangan@nvidia.com>
@@ -26,138 +26,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 platform, Dalmore, uses the TPS65090 as
-secondary PMICs which mainly act as voltage switch controlled
-by I2C communication.
+NVIDIA's Tegra114 platform Dalmore has some voltage switches
+which are controlled by the Tegra GPIOs.
 
-Add regulator node for this device.
+Add dt node for such fixed regulators.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- .../devicetree/bindings/regulator/tps65090.txt     |    4 +-
- arch/arm/boot/dts/tegra114-dalmore.dts             |   90 ++++++++++++++++++++
- 2 files changed, 92 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/tegra114-dalmore.dts |   55 ++++++++++++++++++++++++++++++++
+ 1 files changed, 55 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
-index 313a60b..8926e2d 100644
---- a/Documentation/devicetree/bindings/regulator/tps65090.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
-@@ -41,8 +41,8 @@ Example:
- 		infet5-supply = <&some_reg>;
- 		infet6-supply = <&some_reg>;
- 		infet7-supply = <&some_reg>;
--		vsys_l1-supply = <&some_reg>;
--		vsys_l2-supply = <&some_reg>;
-+		vsys-l1-supply = <&some_reg>;
-+		vsys-l2-supply = <&some_reg>;
- 
- 		regulators {
- 			dcdc1 {
 diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index 6be9434..a47c3d2 100644
+index a47c3d2..86116f1 100644
 --- a/arch/arm/boot/dts/tegra114-dalmore.dts
 +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -731,6 +731,82 @@
- 			regulator-boot-on;
+@@ -836,5 +836,60 @@
+ 			regulator-max-microvolt = <5000000>;
  			regulator-always-on;
  		};
 +
-+		tps65090@48 {
-+			compatible = "ti,tps65090";
-+			reg = <0x48>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <72 0x04>; /* gpio PJ0 */
-+
-+			vsys1-supply = <&vdd_ac_bat_reg>;
-+			vsys2-supply = <&vdd_ac_bat_reg>;
-+			vsys3-supply = <&vdd_ac_bat_reg>;
-+			infet1-supply = <&vdd_ac_bat_reg>;
-+			infet2-supply = <&vdd_ac_bat_reg>;
-+			infet3-supply = <&tps65090_dcdc2_reg>;
-+			infet4-supply = <&tps65090_dcdc2_reg>;
-+			infet5-supply = <&tps65090_dcdc2_reg>;
-+			infet6-supply = <&tps65090_dcdc2_reg>;
-+			infet7-supply = <&tps65090_dcdc2_reg>;
-+			vsys-l1-supply = <&vdd_ac_bat_reg>;
-+			vsys-l2-supply = <&vdd_ac_bat_reg>;
-+
-+			regulators {
-+				dcdc1 {
-+					regulator-name = "vdd-sys-5v0";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				tps65090_dcdc2_reg: dcdc2 {
-+					regulator-name = "vdd-sys-3v3";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				dcdc3 {
-+					regulator-name = "vdd-ao";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				fet1 {
-+					regulator-name = "vdd-lcd-bl";
-+				};
-+
-+				fet3 {
-+					regulator-name = "vdd-modem-3v3";
-+				};
-+
-+				fet4 {
-+					regulator-name = "avdd-lcd";
-+				};
-+
-+				fet5 {
-+					regulator-name = "vdd-lvds";
-+				};
-+
-+				fet6 {
-+					regulator-name = "vdd-sd-slot";
-+				};
-+
-+				fet7 {
-+					regulator-name = "vdd-com-3v3";
-+				};
-+
-+				ldo1 {
-+					regulator-name = "vdd-sby-5v0";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo2 {
-+					regulator-name = "vdd-sby-3v3";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+			};
-+		};
- 	};
- 
- 	pmc {
-@@ -747,4 +823,18 @@
- 		bus-width = <8>;
- 		status = "okay";
- 	};
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		vdd_ac_bat_reg: regulator@0 {
++		dvdd_ts_reg: regulator@1 {
 +			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "vdd_ac_bat";
++			reg = <1>;
++			regulator-name = "dvdd_ts";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			enable-active-high;
++			gpio = <&gpio 61 0>; /* GPIO PH5 */
++		};
++
++		lcd_bl_en_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "lcd_bl_en";
 +			regulator-min-microvolt = <5000000>;
 +			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
++			enable-active-high;
++			gpio = <&gpio 58 0>; /* GPIO PH2 */
 +		};
-+	};
++
++		usb1_vbus_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "usb1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			enable-active-high;
++			gpio = <&gpio 108 0>; /* GPIO PN4 */
++			gpio-open-drain;
++			vin-supply = <&tps65090_dcdc1_reg>;
++		};
++
++		usb3_vbus_reg: regulator@4 {
++			compatible = "regulator-fixed";
++			reg = <4>;
++			regulator-name = "usb2_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			enable-active-high;
++			gpio = <&gpio 86 0>; /* GPIO PK6 */
++			gpio-open-drain;
++			vin-supply = <&tps65090_dcdc1_reg>;
++		};
++
++		vdd_hdmi_reg: regulator@5 {
++			compatible = "regulator-fixed";
++			reg = <5>;
++			regulator-name = "vdd_hdmi_5v0";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			enable-active-high;
++			gpio = <&gpio 81 0>; /* GPIO PK1 */
++			vin-supply = <&tps65090_dcdc1_reg>;
++		};
+ 	};
  };
 -- 
 1.7.1.1
