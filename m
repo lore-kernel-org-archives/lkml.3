@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab3CTML5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 08:11:57 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:40233 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067Ab3CTML4 (ORCPT
+	id S934105Ab3CTMMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 08:12:19 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50811 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933892Ab3CTMKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 08:11:56 -0400
-Date: Wed, 20 Mar 2013 13:11:45 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Massimo Dal Zotto <dz@debian.org>
-Subject: MAINTAINERS: i8k driver is orphan
-Message-ID: <20130320131145.54a99f99@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 08:10:47 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org
+Cc: santosh.shilimkar@ti.com, khilman@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH 07/10] gpio: gpio-stp-xway.c: fix checkpatch error
+Date: Wed, 20 Mar 2013 13:16:01 +0100
+Message-Id: <1363781764-17330-8-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363781764-17330-1-git-send-email-laurent.navet@gmail.com>
+References: <1363781764-17330-1-git-send-email-laurent.navet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Massimo Dal Zotto stopped maintaining the i8k driver several years
-ago, so move his name from MAINTAINERS to CREDITS.
+Fix :
+ gpio/gpio-stp-xway.c:220: ERROR: trailing whitespace
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
 ---
- CREDITS     |    4 ++++
- MAINTAINERS |    4 +---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpio/gpio-stp-xway.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-3.9-rc3.orig/CREDITS	2013-03-20 11:53:43.810557616 +0100
-+++ linux-3.9-rc3/CREDITS	2013-03-20 13:07:57.630663188 +0100
-@@ -761,6 +761,10 @@ S: Northampton
- S: NN1 3QT
- S: United Kingdom
- 
-+N: Massimo Dal Zotto
-+E: dz@debian.org
-+D: i8k Dell laptop SMM driver
+diff --git a/drivers/gpio/gpio-stp-xway.c b/drivers/gpio/gpio-stp-xway.c
+index c20e051..04882a9 100644
+--- a/drivers/gpio/gpio-stp-xway.c
++++ b/drivers/gpio/gpio-stp-xway.c
+@@ -217,7 +217,7 @@ static int xway_stp_probe(struct platform_device *pdev)
+ 	chip->virt = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(chip->virt))
+ 		return PTR_ERR(chip->virt);
+-	
 +
- N: Uwe Dannowski
- E: Uwe.Dannowski@ira.uka.de
- W: http://i30www.ira.uka.de/~dannowsk/
---- linux-3.9-rc3.orig/MAINTAINERS	2013-03-20 12:37:24.511191296 +0100
-+++ linux-3.9-rc3/MAINTAINERS	2013-03-20 13:01:58.264354299 +0100
-@@ -2435,9 +2435,7 @@ S:	Maintained
- F:	drivers/platform/x86/dell-laptop.c
- 
- DELL LAPTOP SMM DRIVER
--M:	Massimo Dal Zotto <dz@debian.org>
--W:	http://www.debian.org/~dz/i8k/
--S:	Maintained
-+S:	Orphan
- F:	drivers/char/i8k.c
- F:	include/uapi/linux/i8k.h
- 
-
-
+ 	chip->gc.dev = &pdev->dev;
+ 	chip->gc.label = "stp-xway";
+ 	chip->gc.direction_output = xway_stp_dir_out;
 -- 
-Jean Delvare
+1.7.10.4
+
