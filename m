@@ -1,121 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3CTOIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:08:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59898 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3CTOIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:08:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363737629-16745-2-git-send-email-tj@kernel.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
-	<1363737629-16745-2-git-send-email-tj@kernel.org>
-Date: Wed, 20 Mar 2013 23:08:29 +0900
-Message-ID: <CAAmzW4OosERgCwGnDx7HGHOf7BxbBPNYugA_V8wbegKvOiDqgQ@mail.gmail.com>
-Subject: Re: [PATCH 01/10] workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]
-From: JoonSoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754572Ab3CTOIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:08:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41227 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab3CTOHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 10:07:35 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3/6] x86, cpu: Convert FDIV bug detection
+Date: Wed, 20 Mar 2013 15:07:25 +0100
+Message-Id: <1363788448-31325-4-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+In-Reply-To: <1363788448-31325-1-git-send-email-bp@alien8.de>
+References: <1363788448-31325-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/20 Tejun Heo <tj@kernel.org>:
-> Unbound workqueues are going to be NUMA-affine.  Add wq_numa_tbl_len
-> and wq_numa_possible_cpumask[] in preparation.  The former is the
-> highest NUMA node ID + 1 and the latter is masks of possibles CPUs for
-> each NUMA node.
+From: Borislav Petkov <bp@suse.de>
 
-It is better to move this code to topology.c or cpumask.c,
-then it can be generally used.
+... to the new facility. Add a reference to the wikipedia article
+explaining the FDIV test we're doing here.
 
-Thanks.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/cpufeature.h | 1 +
+ arch/x86/include/asm/processor.h  | 1 -
+ arch/x86/kernel/cpu/bugs.c        | 7 ++++---
+ arch/x86/kernel/cpu/proc.c        | 2 +-
+ arch/x86/kernel/setup.c           | 2 --
+ 5 files changed, 6 insertions(+), 7 deletions(-)
 
-> This patch only introduces these.  Future patches will make use of
-> them.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/workqueue.c | 35 ++++++++++++++++++++++++++++++++++-
->  1 file changed, 34 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 775c2f4..9b096e3 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -44,6 +44,7 @@
->  #include <linux/jhash.h>
->  #include <linux/hashtable.h>
->  #include <linux/rculist.h>
-> +#include <linux/nodemask.h>
->
->  #include "workqueue_internal.h"
->
-> @@ -256,6 +257,11 @@ struct workqueue_struct {
->
->  static struct kmem_cache *pwq_cache;
->
-> +static int wq_numa_tbl_len;            /* highest possible NUMA node id + 1 */
-> +static cpumask_var_t *wq_numa_possible_cpumask;
-> +                                       /* possible CPUs of each node, may
-> +                                          be NULL if init failed */
-> +
->  static DEFINE_MUTEX(wq_mutex);         /* protects workqueues and pools */
->  static DEFINE_SPINLOCK(pwq_lock);      /* protects pool_workqueues */
->  static DEFINE_SPINLOCK(wq_mayday_lock);        /* protects wq->maydays list */
-> @@ -4416,7 +4422,7 @@ out_unlock:
->  static int __init init_workqueues(void)
->  {
->         int std_nice[NR_STD_WORKER_POOLS] = { 0, HIGHPRI_NICE_LEVEL };
-> -       int i, cpu;
-> +       int i, node, cpu;
->
->         /* make sure we have enough bits for OFFQ pool ID */
->         BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_POOL_SHIFT)) <
-> @@ -4429,6 +4435,33 @@ static int __init init_workqueues(void)
->         cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
->         hotcpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
->
-> +       /* determine NUMA pwq table len - highest node id + 1 */
-> +       for_each_node(node)
-> +               wq_numa_tbl_len = max(wq_numa_tbl_len, node + 1);
-> +
-> +       /*
-> +        * We want masks of possible CPUs of each node which isn't readily
-> +        * available.  Build one from cpu_to_node() which should have been
-> +        * fully initialized by now.
-> +        */
-> +       wq_numa_possible_cpumask = kzalloc(wq_numa_tbl_len *
-> +                                          sizeof(wq_numa_possible_cpumask[0]),
-> +                                          GFP_KERNEL);
-> +       BUG_ON(!wq_numa_possible_cpumask);
-> +
-> +       for_each_node(node)
-> +               BUG_ON(!alloc_cpumask_var_node(&wq_numa_possible_cpumask[node],
-> +                                              GFP_KERNEL, node));
-> +       for_each_possible_cpu(cpu) {
-> +               node = cpu_to_node(cpu);
-> +               if (WARN_ON(node == NUMA_NO_NODE)) {
-> +                       pr_err("workqueue: NUMA node mapping not available for cpu%d, disabling NUMA support\n", cpu);
-> +                       wq_numa_possible_cpumask = NULL;
-> +                       break;
-> +               }
-> +               cpumask_set_cpu(cpu, wq_numa_possible_cpumask[node]);
-> +       }
-> +
->         /* initialize CPU pools */
->         for_each_possible_cpu(cpu) {
->                 struct worker_pool *pool;
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index c0ad7e75815c..25eb9488a9a5 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -223,6 +223,7 @@
+ #define X86_BUG(x)		(NCAPINTS*32 + (x))
+ 
+ #define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
++#define X86_BUG_FDIV		X86_BUG(1) /* FPU FDIV */
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 1e55e2d543b5..ea22dfaf6c5e 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -91,7 +91,6 @@ struct cpuinfo_x86 {
+ 	/* Problems on some 486Dx4's and old 386's: */
+ 	char			hard_math;
+ 	char			rfu;
+-	char			fdiv_bug;
+ 	char			coma_bug;
+ 	char			pad0;
+ #else
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index af6455e3fcc9..c59635ecbbb8 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -59,7 +59,7 @@ static void __init check_fpu(void)
+ 	 * trap_init() enabled FXSR and company _before_ testing for FP
+ 	 * problems here.
+ 	 *
+-	 * Test for the divl bug..
++	 * Test for the divl bug: http://en.wikipedia.org/wiki/Fdiv_bug
+ 	 */
+ 	__asm__("fninit\n\t"
+ 		"fldl %1\n\t"
+@@ -75,9 +75,10 @@ static void __init check_fpu(void)
+ 
+ 	kernel_fpu_end();
+ 
+-	boot_cpu_data.fdiv_bug = fdiv_bug;
+-	if (boot_cpu_data.fdiv_bug)
++	if (fdiv_bug) {
++		set_cpu_bug(&boot_cpu_data, X86_BUG_FDIV);
+ 		pr_warn("Hmm, FPU with FDIV bug\n");
++	}
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 2d60b2bec01c..5dfb6c65138f 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -34,7 +34,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   "fpu_exception\t: %s\n"
+ 		   "cpuid level\t: %d\n"
+ 		   "wp\t\t: %s\n",
+-		   c->fdiv_bug ? "yes" : "no",
++		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
+ 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
+ 		   c->coma_bug ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 90d8cc930f5e..29258c75a2f3 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -173,12 +173,10 @@ static struct resource bss_resource = {
+ /* cpu data as detected by the assembly code in head.S */
+ struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
+ 	.wp_works_ok = -1,
+-	.fdiv_bug = -1,
+ };
+ /* common cpu data for all cpus */
+ struct cpuinfo_x86 boot_cpu_data __read_mostly = {
+ 	.wp_works_ok = -1,
+-	.fdiv_bug = -1,
+ };
+ EXPORT_SYMBOL(boot_cpu_data);
+ 
+-- 
+1.8.1.3.535.ga923c31
+
