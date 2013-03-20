@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab3CTOHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:07:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41217 "EHLO mail.skyhub.de"
+	id S1752671Ab3CTOHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:07:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41228 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886Ab3CTOHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:07:34 -0400
+	id S1751208Ab3CTOHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 10:07:36 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <bp@suse.de>
-Subject: [PATCH 2/6] x86, cpu: Convert F00F bug detection
-Date: Wed, 20 Mar 2013 15:07:24 +0100
-Message-Id: <1363788448-31325-3-git-send-email-bp@alien8.de>
+Subject: [PATCH 6/6] x86, cpu: Convert AMD Erratum 400
+Date: Wed, 20 Mar 2013 15:07:28 +0100
+Message-Id: <1363788448-31325-7-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 In-Reply-To: <1363788448-31325-1-git-send-email-bp@alien8.de>
 References: <1363788448-31325-1-git-send-email-bp@alien8.de>
@@ -22,86 +22,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-... to using the new facility and drop the cpuinfo_x86 member.
+Convert AMD erratum 400 to the bug infrastructure. Then, retract all
+exports for modules since they're not needed now and make the AMD
+erratum checking machinery local to amd.c. Use forward declarations to
+avoid shuffling too much code around needlessly.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/include/asm/cpufeature.h | 2 ++
- arch/x86/include/asm/processor.h  | 1 -
- arch/x86/kernel/cpu/intel.c       | 4 ++--
- arch/x86/kernel/cpu/proc.c        | 2 +-
- arch/x86/mm/fault.c               | 2 +-
- 5 files changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/cpufeature.h |  1 +
+ arch/x86/include/asm/processor.h  | 19 -------------------
+ arch/x86/kernel/cpu/amd.c         | 23 ++++++++++++++++-------
+ arch/x86/kernel/process.c         |  2 +-
+ 4 files changed, 18 insertions(+), 27 deletions(-)
 
 diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 16190abd8905..c0ad7e75815c 100644
+index 4cfb5c9f6029..272fdccda5d5 100644
 --- a/arch/x86/include/asm/cpufeature.h
 +++ b/arch/x86/include/asm/cpufeature.h
-@@ -222,6 +222,8 @@
-  */
- #define X86_BUG(x)		(NCAPINTS*32 + (x))
+@@ -226,6 +226,7 @@
+ #define X86_BUG_FDIV		X86_BUG(1) /* FPU FDIV */
+ #define X86_BUG_COMA		X86_BUG(2) /* Cyrix 6x86 coma */
+ #define X86_BUG_AMD_TLB_MMATCH	X86_BUG(3) /* AMD Erratum 383 */
++#define X86_BUG_AMD_APIC_C1E	X86_BUG(4) /* AMD Erratum 400 */
  
-+#define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
-+
  #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
  
- #include <asm/asm.h>
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 23c8081d3870..1e55e2d543b5 100644
+index e044ef35f91f..22224b3b43bb 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -92,7 +92,6 @@ struct cpuinfo_x86 {
- 	char			hard_math;
- 	char			rfu;
- 	char			fdiv_bug;
--	char			f00f_bug;
- 	char			coma_bug;
- 	char			pad0;
- #else
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 1905ce98bee0..1acdd42d86d1 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -209,11 +209,11 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
- 	 * system.
- 	 * Note that the workaround only should be initialized once...
- 	 */
--	c->f00f_bug = 0;
-+	clear_cpu_bug(c, X86_BUG_F00F);
- 	if (!paravirt_enabled() && c->x86 == 5) {
- 		static int f00f_workaround_enabled;
+@@ -970,25 +970,6 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
+ 	return ratio;
+ }
  
--		c->f00f_bug = 1;
-+		set_cpu_bug(c, X86_BUG_F00F);
- 		if (!f00f_workaround_enabled) {
- 			trap_init_f00f_bug();
- 			printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index e280253f6f94..2d60b2bec01c 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -35,7 +35,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   "cpuid level\t: %d\n"
- 		   "wp\t\t: %s\n",
- 		   c->fdiv_bug ? "yes" : "no",
--		   c->f00f_bug ? "yes" : "no",
-+		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
- 		   c->coma_bug ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index fa8c02de0d25..3da69dbc0185 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -555,7 +555,7 @@ static int is_f00f_bug(struct pt_regs *regs, unsigned long address)
- 	/*
- 	 * Pentium F0 0F C7 C8 bug workaround:
- 	 */
--	if (boot_cpu_data.f00f_bug) {
-+	if (boot_cpu_has_bug(X86_BUG_F00F)) {
- 		nr = (address - idt_descr.address) >> 3;
+-/*
+- * AMD errata checking
+- */
+-#ifdef CONFIG_CPU_SUP_AMD
+-extern const int amd_erratum_400[];
+-extern bool cpu_has_amd_erratum(const int *);
+-
+-#define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
+-#define AMD_OSVW_ERRATUM(osvw_id, ...)	{ osvw_id, __VA_ARGS__, 0 }
+-#define AMD_MODEL_RANGE(f, m_start, s_start, m_end, s_end) \
+-	((f << 24) | (m_start << 16) | (s_start << 12) | (m_end << 4) | (s_end))
+-#define AMD_MODEL_RANGE_FAMILY(range)	(((range) >> 24) & 0xff)
+-#define AMD_MODEL_RANGE_START(range)	(((range) >> 12) & 0xfff)
+-#define AMD_MODEL_RANGE_END(range)	((range) & 0xfff)
+-
+-#else
+-#define cpu_has_amd_erratum(x)	(false)
+-#endif /* CONFIG_CPU_SUP_AMD */
+-
+ extern unsigned long arch_align_stack(unsigned long sp);
+ extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
  
- 		if (nr == 6) {
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 85f84e13d2dd..9a2a71669c5d 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -514,6 +514,8 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ }
+ 
+ static const int amd_erratum_383[];
++static const int amd_erratum_400[];
++static bool cpu_has_amd_erratum(const int *erratum);
+ 
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ {
+@@ -734,6 +736,9 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
+ 	}
+ 
++	if (cpu_has_amd_erratum(amd_erratum_400))
++		set_cpu_bug(c, X86_BUG_AMD_APIC_C1E);
++
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+ }
+ 
+@@ -852,8 +857,7 @@ cpu_dev_register(amd_cpu_dev);
+  * AMD_OSVW_ERRATUM() macros. The latter is intended for newer errata that
+  * have an OSVW id assigned, which it takes as first argument. Both take a
+  * variable number of family-specific model-stepping ranges created by
+- * AMD_MODEL_RANGE(). Each erratum also has to be declared as extern const
+- * int[] in arch/x86/include/asm/processor.h.
++ * AMD_MODEL_RANGE().
+  *
+  * Example:
+  *
+@@ -863,15 +867,22 @@ cpu_dev_register(amd_cpu_dev);
+  *			   AMD_MODEL_RANGE(0x10, 0x9, 0x0, 0x9, 0x0));
+  */
+ 
+-const int amd_erratum_400[] =
++#define AMD_LEGACY_ERRATUM(...)		{ -1, __VA_ARGS__, 0 }
++#define AMD_OSVW_ERRATUM(osvw_id, ...)	{ osvw_id, __VA_ARGS__, 0 }
++#define AMD_MODEL_RANGE(f, m_start, s_start, m_end, s_end) \
++	((f << 24) | (m_start << 16) | (s_start << 12) | (m_end << 4) | (s_end))
++#define AMD_MODEL_RANGE_FAMILY(range)	(((range) >> 24) & 0xff)
++#define AMD_MODEL_RANGE_START(range)	(((range) >> 12) & 0xfff)
++#define AMD_MODEL_RANGE_END(range)	((range) & 0xfff)
++
++static const int amd_erratum_400[] =
+ 	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+ 			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+-EXPORT_SYMBOL_GPL(amd_erratum_400);
+ 
+ static const int amd_erratum_383[] =
+ 	AMD_OSVW_ERRATUM(3, AMD_MODEL_RANGE(0x10, 0, 0, 0xff, 0xf));
+ 
+-bool cpu_has_amd_erratum(const int *erratum)
++static bool cpu_has_amd_erratum(const int *erratum)
+ {
+ 	struct cpuinfo_x86 *cpu = __this_cpu_ptr(&cpu_info);
+ 	int osvw_id = *erratum++;
+@@ -912,5 +923,3 @@ bool cpu_has_amd_erratum(const int *erratum)
+ 
+ 	return false;
+ }
+-
+-EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 14ae10031ff0..e718f150c880 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -495,7 +495,7 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ 	if (x86_idle)
+ 		return;
+ 
+-	if (cpu_has_amd_erratum(amd_erratum_400)) {
++	if (cpu_has_bug(c, X86_BUG_AMD_APIC_C1E)) {
+ 		/* E400: APIC timer interrupt does not wake up CPU from C1e */
+ 		pr_info("using AMD E400 aware idle routine\n");
+ 		x86_idle = amd_e400_idle;
 -- 
 1.8.1.3.535.ga923c31
 
