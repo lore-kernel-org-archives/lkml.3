@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053Ab3CTBzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 21:55:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30733 "EHLO
+	id S934159Ab3CTB7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 21:59:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15374 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757621Ab3CTBzD (ORCPT
+	with ESMTP id S1757624Ab3CTB7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 21:55:03 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=c2tSGNMr5iYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=SbTfxjnowbEA:10 a=VtoKG2duGdmYFxOB28kA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 19 Mar 2013 21:59:03 -0400
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=FVc5S2mYZKgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=-PlxAUMR4MkA:10 a=yGbAVU1Q76W6_vTxM7EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1363744502.6345.1.camel@gandalf.local.home>
-Subject: Re: [PATCH 6/9] perf util: Get rid of malloc_or_die() in
+Message-ID: <1363744741.6345.4.camel@gandalf.local.home>
+Subject: Re: [PATCH 7/9] perf util: Get rid of read_or_die() in
  trace-event-read.c
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Namhyung Kim <namhyung@kernel.org>
@@ -22,12 +22,12 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 19 Mar 2013 21:55:02 -0400
-In-Reply-To: <87ehfaj2ic.fsf@sejong.aot.lge.com>
+Date: Tue, 19 Mar 2013 21:59:01 -0400
+In-Reply-To: <87a9pyj227.fsf@sejong.aot.lge.com>
 References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	 <1363683224-28804-7-git-send-email-namhyung@kernel.org>
-	 <1363704602.5938.26.camel@gandalf.local.home>
-	 <87ehfaj2ic.fsf@sejong.aot.lge.com>
+	 <1363683224-28804-8-git-send-email-namhyung@kernel.org>
+	 <1363704867.5938.28.camel@gandalf.local.home>
+	 <87a9pyj227.fsf@sejong.aot.lge.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
@@ -36,32 +36,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 10:14 +0900, Namhyung Kim wrote:
-> On Tue, 19 Mar 2013 10:50:02 -0400, Steven Rostedt wrote:
-> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
-> >>  	free(version);
-> >> @@ -331,11 +354,12 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
-> >>  
-> >>  	page_size = read4(pevent);
-> >>  
-> >> -	read_header_files(pevent);
-> >> -	read_ftrace_files(pevent);
-> >> -	read_event_files(pevent);
-> >> -	read_proc_kallsyms(pevent);
-> >> -	read_ftrace_printk(pevent);
-> >> +	if (read_header_files(pevent) ||
-> >> +	    read_ftrace_files(pevent) ||
-> >> +	    read_event_files(pevent) ||
-> >> +	    read_proc_kallsyms(pevent) ||
-> >> +	    read_ftrace_printk(pevent))
-> >> +		goto out;
-> >
-> > I think I like the err += func() and check for err < 0, better.
-> 
-> Okay, I'll change them to err |= func() style if you're fine as Peter
-> suggested.
+On Wed, 2013-03-20 at 10:24 +0900, Namhyung Kim wrote:
 
-+= or |= I'm not picky ;-)
+> >> @@ -61,8 +61,10 @@ static int do_read(int fd, void *buf, int size)
+> >>  		if (repipe) {
+> >>  			int retw = write(STDOUT_FILENO, buf, ret);
+> >>  
+> >> -			if (retw <= 0 || retw != ret)
+> >> -				die("repiping input file");
+> >> +			if (retw <= 0 || retw != ret) {
+> >> +				pr_debug("repiping input file");
+> >
+> > Again, why debug and not err?
+> 
+> Well, there's a pr_err() at the caller of top-level trace_report() in
+> case of error.  So if we use pr_err() there'll be multiple error message
+> for one failure and I don't think it's so helpful to normal users.  If
+> one really wants to know what happens inside, she will set -v to see
+> this low-level debug message.
+> 
+> Does that make sense?
+> 
+
+I haven't looked at the context of all the changes as to where they are
+called from. I'm fine if we have a methodology of having pr_err() at the
+top level and pr_debug() within the nested code. It looked to me that
+the choices were somewhat random, but then again, I was missing context
+to the code.
+
+As long as a pr_err() that gives the user enough information to know
+what went wrong is displayed, I'm fine with other errors using
+pr_debug().
 
 -- Steve
 
