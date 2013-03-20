@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab3CTJYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:24:55 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:59898 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758099Ab3CTJYx (ORCPT
+	id S1758142Ab3CTJZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:25:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42248 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3CTJY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:24:53 -0400
-Message-ID: <5149805D.9000907@huawei.com>
-Date: Wed, 20 Mar 2013 17:24:45 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH 2/2] relay: move FIX_SIZE macro into relay.c
-References: <5146814A.4010200@huawei.com> <20130318131940.a2a7f04455d35ebeb899c6e4@linux-foundation.org>
-In-Reply-To: <20130318131940.a2a7f04455d35ebeb899c6e4@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+	Wed, 20 Mar 2013 05:24:58 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, andi@firstfloor.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [RFC 28/30] compat: embrace LINUX_BACKPORT() for pm_qos_params
+Date: Wed, 20 Mar 2013 02:22:53 -0700
+Message-Id: <1363771375-31715-29-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/19 4:19, Andrew Morton wrote:
-> On Mon, 18 Mar 2013 10:51:54 +0800 "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
-> 
->> +/* Needs a _much_ better name... */
->> +#define FIX_SIZE(x) ((((x) - 1) & PAGE_MASK) + PAGE_SIZE)
->> +
-> 
-> Gad.  That's the same as PAGE_ALIGN(), is it not?
-> 
-Indeed, I will post another patch to change this, base on -mm.
-Thanks.
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-.jovi
+1   2.6.24              [  OK  ]
+2   2.6.25              [  OK  ]
+3   2.6.26              [  OK  ]
+4   2.6.27              [  OK  ]
+5   2.6.28              [  OK  ]
+6   2.6.29              [  OK  ]
+7   2.6.30              [  OK  ]
+8   2.6.31              [  OK  ]
+9   2.6.32              [  OK  ]
+10  2.6.33              [  OK  ]
+11  2.6.34              [  OK  ]
+12  2.6.35              [  OK  ]
+13  2.6.36              [  OK  ]
+14  2.6.37              [  OK  ]
+15  2.6.38              [  OK  ]
+16  2.6.39              [  OK  ]
+17  3.0.65              [  OK  ]
+18  3.1.10              [  OK  ]
+19  3.2.38              [  OK  ]
+20  3.3.8               [  OK  ]
+21  3.4.32              [  OK  ]
+22  3.5.7               [  OK  ]
+23  3.6.11              [  OK  ]
+24  3.7.9               [  OK  ]
+25  3.8.0               [  OK  ]
+26  3.9-rc1             [  OK  ]
 
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ include/linux/pm_qos_params.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
+index d0e3ad8..4c8c89e 100644
+--- a/include/linux/pm_qos_params.h
++++ b/include/linux/pm_qos_params.h
+@@ -23,13 +23,19 @@
+ #define PM_QOS_NUM_CLASSES 5
+ #define PM_QOS_DEFAULT_VALUE -1
+ 
++#define pm_qos_add_requirement LINUX_BACKPORT(pm_qos_add_requirement)
+ int pm_qos_add_requirement(int qos, char *name, s32 value);
++#define pm_qos_update_requirement LINUX_BACKPORT(pm_qos_update_requirement)
+ int pm_qos_update_requirement(int qos, char *name, s32 new_value);
++#define pm_qos_remove_requirement LINUX_BACKPORT(pm_qos_remove_requirement)
+ void pm_qos_remove_requirement(int qos, char *name);
+ 
++#define pm_qos_requirement LINUX_BACKPORT(pm_qos_requirement)
+ int pm_qos_requirement(int qos);
+ 
++#define pm_qos_add_notifier LINUX_BACKPORT(pm_qos_add_notifier)
+ int pm_qos_add_notifier(int qos, struct notifier_block *notifier);
++#define pm_qos_remove_notifier LINUX_BACKPORT(pm_qos_remove_notifier)
+ int pm_qos_remove_notifier(int qos, struct notifier_block *notifier);
+ #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25)) */
+ 
+-- 
+1.7.10.4
 
