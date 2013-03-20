@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3CTPi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:38:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42524 "EHLO mx1.redhat.com"
+	id S1757278Ab3CTPlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:41:36 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:42763 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3CTPi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:38:58 -0400
-Message-ID: <5149D7ED.4040702@redhat.com>
-Date: Wed, 20 Mar 2013 11:38:21 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755440Ab3CTPle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 11:41:34 -0400
+Message-ID: <5149D8AB.7020101@slimlogic.co.uk>
+Date: Wed, 20 Mar 2013 15:41:31 +0000
+From: Ian Lartey <ian@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        linux-next <linux-next@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 4/4] ipc: sem: do not hold ipc lock more than necessary
-References: <1362476179.2225.54.camel@buesod1.americas.hpqcorp.net> <5149C76D.7090409@redhat.com>
-In-Reply-To: <5149C76D.7090409@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio
+ tree relatred)
+References: <20130306114452.a041ab0737783f9730c1486e@canb.auug.org.au> <CACxGe6sZKRjSnwa-CHC1OhJoGP-ZQe4H2YbMYjDjNYcSdSyuow@mail.gmail.com> <20130321022524.37baf9fedb1848cdbdfc0eef@canb.auug.org.au>
+In-Reply-To: <20130321022524.37baf9fedb1848cdbdfc0eef@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 10:27 AM, Rik van Riel wrote:
-> On 03/05/2013 04:36 AM, Davidlohr Bueso wrote:
+On 20/03/13 15:25, Stephen Rothwell wrote:
+> Hi Grant,
 >
->> @@ -1476,8 +1539,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct
->> sembuf __user *, tsops,
->>       queue.sleeper = current;
+> On Wed, 6 Mar 2013 09:10:42 +0800 Grant Likely <grant.likely@secretlab.ca> wrote:
 >>
->>   sleep_again:
->> -    current->state = TASK_INTERRUPTIBLE;
->>       sem_unlock(sma);
->> +    current->state = TASK_INTERRUPTIBLE;
+>> On Wed, Mar 6, 2013 at 8:44 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>
+>>> After merging the final tree, today's linux-next build (powerpc
+>>> allyesconfig) failed like this:
+>>>
+>>> drivers/gpio/gpio-palmas.c: In function 'palmas_gpio_probe':
+>>> drivers/gpio/gpio-palmas.c:173:2: error: implicit declaration of function 'is_palmas_charger' [-Werror=implicit-function-declaration]
+>>> drivers/gpio/gpio-palmas.c:173:30: error: 'struct palmas' has no member named 'product_id'
+>>>
+>>> Caused by commit 82d4d6637fdf ("gpio/palmas: add in GPIO support for
+>>> palmas charger").  I wonder if this was ever build tested. :-(
 >>
->>       if (timeout)
->>           jiffies_left = schedule_timeout(jiffies_left);
+>> Probably not. Looks like this driver doesn't get enabled without the
+>> associated option in MFD. I didn't go searching for it, so my build
+>> tests didn't catch it. I'll drop the patch from my tree. Sorry for the
+>> pain.
 >
-> After modifying my test case to start with a semaphore value of 1 on
-> every semaphore, and do down followed by up (to have only one process
-> take each semaphore at a time), I started seeing lost wakeups and the
-> test case being stuck.
+> I am still having to revert this commit ....  :-(
 >
-> I believe the change above is the cause of that issue.
->
-> By unlocking before setting current->state to TASK_INTERRUPTIBLE,
-> there is a small window where the next lock holder can grab the
-> lock and wake us up, before we set ourselves to TASK_INTERRUPTIBLE
-> and go to sleep.
->
-> I have reverted your change in my code and am building a test kernel
-> now.
->
-> If things work, I'll clean up the whole patch series for a re-posting
-> today.
 
-Half a billion semaphore operations later, I am pretty sure
-the above was the cause of the semaphore hangups we both
-observed :)
+Sorry Stephen  - There's a new patch series, that should resolve this, 
+undergoing review at the moment so that patch should be reverted...
+for now.
 
-I am currently building a kernel with the cleaned up patch
-series I put together while building the previous test kernel.
 
-If all goes well, expect a patch series after lunch...
+Regards,
 
--- 
-All rights reversed
+Ian
