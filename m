@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab3CTGTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 02:19:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab3CTGTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 02:19:45 -0400
-Message-ID: <514954F0.2040604@redhat.com>
-Date: Wed, 20 Mar 2013 14:19:28 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1754605Ab3CTGan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 02:30:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:17102 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab3CTGam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 02:30:42 -0400
+X-Spam-Score: -100.8
+Message-ID: <51495774.9080809@asianux.com>
+Date: Wed, 20 Mar 2013 14:30:12 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com, edumazet@google.com,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: Re: [PATCH net-next 1/2] net_sched: don't do precise pkt_len computation
- for untrusted packets
-References: <1363333305-54398-1-git-send-email-jasowang@redhat.com>  <20130317.121026.733329595817911776.davem@davemloft.net>  <51482F14.9030407@redhat.com> <1363695040.21184.32.camel@edumazet-glaptop> <1363697906.21184.53.camel@edumazet-glaptop>
-In-Reply-To: <1363697906.21184.53.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>, michael@ellerman.id.au,
+        dhowells@redhat.com, geoff@infradead.org
+CC: linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: [PATCH] PowerPC:kernel: section mismatch from smp_release_cpus to
+ __initdata spinning_secondaries
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 08:58 PM, Eric Dumazet wrote:
-> On Tue, 2013-03-19 at 05:10 -0700, Eric Dumazet wrote:
->> On Tue, 2013-03-19 at 17:25 +0800, Jason Wang wrote:
->>
->>> I believe before doing header check for untrusted packets, the only
->>> thing we can trust is skb->len and that's we've used before
->>> 1def9238d4aa2. But after that, we're trying to use unchecked or
->>> meaningless value (e.g gso_segs were reset to zero in
->>> tun/macvtap/packet), and guest then can utilize this to result a very
->>> huge (-1U) pkt_len by filling evil value in the header. Can all kinds of
->>> packet scheduler survive this kinds of possible DOS?
->> I would use the flow dissector to fix the transport header from all
->> DODGY providers.
->>
->> Daniel Borkmann is working on a patch serie adding nhoff into flow_keys,
->> and adding __skb_get_poff(const struct sk_buff *skb), for a BPF
->> extension we talked about in Copenhagen / Netfilter Workshop.
->>
->> You could then set the transport header offset to the right value.
->>
->> (and drop evil packets before they go further in the stack)
->>
->> if (gso_packet(skb)) {
->> 	u32 poff = __skb_get_poff(skb);
->>
->> 	if (!poff) {
->> 		drop_evil_packet(skb);
->> 	} else {
->> 		skb_set_transport_header(skb, poff);
->> 		...
->> 	}
->> }
->
-> Oh well, no need to use __skb_get_poff() but plain skb_flow_dissect()
-> (once patched to include thoff in struct flow_keys)
->
-> struct flow_keys keys;
->
-> if (!skb_flow_dissect(skb, &keys))
-> 	goto drop;
->
-> if ((gso_type & (SKB_GSO_TCPV4|SKB_GSO_TCPV6)) &&
->     keys.ip_proto != IP_PROTO_TCP)
-> 	goto drop;
->
-> skb_set_transport_header(skb, keys.thoff);
 
-I was consider a just skb_reset_transport_header() here. Consider the
-transport header maybe checked and reset during header check for packets
-of gso or partial checksum. And bypass precise pkt len computation.
+  the smp_release_cpus is a normal funciton and called in normal environments,
+  but it calls the __initdata spinning_secondaries.
+  need modify spinning_secondaries to match smp_release_cpus.
 
-Some problems with skb_flow_dissect():
+the related warning:
+  (the linker report boot_paca.33377, but it should be spinning_secondaries)
 
-- it can only recognizes a subset of all ethernet protocols. The may
-blocks guest who may want to use other protocol such as IPX.
-- almost no check in the validity of the L4 protocol header which may be
-used by qdisc_pkt_len_init(), which may still give a chance to evil
-guest to use
-- gso_segs were untouched (still zero)
+-----------------------------------------------------------------------------
 
-Another method is doing header check here which needs more work.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x23176): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata 
+annotation or the annotation of boot_paca.33377 is wrong.
 
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x231fe): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata 
+annotation or the annotation of boot_paca.33377 is wrong.
+
+-----------------------------------------------------------------------------
+
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/powerpc/kernel/setup_64.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
+index 75fbaceb..e8a2f2e 100644
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -76,7 +76,7 @@
+ #endif
+ 
+ int boot_cpuid = 0;
+-int __initdata spinning_secondaries;
++int spinning_secondaries;
+ u64 ppc64_pft_size;
+ 
+ /* Pick defaults since we might want to patch instructions
+-- 
+1.7.7.6
