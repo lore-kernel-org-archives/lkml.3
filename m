@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab3CTLXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:23:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57821 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757026Ab3CTLX2 (ORCPT
+	id S932322Ab3CTLXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 07:23:51 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:38538 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab3CTLXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:23:28 -0400
-Message-ID: <51499C29.6070405@ti.com>
-Date: Wed, 20 Mar 2013 16:53:21 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 2/7] ARM: tegra: update device trees for USB binding rework
-References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com> <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 07:23:50 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] DTS at91sam9x5cm: add 1-wire chip on CM board
+Date: Wed, 20 Mar 2013 12:23:40 +0100
+Message-Id: <1363778620-5213-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This add the 1-wire chip present on the CM board to the DTS.
+As the pin is also used by leds, tt's disabled by default.
+If the board really wants it, it can be enabled in the board DTS.
 
-On Monday 18 March 2013 05:59 PM, Venu Byravarasu wrote:
-> This patch updates all Tegra board files so that they contain all the
-> properties required by the updated USB DT binding. Note that this patch
-> only adds the new properties and does not yet remove the old properties,
-> in order to maintain bisectability. The old properties will be removed
-> once the driver has been updated to assume the new bindings.
->
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
->   arch/arm/boot/dts/tegra20-colibri-512.dtsi |    4 +++
->   arch/arm/boot/dts/tegra20-harmony.dts      |    8 +++---
->   arch/arm/boot/dts/tegra20-iris-512.dts     |    4 +++
->   arch/arm/boot/dts/tegra20-paz00.dts        |    8 +++---
->   arch/arm/boot/dts/tegra20-seaboard.dts     |   13 +++++++---
->   arch/arm/boot/dts/tegra20-trimslice.dts    |   12 +++++++---
->   arch/arm/boot/dts/tegra20-ventana.dts      |    7 +++--
->   arch/arm/boot/dts/tegra20.dtsi             |   32 +++++++++++++++++----------
->   8 files changed, 57 insertions(+), 31 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/tegra20-colibri-512.dtsi b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
-> index cb73e62..af5a7ae 100644
-> --- a/arch/arm/boot/dts/tegra20-colibri-512.dtsi
-> +++ b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
-> @@ -443,6 +443,10 @@
->   		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
->   	};
->
-> +	usb-phy@c5004000 {
-This node doesn't have a *reg* property. So "@c5004000" is not needed. 
-This comment applies to all the nodes which doesn't have *reg* property.
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ arch/arm/boot/dts/at91sam9x5cm.dtsi |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-Thanks
-Kishon
+diff --git a/arch/arm/boot/dts/at91sam9x5cm.dtsi b/arch/arm/boot/dts/at91sam9x5cm.dtsi
+index 4027ac7..347a74a 100644
+--- a/arch/arm/boot/dts/at91sam9x5cm.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5cm.dtsi
+@@ -24,6 +24,16 @@
+ 	};
+ 
+ 	ahb {
++		apb {
++			pinctrl@fffff400 {
++				1wire_cm {
++					pinctrl_1wire_cm: 1wire_cm-0 {
++						atmel,pins = <1 18 0x0 0x2>; /* PB18 multidrive, conflicts with led */
++					};
++				};
++			};
++		};
++
+ 		nand0: nand@40000000 {
+ 			nand-bus-width = <8>;
+ 			nand-ecc-mode = "hw";
+@@ -74,4 +84,14 @@
+ 			gpios = <&pioD 21 0>;
+ 		};
+ 	};
++
++	1wire_cm {
++		compatible = "w1-gpio";
++		gpios = <&pioB 18 0>;
++		linux,open-drain;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_1wire_cm>;
++		status = "okay";
++	};
++
+ };
+-- 
+1.7.2.5
+
