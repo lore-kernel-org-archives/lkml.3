@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab3CTS4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:56:06 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:47781 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3CTS4E (ORCPT
+	id S932916Ab3CTS4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:56:25 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:43055 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567Ab3CTS4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:56:04 -0400
-Date: Wed, 20 Mar 2013 11:56:01 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Randy Dunlap <rdunlap@infradead.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: linux-next: Tree for Mar 20 (vmcore)
-In-Reply-To: <5149E813.8060307@infradead.org>
-Message-ID: <alpine.DEB.2.02.1303201153330.17761@chino.kir.corp.google.com>
-References: <20130320160536.54e62fc11a3651494b710e3b@canb.auug.org.au> <5149E813.8060307@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 20 Mar 2013 14:56:23 -0400
+Date: Wed, 20 Mar 2013 19:56:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: include hugepages in meminfo
+Message-ID: <20130320185618.GC970@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1303191714440.13526@chino.kir.corp.google.com>
+ <20130320095306.GA21856@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1303201145260.17761@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1303201145260.17761@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Mar 2013, Randy Dunlap wrote:
-
-> on x86_64:
+On Wed 20-03-13 11:46:12, David Rientjes wrote:
+> On Wed, 20 Mar 2013, Michal Hocko wrote:
 > 
-> fs/proc/vmcore.c: In function 'merge_note_headers_elf64':
-> fs/proc/vmcore.c:349:22: error: 'VMCOREINFO_NOTE_NAME' undeclared (first use in this function)
-> fs/proc/vmcore.c:349:22: note: each undeclared identifier is reported only once for each function it appears in
-> fs/proc/vmcore.c: In function 'merge_note_headers_elf32':
-> fs/proc/vmcore.c:470:22: error: 'VMCOREINFO_NOTE_NAME' undeclared (first use in this function)
-> make[3]: *** [fs/proc/vmcore.o] Error 1
+> > On Tue 19-03-13 17:18:12, David Rientjes wrote:
+> > > Particularly in oom conditions, it's troublesome that hugetlb memory is 
+> > > not displayed.  All other meminfo that is emitted will not add up to what 
+> > > is expected, and there is no artifact left in the kernel log to show that 
+> > > a potentially significant amount of memory is actually allocated as 
+> > > hugepages which are not available to be reclaimed.
+> > 
+> > Yes, I like the idea. It's bitten me already in the past.
+> > 
+> > The only objection I have is that you print only default_hstate. You
+> > just need to wrap your for_each_node_state by for_each_hstate to do
+> > that.  With that applied, feel free to add my
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
+> > 
 > 
-> 
-> Needs to #include <linux/kexec.h>
-> 
+> I didn't do this because it isn't already exported in /proc/meminfo and 
+> since we've made an effort to reduce the amount of information emitted by 
+> the oom killer at oom kill time to avoid spamming the kernel log, I only 
+> print the default hstate.
 
-I don't think that's it, linux/kexec.h already gets included indirectly.  
-The problem is that CONFIG_KEXEC isn't set so the definition in kexec.h is 
-meaningless.
+I do not see how this would make the output too much excessive. If
+you do not want to have too many lines in the output then the hstate
+loop can be pushed inside the node loop and have only per-node number
+of lines same as you are proposing except you would have a complete
+information.
+Besides that we are talking about handful of hstates.
 
-This comes from "vmcore: check NT_VMCORE_PAD as a mark indicating the end 
-of ELF note buffer" merged through the -mm tree.  I've added the patch's 
-author and Andrew to the cc.
-
-How can this be protected by CONFIG_KEXEC?
+-- 
+Michal Hocko
+SUSE Labs
