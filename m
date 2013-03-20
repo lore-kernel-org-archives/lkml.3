@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab3CTJcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:32:05 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:55015 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab3CTJcC (ORCPT
+	id S965156Ab3CTJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:32:26 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:34533 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab3CTJcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:32:02 -0400
+	Wed, 20 Mar 2013 05:32:22 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 13/30] compat: embrace LINUX_BACKPORT() for v2.6.35
-Date: Wed, 20 Mar 2013 02:22:38 -0700
-Message-Id: <1363771375-31715-14-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 16/30] compat: embrace LINUX_BACKPORT() for v2.6.38
+Date: Wed, 20 Mar 2013 02:22:41 -0700
+Message-Id: <1363771375-31715-17-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,66 +53,72 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- compat/compat-2.6.35.c        |    4 ++--
- include/linux/compat-2.6.35.h |    7 ++++---
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ compat/compat-2.6.38.c        |    8 ++++----
+ include/linux/compat-2.6.38.h |    9 +++------
+ 2 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/compat/compat-2.6.35.c b/compat/compat-2.6.35.c
-index 646afa2..20fee85 100644
---- a/compat/compat-2.6.35.c
-+++ b/compat/compat-2.6.35.c
-@@ -61,7 +61,7 @@ EXPORT_SYMBOL_GPL(netif_set_real_num_tx_queues);
-  * hex_to_bin() converts one hex digit to its actual value or -1 in case of bad
-  * input.
+diff --git a/compat/compat-2.6.38.c b/compat/compat-2.6.38.c
+index b546194..0074ac6 100644
+--- a/compat/compat-2.6.38.c
++++ b/compat/compat-2.6.38.c
+@@ -22,14 +22,14 @@
+  *
+  * Initialize the EWMA parameters for a given struct ewma @avg.
   */
--int compat_hex_to_bin(char ch)
-+int hex_to_bin(char ch)
+-void compat_ewma_init(struct ewma *avg, unsigned long factor, unsigned long weight)
++void ewma_init(struct ewma *avg, unsigned long factor, unsigned long weight)
  {
- 	if ((ch >= '0') && (ch <= '9'))
- 		return ch - '0';
-@@ -70,7 +70,7 @@ int compat_hex_to_bin(char ch)
- 		return ch - 'a' + 10;
- 	return -1;
+ 	WARN_ON(weight <= 1 || factor == 0);
+ 	avg->internal = 0;
+ 	avg->weight = weight;
+ 	avg->factor = factor;
  }
--EXPORT_SYMBOL_GPL(compat_hex_to_bin);
-+EXPORT_SYMBOL_GPL(hex_to_bin);
+-EXPORT_SYMBOL_GPL(compat_ewma_init);
++EXPORT_SYMBOL_GPL(ewma_init);
  
  /**
-  * noop_llseek - No Operation Performed llseek implementation
-diff --git a/include/linux/compat-2.6.35.h b/include/linux/compat-2.6.35.h
-index 82b4dea..99968bf 100644
---- a/include/linux/compat-2.6.35.h
-+++ b/include/linux/compat-2.6.35.h
-@@ -45,6 +45,7 @@ static inline void qdisc_reset_all_tx_gt(struct net_device *dev, unsigned int i)
+  * ewma_add() - Exponentially weighted moving average (EWMA)
+@@ -38,7 +38,7 @@ EXPORT_SYMBOL_GPL(compat_ewma_init);
+  *
+  * Add a sample to the average.
+  */
+-struct ewma *compat_ewma_add(struct ewma *avg, unsigned long val)
++struct ewma *ewma_add(struct ewma *avg, unsigned long val)
+ {
+ 	avg->internal = avg->internal  ?
+ 		(((avg->internal * (avg->weight - 1)) +
+@@ -46,5 +46,5 @@ struct ewma *compat_ewma_add(struct ewma *avg, unsigned long val)
+ 		(val * avg->factor);
+ 	return avg;
  }
- #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)) */
+-EXPORT_SYMBOL_GPL(compat_ewma_add);
++EXPORT_SYMBOL_GPL(ewma_add);
  
-+#define netif_set_real_num_tx_queues LINUX_BACKPORT(netif_set_real_num_tx_queues)
- extern int netif_set_real_num_tx_queues(struct net_device *dev,
- 					unsigned int txq);
+diff --git a/include/linux/compat-2.6.38.h b/include/linux/compat-2.6.38.h
+index e936c42..58ec64e 100644
+--- a/include/linux/compat-2.6.38.h
++++ b/include/linux/compat-2.6.38.h
+@@ -66,17 +66,14 @@ struct ewma {
+ 	unsigned long weight;
+ };
  
-@@ -68,11 +69,10 @@ static inline wait_queue_head_t *sk_sleep(struct sock *sk)
- 
- #define sdio_writeb_readb(func, write_byte, addr, err_ret) sdio_readb(func, addr, err_ret)
- 
--/* mask hex_to_bin as RHEL6 backports this */
--#define hex_to_bin(a) compat_hex_to_bin(a)
+-/* mask ewma_init as RHEL6 backports this */
+-#define ewma_init(a,b,c) compat_ewma_init(a,b,c)
 -
-+#define hex_to_bin LINUX_BACKPORT(hex_to_bin)
- int hex_to_bin(char ch);
++#define ewma_init LINUX_BACKPORT(ewma_init)
+ extern void ewma_init(struct ewma *avg, unsigned long factor,
+ 		      unsigned long weight);
  
-+#define noop_llseek LINUX_BACKPORT(noop_llseek)
- extern loff_t noop_llseek(struct file *file, loff_t offset, int origin);
+-/* mask ewma_add as RHEL6 backports this */
+-#define ewma_add(a,b) compat_ewma_add(a,b)
+-
++#define ewma_add LINUX_BACKPORT(ewma_add)
+ extern struct ewma *ewma_add(struct ewma *avg, unsigned long val);
  
- #define pm_qos_request(_qos) pm_qos_requirement(_qos)
-@@ -88,6 +88,7 @@ usb_pipe_endpoint(struct usb_device *dev, unsigned int pipe)
- 	return eps[usb_pipeendpoint(pipe)];
- }
- 
-+#define simple_write_to_buffer LINUX_BACKPORT(simple_write_to_buffer)
- extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
- 		const void __user *from, size_t count);
- 
++#define ewma_read LINUX_BACKPORT(ewma_read)
+ /**
+  * ewma_read() - Get average value
+  * @avg: Average structure
 -- 
 1.7.10.4
 
