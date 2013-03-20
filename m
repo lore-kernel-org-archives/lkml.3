@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3CTOWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:22:36 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:41132 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3CTOWf (ORCPT
+	id S1754776Ab3CTOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:24:58 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:39215 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3CTOY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:22:35 -0400
+	Wed, 20 Mar 2013 10:24:56 -0400
+Message-ID: <5149C4E8.5020707@suse.cz>
+Date: Wed, 20 Mar 2013 15:17:12 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Wed, 20 Mar 2013 09:22:03 -0500
-Message-ID: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
-Subject: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
-To: linux-kernel@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+References: <20130320125137.EDCD3802B0@viridian.itc.virginia.edu>
+In-Reply-To: <20130320125137.EDCD3802B0@viridian.itc.virginia.edu>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Fixes a race on driver init with registering algorithms where the
-driver status flag wasn't being set before self testing started.
+On 03/20/2013 01:51 PM, Bill Pemberton wrote:
+> Jiri Slaby writes:
+>>
+>>> drivers/usb/serial/quatech2.c: In function 'qt2_process_read_urb': 
+>>> drivers/usb/serial/quatech2.c:661:18: error: 'struct
+>>> qt2_port_private' has no member named 'is_open' 
+>>> drivers/usb/serial/quatech2.c:705:15: error: 'struct
+>>> qt2_port_private' has no member named 'is_open'
+>>>
+>>> Caused by commit e4408ce3c23f ("TTY: quatech2, remove unneeded 
+>>> is_open").  grep is your friend (or searching while editting the
+>>> file).
+>>
+>> I think this is caused by another commit. Bill added a check for
+>> is_open meanwhile I removed that member completely. Bill, could you
+>> fix that up, please?
+>>
+> 
+> Is it legal to call tty_flip_buffer_push() without an open tty?  If
+> so, I can get rid of the is_open logic completely.  Otherwise, I need
+> to either keep is_open or otherwise check for a valid tty before
+> calling tty_flip_buffer_push().
 
-  Added the cra_alignmask field for CBC and ECB modes.
+Yeah, it is legal to call that, as long as you have a valid tty_port.
+Now, the data are queued and later flushed. The plan is to throw the
+data directly on ingress in a way the drivers don't need to care.
 
-  Fixed a bug in GCM where AES block size was being used instead of
-authsize.
-
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
-Only changes in v2 were to leave stable off the cc and add Ben for PPC.
-
- drivers/crypto/nx/nx-aes-cbc.c | 1 +
- drivers/crypto/nx/nx-aes-ecb.c | 1 +
- drivers/crypto/nx/nx-aes-gcm.c | 2 +-
- drivers/crypto/nx/nx.c         | 4 ++--
- 4 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
-index a76d4c4..35d483f 100644
---- a/drivers/crypto/nx/nx-aes-cbc.c
-+++ b/drivers/crypto/nx/nx-aes-cbc.c
-@@ -126,6 +126,7 @@ struct crypto_alg nx_cbc_aes_alg = {
- 	.cra_blocksize   = AES_BLOCK_SIZE,
- 	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
- 	.cra_type        = &crypto_blkcipher_type,
-+	.cra_alignmask   = 0xf,
- 	.cra_module      = THIS_MODULE,
- 	.cra_init        = nx_crypto_ctx_aes_cbc_init,
- 	.cra_exit        = nx_crypto_ctx_exit,
-diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
-index ba5f161..7bbc9a8 100644
---- a/drivers/crypto/nx/nx-aes-ecb.c
-+++ b/drivers/crypto/nx/nx-aes-ecb.c
-@@ -123,6 +123,7 @@ struct crypto_alg nx_ecb_aes_alg = {
- 	.cra_priority    = 300,
- 	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
- 	.cra_blocksize   = AES_BLOCK_SIZE,
-+	.cra_alignmask   = 0xf,
- 	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
- 	.cra_type        = &crypto_blkcipher_type,
- 	.cra_module      = THIS_MODULE,
-diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
-index c8109ed..6cca6c3 100644
---- a/drivers/crypto/nx/nx-aes-gcm.c
-+++ b/drivers/crypto/nx/nx-aes-gcm.c
-@@ -219,7 +219,7 @@ static int gcm_aes_nx_crypt(struct aead_request
-*req, int enc)
- 	if (enc)
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
- 	else
--		nbytes -= AES_BLOCK_SIZE;
-+		nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
-
- 	csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
-
-diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
-index c767f23..7621d05 100644
---- a/drivers/crypto/nx/nx.c
-+++ b/drivers/crypto/nx/nx.c
-@@ -454,6 +454,8 @@ static int nx_register_algs(void)
- 	if (rc)
- 		goto out;
-
-+	nx_driver.of.status = NX_OKAY;
-+
- 	rc = crypto_register_alg(&nx_ecb_aes_alg);
- 	if (rc)
- 		goto out;
-@@ -498,8 +500,6 @@ static int nx_register_algs(void)
- 	if (rc)
- 		goto out_unreg_s512;
-
--	nx_driver.of.status = NX_OKAY;
--
- 	goto out;
-
- out_unreg_s512:
+thanks,
 -- 
-1.7.11.7
+js
+suse labs
