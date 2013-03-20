@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab3CTU5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 16:57:05 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:33272 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3CTU5D (ORCPT
+	id S1751659Ab3CTU7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 16:59:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34437 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab3CTU7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 16:57:03 -0400
-Message-ID: <1363813022.31240.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@surriel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Date: Wed, 20 Mar 2013 13:57:02 -0700
-In-Reply-To: <CA+55aFyv3u4uuAamCONMBUmB+rh0JsY4HdOj+UKwtTk0Wzf7Ag@mail.gmail.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	 <CA+55aFyv3u4uuAamCONMBUmB+rh0JsY4HdOj+UKwtTk0Wzf7Ag@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Wed, 20 Mar 2013 16:59:49 -0400
+Message-ID: <514A233F.8010105@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 14:59:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
+        akpm@linux-foundation.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
+        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
+References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com>
+In-Reply-To: <1363770725-13717-6-git-send-email-kishon@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 13:49 -0700, Linus Torvalds wrote:
-> On Wed, Mar 20, 2013 at 12:55 PM, Rik van Riel <riel@surriel.com> wrote:
-> >
-> > This series makes the sysv semaphore code more scalable,
-> > by reducing the time the semaphore lock is held, and making
-> > the locking more scalable for semaphore arrays with multiple
-> > semaphores.
-> 
-> The series looks sane to me, and I like how each individual step is
-> pretty small and makes sense.
-> 
-> It *would* be lovely to see this run with the actual Swingbench
-> numbers. The microbenchmark always looked much nicer. Do the
-> additional multi-semaphore scalability patches on top of Davidlohr's
-> patches help with the swingbench issue, or are we still totally
-> swamped by the ipc lock there?
+On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
+> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
+> binding in order for the driver to use the new generic PHY framework.
+> Also updated the Documentation to include the binding information.
 
-Yes, I'm testing this patchset with my swingbench workloads. I should
-have some numbers by today or tomorrow.
+> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> index abce256..3d6f9f6 100644
+> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
+>   - power : Should be "50". This signifies the controller can supply upto
+>     100mA when operating in host mode.
+>   - usb-phy : the phandle for the PHY device
+> + - phy : the phandle for the PHY device (used by generic PHY framework)
+> + - phy-names : the names of the PHY corresponding to the PHYs present in the
+> +   *phy* phandle.
 
-> 
-> Maybe there were already numbers for that, but the last swingbench
-> numbers I can actually recall was from before the finer-grained
-> locking..
+If the intent is for those properties to be generic and used by any DT
+binding that refers to a PHY node, I think you'd want to define those
+properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
+like common clock/GPIO/... properties are defined in standalone common
+files.
 
-Right, I couldn't get Oracle to run on the with the previous patches,
-hopefully the bug(s) are now addressed.
-
-Thanks,
-Davidlohr
-
+I think you want to require that DT nodes that represent PHYs have a
+#phy-cells property, and that the format of the phy property be
+<&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
+defines how many cells are part of phy_specifier*, just like (almost)
+any other DT property that references another node by phandle. That way,
+if a single DT node represents a HW block that implements e.g. 3 PHYs,
+it can use #phy-cells = <1>, and the referencing phy property can
+include a cell that indicates which of those 3 PHYs is being referenced.
