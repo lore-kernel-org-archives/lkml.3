@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3CTPPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:15:13 -0400
-Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:41783 "EHLO
-	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3CTPPM (ORCPT
+	id S1756069Ab3CTPQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:16:09 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:61700 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3CTPQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:15:12 -0400
-Subject: Re: linux-next: build failure after merge of the tty tree
-To: jslaby@suse.cz (Jiri Slaby)
-Date: Wed, 20 Mar 2013 11:15:11 -0400
-Cc: sfr@canb.auug.org.au (Stephen Rothwell), greg@kroah.com (Greg KH),
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <5149D1FD.90400@suse.cz>
-X-Mailer: ELM [version 2.5.8.59.gd925]
+	Wed, 20 Mar 2013 11:16:07 -0400
+Date: Wed, 20 Mar 2013 10:16:03 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 0/3] Patches to enable chroot for all users
+To: Tal Tchwella <tal.tchwella@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tchwella@mit.edu
+References: <1363784025-23870-1-git-send-email-tchwella@mit.edu>
+In-Reply-To: <1363784025-23870-1-git-send-email-tchwella@mit.edu> (from
+	tal.tchwella@gmail.com on Wed Mar 20 07:53:42 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1363792563.15703.50@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130320151511.170EC8017A@viridian.itc.virginia.edu>
-From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby writes:
-> 
-> On 03/20/2013 03:42 PM, Bill Pemberton wrote:
-> > Ok, for the unopened ports there *should* never be any actual data to
-> > push so the push is really doing nothing anyhow in these cases.  It's
-> > coming from the device sending an initial change port command.
-> > 
-> > Anyhow, so my patch adding more is_open logic can be dropped and then
-> > yours will apply fine.  What's the best way for me to handle this?
-> > Send a revert for my patch so yours will apply or send an updated
-> > version of your patch that removes my additions?
-> 
-> Asking Greg to revert should suffice. I commented on that patch, but in
-> a different thread, so Greg missed the comment the patch is not needed
-> IIRC. What was the title of the patch, I cannot find it immediately :/?
-> 
+On 03/20/2013 07:53:42 AM, Tal Tchwella wrote:
+> I want to suggest adding chroot capability to all users.
 
-"USB: quatech2: only write to the tty if the port is open." (commit
-27b351c in v3.9-rc3).
+I note that chroot doesn't quite do what most people think it does:
 
--- 
-Bill
+   http://landley.net/notes-2011.html#02-06-2011
+
+I've had a todo item forever to modify chroot to actually change the  
+process-local mount tree, creating a bind mount if necessary for the  
+new directory, reparenting the mount tree to that bind mount, and  
+making sure that reference counting can free unused mounts that this  
+would discard. (Except rootfs always needs a nonzero reference count.)
+
+The problem isn't adding security checks, the problem is that having a  
+"/" symlink point somewhere _other_ than the actual top of the  
+process-local mount tree is obsolete now that there isn't a single  
+global mount tree for all processes. (Yes, this would mean it might  
+need to create a new namespace.)
+
+Rob
