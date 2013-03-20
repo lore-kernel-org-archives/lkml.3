@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606Ab3CTTWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 15:22:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55130 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069Ab3CTTWQ (ORCPT
+	id S1757831Ab3CTTWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 15:22:41 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16583 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882Ab3CTTWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 15:22:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 20 Mar 2013 12:22:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging/iio: iio_hwmon: Use device tree node name for
- hwmon name attribute
-Message-ID: <20130320192216.GA966@roeck-us.net>
-References: <1363794751-31977-1-git-send-email-linux@roeck-us.net>
- <5149FFC5.3040504@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5149FFC5.3040504@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Mar 2013 15:22:39 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] kexec: use Crash kernel for Crash kernel low
+Date: Wed, 20 Mar 2013 12:22:09 -0700
+Message-Id: <1363807329-24975-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130320163131.GE2273@redhat.com>
+References: <20130320163131.GE2273@redhat.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 06:28:21PM +0000, Jonathan Cameron wrote:
-> On 03/20/2013 03:52 PM, Guenter Roeck wrote:
-> > So far, all instances of iio_hwmon set their hwmon name attribute
-> > to "iio_hwmon", which is not very descriptive. Set it to the device tree
-> > node name if available, and only revert to iio_hwmon otherwise.
-> > 
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > 
-> > Jonathan, can we move this driver out of staging ?
-> > I would like to see it in 3.10 if possible.
-> 
-> Certainly. Now you've cleaned it up nicely it's ready
-> to go as far as I am concerned.  I'll put together a patch
-> on top of this sometime in the next couple of days and
-> post to the relevant lists etc and if no one shouts I'll
-> send it in a pull request to Greg around next weekend....
-> 
+We can extend kexec-tools to support multiple "Crash kernel" in /proc/iomem
+instead.
 
-Sounds good.
+So we can use "Crash kernel" instead of "Crash kernel low" in /proc/iomem.
 
-> Thanks for all your hard work!
-> 
-My pleasure.
+Suggested-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Thanks,
-Guenter
+---
+ kernel/kexec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/kexec.c
+===================================================================
+--- linux-2.6.orig/kernel/kexec.c
++++ linux-2.6/kernel/kexec.c
+@@ -55,7 +55,7 @@ struct resource crashk_res = {
+ 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
+ };
+ struct resource crashk_low_res = {
+-	.name  = "Crash kernel low",
++	.name  = "Crash kernel",
+ 	.start = 0,
+ 	.end   = 0,
+ 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
