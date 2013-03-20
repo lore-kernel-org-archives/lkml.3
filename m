@@ -1,183 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab3CTPwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:52:07 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:65194 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab3CTPwE (ORCPT
+	id S933065Ab3CTPwq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:52:46 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51039 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3CTPwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:52:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363737629-16745-9-git-send-email-tj@kernel.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
-	<1363737629-16745-9-git-send-email-tj@kernel.org>
-Date: Wed, 20 Mar 2013 23:52:03 +0800
-Message-ID: <CACvQF52vBmDi7nbg2O+CEo7M=n+RZSdEK45vyuCgv=o6R36KeA@mail.gmail.com>
-Subject: Re: [PATCH 08/10] workqueue: break init_and_link_pwq() into two
- functions and introduce alloc_unbound_pwq()
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Mar 2013 11:52:44 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Wed, 20 Mar 2013 10:52:42 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] staging/iio: iio_hwmon: Use device tree node name for hwmon name attribute
+Date: Wed, 20 Mar 2013 08:52:31 -0700
+Message-Id: <1363794751-31977-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 8:00 AM, Tejun Heo <tj@kernel.org> wrote:
-> Break init_and_link_pwq() into init_pwq() and link_pwq() and move
-> unbound-workqueue specific handling into apply_workqueue_attrs().
-> Also, factor out unbound pool and pool_workqueue allocation into
-> alloc_unbound_pwq().
->
-> This reorganization is to prepare for NUMA affinity and doesn't
-> introduce any functional changes.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/workqueue.c | 75 +++++++++++++++++++++++++++++++++++++-----------------
->  1 file changed, 52 insertions(+), 23 deletions(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 3f820a5..bbbfc92 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -3647,13 +3647,10 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
->         spin_unlock(&pwq->pool->lock);
->  }
->
-> -static void init_and_link_pwq(struct pool_workqueue *pwq,
-> -                             struct workqueue_struct *wq,
-> -                             struct worker_pool *pool,
-> -                             struct pool_workqueue **p_last_pwq)
-> +/* initialize newly zalloced @pwq which is associated with @wq and @pool */
-> +static void init_pwq(struct pool_workqueue *pwq, struct workqueue_struct *wq,
-> +                    struct worker_pool *pool)
->  {
-> -       int node;
-> -
->         BUG_ON((unsigned long)pwq & WORK_STRUCT_FLAG_MASK);
->
->         pwq->pool = pool;
-> @@ -3663,9 +3660,16 @@ static void init_and_link_pwq(struct pool_workqueue *pwq,
->         INIT_LIST_HEAD(&pwq->delayed_works);
->         INIT_LIST_HEAD(&pwq->mayday_node);
->         INIT_WORK(&pwq->unbound_release_work, pwq_unbound_release_workfn);
-> +}
->
-> -       mutex_lock(&wq->flush_mutex);
-> -       spin_lock_irq(&pwq_lock);
-> +/* sync @pwq with the current state of its associated wq and link it */
-> +static void link_pwq(struct pool_workqueue *pwq,
-> +                    struct pool_workqueue **p_last_pwq)
-> +{
-> +       struct workqueue_struct *wq = pwq->wq;
-> +
-> +       lockdep_assert_held(&wq->flush_mutex);
-> +       lockdep_assert_held(&pwq_lock);
->
->         /*
->          * Set the matching work_color.  This is synchronized with
-> @@ -3680,15 +3684,27 @@ static void init_and_link_pwq(struct pool_workqueue *pwq,
->
->         /* link in @pwq */
->         list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
-> +}
->
-> -       if (wq->flags & WQ_UNBOUND) {
-> -               copy_workqueue_attrs(wq->unbound_attrs, pool->attrs);
-> -               for_each_node(node)
-> -                       rcu_assign_pointer(wq->numa_pwq_tbl[node], pwq);
-> +/* obtain a pool matching @attr and create a pwq associating the pool and @wq */
-> +static struct pool_workqueue *alloc_unbound_pwq(struct workqueue_struct *wq,
-> +                                       const struct workqueue_attrs *attrs)
-> +{
-> +       struct worker_pool *pool;
-> +       struct pool_workqueue *pwq;
-> +
-> +       pool = get_unbound_pool(attrs);
-> +       if (!pool)
-> +               return NULL;
-> +
-> +       pwq = kmem_cache_zalloc(pwq_cache, GFP_KERNEL);
+So far, all instances of iio_hwmon set their hwmon name attribute
+to "iio_hwmon", which is not very descriptive. Set it to the device tree
+node name if available, and only revert to iio_hwmon otherwise.
 
-this allocation is not numa-awared, you may use pool->node here.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
 
-> +       if (!pwq) {
-> +               put_unbound_pool(pool);
-> +               return NULL;
->         }
->
-> -       spin_unlock_irq(&pwq_lock);
-> -       mutex_unlock(&wq->flush_mutex);
-> +       init_pwq(pwq, wq, pool);
-> +       return pwq;
->  }
->
->  /**
-> @@ -3709,7 +3725,7 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
->                           const struct workqueue_attrs *attrs)
->  {
->         struct pool_workqueue *pwq, *last_pwq;
-> -       struct worker_pool *pool;
-> +       int node;
->
->         /* only unbound workqueues can change attributes */
->         if (WARN_ON(!(wq->flags & WQ_UNBOUND)))
-> @@ -3719,17 +3735,22 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
->         if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
->                 return -EINVAL;
->
-> -       pwq = kmem_cache_zalloc(pwq_cache, GFP_KERNEL);
-> +       pwq = alloc_unbound_pwq(wq, attrs);
->         if (!pwq)
->                 return -ENOMEM;
->
-> -       pool = get_unbound_pool(attrs);
-> -       if (!pool) {
-> -               kmem_cache_free(pwq_cache, pwq);
-> -               return -ENOMEM;
-> -       }
-> +       mutex_lock(&wq->flush_mutex);
-> +       spin_lock_irq(&pwq_lock);
-> +
-> +       link_pwq(pwq, &last_pwq);
-> +
-> +       copy_workqueue_attrs(wq->unbound_attrs, pwq->pool->attrs);
-> +       for_each_node(node)
-> +               rcu_assign_pointer(wq->numa_pwq_tbl[node], pwq);
-> +
-> +       spin_unlock_irq(&pwq_lock);
-> +       mutex_unlock(&wq->flush_mutex);
->
-> -       init_and_link_pwq(pwq, wq, pool, &last_pwq);
->         if (last_pwq) {
->                 spin_lock_irq(&last_pwq->pool->lock);
->                 put_pwq(last_pwq);
-> @@ -3755,7 +3776,15 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
->                         struct worker_pool *cpu_pools =
->                                 per_cpu(cpu_worker_pools, cpu);
->
-> -                       init_and_link_pwq(pwq, wq, &cpu_pools[highpri], NULL);
-> +                       init_pwq(pwq, wq, &cpu_pools[highpri]);
-> +
-> +                       mutex_lock(&wq->flush_mutex);
-> +                       spin_lock_irq(&pwq_lock);
-> +
-> +                       link_pwq(pwq, NULL);
-> +
-> +                       spin_unlock_irq(&pwq_lock);
-> +                       mutex_unlock(&wq->flush_mutex);
->                 }
->                 return 0;
->         } else {
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Jonathan, can we move this driver out of staging ?
+I would like to see it in 3.10 if possible.
+
+ drivers/staging/iio/iio_hwmon.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/iio/iio_hwmon.c b/drivers/staging/iio/iio_hwmon.c
+index 93af756..aafa453 100644
+--- a/drivers/staging/iio/iio_hwmon.c
++++ b/drivers/staging/iio/iio_hwmon.c
+@@ -13,6 +13,7 @@
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
+ #include <linux/hwmon.h>
++#include <linux/of.h>
+ #include <linux/hwmon-sysfs.h>
+ #include <linux/iio/consumer.h>
+ #include <linux/iio/types.h>
+@@ -58,7 +59,12 @@ static ssize_t iio_hwmon_read_val(struct device *dev,
+ static ssize_t show_name(struct device *dev, struct device_attribute *attr,
+ 			 char *buf)
+ {
+-	return sprintf(buf, "iio_hwmon\n");
++	const char *name = "iio_hwmon";
++
++	if (dev->of_node && dev->of_node->name)
++		name = dev->of_node->name;
++
++	return sprintf(buf, "%s\n", name);
+ }
+ 
+ static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
+-- 
+1.7.9.7
+
