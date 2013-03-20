@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab3CTVL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 17:11:27 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54875 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab3CTVLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 17:11:25 -0400
-Message-ID: <1363813877.2580.120.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Date: Wed, 20 Mar 2013 17:11:17 -0400
-In-Reply-To: <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-	 <alpine.LRH.2.02.1303191542200.30973@tundra.namei.org>
-	 <1363797717.2580.10.camel@falcor1.watson.ibm.com>
-	 <1363798166.2553.29.camel@x230.sbx07502.somerma.wayport.net>
-	 <1363802506.2580.55.camel@falcor1.watson.ibm.com>
-	 <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
-	 <1363806968.2580.86.camel@falcor1.watson.ibm.com>
-	 <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032021-5806-0000-0000-0000206B4E2F
+	id S1752022Ab3CTVLc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 17:11:32 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:41557 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab3CTVLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 17:11:30 -0400
+Date: Wed, 20 Mar 2013 16:11:25 -0500
+From: William Hubbs <williamh@gentoo.org>
+To: Rob Landley <rob@landley.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        mpagano@gentoo.org, ryao@gentoo.org, gregkh@gentoo.org,
+        torvalds@linux-foundation.org, w.d.hubbs@gmail.com, kay@vrfy.org
+Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
+Message-ID: <20130320211125.GA26595@linux1>
+References: <20130320002017.GA2810@linux1>
+ <1363763000.15703.47@driftwood>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <1363763000.15703.47@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 20:37 +0000, Matthew Garrett wrote:
-> On Wed, 2013-03-20 at 15:16 -0400, Mimi Zohar wrote:
-> > On Wed, 2013-03-20 at 18:12 +0000, Matthew Garrett wrote:
-> > > Well, in the absence of hardcoded in-kernel policy, there needs to be
-> > > some mechanism for ensuring the integrity of a policy. Shipping a signed
-> > > policy initramfs fragment and having any Secure Boot bootloaders pass a
-> > > flag in bootparams indicating that the kernel should panic if that
-> > > fragment isn't present would seem to be the easiest way of doing that.
-> > > Or have I misunderstood the question?
-> > 
-> > Ok, I was confused by the term "fragmented" initramfs.  So once you have
-> > verified the "early" fragmented initramfs signature, this initramfs will
-> > load the "trusted" public keys and could also load the MAC policy. (I
-> > realize that dracut is currently loading the MAC policy, not the
-> > initramfs.)  The MAC policy would then be trusted, right?  Could we then
-> > use the LSM labels for defining an integrity policy for kexec?
-> 
-> Right, that'd be the rough idea. Any further runtime policy updates
-> would presumably need to be signed with a trusted key.
 
-I'm really sorry to belabor this point, but can kexec rely on an LSM
-label to identify a specific file, out of all the files being executed,
-in a secure boot environment?  The SELinux integrity rule for kexec
-would then look something like,
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-appraise func=BPRM_CHECK obj_type=kdump_exec_t appraise_type=imasig
+On Wed, Mar 20, 2013 at 02:03:20AM -0500, Rob Landley wrote:
+> On 03/19/2013 07:20:17 PM, William Hubbs wrote:
+> > On Tue, Mar 19, 2013 at 04:17:11PM -0700, H. Peter Anvin wrote:
+> > > On 03/19/2013 03:28 PM, William Hubbs wrote:
+> > > > The issue is that /dev/root appears in /proc/mounts if you do not
+> > > > boot with an initramfs, but /dev/root is not a device node. In the
+> > > > past, udev created a symbolic link from /dev/root to the
+> > > > appropriate block device, but it does not do this any longer. =20
+> > Also,
+> > > > devtmpfs does not create this symbolic link.
+> > > >
+> > > > This is causing bugs with software that depends on the existence
+> > > > of /dev/root [2] for example.
+> > >
+> > > Seems okay to me, although even better would be to use the udev name
+> > > of the device in question.
+> >=20
+> > I'm not following what you mean.
+> >=20
+> > The problem is that "/dev/root" should not be in /proc/mounts,
+> > since there is always another entry that points to the root
+> > file system.
+>=20
+> What gave you that idea?
+>=20
+> wget http://landley.net/aboriginal/bin/system-image-i686.tar.bz2
+> extract it and ./run-emulator.sh and in there:
+>=20
+> (i686:1) /home # cat /proc/mounts
+> rootfs / rootfs rw 0 0
+> /dev/root / squashfs ro,relatime 0 0
+> proc /proc proc rw,relatime 0 0
+> sys /sys sysfs rw,relatime 0 0
+> dev /dev devtmpfs rw,relatime,size=3D63072k,nr_inodes=3D15768,mode=3D755 =
+0 0
+> dev/pts /dev/pts devpts rw,relatime,mode=3D600 0 0
+> /tmp /tmp tmpfs rw,relatime 0 0
+> /home /home tmpfs rw,relatime 0 0
+>=20
+> Userspace can totally determine what /dev/root points to, I made mdev =20
+> do it in 2006 (udev started doing so shortly thereafter). Busybox git =20
+> commit a7e3d052.:4
 
-We could then follow this up with Serge's idea of, "a capset
-akin to the bounding set, saying you can only have the caps in this set
-if the running binary was a signed one."  kexec already requires
-CAP_SYS_BOOT.
+There are situations where it doesn't work though -- suppose that root
+is btrfs for example.
 
-thanks,
+Also, the other message that answered you is correct, the udev
+maintainers say we should not be relying on /dev/root at all so to make
+it work distro packagers have to add a rule themselves.
 
-Mimi
+Kay,
 
+if you are reading, canyou jump in and explain why /dev/root is a bad
+idea?
+
+Thanks,
+
+William
+
+
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlFKJf0ACgkQblQW9DDEZThJ9ACfYij6vbyUI4wdI365LAo3Qgl8
+BtYAn0Ur31q+vawOpFhGf97Ppahks+gi
+=8c7E
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
