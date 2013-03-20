@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab3CTNie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:38:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48779 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750709Ab3CTNid (ORCPT
+	id S1751873Ab3CTNmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:42:55 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37842 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab3CTNmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:38:33 -0400
-Date: Wed, 20 Mar 2013 13:38:21 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "feng.tang@intel.com" <feng.tang@intel.com>
-Subject: Re: Perf tool won't build without libnewt
-Message-ID: <20130320133820.GA15279@e106331-lin.cambridge.arm.com>
-References: <20130320121111.GB16485@e106331-lin.cambridge.arm.com>
- <20130320132322.GE23423@infradead.org>
+	Wed, 20 Mar 2013 09:42:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130320132322.GE23423@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1363777891.2612.7.camel@laptop>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1360820921-2513-5-git-send-email-iamjoonsoo.kim@lge.com>
+	<1363703415.22553.54.camel@laptop>
+	<20130320073355.GC11672@lge.com>
+	<1363777891.2612.7.camel@laptop>
+Date: Wed, 20 Mar 2013 22:42:52 +0900
+Message-ID: <CAAmzW4OKTxSCFFCOA=YKSwV_qQjxMb6z6ThELp=w9J2bBG4ObQ@mail.gmail.com>
+Subject: Re: [PATCH 4/8] sched: clean up move_task() and move_one_task()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 01:23:22PM +0000, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Mar 20, 2013 at 12:11:11PM +0000, Mark Rutland escreveu:
-> > I attempted to cross-build v3.9-rc3's perf tool for an arm system today, and
-> > got the following out of the build system:
-> > 
-> > CHK libnewt
-> > Makefile:655: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
-> > [...]
-> > builtin-report.c: In function ‘__cmd_report’:
-> > builtin-report.c:478:15: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
-> > builtin-report.c:478:15: note: each undeclared identifier is reported only once for each function it appears in
-> > builtin-report.c: In function ‘cmd_report’:
-> > builtin-report.c:821:13: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
-> > make: *** [builtin-report.o] Error 1
-> > make: *** Waiting for unfinished jobs....
-> > 
-> > I've bisected this down to ad0de0971b: "perf report: Enable the runtime
-> > switching of perf data file".
-> 
-> Can you try with latest tip/perf/urgent, should go to Linus soon.
-> 
-> This cset should fix it:
+2013/3/20 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2013-03-20 at 16:33 +0900, Joonsoo Kim wrote:
+>
+>> > Right, so I'm not so taken with this one. The whole load stuff really
+>> > is a balance heuristic that's part of move_tasks(), move_one_task()
+>> > really doesn't care about that.
+>> >
+>> > So why did you include it? Purely so you didn't have to re-order the
+>> > tests? I don't see any reason not to flip a tests around.
+>>
+>> I think that I'm not fully understand what you are concerning, because of
+>> my poor English. If possible, please elaborate on a problem in more detail.
+>
+> OK, so your initial Changelog said it wanted to remove some code
+> duplication between move_tasks() and move_one_task(); but then you put
+> in the load heuristics and add a boolean argument to only enable those
+> for move_tasks() -- so clearly that wasn't duplicated.
+>
+> So why move that code.. I proposed that this was due a reluctance to
+> re-arrange the various tests that stop the migration from happening.
+>
+> Now you say:
+>
+>> ... Just moving up can_migrate_task() above
+>> load evaluation code may raise side effect, because can_migrate_task() have
+>> other checking which is 'cache hottness'. I don't want a side effect. So
+>> embedding load evaluation to can_migrate_task() and re-order checking and
+>> makes load evaluation disabled for move_one_task().
+>
+> Which pretty much affirms this. However I also said that I don't think
+> the order really matters that much; each test will cancel the migration
+> of this task; the order of these tests seem immaterial.
+>
+>> If your recommandation is to move up can_mirate_task() above
+>> load evaluation code, yes, I can, and will do that. :)
+>
+> I would actually propose moving the throttled test into
+> can_migrate_task() and leave it at that.
 
-Indeed it does.
+Okay. I will do that in next spin.
 
-> 
-> commit 5f7439e07822942f32b9e0a66f4a3cc9c3e29e67
-> Author: Michael Ellerman <michael@ellerman.id.au>
-> Date:   Tue Feb 26 16:02:03 2013 +1100
-> 
->     perf report: Fix build with NO_NEWT=1
-> 
-> ----
-> 
-> 	Thanks for reporting!
-> 
-> - Arnaldo
+Thanks!!
 
-Cheers,
-Mark.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
