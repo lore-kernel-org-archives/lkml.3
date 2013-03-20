@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab3CTNYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:24:19 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:47241 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab3CTNYR (ORCPT
+	id S1757169Ab3CTN1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:27:33 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:47278 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab3CTN1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:24:17 -0400
+	Wed, 20 Mar 2013 09:27:32 -0400
+Date: Wed, 20 Mar 2013 10:27:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 8/9] perf util: Get rid of die() calls in
+ trace-data-read.c
+Message-ID: <20130320132724.GD1964@ghostprotocols.net>
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+ <1363683224-28804-9-git-send-email-namhyung@kernel.org>
+ <1363704928.5938.29.camel@gandalf.local.home>
+ <87620mj1zz.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
-References: <CADB-GoLzX-G5j92oEsLeUq6PRpKwb15U6LL_jw4zh6Nhh+ZHLg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1303191142330.15684-100000@netrider.rowland.org>
-Date: Wed, 20 Mar 2013 21:24:14 +0800
-Message-ID: <CADB-GoLncGoXmJsxXPUZocz1fJe9uUBX+mtgBVkuUR1SqbOBEQ@mail.gmail.com>
-Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        sarah.a.sharp@linux.intel.com, Julia.Lawall@lip6.fr,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>, john453@faraday-tech.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87620mj1zz.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Wed, Mar 20, 2013 at 10:25:52AM +0900, Namhyung Kim escreveu:
+> On Tue, 19 Mar 2013 10:55:28 -0400, Steven Rostedt wrote:
+> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
+> >> Convert them to pr_debug() and propagate error code.
 
-On Tue, Mar 19, 2013 at 11:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 19 Mar 2013, Yuan-Hsin Chen wrote:
->
->> > What about the port_status registers?  They're not between command and
->> > async_next.  If they aren't consistent with EHCI, it makes things a lot
->> > more complicated.
->>
->> fusbh200 has only one port_status register with different offset,
->> 0x30, and the position of some bits are different from EHCI.
+> > Shouldn't they be pr_err(). I mean, if the old code would kill the
+> > process, why just keep it as a debug output?
 
-How about adding kernel configuration to adjust offset for FUSBH200 in
-ehci_def.h? So port_status would be in offset 0x20 from ehci_regs.
+> Please see my other reply.
 
-For example,
+Ditto.
+ 
+> Arnaldo, can you give me your direction/preference?
 
-        /* ASYNCLISTADDR: offset 0x18 */
-        u32             async_next;     /* address of next async queue head */
+Yeah, I think that lower levels should emit a debug if it helps
+developers and advanced users to remedy or at least understand the
+situation.
 
-#ifndef CONFIG_USB_EHCI_HCD_FUSBH200
-        u32             reserved1[2];
+The builtin-foo.c top level and the [TG]UI routines are the ones that
+must emit messages to the user.
 
-        /* TXFILLTUNING: offset 0x24 */
-        u32             txfill_tuning;  /* TX FIFO Tuning register */
-#define TXFIFO_DEFAULT  (8<<16)         /* FIFO burst threshold 8 */
-
-        u32             reserved2[6];
-
-        /* CONFIGFLAG: offset 0x40 */
-        u32             configured_flag;
-#define FLAG_CF         (1<<0)          /* true: we'll support "high speed" */
-
-#else
-        u32             reserved1;
-#endif
-        /* PORTSC: offset 0x44 */
-        u32             port_status[0]; /* up to N_PORTS */
-
-
-Furthermore, there are PORT_POWER, PORT_OWNER, PORT_LED_XXX,
-PORT_TEST, PORT_WKCONN_E, PORT_WKDISC_E, PORT_WKOC_E absent in
-port_status of FUSBH200. Also PORT_OC and PORT_OCC are in another
-register. Is it ok to use quirk flag also?
-
->
-> That's pretty nasty.  Integrating that with the standard EHCI driver
-> would be considerably more difficult.
->
-> Why was the FUSBH200 designed in this strange way?  Why doesn't it use
-> the standard EHCI register layout?  Were the engineers at Faraday
-> deliberately trying to make life harder for driver writers?
->
->> Also, usbmode_ex, hostpc, and txfill_tuning other than configured_flag
->> are non-existent in fusbh200. They are used in both ehci-hcd.c and
->> ehci-hub.c for several times.
->
-> They are used only if the hardware supports them, that is, only if the
-> ehci->has_hostpc flag is set.
->
-> Alan Stern
->
-
-Thank you for your help.
-
-Yuan-Hsin
+- Arnaldo
