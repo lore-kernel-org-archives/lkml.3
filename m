@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab3CTQGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:06:41 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.5]:61288 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab3CTQGj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:06:39 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-127.messagelabs.com!1363795502!6339186!37
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Joe Perches <joe@perches.com>, Al Viro <viro@ZenIV.linux.org.uk>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Alice Ferrazzi <alice.ferrazzi@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Mar 2013 11:06:16 -0500
-Subject: RE: [PATCH] Staging: comedi: serial2002: fixed consistent spacing
- issue
-Thread-Topic: [PATCH] Staging: comedi: serial2002: fixed consistent spacing
- issue
-Thread-Index: Ac4lhJBhVPznTjk/QM2qEuZOSoIq+AAAA2Mw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00209801072F8@AUSP01VMBX24.collaborationhost.net>
-References: <1363782411-11729-1-git-send-email-alice.ferrazzi@gmail.com>
-	 <20130320124753.GZ9138@mwanda> <20130320152951.GO21522@ZenIV.linux.org.uk>
- <1363795450.16270.33.camel@joe-AO722>
-In-Reply-To: <1363795450.16270.33.camel@joe-AO722>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757718Ab3CTQHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:07:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46975 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab3CTQHU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:07:20 -0400
+Message-ID: <5149DEB5.7000709@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 10:07:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>
+Subject: Re: [PATCH 2/2] regulator: palmas: add input supply names
+References: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com> <20130320123128.GM28775@opensource.wolfsonmicro.com> <5149B19E.90400@nvidia.com>
+In-Reply-To: <5149B19E.90400@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 20, 2013 9:04 AM, Joe Perches wrote:
-> On Wed, 2013-03-20 at 15:29 +0000, Al Viro wrote:
->> On Wed, Mar 20, 2013 at 03:47:53PM +0300, Dan Carpenter wrote:
->> 
->>> The original code here needs to broken up into functions so it isn't
->>> squashed up against the 80 character limit.
->> 
->> I'd say what needs to be done to the original code...
->
-> All good things, thanks for taking the time to write it Al.
-> Not that I'm ever touching comedi code, but Hartley is, so
-> I'm adding him to cc just in case he didn't see it...
+On 03/20/2013 06:54 AM, Laxman Dewangan wrote:
+> On Wednesday 20 March 2013 06:01 PM, Mark Brown wrote:
+>> * PGP Signed by an unknown key
+>>
+>> On Mon, Mar 18, 2013 at 02:59:48PM +0530, Laxman Dewangan wrote:
+>>
+>> There's something odd about several recent patch serieses you've posted,
+>> they end up with patch 2 before instead of after patch 1.  Anyway...
+> 
+> I generally send a patches on single git-send command
+> git send-emal --to=ldewangan@nvidia.com 0000.patch 0001.patch
 
-I saw it.
-
-I haven't touched this driver yet because I haven't worked out
-a clean way to fix the sparse warnings in it.
-
-I'll get to it eventually. :-)
-
-Regards,
-Hartley
-
+Don't do that; send *.patch. If you don't, then patches 2..n don't end
+up being "in-reply-to" patch 1, so they won't show up as a single email
+thread.
