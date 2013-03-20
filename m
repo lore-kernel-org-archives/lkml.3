@@ -1,219 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3CTH5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:57:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46922 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134Ab3CTH5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:57:42 -0400
-Date: Wed, 20 Mar 2013 08:57:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
- hugepage
-Message-ID: <20130320075736.GC20045@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130318160737.GU10192@dhcp22.suse.cz>
- <1363751733-1fg9kic6-mutt-n-horiguchi@ah.jp.nec.com>
+	id S932983Ab3CTH6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:58:01 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:55091 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab3CTH56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:57:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363751733-1fg9kic6-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130315154151.GA3887@redhat.com>
+References: <20130314182815.GB24238@redhat.com>
+	<CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
+	<20130314203028.GE24238@redhat.com>
+	<20130314203703.GF24238@redhat.com>
+	<CALLzPKb646eXYCLrgtuNFYx_Y6dWdwNWZM1whJPR1wZBxbVY6w@mail.gmail.com>
+	<20130315154151.GA3887@redhat.com>
+Date: Wed, 20 Mar 2013 09:57:57 +0200
+Message-ID: <CALLzPKa+7tmpnKt-b_g7p=pdWqutNT=71DbJSmY04TqVRdXrQw@mail.gmail.com>
+Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-03-13 23:55:33, Naoya Horiguchi wrote:
-> On Mon, Mar 18, 2013 at 05:07:37PM +0100, Michal Hocko wrote:
-> > On Thu 21-02-13 14:41:47, Naoya Horiguchi wrote:
-[...]
-> > > As for larger hugepages (1GB for x86_64), it's not easy to do hotremove
-> > > over them because it's larger than memory block. So we now simply leave
-> > > it to fail as it is.
-> > 
-> > What we could do is to check whether there is a free gb huge page on
-> > other node and migrate there.
-> 
-> Correct, and 1GB page migration needs more code in migration core code
-> (mainly it's related to migration entry in pud) and enough testing,
-> so I want to do it in separate patchset.
+On Fri, Mar 15, 2013 at 5:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Mar 14, 2013 at 11:08:45PM +0200, Kasatkin, Dmitry wrote:
+>> On Thu, Mar 14, 2013 at 10:37 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Thu, Mar 14, 2013 at 04:30:28PM -0400, Vivek Goyal wrote:
+>> >
+>> > [..]
+>> >> I thought explicitly using signature format is more intutive. Exporting
+>> >> signature version is not. I personally associate versioning with minor
+>> >> changes like addition of some fields etc.
+>> >
+>> > For instance, you might want to add some fields to  signature_v2_hdr down
+>> > the line. I think even after that change, it still remains "asymmetric
+>> > signature" just that structure size changes and there is additional
+>> > info. If there is versioning info assciated with signature type
+>> > ASYMMETRIC, we could simple bump it to 1.1 or whatever and keep the
+>> > version detail internal to ima/integrity subsystem.
+>> >
+>>
+>> Yes, it will make some things cleaner.
+>
+> So do you agree that every new signature format should have a new entry
+> and we can introduce new signature type for asymmetric signature.
+>
 
-Sure, this was just a note that it is achievable not that it has to be
-done in the patchset.
+Hi Vivek,
 
-[...]
-> > > diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-> > > index ccf9995..c28e6c9 100644
-> > > --- v3.8.orig/mm/hugetlb.c
-> > > +++ v3.8/mm/hugetlb.c
-> > > @@ -843,6 +843,30 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
-> > >  	return ret;
-> > >  }
-> > >  
-> > > +/* Dissolve a given free hugepage into free pages. */
-> > > +void dissolve_free_huge_page(struct page *page)
-> > > +{
-> > > +	if (PageHuge(page) && !page_count(page)) {
-> > 
-> > Could you clarify why you are cheking page_count here? I assume it is to
-> > make sure the page is free but what prevents it being increased before
-> > you take hugetlb_lock?
-> 
-> There's nothing to prevent it, so it's not safe to check refcount outside
-> hugetlb_lock.
+I was/am a bit busy with responding.
+I will do it asap.
 
-OK, so the lock has to be moved up.
+Thanks,
+Dmitry
 
-[...]
-> > > diff --git v3.8.orig/mm/memory_hotplug.c v3.8/mm/memory_hotplug.c
-> > > index d04ed87..6418de2 100644
-> > > --- v3.8.orig/mm/memory_hotplug.c
-> > > +++ v3.8/mm/memory_hotplug.c
-> > > @@ -29,6 +29,7 @@
-> > >  #include <linux/suspend.h>
-> > >  #include <linux/mm_inline.h>
-> > >  #include <linux/firmware-map.h>
-> > > +#include <linux/hugetlb.h>
-> > >  
-> > >  #include <asm/tlbflush.h>
-> > >  
-> > > @@ -985,10 +986,12 @@ static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
-> > >  }
-> > >  
-> > >  /*
-> > > - * Scanning pfn is much easier than scanning lru list.
-> > > - * Scan pfn from start to end and Find LRU page.
-> > > + * Scan pfn range [start,end) to find movable/migratable pages (LRU pages
-> > > + * and hugepages). We scan pfn because it's much easier than scanning over
-> > > + * linked list. This function returns the pfn of the first found movable
-> > > + * page if it's found, otherwise 0.
-> > >   */
-> > > -static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-> > > +static unsigned long scan_movable_pages(unsigned long start, unsigned long end)
-> > >  {
-> > >  	unsigned long pfn;
-> > >  	struct page *page;
-> > > @@ -997,6 +1000,12 @@ static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-> > >  			page = pfn_to_page(pfn);
-> > >  			if (PageLRU(page))
-> > >  				return pfn;
-> > > +			if (PageHuge(page)) {
-> > > +				if (is_hugepage_movable(page))
-> > > +					return pfn;
-> > > +				else
-> > > +					pfn += (1 << compound_order(page)) - 1;
-> > > +			}
-> > 
-> > scan_lru_pages's name gets really confusing after this change because
-> > hugetlb pages are not on the LRU. Maybe it would be good to rename it.
-> 
-> Yes, and that's done in right above chunk.
-
-bahh, I am blind. I got confused by the name in the hunk header. Sorry
-about that.
-
-> 
-> > 
-> > >  		}
-> > >  	}
-> > >  	return 0;
-> > > @@ -1019,6 +1028,30 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
-> > >  		page = pfn_to_page(pfn);
-> > >  		if (!get_page_unless_zero(page))
-> > >  			continue;
-> > 
-> > All tail pages have 0 reference count (according to prep_compound_page)
-> > so they would be skipped anyway. This makes the below pfn tweaks
-> > pointless.
-> 
-> I was totally mistaken about what we should do here, sorry. If we call
-> do_migrate_range() for 1GB hugepage, we should return with error (maybe -EBUSY)
-> instead of just skipping it, otherwise the caller __offline_pages() repeats
-> 'goto repeat' until timeout. In order to do that, we had better insert
-> if(PageHuge) block before getting refcount. And ...
-> 
-> > > +		if (PageHuge(page)) {
-> > > +			/*
-> > > +			 * Larger hugepage (1GB for x86_64) is larger than
-> > > +			 * memory block, so pfn scan can start at the tail
-> > > +			 * page of larger hugepage. In such case,
-> > > +			 * we simply skip the hugepage and move the cursor
-> > > +			 * to the last tail page.
-> > > +			 */
-> > > +			if (PageTail(page)) {
-> > > +				struct page *head = compound_head(page);
-> > > +				pfn = page_to_pfn(head) +
-> > > +					(1 << compound_order(head)) - 1;
-> > > +				put_page(page);
-> > > +				continue;
-> > > +			}
-> > > +			pfn = (1 << compound_order(page)) - 1;
-> > > +			if (huge_page_size(page_hstate(page)) != PMD_SIZE) {
-> > > +				put_page(page);
-> > > +				continue;
-> > > +			}
-> > 
-> > There might be other hugepage sizes which fit into memblock so this test
-> > doesn't seem right.
-> 
-> yes, so compound_order(head) > PFN_SECTION_SHIFT would be better.
-
-I would rather see compound_order(head) < MAX_ORDER to be more coupled
-with the allocator.
-
-> I'll replace this chunk with the following if I don't get any other
-> suggestion.
-> 
-> @@ -1017,6 +1026,21 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
->  		if (!pfn_valid(pfn))
->  			continue;
->  		page = pfn_to_page(pfn);
-> +
-> +		if (PageHuge(page)) {
-> +			struct page *head = compound_head(page);
-> +			pfn = page_to_pfn(head) + (1 << compound_order(head)) - 1;
-
-I do not think this is safe without an elevated ref count. Your page
-might be on the way to be freed. So you need to put get_page_unless_zero
-before compound_order check.
-
-Besides that I do not see too much point in optimizing this path on the
-code complexity behalf. Sure we would call get_page_unless_zero
-pointlessly for all tail pages but this is hardly a hot path.
-
-> +			if (compound_order(head) > PFN_SECTION_SHIFT) {
-> +				ret = -EBUSY;
-> +				break;
-> +			}
-> +			if (!get_page_unless_zero(page))
-
-Should be head.
-
-> +				continue;
-> +			list_move_tail(&head->lru, &source);
-> +			move_pages -= 1 << compound_order(head);
-> +			continue;
-> +		}
-> +
->  		if (!get_page_unless_zero(page))
->  			continue;
->  		/*
-> 
-> Thanks,
-> Naoya
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
+>> We recently discussed with Mimi how to extend IMA with memory locking and
+>> one of the ideas was to use a flag in the signature header to indicate
+>> that we need
+>> require memory locking. There we need new subversion of the asymmetric
+>> signature type.
+>
+> I have few concerns here.
+>
+> - Whether a file should be mem locked or not is not file property. It
+>   should not be stored in the file signature when file is being signed.
+>   Whether file should be locked or not depends on the caller and that
+>   in turn depends on the system environment.
+>
+>   For example, one can create a system where whole of the user space is
+>   signed. (Extending secureboot fully to the user space). I think in that
+>   system one might not need to lock executables/files in memory.
+>
+> - IMA should not be mmaping files in process address space. IMA does not
+>   know what should be mapped where. For example, executable files.
+>   Respective binary loader knows what sections of the file should be
+>   mapped at what address.
+>
+>   IIUC, do_mmap_pgoff() will map file at first suitable available address.
+>
+>   Secondly will IMA return with file mapped and locked or will unmap file
+>   before returning. If it does not unmap then it can conflict with binary
+>   loader who wants to map a section of file on a particular address which
+>   is already used. And if IMA unmaps the file before returning to caller,
+>   then mapping and mlocking has no benefit.
+>
+> - Special hardcoded handling of BPRM_CHECK hook sounds like a kludge.
+>
+> +       if (function == BPRM_CHECK && (iint->flags & IMA_DIGSIG))
+> +               iint->flags &= ~IMA_DONE_MASK;
+>
+>   IMA in general has the issue of direct writes to disk. If we want to solve
+>   the caching issues, these should be solved in general and not be made hook
+>   specific.
+>
+>   Even with ima_appraise_tcb policy in effect, there are vulnerabilities.
+>   ima_appraise_tcb will appraise only root files and a member of group
+>   "disk" can directly write to disk without being appraised and bypass all
+>   the caching logic.
+>
+> - Memory locking will not solve the problem of knowing what did successful
+>   appraisal mean. User needs to know whether its rule got executed or not
+>   and based on that it can make a decision.
+>
+> I really think that it is caller who should decide whether a file should
+> be locked or not. If there is a need, caller should first map full or part
+> file at appropriate address range and lock mapped pages in memory and
+> then call into IMA for signature verification.
+>
+>>
+>> Please have a look to 3 top patches.
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/log/?h=working
+>>
+>> It is a prototype to verify signature with arbitrary hash algorithm.
+>
+> Thanks. I had a quick look. Hash related improvements look fine to me.
+>
+>> Top patch also locks the memory if executable is verified and it has
+>> asymmetric signature type.
+>
+> I have concerned with ima memory locking as mentioned above. We need to
+> have some discussion here first w.r.t what problem we are solving by
+> locking files on bprm_check hook and whether it is appropriate to do
+> it in IMA or not.
+>
+>> This unconditional locking is just for development and we might use
+>> mlock bit from signature header.
+>
+> As mentioned above, I have concerns here. Whether a file should be
+> memlocked or not is not a property of file or file signature.
+>
+>> Notice, that patch reset appraisal status when we get BPRM check and
+>> there is a signature.
+>
+> This is also shouds like a kludge. Why BPRM_CHECK only is special. Same
+> problem will exist with any other measurement hook, isn't it.
+>
+>>
+>> BTW, do you have a kernel repository somewhere.
+>> It is often easier to understand and discuss when seeing "complete"
+>> set of commits.
+>
+> No, I don't have yet. The moment I have something (even in raw form), I
+> will post patches as RFC. If things still don't work, I will setup a
+> repository somewhere.
+>
+> Thanks
+> Vivek
