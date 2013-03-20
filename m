@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab3CTOVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:21:19 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30821 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3CTOVS (ORCPT
+	id S1753730Ab3CTOWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:22:36 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:41132 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3CTOWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:21:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, rafael.j.wysocki@intel.com,
-        dirk.j.brandewie@intel.com
-Subject: [PATCH] intel-pstate: Use #defines instead of hard-coded values.
-Date: Wed, 20 Mar 2013 10:21:10 -0400
-Message-Id: <1363789270-29579-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 20 Mar 2013 10:22:35 -0400
+MIME-Version: 1.0
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Wed, 20 Mar 2013 09:22:03 -0500
+Message-ID: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
+Subject: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are defined in coreboot (MSR_PLATFORM) and the other
-one is already defined in msr-index.h.
+  Fixes a race on driver init with registering algorithms where the
+driver status flag wasn't being set before self testing started.
 
-Lets use those.
+  Added the cra_alignmask field for CBC and ECB modes.
 
-CC: rafael.j.wysocki@intel.com
-CC: dirk.j.brandewie@intel.com
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+  Fixed a bug in GCM where AES block size was being used instead of
+authsize.
+
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h | 1 +
- drivers/cpufreq/intel_pstate.c        | 6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Only changes in v2 were to leave stable off the cc and add Ben for PPC.
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 892ce40..7a060f4 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -44,6 +44,7 @@
- #define SNB_C1_AUTO_UNDEMOTE		(1UL << 27)
- #define SNB_C3_AUTO_UNDEMOTE		(1UL << 28)
- 
-+#define MSR_PLATFORM_INFO		0x000000ce
- #define MSR_MTRRcap			0x000000fe
- #define MSR_IA32_BBL_CR_CTL		0x00000119
- #define MSR_IA32_BBL_CR_CTL3		0x0000011e
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index f6dd1e7..dadc27d 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -358,14 +358,14 @@ static void intel_pstate_sysfs_expose_params(void)
- static int intel_pstate_min_pstate(void)
- {
- 	u64 value;
--	rdmsrl(0xCE, value);
-+	rdmsrl(MSR_PLATFORM_INFO, value);
- 	return (value >> 40) & 0xFF;
- }
- 
- static int intel_pstate_max_pstate(void)
- {
- 	u64 value;
--	rdmsrl(0xCE, value);
-+	rdmsrl(MSR_PLATFORM_INFO, value);
- 	return (value >> 8) & 0xFF;
- }
- 
-@@ -373,7 +373,7 @@ static int intel_pstate_turbo_pstate(void)
- {
- 	u64 value;
- 	int nont, ret;
--	rdmsrl(0x1AD, value);
-+	rdmsrl(MSR_NHM_TURBO_RATIO_LIMIT, value);
- 	nont = intel_pstate_max_pstate();
- 	ret = ((value) & 255);
- 	if (ret <= nont)
+ drivers/crypto/nx/nx-aes-cbc.c | 1 +
+ drivers/crypto/nx/nx-aes-ecb.c | 1 +
+ drivers/crypto/nx/nx-aes-gcm.c | 2 +-
+ drivers/crypto/nx/nx.c         | 4 ++--
+ 4 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
+index a76d4c4..35d483f 100644
+--- a/drivers/crypto/nx/nx-aes-cbc.c
++++ b/drivers/crypto/nx/nx-aes-cbc.c
+@@ -126,6 +126,7 @@ struct crypto_alg nx_cbc_aes_alg = {
+ 	.cra_blocksize   = AES_BLOCK_SIZE,
+ 	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+ 	.cra_type        = &crypto_blkcipher_type,
++	.cra_alignmask   = 0xf,
+ 	.cra_module      = THIS_MODULE,
+ 	.cra_init        = nx_crypto_ctx_aes_cbc_init,
+ 	.cra_exit        = nx_crypto_ctx_exit,
+diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
+index ba5f161..7bbc9a8 100644
+--- a/drivers/crypto/nx/nx-aes-ecb.c
++++ b/drivers/crypto/nx/nx-aes-ecb.c
+@@ -123,6 +123,7 @@ struct crypto_alg nx_ecb_aes_alg = {
+ 	.cra_priority    = 300,
+ 	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
+ 	.cra_blocksize   = AES_BLOCK_SIZE,
++	.cra_alignmask   = 0xf,
+ 	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+ 	.cra_type        = &crypto_blkcipher_type,
+ 	.cra_module      = THIS_MODULE,
+diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
+index c8109ed..6cca6c3 100644
+--- a/drivers/crypto/nx/nx-aes-gcm.c
++++ b/drivers/crypto/nx/nx-aes-gcm.c
+@@ -219,7 +219,7 @@ static int gcm_aes_nx_crypt(struct aead_request
+*req, int enc)
+ 	if (enc)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+ 	else
+-		nbytes -= AES_BLOCK_SIZE;
++		nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
+
+ 	csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
+
+diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
+index c767f23..7621d05 100644
+--- a/drivers/crypto/nx/nx.c
++++ b/drivers/crypto/nx/nx.c
+@@ -454,6 +454,8 @@ static int nx_register_algs(void)
+ 	if (rc)
+ 		goto out;
+
++	nx_driver.of.status = NX_OKAY;
++
+ 	rc = crypto_register_alg(&nx_ecb_aes_alg);
+ 	if (rc)
+ 		goto out;
+@@ -498,8 +500,6 @@ static int nx_register_algs(void)
+ 	if (rc)
+ 		goto out_unreg_s512;
+
+-	nx_driver.of.status = NX_OKAY;
+-
+ 	goto out;
+
+ out_unreg_s512:
 -- 
-1.8.0.2
-
+1.7.11.7
