@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab3CTDN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 23:13:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10781 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150Ab3CTDN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 23:13:28 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=c2tSGNMr5iYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=SbTfxjnowbEA:10 a=nR5f1fUsjioDoUop7s4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363749205.6345.5.camel@gandalf.local.home>
-Subject: Re: [PATCH 6/9] perf util: Get rid of malloc_or_die() in
- trace-event-read.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 19 Mar 2013 23:13:25 -0400
-In-Reply-To: <871ubaixlw.fsf@sejong.aot.lge.com>
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	 <1363683224-28804-7-git-send-email-namhyung@kernel.org>
-	 <1363704602.5938.26.camel@gandalf.local.home>
-	 <87ehfaj2ic.fsf@sejong.aot.lge.com>
-	 <1363744502.6345.1.camel@gandalf.local.home>
-	 <871ubaixlw.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934177Ab3CTDNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 23:13:49 -0400
+Received: from ozlabs.org ([203.10.76.45]:40848 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932150Ab3CTDNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 23:13:45 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Bob Liu <lliubbo@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: make[2]: execvp: /bin/bash: Argument list too long
+In-Reply-To: <20130319150204.GA11928@localhost>
+References: <5148064c.NHUmXnvVxwyYN+nc%fengguang.wu@intel.com> <20130318235058.8c3c78ec.akpm@linux-foundation.org> <20130319131025.GC2706@phenom.dumpdata.com> <20130319150204.GA11928@localhost>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 20 Mar 2013 13:41:07 +1030
+Message-ID: <87vc8mpxys.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 12:00 +0900, Namhyung Kim wrote:
-> On Tue, 19 Mar 2013 21:55:02 -0400, Steven Rostedt wrote:
-> > On Wed, 2013-03-20 at 10:14 +0900, Namhyung Kim wrote:
-> >> On Tue, 19 Mar 2013 10:50:02 -0400, Steven Rostedt wrote:
-> >> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
-> >> >>  	free(version);
-> >> >> @@ -331,11 +354,12 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
-> >> >>  
-> >> >>  	page_size = read4(pevent);
-> >> >>  
-> >> >> -	read_header_files(pevent);
-> >> >> -	read_ftrace_files(pevent);
-> >> >> -	read_event_files(pevent);
-> >> >> -	read_proc_kallsyms(pevent);
-> >> >> -	read_ftrace_printk(pevent);
-> >> >> +	if (read_header_files(pevent) ||
-> >> >> +	    read_ftrace_files(pevent) ||
-> >> >> +	    read_event_files(pevent) ||
-> >> >> +	    read_proc_kallsyms(pevent) ||
-> >> >> +	    read_ftrace_printk(pevent))
-> >> >> +		goto out;
-> >> >
-> >> > I think I like the err += func() and check for err < 0, better.
-> >> 
-> >> Okay, I'll change them to err |= func() style if you're fine as Peter
-> >> suggested.
-> >
-> > += or |= I'm not picky ;-)
-> 
-> Ah, one thing I also care was the short-circuit logic.  I think we don't
-> need to call later functions if one fails, do we?
+Fengguang Wu <fengguang.wu@intel.com> writes:
+> On Tue, Mar 19, 2013 at 09:10:25AM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Mon, Mar 18, 2013 at 11:50:58PM -0700, Andrew Morton wrote:
+>> > On Tue, 19 Mar 2013 14:31:40 +0800 kbuild test robot <fengguang.wu@intel.com> wrote:
+>> > 
+>> > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next master
+>> > > head:   0e78c0989334e9c1d578ba25621de14e8441d8b4
+>> > > commit: 7cac5501aa2bd4777906fa0cdccc1b1ce18b3166 staging: zcache: enable zcache to be built/loaded as a module
+>> > > date:   26 hours ago
+>> > > config: make ARCH=i386 allmodconfig
+>> > > 
+>> > > All error/warnings:
+>> > > 
+>> > > >> make[2]: execvp: /bin/bash: Argument list too long
+>> > >    make[2]: *** [__modpost] Error 127
+>> > >    make[2]: Target `_modpost' not remade because of errors.
+>> > > 
+>> > 
+>> > Hey, I see that very occasionally, but it goes away all by itself.  Are
+>> > you sure that
+>> > staging-zcache-enable-ramster-to-be-built-loaded-as-a-module.patch
+>> > causes it?
+>
+> Sorry, I confirmed that it's a wrong bisect..
+>
+>> Is there a way to print out what the argument list is?
+>
+> Good idea! I managed to catch the error command with
+>
+>         strace -e trace=process -s 4096 -f -o argtoolong make -j1 --debug=j V=1 ARCH=i386 modules
 
-Yeah, good point. It still looks ugly, but it does make sense.
+Wow, nice!
 
--- Steve
+modpost really does want all the modules at once, so it can check for
+unresolved symbols.  So xargs is out, we need to implement stdin-reading
+directly.
+
+Bikeshedding on the option name reveals no established standard:
+-S/--stdin-file-list in shar, -T/--files-from=i in tar, --files-from=-
+in rsync.
+
+Now, if someone can find a better way of getting the module list into a
+file/stdin, I'm all ears.  I'm not sure the find works in all cases...
+
+Thanks,
+Rusty.
+
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index cf82c83..421e14f 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -78,12 +78,13 @@ modpost = scripts/mod/modpost                    \
+  $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)      \
+  $(if $(KBUILD_EXTMOD)$(KBUILD_MODPOST_WARN),-w)
+ 
+-quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+-      cmd_modpost = $(modpost) -s
++# We can go over command line length here, so be careful.
++quiet_cmd_modpost = MODPOST modules
++      cmd_modpost = find * -name '*.ko' | $(modpost) -s -T -
+ 
+ PHONY += __modpost
+ __modpost: $(modules:.ko=.o) FORCE
+-	$(call cmd,modpost) $(wildcard vmlinux) $(filter-out FORCE,$^)
++	$(call cmd,modpost) $(wildcard vmlinux)
+ 
+ quiet_cmd_kernel-mod = MODPOST $@
+       cmd_kernel-mod = $(modpost) $@
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 282decf..ff6b40b 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -15,6 +15,7 @@
+ #include <stdio.h>
+ #include <ctype.h>
+ #include <string.h>
++#include <limits.h>
+ #include "modpost.h"
+ #include "../../include/generated/autoconf.h"
+ #include "../../include/linux/license.h"
+@@ -1756,6 +1757,28 @@ static void read_symbols(char *modname)
+ 		mod->unres = alloc_symbol("module_layout", 0, mod->unres);
+ }
+ 
++static void read_symbols_from_files(const char *filename)
++{
++	FILE *in = stdin;
++	char fname[PATH_MAX];
++
++	if (strcmp(filename, "-") != 0) {
++		in = fopen(filename, "r");
++		if (!in)
++			fatal("Can't open filenames file %s: %m", filename);
++	}
++
++	while (fgets(fname, PATH_MAX, in) != NULL) {
++		/* Strip \n */
++		if (strlen(fname))
++			fname[strlen(fname)-1] = '\0';
++		read_symbols(fname);
++	}
++
++	if (in != stdin)
++		fclose(in);
++}
++
+ #define SZ 500
+ 
+ /* We first write the generated file into memory using the
+@@ -2116,13 +2139,13 @@ int main(int argc, char **argv)
+ 	struct module *mod;
+ 	struct buffer buf = { };
+ 	char *kernel_read = NULL, *module_read = NULL;
+-	char *dump_write = NULL;
++	char *dump_write = NULL, *files_source = NULL;
+ 	int opt;
+ 	int err;
+ 	struct ext_sym_list *extsym_iter;
+ 	struct ext_sym_list *extsym_start = NULL;
+ 
+-	while ((opt = getopt(argc, argv, "i:I:e:msSo:awM:K:")) != -1) {
++	while ((opt = getopt(argc, argv, "i:I:e:msST:o:awM:K:")) != -1) {
+ 		switch (opt) {
+ 		case 'i':
+ 			kernel_read = optarg;
+@@ -2154,6 +2177,9 @@ int main(int argc, char **argv)
+ 		case 'S':
+ 			sec_mismatch_verbose = 0;
+ 			break;
++		case 'T':
++			files_source = optarg;
++			break;
+ 		case 'w':
+ 			warn_unresolved = 1;
+ 			break;
+@@ -2176,6 +2202,9 @@ int main(int argc, char **argv)
+ 	while (optind < argc)
+ 		read_symbols(argv[optind++]);
+ 
++	if (files_source)
++		read_symbols_from_files(files_source);
++
+ 	for (mod = modules; mod; mod = mod->next) {
+ 		if (mod->skip)
+ 			continue;
 
 
