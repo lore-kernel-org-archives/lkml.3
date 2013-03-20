@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab3CTO0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:26:35 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52960 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab3CTO0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:26:33 -0400
-From: Alice Ferrazzi <alice.ferrazzi@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Alice Ferrazzi <alice.ferrazzi@gmail.com>
-Subject: [PATCH] Staging: media: solo6x10: v4l2-enc: Fixed C99 comment
-Date: Wed, 20 Mar 2013 23:26:21 +0900
-Message-Id: <1363789581-12782-1-git-send-email-alice.ferrazzi@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754687Ab3CTO2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:28:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3CTO2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 10:28:20 -0400
+Message-ID: <5149C76D.7090409@redhat.com>
+Date: Wed, 20 Mar 2013 10:27:57 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 4/4] ipc: sem: do not hold ipc lock more than necessary
+References: <1362476179.2225.54.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1362476179.2225.54.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed do not use C99 // comments.
+On 03/05/2013 04:36 AM, Davidlohr Bueso wrote:
 
-Signed-off-by: Alice Ferrazzi <alice.ferrazzi@gmail.com>
----
- drivers/staging/media/solo6x10/v4l2-enc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> @@ -1476,8 +1539,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>   	queue.sleeper = current;
+>
+>   sleep_again:
+> -	current->state = TASK_INTERRUPTIBLE;
+>   	sem_unlock(sma);
+> +	current->state = TASK_INTERRUPTIBLE;
+>
+>   	if (timeout)
+>   		jiffies_left = schedule_timeout(jiffies_left);
 
-diff --git a/drivers/staging/media/solo6x10/v4l2-enc.c b/drivers/staging/media/solo6x10/v4l2-enc.c
-index 4977e86..8f4ec1b 100644
---- a/drivers/staging/media/solo6x10/v4l2-enc.c
-+++ b/drivers/staging/media/solo6x10/v4l2-enc.c
-@@ -466,7 +466,7 @@ static void write_bytes(u8 **out, unsigned *bits, const u8 *src, unsigned count)
- static void write_bits(u8 **out, unsigned *bits, u32 value, unsigned count)
- {
- 
--	value <<= 32 - count; // shift to the right
-+	value <<= 32 - count; /* shift to the right */
- 
- 	while (count--) {
- 		**out <<= 1;
+After modifying my test case to start with a semaphore value of 1 on
+every semaphore, and do down followed by up (to have only one process
+take each semaphore at a time), I started seeing lost wakeups and the
+test case being stuck.
+
+I believe the change above is the cause of that issue.
+
+By unlocking before setting current->state to TASK_INTERRUPTIBLE,
+there is a small window where the next lock holder can grab the
+lock and wake us up, before we set ourselves to TASK_INTERRUPTIBLE
+and go to sleep.
+
+I have reverted your change in my code and am building a test kernel
+now.
+
+If things work, I'll clean up the whole patch series for a re-posting
+today.
+
 -- 
-1.7.10.4
-
+All rights reversed
