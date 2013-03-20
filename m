@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab3CTPpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:45:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54182 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933284Ab3CTPpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:45:50 -0400
+	id S933420Ab3CTPqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:46:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47248 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3CTPqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 11:46:06 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <balbi@ti.com>, <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>
-Subject: [PATCH v4 21/21] ARM: dts: omap3-beagle: Add USB Host support
-Date: Wed, 20 Mar 2013 17:45:00 +0200
-Message-ID: <1363794300-31526-22-git-send-email-rogerq@ti.com>
+Subject: [PATCH v4 19/21] ARM: dts: OMAP4: Add HS USB Host IP nodes
+Date: Wed, 20 Mar 2013 17:44:58 +0200
+Message-ID: <1363794300-31526-20-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1363794300-31526-1-git-send-email-rogerq@ti.com>
 References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
@@ -25,104 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide RESET and Power regulators for the USB PHY,
-the USB Host port mode and the PHY device.
-
-Also provide pin multiplexer information for USB host
-pins.
+Adds device nodes for HS USB Host module, TLL module,
+OHCI and EHCI controllers.
 
 CC: Benoît Cousson <b-cousson@ti.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap3-beagle.dts |   71 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 71 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/omap4.dtsi |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index f624dc8..02d23f1 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -38,6 +38,57 @@
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 739bb79..b7db1a2 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -529,5 +529,35 @@
+ 			ti,hwmods = "timer11";
+ 			ti,timer-pwm;
  		};
++
++		usbhstll: usbhstll@4a062000 {
++			compatible = "ti,usbhs-tll";
++			reg = <0x4a062000 0x1000>;
++			interrupts = <0 78 0x4>;
++			ti,hwmods = "usb_tll_hs";
++		};
++
++		usbhshost: usbhshost@4a064000 {
++			compatible = "ti,usbhs-host";
++			reg = <0x4a064000 0x800>;
++			ti,hwmods = "usb_host_hs";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			usbhsohci: ohci@4a064800 {
++				compatible = "ti,ohci-omap3", "usb-ohci";
++				reg = <0x4a064800 0x400>;
++				interrupt-parent = <&gic>;
++				interrupts = <0 76 0x4>;
++			};
++
++			usbhsehci: ehci@4a064c00 {
++				compatible = "ti,ehci-omap", "usb-ehci";
++				reg = <0x4a064c00 0x400>;
++				interrupt-parent = <&gic>;
++				interrupts = <0 77 0x4>;
++			};
++		};
  	};
- 
-+	/* HS USB Port 2 RESET */
-+	hsusb2_reset: hsusb2_reset_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb2_reset";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&gpio5 19 0>;	/* gpio_147 */
-+		startup-delay-us = <70000>;
-+		enable-active-high;
-+	};
-+
-+	/* HS USB Port 2 Power */
-+	hsusb2_power: hsusb2_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb2_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
-+		startup-delay-us = <70000>;
-+	};
-+
-+	/* HS USB Host PHY on PORT 2 */
-+	hsusb2_phy: hsusb2_phy {
-+		compatible = "usb-nop-xceiv";
-+		reset-supply = <&hsusb2_reset>;
-+		vcc-supply = <&hsusb2_power>;
-+	};
-+};
-+
-+&omap3_pmx_core {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+			&hsusbb2_pins
-+	>;
-+
-+	hsusbb2_pins: pinmux_hsusbb2_pins {
-+		pinctrl-single,pins = <
-+			0x5c0 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_clk OUTPUT */
-+			0x5c2 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_stp OUTPUT */
-+			0x5c4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dir INPUT | PULLDOWN */
-+			0x5c6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_nxt INPUT | PULLDOWN */
-+			0x5c8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat0 INPUT | PULLDOWN */
-+			0x5cA 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat1 INPUT | PULLDOWN */
-+			0x1a4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat2 INPUT | PULLDOWN */
-+			0x1a6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat3 INPUT | PULLDOWN */
-+			0x1a8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat4 INPUT | PULLDOWN */
-+			0x1aa 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat5 INPUT | PULLDOWN */
-+			0x1ac 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat6 INPUT | PULLDOWN */
-+			0x1ae 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat7 INPUT | PULLDOWN */
-+		>;
-+	};
  };
- 
- &i2c1 {
-@@ -65,3 +116,23 @@
- &mmc3 {
- 	status = "disabled";
- };
-+
-+&usbhshost {
-+	port2-mode = "ehci-phy";
-+};
-+
-+&usbhsehci {
-+	phys = <0 &hsusb2_phy>;
-+};
-+
-+&twl_gpio {
-+	ti,use-leds;
-+	/* pullups: BIT(1) */
-+	ti,pullups = <0x000002>;
-+	/*
-+	 * pulldowns:
-+	 * BIT(2), BIT(6), BIT(7), BIT(8), BIT(13)
-+	 * BIT(15), BIT(16), BIT(17)
-+	 */
-+	ti,pulldowns = <0x03a1c4>;
-+};
 -- 
 1.7.4.1
 
